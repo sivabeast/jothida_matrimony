@@ -1,0 +1,255 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
+import '../../models/profile_model.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/interest_provider.dart';
+import '../../providers/profile_provider.dart';
+import '../../widgets/common/gradient_button.dart';
+
+class ProfileViewScreen extends ConsumerStatefulWidget {
+  final String profileId;
+
+  const ProfileViewScreen({super.key, required this.profileId});
+
+  @override
+  ConsumerState<ProfileViewScreen> createState() => _ProfileViewScreenState();
+}
+
+class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
+  int _photoIndex = 0;
+
+  Future<void> _sendInterest(ProfileModel profile) async {
+    final userId = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
+    if (userId == null) return;
+    final myProfile = await ref.read(profileRepositoryProvider).getProfileByUserId(userId);
+    if (myProfile == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Create your profile first to send interest')));
+      }
+      return;
+    }
+    await ref.read(interestNotifierProvider.notifier).sendInterest(
+          senderId: userId,
+          receiverId: profile.userId,
+          senderProfileId: myProfile.id,
+          receiverProfileId: profile.id,
+        );
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Interest sent successfully!')));
+    }
+  }
+
+  void _reportProfile(ProfileModel profile) {
+    context.push('/report/${profile.id}');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final profileAsync = ref.watch(profileByIdProvider(widget.profileId));
+
+    return Scaffold(
+      body: profileAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('$e')),
+        data: (profile) {
+          if (profile == null) {
+            return const Center(child: Text('Profile not found'));
+          }
+          // Increment view count
+          ref.read(profileRepositoryProvider).incrementViewCount(profile.id);
+          return _buildProfileView(profile);
+        },
+      ),
+    );
+  }
+
+  Widget _buildProfileView(ProfileModel profile) {
+    return CustomScrollView(
+      slivers: [
+        SliverAppBar(
+          expandedHeight: 300,
+          pinned: true,
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.flag_outlined),
+              onPressed: () => _reportProfile(profile),
+              tooltip: 'Report',
+            ),
+          ],
+          flexibleSpace: FlexibleSpaceBar(
+            background: Stack(
+              fit: StackFit.expand,
+              children: [
+                profile.photos.isNotEmpty
+                    ? Image.network(profile.photos[_photoIndex], fit: BoxFit.cover)
+                    : Container(
+                        color: AppColors.primary.withOpacity(0.3),
+                        child: const Icon(Icons.person, size: 100, color: Colors.white)),
+                // Photo dots
+                if (profile.photos.length > 1)
+                  Positioned(
+                    bottom: 16,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        profile.photos.length,
+                        (i) => GestureDetector(
+                          onTap: () => setState(() => _photoIndex = i),
+                          child: Container(
+                            width: _photoIndex == i ? 20 : 8,
+                            height: 8,
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
+                            decoration: BoxDecoration(
+                              color: _photoIndex == i ? Colors.white : Colors.white54,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(profile.name, style: AppTextStyles.heading1),
+                        Text(
+                          '${profile.age} yrs • ${profile.city}',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                    if (profile.horoscopeDetails.isAstrologerVerified)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green[50],
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.green[200]!),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.verified, color: Colors.green, size: 14),
+                            SizedBox(width: 4),
+                            Text('Verified', style: TextStyle(color: Colors.green, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (profile.about.isNotEmpty) ...[
+                  Text('About', style: AppTextStyles.heading3),
+                  const SizedBox(height: 8),
+                  Text(profile.about, style: AppTextStyles.bodyMedium),
+                  const SizedBox(height: 20),
+                ],
+                _buildInfoSection('Personal Details', [
+                  _InfoItem(Icons.cake_outlined, 'Age', '${profile.age} years'),
+                  _InfoItem(Icons.school_outlined, 'Education', profile.education),
+                  _InfoItem(Icons.work_outline, 'Occupation', profile.occupation),
+                  _InfoItem(Icons.church_outlined, 'Religion', profile.religion),
+                  _InfoItem(Icons.people_outline, 'Caste', profile.caste),
+                  _InfoItem(Icons.wc, 'Marital Status', profile.maritalStatus),
+                ]),
+                const SizedBox(height: 20),
+                _buildInfoSection('Horoscope', [
+                  _InfoItem(Icons.stars, 'Rasi', profile.horoscopeDetails.rasi),
+                  _InfoItem(Icons.star_border, 'Nakshatra', profile.horoscopeDetails.nakshatra),
+                  _InfoItem(Icons.wb_twilight, 'Lagnam', profile.horoscopeDetails.lagnam),
+                  _InfoItem(Icons.place_outlined, 'Birth Place', profile.horoscopeDetails.birthPlace),
+                ]),
+                const SizedBox(height: 32),
+                // Action buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: GradientButton(
+                        onPressed: () => _sendInterest(profile),
+                        text: 'Send Interest',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => context.push('/porutham', extra: profile),
+                        icon: const Icon(Icons.star),
+                        label: const Text('Porutham'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(52),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoSection(String title, List<_InfoItem> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: AppTextStyles.heading3),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Column(
+            children: items
+                .where((item) => item.value.isNotEmpty)
+                .map((item) => ListTile(
+                      dense: true,
+                      leading: Icon(item.icon, size: 20, color: AppColors.primary),
+                      title: Text(item.label,
+                          style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      trailing: Text(item.value,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                    ))
+                .toList(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _InfoItem {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _InfoItem(this.icon, this.label, this.value);
+}
