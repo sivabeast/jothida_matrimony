@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/validators.dart';
 import '../../../providers/profile_provider.dart';
@@ -88,8 +89,13 @@ class _Step7State extends ConsumerState<Step7Contact> {
               controller: _mobileController,
               label: 'Mobile Number *',
               hint: '9876543210',
-              keyboardType: TextInputType.phone,
+              keyboardType: TextInputType.number,
               prefixText: '+91 ',
+              maxLength: 10,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10),
+              ],
               validator: Validators.phone,
             ),
             const SizedBox(height: 12),
@@ -107,8 +113,13 @@ class _Step7State extends ConsumerState<Step7Contact> {
                 controller: _whatsappController,
                 label: 'WhatsApp Number',
                 hint: '9876543210',
-                keyboardType: TextInputType.phone,
+                keyboardType: TextInputType.number,
                 prefixText: '+91 ',
+                maxLength: 10,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(10),
+                ],
                 validator: Validators.phone,
               ),
             ],

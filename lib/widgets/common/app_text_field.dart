@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
 
 class AppTextField extends StatelessWidget {
@@ -16,6 +17,7 @@ class AppTextField extends StatelessWidget {
   final bool readOnly;
   final VoidCallback? onTap;
   final void Function(String)? onChanged;
+  final List<TextInputFormatter>? inputFormatters;
 
   const AppTextField({
     super.key,
@@ -33,6 +35,7 @@ class AppTextField extends StatelessWidget {
     this.readOnly = false,
     this.onTap,
     this.onChanged,
+    this.inputFormatters,
   });
 
   @override
@@ -44,12 +47,15 @@ class AppTextField extends StatelessWidget {
       obscureText: obscureText,
       maxLines: maxLines,
       maxLength: maxLength,
+      inputFormatters: inputFormatters,
       readOnly: readOnly,
       onTap: onTap,
       onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
+        // Hide the character counter that maxLength would otherwise show.
+        counterText: maxLength != null ? '' : null,
         suffixIcon: suffixIcon,
         prefixIcon: prefixIcon,
         prefixText: prefixText,

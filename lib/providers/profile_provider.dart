@@ -1,11 +1,22 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/config/dev_config.dart';
 import '../models/profile_model.dart';
+import 'demo_data_provider.dart';
 import 'service_providers.dart';
 import 'auth_provider.dart';
 
 // Current user's profile
 final myProfileProvider = StreamProvider.autoDispose<ProfileModel?>((ref) {
+  // Demo mode: serve the profile the user created locally (if any).
+  if (kBypassAuth) {
+    final id = ref.watch(myDemoProfileIdProvider);
+    ref.watch(demoProfilesProvider); // stay reactive to store changes
+    final mine =
+        id == null ? null : ref.read(demoProfilesProvider.notifier).byId(id);
+    return Stream.value(mine);
+  }
+
   final authAsync = ref.watch(firebaseAuthStreamProvider);
   final userId = authAsync.valueOrNull?.uid;
   if (userId == null) return Stream.value(null);
@@ -15,8 +26,13 @@ final myProfileProvider = StreamProvider.autoDispose<ProfileModel?>((ref) {
 
 // Watch a specific profile by id
 final profileByIdProvider =
-    StreamProvider.autoDispose.family<ProfileModel?, String>((ref, profileId) =>
-        ref.watch(profileRepositoryProvider).watchProfile(profileId));
+    StreamProvider.autoDispose.family<ProfileModel?, String>((ref, profileId) {
+  if (kBypassAuth) {
+    ref.watch(demoProfilesProvider); // stay reactive
+    return Stream.value(ref.read(demoProfilesProvider.notifier).byId(profileId));
+  }
+  return ref.watch(profileRepositoryProvider).watchProfile(profileId);
+});
 
 // Profile creation / editing notifier
 class ProfileCreationState {
@@ -67,6 +83,34 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
 
   Future<String?> submitProfile(String userId) async {
     state = state.copyWith(isLoading: true, error: null);
+
+    // ── Demo mode: save the profile to the in-memory store, no backend ──
+    if (kBypassAuth) {
+      try {
+        final id = 'me_${DateTime.now().millisecondsSinceEpoch}';
+        final gender = (state.data['gender'] ?? 'Male').toString();
+        // No upload available offline — use a placeholder portrait.
+        final placeholder = gender == 'Female'
+            ? 'https://randomuser.me/api/portraits/women/90.jpg'
+            : 'https://randomuser.me/api/portraits/men/90.jpg';
+        final profile = ProfileModel.fromMap({
+          ...state.data,
+          'id': id,
+          'userId': userId,
+          'photos': [placeholder],
+          'status': 'approved', // visible immediately in demo
+        }).copyWith(isActive: true, status: 'approved');
+
+        ref.read(demoProfilesProvider.notifier).upsert(profile);
+        ref.read(myDemoProfileIdProvider.notifier).state = id;
+        state = state.copyWith(isLoading: false, isComplete: true);
+        return id;
+      } catch (e) {
+        state = state.copyWith(isLoading: false, error: e.toString());
+        return null;
+      }
+    }
+
     try {
       final repo = ref.read(profileRepositoryProvider);
       List<String> photoUrls = [];
@@ -143,6 +187,19 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
 
   Future<void> load({String gender = 'Female', Map<String, dynamic>? filters}) async {
     state = DiscoverState(isLoading: true, filters: filters ?? {});
+
+    // ── Demo mode: read from the in-memory sample store ──
+    if (kBypassAuth) {
+      final profiles =
+          ref.read(demoProfilesProvider.notifier).discover(gender: gender);
+      state = state.copyWith(
+        profiles: profiles,
+        isLoading: false,
+        hasMore: false,
+      );
+      return;
+    }
+
     try {
       final f = filters ?? {};
       final profiles = await ref.read(profileRepositoryProvider).searchProfiles(

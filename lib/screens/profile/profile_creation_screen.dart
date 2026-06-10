@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/config/dev_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/demo_data_provider.dart';
 import '../../providers/profile_provider.dart';
 import 'steps/step1_who_are_you.dart';
 import 'steps/step2_personal_details.dart';
@@ -60,7 +62,8 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   }
 
   Future<void> _submitProfile() async {
-    final userId = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
+    final userId = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ??
+        (kBypassAuth ? kDemoUserId : null);
     if (userId == null) return;
     final profileId =
         await ref.read(profileCreationProvider.notifier).submitProfile(userId);
