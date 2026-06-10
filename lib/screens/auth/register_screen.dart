@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/config/dev_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/validators.dart';
@@ -32,6 +33,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _register() async {
+    // TODO(auth): demo bypass for UI testing — skip account creation.
+    if (kBypassAuth) {
+      context.go('/profile/create');
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
     await ref.read(authNotifierProvider.notifier).registerWithEmail(
           _emailController.text.trim(),

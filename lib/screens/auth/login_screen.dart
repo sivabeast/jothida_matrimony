@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/config/dev_config.dart';
 import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -35,6 +36,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _sendOtp() async {
+    // TODO(auth): demo bypass for UI testing — skip OTP, go straight to Home.
+    if (kBypassAuth) {
+      context.go('/home');
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
     await ref.read(otpNotifierProvider.notifier).sendOtp(_phoneController.text.trim());
     final otpState = ref.read(otpNotifierProvider);
@@ -47,6 +53,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _signInWithEmail() async {
+    // TODO(auth): demo bypass for UI testing — go straight to Home.
+    if (kBypassAuth) {
+      context.go('/home');
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
     await ref.read(authNotifierProvider.notifier).signInWithEmail(
           _emailController.text.trim(),
@@ -63,6 +74,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _signInWithGoogle() async {
+    // TODO(auth): demo bypass for UI testing — go straight to Home, no auth.
+    if (kBypassAuth) {
+      context.go('/home');
+      return;
+    }
     await ref.read(authNotifierProvider.notifier).signInWithGoogle();
     if (!mounted) return;
     final auth = ref.read(authNotifierProvider);

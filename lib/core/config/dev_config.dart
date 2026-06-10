@@ -10,4 +10,4 @@
 ///   * The router's auth guard is disabled so every screen is reachable.
 ///
 /// Set this to `false` (or delete it) to restore real authentication behavior.
-const bool kBypassAuth = false;
+const bool kBypassAuth = true;
