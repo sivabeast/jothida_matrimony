@@ -30,8 +30,8 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
     state = await AsyncValue.guard(() async {
       final repo = ref.read(authRepositoryProvider);
       final cred = await repo.signInWithOTP(verificationId, otp);
-      await repo.createUserDocumentAfterAuth(cred.user!, phone: cred.user!.phoneNumber);
-      return repo.getUserModel(cred.user!.uid);
+      return repo.createUserDocumentAfterAuth(
+          cred.user!, phone: cred.user!.phoneNumber);
     });
   }
 
@@ -40,8 +40,7 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
     state = await AsyncValue.guard(() async {
       final repo = ref.read(authRepositoryProvider);
       final cred = await repo.registerWithEmail(email, password);
-      await repo.createUserDocumentAfterAuth(cred.user!);
-      return repo.getUserModel(cred.user!.uid);
+      return repo.createUserDocumentAfterAuth(cred.user!);
     });
   }
 
@@ -50,18 +49,18 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
     state = await AsyncValue.guard(() async {
       final repo = ref.read(authRepositoryProvider);
       final cred = await repo.signInWithEmail(email, password);
-      return repo.getUserModel(cred.user!.uid);
+      // Refresh lastLoginAt and return the up-to-date model.
+      return repo.createUserDocumentAfterAuth(cred.user!);
     });
   }
 
+  /// Google sign-in. The returned [UserModel] is `null` only when the user
+  /// cancels the picker; real failures propagate as an error state.
   Future<void> signInWithGoogle() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final repo = ref.read(authRepositoryProvider);
-      final cred = await repo.signInWithGoogle();
-      if (cred == null) return null;
-      await repo.createUserDocumentAfterAuth(cred.user!);
-      return repo.getUserModel(cred.user!.uid);
+      return repo.signInWithGoogle();
     });
   }
 

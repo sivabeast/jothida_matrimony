@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/config/dev_config.dart';
+import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/validators.dart';
@@ -63,23 +63,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _signInWithGoogle() async {
-    // TODO(auth): Temporary demo bypass for UI testing only.
-    // While `kBypassAuth` is true this button performs NO authentication —
-    // no Firebase Auth, no Google Sign-In, no validation, no account creation —
-    // and navigates straight to the Home screen. Remove this block and rely on
-    // the real `signInWithGoogle()` call below once auth is integrated.
-    if (kBypassAuth) {
-      context.go('/home');
+    await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+    if (!mounted) return;
+    final auth = ref.read(authNotifierProvider);
+
+    if (auth.hasError) {
+      // AuthException already carries a friendly, localisable message.
+      final err = auth.error;
+      final message = err is AuthException
+          ? err.message
+          : 'Google Sign-In failed. Please try again.';
+      // Silently ignore a user-cancelled picker.
+      if (!(err is AuthException && err.cancelled)) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(message)));
+      }
       return;
     }
 
-    await ref.read(authNotifierProvider.notifier).signInWithGoogle();
-    final auth = ref.read(authNotifierProvider);
-    if (auth.hasError && mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(auth.error.toString())));
-    } else if (auth.valueOrNull != null && mounted) {
-      context.go('/home');
+    final user = auth.valueOrNull;
+    if (user != null) {
+      user.isAdmin ? context.go('/admin') : context.go('/home');
     }
   }
 

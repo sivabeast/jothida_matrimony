@@ -1,13 +1,18 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../services/firebase/auth_service.dart';
+import '../services/firebase/firestore_service.dart';
 import '../services/firebase/fcm_service.dart';
 
+/// Orchestrates authentication: delegates credential work to [AuthService] and
+/// user-document work to [FirestoreService]. The UI/providers only talk to this
+/// repository, never to Firebase directly.
 class AuthRepository {
   final AuthService _auth;
+  final FirestoreService _firestore;
   final FcmService _fcm;
 
-  AuthRepository(this._auth, this._fcm);
+  AuthRepository(this._auth, this._firestore, this._fcm);
 
   Stream<User?> get authStateChanges => _auth.authStateChanges;
   User? get currentUser => _auth.currentUser;
@@ -35,18 +40,32 @@ class AuthRepository {
   Future<UserCredential> signInWithEmail(String email, String password) =>
       _auth.signInWithEmail(email, password);
 
-  Future<UserCredential?> signInWithGoogle() => _auth.signInWithGoogle();
-
   Future<void> sendPasswordReset(String email) => _auth.sendPasswordReset(email);
 
-  Future<void> createUserDocumentAfterAuth(User user, {String? phone}) async {
-    await _auth.createUserDocument(user, phone: phone);
-    final uid = user.uid;
-    final token = await _fcm.getToken();
-    if (token != null) await _auth.updateFcmToken(uid, token);
+  /// Full Google sign-in. Returns the resolved [UserModel], or `null` if the
+  /// user dismissed the account picker. Throws [AuthException] on real errors.
+  Future<UserModel?> signInWithGoogle() async {
+    final cred = await _auth.signInWithGoogle();
+    if (cred?.user == null) return null;
+    return _onAuthenticated(cred!.user!);
   }
 
-  Future<UserModel?> getUserModel(String uid) => _auth.getUserModel(uid);
+  /// Shared post-auth step for every sign-in path: create-or-update the user
+  /// document, register the FCM token, and return the [UserModel].
+  Future<UserModel> _onAuthenticated(User user, {String? phone}) async {
+    final model = await _firestore.createOrUpdateUserOnLogin(user, phone: phone);
+    final token = await _fcm.getToken();
+    if (token != null) {
+      await _firestore.updateFcmToken(user.uid, token);
+    }
+    return model;
+  }
+
+  /// Used by the email/OTP flows to ensure a user document exists.
+  Future<UserModel> createUserDocumentAfterAuth(User user, {String? phone}) =>
+      _onAuthenticated(user, phone: phone);
+
+  Future<UserModel?> getUserModel(String uid) => _firestore.getUser(uid);
 
   Future<void> signOut() => _auth.signOut();
 }

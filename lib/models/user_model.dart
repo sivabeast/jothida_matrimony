@@ -17,6 +17,10 @@ class UserModel {
   final int freePortuthamsUsed;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final DateTime? lastLoginAt;
+  // 'free' | 'basic' | 'medium' | 'premium'. Mirrors the active plan tier and
+  // is the field requested for the auth/user document.
+  final String membershipType;
   final Map<String, bool> privacySettings;
   final String? fcmToken;
 
@@ -37,6 +41,8 @@ class UserModel {
     this.freePortuthamsUsed = 0,
     required this.createdAt,
     required this.updatedAt,
+    this.lastLoginAt,
+    this.membershipType = 'free',
     this.privacySettings = const {
       'hidePhone': false,
       'hideAddress': false,
@@ -73,6 +79,10 @@ class UserModel {
       updatedAt: data['updatedAt'] != null
           ? (data['updatedAt'] as Timestamp).toDate()
           : DateTime.now(),
+      lastLoginAt: data['lastLoginAt'] != null
+          ? (data['lastLoginAt'] as Timestamp).toDate()
+          : null,
+      membershipType: data['membershipType'] ?? 'free',
       privacySettings: Map<String, bool>.from(data['privacySettings'] ?? {
         'hidePhone': false,
         'hideAddress': false,
@@ -103,6 +113,9 @@ class UserModel {
         'freePortuthamsUsed': freePortuthamsUsed,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
+        'lastLoginAt':
+            lastLoginAt != null ? Timestamp.fromDate(lastLoginAt!) : null,
+        'membershipType': membershipType,
         'privacySettings': privacySettings,
         'fcmToken': fcmToken,
       };
@@ -124,6 +137,8 @@ class UserModel {
     int? freePortuthamsUsed,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? lastLoginAt,
+    String? membershipType,
     Map<String, bool>? privacySettings,
     String? fcmToken,
   }) =>
@@ -144,6 +159,8 @@ class UserModel {
         freePortuthamsUsed: freePortuthamsUsed ?? this.freePortuthamsUsed,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
+        lastLoginAt: lastLoginAt ?? this.lastLoginAt,
+        membershipType: membershipType ?? this.membershipType,
         privacySettings: privacySettings ?? this.privacySettings,
         fcmToken: fcmToken ?? this.fcmToken,
       );

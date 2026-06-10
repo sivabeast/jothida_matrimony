@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' show User;
 import '../../core/constants/app_constants.dart';
 import '../../models/profile_model.dart';
 import '../../models/interest_model.dart';
@@ -10,6 +11,70 @@ import '../../models/user_model.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  // ── Users ───────────────────────────────────────────────────────────────────
+  /// Creates the user document on first login, or just refreshes `lastLoginAt`
+  /// for a returning user — never creates a duplicate.
+  ///
+  /// Stored fields: uid (doc id), email, displayName (name), photoUrl,
+  /// createdAt, lastLoginAt, isProfileComplete (profileCompleted),
+  /// membershipType, plus the app's account metadata. Returns the resulting
+  /// [UserModel].
+  Future<UserModel> createOrUpdateUserOnLogin(User user, {String? phone}) async {
+    final docRef =
+        _db.collection(AppConstants.usersCollection).doc(user.uid);
+
+    // A transaction makes the "create if new, else update lastLoginAt" step
+    // atomic, so concurrent logins can't race into a duplicate write.
+    await _db.runTransaction((txn) async {
+      final snap = await txn.get(docRef);
+      if (!snap.exists) {
+        final now = DateTime.now();
+        final newUser = UserModel(
+          uid: user.uid,
+          email: user.email,
+          phone: phone ?? user.phoneNumber,
+          displayName: user.displayName,
+          photoUrl: user.photoURL,
+          membershipType: 'free',
+          isProfileComplete: false,
+          isEmailVerified: user.emailVerified,
+          createdAt: now,
+          updatedAt: now,
+          lastLoginAt: now,
+        );
+        // Use server timestamps for the audit fields once written.
+        txn.set(docRef, {
+          ...newUser.toFirestore(),
+          'createdAt': FieldValue.serverTimestamp(),
+          'lastLoginAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        // Existing user → only bump lastLoginAt (no duplicate document).
+        txn.update(docRef, {
+          'lastLoginAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    });
+
+    final fresh = await docRef.get();
+    return UserModel.fromFirestore(fresh);
+  }
+
+  Future<UserModel?> getUser(String uid) async {
+    final doc =
+        await _db.collection(AppConstants.usersCollection).doc(uid).get();
+    if (!doc.exists) return null;
+    return UserModel.fromFirestore(doc);
+  }
+
+  Future<void> updateFcmToken(String uid, String token) => _db
+      .collection(AppConstants.usersCollection)
+      .doc(uid)
+      .set({'fcmToken': token, 'updatedAt': FieldValue.serverTimestamp()},
+          SetOptions(merge: true));
 
   // ── Profiles ──────────────────────────────────────────────────────────────
   Future<String> createProfile(ProfileModel profile) async {

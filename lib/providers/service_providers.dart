@@ -21,6 +21,7 @@ final razorpayServiceProvider = Provider<RazorpayService>((ref) => RazorpayServi
 // ── Repositories ──────────────────────────────────────────────────────────────
 final authRepositoryProvider = Provider<AuthRepository>((ref) => AuthRepository(
       ref.watch(authServiceProvider),
+      ref.watch(firestoreServiceProvider),
       ref.watch(fcmServiceProvider),
     ));
 

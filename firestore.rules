@@ -28,10 +28,12 @@ service cloud.firestore {
     }
 
     // ── Users ─────────────────────────────────────────────────────────────
+    // A user can only read/write their OWN account document. Admins and
+    // astrologers may read any user (for moderation); only admins may delete.
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if isOwner(userId) || isAdminOrAstrologer();
       allow create: if isAuthenticated() && isOwner(userId);
-      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
     }
 
