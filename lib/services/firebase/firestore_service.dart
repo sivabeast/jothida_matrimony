@@ -76,6 +76,17 @@ class FirestoreService {
       .set({'fcmToken': token, 'updatedAt': FieldValue.serverTimestamp()},
           SetOptions(merge: true));
 
+  /// Marks the user's profile as completed (gates Home access). Writes both
+  /// `isProfileComplete` (app field) and `profileCompleted` (spec field).
+  Future<void> markProfileCompleted(String uid) => _db
+      .collection(AppConstants.usersCollection)
+      .doc(uid)
+      .set({
+        'isProfileComplete': true,
+        'profileCompleted': true,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
   // ── Profiles ──────────────────────────────────────────────────────────────
   Future<String> createProfile(ProfileModel profile) async {
     final doc = _db.collection(AppConstants.profilesCollection).doc();

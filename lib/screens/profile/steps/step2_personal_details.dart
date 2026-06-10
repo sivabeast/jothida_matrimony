@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/theme/app_text_styles.dart';
+import '../../../core/data/selection_data.dart';
 import '../../../core/utils/validators.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
+import '../../../widgets/common/searchable_field.dart';
 
 class Step2PersonalDetails extends ConsumerStatefulWidget {
   final VoidCallback onNext;
@@ -18,27 +20,30 @@ class Step2PersonalDetails extends ConsumerStatefulWidget {
 class _Step2State extends ConsumerState<Step2PersonalDetails> {
   final _nameController = TextEditingController();
   final _dobController = TextEditingController();
-  final _heightController = TextEditingController();
-  final _cityController = TextEditingController();
-  final _stateController = TextEditingController();
+  final _weightController = TextEditingController();
   final _aboutController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
+  // Dependent / searchable selections
+  String? _height;
   String? _religion;
   String? _caste;
+  String? _subCaste;
+  String? _motherTongue;
   String? _maritalStatus;
   String? _education;
   String? _occupation;
   String? _annualIncome;
+  String? _country = 'India';
+  String? _state;
+  String? _city;
   DateTime? _dob;
 
   @override
   void dispose() {
     _nameController.dispose();
     _dobController.dispose();
-    _heightController.dispose();
-    _cityController.dispose();
-    _stateController.dispose();
+    _weightController.dispose();
     _aboutController.dispose();
     super.dispose();
   }
@@ -46,7 +51,7 @@ class _Step2State extends ConsumerState<Step2PersonalDetails> {
   Future<void> _pickDate() async {
     final date = await showDatePicker(
       context: context,
-      initialDate: DateTime(1990),
+      initialDate: DateTime(1995),
       firstDate: DateTime(1960),
       lastDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
     );
@@ -60,26 +65,40 @@ class _Step2State extends ConsumerState<Step2PersonalDetails> {
 
   void _saveAndNext() {
     if (!_formKey.currentState!.validate()) return;
-    if (_dob == null || _religion == null || _maritalStatus == null ||
-        _education == null || _occupation == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Please fill all required fields')));
+    if (_dob == null ||
+        _religion == null ||
+        _maritalStatus == null ||
+        _education == null ||
+        _occupation == null ||
+        _country == null ||
+        _city == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please fill all required fields')));
       return;
     }
-    final age = DateTime.now().year - _dob!.year;
+    final now = DateTime.now();
+    var age = now.year - _dob!.year;
+    if (now.month < _dob!.month ||
+        (now.month == _dob!.month && now.day < _dob!.day)) {
+      age--;
+    }
     ref.read(profileCreationProvider.notifier).updateData({
       'name': _nameController.text.trim(),
       'dateOfBirth': _dob!.toIso8601String(),
       'age': age,
-      'height': _heightController.text.trim(),
+      'height': _height ?? '',
+      'weight': _weightController.text.trim(),
       'religion': _religion,
       'caste': _caste ?? '',
+      'subCaste': _subCaste ?? '',
+      'motherTongue': _motherTongue ?? 'Tamil',
       'maritalStatus': _maritalStatus,
       'education': _education,
       'occupation': _occupation,
       'annualIncome': _annualIncome ?? '',
-      'city': _cityController.text.trim(),
-      'state': _stateController.text.trim(),
+      'country': _country,
+      'state': _state ?? '',
+      'city': _city,
       'about': _aboutController.text.trim(),
     });
     widget.onNext();
@@ -110,34 +129,133 @@ class _Step2State extends ConsumerState<Step2PersonalDetails> {
               validator: (v) => v == null || v.isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 16),
-            AppTextField(
-              controller: _heightController,
-              label: 'Height (e.g. 5\'8")',
-              hint: "5'6\"",
+            SearchableField(
+              label: 'Height',
+              items: AppConstants.heightList,
+              selectedItem: _height,
+              prefixIcon: Icons.height,
+              onChanged: (v) => setState(() => _height = v),
             ),
             const SizedBox(height: 16),
-            _buildDropdown('Religion *', AppConstants.religions, _religion,
-                (v) => setState(() => _religion = v)),
+            AppTextField(
+              controller: _weightController,
+              label: 'Weight (kg)',
+              hint: '60',
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(3),
+              ],
+            ),
             const SizedBox(height: 16),
-            _buildDropdown('Caste', AppConstants.castes, _caste,
-                (v) => setState(() => _caste = v)),
+            // ── Religion → Caste → Sub-caste (dependent) ──
+            SearchableField(
+              label: 'Religion',
+              isRequired: true,
+              items: AppConstants.religions,
+              selectedItem: _religion,
+              prefixIcon: Icons.spa_outlined,
+              onChanged: (v) => setState(() {
+                _religion = v;
+                _caste = null; // reset dependents
+                _subCaste = null;
+              }),
+            ),
             const SizedBox(height: 16),
-            _buildDropdown('Marital Status *', AppConstants.maritalStatuses, _maritalStatus,
-                (v) => setState(() => _maritalStatus = v)),
+            SearchableField(
+              label: 'Caste',
+              items: SelectionData.castesFor(_religion),
+              selectedItem: _caste,
+              enabled: _religion != null,
+              onChanged: (v) => setState(() {
+                _caste = v;
+                _subCaste = null;
+              }),
+            ),
             const SizedBox(height: 16),
-            _buildDropdown('Education *', AppConstants.educations, _education,
-                (v) => setState(() => _education = v)),
+            SearchableField(
+              label: 'Sub Caste',
+              items: SelectionData.subCastesFor(_caste),
+              selectedItem: _subCaste,
+              enabled: _caste != null,
+              onChanged: (v) => setState(() => _subCaste = v),
+            ),
             const SizedBox(height: 16),
-            _buildDropdown('Occupation *', AppConstants.occupations, _occupation,
-                (v) => setState(() => _occupation = v)),
+            SearchableField(
+              label: 'Mother Tongue',
+              items: AppConstants.motherTongueList,
+              selectedItem: _motherTongue,
+              onChanged: (v) => setState(() => _motherTongue = v),
+            ),
             const SizedBox(height: 16),
-            _buildDropdown('Annual Income', AppConstants.incomeRanges, _annualIncome,
-                (v) => setState(() => _annualIncome = v)),
+            SearchableField(
+              label: 'Marital Status',
+              isRequired: true,
+              items: AppConstants.maritalStatuses,
+              selectedItem: _maritalStatus,
+              onChanged: (v) => setState(() => _maritalStatus = v),
+            ),
             const SizedBox(height: 16),
-            AppTextField(controller: _cityController, label: 'City *',
-                validator: (v) => v == null || v.isEmpty ? 'Required' : null),
+            SearchableField(
+              label: 'Education',
+              isRequired: true,
+              items: AppConstants.educations,
+              selectedItem: _education,
+              prefixIcon: Icons.school_outlined,
+              onChanged: (v) => setState(() => _education = v),
+            ),
             const SizedBox(height: 16),
-            AppTextField(controller: _stateController, label: 'State'),
+            SearchableField(
+              label: 'Occupation',
+              isRequired: true,
+              items: AppConstants.occupations,
+              selectedItem: _occupation,
+              prefixIcon: Icons.work_outline,
+              onChanged: (v) => setState(() => _occupation = v),
+            ),
+            const SizedBox(height: 16),
+            SearchableField(
+              label: 'Annual Income',
+              items: AppConstants.incomeRanges,
+              selectedItem: _annualIncome,
+              onChanged: (v) => setState(() => _annualIncome = v),
+            ),
+            const SizedBox(height: 16),
+            // ── Country → State → City (dependent) ──
+            SearchableField(
+              label: 'Country',
+              isRequired: true,
+              items: SelectionData.countries,
+              selectedItem: _country,
+              prefixIcon: Icons.public,
+              onChanged: (v) => setState(() {
+                _country = v;
+                _state = null;
+                _city = null;
+              }),
+            ),
+            const SizedBox(height: 16),
+            SearchableField(
+              label: 'State',
+              items: _country == 'India'
+                  ? SelectionData.indianStates
+                  : const ['Other'],
+              selectedItem: _state,
+              onChanged: (v) => setState(() {
+                _state = v;
+                _city = null;
+              }),
+            ),
+            const SizedBox(height: 16),
+            SearchableField(
+              label: 'City',
+              isRequired: true,
+              items: SelectionData.citiesFor(_state),
+              selectedItem: _city,
+              enabled: _state != null,
+              prefixIcon: Icons.location_city,
+              onChanged: (v) => setState(() => _city = v),
+            ),
             const SizedBox(height: 16),
             AppTextField(
               controller: _aboutController,
@@ -151,21 +269,6 @@ class _Step2State extends ConsumerState<Step2PersonalDetails> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildDropdown(String label, List<String> items, String? value, ValueChanged<String?> onChanged) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      hint: Text(label),
-      onChanged: onChanged,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        filled: true,
-        fillColor: Colors.grey[50],
-      ),
-      items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
     );
   }
 }

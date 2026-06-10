@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/config/dev_config.dart';
 import '../providers/auth_provider.dart';
+import '../providers/demo_data_provider.dart';
 import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/otp_screen.dart';
@@ -28,20 +29,39 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     redirect: (context, state) {
-      // TODO(auth): Remove this bypass once real authentication is integrated.
-      // While `kBypassAuth` is true the guard is disabled so every screen is
-      // reachable for UI testing without a signed-in user.
-      if (kBypassAuth) return null;
+      final loc = state.matchedLocation;
+      final onAuthPage = loc == '/login' ||
+          loc == '/register' ||
+          loc == '/forgot-password' ||
+          loc.startsWith('/otp');
+      final onSplash = loc == '/';
+      final onProfileCreate = loc == '/profile/create';
 
-      final isAuthenticated = authState.valueOrNull != null;
-      final loggingIn = state.matchedLocation == '/login' ||
-          state.matchedLocation == '/register' ||
-          state.matchedLocation == '/forgot-password' ||
-          state.matchedLocation.startsWith('/otp');
-
-      if (!isAuthenticated && !loggingIn && state.matchedLocation != '/') {
-        return '/login';
+      // ── Demo mode (kBypassAuth): gate Home behind profile completion ──
+      // No user can reach Discover/Requests/Matches/etc. until their profile
+      // is created. profileCompleted == (a demo profile exists).
+      if (kBypassAuth) {
+        final profileCompleted = ref.read(myDemoProfileIdProvider) != null;
+        if (!profileCompleted && !onProfileCreate && !onAuthPage && !onSplash) {
+          return '/profile/create';
+        }
+        return null;
       }
+
+      // ── Real auth path ──
+      final isAuthenticated = authState.valueOrNull != null;
+      if (!isAuthenticated) {
+        return (onAuthPage || onSplash) ? null : '/login';
+      }
+
+      // Authenticated → enforce profileCompleted (users/{uid}.isProfileComplete).
+      final userAsync = ref.read(currentUserProvider);
+      if (userAsync.isLoading) return null; // wait for the profile to load
+      final profileCompleted = userAsync.valueOrNull?.isProfileComplete ?? false;
+      if (!profileCompleted && !onProfileCreate && !onSplash) {
+        return '/profile/create';
+      }
+      if (profileCompleted && onAuthPage) return '/home';
       return null;
     },
     routes: [

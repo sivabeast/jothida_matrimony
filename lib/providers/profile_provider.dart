@@ -135,6 +135,9 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
 
       final profile = ProfileModel.fromMap(profileData);
       final profileId = await repo.createProfile(profile);
+      // Mark the account as profile-completed so the Home gate opens.
+      await ref.read(firestoreServiceProvider).markProfileCompleted(userId);
+      ref.invalidate(currentUserProvider); // refresh the gate
       state = state.copyWith(isLoading: false, isComplete: true);
       return profileId;
     } catch (e) {

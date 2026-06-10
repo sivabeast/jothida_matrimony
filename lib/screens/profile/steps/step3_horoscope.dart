@@ -5,6 +5,7 @@ import '../../../core/utils/horoscope_utils.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
+import '../../../widgets/common/searchable_field.dart';
 
 class Step3Horoscope extends ConsumerStatefulWidget {
   final VoidCallback onNext;
@@ -105,14 +106,30 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
             ],
           ),
           const SizedBox(height: 16),
-          _buildDropdown('Rasi *', AppConstants.rasiList, _rasi,
-              (v) => setState(() => _rasi = v)),
+          SearchableField(
+            label: 'Rasi',
+            isRequired: true,
+            items: AppConstants.rasiList,
+            selectedItem: _rasi,
+            prefixIcon: Icons.brightness_3_outlined,
+            onChanged: (v) => setState(() => _rasi = v),
+          ),
           const SizedBox(height: 16),
-          _buildDropdown('Nakshatra *', AppConstants.nakshatraList, _nakshatra,
-              (v) => setState(() => _nakshatra = v)),
+          SearchableField(
+            label: 'Nakshatra',
+            isRequired: true,
+            items: AppConstants.nakshatraList,
+            selectedItem: _nakshatra,
+            prefixIcon: Icons.star_outline,
+            onChanged: (v) => setState(() => _nakshatra = v),
+          ),
           const SizedBox(height: 16),
-          _buildDropdown('Lagnam', AppConstants.lagnamList, _lagnam,
-              (v) => setState(() => _lagnam = v)),
+          SearchableField(
+            label: 'Lagnam',
+            items: AppConstants.lagnamList,
+            selectedItem: _lagnam,
+            onChanged: (v) => setState(() => _lagnam = v),
+          ),
           if (_rasi != null || _nakshatra != null) ...[
             const SizedBox(height: 16),
             Container(
@@ -142,18 +159,4 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
     );
   }
 
-  Widget _buildDropdown(String label, List<String> items, String? value, ValueChanged<String?> onChanged) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      hint: Text(label),
-      onChanged: onChanged,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        filled: true,
-        fillColor: Colors.grey[50],
-      ),
-      items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
-    );
-  }
 }

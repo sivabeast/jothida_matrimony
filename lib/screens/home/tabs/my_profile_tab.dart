@@ -103,7 +103,8 @@ class MyProfileTab extends ConsumerWidget {
           // Menu items
           _buildMenuItem(context, Icons.lock_outline, 'Privacy Settings', '/privacy'),
           _buildMenuItem(context, Icons.star_border, 'Horoscope Details', '/horoscope'),
-          _buildMenuItem(context, Icons.people_outline, 'Porutham Analysis', '/porutham'),
+          // "Porutham Analysis" self-serve removed — astrologer consultation
+          // (Match → Compatibility → Connect Astrologer) is the only analysis flow.
           _buildMenuItem(context, Icons.workspace_premium, 'Subscription Plans', '/subscription'),
           _buildMenuItem(context, Icons.help_outline, 'Help & Support', '/help'),
           const SizedBox(height: 8),
