@@ -11,6 +11,8 @@ import '../screens/auth/forgot_password_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/profile/profile_creation_screen.dart';
 import '../screens/profile/profile_view_screen.dart';
+import '../screens/match/match_details_screen.dart';
+import '../screens/astrologer/astrologer_profile_screen.dart';
 import '../screens/privacy/privacy_settings_screen.dart';
 import '../screens/subscription/subscription_screen.dart';
 import '../screens/porutham/porutham_screen.dart';
@@ -62,6 +64,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile/:id',
         builder: (_, state) => ProfileViewScreen(profileId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/match/:id',
+        builder: (_, state) =>
+            MatchDetailsScreen(profileId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/astrologer/:id',
+        builder: (_, state) =>
+            AstrologerProfileScreen(astrologerId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/subscription', builder: (_, __) => const SubscriptionScreen()),
       GoRoute(path: '/porutham', builder: (_, __) => const PoruthamsScreen()),

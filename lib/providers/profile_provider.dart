@@ -188,15 +188,33 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
   Future<void> load({String gender = 'Female', Map<String, dynamic>? filters}) async {
     state = DiscoverState(isLoading: true, filters: filters ?? {});
 
-    // ── Demo mode: read from the in-memory sample store ──
+    // ── Demo mode: read from the in-memory sample store + apply filters ──
     if (kBypassAuth) {
-      final profiles =
+      final f = filters ?? {};
+      var profiles =
           ref.read(demoProfilesProvider.notifier).discover(gender: gender);
-      state = state.copyWith(
-        profiles: profiles,
-        isLoading: false,
-        hasMore: false,
-      );
+
+      final minAge = f['minAge'] as int?;
+      final maxAge = f['maxAge'] as int?;
+      final city = (f['city'] as String?)?.trim();
+      final education = (f['education'] as String?)?.trim();
+      final occupation = (f['occupation'] as String?)?.trim();
+
+      profiles = profiles.where((p) {
+        if (minAge != null && p.age < minAge) return false;
+        if (maxAge != null && p.age > maxAge) return false;
+        if (city != null && city.isNotEmpty &&
+            !p.city.toLowerCase().contains(city.toLowerCase())) return false;
+        if (education != null && education.isNotEmpty &&
+            !p.education.toLowerCase().contains(education.toLowerCase())) return false;
+        if (occupation != null && occupation.isNotEmpty &&
+            !p.occupation.toLowerCase().contains(occupation.toLowerCase())) {
+          return false;
+        }
+        return true;
+      }).toList();
+
+      state = state.copyWith(profiles: profiles, isLoading: false, hasMore: false);
       return;
     }
 

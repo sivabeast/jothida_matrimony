@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/notification_provider.dart';
+import '../astrologer/astrologers_tab.dart';
 import 'tabs/discover_tab.dart';
 import 'tabs/interests_tab.dart';
 import 'tabs/my_profile_tab.dart';
@@ -20,20 +21,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   static const _tabs = [
     DiscoverTab(),
+    AstrologersTab(),
     InterestsTab(),
     NotificationsTab(),
     MyProfileTab(),
   ];
 
-  static const _labels = ['Discover', 'Interests', 'Alerts', 'Profile'];
+  static const _labels = ['Discover', 'Astrologers', 'Interests', 'Alerts', 'Profile'];
   static const _icons = [
     Icons.search,
+    Icons.auto_awesome_outlined,
     Icons.favorite_border,
     Icons.notifications_none,
     Icons.person_outline,
   ];
   static const _activeIcons = [
     Icons.search,
+    Icons.auto_awesome,
     Icons.favorite,
     Icons.notifications,
     Icons.person,
@@ -65,7 +69,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         destinations: List.generate(
           _tabs.length,
           (i) => NavigationDestination(
-            icon: i == 2 && unread > 0
+            icon: i == 3 && unread > 0
                 ? Badge(label: Text('$unread'), child: Icon(_icons[i]))
                 : Icon(_icons[i]),
             selectedIcon: Icon(_activeIcons[i], color: AppColors.primary),
