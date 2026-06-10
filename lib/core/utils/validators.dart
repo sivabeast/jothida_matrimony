@@ -66,3 +66,6 @@ class AppValidators {
     return null;
   }
 }
+
+/// Alias used by screens that refer to `Validators.*`.
+typedef Validators = AppValidators;

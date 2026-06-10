@@ -7,6 +7,7 @@ import '../../models/profile_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/interest_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../providers/service_providers.dart';
 import '../../widgets/common/gradient_button.dart';
 
 class ProfileViewScreen extends ConsumerStatefulWidget {
@@ -171,7 +172,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                   _InfoItem(Icons.school_outlined, 'Education', profile.education),
                   _InfoItem(Icons.work_outline, 'Occupation', profile.occupation),
                   _InfoItem(Icons.church_outlined, 'Religion', profile.religion),
-                  _InfoItem(Icons.people_outline, 'Caste', profile.caste),
+                  _InfoItem(Icons.people_outline, 'Caste', profile.caste ?? 'Not specified'),
                   _InfoItem(Icons.wc, 'Marital Status', profile.maritalStatus),
                 ]),
                 const SizedBox(height: 20),

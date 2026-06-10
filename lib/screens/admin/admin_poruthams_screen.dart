@@ -5,6 +5,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../models/porutham_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/porutham_provider.dart';
+import '../../providers/service_providers.dart';
 
 class AdminPoruthamsScreen extends ConsumerWidget {
   const AdminPoruthamsScreen({super.key});

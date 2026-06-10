@@ -8,6 +8,7 @@ class RazorpayConstants {
 
   static const String currency = 'INR';
   static const String businessName = 'Jothida Matrimony';
+  static const String appName = businessName;
   static const String description = 'Subscription Payment';
 
   // Prefill

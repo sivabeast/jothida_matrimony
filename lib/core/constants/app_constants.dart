@@ -201,4 +201,13 @@ class AppConstants {
     'Himachal Pradesh', 'Uttarakhand', 'Goa', 'Chhattisgarh', 'Jharkhand',
     'Assam', 'Other',
   ];
+
+  // ── Shorthand aliases used by screens ─────────────────────────────────────
+  static const int poruthamsRequestPrice = poruthamsPrice;
+  static const List<String> religions = religionList;
+  static const List<String> castes = castList;
+  static const List<String> maritalStatuses = maritalStatusList;
+  static const List<String> educations = educationList;
+  static const List<String> occupations = occupationList;
+  static const List<String> incomeRanges = incomeList;
 }
