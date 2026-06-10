@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/services/compatibility.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
 import '../../providers/profile_provider.dart';
+import '../../providers/requests_provider.dart';
 import '../astrologer/connect_astrologer_sheet.dart';
 
 /// Compares the logged-in user with a selected [profileId] and shows a full
@@ -40,6 +42,7 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen>
   Widget build(BuildContext context) {
     final otherAsync = ref.watch(profileByIdProvider(widget.profileId));
     final me = ref.watch(myProfileProvider).valueOrNull;
+    final isMatched = ref.watch(isMatchedProvider(widget.profileId));
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
@@ -48,7 +51,10 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen>
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
-      body: otherAsync.when(
+      // Compatibility analysis is gated until both users mutually connect.
+      body: !isMatched
+          ? _lockedView(context)
+          : otherAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),
         data: (other) {
@@ -78,106 +84,180 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen>
     );
   }
 
-  // ── Header: both photos + animated match % ─────────────────────────────
+  // Shown when the two users have not yet mutually accepted.
+  Widget _lockedView(BuildContext context) {
+    final other = ref.watch(profileByIdProvider(widget.profileId)).valueOrNull;
+    final alreadySent = ref.watch(hasSentInterestProvider(widget.profileId));
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.lock_outline, size: 54, color: AppColors.primary),
+            ),
+            const SizedBox(height: 20),
+            const Text('Compatibility is locked',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            Text(
+              'Match analysis, porutham results and horoscope compatibility unlock '
+              'only after ${other?.name ?? 'this person'} accepts your interest.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600], height: 1.4),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: alreadySent
+                    ? null
+                    : () {
+                        ref
+                            .read(requestsProvider.notifier)
+                            .sendInterest(widget.profileId);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Interest sent')),
+                        );
+                      },
+                icon: Icon(alreadySent ? Icons.check : Icons.favorite, size: 18),
+                label: Text(alreadySent ? 'Interest Sent' : 'Send Interest'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(48),
+                  shape:
+                      RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () => context.pop(),
+              child: const Text('Back to Discover'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Compact header: [ photo ]  [ % ]  [ photo ] in a single short row ───
   Widget _header(ProfileModel? me, ProfileModel other, CompatibilityResult r) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [AppColors.primary, AppColors.primaryLight],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
       ),
-      child: Column(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _avatar(me?.photos.isNotEmpty == true ? me!.photos.first : null,
-                  me?.name ?? 'You'),
-              Column(
-                children: [
-                  const Icon(Icons.favorite, color: AppColors.gold, size: 34),
-                  const SizedBox(height: 4),
-                  Text(r.verdict,
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w600)),
-                ],
-              ),
-              _avatar(other.photos.isNotEmpty ? other.photos.first : null,
-                  other.name),
-            ],
+          Expanded(
+            child: _squareProfile(
+                me?.photos.isNotEmpty == true ? me!.photos.first : null,
+                me?.name ?? 'You'),
           ),
-          const SizedBox(height: 18),
-          AnimatedBuilder(
-            animation: _percentAnim,
-            builder: (_, __) {
-              final value = (_percentAnim.value * r.matchPercent).round();
-              return Column(
-                children: [
-                  SizedBox(
-                    width: 120,
-                    height: 120,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        SizedBox(
-                          width: 120,
-                          height: 120,
-                          child: CircularProgressIndicator(
-                            value: _percentAnim.value * r.matchPercent / 100,
-                            strokeWidth: 9,
-                            backgroundColor: Colors.white24,
-                            valueColor:
-                                const AlwaysStoppedAnimation(AppColors.gold),
-                          ),
-                        ),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text('$value%',
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 30,
-                                    fontWeight: FontWeight.bold)),
-                            const Text('Match',
-                                style: TextStyle(color: Colors.white70, fontSize: 12)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
+          _scoreCenter(r),
+          Expanded(
+            child: _squareProfile(
+                other.photos.isNotEmpty ? other.photos.first : null, other.name),
           ),
         ],
       ),
     );
   }
 
-  Widget _avatar(String? url, String name) => Column(
+  Widget _squareProfile(String? url, String name) => Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          CircleAvatar(
-            radius: 38,
-            backgroundColor: Colors.white,
-            backgroundImage: url != null ? NetworkImage(url) : null,
-            child: url == null
-                ? const Icon(Icons.person, size: 38, color: AppColors.primary)
-                : null,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: SizedBox(
+              width: 64,
+              height: 64,
+              child: url != null
+                  ? Image.network(url, fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _photoFallback())
+                  : _photoFallback(),
+            ),
           ),
           const SizedBox(height: 6),
-          SizedBox(
-            width: 90,
-            child: Text(name,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-          ),
+          Text(name,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
         ],
+      );
+
+  Widget _photoFallback() => Container(
+        color: Colors.white,
+        child: const Icon(Icons.person, size: 34, color: AppColors.primary),
+      );
+
+  Widget _scoreCenter(CompatibilityResult r) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: AnimatedBuilder(
+          animation: _percentAnim,
+          builder: (_, __) {
+            final value = (_percentAnim.value * r.matchPercent).round();
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 74,
+                  height: 74,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 74,
+                        height: 74,
+                        child: CircularProgressIndicator(
+                          value: _percentAnim.value * r.matchPercent / 100,
+                          strokeWidth: 6,
+                          backgroundColor: Colors.white24,
+                          valueColor: const AlwaysStoppedAnimation(AppColors.gold),
+                        ),
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('$value%',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.bold)),
+                          const Text('Match',
+                              style: TextStyle(color: Colors.white70, fontSize: 10)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(r.verdict,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        color: AppColors.gold,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11)),
+              ],
+            );
+          },
+        ),
       );
 
   // ── Porutham summary ───────────────────────────────────────────────────

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/profile_provider.dart';
+import '../../../providers/requests_provider.dart';
 
 class DiscoverTab extends ConsumerStatefulWidget {
   const DiscoverTab({super.key});
@@ -245,85 +246,107 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
       );
 }
 
-class _ProfileCard extends StatelessWidget {
+class _ProfileCard extends ConsumerWidget {
   final ProfileModel profile;
   const _ProfileCard({required this.profile});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sent = ref.watch(hasSentInterestProvider(profile.id));
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 14),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        // Tapping a card opens the Match Details (compatibility) screen.
-        onTap: () => context.push('/match/${profile.id}'),
+        // Tapping opens a basic profile view (compatibility stays gated until
+        // a mutual match — see Match Details).
+        onTap: () => context.push('/profile/${profile.id}'),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Stack(
-              children: [
-                profile.photos.isNotEmpty
-                    ? Image.network(
-                        profile.photos.first,
-                        height: 240,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _placeholderImage(),
-                      )
-                    : _placeholderImage(),
-                Positioned(
-                  right: 10,
-                  top: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text('${profile.age} yrs',
-                        style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.w600)),
-                  ),
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
+            // ── Top: square photo (left) + key info (right) ──
+            SizedBox(
+              height: 150,
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(profile.name,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  _iconLine(Icons.location_on, '${profile.city}, ${profile.state}'),
-                  const SizedBox(height: 2),
-                  _iconLine(Icons.school, profile.education),
-                  const SizedBox(height: 2),
-                  _iconLine(Icons.work_outline, profile.occupation),
-                  if (profile.about.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Text(profile.about,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: Colors.grey[700], fontSize: 13)),
-                  ],
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      const Icon(Icons.favorite, size: 16, color: AppColors.primary),
-                      const SizedBox(width: 6),
-                      Text('Tap to view compatibility',
-                          style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600)),
-                      const Spacer(),
-                      const Icon(Icons.arrow_forward_ios,
-                          size: 14, color: AppColors.primary),
-                    ],
+                  SizedBox(
+                    width: 130,
+                    height: 150,
+                    child: profile.photos.isNotEmpty
+                        ? Image.network(profile.photos.first,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _placeholderImage())
+                        : _placeholderImage(),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('${profile.name}, ${profile.age}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 17, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 6),
+                          _iconLine(Icons.location_on,
+                              '${profile.city}, ${profile.state}'),
+                          _iconLine(Icons.school, profile.education),
+                          _iconLine(Icons.work_outline, profile.occupation),
+                          _iconLine(Icons.spa_outlined, profile.religion),
+                          if (profile.about.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Expanded(
+                              child: Text(profile.about,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      color: Colors.grey[600], fontSize: 12)),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
                 ],
+              ),
+            ),
+            // ── Bottom: Send Interest ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: SizedBox(
+                width: double.infinity,
+                child: sent
+                    ? OutlinedButton.icon(
+                        onPressed: null,
+                        icon: const Icon(Icons.check, size: 18),
+                        label: const Text('Interest Sent'),
+                      )
+                    : ElevatedButton.icon(
+                        onPressed: () {
+                          ref
+                              .read(requestsProvider.notifier)
+                              .sendInterest(profile.id);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Interest sent to ${profile.name}'),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.favorite, size: 18),
+                        label: const Text('Send Interest'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size.fromHeight(42),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
               ),
             ),
           ],
@@ -332,23 +355,24 @@ class _ProfileCard extends StatelessWidget {
     );
   }
 
-  Widget _iconLine(IconData icon, String text) => Row(
-        children: [
-          Icon(icon, size: 14, color: Colors.grey[500]),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Text(text,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: Colors.grey[700], fontSize: 13)),
-          ),
-        ],
+  Widget _iconLine(IconData icon, String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 2),
+        child: Row(
+          children: [
+            Icon(icon, size: 13, color: Colors.grey[500]),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(text,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.grey[700], fontSize: 12.5)),
+            ),
+          ],
+        ),
       );
 
   Widget _placeholderImage() => Container(
-        height: 240,
-        width: double.infinity,
         color: Colors.grey[200],
-        child: const Icon(Icons.person, size: 80, color: Colors.grey),
+        child: const Icon(Icons.person, size: 64, color: Colors.grey),
       );
 }
