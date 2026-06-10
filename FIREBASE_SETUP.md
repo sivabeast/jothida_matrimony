@@ -28,11 +28,34 @@ Do the steps below once and all three disappear.
    --project-name=jothida_matrimony`, so the applicationId is the above. If you
    build locally, confirm `android/app/build.gradle` → `applicationId` matches.)
 
-## 2. Register your SHA-1 / SHA-256 fingerprints (fixes error 10)
+## 2. Register the SHA-1 / SHA-256 fingerprints (fixes error 10) — IMPORTANT
 
-Google Sign-In on Android **requires** the signing certificate fingerprint.
+**This is the root cause of "after selecting a Google account, login fails."**
 
-Get the **debug** fingerprint:
+Google Sign-In returns a null ID token (→ ApiException 10 / DEVELOPER_ERROR)
+because the signing certificate's SHA-1 is not registered in Firebase. Worse,
+CI used to regenerate a *random* debug keystore on every build, so the SHA-1
+changed every run and could never be registered.
+
+**This is now fixed in the repo:** a fixed, shared debug keystore is committed at
+`ci/debug.keystore` and CI copies it to `~/.android/debug.keystore` before every
+build (see `.github/workflows/ci.yml`). Both the debug and release APKs are
+signed with it, so the SHA-1 is now **stable**. Register these exact
+fingerprints once:
+
+```
+SHA-1:   8B:4E:88:65:BD:95:8B:9B:46:60:32:B4:C8:D7:32:4D:87:7B:AD:BE
+SHA-256: BE:11:8D:5D:BE:46:60:17:09:E1:11:F2:41:4C:B1:17:64:6F:A1:E4:04:1F:F1:C8:D0:21:09:E4:97:B0:DD:FE
+```
+
+In Firebase Console → **Project settings → Your apps → Android app
+(`com.jothida.jothida_matrimony`) → Add fingerprint**, paste **both** values,
+then **re-download `google-services.json`** (step 3) and update the
+`GOOGLE_SERVICES_JSON` CI secret with the new contents.
+
+> If you build **locally** instead of using the committed keystore, get your own
+> machine's fingerprint with the commands below and register that one too. You
+> can register multiple SHA-1s on the same app.
 
 ```bash
 cd android

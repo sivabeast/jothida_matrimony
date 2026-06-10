@@ -31,6 +31,17 @@ jobs:
             flutter create . --platforms=android --org=com.jothida --project-name=jothida_matrimony
           fi
 
+      # Use a fixed, committed debug keystore so every build (debug AND release,
+      # which Flutter signs with the debug key by default) has a STABLE SHA-1.
+      # Without this, CI auto-generates a random keystore each run, the SHA-1
+      # changes every build, and Google Sign-In fails with ApiException 10.
+      # The matching SHA-1/SHA-256 are listed in FIREBASE_SETUP.md — register
+      # them once in the Firebase Console.
+      - name: Install fixed debug keystore (stable SHA-1 for Google Sign-In)
+        run: |
+          mkdir -p ~/.android
+          cp ci/debug.keystore ~/.android/debug.keystore
+
       - name: Create .env file
         run: |
           cat > .env << EOF

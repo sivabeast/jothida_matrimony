@@ -42,6 +42,10 @@ build/
 android/key.properties
 *.keystore
 *.jks
+# Exception: the SHARED, NON-SECRET debug keystore is committed on purpose so
+# CI produces a STABLE SHA-1 for Google Sign-In. (Standard public debug
+# passwords; safe to commit.) Never commit a real RELEASE keystore.
+!/ci/debug.keystore
 
 # Misc
 *.log
