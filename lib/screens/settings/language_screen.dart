@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/locale_provider.dart';
 
@@ -16,7 +15,10 @@ class LanguageScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
-      appBar: context.canPop()
+      // Use the Material Navigator (present in both MaterialApp and
+      // MaterialApp.router). go_router's context.canPop() would assert on first
+      // launch where the screen is shown outside the router.
+      appBar: Navigator.of(context).canPop()
           ? AppBar(
               title: const Text('Language / மொழி'),
               backgroundColor: AppColors.primary,
@@ -63,7 +65,8 @@ class LanguageScreen extends ConsumerWidget {
     if (!context.mounted) return;
     // From Settings → pop back. On first launch the app root rebuilds into the
     // router automatically once a locale is set, so no navigation is needed.
-    if (context.canPop()) context.pop();
+    final nav = Navigator.of(context);
+    if (nav.canPop()) nav.pop();
   }
 }
 
