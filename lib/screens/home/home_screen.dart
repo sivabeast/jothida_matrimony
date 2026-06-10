@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -27,7 +28,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     MyProfileTab(),
   ];
 
-  static const _labels = ['Discover', 'Astrologers', 'Interests', 'Alerts', 'Profile'];
   static const _icons = [
     Icons.search,
     Icons.auto_awesome_outlined,
@@ -46,10 +46,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final unread = ref.watch(unreadNotificationCountProvider);
+    final l10n = AppLocalizations.of(context);
+    final labels = [
+      l10n.discover,
+      l10n.astrologers,
+      l10n.interests,
+      l10n.alerts,
+      l10n.profile,
+    ];
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Jothida Matrimony',
-            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
+        title: Text(l10n.appTitle,
+            style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         actions: [
@@ -73,7 +81,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ? Badge(label: Text('$unread'), child: Icon(_icons[i]))
                 : Icon(_icons[i]),
             selectedIcon: Icon(_activeIcons[i], color: AppColors.primary),
-            label: _labels[i],
+            label: labels[i],
           ),
         ),
       ),

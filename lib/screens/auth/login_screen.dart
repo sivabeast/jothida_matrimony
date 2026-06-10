@@ -260,6 +260,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 8),
+                        const Divider(),
+                        // Separate entry for the astrologer portal (own login,
+                        // onboarding & dashboard). Routes to the dashboard if
+                        // already onboarded.
+                        TextButton.icon(
+                          onPressed: () => context.push('/astrologer-onboarding'),
+                          icon: const Icon(Icons.auto_awesome, size: 18),
+                          label: const Text('Astrologer Portal'),
+                          style: TextButton.styleFrom(
+                              foregroundColor: AppColors.goldDark),
+                        ),
                       ],
                     ),
                   ),

@@ -101,6 +101,7 @@ class MyProfileTab extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           // Menu items
+          _buildMenuItem(context, Icons.language, 'Language / மொழி', '/language'),
           _buildMenuItem(context, Icons.lock_outline, 'Privacy Settings', '/privacy'),
           _buildMenuItem(context, Icons.star_border, 'Horoscope Details', '/horoscope'),
           // "Porutham Analysis" self-serve removed — astrologer consultation

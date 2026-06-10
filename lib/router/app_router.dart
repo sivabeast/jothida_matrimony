@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../core/config/dev_config.dart';
 import '../providers/auth_provider.dart';
 import '../providers/demo_data_provider.dart';
+import '../providers/astrologer_session_provider.dart';
+import '../screens/astrologer/astrologer_onboarding_screen.dart';
+import '../screens/astrologer/astrologer_dashboard_screen.dart';
 import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/otp_screen.dart';
@@ -15,6 +18,7 @@ import '../screens/profile/profile_view_screen.dart';
 import '../screens/match/match_details_screen.dart';
 import '../screens/astrologer/astrologer_profile_screen.dart';
 import '../screens/privacy/privacy_settings_screen.dart';
+import '../screens/settings/language_screen.dart';
 import '../screens/subscription/subscription_screen.dart';
 import '../screens/porutham/porutham_screen.dart';
 import '../screens/admin/admin_shell.dart';
@@ -36,6 +40,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           loc.startsWith('/otp');
       final onSplash = loc == '/';
       final onProfileCreate = loc == '/profile/create';
+
+      // Astrologer portal has its OWN gate (onboarding before dashboard) and is
+      // exempt from the matrimony profile gate.
+      final inAstrologerPortal =
+          loc == '/astrologer-onboarding' || loc == '/astrologer-dashboard';
+      if (inAstrologerPortal) {
+        final onboarded = ref.read(isAstrologerOnboardedProvider);
+        if (!onboarded && loc == '/astrologer-dashboard') {
+          return '/astrologer-onboarding';
+        }
+        if (onboarded && loc == '/astrologer-onboarding') {
+          return '/astrologer-dashboard';
+        }
+        return null;
+      }
 
       // ── Demo mode (kBypassAuth): gate Home behind profile completion ──
       // No user can reach Discover/Requests/Matches/etc. until their profile
@@ -90,6 +109,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) =>
             MatchDetailsScreen(profileId: state.pathParameters['id']!),
       ),
+      // Astrologer portal (distinct prefix so it never collides with
+      // '/astrologer/:id' above).
+      GoRoute(
+        path: '/astrologer-onboarding',
+        builder: (_, __) => const AstrologerOnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/astrologer-dashboard',
+        builder: (_, __) => const AstrologerDashboardScreen(),
+      ),
       GoRoute(
         path: '/astrologer/:id',
         builder: (_, state) =>
@@ -98,6 +127,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/subscription', builder: (_, __) => const SubscriptionScreen()),
       GoRoute(path: '/porutham', builder: (_, __) => const PoruthamsScreen()),
       GoRoute(path: '/privacy', builder: (_, __) => const PrivacySettingsScreen()),
+      GoRoute(path: '/language', builder: (_, __) => const LanguageScreen()),
       // Admin
       ShellRoute(
         builder: (_, __, child) => AdminShell(child: child),
