@@ -75,4 +75,15 @@ class SelectionData {
   /// Cities for a [state] (falls back to a generic list).
   static List<String> citiesFor(String? state) =>
       citiesByState[state] ?? const ['Other'];
+
+  /// A flat, de-duplicated, sorted list of all known cities — used for the
+  /// "Birth Place" searchable picker.
+  static List<String> get allCities {
+    final set = <String>{};
+    for (final list in citiesByState.values) {
+      set.addAll(list.where((c) => c != 'Other'));
+    }
+    final result = set.toList()..sort();
+    return result;
+  }
 }

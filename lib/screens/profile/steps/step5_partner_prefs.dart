@@ -26,7 +26,9 @@ class _Step5State extends ConsumerState<Step5PartnerPrefs> {
         'maxAge': _ageRange.end.round(),
         'religion': _religion ?? 'Any',
         'caste': _caste ?? 'Any',
-        'education': _education ?? 'Any',
+        // education is a List<String> in the model — send a list, not a scalar.
+        'education':
+            (_education != null && _education != 'Any') ? [_education] : <String>[],
         'rasi': _rasi ?? 'Any',
       },
     });

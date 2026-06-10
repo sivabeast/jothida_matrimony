@@ -1,5 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Safely coerce a dynamic value into a List<String>.
+///
+/// Tolerates a single String (e.g. a dropdown value like "Any" or "B.E"),
+/// a real List, or null — preventing the
+/// "type 'String' is not a subtype of type 'Iterable<dynamic>'" crash when a
+/// scalar is stored where a list is expected.
+List<String> toStringList(dynamic value) {
+  if (value == null) return const [];
+  if (value is List) return value.map((e) => e.toString()).toList();
+  if (value is String) {
+    return (value.isEmpty || value == 'Any') ? const [] : [value];
+  }
+  return const [];
+}
+
 class ProfileModel {
   final String id;
   final String userId;
@@ -200,7 +215,7 @@ class ProfileModel {
     final famMap = d['familyDetails'] as Map<String, dynamic>? ?? {};
     final prefMap = d['partnerPreferences'] as Map<String, dynamic>? ?? {};
     final contactMap = d['contactDetails'] as Map<String, dynamic>? ?? {};
-    final photos = List<String>.from(d['photos'] ?? []);
+    final photos = toStringList(d['photos']);
     return ProfileModel(
       id: d['id'] ?? '',
       userId: d['userId'] ?? '',
@@ -346,7 +361,7 @@ class HoroscopeDetails {
         isUserEdited: map['isUserEdited'] ?? false,
         isAstrologerVerified: map['isAstrologerVerified'] ?? false,
         horoscopePdfUrl: map['horoscopePdfUrl'],
-        horoscopeImages: List<String>.from(map['horoscopeImages'] ?? []),
+        horoscopeImages: toStringList(map['horoscopeImages']),
       );
 
   Map<String, dynamic> toMap() => {
@@ -452,8 +467,8 @@ class PartnerPreferences {
         maxAge: map['maxAge'] ?? 40,
         minHeight: map['minHeight'] ?? "5'0\"",
         maxHeight: map['maxHeight'] ?? "5'10\"",
-        education: List<String>.from(map['education'] ?? []),
-        occupation: List<String>.from(map['occupation'] ?? []),
+        education: toStringList(map['education']),
+        occupation: toStringList(map['occupation']),
         income: map['income'] ?? 'Any',
         religion: map['religion'] ?? 'Any',
         caste: map['caste'],
