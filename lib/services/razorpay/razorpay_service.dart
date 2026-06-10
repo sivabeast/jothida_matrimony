@@ -61,40 +61,6 @@ class RazorpayService {
     }
   }
 
-  void openPoruthamsCheckout({
-    required String userPhone,
-    required String userEmail,
-    required String userName,
-    required String userId,
-    required String brideProfileId,
-    required String groomProfileId,
-  }) {
-    final options = {
-      'key': RazorpayConstants.testKeyId,
-      'amount': AppConstants.poruthamsRequestPrice * 100, // ₹199 → 19900 paise
-      'name': RazorpayConstants.appName,
-      'description': 'Porutham Analysis Request',
-      'prefill': {
-        'contact': userPhone,
-        'email': userEmail,
-        'name': userName,
-      },
-      'notes': {
-        'type': 'porutham',
-        'userId': userId,
-        'brideProfileId': brideProfileId,
-        'groomProfileId': groomProfileId,
-      },
-      'theme': {'color': RazorpayConstants.themeColor},
-      'currency': 'INR',
-    };
-    try {
-      _razorpay.open(options);
-    } catch (e) {
-      debugPrint('RazorpayService.openPoruthamsCheckout error: $e');
-    }
-  }
-
   String _planDisplayName(String plan) {
     switch (plan) {
       case AppConstants.planBasic:

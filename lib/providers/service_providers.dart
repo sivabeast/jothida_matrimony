@@ -8,7 +8,6 @@ import '../repositories/auth_repository.dart';
 import '../repositories/profile_repository.dart';
 import '../repositories/interest_repository.dart';
 import '../repositories/subscription_repository.dart';
-import '../repositories/porutham_repository.dart';
 import '../repositories/admin_repository.dart';
 
 // ── Services ──────────────────────────────────────────────────────────────────
@@ -38,10 +37,6 @@ final subscriptionRepositoryProvider =
     Provider<SubscriptionRepository>((ref) => SubscriptionRepository(
           ref.watch(firestoreServiceProvider),
         ));
-
-final poruthamsRepositoryProvider = Provider<PoruthamsRepository>((ref) => PoruthamsRepository(
-      ref.watch(firestoreServiceProvider),
-    ));
 
 final adminRepositoryProvider = Provider<AdminRepository>((ref) => AdminRepository(
       ref.watch(firestoreServiceProvider),

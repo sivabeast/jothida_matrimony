@@ -21,7 +21,6 @@ class _AdminShellState extends ConsumerState<AdminShell> {
     '/admin/users',
     '/admin/approvals',
     '/admin/reports',
-    '/admin/poruthams',
   ];
 
   @override
@@ -54,7 +53,6 @@ class _AdminShellState extends ConsumerState<AdminShell> {
           NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Users'),
           NavigationDestination(icon: Icon(Icons.approval_outlined), selectedIcon: Icon(Icons.approval), label: 'Approvals'),
           NavigationDestination(icon: Icon(Icons.report_outlined), selectedIcon: Icon(Icons.report), label: 'Reports'),
-          NavigationDestination(icon: Icon(Icons.star_outline), selectedIcon: Icon(Icons.star), label: 'Porutham'),
         ],
       ),
     );

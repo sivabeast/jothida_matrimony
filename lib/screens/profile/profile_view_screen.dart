@@ -183,29 +183,15 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                   _InfoItem(Icons.place_outlined, 'Birth Place', profile.horoscopeDetails.birthPlace),
                 ]),
                 const SizedBox(height: 32),
-                // Action buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: GradientButton(
-                        onPressed: () => _sendInterest(profile),
-                        text: 'Send Interest',
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => context.push('/porutham', extra: profile),
-                        icon: const Icon(Icons.star),
-                        label: const Text('Porutham'),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(52),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                  ],
+                // Action: Send Interest only. (Porutham Analysis removed —
+                // compatibility lives in Match Details, deeper analysis via
+                // Connect Astrologer.)
+                SizedBox(
+                  width: double.infinity,
+                  child: GradientButton(
+                    onPressed: () => _sendInterest(profile),
+                    text: 'Send Interest',
+                  ),
                 ),
                 const SizedBox(height: 32),
               ],

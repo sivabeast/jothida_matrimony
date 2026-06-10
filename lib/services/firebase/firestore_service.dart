@@ -4,7 +4,6 @@ import '../../core/constants/app_constants.dart';
 import '../../models/profile_model.dart';
 import '../../models/interest_model.dart';
 import '../../models/subscription_model.dart';
-import '../../models/porutham_model.dart';
 import '../../models/report_model.dart';
 import '../../models/notification_model.dart';
 import '../../models/user_model.dart';
@@ -216,37 +215,6 @@ class FirestoreService {
     return SubscriptionModel.fromFirestore(snap.docs.first);
   }
 
-  // ── Poruthams ─────────────────────────────────────────────────────────────
-  Future<String> createPoruthamsRequest(PoruthamsModel model) async {
-    final doc = _db.collection(AppConstants.poruthamsCollection).doc();
-    await doc.set(model.toFirestore());
-    return doc.id;
-  }
-
-  Future<void> submitPoruthamsResult(String poruthamsId, PoruthamsResult result, String astrologerId) =>
-      _db.collection(AppConstants.poruthamsCollection).doc(poruthamsId).update({
-        'status': 'completed',
-        'result': result.toMap(),
-        'astrologerId': astrologerId,
-        'completedAt': FieldValue.serverTimestamp(),
-      });
-
-  Stream<List<PoruthamsModel>> watchUserPoruthams(String userId) => _db
-      .collection(AppConstants.poruthamsCollection)
-      .where('requestedByUserId', isEqualTo: userId)
-      .orderBy('requestedAt', descending: true)
-      .snapshots()
-      .map((s) => s.docs.map((d) => PoruthamsModel.fromFirestore(d)).toList());
-
-  Future<List<PoruthamsModel>> getPendingPoruthams() async {
-    final snap = await _db
-        .collection(AppConstants.poruthamsCollection)
-        .where('status', isEqualTo: 'requested')
-        .orderBy('requestedAt')
-        .get();
-    return snap.docs.map((d) => PoruthamsModel.fromFirestore(d)).toList();
-  }
-
   // ── Reports ───────────────────────────────────────────────────────────────
   Future<void> submitReport(ReportModel report) async {
     await _db.collection(AppConstants.reportsCollection).doc(report.id).set(report.toFirestore());
@@ -344,18 +312,12 @@ class FirestoreService {
         .count()
         .get();
     final reports = await _db.collection(AppConstants.reportsCollection).count().get();
-    final pendingPoruthams = await _db
-        .collection(AppConstants.poruthamsCollection)
-        .where('status', isEqualTo: 'requested')
-        .count()
-        .get();
 
     return {
       'totalUsers': users.count,
       'totalProfiles': profiles.count,
       'pendingProfiles': pendingProfiles.count,
       'totalReports': reports.count,
-      'pendingPoruthams': pendingPoruthams.count,
     };
   }
 }

@@ -20,13 +20,11 @@ import '../screens/astrologer/astrologer_profile_screen.dart';
 import '../screens/privacy/privacy_settings_screen.dart';
 import '../screens/settings/language_screen.dart';
 import '../screens/subscription/subscription_screen.dart';
-import '../screens/porutham/porutham_screen.dart';
 import '../screens/admin/admin_shell.dart';
 import '../screens/admin/admin_dashboard.dart';
 import '../screens/admin/admin_users_screen.dart';
 import '../screens/admin/admin_approvals_screen.dart';
 import '../screens/admin/admin_reports_screen.dart';
-import '../screens/admin/admin_poruthams_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(firebaseAuthStreamProvider);
@@ -125,7 +123,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             AstrologerProfileScreen(astrologerId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/subscription', builder: (_, __) => const SubscriptionScreen()),
-      GoRoute(path: '/porutham', builder: (_, __) => const PoruthamsScreen()),
       GoRoute(path: '/privacy', builder: (_, __) => const PrivacySettingsScreen()),
       GoRoute(path: '/language', builder: (_, __) => const LanguageScreen()),
       // Admin
@@ -136,7 +133,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/admin/users', builder: (_, __) => const AdminUsersScreen()),
           GoRoute(path: '/admin/approvals', builder: (_, __) => const AdminApprovalsScreen()),
           GoRoute(path: '/admin/reports', builder: (_, __) => const AdminReportsScreen()),
-          GoRoute(path: '/admin/poruthams', builder: (_, __) => const AdminPoruthamsScreen()),
         ],
       ),
     ],

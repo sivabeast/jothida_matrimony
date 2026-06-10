@@ -167,7 +167,7 @@ class MyProfileTab extends ConsumerWidget {
           leading: const Icon(Icons.workspace_premium, color: AppColors.gold),
           title: const Text('Upgrade to Premium',
               style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          subtitle: const Text('Get unlimited access & free Porutham analysis',
+          subtitle: const Text('Get unlimited access & free astrologer consultations',
               style: TextStyle(color: Colors.white70, fontSize: 12)),
           trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
           onTap: () => context.push('/subscription'),
