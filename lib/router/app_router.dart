@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../core/config/dev_config.dart';
 import '../providers/auth_provider.dart';
 import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -25,6 +26,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     redirect: (context, state) {
+      // TODO(auth): Remove this bypass once real authentication is integrated.
+      // While `kBypassAuth` is true the guard is disabled so every screen is
+      // reachable for UI testing without a signed-in user.
+      if (kBypassAuth) return null;
+
       final isAuthenticated = authState.valueOrNull != null;
       final loggingIn = state.matchedLocation == '/login' ||
           state.matchedLocation == '/register' ||

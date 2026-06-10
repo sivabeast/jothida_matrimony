@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/config/dev_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/validators.dart';
@@ -62,6 +63,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _signInWithGoogle() async {
+    // TODO(auth): Temporary demo bypass for UI testing only.
+    // While `kBypassAuth` is true this button performs NO authentication —
+    // no Firebase Auth, no Google Sign-In, no validation, no account creation —
+    // and navigates straight to the Home screen. Remove this block and rely on
+    // the real `signInWithGoogle()` call below once auth is integrated.
+    if (kBypassAuth) {
+      context.go('/home');
+      return;
+    }
+
     await ref.read(authNotifierProvider.notifier).signInWithGoogle();
     final auth = ref.read(authNotifierProvider);
     if (auth.hasError && mounted) {
