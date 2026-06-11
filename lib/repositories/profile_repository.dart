@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/profile_model.dart';
 import '../services/firebase/firestore_service.dart';
-import '../services/firebase/storage_service.dart';
+import '../services/storage_service.dart';
 
 class ProfileRepository {
   final FirestoreService _firestore;
@@ -56,8 +56,35 @@ class ProfileRepository {
   Future<String> uploadHoroscopePdf({
     required String userId,
     required File file,
+    void Function(double)? onProgress,
   }) =>
-      _storage.uploadHoroscopePdf(userId: userId, file: file);
+      _storage.uploadHoroscopePdf(userId: userId, file: file, onProgress: onProgress);
+
+  /// Replaces a single profile photo (e.g. from an "Edit profile" screen)
+  /// and updates the `photos` array on the profile document.
+  Future<String> updateProfilePhoto({
+    required String userId,
+    required String profileId,
+    required File file,
+    required int index,
+    required List<String> currentPhotos,
+    void Function(double)? onProgress,
+  }) async {
+    final url = await _storage.updateProfilePhoto(
+      userId: userId,
+      file: file,
+      index: index,
+      onProgress: onProgress,
+    );
+    final photos = [...currentPhotos];
+    if (index < photos.length) {
+      photos[index] = url;
+    } else {
+      photos.add(url);
+    }
+    await _firestore.updateProfile(profileId, {'photos': photos});
+    return url;
+  }
 
   Future<void> incrementViewCount(String profileId) => _firestore.incrementViewCount(profileId);
 }

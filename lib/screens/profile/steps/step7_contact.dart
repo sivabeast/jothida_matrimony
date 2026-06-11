@@ -10,7 +10,19 @@ class Step7Contact extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   final bool isLoading;
 
-  const Step7Contact({super.key, required this.onNext, this.isLoading = false});
+  /// Overall upload progress (0..1) while [isLoading] is true.
+  final double uploadProgress;
+
+  /// Status text shown under the progress bar, e.g. "Uploading photo...".
+  final String? uploadStatus;
+
+  const Step7Contact({
+    super.key,
+    required this.onNext,
+    this.isLoading = false,
+    this.uploadProgress = 0,
+    this.uploadStatus,
+  });
 
   @override
   ConsumerState<Step7Contact> createState() => _Step7State();
@@ -146,6 +158,26 @@ class _Step7State extends ConsumerState<Step7Contact> {
               ),
             ),
             const SizedBox(height: 32),
+            if (widget.isLoading) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: widget.uploadProgress > 0 ? widget.uploadProgress : null,
+                  minHeight: 6,
+                  backgroundColor: Colors.grey[200],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                widget.uploadStatus ??
+                    (widget.uploadProgress > 0
+                        ? '${(widget.uploadProgress * 100).round()}%'
+                        : 'Submitting...'),
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+            ],
             GradientButton(
               onPressed: widget.isLoading ? null : _saveAndNext,
               isLoading: widget.isLoading,

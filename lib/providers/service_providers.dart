@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/firebase/auth_service.dart';
 import '../services/firebase/firestore_service.dart';
-import '../services/firebase/storage_service.dart';
+import '../services/storage_service.dart';
+import '../services/cloudinary/cloudinary_storage_service.dart';
 import '../services/firebase/fcm_service.dart';
 import '../services/firebase/astrologer_service.dart';
 import '../services/firebase/chat_service.dart';
@@ -15,7 +16,12 @@ import '../repositories/admin_repository.dart';
 // ── Services ──────────────────────────────────────────────────────────────────
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());
 final firestoreServiceProvider = Provider<FirestoreService>((ref) => FirestoreService());
-final storageServiceProvider = Provider<StorageService>((ref) => StorageService());
+// Profile media (photos, horoscope PDFs/images, ID proof) is uploaded to
+// Cloudinary (unsigned upload preset) — see lib/services/storage_service.dart
+// for the abstraction and lib/services/firebase/storage_service.dart for the
+// Firebase Storage alternative (requires the Blaze plan).
+final storageServiceProvider =
+    Provider<StorageService>((ref) => CloudinaryStorageService());
 final fcmServiceProvider = Provider<FcmService>((ref) => FcmService());
 final razorpayServiceProvider = Provider<RazorpayService>((ref) => RazorpayService());
 final astrologerServiceProvider =

@@ -181,6 +181,8 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
                 Step7Contact(
                   onNext: _nextStep,
                   isLoading: creationState.isLoading,
+                  uploadProgress: creationState.uploadProgress,
+                  uploadStatus: creationState.uploadStatus,
                 ),
               ],
             ),

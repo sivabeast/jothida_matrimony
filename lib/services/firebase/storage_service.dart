@@ -1,10 +1,21 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import '../storage_service.dart';
 
-class StorageService {
+/// Firebase Storage implementation of [StorageService].
+///
+/// Not used by default — the app currently uploads profile media to
+/// Cloudinary via [CloudinaryStorageService] (see
+/// `lib/services/cloudinary/cloudinary_storage_service.dart`) because
+/// Firebase Storage requires the project to be on the Blaze billing plan.
+/// To switch back, change `storageServiceProvider` in
+/// `lib/providers/service_providers.dart` to `FirebaseStorageService()` —
+/// no other code needs to change.
+class FirebaseStorageService implements StorageService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
+  @override
   Future<String> uploadProfilePhoto({
     required String userId,
     required File file,
@@ -23,6 +34,7 @@ class StorageService {
     return await ref.getDownloadURL();
   }
 
+  @override
   Future<List<String>> uploadMultiplePhotos({
     required String userId,
     required List<File> files,
@@ -41,6 +53,7 @@ class StorageService {
     return urls;
   }
 
+  @override
   Future<String> uploadHoroscopePdf({
     required String userId,
     required File file,
@@ -57,6 +70,7 @@ class StorageService {
     return await ref.getDownloadURL();
   }
 
+  @override
   Future<String> uploadHoroscopeImage({
     required String userId,
     required File file,
@@ -67,6 +81,7 @@ class StorageService {
     return await ref.getDownloadURL();
   }
 
+  @override
   Future<String> uploadIdProof({
     required String userId,
     required File file,
@@ -77,22 +92,35 @@ class StorageService {
     return await ref.getDownloadURL();
   }
 
+  @override
+  Future<String> updateProfilePhoto({
+    required String userId,
+    required File file,
+    required int index,
+    void Function(double)? onProgress,
+  }) {
+    // Same path/index overwrites the existing object in Firebase Storage.
+    return uploadProfilePhoto(userId: userId, file: file, index: index, onProgress: onProgress);
+  }
+
+  @override
   Future<void> deleteFile(String downloadUrl) async {
     try {
       final ref = _storage.refFromURL(downloadUrl);
       await ref.delete();
     } catch (e) {
-      debugPrint('StorageService.deleteFile error: $e');
+      debugPrint('FirebaseStorageService.deleteFile error: $e');
     }
   }
 
+  @override
   Future<void> deleteProfilePhotos(String userId) async {
     try {
       final ref = _storage.ref('profiles/$userId/photos');
       final list = await ref.listAll();
       await Future.wait(list.items.map((item) => item.delete()));
     } catch (e) {
-      debugPrint('StorageService.deleteProfilePhotos error: $e');
+      debugPrint('FirebaseStorageService.deleteProfilePhotos error: $e');
     }
   }
 }

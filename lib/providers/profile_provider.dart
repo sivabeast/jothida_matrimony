@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'package:firebase_core/firebase_core.dart' show FirebaseException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/dev_config.dart';
 import '../models/profile_model.dart';
+import '../services/cloudinary/cloudinary_exception.dart';
 import 'demo_data_provider.dart';
 import 'service_providers.dart';
 import 'auth_provider.dart';
@@ -43,6 +45,14 @@ class ProfileCreationState {
   final String? error;
   final bool isComplete;
 
+  /// Overall upload progress (0..1) across photos + horoscope PDF, while
+  /// [isLoading] is true. Drives the progress bar on the final step.
+  final double uploadProgress;
+
+  /// Human-readable status shown under the progress bar, e.g.
+  /// "Uploading photo 2 of 3...".
+  final String? uploadStatus;
+
   const ProfileCreationState({
     this.data = const {},
     this.photos = const [],
@@ -50,6 +60,8 @@ class ProfileCreationState {
     this.isLoading = false,
     this.error,
     this.isComplete = false,
+    this.uploadProgress = 0,
+    this.uploadStatus,
   });
 
   ProfileCreationState copyWith({
@@ -59,6 +71,8 @@ class ProfileCreationState {
     bool? isLoading,
     String? error,
     bool? isComplete,
+    double? uploadProgress,
+    String? uploadStatus,
   }) =>
       ProfileCreationState(
         data: data ?? this.data,
@@ -67,6 +81,9 @@ class ProfileCreationState {
         isLoading: isLoading ?? this.isLoading,
         error: error,
         isComplete: isComplete ?? this.isComplete,
+        uploadProgress: uploadProgress ?? this.uploadProgress,
+        // `error` resets uploadStatus implicitly via copyWith below when null
+        uploadStatus: uploadStatus,
       );
 }
 
@@ -82,7 +99,7 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
   void setHoroscopePdf(File pdf) => state = state.copyWith(horoscopePdf: pdf);
 
   Future<String?> submitProfile(String userId) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, error: null, uploadProgress: 0, uploadStatus: null);
 
     // ── Demo mode: save the profile to the in-memory store, no backend ──
     if (kBypassAuth) {
@@ -113,14 +130,42 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
 
     try {
       final repo = ref.read(profileRepositoryProvider);
+      final hasPhotos = state.photos.isNotEmpty;
+      final hasPdf = state.horoscopePdf != null;
+
+      // Split overall progress (0..1) across the upload phases that apply.
+      final photoWeight = hasPhotos ? (hasPdf ? 0.7 : 1.0) : 0.0;
+      final pdfWeight = hasPdf ? (hasPhotos ? 0.3 : 1.0) : 0.0;
+
       List<String> photoUrls = [];
-      if (state.photos.isNotEmpty) {
-        photoUrls = await repo.uploadPhotos(userId: userId, files: state.photos);
+      if (hasPhotos) {
+        state = state.copyWith(
+          uploadStatus: state.photos.length == 1
+              ? 'Uploading photo...'
+              : 'Uploading ${state.photos.length} photos...',
+        );
+        photoUrls = await repo.uploadPhotos(
+          userId: userId,
+          files: state.photos,
+          onProgress: (p) => state = state.copyWith(uploadProgress: p * photoWeight),
+        );
       }
+
       String? pdfUrl;
-      if (state.horoscopePdf != null) {
-        pdfUrl = await repo.uploadHoroscopePdf(userId: userId, file: state.horoscopePdf!);
+      if (hasPdf) {
+        state = state.copyWith(uploadStatus: 'Uploading horoscope PDF...');
+        pdfUrl = await repo.uploadHoroscopePdf(
+          userId: userId,
+          file: state.horoscopePdf!,
+          onProgress: (p) =>
+              state = state.copyWith(uploadProgress: photoWeight + p * pdfWeight),
+        );
       }
+
+      state = state.copyWith(
+        uploadStatus: 'Saving your profile...',
+        uploadProgress: photoWeight + pdfWeight,
+      );
 
       final profileData = {
         ...state.data,
@@ -138,15 +183,67 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
       // Mark the account as profile-completed so the Home gate opens.
       await ref.read(firestoreServiceProvider).markProfileCompleted(userId);
       ref.invalidate(currentUserProvider); // refresh the gate
-      state = state.copyWith(isLoading: false, isComplete: true);
+      state = state.copyWith(
+        isLoading: false,
+        isComplete: true,
+        uploadProgress: 1,
+        uploadStatus: null,
+      );
       return profileId;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        error: _friendlyProfileError(e),
+        uploadProgress: 0,
+        uploadStatus: null,
+      );
       return null;
     }
   }
 
   void reset() => state = const ProfileCreationState();
+
+  /// Turn raw upload/Firestore errors into actionable messages instead of
+  /// dumping `e.toString()` (e.g. `[firebase_storage/object-not-found] No
+  /// object exists at the desired reference.`) straight into a SnackBar.
+  String _friendlyProfileError(Object e) {
+    if (e is CloudinaryUploadException) {
+      if (e.statusCode == 400 &&
+          e.message.toLowerCase().contains('preset')) {
+        return 'Could not upload your photo — the Cloudinary upload preset '
+            '"matrimony_profiles" is missing or not set to "Unsigned". '
+            'Check Cloudinary Console > Settings > Upload > Upload presets.';
+      }
+      if (e.statusCode == null) {
+        return 'Could not upload your photo — check your internet '
+            'connection and tap Submit to retry.';
+      }
+      return 'Could not upload your photo (${e.message}). Tap Submit to retry.';
+    }
+    if (e is FirebaseException && e.plugin == 'firebase_storage') {
+      switch (e.code) {
+        case 'object-not-found':
+          return 'Could not save your photo — Cloud Storage may not be set '
+              'up yet for this Firebase project. Enable Storage in the '
+              'Firebase Console (Build > Storage > Get started), deploy '
+              'storage.rules, and try again.';
+        case 'unauthorized':
+          return 'Could not save your photo — Storage security rules '
+              'blocked the upload. Deploy storage.rules and try again.';
+        case 'canceled':
+          return 'Photo upload was cancelled. Please try again.';
+        case 'retry-limit-exceeded':
+          return 'Photo upload timed out. Check your connection and try again.';
+        default:
+          return 'Could not save your photo (${e.code}). Please try again.';
+      }
+    }
+    if (e is FirebaseException) {
+      return 'Could not save your profile (${e.plugin}/${e.code}): '
+          '${e.message ?? 'unknown error'}.';
+    }
+    return 'Something went wrong while saving your profile: $e';
+  }
 }
 
 final profileCreationProvider =

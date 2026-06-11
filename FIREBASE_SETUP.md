@@ -75,10 +75,32 @@ filtered+ordered query runs (e.g. `astrologer_requests` by `astrologerId` +
 `createdAt`); click it to create each index — or add them in
 **Firestore → Indexes**.
 
-## 5. Enable Storage
+## 5. Storage (profile photos, horoscope PDFs, ID proof)
+
+> **This step is now optional.** Profile media currently uploads to
+> **Cloudinary** instead of Firebase Storage, because Firebase Storage
+> requires the project to be on the **Blaze** (pay-as-you-go) plan. See
+> [`CLOUDINARY_SETUP.md`](./CLOUDINARY_SETUP.md) for the active
+> configuration. The steps below are only needed if you switch
+> `storageServiceProvider` back to `FirebaseStorageService` (1-line change in
+> `lib/providers/service_providers.dart`) once your project is on Blaze.
 
 **Build → Storage → Get started.** Used for profile photos
-(`profile_photos/`) and horoscope documents (`horoscope_docs/`).
+(`profiles/{uid}/photos/`), horoscope PDFs/images
+(`profiles/{uid}/horoscope/`), and ID-proof docs (`profiles/{uid}/id_proof/`).
+
+Then deploy the Storage security rules from this repo (`storage.rules`):
+
+```bash
+firebase deploy --only storage
+```
+
+> If profile submission fails with
+> `[firebase_storage/object-not-found] No object exists at the desired
+> reference.`, Storage hasn't been enabled for this project yet (the upload
+> silently has nowhere to land) — do the "Get started" step above, then
+> deploy the rules and retry. `[firebase_storage/unauthorized]` means Storage
+> is enabled but `storage.rules` hasn't been deployed yet.
 
 ## 6. Switch off demo mode
 

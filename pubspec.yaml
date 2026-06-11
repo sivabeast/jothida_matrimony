@@ -24,6 +24,10 @@ dependencies:
   firebase_messaging: ^15.1.6
   google_sign_in: ^6.2.2
 
+  # Cloudinary (profile photo / document uploads — see
+  # lib/services/cloudinary/cloudinary_storage_service.dart)
+  http: ^1.2.2
+
   # State Management
   flutter_riverpod: ^2.6.1
 
