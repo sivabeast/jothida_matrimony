@@ -1,0 +1,216 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/theme/app_colors.dart';
+import '../../models/chat_model.dart';
+import '../../providers/chat_provider.dart';
+
+/// One conversation: realtime message stream + composer.
+class ChatScreen extends ConsumerStatefulWidget {
+  final String threadId;
+
+  /// Optional `{name, photo}` of the other participant (passed when opening
+  /// from a profile card so the header renders instantly).
+  final Map<String, dynamic>? extra;
+
+  const ChatScreen({super.key, required this.threadId, this.extra});
+
+  @override
+  ConsumerState<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends ConsumerState<ChatScreen> {
+  final _controller = TextEditingController();
+  bool _sending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(
+        () => ref.read(chatControllerProvider).markRead(widget.threadId));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty || _sending) return;
+    setState(() => _sending = true);
+    try {
+      await ref.read(chatControllerProvider).sendMessage(widget.threadId, text);
+      _controller.clear();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Could not send: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final myUid = ref.watch(myUidProvider) ?? '';
+    final threadAsync = ref.watch(chatThreadProvider(widget.threadId));
+    final messagesAsync = ref.watch(chatMessagesProvider(widget.threadId));
+
+    final thread = threadAsync.valueOrNull;
+    final name =
+        thread?.otherName(myUid) ?? widget.extra?['name'] as String? ?? 'Chat';
+    final photo =
+        thread?.otherPhoto(myUid) ?? widget.extra?['photo'] as String? ?? '';
+
+    return Scaffold(
+      backgroundColor: AppColors.scaffoldBg,
+      appBar: AppBar(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            CircleAvatar(
+              radius: 17,
+              backgroundColor: Colors.white24,
+              backgroundImage: photo.isNotEmpty ? NetworkImage(photo) : null,
+              child: photo.isEmpty
+                  ? Text(name.isNotEmpty ? name[0] : '?',
+                      style: const TextStyle(color: Colors.white))
+                  : null,
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Text(name, overflow: TextOverflow.ellipsis)),
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: messagesAsync.when(
+              loading: () =>
+                  const Center(child: CircularProgressIndicator()),
+              error: (e, _) =>
+                  Center(child: Text('Could not load messages: $e')),
+              data: (messages) {
+                if (messages.isEmpty) {
+                  return Center(
+                    child: Text('Say hello to $name 👋',
+                        style: TextStyle(color: Colors.grey[500])),
+                  );
+                }
+                return ListView.builder(
+                  reverse: true,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  itemCount: messages.length,
+                  itemBuilder: (_, i) =>
+                      _Bubble(message: messages[i], isMine: messages[i].senderId == myUid),
+                );
+              },
+            ),
+          ),
+          SafeArea(
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+              color: Colors.white,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      textCapitalization: TextCapitalization.sentences,
+                      minLines: 1,
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        hintText: 'Type a message…',
+                        filled: true,
+                        fillColor: AppColors.scaffoldBg,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      onSubmitted: (_) => _send(),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: AppColors.primary,
+                    child: IconButton(
+                      icon: _sending
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.send,
+                              color: Colors.white, size: 20),
+                      onPressed: _send,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Bubble extends StatelessWidget {
+  final ChatMessage message;
+  final bool isMine;
+  const _Bubble({required this.message, required this.isMine});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75),
+        decoration: BoxDecoration(
+          color: isMine ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isMine ? 16 : 4),
+            bottomRight: Radius.circular(isMine ? 4 : 16),
+          ),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              message.text,
+              style: TextStyle(
+                  color: isMine ? Colors.white : AppColors.textPrimary,
+                  fontSize: 14.5,
+                  height: 1.3),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '${message.sentAt.hour.toString().padLeft(2, '0')}:${message.sentAt.minute.toString().padLeft(2, '0')}',
+              style: TextStyle(
+                  fontSize: 10,
+                  color: isMine ? Colors.white70 : Colors.grey[500]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -122,7 +122,7 @@ class _AstrologerOnboardingScreenState
       reviewCount: 0,
     );
     ref.read(myAstrologerAccountProvider.notifier).completeOnboarding(account);
-    context.go('/astrologer/dashboard');
+    context.go('/astrologer-dashboard');
   }
 
   @override

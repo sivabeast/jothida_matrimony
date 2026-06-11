@@ -1,160 +1,121 @@
 # Firebase Setup — Jothida Matrimony
 
-The app code now has a complete, production-ready authentication flow. However,
-**authentication cannot work until the real Firebase project config replaces the
-placeholders in this repo.** The errors you saw prove this:
+The app is fully wired for Firebase (Auth, Firestore, Storage, FCM). It currently
+runs in **demo mode** (`kBypassAuth = true` in `lib/core/config/dev_config.dart`)
+with placeholder Firebase config so the UI works without a backend.
+Follow the steps below to connect your real Firebase project, then set
+`kBypassAuth = false`.
 
-| Error on screen | Real cause |
-|---|---|
-| `[firebase_auth/unknown] … API key not valid` | `lib/firebase_options.dart` + `android/app/google-services.json` contain **fake placeholder values** (`AIzaSyA000…`, `"client": []`). |
-| `sign_in_failed … :10:` (ApiException 10 / DEVELOPER_ERROR) | The app's **SHA-1 fingerprint and OAuth client are not registered** in Firebase. |
-| "Please select an email address" on the Google provider | The Google provider's **support email is not configured**. |
-
-Do the steps below once and all three disappear.
+> Note: errors like `API key not valid`, `sign_in_failed (ApiException 10)`, or
+> "Please select an email address" all mean the placeholder config is still in
+> place or SHA keys / support email are missing — steps 2–3 fix them.
 
 ---
 
-## 1. Firebase project + Android app
+## 1. Create the Firebase project
 
-1. Open the [Firebase Console](https://console.firebase.google.com) → use your
-   existing project (`matrimony-app-bd0d5`) or create one.
-2. Add an **Android app** with this exact package name:
+1. Go to https://console.firebase.google.com → **Add project** → name it
+   (e.g. `jothida-matrimony`).
+2. In the project, add an **Android app** with package name
+   `com.example.jothida_matrimony` (or your real applicationId from
+   `android/app/build.gradle`). Add an **iOS app** too if you ship iOS.
 
-   ```
-   com.jothida.jothida_matrimony
-   ```
+## 2. Generate the config files
 
-   (CI generates the Android project with `--org=com.jothida
-   --project-name=jothida_matrimony`, so the applicationId is the above. If you
-   build locally, confirm `android/app/build.gradle` → `applicationId` matches.)
-
-## 2. Register the SHA-1 / SHA-256 fingerprints (fixes error 10) — IMPORTANT
-
-**This is the root cause of "after selecting a Google account, login fails."**
-
-Google Sign-In returns a null ID token (→ ApiException 10 / DEVELOPER_ERROR)
-because the signing certificate's SHA-1 is not registered in Firebase. Worse,
-CI used to regenerate a *random* debug keystore on every build, so the SHA-1
-changed every run and could never be registered.
-
-**This is now fixed in the repo:** a fixed, shared debug keystore is committed at
-`ci/debug.keystore` and CI copies it to `~/.android/debug.keystore` before every
-build (see `.github/workflows/ci.yml`). Both the debug and release APKs are
-signed with it, so the SHA-1 is now **stable**. Register these exact
-fingerprints once:
-
-```
-SHA-1:   8B:4E:88:65:BD:95:8B:9B:46:60:32:B4:C8:D7:32:4D:87:7B:AD:BE
-SHA-256: BE:11:8D:5D:BE:46:60:17:09:E1:11:F2:41:4C:B1:17:64:6F:A1:E4:04:1F:F1:C8:D0:21:09:E4:97:B0:DD:FE
-```
-
-In Firebase Console → **Project settings → Your apps → Android app
-(`com.jothida.jothida_matrimony`) → Add fingerprint**, paste **both** values,
-then **re-download `google-services.json`** (step 3) and update the
-`GOOGLE_SERVICES_JSON` CI secret with the new contents.
-
-> If you build **locally** instead of using the committed keystore, get your own
-> machine's fingerprint with the commands below and register that one too. You
-> can register multiple SHA-1s on the same app.
-
-```bash
-cd android
-./gradlew signingReport
-# or:
-keytool -list -v -alias androiddebugkey -keystore ~/.android/debug.keystore -storepass android -keypass android
-```
-
-Copy the `SHA1` (and `SHA-256`) values. In Firebase Console →
-**Project settings → Your apps → Android app → Add fingerprint**, paste them.
-Add the **release** keystore fingerprint too before you publish.
-
-## 3. Download the real `google-services.json`
-
-Firebase Console → Project settings → Your apps → Android → **Download
-`google-services.json`** and place it at:
-
-```
-android/app/google-services.json
-```
-
-This file must contain a non-empty `oauth_client` array and a
-`default_web_client_id` — that is what lets `google_sign_in` return an ID token.
-
-## 4. Regenerate `lib/firebase_options.dart`
+The easiest way (replaces `lib/firebase_options.dart` and
+`android/app/google-services.json` automatically):
 
 ```bash
 dart pub global activate flutterfire_cli
 flutterfire configure
 ```
 
-Select the same project and Android app. This overwrites the placeholder
-`firebase_options.dart` with real keys (fixing "API key not valid").
+Pick your project and platforms when prompted. That's it — both placeholder
+files are overwritten with real values.
 
-## 5. Enable sign-in providers
+## 3. Enable Authentication providers
 
-Firebase Console → **Authentication → Sign-in method**, enable:
+Firebase Console → **Build → Authentication → Sign-in method**, enable:
 
-- **Google** — and **select a Support email** (this is the red error in your
-  screenshot; the provider stays disabled until you do).
-- **Email/Password**
-- **Phone** (the app also supports OTP login)
-
-## 6. Firestore database + rules
-
-1. Console → **Firestore Database → Create database** (production mode).
-2. Deploy the rules in `firestore.rules` (a user can only read/write their own
-   `users/{uid}` document; admins/astrologers can read for moderation):
-
-   ```bash
-   npm install -g firebase-tools
-   firebase login
-   firebase deploy --only firestore:rules
-   ```
-
-## 7. CI/CD secrets (GitHub Actions)
-
-`.github/workflows/ci.yml` already reads these — add them in
-**Repo → Settings → Secrets and variables → Actions**:
-
-- `GOOGLE_SERVICES_JSON` — full contents of the real `google-services.json`
-- `FIREBASE_API_KEY`, `FIREBASE_APP_ID`, `FIREBASE_PROJECT_ID`
-- `RAZORPAY_KEY_ID`
-
----
-
-## What the code stores on login
-
-On a successful Google (or email/phone) sign-in, `users/{uid}` is created once
-with these fields and **never duplicated**; returning users only get
-`lastLoginAt` refreshed:
-
-| Field | Source |
+| Provider | Notes |
 |---|---|
-| `uid` | Firebase Auth (document id) |
-| `displayName` (name) | Google account |
-| `email` | Google account |
-| `photoUrl` | Google account |
-| `createdAt` | server timestamp, first login only |
-| `lastLoginAt` | server timestamp, every login |
-| `isProfileComplete` (profileCompleted) | `false` for new users |
-| `membershipType` | `free` for new users |
+| **Email/Password** | Used by user signup and astrologer signup. Free. |
+| **Google** | Set the provider's **support email**. Add your debug + release **SHA-1/SHA-256** keys under Project settings → Your apps → Android, then re-download `google-services.json` (or re-run `flutterfire configure`). Get the debug SHA-1 with `cd android && ./gradlew signingReport`. |
+| **Phone** | Used for OTP login. Requires the **Blaze plan** for real SMS beyond the free daily quota, plus SHA keys + Play Integrity. For testing, add test phone numbers under Phone → "Phone numbers for testing". |
 
-> Note on naming: the app's existing schema uses `displayName` and
-> `isProfileComplete`; these are the same concepts as the requested `name` and
-> `profileCompleted`. They were kept to avoid breaking the other 60+ screens.
+## 4. Create Firestore
 
----
+1. **Build → Firestore Database → Create database** (production mode,
+   `asia-south1` is closest for Tamil Nadu users).
+2. Deploy the security rules from this repo:
 
-## Testing the flow
+```bash
+npm install -g firebase-tools
+firebase login
+firebase init firestore   # choose existing project, point to firestore.rules
+firebase deploy --only firestore:rules
+```
 
-1. Complete steps 1–6 above.
-2. `flutter clean && flutter pub get`
-3. `flutter run` on a real device or emulator **with Google Play services**.
-4. Tap **Continue with Google** → choose an account → you should land on Home.
-5. In Firebase Console → Authentication → Users, confirm the new user appears.
-6. In Firestore → `users` → confirm the document with the fields above.
-7. Sign in again with the same account → confirm **no duplicate** doc and that
-   `lastLoginAt` changed.
-8. Tap **Sign Out** (My Profile tab) → you should return to Login.
-9. Error cases to verify: turn off Wi-Fi (network message), dismiss the Google
-   sheet (no error shown), wrong email password (friendly message).
+Collections are created automatically by the app on first write — no manual
+setup needed. The app uses:
+
+| Collection | Purpose |
+|---|---|
+| `users/{uid}` | Account doc: role (`user`/`astrologer`/`admin`), name, phone, gender, dateOfBirth, location, profileId, membership |
+| `profiles/{id}` | Full matrimony profiles (personal, horoscope, family, preferences, contact) |
+| `astrologers/{uid}` | Astrologer accounts: experience, specialization, location, services, verification status |
+| `astrologer_requests/{id}` | Consultations, inquiries, horoscope-matching requests (`type`, `status`, `amount`) |
+| `bookings/{id}` | Appointments between users and astrologers |
+| `chats/{threadId}` + `messages` subcollection | 1-to-1 realtime chat |
+| `interests/{id}` | Interest (like) requests between profiles |
+| `notifications`, `subscriptions`, `reports`, `transactions` | Supporting features |
+
+Composite indexes: Firestore will print a console link the first time a
+filtered+ordered query runs (e.g. `astrologer_requests` by `astrologerId` +
+`createdAt`); click it to create each index — or add them in
+**Firestore → Indexes**.
+
+## 5. Enable Storage
+
+**Build → Storage → Get started.** Used for profile photos
+(`profile_photos/`) and horoscope documents (`horoscope_docs/`).
+
+## 6. Switch off demo mode
+
+In `lib/core/config/dev_config.dart`:
+
+```dart
+const bool kBypassAuth = false;
+```
+
+Then run:
+
+```bash
+flutter pub get
+flutter run
+```
+
+## 7. End-to-end flow (what to expect)
+
+1. **Splash** → **"Who are you creating an account for?"** (User / Astrologer).
+2. **User** → login (Phone OTP / Email / Google) or signup
+   (name, mobile, gender, DOB, location) → saved to `users/{uid}` → **Home**.
+3. **Home** → header (photo, name, notifications), profile-completion card
+   (% + missing fields + Complete Profile), realtime profile cards with
+   **View / Interest / Chat** actions.
+4. **Astrologer** → its own login/signup (name, mobile, experience,
+   specialization, location) → saved to `astrologers/{uid}` with
+   `role: astrologer` → **Dashboard** (overview stats, consultation /
+   inquiry / matching requests with Accept-Decline-Complete, appointments,
+   earnings, reviews, profile).
+5. Signing in later routes by role automatically (user → Home,
+   astrologer → Dashboard, admin → Admin).
+
+## 8. Optional
+
+- **FCM push notifications**: already initialised in `main.dart`; upload your
+  APNs key for iOS.
+- **Admin account**: set `role: "admin"` manually on a user document in the
+  Firestore console to unlock the admin panel.
+- **Razorpay**: put your key in `.env` (`RAZORPAY_KEY_ID=...`) for
+  subscription payments.

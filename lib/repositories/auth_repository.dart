@@ -65,6 +65,33 @@ class AuthRepository {
   Future<UserModel> createUserDocumentAfterAuth(User user, {String? phone}) =>
       _onAuthenticated(user, phone: phone);
 
+  /// Email/password signup for matrimony **users**: creates the auth account,
+  /// the `users/{uid}` document, and saves the essential registration details
+  /// (name, mobile, gender, DOB, location) in one go.
+  Future<UserModel> registerUserWithDetails({
+    required String email,
+    required String password,
+    required String name,
+    required String phone,
+    required String gender,
+    required DateTime dateOfBirth,
+    required String location,
+  }) async {
+    final cred = await _auth.registerWithEmail(email, password);
+    final user = cred.user!;
+    await user.updateDisplayName(name);
+    await _onAuthenticated(user, phone: phone);
+    await _firestore.saveUserRegistrationDetails(
+      user.uid,
+      name: name,
+      phone: phone,
+      gender: gender,
+      dateOfBirth: dateOfBirth,
+      location: location,
+    );
+    return (await _firestore.getUser(user.uid))!;
+  }
+
   Future<UserModel?> getUserModel(String uid) => _firestore.getUser(uid);
 
   Future<void> signOut() => _auth.signOut();

@@ -44,6 +44,31 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
     });
   }
 
+  /// User signup collecting the essential details required by the spec
+  /// (name, mobile, gender, DOB, location).
+  Future<void> registerUser({
+    required String email,
+    required String password,
+    required String name,
+    required String phone,
+    required String gender,
+    required DateTime dateOfBirth,
+    required String location,
+  }) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() {
+      return ref.read(authRepositoryProvider).registerUserWithDetails(
+            email: email,
+            password: password,
+            name: name,
+            phone: phone,
+            gender: gender,
+            dateOfBirth: dateOfBirth,
+            location: location,
+          );
+    });
+  }
+
   Future<void> signInWithEmail(String email, String password) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {

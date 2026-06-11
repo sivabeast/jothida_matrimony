@@ -3,12 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/config/dev_config.dart';
 import '../providers/auth_provider.dart';
-import '../providers/demo_data_provider.dart';
 import '../providers/astrologer_session_provider.dart';
 import '../screens/astrologer/astrologer_onboarding_screen.dart';
 import '../screens/astrologer/astrologer_dashboard_screen.dart';
+import '../screens/astrologer/astrologer_login_screen.dart';
+import '../screens/astrologer/astrologer_register_screen.dart';
+import '../screens/auth/account_type_screen.dart';
 import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
+import '../screens/chat/chat_list_screen.dart';
+import '../screens/chat/chat_screen.dart';
 import '../screens/auth/otp_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
@@ -32,21 +36,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     redirect: (context, state) {
       final loc = state.matchedLocation;
-      final onAuthPage = loc == '/login' ||
+      final onAuthPage = loc == '/account-type' ||
+          loc == '/login' ||
           loc == '/register' ||
           loc == '/forgot-password' ||
+          loc == '/astrologer-login' ||
+          loc == '/astrologer-register' ||
           loc.startsWith('/otp');
       final onSplash = loc == '/';
-      final onProfileCreate = loc == '/profile/create';
 
-      // Astrologer portal has its OWN gate (onboarding before dashboard) and is
-      // exempt from the matrimony profile gate.
+      // Astrologer portal has its OWN gate (login/signup before dashboard).
       final inAstrologerPortal =
           loc == '/astrologer-onboarding' || loc == '/astrologer-dashboard';
       if (inAstrologerPortal) {
         final onboarded = ref.read(isAstrologerOnboardedProvider);
         if (!onboarded && loc == '/astrologer-dashboard') {
-          return '/astrologer-onboarding';
+          // In demo mode the astrologer signup creates the session locally; in
+          // real mode the session is hydrated after Firebase login.
+          return kBypassAuth ? '/astrologer-onboarding' : '/astrologer-login';
         }
         if (onboarded && loc == '/astrologer-onboarding') {
           return '/astrologer-dashboard';
@@ -54,36 +61,45 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
-      // ── Demo mode (kBypassAuth): gate Home behind profile completion ──
-      // No user can reach Discover/Requests/Matches/etc. until their profile
-      // is created. profileCompleted == (a demo profile exists).
-      if (kBypassAuth) {
-        final profileCompleted = ref.read(myDemoProfileIdProvider) != null;
-        if (!profileCompleted && !onProfileCreate && !onAuthPage && !onSplash) {
-          return '/profile/create';
-        }
-        return null;
-      }
+      // ── Demo mode (kBypassAuth): everything reachable, Home shows the
+      // profile-completion card instead of force-redirecting. ──
+      if (kBypassAuth) return null;
 
       // ── Real auth path ──
       final isAuthenticated = authState.valueOrNull != null;
       if (!isAuthenticated) {
-        return (onAuthPage || onSplash) ? null : '/login';
+        return (onAuthPage || onSplash) ? null : '/account-type';
       }
 
-      // Authenticated → enforce profileCompleted (users/{uid}.isProfileComplete).
+      // Authenticated → route by role; Home itself nudges profile completion.
       final userAsync = ref.read(currentUserProvider);
-      if (userAsync.isLoading) return null; // wait for the profile to load
-      final profileCompleted = userAsync.valueOrNull?.isProfileComplete ?? false;
-      if (!profileCompleted && !onProfileCreate && !onSplash) {
-        return '/profile/create';
+      if (userAsync.isLoading) return null; // wait for the user doc to load
+      final user = userAsync.valueOrNull;
+      if (user != null && user.isAstrologer && (onAuthPage || loc == '/home')) {
+        return '/astrologer-dashboard';
       }
-      if (profileCompleted && onAuthPage) return '/home';
+      if (onAuthPage) return user?.isAdmin == true ? '/admin' : '/home';
       return null;
     },
     routes: [
       GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
+      GoRoute(
+          path: '/account-type', builder: (_, __) => const AccountTypeScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      GoRoute(
+          path: '/astrologer-login',
+          builder: (_, __) => const AstrologerLoginScreen()),
+      GoRoute(
+          path: '/astrologer-register',
+          builder: (_, __) => const AstrologerRegisterScreen()),
+      GoRoute(path: '/chats', builder: (_, __) => const ChatListScreen()),
+      GoRoute(
+        path: '/chat/:id',
+        builder: (_, state) => ChatScreen(
+          threadId: state.pathParameters['id']!,
+          extra: state.extra as Map<String, dynamic>?,
+        ),
+      ),
       GoRoute(
         path: '/otp',
         builder: (_, state) {

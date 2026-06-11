@@ -6,7 +6,9 @@ import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/validators.dart';
+import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/astrologer_session_provider.dart';
 import '../../widgets/common/gradient_button.dart';
 import '../../widgets/common/app_text_field.dart';
 
@@ -68,8 +70,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(auth.error.toString())));
     } else if (auth.valueOrNull != null && mounted) {
-      final user = auth.valueOrNull!;
-      user.isAdmin ? context.go('/admin') : context.go('/home');
+      await _routeByRole(auth.valueOrNull!);
+    }
+  }
+
+  /// Sends the signed-in account to the right surface for its role.
+  Future<void> _routeByRole(UserModel user) async {
+    if (user.isAstrologer) {
+      // Hydrate the astrologer session before opening the dashboard.
+      await ref
+          .read(myAstrologerAccountProvider.notifier)
+          .loadFromFirestore(user.uid);
+      if (mounted) context.go('/astrologer-dashboard');
+    } else if (user.isAdmin) {
+      context.go('/admin');
+    } else {
+      context.go('/home');
     }
   }
 
@@ -99,7 +115,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     final user = auth.valueOrNull;
     if (user != null) {
-      user.isAdmin ? context.go('/admin') : context.go('/home');
+      await _routeByRole(user);
     }
   }
 
@@ -262,13 +278,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         const SizedBox(height: 8),
                         const Divider(),
-                        // Separate entry for the astrologer portal (own login,
-                        // onboarding & dashboard). Routes to the dashboard if
-                        // already onboarded.
+                        // Separate entry for the astrologer portal (its own
+                        // login / signup / dashboard).
                         TextButton.icon(
-                          onPressed: () => context.push('/astrologer-onboarding'),
+                          onPressed: () => context.push('/astrologer-login'),
                           icon: const Icon(Icons.auto_awesome, size: 18),
-                          label: const Text('Astrologer Portal'),
+                          label: const Text('Are you an Astrologer? Sign in here'),
                           style: TextButton.styleFrom(
                               foregroundColor: AppColors.goldDark),
                         ),

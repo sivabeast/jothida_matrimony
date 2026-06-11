@@ -13,6 +13,25 @@ class AppConstants {
   static const String notificationsCollection = 'notifications';
   static const String transactionsCollection = 'transactions';
   static const String adminCollection = 'admin';
+  static const String astrologersCollection = 'astrologers';
+  static const String astrologerRequestsCollection = 'astrologer_requests';
+  static const String bookingsCollection = 'bookings';
+  static const String chatsCollection = 'chats';
+  static const String messagesSubcollection = 'messages';
+
+  // Astrologer specializations
+  static const List<String> astrologerSpecializations = [
+    'Vedic Astrology',
+    'Horoscope Matching (Porutham)',
+    'Nadi Astrology',
+    'Numerology',
+    'Palmistry',
+    'Vastu Shastra',
+    'KP Astrology',
+    'Prashna Astrology',
+    'Gemology',
+    'Muhurtha (Auspicious Timing)',
+  ];
 
   // Storage Paths
   static const String profilePhotosPath = 'profile_photos';

@@ -36,13 +36,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final authAsync = ref.read(firebaseAuthStreamProvider);
     final user = authAsync.valueOrNull;
     if (user == null) {
-      context.go('/login');
+      // Signed out: ask who the account is for (User / Astrologer).
+      context.go('/account-type');
     } else {
-      final userModel = await ref.read(authRepositoryProvider).getUserModel(user.uid);
+      final userModel =
+          await ref.read(authRepositoryProvider).getUserModel(user.uid);
+      if (!mounted) return;
       if (userModel == null) {
-        context.go('/login');
+        context.go('/account-type');
       } else if (userModel.isAdmin) {
         context.go('/admin');
+      } else if (userModel.isAstrologer) {
+        context.go('/astrologer-dashboard');
       } else {
         context.go('/home');
       }

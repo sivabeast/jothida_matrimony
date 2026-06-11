@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'astrologer_model.dart';
 
 /// Certificate verification status set by the admin.
@@ -108,6 +109,44 @@ class AstrologerAccount {
         reviewCount: reviewCount,
       );
 
+  factory AstrologerAccount.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    final cert = (d['certification'] as Map<String, dynamic>?) ?? const {};
+    return AstrologerAccount(
+      id: doc.id,
+      fullName: d['fullName'] ?? '',
+      gender: d['gender'] ?? '',
+      dob: d['dob'] != null ? DateTime.tryParse(d['dob']) : null,
+      mobile: d['mobile'] ?? '',
+      email: d['email'] ?? '',
+      city: d['city'] ?? '',
+      state: d['state'] ?? '',
+      country: d['country'] ?? 'India',
+      photoUrl: d['photoUrl'] ?? '',
+      experienceYears: (d['experienceYears'] ?? 0) is int
+          ? d['experienceYears'] ?? 0
+          : int.tryParse('${d['experienceYears']}') ?? 0,
+      expertise: List<String>.from(d['expertise'] ?? const []),
+      languages: List<String>.from(d['languages'] ?? const []),
+      about: d['about'] ?? '',
+      consultationModes:
+          List<String>.from(d['consultationModes'] ?? const ['Chat']),
+      certName: cert['name'] ?? '',
+      certOrg: cert['organization'] ?? '',
+      certNumber: cert['number'] ?? '',
+      certFileName: cert['fileName'] ?? '',
+      status: VerificationStatus.values.firstWhere(
+        (s) => s.name == (d['status'] ?? 'pending'),
+        orElse: () => VerificationStatus.pending,
+      ),
+      services: ((d['services'] as List?) ?? const [])
+          .map((s) => AstrologerService.fromMap(Map<String, dynamic>.from(s)))
+          .toList(),
+      rating: (d['rating'] ?? 0).toDouble(),
+      reviewCount: d['reviewCount'] ?? 0,
+    );
+  }
+
   Map<String, dynamic> toFirestore() => {
         'fullName': fullName,
         'gender': gender,
@@ -130,6 +169,7 @@ class AstrologerAccount {
           'fileName': certFileName,
         },
         'status': status.name,
+        'services': services.map((s) => s.toMap()).toList(),
         'rating': rating,
         'reviewCount': reviewCount,
       };

@@ -3,6 +3,8 @@ import '../services/firebase/auth_service.dart';
 import '../services/firebase/firestore_service.dart';
 import '../services/firebase/storage_service.dart';
 import '../services/firebase/fcm_service.dart';
+import '../services/firebase/astrologer_service.dart';
+import '../services/firebase/chat_service.dart';
 import '../services/razorpay/razorpay_service.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/profile_repository.dart';
@@ -16,6 +18,9 @@ final firestoreServiceProvider = Provider<FirestoreService>((ref) => FirestoreSe
 final storageServiceProvider = Provider<StorageService>((ref) => StorageService());
 final fcmServiceProvider = Provider<FcmService>((ref) => FcmService());
 final razorpayServiceProvider = Provider<RazorpayService>((ref) => RazorpayService());
+final astrologerServiceProvider =
+    Provider<AstrologerService>((ref) => AstrologerService());
+final chatServiceProvider = Provider<ChatService>((ref) => ChatService());
 
 // ── Repositories ──────────────────────────────────────────────────────────────
 final authRepositoryProvider = Provider<AuthRepository>((ref) => AuthRepository(

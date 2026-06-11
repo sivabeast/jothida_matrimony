@@ -62,6 +62,32 @@ class FirestoreService {
     return UserModel.fromFirestore(fresh);
   }
 
+  /// Saves the essential registration details collected on the user signup
+  /// form (name, mobile, gender, DOB, location) onto `users/{uid}`.
+  Future<void> saveUserRegistrationDetails(
+    String uid, {
+    required String name,
+    required String phone,
+    required String gender,
+    required DateTime dateOfBirth,
+    required String location,
+  }) =>
+      _db.collection(AppConstants.usersCollection).doc(uid).set({
+        'displayName': name,
+        'phone': phone,
+        'gender': gender,
+        'dateOfBirth': Timestamp.fromDate(dateOfBirth),
+        'location': location,
+        'role': AppConstants.roleUser,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+  Stream<UserModel?> watchUser(String uid) => _db
+      .collection(AppConstants.usersCollection)
+      .doc(uid)
+      .snapshots()
+      .map((doc) => doc.exists ? UserModel.fromFirestore(doc) : null);
+
   Future<UserModel?> getUser(String uid) async {
     final doc =
         await _db.collection(AppConstants.usersCollection).doc(uid).get();

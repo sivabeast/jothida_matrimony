@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/profile_model.dart';
+import '../../../providers/chat_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/requests_provider.dart';
+import '../../../widgets/home/profile_completion_card.dart';
 
 class DiscoverTab extends ConsumerStatefulWidget {
   const DiscoverTab({super.key});
@@ -61,8 +63,11 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
               onRefresh: () async => _applyFilters(),
               child: ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: state.profiles.length,
-                itemBuilder: (_, i) => _ProfileCard(profile: state.profiles[i]),
+                // +1 → profile-completion nudge on top of the feed.
+                itemCount: state.profiles.length + 1,
+                itemBuilder: (_, i) => i == 0
+                    ? const ProfileCompletionCard()
+                    : _ProfileCard(profile: state.profiles[i - 1]),
               ),
             );
           }),
@@ -233,8 +238,10 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   }
 
   Widget _buildEmptyState() => ListView(
+        padding: const EdgeInsets.all(16),
         children: [
-          const SizedBox(height: 120),
+          const ProfileCompletionCard(),
+          const SizedBox(height: 100),
           Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
           const SizedBox(height: 16),
           const Center(child: Text('No profiles found', style: TextStyle(fontSize: 18))),
@@ -296,17 +303,7 @@ class _ProfileCard extends ConsumerWidget {
                               '${profile.city}, ${profile.state}'),
                           _iconLine(Icons.school, profile.education),
                           _iconLine(Icons.work_outline, profile.occupation),
-                          _iconLine(Icons.spa_outlined, profile.religion),
-                          if (profile.about.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Expanded(
-                              child: Text(profile.about,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                      color: Colors.grey[600], fontSize: 12)),
-                            ),
-                          ],
+                          _iconLine(Icons.auto_awesome, _horoscopeSummary()),
                         ],
                       ),
                     ),
@@ -314,45 +311,123 @@ class _ProfileCard extends ConsumerWidget {
                 ],
               ),
             ),
-            // ── Bottom: Send Interest ──
+            // ── Bottom actions: View Profile · Interest · Chat ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              child: SizedBox(
-                width: double.infinity,
-                child: sent
-                    ? OutlinedButton.icon(
-                        onPressed: null,
-                        icon: const Icon(Icons.check, size: 18),
-                        label: const Text('Interest Sent'),
-                      )
-                    : ElevatedButton.icon(
-                        onPressed: () {
-                          ref
-                              .read(requestsProvider.notifier)
-                              .sendInterest(profile.id);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Interest sent to ${profile.name}'),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.favorite, size: 18),
-                        label: const Text('Send Interest'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(42),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                        ),
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => context.push('/profile/${profile.id}'),
+                      icon: const Icon(Icons.person_outline, size: 17),
+                      label: const Text('View',
+                          style: TextStyle(fontSize: 12.5)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        minimumSize: const Size.fromHeight(40),
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
                       ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: sent
+                        ? OutlinedButton.icon(
+                            onPressed: null,
+                            icon: const Icon(Icons.check, size: 17),
+                            label: const Text('Sent',
+                                style: TextStyle(fontSize: 12.5)),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(40),
+                              padding: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                            ),
+                          )
+                        : ElevatedButton.icon(
+                            onPressed: () {
+                              ref
+                                  .read(requestsProvider.notifier)
+                                  .sendInterest(profile.id);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      'Interest sent to ${profile.name}'),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.favorite, size: 17),
+                            label: const Text('Interest',
+                                style: TextStyle(fontSize: 12.5)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size.fromHeight(40),
+                              padding: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _openChat(context, ref),
+                      icon: const Icon(Icons.chat_bubble_outline, size: 17),
+                      label: const Text('Chat',
+                          style: TextStyle(fontSize: 12.5)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.goldDark,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(40),
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  /// Short horoscope summary for the card (Rasi · Nakshatra).
+  String _horoscopeSummary() {
+    final h = profile.horoscope;
+    final parts = [
+      if (h.rasi.isNotEmpty) h.rasi,
+      if (h.nakshatra.isNotEmpty) h.nakshatra,
+    ];
+    return parts.isEmpty ? 'Horoscope on request' : parts.join(' · ');
+  }
+
+  /// Opens (or creates) the chat thread with this profile's owner.
+  Future<void> _openChat(BuildContext context, WidgetRef ref) async {
+    try {
+      final threadId = await ref.read(chatControllerProvider).openChatWith(
+            otherUid: profile.userId,
+            otherName: profile.name,
+            otherPhoto: profile.photos.isNotEmpty ? profile.photos.first : '',
+          );
+      if (context.mounted) {
+        context.push('/chat/$threadId', extra: {
+          'name': profile.name,
+          'photo': profile.photos.isNotEmpty ? profile.photos.first : '',
+        });
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Could not open chat: $e')));
+      }
+    }
   }
 
   Widget _iconLine(IconData icon, String text) => Padding(

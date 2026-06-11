@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/data/sample_astrologer_dashboard.dart';
+import '../../core/config/dev_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_account_model.dart';
 import '../../models/astrologer_booking_model.dart';
-import '../../models/astrologer_model.dart';
+import '../../models/astrologer_request_model.dart';
 import '../../providers/astrologer_session_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/service_providers.dart';
 
-/// Astrologer dashboard with 6 sections (Overview, Bookings, Services,
-/// Availability, Reviews, Profile) shown in a scrollable tab bar.
+/// Astrologer dashboard with 7 sections (Overview, Requests, Appointments,
+/// Services, Availability, Reviews, Profile) shown in a scrollable tab bar.
 class AstrologerDashboardScreen extends ConsumerWidget {
   const AstrologerDashboardScreen({super.key});
 
@@ -22,7 +24,7 @@ class AstrologerDashboardScreen extends ConsumerWidget {
     }
 
     return DefaultTabController(
-      length: 6,
+      length: 7,
       child: Scaffold(
         backgroundColor: AppColors.scaffoldBg,
         appBar: AppBar(
@@ -33,9 +35,12 @@ class AstrologerDashboardScreen extends ConsumerWidget {
             IconButton(
               tooltip: 'Sign out',
               icon: const Icon(Icons.logout),
-              onPressed: () {
+              onPressed: () async {
                 ref.read(myAstrologerAccountProvider.notifier).signOut();
-                context.go('/login');
+                if (!kBypassAuth) {
+                  await ref.read(authNotifierProvider.notifier).signOut();
+                }
+                if (context.mounted) context.go('/account-type');
               },
             ),
           ],
@@ -44,7 +49,8 @@ class AstrologerDashboardScreen extends ConsumerWidget {
             indicatorColor: AppColors.gold,
             tabs: [
               Tab(text: 'Overview'),
-              Tab(text: 'Bookings'),
+              Tab(text: 'Requests'),
+              Tab(text: 'Appointments'),
               Tab(text: 'Services'),
               Tab(text: 'Availability'),
               Tab(text: 'Reviews'),
@@ -55,6 +61,7 @@ class AstrologerDashboardScreen extends ConsumerWidget {
         body: TabBarView(
           children: [
             _OverviewSection(account: account),
+            const _RequestsSection(),
             const _BookingsSection(),
             _ServicesSection(account: account),
             const _AvailabilitySection(),
@@ -62,6 +69,204 @@ class AstrologerDashboardScreen extends ConsumerWidget {
             _ProfileSection(account: account),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Requests: consultations · inquiries · horoscope matching ───────────────
+class _RequestsSection extends ConsumerWidget {
+  const _RequestsSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final requestsAsync = ref.watch(astrologerRequestsProvider);
+
+    return requestsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Could not load requests: $e')),
+      data: (requests) {
+        List<AstrologerRequestModel> of(AstrologerRequestType t) =>
+            requests.where((r) => r.type == t).toList();
+
+        return DefaultTabController(
+          length: 3,
+          child: Column(
+            children: [
+              TabBar(
+                labelColor: AppColors.primary,
+                indicatorColor: AppColors.primary,
+                tabs: [
+                  Tab(
+                      text:
+                          'Consultations (${of(AstrologerRequestType.consultation).length})'),
+                  Tab(
+                      text:
+                          'Inquiries (${of(AstrologerRequestType.inquiry).length})'),
+                  Tab(
+                      text:
+                          'Matching (${of(AstrologerRequestType.matching).length})'),
+                ],
+              ),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    _requestList(of(AstrologerRequestType.consultation)),
+                    _requestList(of(AstrologerRequestType.inquiry)),
+                    _requestList(of(AstrologerRequestType.matching)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _requestList(List<AstrologerRequestModel> items) {
+    if (items.isEmpty) {
+      return const Center(child: Text('No requests here yet'));
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.all(12),
+      itemCount: items.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (_, i) => _RequestCard(request: items[i]),
+    );
+  }
+}
+
+class _RequestCard extends ConsumerWidget {
+  final AstrologerRequestModel request;
+  const _RequestCard({required this.request});
+
+  Future<void> _setStatus(
+      WidgetRef ref, AstrologerRequestStatus status) async {
+    if (kBypassAuth) {
+      ref
+          .read(demoAstrologerRequestsProvider.notifier)
+          .setStatus(request.id, status);
+      return;
+    }
+    await ref
+        .read(astrologerServiceProvider)
+        .updateRequestStatus(request.id, status);
+  }
+
+  Color get _statusColor {
+    switch (request.status) {
+      case AstrologerRequestStatus.pending:
+        return AppColors.warning;
+      case AstrologerRequestStatus.accepted:
+        return AppColors.info;
+      case AstrologerRequestStatus.completed:
+        return AppColors.success;
+      case AstrologerRequestStatus.rejected:
+        return AppColors.error;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundImage: request.userPhotoUrl.isNotEmpty
+                    ? NetworkImage(request.userPhotoUrl)
+                    : null,
+                child: request.userPhotoUrl.isEmpty
+                    ? Text(
+                        request.userName.isNotEmpty
+                            ? request.userName[0]
+                            : '?',
+                        style: const TextStyle(color: AppColors.primary))
+                    : null,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(request.userName,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(request.type.label,
+                        style: TextStyle(
+                            fontSize: 12, color: Colors.grey[600])),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: _statusColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(request.status.label,
+                    style: TextStyle(fontSize: 11, color: _statusColor)),
+              ),
+            ],
+          ),
+          if (request.message.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(request.message,
+                style: TextStyle(fontSize: 13, color: Colors.grey[800])),
+          ],
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              if (request.amount > 0)
+                Text('₹${request.amount}',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary)),
+              const Spacer(),
+              if (request.status == AstrologerRequestStatus.pending) ...[
+                TextButton(
+                  onPressed: () =>
+                      _setStatus(ref, AstrologerRequestStatus.rejected),
+                  style:
+                      TextButton.styleFrom(foregroundColor: AppColors.error),
+                  child: const Text('Decline'),
+                ),
+                const SizedBox(width: 4),
+                ElevatedButton(
+                  onPressed: () =>
+                      _setStatus(ref, AstrologerRequestStatus.accepted),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  child: const Text('Accept'),
+                ),
+              ] else if (request.status ==
+                  AstrologerRequestStatus.accepted)
+                ElevatedButton(
+                  onPressed: () =>
+                      _setStatus(ref, AstrologerRequestStatus.completed),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                    foregroundColor: Colors.white,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  child: const Text('Mark Completed'),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -119,11 +324,11 @@ class _OverviewSection extends ConsumerWidget {
             crossAxisSpacing: 12,
             childAspectRatio: 1.5,
             children: [
-              _statCard('Total Bookings', '${stats['totalBookings']}',
+              _statCard('Appointments', '${stats['totalBookings']}',
                   Icons.event_note, AppColors.primary),
-              _statCard('Upcoming', '${stats['upcoming']}',
-                  Icons.upcoming, AppColors.info),
-              _statCard('Monthly Earnings', '₹${stats['monthlyEarnings']}',
+              _statCard('Pending Requests', '${stats['pendingRequests']}',
+                  Icons.mark_email_unread_outlined, AppColors.info),
+              _statCard('Earnings', '₹${stats['monthlyEarnings']}',
                   Icons.payments_outlined, AppColors.success),
               _statCard('Rating', '${stats['avgRating']} ★',
                   Icons.star, AppColors.gold),
