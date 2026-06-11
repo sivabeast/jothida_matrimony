@@ -24,22 +24,42 @@ class AuthRepository {
     required Function(String) onCodeSent,
     required Function(String) onError,
     required Function(PhoneAuthCredential) onAutoVerified,
-  }) =>
-      _auth.verifyPhone(
-        phoneNumber: phoneNumber,
-        onCodeSent: onCodeSent,
-        onError: onError,
-        onAutoVerified: onAutoVerified,
-      );
+  }) {
+    debugPrint('[AuthRepository] verifyPhone($phoneNumber): starting...');
+    return _auth.verifyPhone(
+      phoneNumber: phoneNumber,
+      onCodeSent: (id) {
+        debugPrint('[AuthRepository] verifyPhone: codeSent.');
+        onCodeSent(id);
+      },
+      onError: (e) {
+        debugPrint('[AuthRepository] verifyPhone: error: $e');
+        onError(e);
+      },
+      onAutoVerified: onAutoVerified,
+    );
+  }
 
-  Future<UserCredential> signInWithOTP(String verificationId, String otp) =>
-      _auth.signInWithOTP(verificationId, otp);
+  Future<UserCredential> signInWithOTP(String verificationId, String otp) async {
+    debugPrint('[AuthRepository] signInWithOTP: starting...');
+    final cred = await _auth.signInWithOTP(verificationId, otp);
+    debugPrint('[AuthRepository] signInWithOTP: success. uid=${cred.user?.uid}');
+    return cred;
+  }
 
-  Future<UserCredential> registerWithEmail(String email, String password) =>
-      _auth.registerWithEmail(email, password);
+  Future<UserCredential> registerWithEmail(String email, String password) async {
+    debugPrint('[AuthRepository] registerWithEmail($email): starting...');
+    final cred = await _auth.registerWithEmail(email, password);
+    debugPrint('[AuthRepository] registerWithEmail: success. uid=${cred.user?.uid}');
+    return cred;
+  }
 
-  Future<UserCredential> signInWithEmail(String email, String password) =>
-      _auth.signInWithEmail(email, password);
+  Future<UserCredential> signInWithEmail(String email, String password) async {
+    debugPrint('[AuthRepository] signInWithEmail($email): starting...');
+    final cred = await _auth.signInWithEmail(email, password);
+    debugPrint('[AuthRepository] signInWithEmail: success. uid=${cred.user?.uid}');
+    return cred;
+  }
 
   Future<void> sendPasswordReset(String email) => _auth.sendPasswordReset(email);
 
@@ -108,10 +128,16 @@ class AuthRepository {
     required DateTime dateOfBirth,
     required String location,
   }) async {
+    debugPrint('[AuthRepository] registerUserWithDetails($email): '
+        'creating Firebase account...');
     final cred = await _auth.registerWithEmail(email, password);
     final user = cred.user!;
+    debugPrint('[AuthRepository] registerUserWithDetails: Firebase user '
+        '${user.uid} created. Updating display name...');
     await user.updateDisplayName(name);
     await _onAuthenticated(user, phone: phone, loginProvider: 'password');
+    debugPrint('[AuthRepository] registerUserWithDetails: saving registration '
+        'details to Firestore...');
     await _firestore.saveUserRegistrationDetails(
       user.uid,
       name: name,
@@ -120,7 +146,10 @@ class AuthRepository {
       dateOfBirth: dateOfBirth,
       location: location,
     );
-    return (await _firestore.getUser(user.uid))!;
+    final model = (await _firestore.getUser(user.uid))!;
+    debugPrint('[AuthRepository] registerUserWithDetails: done. '
+        'isProfileComplete=${model.isProfileComplete}');
+    return model;
   }
 
   Future<UserModel?> getUserModel(String uid) => _firestore.getUser(uid);

@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
+import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/auth_routing.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/common/gradient_button.dart';
 
@@ -46,6 +48,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
   Future<void> _verify() async {
     if (_otp.length != 6) return;
+    debugPrint('[OtpScreen] "Verify OTP" tapped (otp length=${_otp.length}).');
     await ref
         .read(authNotifierProvider.notifier)
         .signInWithOTP(widget.verificationId, _otp);
@@ -53,12 +56,18 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     final auth = ref.read(authNotifierProvider);
     if (!mounted) return;
     if (auth.hasError) {
+      final err = auth.error;
+      final message = err is AuthException
+          ? err.message
+          : 'OTP verification failed. Please check the code and try again.';
+      debugPrint('[OtpScreen] signInWithOTP error: $err');
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(auth.error.toString())));
+          .showSnackBar(SnackBar(content: Text(message)));
     } else if (auth.valueOrNull != null) {
       final user = auth.valueOrNull!;
-      // New user → create profile; existing → home
-      user.isAdmin ? context.go('/admin') : context.go('/home');
+      debugPrint('[OtpScreen] OTP verified (uid=${user.uid}, '
+          'isProfileComplete=${user.isProfileComplete}). Routing...');
+      await routeAuthenticatedUser(context, ref, user, tag: 'OtpScreen');
     }
   }
 

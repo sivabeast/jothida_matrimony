@@ -2,14 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/config/dev_config.dart';
 import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/auth_routing.dart';
 import '../../core/utils/validators.dart';
-import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/astrologer_session_provider.dart';
 import '../../widgets/common/gradient_button.dart';
 import '../../widgets/common/app_text_field.dart';
 
@@ -39,62 +37,48 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _sendOtp() async {
-    // TODO(auth): demo bypass for UI testing — skip OTP, go straight to Home.
-    if (kBypassAuth) {
-      context.go('/home');
-      return;
-    }
+    debugPrint('[LoginScreen] "Send OTP" tapped for '
+        '+91${_phoneController.text.trim()}');
     if (!_formKey.currentState!.validate()) return;
     await ref.read(otpNotifierProvider.notifier).sendOtp(_phoneController.text.trim());
+    if (!mounted) return;
     final otpState = ref.read(otpNotifierProvider);
-    if (otpState.codeSent && mounted) {
+    if (otpState.codeSent && otpState.verificationId != null) {
+      debugPrint('[LoginScreen] OTP sent — opening OTP screen.');
       context.push('/otp', extra: {
         'verificationId': otpState.verificationId!,
         'phone': _phoneController.text.trim(),
       });
+    } else if (otpState.error != null) {
+      debugPrint('[LoginScreen] sendOtp failed: ${otpState.error}');
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(otpState.error!)));
     }
   }
 
   Future<void> _signInWithEmail() async {
-    // TODO(auth): demo bypass for UI testing — go straight to Home.
-    if (kBypassAuth) {
-      context.go('/home');
-      return;
-    }
+    debugPrint('[LoginScreen] "Sign In" (email) tapped for '
+        '${_emailController.text.trim()}');
     if (!_formKey.currentState!.validate()) return;
     await ref.read(authNotifierProvider.notifier).signInWithEmail(
           _emailController.text.trim(),
           _passwordController.text,
         );
+    if (!mounted) return;
     final auth = ref.read(authNotifierProvider);
-    if (auth.hasError && mounted) {
+    if (auth.hasError) {
+      final err = auth.error;
+      final message = err is AuthException
+          ? err.message
+          : 'Sign in failed. Please check your credentials and try again.';
+      debugPrint('[LoginScreen] signInWithEmail error: $err');
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(auth.error.toString())));
-    } else if (auth.valueOrNull != null && mounted) {
-      await _routeByRole(auth.valueOrNull!);
-    }
-  }
-
-  /// Sends the signed-in account to the right surface for its role.
-  ///
-  /// New accounts (and any account that hasn't finished the matrimony
-  /// profile yet) are sent to the profile-creation/onboarding flow first;
-  /// returning users with a completed profile go straight to their normal
-  /// screen.
-  Future<void> _routeByRole(UserModel user) async {
-    if (user.isAstrologer) {
-      // Hydrate the astrologer session before opening the dashboard.
-      await ref
-          .read(myAstrologerAccountProvider.notifier)
-          .loadFromFirestore(user.uid);
-      if (mounted) context.go('/astrologer-dashboard');
-    } else if (user.isAdmin) {
-      context.go('/admin');
-    } else if (!user.isProfileComplete) {
-      // New user (or one who never finished setup) → onboarding.
-      context.go('/profile/create');
-    } else {
-      context.go('/home');
+          .showSnackBar(SnackBar(content: Text(message)));
+    } else if (auth.valueOrNull != null) {
+      final user = auth.valueOrNull!;
+      debugPrint('[LoginScreen] Email sign-in successful (uid=${user.uid}, '
+          'isProfileComplete=${user.isProfileComplete}). Routing...');
+      await routeAuthenticatedUser(context, ref, user, tag: 'LoginScreen');
     }
   }
 
@@ -131,7 +115,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (user != null) {
       debugPrint('[LoginScreen] Sign-in successful (uid=${user.uid}, '
           'isProfileComplete=${user.isProfileComplete}). Routing...');
-      await _routeByRole(user);
+      await routeAuthenticatedUser(context, ref, user, tag: 'LoginScreen');
     } else {
       debugPrint('[LoginScreen] signInWithGoogle returned null '
           '(picker dismissed) — staying on login screen.');

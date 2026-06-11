@@ -27,6 +27,7 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
   }
 
   Future<void> signInWithOTP(String verificationId, String otp) async {
+    debugPrint('[AuthNotifier] signInWithOTP: state -> loading');
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final repo = ref.read(authRepositoryProvider);
@@ -34,9 +35,18 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
       return repo.createUserDocumentAfterAuth(
           cred.user!, phone: cred.user!.phoneNumber, loginProvider: 'phone');
     });
+    state.when(
+      data: (user) => debugPrint(
+          '[AuthNotifier] signInWithOTP: state -> data (user=${user?.uid}, '
+          'isProfileComplete=${user?.isProfileComplete})'),
+      error: (e, st) =>
+          debugPrint('[AuthNotifier] signInWithOTP: state -> error: $e'),
+      loading: () => debugPrint('[AuthNotifier] signInWithOTP: still loading?!'),
+    );
   }
 
   Future<void> registerWithEmail(String email, String password) async {
+    debugPrint('[AuthNotifier] registerWithEmail: state -> loading');
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final repo = ref.read(authRepositoryProvider);
@@ -44,6 +54,14 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
       return repo.createUserDocumentAfterAuth(cred.user!,
           loginProvider: 'password');
     });
+    state.when(
+      data: (user) => debugPrint(
+          '[AuthNotifier] registerWithEmail: state -> data (user=${user?.uid})'),
+      error: (e, st) =>
+          debugPrint('[AuthNotifier] registerWithEmail: state -> error: $e'),
+      loading: () =>
+          debugPrint('[AuthNotifier] registerWithEmail: still loading?!'),
+    );
   }
 
   /// User signup collecting the essential details required by the spec
@@ -57,6 +75,7 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
     required DateTime dateOfBirth,
     required String location,
   }) async {
+    debugPrint('[AuthNotifier] registerUser: state -> loading ($email)');
     state = const AsyncLoading();
     state = await AsyncValue.guard(() {
       return ref.read(authRepositoryProvider).registerUserWithDetails(
@@ -69,9 +88,18 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
             location: location,
           );
     });
+    state.when(
+      data: (user) => debugPrint(
+          '[AuthNotifier] registerUser: state -> data (user=${user?.uid}, '
+          'isProfileComplete=${user?.isProfileComplete})'),
+      error: (e, st) =>
+          debugPrint('[AuthNotifier] registerUser: state -> error: $e'),
+      loading: () => debugPrint('[AuthNotifier] registerUser: still loading?!'),
+    );
   }
 
   Future<void> signInWithEmail(String email, String password) async {
+    debugPrint('[AuthNotifier] signInWithEmail: state -> loading ($email)');
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final repo = ref.read(authRepositoryProvider);
@@ -80,6 +108,15 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
       return repo.createUserDocumentAfterAuth(cred.user!,
           loginProvider: 'password');
     });
+    state.when(
+      data: (user) => debugPrint(
+          '[AuthNotifier] signInWithEmail: state -> data (user=${user?.uid}, '
+          'isProfileComplete=${user?.isProfileComplete})'),
+      error: (e, st) =>
+          debugPrint('[AuthNotifier] signInWithEmail: state -> error: $e'),
+      loading: () =>
+          debugPrint('[AuthNotifier] signInWithEmail: still loading?!'),
+    );
   }
 
   /// Google sign-in. The returned [UserModel] is `null` only when the user
@@ -141,17 +178,24 @@ class OtpNotifier extends Notifier<OtpState> {
   OtpState build() => const OtpState();
 
   Future<void> sendOtp(String phoneNumber) async {
+    debugPrint('[OtpNotifier] sendOtp: requesting OTP for $phoneNumber');
     state = state.copyWith(isLoading: true, error: null);
     await ref.read(authRepositoryProvider).verifyPhone(
       phoneNumber: phoneNumber,
       onCodeSent: (id) {
+        debugPrint('[OtpNotifier] sendOtp: code sent (verificationId=$id)');
         state = state.copyWith(verificationId: id, isLoading: false, codeSent: true);
       },
       onError: (e) {
+        debugPrint('[OtpNotifier] sendOtp: error: $e');
         state = state.copyWith(isLoading: false, error: e);
       },
       onAutoVerified: (credential) async {
-        // Auto sign-in handled separately
+        // Some Android devices auto-detect the SMS and verify instantly
+        // (before the user reaches the OTP screen). We don't auto-navigate
+        // here — the user can still enter the code manually if this fires
+        // too early; this just clears the loading spinner.
+        debugPrint('[OtpNotifier] sendOtp: onAutoVerified fired.');
         state = state.copyWith(isLoading: false);
       },
     );

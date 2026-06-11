@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/config/dev_config.dart';
 import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -55,12 +54,8 @@ class _AstrologerLoginScreenState
   }
 
   Future<void> _signIn() async {
-    // Demo bypass: no backend — go to the demo signup/onboarding flow.
-    if (kBypassAuth) {
-      final onboarded = ref.read(isAstrologerOnboardedProvider);
-      context.go(onboarded ? '/astrologer-dashboard' : '/astrologer-register');
-      return;
-    }
+    debugPrint('[AstrologerLogin] "Sign In" tapped for '
+        '${_emailController.text.trim()}');
     if (!_formKey.currentState!.validate()) return;
     await ref.read(authNotifierProvider.notifier).signInWithEmail(
           _emailController.text.trim(),
@@ -69,9 +64,16 @@ class _AstrologerLoginScreenState
     final auth = ref.read(authNotifierProvider);
     if (!mounted) return;
     if (auth.hasError) {
+      final err = auth.error;
+      final message = err is AuthException
+          ? err.message
+          : 'Sign in failed. Please check your credentials and try again.';
+      debugPrint('[AstrologerLogin] signInWithEmail error: $err');
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(auth.error.toString())));
+          .showSnackBar(SnackBar(content: Text(message)));
     } else if (auth.valueOrNull != null) {
+      debugPrint('[AstrologerLogin] Email sign-in successful '
+          '(uid=${auth.valueOrNull!.uid}). Loading astrologer profile...');
       await _afterAuth(auth.valueOrNull!.uid);
     }
   }

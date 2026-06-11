@@ -29,35 +29,73 @@ class AuthService {
     required Function(String error) onError,
     required Function(PhoneAuthCredential credential) onAutoVerified,
   }) async {
+    debugPrint('[AuthService] verifyPhone: requesting OTP for +91$phoneNumber');
     await _auth.verifyPhoneNumber(
       phoneNumber: '+91$phoneNumber',
-      verificationCompleted: onAutoVerified,
-      verificationFailed: (e) => onError(AuthException.from(e).message),
-      codeSent: (verificationId, _) => onCodeSent(verificationId),
-      codeAutoRetrievalTimeout: (_) {},
+      verificationCompleted: (credential) {
+        debugPrint('[AuthService] verifyPhone: auto-verification completed.');
+        onAutoVerified(credential);
+      },
+      verificationFailed: (e) {
+        final msg = AuthException.from(e).message;
+        debugPrint('[AuthService] verifyPhone: verificationFailed: '
+            '${e.code} — $msg');
+        onError(msg);
+      },
+      codeSent: (verificationId, resendToken) {
+        debugPrint('[AuthService] verifyPhone: codeSent '
+            '(verificationId=$verificationId)');
+        onCodeSent(verificationId);
+      },
+      codeAutoRetrievalTimeout: (verificationId) {
+        debugPrint('[AuthService] verifyPhone: auto-retrieval timeout '
+            '(verificationId=$verificationId)');
+      },
       timeout: const Duration(seconds: 60),
     );
   }
 
   Future<UserCredential> signInWithOTP(String verificationId, String otp) {
+    debugPrint('[AuthService] signInWithOTP: verifying OTP...');
     final credential = PhoneAuthProvider.credential(
       verificationId: verificationId,
       smsCode: otp,
     );
-    return _guard(() => _auth.signInWithCredential(credential));
+    return _guard(() async {
+      final cred = await _auth.signInWithCredential(credential);
+      debugPrint('[AuthService] signInWithOTP: success. '
+          'uid=${cred.user?.uid}, isNewUser=${cred.additionalUserInfo?.isNewUser}');
+      return cred;
+    });
   }
 
   // ── Email / Password ──────────────────────────────────────────────────────
-  Future<UserCredential> registerWithEmail(String email, String password) =>
-      _guard(() =>
-          _auth.createUserWithEmailAndPassword(email: email, password: password));
+  Future<UserCredential> registerWithEmail(String email, String password) {
+    debugPrint('[AuthService] registerWithEmail: creating account for $email');
+    return _guard(() async {
+      final cred = await _auth.createUserWithEmailAndPassword(
+          email: email, password: password);
+      debugPrint('[AuthService] registerWithEmail: success. '
+          'uid=${cred.user?.uid}');
+      return cred;
+    });
+  }
 
-  Future<UserCredential> signInWithEmail(String email, String password) =>
-      _guard(() =>
-          _auth.signInWithEmailAndPassword(email: email, password: password));
+  Future<UserCredential> signInWithEmail(String email, String password) {
+    debugPrint('[AuthService] signInWithEmail: signing in $email');
+    return _guard(() async {
+      final cred = await _auth.signInWithEmailAndPassword(
+          email: email, password: password);
+      debugPrint('[AuthService] signInWithEmail: success. '
+          'uid=${cred.user?.uid}');
+      return cred;
+    });
+  }
 
-  Future<void> sendPasswordReset(String email) =>
-      _guard(() => _auth.sendPasswordResetEmail(email: email));
+  Future<void> sendPasswordReset(String email) {
+    debugPrint('[AuthService] sendPasswordReset: sending to $email');
+    return _guard(() => _auth.sendPasswordResetEmail(email: email));
+  }
 
   // ── Google ────────────────────────────────────────────────────────────────
   /// Runs the full Google → Firebase credential exchange.

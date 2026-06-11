@@ -117,14 +117,47 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return (onAuthPage || onSplash) ? null : '/account-type';
       }
 
-      // Authenticated → route by role; Home itself nudges profile completion.
+      // Authenticated → route by role / onboarding status.
       final userAsync = ref.read(currentUserProvider);
       if (userAsync.isLoading) return null; // wait for the user doc to load
       final user = userAsync.valueOrNull;
+      debugPrint('[Router] redirect check: loc=$loc, uid=${user?.uid}, '
+          'isAdmin=${user?.isAdmin}, isAstrologer=${user?.isAstrologer}, '
+          'isProfileComplete=${user?.isProfileComplete}');
+
       if (user != null && user.isAstrologer && (onAuthPage || loc == '/home')) {
+        debugPrint('[Router] redirect: astrologer account → /astrologer-dashboard');
         return '/astrologer-dashboard';
       }
-      if (onAuthPage) return user?.isAdmin == true ? '/admin' : '/home';
+      if (onAuthPage) {
+        if (user?.isAdmin == true) return '/admin';
+        if (user != null && !user.isProfileComplete && !user.isAstrologer) {
+          debugPrint('[Router] redirect: profile incomplete → /profile/create');
+          return '/profile/create';
+        }
+        return '/home';
+      }
+
+      // Authenticated user with an incomplete profile must finish onboarding
+      // before reaching any other authenticated screen (Home, chats, etc.).
+      final onProfileCreate = loc == '/profile/create';
+      if (user != null &&
+          !user.isAdmin &&
+          !user.isAstrologer &&
+          !user.isProfileComplete &&
+          !onProfileCreate &&
+          !onSplash) {
+        debugPrint('[Router] redirect: profile incomplete, blocking $loc → /profile/create');
+        return '/profile/create';
+      }
+
+      // A user who has already completed their profile shouldn't be sent
+      // back through onboarding.
+      if (user != null && user.isProfileComplete && onProfileCreate) {
+        debugPrint('[Router] redirect: profile already complete → /home');
+        return '/home';
+      }
+
       return null;
     },
     routes: [

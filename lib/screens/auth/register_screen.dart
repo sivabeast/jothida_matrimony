@@ -1,11 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../core/config/dev_config.dart';
+import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/auth_routing.dart';
 import '../../core/utils/validators.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/common/gradient_button.dart';
@@ -66,6 +68,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _register() async {
+    debugPrint('[RegisterScreen] "Create Account" tapped for '
+        '${_emailController.text.trim()}');
     if (!_formKey.currentState!.validate()) return;
     if (_gender.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -75,12 +79,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (_dob == null) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please select your date of birth')));
-      return;
-    }
-
-    // Demo bypass for UI testing — skip account creation, go to Home.
-    if (kBypassAuth) {
-      context.go('/home');
       return;
     }
 
@@ -96,10 +94,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final auth = ref.read(authNotifierProvider);
     if (!mounted) return;
     if (auth.hasError) {
+      final err = auth.error;
+      final message = err is AuthException
+          ? err.message
+          : 'Registration failed. Please try again.';
+      debugPrint('[RegisterScreen] registerUser error: $err');
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(auth.error.toString())));
+          .showSnackBar(SnackBar(content: Text(message)));
     } else if (auth.valueOrNull != null) {
-      context.go('/home');
+      final user = auth.valueOrNull!;
+      debugPrint('[RegisterScreen] Registration successful (uid=${user.uid}, '
+          'isProfileComplete=${user.isProfileComplete}). Routing...');
+      await routeAuthenticatedUser(context, ref, user, tag: 'RegisterScreen');
     }
   }
 
