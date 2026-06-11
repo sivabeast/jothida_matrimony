@@ -1,14 +1,12 @@
-// File generated for Jothida Matrimony — PLACEHOLDER VALUES.
+// File generated for Jothida Matrimony — Firebase project `matrimony-app-bd0d5`.
 //
-// These are structurally-valid but FAKE Firebase config values. They let
-// Firebase.initializeApp() succeed so the app launches and the UI (frontend)
-// can be reviewed, without needing a real Firebase project yet.
+// Generated from android/app/google-services.json (Project Settings > Your apps
+// > Jothida Matrimony [Android]). This project currently targets Android only.
 //
-// Once a real Firebase project is created for "Jothida Matrimony", replace
-// this file by running:
-//   dart pub global activate flutterfire_cli
-//   flutterfire configure
-// or manually paste the values from Firebase Console > Project settings.
+// If iOS/Web/macOS support is added later, run:
+//   flutterfire configure --project=matrimony-app-bd0d5
+// to add those platform blocks, or paste values manually from the
+// Firebase Console > Project settings > Your apps.
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart'
@@ -17,40 +15,31 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      return web;
+      throw UnsupportedError(
+        'DefaultFirebaseOptions have not been configured for web - '
+        'this project currently targets Android only. '
+        'Run `flutterfire configure` to add web support.',
+      );
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        return ios;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for iOS - '
+          'this project currently targets Android only. '
+          'Run `flutterfire configure` to add iOS support.',
+        );
       default:
         return android;
     }
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyA0000000000000000000000000000000000',
-    appId: '1:000000000000:android:0000000000000000000000',
-    messagingSenderId: '000000000000',
-    projectId: 'jothida-matrimony-placeholder',
-    storageBucket: 'jothida-matrimony-placeholder.appspot.com',
-  );
-
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyA0000000000000000000000000000000000',
-    appId: '1:000000000000:ios:0000000000000000000000',
-    messagingSenderId: '000000000000',
-    projectId: 'jothida-matrimony-placeholder',
-    storageBucket: 'jothida-matrimony-placeholder.appspot.com',
-    iosBundleId: 'com.jothida.jothidaMatrimony',
-  );
-
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyA0000000000000000000000000000000000',
-    appId: '1:000000000000:web:0000000000000000000000',
-    messagingSenderId: '000000000000',
-    projectId: 'jothida-matrimony-placeholder',
-    storageBucket: 'jothida-matrimony-placeholder.appspot.com',
+    apiKey: 'AIzaSyDgmSX5-uwCa-e8anHt6wYjnwca9PJoWm0',
+    appId: '1:560906592127:android:0fa605b5a85ff77d4e444a',
+    messagingSenderId: '560906592127',
+    projectId: 'matrimony-app-bd0d5',
+    storageBucket: 'matrimony-app-bd0d5.firebasestorage.app',
   );
 }
