@@ -6,6 +6,7 @@ class UserModel {
   final String? phone;
   final String? displayName;
   final String? photoUrl;
+  final String? gender; // 'Male' | 'Female' — collected at signup
   final String role; // user, admin, astrologer
   final bool isProfileComplete;
   final bool isEmailVerified;
@@ -30,6 +31,7 @@ class UserModel {
     this.phone,
     this.displayName,
     this.photoUrl,
+    this.gender,
     this.role = 'user',
     this.isProfileComplete = false,
     this.isEmailVerified = false,
@@ -62,6 +64,7 @@ class UserModel {
       phone: data['phone'],
       displayName: data['displayName'],
       photoUrl: data['photoUrl'],
+      gender: data['gender'],
       role: data['role'] ?? 'user',
       isProfileComplete: data['isProfileComplete'] ?? false,
       isEmailVerified: data['isEmailVerified'] ?? false,
@@ -100,6 +103,7 @@ class UserModel {
         'phone': phone,
         'displayName': displayName,
         'photoUrl': photoUrl,
+        'gender': gender,
         'role': role,
         'isProfileComplete': isProfileComplete,
         'isEmailVerified': isEmailVerified,
@@ -126,6 +130,7 @@ class UserModel {
     String? phone,
     String? displayName,
     String? photoUrl,
+    String? gender,
     String? role,
     bool? isProfileComplete,
     bool? isEmailVerified,
@@ -148,6 +153,7 @@ class UserModel {
         phone: phone ?? this.phone,
         displayName: displayName ?? this.displayName,
         photoUrl: photoUrl ?? this.photoUrl,
+        gender: gender ?? this.gender,
         role: role ?? this.role,
         isProfileComplete: isProfileComplete ?? this.isProfileComplete,
         isEmailVerified: isEmailVerified ?? this.isEmailVerified,

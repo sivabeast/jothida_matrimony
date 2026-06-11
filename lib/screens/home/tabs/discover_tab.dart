@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/profile_model.dart';
-import '../../../providers/chat_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/requests_provider.dart';
 import '../../../widgets/home/profile_completion_card.dart';
 
+/// Discover feed: recommended matches filtered automatically by the user's
+/// own gender (Male → Female profiles, Female → Male profiles). The gender
+/// filter is applied at the database-query level — there is no manual
+/// Brides/Grooms toggle.
 class DiscoverTab extends ConsumerStatefulWidget {
   const DiscoverTab({super.key});
 
@@ -21,7 +24,6 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   String _city = '';
   String _education = '';
   String _occupation = '';
-  String _gender = 'Female';
 
   @override
   void initState() {
@@ -30,7 +32,9 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   }
 
   void _applyFilters() {
-    ref.read(discoverProvider.notifier).load(gender: _gender, filters: {
+    // Opposite-gender matching, resolved from the signed-in user's gender.
+    final matchGender = ref.read(matchGenderProvider);
+    ref.read(discoverProvider.notifier).load(gender: matchGender, filters: {
       'minAge': _ageRange.start.round(),
       'maxAge': _ageRange.end.round(),
       'city': _city,
@@ -49,6 +53,10 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(discoverProvider);
+    // Re-query when the user's gender becomes known (e.g. profile loads).
+    ref.listen<String>(matchGenderProvider, (prev, next) {
+      if (prev != next) _applyFilters();
+    });
 
     return Column(
       children: [
@@ -77,7 +85,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   }
 
   Widget _filterBar() => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         color: Colors.white,
         child: Row(
           children: [
@@ -86,10 +94,15 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _genderToggle(),
-                    const SizedBox(width: 8),
+                    const Text('Recommended Matches',
+                        style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15)),
+                    const SizedBox(width: 10),
                     if (_hasActiveFilters)
-                      _activeChip('Age ${_ageRange.start.round()}-${_ageRange.end.round()}'),
+                      _activeChip(
+                          'Age ${_ageRange.start.round()}-${_ageRange.end.round()}'),
                     if (_city.isNotEmpty) _activeChip(_city),
                     if (_education.isNotEmpty) _activeChip(_education),
                     if (_occupation.isNotEmpty) _activeChip(_occupation),
@@ -104,19 +117,6 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
             ),
           ],
         ),
-      );
-
-  Widget _genderToggle() => SegmentedButton<String>(
-        style: const ButtonStyle(visualDensity: VisualDensity.compact),
-        segments: const [
-          ButtonSegment(value: 'Female', label: Text('Brides')),
-          ButtonSegment(value: 'Male', label: Text('Grooms')),
-        ],
-        selected: {_gender},
-        onSelectionChanged: (s) {
-          setState(() => _gender = s.first);
-          _applyFilters();
-        },
       );
 
   Widget _activeChip(String label) => Padding(
@@ -244,7 +244,8 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
           const SizedBox(height: 100),
           Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
           const SizedBox(height: 16),
-          const Center(child: Text('No profiles found', style: TextStyle(fontSize: 18))),
+          const Center(
+              child: Text('No profiles found', style: TextStyle(fontSize: 18))),
           const SizedBox(height: 8),
           const Center(
               child: Text('Try adjusting your filters',
@@ -253,6 +254,9 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
       );
 }
 
+/// Premium horizontal profile card: full-height photo on the left, identity
+/// details + highlighted profession & salary on the right, with View Profile
+/// and Interest actions.
 class _ProfileCard extends ConsumerWidget {
   final ProfileModel profile;
   const _ProfileCard({required this.profile});
@@ -263,187 +267,165 @@ class _ProfileCard extends ConsumerWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
+      elevation: 2,
+      shadowColor: AppColors.shadow,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        // Tapping opens a basic profile view (compatibility stays gated until
-        // a mutual match — see Match Details).
         onTap: () => context.push('/profile/${profile.id}'),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ── Top: square photo (left) + key info (right) ──
-            SizedBox(
-              height: 150,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 130,
-                    height: 150,
-                    child: profile.photos.isNotEmpty
-                        ? Image.network(profile.photos.first,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _placeholderImage())
-                        : _placeholderImage(),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('${profile.name}, ${profile.age}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                  fontSize: 17, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 6),
-                          _iconLine(Icons.location_on,
-                              '${profile.city}, ${profile.state}'),
-                          _iconLine(Icons.school, profile.education),
-                          _iconLine(Icons.work_outline, profile.occupation),
-                          _iconLine(Icons.auto_awesome, _horoscopeSummary()),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── Left: photo fills the full card height ──
+              SizedBox(
+                width: 128,
+                child: profile.photos.isNotEmpty
+                    ? Image.network(
+                        profile.photos.first,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _placeholderImage(),
+                      )
+                    : _placeholderImage(),
               ),
-            ),
-            // ── Bottom actions: View Profile · Interest · Chat ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => context.push('/profile/${profile.id}'),
-                      icon: const Icon(Icons.person_outline, size: 17),
-                      label: const Text('View',
-                          style: TextStyle(fontSize: 12.5)),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        minimumSize: const Size.fromHeight(40),
-                        padding: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: sent
-                        ? OutlinedButton.icon(
-                            onPressed: null,
-                            icon: const Icon(Icons.check, size: 17),
-                            label: const Text('Sent',
-                                style: TextStyle(fontSize: 12.5)),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(40),
-                              padding: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10)),
-                            ),
-                          )
-                        : ElevatedButton.icon(
-                            onPressed: () {
-                              ref
-                                  .read(requestsProvider.notifier)
-                                  .sendInterest(profile.id);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                      'Interest sent to ${profile.name}'),
-                                  duration: const Duration(seconds: 2),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.favorite, size: 17),
-                            label: const Text('Interest',
-                                style: TextStyle(fontSize: 12.5)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              minimumSize: const Size.fromHeight(40),
-                              padding: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10)),
+              // ── Right: identity + highlighted professional info ──
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${profile.name}, ${profile.age}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 17,
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 6),
+                      _detailLine(
+                          Icons.location_on_outlined, '${profile.city}, ${profile.state}'),
+                      const SizedBox(height: 3),
+                      _detailLine(Icons.school_outlined, profile.education),
+                      const SizedBox(height: 10),
+                      // Profession & salary — the primary highlights.
+                      _highlightLine(Icons.work_outline,
+                          profile.occupation.isEmpty ? 'Profession not specified' : profile.occupation),
+                      const SizedBox(height: 6),
+                      _highlightLine(
+                          Icons.payments_outlined,
+                          profile.annualIncome.isEmpty
+                              ? 'Salary not specified'
+                              : '${profile.annualIncome} per annum'),
+                      const SizedBox(height: 14),
+                      // ── Actions: View Profile · Interest ──
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () =>
+                                  context.push('/profile/${profile.id}'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                                side: const BorderSide(
+                                    color: AppColors.primary, width: 1.2),
+                                minimumSize: const Size.fromHeight(40),
+                                padding: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10)),
+                              ),
+                              child: const Text('View Profile',
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600)),
                             ),
                           ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _openChat(context, ref),
-                      icon: const Icon(Icons.chat_bubble_outline, size: 17),
-                      label: const Text('Chat',
-                          style: TextStyle(fontSize: 12.5)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.goldDark,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size.fromHeight(40),
-                        padding: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: sent
+                                  ? null
+                                  : () {
+                                      ref
+                                          .read(requestsProvider.notifier)
+                                          .sendInterest(profile.id);
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(SnackBar(
+                                        content: Text(
+                                            'Interest sent to ${profile.name}'),
+                                        duration: const Duration(seconds: 2),
+                                      ));
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor:
+                                    AppColors.primary.withOpacity(0.45),
+                                disabledForegroundColor: Colors.white,
+                                minimumSize: const Size.fromHeight(40),
+                                padding: EdgeInsets.zero,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10)),
+                              ),
+                              child: Text(sent ? 'Interest Sent ✓' : 'Interest',
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600)),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  /// Short horoscope summary for the card (Rasi · Nakshatra).
-  String _horoscopeSummary() {
-    final h = profile.horoscope;
-    final parts = [
-      if (h.rasi.isNotEmpty) h.rasi,
-      if (h.nakshatra.isNotEmpty) h.nakshatra,
-    ];
-    return parts.isEmpty ? 'Horoscope on request' : parts.join(' · ');
-  }
+  /// Secondary detail row (location, education).
+  Widget _detailLine(IconData icon, String text) => Row(
+        children: [
+          Icon(icon, size: 14, color: Colors.grey[500]),
+          const SizedBox(width: 5),
+          Expanded(
+            child: Text(text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: Colors.grey[700], fontSize: 12.5)),
+          ),
+        ],
+      );
 
-  /// Opens (or creates) the chat thread with this profile's owner.
-  Future<void> _openChat(BuildContext context, WidgetRef ref) async {
-    try {
-      final threadId = await ref.read(chatControllerProvider).openChatWith(
-            otherUid: profile.userId,
-            otherName: profile.name,
-            otherPhoto: profile.photos.isNotEmpty ? profile.photos.first : '',
-          );
-      if (context.mounted) {
-        context.push('/chat/$threadId', extra: {
-          'name': profile.name,
-          'photo': profile.photos.isNotEmpty ? profile.photos.first : '',
-        });
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not open chat: $e')));
-      }
-    }
-  }
-
-  Widget _iconLine(IconData icon, String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 2),
-        child: Row(
-          children: [
-            Icon(icon, size: 13, color: Colors.grey[500]),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Text(text,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.grey[700], fontSize: 12.5)),
+  /// Prominent professional detail row (profession, salary).
+  Widget _highlightLine(IconData icon, String text) => Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(8),
             ),
-          ],
-        ),
+            child: Icon(icon, size: 15, color: AppColors.primary),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
       );
 
   Widget _placeholderImage() => Container(

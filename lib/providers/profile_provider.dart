@@ -152,6 +152,18 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
 final profileCreationProvider =
     NotifierProvider<ProfileCreationNotifier, ProfileCreationState>(() => ProfileCreationNotifier());
 
+/// Gender of profiles to show on Discover, derived automatically from the
+/// signed-in user's own gender (opposite-gender matching). No manual toggle.
+///
+/// Sources, in priority order: the user's matrimony profile → the `users/{uid}`
+/// account document (gender is collected at signup). Defaults to showing
+/// Female profiles until the gender is known.
+final matchGenderProvider = Provider.autoDispose<String>((ref) {
+  final myGender = ref.watch(myProfileProvider).valueOrNull?.gender ??
+      ref.watch(currentUserProvider).valueOrNull?.gender;
+  return myGender == 'Female' ? 'Male' : 'Female';
+});
+
 // Discover / search
 class DiscoverState {
   final List<ProfileModel> profiles;
@@ -223,12 +235,32 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
 
     try {
       final f = filters ?? {};
-      final profiles = await ref.read(profileRepositoryProvider).searchProfiles(
+      // Gender is filtered at the Firestore query level (opposite-gender
+      // matching); the remaining lightweight filters refine the page locally.
+      var profiles = await ref.read(profileRepositoryProvider).searchProfiles(
             gender: gender,
             religion: f['religion'],
             city: f['city'],
             rasi: f['rasi'],
           );
+
+      final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
+      final minAge = f['minAge'] as int?;
+      final maxAge = f['maxAge'] as int?;
+      final education = (f['education'] as String?)?.trim().toLowerCase();
+      final occupation = (f['occupation'] as String?)?.trim().toLowerCase();
+
+      profiles = profiles.where((p) {
+        if (myUid != null && p.userId == myUid) return false; // never self
+        if (minAge != null && p.age < minAge) return false;
+        if (maxAge != null && p.age > maxAge) return false;
+        if (education != null && education.isNotEmpty &&
+            !p.education.toLowerCase().contains(education)) return false;
+        if (occupation != null && occupation.isNotEmpty &&
+            !p.occupation.toLowerCase().contains(occupation)) return false;
+        return true;
+      }).toList();
+
       state = state.copyWith(
         profiles: profiles,
         isLoading: false,
