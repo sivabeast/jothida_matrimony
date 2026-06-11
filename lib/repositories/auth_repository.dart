@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import '../core/errors/auth_exception.dart';
 import '../models/user_model.dart';
 import '../services/firebase/auth_service.dart';
 import '../services/firebase/firestore_service.dart';
@@ -94,8 +96,39 @@ class AuthRepository {
       {String? phone, String? loginProvider}) async {
     debugPrint('[AuthRepository] _onAuthenticated: '
         'createOrUpdateUserOnLogin(${user.uid}, loginProvider=$loginProvider)');
-    final model = await _firestore.createOrUpdateUserOnLogin(user,
-        phone: phone, loginProvider: loginProvider);
+    final UserModel model;
+    try {
+      model = await _firestore.createOrUpdateUserOnLogin(user,
+          phone: phone, loginProvider: loginProvider);
+    } on FirebaseException catch (e, st) {
+      debugPrint('[AuthRepository] _onAuthenticated: Firestore write FAILED: '
+          '${e.plugin}/${e.code} — ${e.message}\n$st');
+      if (e.code == 'permission-denied') {
+        throw AuthException(
+          'Signed in, but saving your account to the database was blocked '
+          '(permission-denied). The Firestore security rules likely have not '
+          'been deployed yet for this Firebase project. Please deploy '
+          'firestore.rules and try again.',
+          code: 'firestore-permission-denied',
+        );
+      }
+      if (e.code == 'unavailable' || e.code == 'deadline-exceeded') {
+        throw const AuthException(
+          'Signed in, but could not reach the database. Please check your '
+          'internet connection and try again.',
+          code: 'firestore-unavailable',
+        );
+      }
+      throw AuthException(
+        'Signed in, but saving your account failed (${e.code}). '
+        'Please verify Cloud Firestore is enabled for this Firebase project.',
+        code: 'firestore-${e.code}',
+      );
+    } catch (e, st) {
+      debugPrint('[AuthRepository] _onAuthenticated: unexpected error: $e\n$st');
+      throw AuthException('Signed in, but something went wrong while '
+          'setting up your account: $e');
+    }
     debugPrint('[AuthRepository] _onAuthenticated: Firestore doc ready.');
     try {
       final token = await _fcm.getToken();

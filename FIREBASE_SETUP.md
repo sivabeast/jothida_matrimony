@@ -111,7 +111,29 @@ flutter run
 5. Signing in later routes by role automatically (user → Home,
    astrologer → Dashboard, admin → Admin).
 
-## 8. Optional
+## 8. Troubleshooting "Google Sign-In failed"
+
+This project's Android config (`android/app/google-services.json`,
+`android/app/build.gradle`, `ci/debug.keystore`) is already set up consistently:
+package `com.jothida.jothida_matrimony`, project `matrimony-app-bd0d5`, and the
+debug keystore's SHA-1 (`8B:4E:88:65:BD:95:8B:9B:46:60:32:B4:C8:D7:32:4D:87:7B:AD:BE`)
+matches the OAuth Android client in `google-services.json`. If you still see a
+sign-in error, the cause is almost always in the **Google Cloud / Firebase
+console**, not the code:
+
+| Error code | Meaning | Fix |
+|---|---|---|
+| `ApiException: 10` (DEVELOPER_ERROR) | SHA-1/SHA-256 fingerprint or package name not registered for the OAuth client. | In Firebase Console → Project settings → Your apps → Android, add the **debug** SHA-1 above (and your **release** SHA-1 once you have one), then re-download `google-services.json`. |
+| `ApiException: 12500` (SIGN_IN_FAILED) | The OAuth consent screen isn't fully configured, or the signing-in account isn't permitted yet. | In Google Cloud Console → APIs & Services → OAuth consent screen: set a **support email**, add the app, and either **publish** the app or add the test Google account under **Test users**. Also make sure Google Play Services is up to date on the device/emulator and that the device has at least one Google account signed in. |
+| `ApiException: 7` | No network. | Check device connectivity. |
+| `account-exists-with-different-credential` | The email is already registered via Email/Password or Phone. | Sign in with the original method, or enable account linking. |
+
+The app now decodes the underlying `ApiException` code and shows one of the
+messages above instead of a generic "Google Sign-In failed. Please try again.",
+so check the SnackBar text (or `[AuthService] signInWithGoogle failed: ...` in
+logcat) for the specific code.
+
+## 9. Optional
 
 - **FCM push notifications**: already initialised in `main.dart`; upload your
   APNs key for iOS.

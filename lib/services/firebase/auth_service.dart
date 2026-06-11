@@ -16,7 +16,18 @@ class AuthService {
   AuthService({FirebaseAuth? auth, GoogleSignIn? googleSignIn})
       : _auth = auth ?? FirebaseAuth.instance,
         // Request the e-mail scope so we always receive the account e-mail.
-        _googleSignIn = googleSignIn ?? GoogleSignIn(scopes: const ['email']);
+        // `serverClientId` is the "Web client (auto-created by Google
+        // Service)" OAuth client (client_type 3) from
+        // android/app/google-services.json. Passing it explicitly makes the
+        // ID-token exchange reliable across Play Services versions — without
+        // it some devices return a null idToken or fail with
+        // PlatformException(sign_in_failed).
+        _googleSignIn = googleSignIn ??
+            GoogleSignIn(
+              scopes: const ['email'],
+              serverClientId:
+                  '560906592127-r147po3abrkrppf46bqkaneg1s39815u.apps.googleusercontent.com',
+            );
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;

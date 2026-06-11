@@ -35,15 +35,49 @@ class AuthException implements Exception {
             code: 'network_error',
           );
         case 'sign_in_failed':
-          // ApiException 10 = DEVELOPER_ERROR (SHA-1 / OAuth client mismatch).
-          final isDeveloperError = (error.message ?? '').contains('10');
-          return AuthException(
-            isDeveloperError
-                ? 'Google Sign-In is not configured correctly for this app '
-                    '(missing SHA-1 fingerprint or OAuth client). See FIREBASE_SETUP.md.'
-                : 'Google Sign-In failed. Please try again.',
-            code: 'sign_in_failed',
-          );
+          // The underlying com.google.android.gms.common.api.ApiException
+          // code is embedded in the message, e.g. "ApiException: 10: ...".
+          final msg = error.message ?? '';
+          final apiCode = RegExp(r'ApiException:\s*(\d+)').firstMatch(msg)?.group(1)
+              ?? (msg.contains('10') ? '10' : null);
+          switch (apiCode) {
+            case '10':
+              // DEVELOPER_ERROR: SHA-1 fingerprint / OAuth client mismatch,
+              // or the package name doesn't match google-services.json.
+              return const AuthException(
+                'Google Sign-In is not configured correctly for this app '
+                '(missing/incorrect SHA-1 fingerprint or OAuth client). '
+                'See FIREBASE_SETUP.md.',
+                code: 'sign_in_failed_10',
+              );
+            case '12500':
+              // SIGN_IN_FAILED: usually the OAuth consent screen is
+              // unconfigured/unpublished, the signing account isn't a test
+              // user, or Google Play Services on the device is outdated.
+              return const AuthException(
+                'Google Sign-In failed (12500). Check that the OAuth consent '
+                'screen has a support email set and is published (or the '
+                'account is added as a test user), and that Google Play '
+                'Services is up to date on this device. See FIREBASE_SETUP.md.',
+                code: 'sign_in_failed_12500',
+              );
+            case '7':
+              return const AuthException(
+                'No internet connection. Please check your network and try again.',
+                code: 'sign_in_failed_network',
+              );
+            case '8':
+              return const AuthException(
+                'Google Sign-In hit a temporary internal error. Please try again.',
+                code: 'sign_in_failed_internal',
+              );
+            default:
+              return AuthException(
+                'Google Sign-In failed${msg.isNotEmpty ? ' ($msg)' : ''}. '
+                'Please try again.',
+                code: 'sign_in_failed',
+              );
+          }
         default:
           return AuthException(
             error.message ?? 'Google Sign-In failed. Please try again.',
