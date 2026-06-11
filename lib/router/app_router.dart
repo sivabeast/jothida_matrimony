@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../core/config/dev_config.dart';
 import '../providers/auth_provider.dart';
 import '../providers/astrologer_session_provider.dart';
+import '../providers/service_providers.dart';
 import '../screens/astrologer/astrologer_onboarding_screen.dart';
 import '../screens/astrologer/astrologer_dashboard_screen.dart';
 import '../screens/astrologer/astrologer_login_screen.dart';
