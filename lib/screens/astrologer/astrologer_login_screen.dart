@@ -76,11 +76,6 @@ class _AstrologerLoginScreenState
   }
 
   Future<void> _signInWithGoogle() async {
-    if (kBypassAuth) {
-      final onboarded = ref.read(isAstrologerOnboardedProvider);
-      context.go(onboarded ? '/astrologer-dashboard' : '/astrologer-register');
-      return;
-    }
     await ref.read(authNotifierProvider.notifier).signInWithGoogle();
     if (!mounted) return;
     final auth = ref.read(authNotifierProvider);

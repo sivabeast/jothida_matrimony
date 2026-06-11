@@ -31,14 +31,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ];
 
   static const _icons = [
-    Icons.search,
+    Icons.home_outlined,
     Icons.auto_awesome_outlined,
     Icons.favorite_border,
     Icons.notifications_none,
     Icons.person_outline,
   ];
   static const _activeIcons = [
-    Icons.search,
+    Icons.home,
     Icons.auto_awesome,
     Icons.favorite,
     Icons.notifications,
@@ -141,6 +141,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         onDestinationSelected: (i) => setState(() => _selectedIndex = i),
         backgroundColor: Colors.white,
         indicatorColor: AppColors.primary.withOpacity(0.12),
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
         destinations: List.generate(
           _tabs.length,
           (i) => NavigationDestination(
@@ -149,6 +150,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 : Icon(_icons[i]),
             selectedIcon: Icon(_activeIcons[i], color: AppColors.primary),
             label: labels[i],
+            tooltip: labels[i],
           ),
         ),
       ),

@@ -6,6 +6,8 @@ class UserModel {
   final String? phone;
   final String? displayName;
   final String? photoUrl;
+  // 'google.com' | 'password' | 'phone' — how the user authenticated.
+  final String? loginProvider;
   final String? gender; // 'Male' | 'Female' — collected at signup
   final String role; // user, admin, astrologer
   final bool isProfileComplete;
@@ -31,6 +33,7 @@ class UserModel {
     this.phone,
     this.displayName,
     this.photoUrl,
+    this.loginProvider,
     this.gender,
     this.role = 'user',
     this.isProfileComplete = false,
@@ -64,6 +67,7 @@ class UserModel {
       phone: data['phone'],
       displayName: data['displayName'],
       photoUrl: data['photoUrl'],
+      loginProvider: data['loginProvider'],
       gender: data['gender'],
       role: data['role'] ?? 'user',
       isProfileComplete: data['isProfileComplete'] ?? false,
@@ -103,6 +107,7 @@ class UserModel {
         'phone': phone,
         'displayName': displayName,
         'photoUrl': photoUrl,
+        'loginProvider': loginProvider,
         'gender': gender,
         'role': role,
         'isProfileComplete': isProfileComplete,
@@ -130,6 +135,7 @@ class UserModel {
     String? phone,
     String? displayName,
     String? photoUrl,
+    String? loginProvider,
     String? gender,
     String? role,
     bool? isProfileComplete,
@@ -153,6 +159,7 @@ class UserModel {
         phone: phone ?? this.phone,
         displayName: displayName ?? this.displayName,
         photoUrl: photoUrl ?? this.photoUrl,
+        loginProvider: loginProvider ?? this.loginProvider,
         gender: gender ?? this.gender,
         role: role ?? this.role,
         isProfileComplete: isProfileComplete ?? this.isProfileComplete,

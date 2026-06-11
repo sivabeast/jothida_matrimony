@@ -75,6 +75,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   /// Sends the signed-in account to the right surface for its role.
+  ///
+  /// New accounts (and any account that hasn't finished the matrimony
+  /// profile yet) are sent to the profile-creation/onboarding flow first;
+  /// returning users with a completed profile go straight to their normal
+  /// screen.
   Future<void> _routeByRole(UserModel user) async {
     if (user.isAstrologer) {
       // Hydrate the astrologer session before opening the dashboard.
@@ -84,23 +89,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) context.go('/astrologer-dashboard');
     } else if (user.isAdmin) {
       context.go('/admin');
+    } else if (!user.isProfileComplete) {
+      // New user (or one who never finished setup) → onboarding.
+      context.go('/profile/create');
     } else {
       context.go('/home');
     }
   }
 
   Future<void> _signInWithGoogle() async {
-    // TODO(auth): demo bypass for UI testing — go straight to Home, no auth.
-    if (kBypassAuth) {
-      context.go('/home');
-      return;
-    }
     await ref.read(authNotifierProvider.notifier).signInWithGoogle();
     if (!mounted) return;
     final auth = ref.read(authNotifierProvider);
 
     if (auth.hasError) {
-      // AuthException already carries a friendly, localisable message.
+      // AuthException already carries a friendly, localisable message
+      // (covers cancellation, no-network, misconfigured SHA-1/OAuth client,
+      // account-exists-with-different-credential, etc.).
       final err = auth.error;
       final message = err is AuthException
           ? err.message
@@ -113,6 +118,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
+    // signInWithGoogle() returns null only when the user dismissed the
+    // account picker — in that case stay on the login screen.
     final user = auth.valueOrNull;
     if (user != null) {
       await _routeByRole(user);

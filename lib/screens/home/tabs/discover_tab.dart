@@ -319,62 +319,83 @@ class _ProfileCard extends ConsumerWidget {
                               : '${profile.annualIncome} per annum'),
                       const SizedBox(height: 14),
                       // ── Actions: View Profile · Interest ──
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () =>
-                                  context.push('/profile/${profile.id}'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.primary,
-                                side: const BorderSide(
-                                    color: AppColors.primary, width: 1.2),
-                                minimumSize: const Size.fromHeight(40),
-                                padding: EdgeInsets.zero,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
+                      SizedBox(
+                        height: 40,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () =>
+                                    context.push('/profile/${profile.id}'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.primary,
+                                  side: const BorderSide(
+                                      color: AppColors.primary, width: 1.2),
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 4),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10)),
+                                ),
+                                child: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text('View Profile',
+                                      maxLines: 1,
+                                      style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600)),
+                                ),
                               ),
-                              child: const Text('View Profile',
-                                  style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600)),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: sent
-                                  ? null
-                                  : () {
-                                      ref
-                                          .read(requestsProvider.notifier)
-                                          .sendInterest(profile.id);
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(SnackBar(
-                                        content: Text(
-                                            'Interest sent to ${profile.name}'),
-                                        duration: const Duration(seconds: 2),
-                                      ));
-                                    },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
-                                disabledBackgroundColor:
-                                    AppColors.primary.withOpacity(0.45),
-                                disabledForegroundColor: Colors.white,
-                                minimumSize: const Size.fromHeight(40),
-                                padding: EdgeInsets.zero,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: sent
+                                    ? null
+                                    : () {
+                                        ref
+                                            .read(requestsProvider.notifier)
+                                            .sendInterest(profile.id);
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(SnackBar(
+                                          content: Text(
+                                              'Interest sent to ${profile.name}'),
+                                          duration: const Duration(seconds: 2),
+                                        ));
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  disabledBackgroundColor:
+                                      AppColors.primary.withOpacity(0.45),
+                                  disabledForegroundColor: Colors.white,
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 4),
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10)),
+                                ),
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(sent ? 'Interest Sent' : 'Interest',
+                                          maxLines: 1,
+                                          style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600)),
+                                      if (sent) ...[
+                                        const SizedBox(width: 4),
+                                        const Icon(Icons.check, size: 14),
+                                      ],
+                                    ],
+                                  ),
+                                ),
                               ),
-                              child: Text(sent ? 'Interest Sent ✓' : 'Interest',
-                                  style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600)),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),

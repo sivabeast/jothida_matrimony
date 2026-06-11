@@ -44,16 +44,25 @@ class AuthRepository {
 
   /// Full Google sign-in. Returns the resolved [UserModel], or `null` if the
   /// user dismissed the account picker. Throws [AuthException] on real errors.
+  ///
+  /// [FirestoreService.createOrUpdateUserOnLogin] creates the `users/{uid}`
+  /// document on first sign-in only (with `isProfileComplete: false`) and
+  /// otherwise just refreshes `lastLoginAt`/`loginProvider`. The UI uses
+  /// [UserModel.isProfileComplete] to decide whether to send the user to
+  /// onboarding (new / incomplete profile) or straight to their normal
+  /// screen (returning user).
   Future<UserModel?> signInWithGoogle() async {
     final cred = await _auth.signInWithGoogle();
     if (cred?.user == null) return null;
-    return _onAuthenticated(cred!.user!);
+    return _onAuthenticated(cred!.user!, loginProvider: 'google.com');
   }
 
   /// Shared post-auth step for every sign-in path: create-or-update the user
   /// document, register the FCM token, and return the [UserModel].
-  Future<UserModel> _onAuthenticated(User user, {String? phone}) async {
-    final model = await _firestore.createOrUpdateUserOnLogin(user, phone: phone);
+  Future<UserModel> _onAuthenticated(User user,
+      {String? phone, String? loginProvider}) async {
+    final model = await _firestore.createOrUpdateUserOnLogin(user,
+        phone: phone, loginProvider: loginProvider);
     final token = await _fcm.getToken();
     if (token != null) {
       await _firestore.updateFcmToken(user.uid, token);
@@ -62,8 +71,9 @@ class AuthRepository {
   }
 
   /// Used by the email/OTP flows to ensure a user document exists.
-  Future<UserModel> createUserDocumentAfterAuth(User user, {String? phone}) =>
-      _onAuthenticated(user, phone: phone);
+  Future<UserModel> createUserDocumentAfterAuth(User user,
+          {String? phone, String? loginProvider}) =>
+      _onAuthenticated(user, phone: phone, loginProvider: loginProvider);
 
   /// Email/password signup for matrimony **users**: creates the auth account,
   /// the `users/{uid}` document, and saves the essential registration details
@@ -80,7 +90,7 @@ class AuthRepository {
     final cred = await _auth.registerWithEmail(email, password);
     final user = cred.user!;
     await user.updateDisplayName(name);
-    await _onAuthenticated(user, phone: phone);
+    await _onAuthenticated(user, phone: phone, loginProvider: 'password');
     await _firestore.saveUserRegistrationDetails(
       user.uid,
       name: name,

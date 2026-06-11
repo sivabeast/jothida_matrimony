@@ -31,7 +31,7 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
       final repo = ref.read(authRepositoryProvider);
       final cred = await repo.signInWithOTP(verificationId, otp);
       return repo.createUserDocumentAfterAuth(
-          cred.user!, phone: cred.user!.phoneNumber);
+          cred.user!, phone: cred.user!.phoneNumber, loginProvider: 'phone');
     });
   }
 
@@ -40,7 +40,8 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
     state = await AsyncValue.guard(() async {
       final repo = ref.read(authRepositoryProvider);
       final cred = await repo.registerWithEmail(email, password);
-      return repo.createUserDocumentAfterAuth(cred.user!);
+      return repo.createUserDocumentAfterAuth(cred.user!,
+          loginProvider: 'password');
     });
   }
 
@@ -75,7 +76,8 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
       final repo = ref.read(authRepositoryProvider);
       final cred = await repo.signInWithEmail(email, password);
       // Refresh lastLoginAt and return the up-to-date model.
-      return repo.createUserDocumentAfterAuth(cred.user!);
+      return repo.createUserDocumentAfterAuth(cred.user!,
+          loginProvider: 'password');
     });
   }
 

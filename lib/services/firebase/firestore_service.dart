@@ -16,10 +16,16 @@ class FirestoreService {
   /// for a returning user — never creates a duplicate.
   ///
   /// Stored fields: uid (doc id), email, displayName (name), photoUrl,
-  /// createdAt, lastLoginAt, isProfileComplete (profileCompleted),
-  /// membershipType, plus the app's account metadata. Returns the resulting
-  /// [UserModel].
-  Future<UserModel> createOrUpdateUserOnLogin(User user, {String? phone}) async {
+  /// loginProvider, createdAt, lastLoginAt, isProfileComplete
+  /// (profileCompleted), membershipType, plus the app's account metadata.
+  /// Returns the resulting [UserModel].
+  ///
+  /// [loginProvider] records how the user authenticated this time (e.g.
+  /// `'google.com'`, `'password'`, `'phone'`). It is stored on first creation
+  /// and refreshed on every subsequent login so it always reflects the most
+  /// recently used sign-in method.
+  Future<UserModel> createOrUpdateUserOnLogin(User user,
+      {String? phone, String? loginProvider}) async {
     final docRef =
         _db.collection(AppConstants.usersCollection).doc(user.uid);
 
@@ -35,6 +41,7 @@ class FirestoreService {
           phone: phone ?? user.phoneNumber,
           displayName: user.displayName,
           photoUrl: user.photoURL,
+          loginProvider: loginProvider,
           membershipType: 'free',
           isProfileComplete: false,
           isEmailVerified: user.emailVerified,
@@ -50,10 +57,12 @@ class FirestoreService {
           'updatedAt': FieldValue.serverTimestamp(),
         });
       } else {
-        // Existing user → only bump lastLoginAt (no duplicate document).
+        // Existing user → bump lastLoginAt and refresh the login provider
+        // (no duplicate document).
         txn.update(docRef, {
           'lastLoginAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
+          if (loginProvider != null) 'loginProvider': loginProvider,
         });
       }
     });
