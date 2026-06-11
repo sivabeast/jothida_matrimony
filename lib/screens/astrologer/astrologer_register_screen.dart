@@ -1,9 +1,15 @@
+import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../core/config/dev_config.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/data/sample_astrologer_dashboard.dart';
+import '../../core/data/selection_data.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/validators.dart';
@@ -13,10 +19,18 @@ import '../../providers/astrologer_session_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/gradient_button.dart';
 import '../../widgets/common/app_text_field.dart';
+import '../../widgets/common/searchable_field.dart';
 
-/// Astrologer signup — collects name, mobile, experience, specialization and
-/// location (plus email/password credentials), saves the account to Firestore
-/// `astrologers/{uid}` and opens the dashboard.
+/// Astrologer Profile Setup — shown once, immediately after a successful
+/// "Continue with Google" sign-in, for an account that has no
+/// `astrologers/{uid}` document yet.
+///
+/// Authentication is already complete by the time this screen opens: name,
+/// email, and profile photo are read straight from the signed-in Firebase
+/// user (i.e. the Google account) and are NOT asked for again. This screen
+/// only collects astrologer-specific details. On submit, the account is
+/// written to Firestore `astrologers/{uid}` with `profileCompleted: true`
+/// and the user is taken to the Astrologer Dashboard.
 class AstrologerRegisterScreen extends ConsumerStatefulWidget {
   const AstrologerRegisterScreen({super.key});
 
@@ -31,93 +45,209 @@ class _AstrologerRegisterScreenState
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _experienceController = TextEditingController();
-  final _cityController = TextEditingController();
-  final _stateController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
+  final _aboutController = TextEditingController();
+  final _feeController = TextEditingController();
+  final _dobText = TextEditingController();
+
+  final _picker = ImagePicker();
+
+  // Pre-filled from the authenticated Google account — never edited via a
+  // text field, just displayed for confirmation.
+  String _email = '';
+  String? _googlePhotoUrl;
+
+  String? _gender;
+  String? _country = 'India';
+  String? _state;
+  String? _city;
+  DateTime? _dob;
 
   final Set<String> _specializations = {};
-  bool _obscurePass = true;
-  bool _obscureConfirm = true;
+  final Set<String> _languages = {};
+
+  File? _pickedPhoto;
+  File? _pickedDocument;
+
   bool _submitting = false;
+
+  static const _languageOptions = [
+    'Tamil', 'English', 'Telugu', 'Hindi', 'Kannada', 'Malayalam',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Hydrate name/email/photo from the already-authenticated Google account.
+    final user = ref.read(firebaseAuthStreamProvider).valueOrNull;
+    _nameController.text = user?.displayName ?? '';
+    _email = user?.email ?? '';
+    _googlePhotoUrl = user?.photoURL;
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
     _experienceController.dispose();
-    _cityController.dispose();
-    _stateController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
+    _aboutController.dispose();
+    _feeController.dispose();
+    _dobText.dispose();
     super.dispose();
   }
 
-  AstrologerAccount _buildAccount(String id) => AstrologerAccount(
+  Future<void> _pickDob() async {
+    final d = await showDatePicker(
+      context: context,
+      initialDate: DateTime(1985),
+      firstDate: DateTime(1950),
+      lastDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
+    );
+    if (d != null) {
+      setState(() {
+        _dob = d;
+        _dobText.text = '${d.day}/${d.month}/${d.year}';
+      });
+    }
+  }
+
+  Future<void> _pickPhoto() async {
+    final picked = await _picker.pickImage(
+        source: ImageSource.gallery, imageQuality: 80, maxWidth: 1000);
+    if (picked != null) {
+      setState(() => _pickedPhoto = File(picked.path));
+    }
+  }
+
+  Future<void> _pickDocument() async {
+    final picked = await _picker.pickImage(
+        source: ImageSource.gallery, imageQuality: 85, maxWidth: 1600);
+    if (picked != null) {
+      setState(() => _pickedDocument = File(picked.path));
+    }
+  }
+
+  AstrologerAccount _buildAccount({
+    required String id,
+    String photoUrl = '',
+    String verificationDocUrl = '',
+  }) =>
+      AstrologerAccount(
         id: id,
         fullName: _nameController.text.trim(),
-        gender: '',
-        dob: null,
+        gender: _gender ?? '',
+        dob: _dob,
         mobile: _phoneController.text.trim(),
-        email: _emailController.text.trim(),
-        city: _cityController.text.trim(),
-        state: _stateController.text.trim(),
-        country: 'India',
+        email: _email,
+        city: _city ?? '',
+        state: _state ?? '',
+        country: _country ?? 'India',
+        photoUrl: photoUrl,
         experienceYears: int.tryParse(_experienceController.text.trim()) ?? 0,
         expertise: _specializations.toList(),
-        languages: const ['Tamil', 'English'],
-        about: '',
+        languages: _languages.toList(),
+        about: _aboutController.text.trim(),
         consultationModes: const ['Chat', 'Audio Call', 'Video Call'],
         certName: '',
         certOrg: '',
         certNumber: '',
-        certFileName: '',
+        certFileName: verificationDocUrl,
+        consultationFee:
+            double.tryParse(_feeController.text.trim()) ?? 0,
+        profileCompleted: true,
+        status: VerificationStatus.pending,
+        services: defaultAstrologerServices(),
       );
 
-  Future<void> _register() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_specializations.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Please select at least one specialization')));
       return;
     }
+    if (_languages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Please select at least one language')));
+      return;
+    }
+    if (_gender == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Please select your gender')));
+      return;
+    }
+    if (_dob == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Please select your date of birth')));
+      return;
+    }
+    if (_city == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Please select your city')));
+      return;
+    }
 
     // Demo bypass: create the session locally and open the dashboard.
     if (kBypassAuth) {
-      ref
-          .read(myAstrologerAccountProvider.notifier)
-          .completeOnboarding(_buildAccount('demo-astrologer'));
+      final account = _buildAccount(
+        id: 'demo-astrologer',
+        photoUrl: _pickedPhoto?.path ?? _googlePhotoUrl ?? '',
+      );
+      ref.read(myAstrologerAccountProvider.notifier).completeOnboarding(account);
       context.go('/astrologer-dashboard');
+      return;
+    }
+
+    final uid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Please sign in with Google first.')));
+      context.go('/astrologer-login');
       return;
     }
 
     setState(() => _submitting = true);
     try {
-      // 1. Create (or reuse) the Firebase Auth account.
-      final notifier = ref.read(authNotifierProvider.notifier);
-      await notifier.registerWithEmail(
-        _emailController.text.trim(),
-        _passwordController.text,
+      final storage = ref.read(storageServiceProvider);
+
+      // Profile photo: keep the Google photo unless the astrologer picked a
+      // new one.
+      String photoUrl = _googlePhotoUrl ?? '';
+      if (_pickedPhoto != null) {
+        photoUrl = await storage.updateProfilePhoto(
+          userId: uid,
+          file: _pickedPhoto!,
+          index: 0,
+        );
+      }
+
+      // Verification document (optional).
+      String verificationDocUrl = '';
+      if (_pickedDocument != null) {
+        verificationDocUrl = await storage.uploadIdProof(
+          userId: uid,
+          file: _pickedDocument!,
+          docType: 'verification',
+        );
+      }
+
+      final account = _buildAccount(
+        id: uid,
+        photoUrl: photoUrl,
+        verificationDocUrl: verificationDocUrl,
       );
-      final auth = ref.read(authNotifierProvider);
-      if (auth.hasError) throw auth.error!;
-      final uid = auth.valueOrNull!.uid;
 
-      // 2. Save the astrologer account + role to Firestore.
-      final account = _buildAccount(uid);
       await ref.read(astrologerServiceProvider).createAccount(uid, account);
+      ref.read(myAstrologerAccountProvider.notifier).completeOnboarding(account);
+      // The account doc now has role: astrologer — refresh the cached user
+      // model so router redirects see the up-to-date role.
+      ref.invalidate(currentUserProvider);
+      ref.invalidate(authNotifierProvider);
 
-      // 3. Hydrate the session and open the dashboard.
-      ref
-          .read(myAstrologerAccountProvider.notifier)
-          .completeOnboarding(account);
       if (mounted) context.go('/astrologer-dashboard');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
+            .showSnackBar(SnackBar(content: Text('Could not save your profile: $e')));
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -127,10 +257,12 @@ class _AstrologerRegisterScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Astrologer Registration'),
+        title: const Text('Complete Your Profile'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -139,10 +271,15 @@ class _AstrologerRegisterScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Join as an Astrologer', style: AppTextStyles.heading2),
+              Text('Set up your astrologer profile', style: AppTextStyles.heading2),
               const SizedBox(height: 4),
-              Text('Offer consultations & horoscope matching to thousands',
-                  style: AppTextStyles.bodyMedium),
+              Text(
+                "You're signed in${_email.isNotEmpty ? ' as $_email' : ''}. "
+                'Just a few more details to start receiving consultations.',
+                style: AppTextStyles.bodyMedium,
+              ),
+              const SizedBox(height: 24),
+              Center(child: _photoPicker()),
               const SizedBox(height: 28),
               AppTextField(
                 controller: _nameController,
@@ -162,9 +299,59 @@ class _AstrologerRegisterScreenState
                 validator: Validators.phone,
               ),
               const SizedBox(height: 16),
+              SearchableField(
+                label: 'Gender',
+                isRequired: true,
+                items: const ['Male', 'Female', 'Other'],
+                selectedItem: _gender,
+                onChanged: (v) => setState(() => _gender = v),
+              ),
+              const SizedBox(height: 16),
+              AppTextField(
+                controller: _dobText,
+                label: 'Date of Birth',
+                readOnly: true,
+                onTap: _pickDob,
+                suffixIcon: const Icon(Icons.calendar_today),
+                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              SearchableField(
+                label: 'Country',
+                isRequired: true,
+                items: SelectionData.countries,
+                selectedItem: _country,
+                onChanged: (v) => setState(() {
+                  _country = v;
+                  _state = null;
+                  _city = null;
+                }),
+              ),
+              const SizedBox(height: 16),
+              SearchableField(
+                label: 'State',
+                items: _country == 'India'
+                    ? SelectionData.indianStates
+                    : const ['Other'],
+                selectedItem: _state,
+                onChanged: (v) => setState(() {
+                  _state = v;
+                  _city = null;
+                }),
+              ),
+              const SizedBox(height: 16),
+              SearchableField(
+                label: 'City',
+                isRequired: true,
+                items: SelectionData.citiesFor(_state),
+                selectedItem: _city,
+                enabled: _state != null,
+                onChanged: (v) => setState(() => _city = v),
+              ),
+              const SizedBox(height: 16),
               AppTextField(
                 controller: _experienceController,
-                label: 'Experience (years)',
+                label: 'Years of Experience',
                 hint: 'e.g. 8',
                 keyboardType: TextInputType.number,
                 maxLength: 2,
@@ -178,124 +365,143 @@ class _AstrologerRegisterScreenState
                   return null;
                 },
               ),
+              const SizedBox(height: 20),
+              _chipGroup('Astrology Specializations',
+                  AppConstants.astrologerSpecializations, _specializations),
+              const SizedBox(height: 20),
+              _chipGroup('Languages Known', _languageOptions, _languages),
               const SizedBox(height: 16),
-              Text('Specialization',
+              AppTextField(
+                controller: _feeController,
+                label: 'Consultation Fee (₹ per session)',
+                hint: 'e.g. 499',
+                prefixText: '₹ ',
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Consultation fee is required';
+                  final fee = int.tryParse(v);
+                  if (fee == null || fee < 0) return 'Enter a valid amount';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              AppTextField(
+                controller: _aboutController,
+                label: 'About Me',
+                hint: 'Brief introduction for users browsing astrologers…',
+                maxLines: 4,
+                validator: Validators.about,
+              ),
+              const SizedBox(height: 20),
+              Text('Verification Documents (optional)',
                   style: AppTextStyles.bodyMedium
                       .copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final s in AppConstants.astrologerSpecializations)
-                    FilterChip(
-                      label: Text(s, style: const TextStyle(fontSize: 12.5)),
-                      selected: _specializations.contains(s),
-                      selectedColor: AppColors.primary.withOpacity(0.12),
-                      checkmarkColor: AppColors.primary,
-                      onSelected: (sel) => setState(() {
-                        sel
-                            ? _specializations.add(s)
-                            : _specializations.remove(s);
-                      }),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: AppTextField(
-                      controller: _cityController,
-                      label: 'City',
-                      hint: 'Chennai',
-                      validator: (v) =>
-                          Validators.required(v, fieldName: 'City'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: AppTextField(
-                      controller: _stateController,
-                      label: 'State',
-                      hint: 'Tamil Nadu',
-                      validator: (v) =>
-                          Validators.required(v, fieldName: 'State'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              const Divider(),
-              const SizedBox(height: 12),
-              Text('Login credentials',
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 12),
-              AppTextField(
-                controller: _emailController,
-                label: 'Email Address',
-                hint: 'your@email.com',
-                keyboardType: TextInputType.emailAddress,
-                validator: Validators.email,
-              ),
-              const SizedBox(height: 16),
-              AppTextField(
-                controller: _passwordController,
-                label: 'Password',
-                hint: 'Min. 6 characters',
-                obscureText: _obscurePass,
-                validator: Validators.password,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                      _obscurePass ? Icons.visibility_off : Icons.visibility),
-                  onPressed: () =>
-                      setState(() => _obscurePass = !_obscurePass),
-                ),
-              ),
-              const SizedBox(height: 16),
-              AppTextField(
-                controller: _confirmPasswordController,
-                label: 'Confirm Password',
-                hint: 'Re-enter password',
-                obscureText: _obscureConfirm,
-                validator: (val) =>
-                    Validators.confirmPassword(val, _passwordController.text),
-                suffixIcon: IconButton(
-                  icon: Icon(_obscureConfirm
-                      ? Icons.visibility_off
-                      : Icons.visibility),
-                  onPressed: () =>
-                      setState(() => _obscureConfirm = !_obscureConfirm),
-                ),
-              ),
+              _documentUpload(),
               const SizedBox(height: 32),
               GradientButton(
-                onPressed: _submitting ? null : _register,
+                onPressed: _submitting ? null : _submit,
                 isLoading: _submitting,
-                text: 'Create Astrologer Account',
+                text: 'Save & Go to Dashboard',
               ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Already registered? '),
-                  GestureDetector(
-                    onTap: () => context.go('/astrologer-login'),
-                    child: Text(
-                      'Sign In',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              const SizedBox(height: 12),
             ],
           ),
         ),
       ),
     );
   }
+
+  Widget _photoPicker() => GestureDetector(
+        onTap: _pickPhoto,
+        child: Stack(
+          children: [
+            CircleAvatar(
+              radius: 48,
+              backgroundColor: AppColors.primary.withOpacity(0.1),
+              backgroundImage: _pickedPhoto != null
+                  ? FileImage(_pickedPhoto!) as ImageProvider
+                  : (_googlePhotoUrl != null && _googlePhotoUrl!.isNotEmpty)
+                      ? CachedNetworkImageProvider(_googlePhotoUrl!)
+                      : null,
+              child: (_pickedPhoto == null &&
+                      (_googlePhotoUrl == null || _googlePhotoUrl!.isEmpty))
+                  ? const Icon(Icons.person, size: 44, color: AppColors.primary)
+                  : null,
+            ),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.edit, size: 16, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      );
+
+  Widget _chipGroup(String label, List<String> options, Set<String> selected) =>
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: options.map((o) {
+              final isSel = selected.contains(o);
+              return FilterChip(
+                label: Text(o, style: const TextStyle(fontSize: 12.5)),
+                selected: isSel,
+                selectedColor: AppColors.primary.withOpacity(0.12),
+                checkmarkColor: AppColors.primary,
+                onSelected: (sel) => setState(() {
+                  sel ? selected.add(o) : selected.remove(o);
+                }),
+              );
+            }).toList(),
+          ),
+        ],
+      );
+
+  Widget _documentUpload() => InkWell(
+        onTap: _pickDocument,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+                color: _pickedDocument != null ? AppColors.success : Colors.grey,
+                style: BorderStyle.solid),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                _pickedDocument != null ? Icons.check_circle : Icons.upload_file,
+                color: _pickedDocument != null ? AppColors.success : AppColors.primary,
+                size: 32,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _pickedDocument != null
+                    ? 'Document selected — will be uploaded on save'
+                    : 'Upload certificate / ID proof (optional)',
+                style: TextStyle(
+                    color: _pickedDocument != null ? AppColors.success : Colors.grey[700]),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
 }

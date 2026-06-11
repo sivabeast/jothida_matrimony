@@ -48,7 +48,7 @@ class _AstrologerLoginScreenState
     } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text(
-              'No astrologer profile found — please complete registration.')));
+              'Just a few more details — please complete your astrologer profile.')));
       context.go('/astrologer-register');
     }
   }
@@ -227,9 +227,9 @@ class _AstrologerLoginScreenState
                           children: [
                             const Text('New astrologer? '),
                             GestureDetector(
-                              onTap: () => context.push('/astrologer-register'),
+                              onTap: isLoading ? null : _signInWithGoogle,
                               child: Text(
-                                'Register',
+                                'Sign up with Google',
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   color: AppColors.goldDark,
                                   fontWeight: FontWeight.w600,

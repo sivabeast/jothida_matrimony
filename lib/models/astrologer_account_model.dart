@@ -45,6 +45,10 @@ class AstrologerAccount {
   final String certOrg;
   final String certNumber;
   final String certFileName;
+  // Consultation fee (per session), in INR.
+  final double consultationFee;
+  // Set once the astrologer has completed the post-Google profile setup.
+  final bool profileCompleted;
   // Status & services
   final VerificationStatus status;
   final List<AstrologerService> services;
@@ -71,6 +75,8 @@ class AstrologerAccount {
     required this.certOrg,
     required this.certNumber,
     required this.certFileName,
+    this.consultationFee = 0,
+    this.profileCompleted = false,
     this.status = VerificationStatus.pending,
     this.services = const [],
     this.rating = 0,
@@ -80,29 +86,51 @@ class AstrologerAccount {
   bool get isApproved => status == VerificationStatus.approved;
 
   AstrologerAccount copyWith({
+    String? fullName,
+    String? gender,
+    DateTime? dob,
+    String? mobile,
+    String? email,
+    String? city,
+    String? state,
+    String? country,
+    String? photoUrl,
+    int? experienceYears,
+    List<String>? expertise,
+    List<String>? languages,
+    String? about,
+    List<String>? consultationModes,
+    String? certName,
+    String? certOrg,
+    String? certNumber,
+    String? certFileName,
+    double? consultationFee,
+    bool? profileCompleted,
     VerificationStatus? status,
     List<AstrologerService>? services,
   }) =>
       AstrologerAccount(
         id: id,
-        fullName: fullName,
-        gender: gender,
-        dob: dob,
-        mobile: mobile,
-        email: email,
-        city: city,
-        state: state,
-        country: country,
-        photoUrl: photoUrl,
-        experienceYears: experienceYears,
-        expertise: expertise,
-        languages: languages,
-        about: about,
-        consultationModes: consultationModes,
-        certName: certName,
-        certOrg: certOrg,
-        certNumber: certNumber,
-        certFileName: certFileName,
+        fullName: fullName ?? this.fullName,
+        gender: gender ?? this.gender,
+        dob: dob ?? this.dob,
+        mobile: mobile ?? this.mobile,
+        email: email ?? this.email,
+        city: city ?? this.city,
+        state: state ?? this.state,
+        country: country ?? this.country,
+        photoUrl: photoUrl ?? this.photoUrl,
+        experienceYears: experienceYears ?? this.experienceYears,
+        expertise: expertise ?? this.expertise,
+        languages: languages ?? this.languages,
+        about: about ?? this.about,
+        consultationModes: consultationModes ?? this.consultationModes,
+        certName: certName ?? this.certName,
+        certOrg: certOrg ?? this.certOrg,
+        certNumber: certNumber ?? this.certNumber,
+        certFileName: certFileName ?? this.certFileName,
+        consultationFee: consultationFee ?? this.consultationFee,
+        profileCompleted: profileCompleted ?? this.profileCompleted,
         status: status ?? this.status,
         services: services ?? this.services,
         rating: rating,
@@ -135,6 +163,8 @@ class AstrologerAccount {
       certOrg: cert['organization'] ?? '',
       certNumber: cert['number'] ?? '',
       certFileName: cert['fileName'] ?? '',
+      consultationFee: (d['consultationFee'] ?? 0).toDouble(),
+      profileCompleted: d['profileCompleted'] ?? false,
       status: VerificationStatus.values.firstWhere(
         (s) => s.name == (d['status'] ?? 'pending'),
         orElse: () => VerificationStatus.pending,
@@ -168,6 +198,8 @@ class AstrologerAccount {
           'number': certNumber,
           'fileName': certFileName,
         },
+        'consultationFee': consultationFee,
+        'profileCompleted': profileCompleted,
         'status': status.name,
         'services': services.map((s) => s.toMap()).toList(),
         'rating': rating,

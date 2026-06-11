@@ -86,9 +86,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           loc == '/register' ||
           loc == '/forgot-password' ||
           loc == '/astrologer-login' ||
-          loc == '/astrologer-register' ||
           loc.startsWith('/otp');
       final onSplash = loc == '/';
+
+      // After Google sign-in, an astrologer-to-be (role still 'user',
+      // matrimony profile incomplete) lands here to fill in astrologer-only
+      // details. Don't bounce them to the matrimony /profile/create wizard.
+      final onAstrologerProfileSetup = loc == '/astrologer-register';
 
       // Astrologer portal has its OWN gate (login/signup before dashboard).
       final inAstrologerPortal =
@@ -131,6 +135,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
       if (onAuthPage) {
         if (user?.isAdmin == true) return '/admin';
+        // Came from the astrologer portal's Google sign-in and isn't an
+        // astrologer yet → go straight to astrologer profile setup, not the
+        // matrimony profile wizard.
+        if (loc == '/astrologer-login' &&
+            user != null &&
+            !user.isAstrologer &&
+            !user.isProfileComplete) {
+          debugPrint('[Router] redirect: astrologer Google sign-in → /astrologer-register');
+          return '/astrologer-register';
+        }
         if (user != null && !user.isProfileComplete && !user.isAstrologer) {
           debugPrint('[Router] redirect: profile incomplete → /profile/create');
           return '/profile/create';
@@ -146,6 +160,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           !user.isAstrologer &&
           !user.isProfileComplete &&
           !onProfileCreate &&
+          !onAstrologerProfileSetup &&
           !onSplash) {
         debugPrint('[Router] redirect: profile incomplete, blocking $loc → /profile/create');
         return '/profile/create';
