@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -98,8 +99,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _signInWithGoogle() async {
+    debugPrint('[LoginScreen] "Continue with Google" tapped.');
     await ref.read(authNotifierProvider.notifier).signInWithGoogle();
-    if (!mounted) return;
+    if (!mounted) {
+      debugPrint('[LoginScreen] Widget unmounted after signInWithGoogle — '
+          'navigation handled elsewhere (e.g. splash).');
+      return;
+    }
     final auth = ref.read(authNotifierProvider);
 
     if (auth.hasError) {
@@ -110,6 +116,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final message = err is AuthException
           ? err.message
           : 'Google Sign-In failed. Please try again.';
+      debugPrint('[LoginScreen] signInWithGoogle error: $err');
       // Silently ignore a user-cancelled picker.
       if (!(err is AuthException && err.cancelled)) {
         ScaffoldMessenger.of(context)
@@ -122,7 +129,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // account picker — in that case stay on the login screen.
     final user = auth.valueOrNull;
     if (user != null) {
+      debugPrint('[LoginScreen] Sign-in successful (uid=${user.uid}, '
+          'isProfileComplete=${user.isProfileComplete}). Routing...');
       await _routeByRole(user);
+    } else {
+      debugPrint('[LoginScreen] signInWithGoogle returned null '
+          '(picker dismissed) — staying on login screen.');
     }
   }
 

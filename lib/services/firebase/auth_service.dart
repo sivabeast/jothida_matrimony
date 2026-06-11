@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../core/errors/auth_exception.dart';
 
@@ -66,11 +67,19 @@ class AuthService {
   Future<UserCredential?> signInWithGoogle() async {
     try {
       // 1. Trigger the native Google account chooser.
+      debugPrint('[AuthService] Opening Google account picker...');
       final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null; // user cancelled
+      if (googleUser == null) {
+        debugPrint('[AuthService] User cancelled the Google picker.');
+        return null; // user cancelled
+      }
+      debugPrint('[AuthService] Google account selected: ${googleUser.email}');
 
       // 2. Obtain the OAuth tokens for the chosen account.
       final googleAuth = await googleUser.authentication;
+      debugPrint('[AuthService] Got Google tokens '
+          '(idToken=${googleAuth.idToken != null}, '
+          'accessToken=${googleAuth.accessToken != null})');
 
       // A null idToken almost always means the OAuth client / SHA-1 is not
       // configured in Firebase — surface a clear, actionable error.
@@ -88,8 +97,14 @@ class AuthService {
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      return await _auth.signInWithCredential(credential);
-    } catch (e) {
+      debugPrint('[AuthService] Exchanging Google credential with Firebase...');
+      final userCred = await _auth.signInWithCredential(credential);
+      debugPrint('[AuthService] Firebase sign-in succeeded. '
+          'uid=${userCred.user?.uid}, '
+          'isNewUser=${userCred.additionalUserInfo?.isNewUser}');
+      return userCred;
+    } catch (e, st) {
+      debugPrint('[AuthService] signInWithGoogle failed: $e\n$st');
       // Make sure a half-finished Google session doesn't get stuck.
       await _googleSignIn.signOut().catchError((_) {});
       throw AuthException.from(e);

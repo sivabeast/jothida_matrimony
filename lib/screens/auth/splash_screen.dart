@@ -33,24 +33,50 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Future<void> _navigate() async {
     await Future.delayed(const Duration(milliseconds: 2500));
     if (!mounted) return;
-    final authAsync = ref.read(firebaseAuthStreamProvider);
-    final user = authAsync.valueOrNull;
-    if (user == null) {
-      // Signed out: ask who the account is for (User / Astrologer).
-      context.go('/account-type');
-    } else {
+
+    try {
+      final authAsync = ref.read(firebaseAuthStreamProvider);
+      final user = authAsync.valueOrNull;
+      debugPrint('[Splash] firebaseAuthStreamProvider state: '
+          '${authAsync.runtimeType}, user=${user?.uid}');
+
+      if (user == null) {
+        debugPrint('[Splash] No signed-in user → /account-type');
+        // Signed out: ask who the account is for (User / Astrologer).
+        context.go('/account-type');
+        return;
+      }
+
+      debugPrint('[Splash] Signed in as ${user.uid} (${user.email}). '
+          'Loading Firestore user doc...');
       final userModel =
           await ref.read(authRepositoryProvider).getUserModel(user.uid);
       if (!mounted) return;
+
       if (userModel == null) {
+        debugPrint('[Splash] No Firestore user doc found → /account-type');
         context.go('/account-type');
       } else if (userModel.isAdmin) {
+        debugPrint('[Splash] Admin user → /admin');
         context.go('/admin');
       } else if (userModel.isAstrologer) {
+        debugPrint('[Splash] Astrologer user → /astrologer-dashboard');
         context.go('/astrologer-dashboard');
+      } else if (!userModel.isProfileComplete) {
+        debugPrint('[Splash] Profile incomplete → /profile/create');
+        context.go('/profile/create');
       } else {
+        debugPrint('[Splash] Profile complete → /home');
         context.go('/home');
       }
+    } catch (e, st) {
+      // Never leave the user stuck on the splash screen. A Firestore read
+      // failure (e.g. permission-denied because security rules aren't
+      // deployed yet, or no network) used to throw here uncaught, leaving
+      // the spinner forever with no navigation and no visible error.
+      debugPrint('[Splash] _navigate() failed: $e\n$st');
+      if (!mounted) return;
+      context.go('/account-type');
     }
   }
 

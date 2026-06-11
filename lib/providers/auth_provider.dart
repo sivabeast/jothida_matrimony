@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user_model.dart';
 import 'service_providers.dart';
@@ -84,11 +85,19 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
   /// Google sign-in. The returned [UserModel] is `null` only when the user
   /// cancels the picker; real failures propagate as an error state.
   Future<void> signInWithGoogle() async {
+    debugPrint('[AuthNotifier] signInWithGoogle: state -> loading');
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final repo = ref.read(authRepositoryProvider);
       return repo.signInWithGoogle();
     });
+    state.when(
+      data: (user) => debugPrint(
+          '[AuthNotifier] signInWithGoogle: state -> data (user=${user?.uid})'),
+      error: (e, st) =>
+          debugPrint('[AuthNotifier] signInWithGoogle: state -> error: $e'),
+      loading: () => debugPrint('[AuthNotifier] signInWithGoogle: still loading?!'),
+    );
   }
 
   Future<void> signOut() async {

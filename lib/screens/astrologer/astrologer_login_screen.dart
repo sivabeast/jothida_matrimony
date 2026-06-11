@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -76,11 +77,13 @@ class _AstrologerLoginScreenState
   }
 
   Future<void> _signInWithGoogle() async {
+    debugPrint('[AstrologerLogin] "Continue with Google" tapped.');
     await ref.read(authNotifierProvider.notifier).signInWithGoogle();
     if (!mounted) return;
     final auth = ref.read(authNotifierProvider);
     if (auth.hasError) {
       final err = auth.error;
+      debugPrint('[AstrologerLogin] signInWithGoogle error: $err');
       if (!(err is AuthException && err.cancelled)) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(err is AuthException
@@ -90,7 +93,10 @@ class _AstrologerLoginScreenState
       return;
     }
     final user = auth.valueOrNull;
-    if (user != null) await _afterAuth(user.uid);
+    if (user != null) {
+      debugPrint('[AstrologerLogin] Sign-in successful (uid=${user.uid}).');
+      await _afterAuth(user.uid);
+    }
   }
 
   @override

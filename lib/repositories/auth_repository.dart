@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../services/firebase/auth_service.dart';
 import '../services/firebase/firestore_service.dart';
@@ -52,20 +53,40 @@ class AuthRepository {
   /// onboarding (new / incomplete profile) or straight to their normal
   /// screen (returning user).
   Future<UserModel?> signInWithGoogle() async {
+    debugPrint('[AuthRepository] signInWithGoogle: starting...');
     final cred = await _auth.signInWithGoogle();
-    if (cred?.user == null) return null;
-    return _onAuthenticated(cred!.user!, loginProvider: 'google.com');
+    if (cred?.user == null) {
+      debugPrint('[AuthRepository] signInWithGoogle: cancelled by user.');
+      return null;
+    }
+    debugPrint('[AuthRepository] signInWithGoogle: Firebase user '
+        '${cred!.user!.uid}, syncing Firestore...');
+    final model = await _onAuthenticated(cred.user!, loginProvider: 'google.com');
+    debugPrint('[AuthRepository] signInWithGoogle: done. '
+        'isProfileComplete=${model.isProfileComplete}, '
+        'isAdmin=${model.isAdmin}, isAstrologer=${model.isAstrologer}');
+    return model;
   }
 
   /// Shared post-auth step for every sign-in path: create-or-update the user
   /// document, register the FCM token, and return the [UserModel].
   Future<UserModel> _onAuthenticated(User user,
       {String? phone, String? loginProvider}) async {
+    debugPrint('[AuthRepository] _onAuthenticated: '
+        'createOrUpdateUserOnLogin(${user.uid}, loginProvider=$loginProvider)');
     final model = await _firestore.createOrUpdateUserOnLogin(user,
         phone: phone, loginProvider: loginProvider);
-    final token = await _fcm.getToken();
-    if (token != null) {
-      await _firestore.updateFcmToken(user.uid, token);
+    debugPrint('[AuthRepository] _onAuthenticated: Firestore doc ready.');
+    try {
+      final token = await _fcm.getToken();
+      if (token != null) {
+        await _firestore.updateFcmToken(user.uid, token);
+        debugPrint('[AuthRepository] _onAuthenticated: FCM token updated.');
+      }
+    } catch (e, st) {
+      // FCM is best-effort — never let a push-notification hiccup block sign-in.
+      debugPrint('[AuthRepository] _onAuthenticated: FCM token update '
+          'failed (non-fatal): $e\n$st');
     }
     return model;
   }

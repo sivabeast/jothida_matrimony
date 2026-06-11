@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/config/dev_config.dart';
@@ -30,10 +32,52 @@ import '../screens/admin/admin_users_screen.dart';
 import '../screens/admin/admin_approvals_screen.dart';
 import '../screens/admin/admin_reports_screen.dart';
 
+/// Bridges a [Stream] (here, Firebase's `authStateChanges`) to a
+/// [Listenable] that [GoRouter] can use as `refreshListenable`.
+///
+/// IMPORTANT: Without this, `appRouterProvider` would have to `ref.watch`
+/// the auth stream directly, which makes Riverpod return a **brand-new**
+/// `GoRouter` instance on every auth change. `MaterialApp.router` then
+/// receives a new `routerConfig`, which resets the navigator back to
+/// `initialLocation` ('/') — i.e. the splash screen. That was the cause of
+/// "stuck on splash after Google Sign-In": the moment Firebase Auth fired
+/// its state-change event (right after `signInWithCredential` succeeded),
+/// the whole router (and the in-flight LoginScreen) was torn down and
+/// rebuilt from scratch before `_routeByRole` could run.
+///
+/// Using `refreshListenable` instead keeps the SAME GoRouter/navigator
+/// alive and just re-evaluates `redirect` for the current location.
+class GoRouterRefreshStream extends ChangeNotifier {
+  late final StreamSubscription<dynamic> _subscription;
+
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen((event) {
+      debugPrint('[Router] authStateChanges event: '
+          '${event == null ? 'signed out' : 'signed in (${event.uid})'} '
+          '— refreshing router');
+      notifyListeners();
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
+
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(firebaseAuthStreamProvider);
+  // `ref.read` (not `watch`) — we don't want this provider itself to rebuild
+  // (and recreate the GoRouter) on auth changes. The refreshListenable below
+  // handles re-running `redirect` instead.
+  final authRepo = ref.read(authRepositoryProvider);
+  final refreshStream = GoRouterRefreshStream(authRepo.authStateChanges);
+  ref.onDispose(refreshStream.dispose);
+
   return GoRouter(
     initialLocation: '/',
+    refreshListenable: refreshStream,
     redirect: (context, state) {
       final loc = state.matchedLocation;
       final onAuthPage = loc == '/account-type' ||
@@ -66,6 +110,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (kBypassAuth) return null;
 
       // ── Real auth path ──
+      final authState = ref.read(firebaseAuthStreamProvider);
       final isAuthenticated = authState.valueOrNull != null;
       if (!isAuthenticated) {
         return (onAuthPage || onSplash) ? null : '/account-type';

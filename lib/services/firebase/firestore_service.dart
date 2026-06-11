@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' show User;
+import 'package:flutter/foundation.dart';
 import '../../core/constants/app_constants.dart';
 import '../../models/profile_model.dart';
 import '../../models/interest_model.dart';
@@ -29,45 +30,60 @@ class FirestoreService {
     final docRef =
         _db.collection(AppConstants.usersCollection).doc(user.uid);
 
-    // A transaction makes the "create if new, else update lastLoginAt" step
-    // atomic, so concurrent logins can't race into a duplicate write.
-    await _db.runTransaction((txn) async {
-      final snap = await txn.get(docRef);
-      if (!snap.exists) {
-        final now = DateTime.now();
-        final newUser = UserModel(
-          uid: user.uid,
-          email: user.email,
-          phone: phone ?? user.phoneNumber,
-          displayName: user.displayName,
-          photoUrl: user.photoURL,
-          loginProvider: loginProvider,
-          membershipType: 'free',
-          isProfileComplete: false,
-          isEmailVerified: user.emailVerified,
-          createdAt: now,
-          updatedAt: now,
-          lastLoginAt: now,
-        );
-        // Use server timestamps for the audit fields once written.
-        txn.set(docRef, {
-          ...newUser.toFirestore(),
-          'createdAt': FieldValue.serverTimestamp(),
-          'lastLoginAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      } else {
-        // Existing user → bump lastLoginAt and refresh the login provider
-        // (no duplicate document).
-        txn.update(docRef, {
-          'lastLoginAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-          if (loginProvider != null) 'loginProvider': loginProvider,
-        });
-      }
-    });
+    debugPrint('[Firestore] createOrUpdateUserOnLogin(${user.uid}): '
+        'starting transaction...');
+    try {
+      // A transaction makes the "create if new, else update lastLoginAt" step
+      // atomic, so concurrent logins can't race into a duplicate write.
+      await _db.runTransaction((txn) async {
+        final snap = await txn.get(docRef);
+        if (!snap.exists) {
+          debugPrint('[Firestore] ${user.uid}: no existing doc → creating '
+              'new user (isProfileComplete=false)');
+          final now = DateTime.now();
+          final newUser = UserModel(
+            uid: user.uid,
+            email: user.email,
+            phone: phone ?? user.phoneNumber,
+            displayName: user.displayName,
+            photoUrl: user.photoURL,
+            loginProvider: loginProvider,
+            membershipType: 'free',
+            isProfileComplete: false,
+            isEmailVerified: user.emailVerified,
+            createdAt: now,
+            updatedAt: now,
+            lastLoginAt: now,
+          );
+          // Use server timestamps for the audit fields once written.
+          txn.set(docRef, {
+            ...newUser.toFirestore(),
+            'createdAt': FieldValue.serverTimestamp(),
+            'lastLoginAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        } else {
+          debugPrint('[Firestore] ${user.uid}: existing doc found → '
+              'refreshing lastLoginAt/loginProvider');
+          // Existing user → bump lastLoginAt and refresh the login provider
+          // (no duplicate document).
+          txn.update(docRef, {
+            'lastLoginAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+            if (loginProvider != null) 'loginProvider': loginProvider,
+          });
+        }
+      });
+    } catch (e, st) {
+      debugPrint('[Firestore] createOrUpdateUserOnLogin(${user.uid}) '
+          'transaction FAILED: $e\n$st');
+      rethrow;
+    }
 
+    debugPrint('[Firestore] ${user.uid}: transaction committed, re-reading doc...');
     final fresh = await docRef.get();
+    debugPrint('[Firestore] ${user.uid}: doc read OK '
+        '(exists=${fresh.exists})');
     return UserModel.fromFirestore(fresh);
   }
 
