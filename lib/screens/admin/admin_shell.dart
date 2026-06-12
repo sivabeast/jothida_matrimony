@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -34,9 +35,12 @@ class _AdminShellState extends ConsumerState<AdminShell> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: 'Sign Out',
             onPressed: () async {
+              debugPrint('[AdminShell] Sign Out tapped');
               await ref.read(authNotifierProvider.notifier).signOut();
-              if (context.mounted) context.go('/login');
+              debugPrint('[AdminShell] signOut() complete');
+              if (context.mounted) context.go('/account-type');
             },
           ),
         ],

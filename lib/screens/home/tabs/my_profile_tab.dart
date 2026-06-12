@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -113,8 +114,36 @@ class MyProfileTab extends ConsumerWidget {
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Sign Out', style: TextStyle(color: Colors.red)),
             onTap: () async {
+              debugPrint('[MyProfileTab] Sign Out tapped — showing confirmation');
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Sign Out'),
+                  content: const Text('Are you sure you want to sign out?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                      child: const Text('Sign Out'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed != true) {
+                debugPrint('[MyProfileTab] Sign Out cancelled by user.');
+                return;
+              }
+              debugPrint('[MyProfileTab] Sign Out confirmed — calling signOut()');
               await ref.read(authNotifierProvider.notifier).signOut();
-              if (context.mounted) context.go('/login');
+              debugPrint('[MyProfileTab] signOut() complete — '
+                  'router redirect will handle navigation');
+              // Safety-net: if the GoRouterRefreshStream fires after this
+              // widget's context is gone, the explicit go() ensures navigation.
+              if (context.mounted) context.go('/account-type');
             },
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             tileColor: Colors.red[50],

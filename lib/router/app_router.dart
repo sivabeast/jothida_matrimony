@@ -111,8 +111,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (kBypassAuth) return null;
 
       // ── Real auth path ──
-      final authState = ref.read(firebaseAuthStreamProvider);
-      final isAuthenticated = authState.valueOrNull != null;
+      // IMPORTANT: do NOT use `ref.read(firebaseAuthStreamProvider)` here.
+      // `GoRouterRefreshStream` and the StreamProvider both subscribe to the
+      // same Firebase authStateChanges stream. When signOut() fires, this
+      // redirect runs (via notifyListeners) BEFORE the StreamProvider has
+      // processed the null event — so it would still see the old user and
+      // incorrectly return null (no redirect). Instead, read currentUser
+      // synchronously from Firebase, which is always immediately accurate.
+      final isAuthenticated = ref.read(authRepositoryProvider).currentUser != null;
+      debugPrint('[Router] redirect: loc=$loc, isAuthenticated=$isAuthenticated');
       if (!isAuthenticated) {
         return (onAuthPage || onSplash) ? null : '/account-type';
       }
