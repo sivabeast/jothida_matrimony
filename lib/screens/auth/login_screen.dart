@@ -136,14 +136,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             padding: const EdgeInsets.all(24),
             child: Column(
               children: [
-                const SizedBox(height: 40),
-                const Icon(Icons.favorite, color: AppColors.gold, size: 72),
-                const SizedBox(height: 12),
-                Text('Jothida Matrimony', style: AppTextStyles.appName),
-                const SizedBox(height: 4),
-                Text('ஜோதிட மேட்ரிமோனி',
-                    style: AppTextStyles.tamilBody.copyWith(color: AppColors.gold)),
-                const SizedBox(height: 40),
+                const SizedBox(height: 24),
+                Image.asset(
+                  'assets/images/app_logo.png',
+                  width: 140,
+                  height: 140,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Column(
+                    children: [
+                      const Icon(Icons.favorite,
+                          color: AppColors.gold, size: 72),
+                      const SizedBox(height: 8),
+                      Text('Jothida Matrimony',
+                          style: AppTextStyles.appName),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
                 // Card
                 Container(
                   padding: const EdgeInsets.all(24),

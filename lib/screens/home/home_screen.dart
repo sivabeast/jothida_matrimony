@@ -71,7 +71,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         titleSpacing: 12,
         title: Row(
           children: [
-            // Profile image (left)
+            // Profile avatar (taps to My Profile tab)
             GestureDetector(
               onTap: () => setState(() => _selectedIndex = 4),
               child: CircleAvatar(
@@ -92,8 +92,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     : null,
               ),
             ),
-            const SizedBox(width: 10),
-            // User name beside the image
+            const SizedBox(width: 8),
+            // User name
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -114,6 +114,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
               ),
             ),
+            // Brand logo (centered brand identity in the app bar)
+            Image.asset(
+              'assets/images/app_logo.png',
+              width: 38,
+              height: 38,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.favorite,
+                color: Color(0xFFD4A843),
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 4),
           ],
         ),
         actions: [

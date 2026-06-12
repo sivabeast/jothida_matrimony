@@ -57,11 +57,23 @@ class _AccountTypeScreenState extends State<AccountTypeScreen>
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Spacer(),
-                  const Icon(Icons.favorite, color: AppColors.gold, size: 56),
-                  const SizedBox(height: 12),
                   Center(
-                      child:
-                          Text('Jothida Matrimony', style: AppTextStyles.appName)),
+                    child: Image.asset(
+                      'assets/images/app_logo.png',
+                      width: 160,
+                      height: 160,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Column(
+                        children: [
+                          const Icon(Icons.favorite,
+                              color: AppColors.gold, size: 56),
+                          const SizedBox(height: 12),
+                          Text('Jothida Matrimony',
+                              style: AppTextStyles.appName),
+                        ],
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 40),
                   const Text(
                     'Who are you creating\nan account for?',

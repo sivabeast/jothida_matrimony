@@ -125,6 +125,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(
+                child: Image.asset(
+                  'assets/images/app_logo.png',
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) =>
+                      const Icon(Icons.favorite,
+                          color: AppColors.primary, size: 48),
+                ),
+              ),
+              const SizedBox(height: 12),
               Text('Find your perfect match', style: AppTextStyles.heading2),
               const SizedBox(height: 4),
               Text('A few details to get you started',

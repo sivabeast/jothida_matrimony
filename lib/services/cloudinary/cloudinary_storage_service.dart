@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -164,6 +165,11 @@ class CloudinaryStorageService implements StorageService {
 
   // ── Internals ─────────────────────────────────────────────────────────
 
+  /// Per-attempt network timeout. Cloudinary uploads from a mobile network
+  /// can be slow; this just turns an indefinite hang into a retryable
+  /// [CloudinaryUploadException] instead of the UI spinning forever.
+  static const _uploadTimeout = Duration(seconds: 60);
+
   Future<String> _uploadWithRetry({
     required File file,
     required String resourceType,
@@ -175,10 +181,20 @@ class CloudinaryStorageService implements StorageService {
       throw CloudinaryUploadException('File does not exist: ${file.path}');
     }
 
+    final sizeBytes = await file.length();
+    debugPrint(
+      'CloudinaryStorageService: starting upload of ${file.path} '
+      '($sizeBytes bytes) -> $folder/$publicId (resourceType=$resourceType)',
+    );
+
     Object? lastError;
     for (var attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         onProgress?.call(0);
+        debugPrint(
+          'CloudinaryStorageService: attempt $attempt/$maxRetries for '
+          '$folder/$publicId',
+        );
         final url = await _uploadOnce(
           file: file,
           resourceType: resourceType,
@@ -187,6 +203,10 @@ class CloudinaryStorageService implements StorageService {
           onProgress: onProgress,
         );
         onProgress?.call(1);
+        debugPrint(
+          'CloudinaryStorageService: upload succeeded for $folder/$publicId '
+          '-> $url',
+        );
         return url;
       } catch (e, st) {
         lastError = e;
@@ -224,52 +244,106 @@ class CloudinaryStorageService implements StorageService {
       ..fields['public_id'] = publicId
       ..files.add(await http.MultipartFile.fromPath('file', file.path));
 
-    final streamedResponse = await _send(request, onProgress);
-    final response = await http.Response.fromStream(streamedResponse);
+    final client = _client ?? http.Client();
+    final ownsClient = _client == null;
+    final http.Response response;
+    try {
+      // IMPORTANT: the response body must be fully read *before* the client
+      // is closed. http.Client.close() force-closes the underlying socket,
+      // which previously caused
+      // "ClientException: Connection closed while receiving data" because
+      // the client was closed right after send() returned (i.e. as soon as
+      // headers arrived), aborting the body stream that
+      // http.Response.fromStream() was about to read.
+      final streamedResponse =
+          await _send(client, request, onProgress).timeout(_uploadTimeout);
+      response = await http.Response.fromStream(streamedResponse)
+          .timeout(_uploadTimeout);
+    } on TimeoutException catch (e) {
+      throw CloudinaryUploadException('Upload timed out: $e');
+    } on http.ClientException catch (e) {
+      // Network-level failure (connection dropped, DNS, TLS, etc.) — worth
+      // retrying.
+      throw CloudinaryUploadException('Network error: $e');
+    } finally {
+      if (ownsClient) client.close();
+    }
+
+    debugPrint(
+      'CloudinaryStorageService: $folder/$publicId -> '
+      'HTTP ${response.statusCode}',
+    );
 
     if (response.statusCode == 200) {
       final json = CloudinaryResponse.fromJsonString(response.body);
       if (json.secureUrl == null) {
+        debugPrint(
+          'CloudinaryStorageService: ⚠ 200 OK but secure_url missing '
+          'for $folder/$publicId — full body: ${response.body}',
+        );
         throw CloudinaryUploadException(
           'Cloudinary response missing secure_url: ${response.body}',
         );
       }
+      debugPrint(
+        'CloudinaryStorageService: ✅ secure_url received for '
+        '$folder/$publicId → ${json.secureUrl}',
+      );
       return json.secureUrl!;
     }
 
     final message = CloudinaryResponse.errorMessage(response.body) ??
-        'HTTP ${response.statusCode}';
+        'HTTP ${response.statusCode}: ${response.body}';
+    debugPrint(
+      'CloudinaryStorageService: ❌ upload error for $folder/$publicId '
+      '→ HTTP ${response.statusCode}  body: ${response.body}',
+    );
     // 4xx (bad preset, validation, file too large) won't succeed on retry;
     // 5xx / network-ish errors are worth retrying.
     final retryable = response.statusCode >= 500;
     throw CloudinaryUploadException(message, statusCode: response.statusCode, isRetryable: retryable);
   }
 
-  /// Sends [request], streaming the file body so [onProgress] can be called
-  /// with the fraction of bytes uploaded so far (0..1).
+  /// Sends [request] using [client], streaming the file body so [onProgress]
+  /// can be called with the fraction of bytes uploaded so far (0..1).
+  ///
+  /// Does NOT close [client] — the caller is responsible for closing it once
+  /// the response body has been fully read.
   Future<http.StreamedResponse> _send(
+    http.Client client,
     http.MultipartRequest request,
     void Function(double progress)? onProgress,
   ) async {
-    final client = _client ?? http.Client();
-    final ownsClient = _client == null;
-
     if (onProgress == null) {
-      try {
-        return await client.send(request);
-      } finally {
-        if (ownsClient) client.close();
-      }
+      return client.send(request);
     }
 
     final totalBytes = request.contentLength;
     var bytesSent = 0;
 
+    // ── FIX: finalize() BEFORE copying headers ─────────────────────────────
+    // http.MultipartRequest.finalize() writes the
+    // "Content-Type: multipart/form-data; boundary=<uuid>" header onto
+    // request.headers as a side-effect.  If we copy request.headers BEFORE
+    // calling finalize() — as the original code did — the Content-Type is
+    // absent from streamedRequest.  Cloudinary then cannot parse the body
+    // and returns HTTP 400 ("Unable to parse multipart body" / "upload
+    // preset not found"), causing the upload to fail on every attempt.
+    // Calling finalize() first ensures the Content-Type is present when
+    // we call addAll().
+    final bodyStream = request.finalize();
+
     final streamedRequest = http.StreamedRequest(request.method, request.url)
-      ..headers.addAll(request.headers)
+      ..headers.addAll(request.headers) // now includes Content-Type
       ..contentLength = totalBytes;
 
-    request.finalize().listen(
+    debugPrint(
+      'CloudinaryStorageService._send: Content-Type = '
+      '${streamedRequest.headers['content-type'] ?? '⚠ MISSING'}  '
+      'contentLength=$totalBytes',
+    );
+
+    bodyStream.listen(
       (chunk) {
         bytesSent += chunk.length;
         if (totalBytes > 0) {
@@ -282,10 +356,6 @@ class CloudinaryStorageService implements StorageService {
       cancelOnError: true,
     );
 
-    try {
-      return await client.send(streamedRequest);
-    } finally {
-      if (ownsClient) client.close();
-    }
+    return client.send(streamedRequest);
   }
 }

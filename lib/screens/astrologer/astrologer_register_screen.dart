@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -206,28 +207,59 @@ class _AstrologerRegisterScreenState
     }
 
     setState(() => _submitting = true);
+    debugPrint('[AstrologerProfileSetup] Submitting profile for uid=$uid '
+        '(photo picked: ${_pickedPhoto != null}, '
+        'document picked: ${_pickedDocument != null})');
     try {
       final storage = ref.read(storageServiceProvider);
 
       // Profile photo: keep the Google photo unless the astrologer picked a
-      // new one.
+      // new one. An upload failure here is non-fatal — fall back to the
+      // Google photo so profile creation can still complete.
       String photoUrl = _googlePhotoUrl ?? '';
       if (_pickedPhoto != null) {
-        photoUrl = await storage.updateProfilePhoto(
-          userId: uid,
-          file: _pickedPhoto!,
-          index: 0,
-        );
+        debugPrint('[AstrologerProfileSetup] Uploading profile photo: '
+            '${_pickedPhoto!.path}');
+        try {
+          photoUrl = await storage.updateProfilePhoto(
+            userId: uid,
+            file: _pickedPhoto!,
+            index: 0,
+          );
+          debugPrint('[AstrologerProfileSetup] Profile photo uploaded: $photoUrl');
+        } catch (e, st) {
+          debugPrint('[AstrologerProfileSetup] Profile photo upload failed: $e');
+          debugPrint(st.toString());
+          photoUrl = _googlePhotoUrl ?? '';
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+                'Could not upload your new photo, kept your Google photo instead: $e')));
+          }
+        }
       }
 
-      // Verification document (optional).
+      // Verification document (optional) — also non-fatal on failure.
       String verificationDocUrl = '';
       if (_pickedDocument != null) {
-        verificationDocUrl = await storage.uploadIdProof(
-          userId: uid,
-          file: _pickedDocument!,
-          docType: 'verification',
-        );
+        debugPrint('[AstrologerProfileSetup] Uploading verification document: '
+            '${_pickedDocument!.path}');
+        try {
+          verificationDocUrl = await storage.uploadIdProof(
+            userId: uid,
+            file: _pickedDocument!,
+            docType: 'verification',
+          );
+          debugPrint('[AstrologerProfileSetup] Verification document uploaded: '
+              '$verificationDocUrl');
+        } catch (e, st) {
+          debugPrint('[AstrologerProfileSetup] Verification document upload '
+              'failed: $e');
+          debugPrint(st.toString());
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+                'Could not upload your document — you can add it later from your profile: $e')));
+          }
+        }
       }
 
       final account = _buildAccount(
@@ -236,7 +268,11 @@ class _AstrologerRegisterScreenState
         verificationDocUrl: verificationDocUrl,
       );
 
+      debugPrint('[AstrologerProfileSetup] Saving astrologer profile to '
+          'Firestore for uid=$uid');
       await ref.read(astrologerServiceProvider).createAccount(uid, account);
+      debugPrint('[AstrologerProfileSetup] Firestore write succeeded for '
+          'uid=$uid');
       ref.read(myAstrologerAccountProvider.notifier).completeOnboarding(account);
       // The account doc now has role: astrologer — refresh the cached user
       // model so router redirects see the up-to-date role.
@@ -244,7 +280,9 @@ class _AstrologerRegisterScreenState
       ref.invalidate(authNotifierProvider);
 
       if (mounted) context.go('/astrologer-dashboard');
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('[AstrologerProfileSetup] Profile save failed: $e');
+      debugPrint(st.toString());
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Could not save your profile: $e')));

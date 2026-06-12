@@ -95,15 +95,22 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const SizedBox(height: 32),
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                shape: BoxShape.circle,
+            const SizedBox(height: 16),
+            Image.asset(
+              'assets/images/app_logo.png',
+              width: 90,
+              height: 90,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child:
+                    const Icon(Icons.sms, color: AppColors.primary, size: 40),
               ),
-              child: const Icon(Icons.sms, color: AppColors.primary, size: 40),
             ),
             const SizedBox(height: 24),
             Text('Enter OTP', style: AppTextStyles.heading2),

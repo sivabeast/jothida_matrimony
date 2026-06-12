@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand maroon — used for the native Android splash background and
+         adaptive icon background layer. Matches AppColors.primary / splashGradient. -->
+    <color name="splashBackground">#8B0000</color>
+    <color name="brandPrimary">#8B0000</color>
+    <color name="brandGold">#D4A843</color>
+</resources>

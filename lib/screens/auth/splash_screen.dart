@@ -99,24 +99,33 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: AppColors.white.withOpacity(0.15),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.gold, width: 2),
+                  // Brand logo — replaces the old heart icon.
+                  Image.asset(
+                    'assets/images/app_logo.png',
+                    width: 220,
+                    height: 220,
+                    fit: BoxFit.contain,
+                    // Graceful fallback if the asset hasn't been placed yet.
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 140,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.gold, width: 2),
+                      ),
+                      child: const Icon(Icons.favorite,
+                          color: AppColors.gold, size: 64),
                     ),
-                    child: const Icon(Icons.favorite, color: AppColors.gold, size: 64),
                   ),
-                  const SizedBox(height: 24),
-                  Text('Jothida Matrimony', style: AppTextStyles.appName),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
+                  // Tamil subtitle (the logo already shows the English name)
                   Text(
                     'ஜோதிட மேட்ரிமோனி',
                     style: AppTextStyles.tamilBody.copyWith(
                       color: AppColors.gold,
-                      fontSize: 18,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 48),

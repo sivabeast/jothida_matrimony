@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:firebase_core/firebase_core.dart' show FirebaseException;
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/dev_config.dart';
 import '../models/profile_model.dart';
@@ -94,7 +95,11 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
   void updateData(Map<String, dynamic> partial) =>
       state = state.copyWith(data: {...state.data, ...partial});
 
-  void setPhotos(List<File> photos) => state = state.copyWith(photos: photos);
+  void setPhotos(List<File> photos) =>
+      // Defensive copy: if the caller (Step6Photos) still holds a reference to
+      // the same list and later modifies it (e.g. user navigates back and adds
+      // or removes a photo), the provider state would be silently corrupted.
+      state = state.copyWith(photos: List.unmodifiable(photos));
 
   void setHoroscopePdf(File pdf) => state = state.copyWith(horoscopePdf: pdf);
 
@@ -133,6 +138,26 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
       final hasPhotos = state.photos.isNotEmpty;
       final hasPdf = state.horoscopePdf != null;
 
+      debugPrint(
+        '[submitProfile] userId=$userId  '
+        'photos=${state.photos.length}  hasPdf=$hasPdf',
+      );
+
+      // Validate that all photo files still exist on disk before we start.
+      for (var i = 0; i < state.photos.length; i++) {
+        final exists = await state.photos[i].exists();
+        debugPrint(
+          '[submitProfile] photo[$i] path=${state.photos[i].path}  exists=$exists',
+        );
+        if (!exists) {
+          throw CloudinaryUploadException(
+            'Photo file $i no longer exists at "${state.photos[i].path}". '
+            'Please re-select your photo and try again.',
+            isRetryable: false,
+          );
+        }
+      }
+
       // Split overall progress (0..1) across the upload phases that apply.
       final photoWeight = hasPhotos ? (hasPdf ? 0.7 : 1.0) : 0.0;
       final pdfWeight = hasPdf ? (hasPhotos ? 0.3 : 1.0) : 0.0;
@@ -144,22 +169,28 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
               ? 'Uploading photo...'
               : 'Uploading ${state.photos.length} photos...',
         );
+        debugPrint('[submitProfile] ▶ starting photo upload (${state.photos.length} file(s))');
         photoUrls = await repo.uploadPhotos(
           userId: userId,
           files: state.photos,
           onProgress: (p) => state = state.copyWith(uploadProgress: p * photoWeight),
         );
+        debugPrint('[submitProfile] ✅ photo upload complete → urls: $photoUrls');
+      } else {
+        debugPrint('[submitProfile] ℹ no photos to upload');
       }
 
       String? pdfUrl;
       if (hasPdf) {
         state = state.copyWith(uploadStatus: 'Uploading horoscope PDF...');
+        debugPrint('[submitProfile] ▶ starting PDF upload');
         pdfUrl = await repo.uploadHoroscopePdf(
           userId: userId,
           file: state.horoscopePdf!,
           onProgress: (p) =>
               state = state.copyWith(uploadProgress: photoWeight + p * pdfWeight),
         );
+        debugPrint('[submitProfile] ✅ PDF upload complete → $pdfUrl');
       }
 
       state = state.copyWith(
@@ -178,10 +209,16 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
         'updatedAt': DateTime.now(),
       };
 
+      debugPrint('[submitProfile] ▶ building ProfileModel from map keys: ${profileData.keys.toList()}');
       final profile = ProfileModel.fromMap(profileData);
+      debugPrint('[submitProfile] ▶ writing profile to Firestore...');
       final profileId = await repo.createProfile(profile);
+      debugPrint('[submitProfile] ✅ Firestore profile created (id=$profileId)');
+
       // Mark the account as profile-completed so the Home gate opens.
+      debugPrint('[submitProfile] ▶ marking profile completed for userId=$userId');
       await ref.read(firestoreServiceProvider).markProfileCompleted(userId);
+      debugPrint('[submitProfile] ✅ markProfileCompleted done');
       ref.invalidate(currentUserProvider); // refresh the gate
       state = state.copyWith(
         isLoading: false,
@@ -190,7 +227,8 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
         uploadStatus: null,
       );
       return profileId;
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('[submitProfile] ❌ FAILED: $e\n$st');
       state = state.copyWith(
         isLoading: false,
         error: _friendlyProfileError(e),

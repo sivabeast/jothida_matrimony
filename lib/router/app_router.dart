@@ -7,7 +7,6 @@ import '../core/config/dev_config.dart';
 import '../providers/auth_provider.dart';
 import '../providers/astrologer_session_provider.dart';
 import '../providers/service_providers.dart';
-import '../screens/astrologer/astrologer_onboarding_screen.dart';
 import '../screens/astrologer/astrologer_dashboard_screen.dart';
 import '../screens/astrologer/astrologer_login_screen.dart';
 import '../screens/astrologer/astrologer_register_screen.dart';
@@ -89,22 +88,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           loc.startsWith('/otp');
       final onSplash = loc == '/';
 
-      // After Google sign-in, an astrologer-to-be (role still 'user',
-      // matrimony profile incomplete) lands here to fill in astrologer-only
-      // details. Don't bounce them to the matrimony /profile/create wizard.
-      final onAstrologerProfileSetup = loc == '/astrologer-register';
-
       // Astrologer portal has its OWN gate (login/signup before dashboard).
+      // /astrologer-register is the first-time setup screen: pre-fills name,
+      // email and photo from Google auth — never asks for credentials again.
       final inAstrologerPortal =
-          loc == '/astrologer-onboarding' || loc == '/astrologer-dashboard';
+          loc == '/astrologer-register' || loc == '/astrologer-dashboard';
       if (inAstrologerPortal) {
         final onboarded = ref.read(isAstrologerOnboardedProvider);
         if (!onboarded && loc == '/astrologer-dashboard') {
           // In demo mode the astrologer signup creates the session locally; in
           // real mode the session is hydrated after Firebase login.
-          return kBypassAuth ? '/astrologer-onboarding' : '/astrologer-login';
+          return kBypassAuth ? '/astrologer-register' : '/astrologer-login';
         }
-        if (onboarded && loc == '/astrologer-onboarding') {
+        if (onboarded && loc == '/astrologer-register') {
           return '/astrologer-dashboard';
         }
         return null;
@@ -160,7 +156,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           !user.isAstrologer &&
           !user.isProfileComplete &&
           !onProfileCreate &&
-          !onAstrologerProfileSetup &&
           !onSplash) {
         debugPrint('[Router] redirect: profile incomplete, blocking $loc → /profile/create');
         return '/profile/create';
@@ -219,10 +214,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Astrologer portal (distinct prefix so it never collides with
       // '/astrologer/:id' above).
-      GoRoute(
-        path: '/astrologer-onboarding',
-        builder: (_, __) => const AstrologerOnboardingScreen(),
-      ),
       GoRoute(
         path: '/astrologer-dashboard',
         builder: (_, __) => const AstrologerDashboardScreen(),
