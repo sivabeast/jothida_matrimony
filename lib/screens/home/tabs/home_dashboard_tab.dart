@@ -22,7 +22,10 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   int _bannerPage = 0;
   Timer? _bannerTimer;
 
-  // Banner slides — add assets/images/banner_1.png and banner_2.png to use real images.
+  // Custom hero banners provided by the brand. The full artwork (headline,
+  // sub-text and CTA) is baked into each image, so the slide simply renders the
+  // asset edge-to-edge. The headline/subtitle/cta below are only used by the
+  // graceful fallback if an asset ever fails to load.
   static const _banners = [
     _BannerData(
       assetPath: 'assets/images/banner_1.png',
@@ -35,12 +38,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
       headline: 'Find Your\nLife Partner',
       subtitle: 'Where stars align,\nhearts connect.',
       cta: 'Explore Matches →',
-    ),
-    _BannerData(
-      assetPath: 'assets/images/banner_3.png',
-      headline: 'Kundli Matching\nfor Happy Life',
-      subtitle: 'Detailed horoscope &\nporutham analysis.',
-      cta: 'Get Horoscope →',
     ),
   ];
 
@@ -120,10 +117,16 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   // ── Banner Carousel ────────────────────────────────────────────────────────
 
   Widget _buildBannerCarousel(BuildContext context) {
+    // The banner artwork is 3:2. Derive the height from the available width
+    // (screen width minus the 16px horizontal padding on each side) so the
+    // complete design is shown edge-to-edge without cropping any content.
+    final bannerWidth = MediaQuery.of(context).size.width - 32;
+    final bannerHeight = bannerWidth * (1024 / 1536);
+
     return Column(
       children: [
         SizedBox(
-          height: 200,
+          height: bannerHeight,
           child: PageView.builder(
             controller: _bannerCtrl,
             itemCount: _banners.length,
@@ -643,21 +646,14 @@ class _MatchCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '${profile.name}, ${profile.age}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              fontFamily: 'Poppins'),
-                        ),
-                      ),
-                      const Icon(Icons.verified, color: Colors.blue, size: 14),
-                    ],
+                  Text(
+                    '${profile.name}, ${profile.age}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        fontFamily: 'Poppins'),
                   ),
                   const SizedBox(height: 3),
                   Text(
