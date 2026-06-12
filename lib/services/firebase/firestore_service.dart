@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:flutter/foundation.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/config/admin_config.dart';
 import '../../models/profile_model.dart';
 import '../../models/interest_model.dart';
 import '../../models/subscription_model.dart';
@@ -48,6 +49,9 @@ class FirestoreService {
             displayName: user.displayName,
             photoUrl: user.photoURL,
             loginProvider: loginProvider,
+            // Auto-assign super_admin to whitelisted accounts; everyone else
+            // defaults to 'user'.
+            role: AdminConfig.roleForEmail(user.email),
             membershipType: 'free',
             isProfileComplete: false,
             isEmailVerified: user.emailVerified,
@@ -66,11 +70,22 @@ class FirestoreService {
           debugPrint('[Firestore] ${user.uid}: existing doc found → '
               'refreshing lastLoginAt/loginProvider');
           // Existing user → bump lastLoginAt and refresh the login provider
-          // (no duplicate document).
+          // (no duplicate document). Also auto-promote a configured Super Admin
+          // account if its document was created before being whitelisted.
+          final existing = snap.data() as Map<String, dynamic>?;
+          final currentRole = existing?['role'];
+          final promoteSuperAdmin =
+              AdminConfig.isSuperAdminEmail(user.email) &&
+                  currentRole != AdminConfig.roleSuperAdmin;
+          if (promoteSuperAdmin) {
+            debugPrint('[Firestore] ${user.uid}: promoting ${user.email} '
+                '→ super_admin');
+          }
           txn.update(docRef, {
             'lastLoginAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
             if (loginProvider != null) 'loginProvider': loginProvider,
+            if (promoteSuperAdmin) 'role': AdminConfig.roleSuperAdmin,
           });
         }
       });
@@ -103,7 +118,8 @@ class FirestoreService {
         'gender': gender,
         'dateOfBirth': Timestamp.fromDate(dateOfBirth),
         'location': location,
-        'role': AppConstants.roleUser,
+        // Role is assigned in createOrUpdateUserOnLogin (which honours the
+        // Super Admin whitelist); don't overwrite it here.
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 

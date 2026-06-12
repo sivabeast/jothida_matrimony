@@ -184,6 +184,11 @@ class UserModel {
     return subscriptionExpiry!.isAfter(DateTime.now());
   }
 
-  bool get isAdmin => role == 'admin';
+  /// `super_admin` accounts also have full admin privileges (route protection
+  /// and Admin Dashboard access). Only the email(s) in
+  /// `AdminConfig.superAdminEmails` receive this role, assigned automatically
+  /// on login.
+  bool get isAdmin => role == 'admin' || role == 'super_admin';
   bool get isAstrologer => role == 'astrologer';
+  bool get isSuperAdmin => role == 'super_admin';
 }

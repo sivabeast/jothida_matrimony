@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../chat/chat_list_screen.dart';
 import 'tabs/astrology_services_tab.dart';
@@ -31,6 +33,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final unread = ref.watch(unreadNotificationCountProvider);
+    // Admin icon visibility — only true for whitelisted Super Admin accounts.
+    final isSuperAdmin =
+        ref.watch(currentUserProvider).valueOrNull?.isSuperAdmin ?? false;
 
     return Scaffold(
       // ── AppBar ────────────────────────────────────────────────────────────
@@ -109,6 +114,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             tooltip: 'Notifications',
           ),
+          // Admin Dashboard — visible ONLY to Super Admin accounts. Normal
+          // users and astrologers never see this icon.
+          if (isSuperAdmin)
+            IconButton(
+              icon: const Icon(Icons.admin_panel_settings,
+                  size: 26, color: AppColors.gold),
+              tooltip: 'Admin Dashboard',
+              onPressed: () {
+                debugPrint('[HomeScreen] Admin icon tapped → /admin');
+                context.push('/admin');
+              },
+            ),
           const SizedBox(width: 4),
         ],
       ),

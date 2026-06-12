@@ -187,9 +187,13 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             onTap: () => context.push('/horoscope'),
           ),
           _QuickAction(
-            icon: Icons.tune,
-            label: 'Search\nFilters',
-            onTap: () => _openFilterSheet(context),
+            icon: Icons.manage_accounts_outlined,
+            label: 'Partner\nPreferences',
+            onTap: () {
+              debugPrint('[HomeDashboard] Quick action: Partner Preferences '
+                  '→ /partner-preferences');
+              context.push('/partner-preferences');
+            },
           ),
           _QuickAction(
             icon: Icons.workspace_premium_outlined,
@@ -198,17 +202,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           ),
         ],
       ),
-    );
-  }
-
-  void _openFilterSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => const _FilterSheet(),
     );
   }
 
@@ -698,104 +691,5 @@ class _MatchCard extends StatelessWidget {
       );
 }
 
-// ── Filter Bottom Sheet ───────────────────────────────────────────────────────
-
-class _FilterSheet extends ConsumerStatefulWidget {
-  const _FilterSheet();
-
-  @override
-  ConsumerState<_FilterSheet> createState() => _FilterSheetState();
-}
-
-class _FilterSheetState extends ConsumerState<_FilterSheet> {
-  RangeValues _age = const RangeValues(21, 40);
-  final _cityCtl = TextEditingController();
-  final _eduCtl = TextEditingController();
-
-  @override
-  void dispose() {
-    _cityCtl.dispose();
-    _eduCtl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20, right: 20, top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Search Filters',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          Text('Age: ${_age.start.round()} - ${_age.end.round()} yrs',
-              style: const TextStyle(fontWeight: FontWeight.w600)),
-          RangeSlider(
-            values: _age,
-            min: 18, max: 60,
-            divisions: 42,
-            activeColor: AppColors.primary,
-            labels: RangeLabels('${_age.start.round()}', '${_age.end.round()}'),
-            onChanged: (v) => setState(() => _age = v),
-          ),
-          TextField(
-            controller: _cityCtl,
-            decoration: const InputDecoration(
-              labelText: 'Location / City',
-              prefixIcon: Icon(Icons.location_on_outlined),
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _eduCtl,
-            decoration: const InputDecoration(
-              labelText: 'Education',
-              prefixIcon: Icon(Icons.school_outlined),
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    final gender = ref.read(matchGenderProvider);
-                    ref.read(discoverProvider.notifier).load(
-                      gender: gender,
-                      filters: {
-                        'minAge': _age.start.round(),
-                        'maxAge': _age.end.round(),
-                        'city': _cityCtl.text.trim(),
-                        'education': _eduCtl.text.trim(),
-                      },
-                    );
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Apply'),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
+// Search filters were replaced by the dedicated Partner Preferences screen
+// (route `/partner-preferences`).

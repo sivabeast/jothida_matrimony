@@ -31,6 +31,16 @@ import '../screens/admin/admin_dashboard.dart';
 import '../screens/admin/admin_users_screen.dart';
 import '../screens/admin/admin_approvals_screen.dart';
 import '../screens/admin/admin_reports_screen.dart';
+import '../screens/admin/admin_management_screens.dart';
+import '../screens/horoscope/horoscope_details_screen.dart';
+import '../screens/profile/personal_details_screen.dart';
+import '../screens/preferences/partner_preferences_screen.dart';
+import '../screens/settings/settings_screen.dart';
+import '../screens/support/help_support_screen.dart';
+import '../screens/legal/privacy_policy_screen.dart';
+import '../screens/legal/terms_conditions_screen.dart';
+import '../screens/report/report_profile_screen.dart';
+import '../core/theme/app_colors.dart';
 
 /// Bridges a [Stream] (here, Firebase's `authStateChanges`) to a
 /// [Listenable] that [GoRouter] can use as `refreshListenable`.
@@ -129,15 +139,27 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (userAsync.isLoading) return null; // wait for the user doc to load
       final user = userAsync.valueOrNull;
       debugPrint('[Router] redirect check: loc=$loc, uid=${user?.uid}, '
-          'isAdmin=${user?.isAdmin}, isAstrologer=${user?.isAstrologer}, '
+          'role=${user?.role}, isAdmin=${user?.isAdmin}, '
+          'isAstrologer=${user?.isAstrologer}, '
           'isProfileComplete=${user?.isProfileComplete}');
+
+      // ── Admin route protection ───────────────────────────────────────────
+      // Only 'admin' / 'super_admin' accounts may reach any /admin route.
+      final onAdmin = loc == '/admin' || loc.startsWith('/admin/');
+      if (onAdmin && !(user?.isAdmin ?? false)) {
+        debugPrint('[Router] ⛔ non-admin blocked from "$loc" → /home');
+        return '/home';
+      }
 
       if (user != null && user.isAstrologer && (onAuthPage || loc == '/home')) {
         debugPrint('[Router] redirect: astrologer account → /astrologer-dashboard');
         return '/astrologer-dashboard';
       }
       if (onAuthPage) {
-        if (user?.isAdmin == true) return '/admin';
+        // Only a *pure* admin account auto-lands on the dashboard. A
+        // super_admin is a normal user with extra powers, so they land on Home
+        // and open the dashboard via the header Admin icon.
+        if (user?.role == 'admin') return '/admin';
         // Came from the astrologer portal's Google sign-in and isn't an
         // astrologer yet → go straight to astrologer profile setup, not the
         // matrimony profile wizard.
@@ -148,7 +170,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           debugPrint('[Router] redirect: astrologer Google sign-in → /astrologer-register');
           return '/astrologer-register';
         }
-        if (user != null && !user.isProfileComplete && !user.isAstrologer) {
+        // Admins/super-admins are exempt from the matrimony onboarding gate.
+        if (user != null &&
+            !user.isProfileComplete &&
+            !user.isAstrologer &&
+            !user.isAdmin) {
           debugPrint('[Router] redirect: profile incomplete → /profile/create');
           return '/profile/create';
         }
@@ -214,10 +240,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/profile/:id',
         builder: (_, state) => ProfileViewScreen(profileId: state.pathParameters['id']!),
       ),
+      // Edit an existing profile (Profile → "Edit Profile"). 3 path segments so
+      // it never collides with the 2-segment '/profile/:id' view route above.
+      GoRoute(
+        path: '/profile/:id/edit',
+        builder: (_, state) =>
+            ProfileCreationScreen(editProfileId: state.pathParameters['id']),
+      ),
       GoRoute(
         path: '/match/:id',
         builder: (_, state) =>
             MatchDetailsScreen(profileId: state.pathParameters['id']!),
+      ),
+      // Report a profile (from the profile view screen).
+      GoRoute(
+        path: '/report/:id',
+        builder: (_, state) =>
+            ReportProfileScreen(profileId: state.pathParameters['id']!),
       ),
       // Astrologer portal (distinct prefix so it never collides with
       // '/astrologer/:id' above).
@@ -233,6 +272,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/subscription', builder: (_, __) => const SubscriptionScreen()),
       GoRoute(path: '/privacy', builder: (_, __) => const PrivacySettingsScreen()),
       GoRoute(path: '/language', builder: (_, __) => const LanguageScreen()),
+      // ── Profile section screens ──────────────────────────────────────────
+      GoRoute(path: '/personal-details', builder: (_, __) => const PersonalDetailsScreen()),
+      GoRoute(path: '/horoscope', builder: (_, __) => const HoroscopeDetailsScreen()),
+      GoRoute(path: '/partner-preferences', builder: (_, __) => const PartnerPreferencesScreen()),
+      GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+      GoRoute(path: '/help', builder: (_, __) => const HelpSupportScreen()),
+      GoRoute(path: '/privacy-policy', builder: (_, __) => const PrivacyPolicyScreen()),
+      GoRoute(path: '/terms', builder: (_, __) => const TermsConditionsScreen()),
       // Admin
       ShellRoute(
         builder: (_, __, child) => AdminShell(child: child),
@@ -241,11 +288,58 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/admin/users', builder: (_, __) => const AdminUsersScreen()),
           GoRoute(path: '/admin/approvals', builder: (_, __) => const AdminApprovalsScreen()),
           GoRoute(path: '/admin/reports', builder: (_, __) => const AdminReportsScreen()),
+          GoRoute(path: '/admin/astrologers', builder: (_, __) => const AstrologerManagementScreen()),
+          GoRoute(path: '/admin/ratings', builder: (_, __) => const RatingManagementScreen()),
+          GoRoute(path: '/admin/banners', builder: (_, __) => const BannerManagementScreen()),
+          GoRoute(path: '/admin/premium', builder: (_, __) => const PremiumManagementScreen()),
+          GoRoute(path: '/admin/analytics', builder: (_, __) => const AnalyticsScreen()),
+          GoRoute(path: '/admin/settings', builder: (_, __) => const AdminSettingsScreen()),
         ],
       ),
     ],
-    errorBuilder: (_, state) => Scaffold(
-      body: Center(child: Text('Page not found: ${state.error}')),
-    ),
+    errorBuilder: (context, state) {
+      // Debug log so a failing navigation is easy to spot in the console.
+      debugPrint('[Router] ❌ ROUTE NOT FOUND → uri="${state.uri}" '
+          'matchedLocation="${state.matchedLocation}" error=${state.error}');
+      return Scaffold(
+        backgroundColor: AppColors.scaffoldBg,
+        appBar: AppBar(
+          title: const Text('Page Not Found'),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.explore_off_outlined,
+                    size: 72, color: AppColors.primary),
+                const SizedBox(height: 16),
+                const Text('Page Not Found',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text('No screen is registered for:\n${state.uri}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => context.go('/home'),
+                  icon: const Icon(Icons.home_outlined),
+                  label: const Text('Go to Home'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
   );
 });

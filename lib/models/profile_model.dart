@@ -446,6 +446,12 @@ class PartnerPreferences {
   final String? city;
   final String? rasi;
   final String? nakshatra;
+  // Extended preference fields (Partner Preferences screen).
+  final String maritalStatus; // 'Any' or a specific status
+  final String? state;
+  final String? country;
+  final String motherTongue; // language preference; 'Any' or a language
+  final bool horoscopeMatchRequired;
 
   const PartnerPreferences({
     this.minAge = 18,
@@ -460,6 +466,11 @@ class PartnerPreferences {
     this.city,
     this.rasi,
     this.nakshatra,
+    this.maritalStatus = 'Any',
+    this.state,
+    this.country,
+    this.motherTongue = 'Any',
+    this.horoscopeMatchRequired = true,
   });
 
   factory PartnerPreferences.fromMap(Map<String, dynamic> map) => PartnerPreferences(
@@ -475,6 +486,11 @@ class PartnerPreferences {
         city: map['city'],
         rasi: map['rasi'],
         nakshatra: map['nakshatra'],
+        maritalStatus: map['maritalStatus'] ?? 'Any',
+        state: map['state'],
+        country: map['country'],
+        motherTongue: map['motherTongue'] ?? 'Any',
+        horoscopeMatchRequired: map['horoscopeMatchRequired'] ?? true,
       );
 
   Map<String, dynamic> toMap() => {
@@ -490,7 +506,52 @@ class PartnerPreferences {
         'city': city,
         'rasi': rasi,
         'nakshatra': nakshatra,
+        'maritalStatus': maritalStatus,
+        'state': state,
+        'country': country,
+        'motherTongue': motherTongue,
+        'horoscopeMatchRequired': horoscopeMatchRequired,
       };
+
+  PartnerPreferences copyWith({
+    int? minAge,
+    int? maxAge,
+    String? minHeight,
+    String? maxHeight,
+    List<String>? education,
+    List<String>? occupation,
+    String? income,
+    String? religion,
+    String? caste,
+    String? city,
+    String? rasi,
+    String? nakshatra,
+    String? maritalStatus,
+    String? state,
+    String? country,
+    String? motherTongue,
+    bool? horoscopeMatchRequired,
+  }) =>
+      PartnerPreferences(
+        minAge: minAge ?? this.minAge,
+        maxAge: maxAge ?? this.maxAge,
+        minHeight: minHeight ?? this.minHeight,
+        maxHeight: maxHeight ?? this.maxHeight,
+        education: education ?? this.education,
+        occupation: occupation ?? this.occupation,
+        income: income ?? this.income,
+        religion: religion ?? this.religion,
+        caste: caste ?? this.caste,
+        city: city ?? this.city,
+        rasi: rasi ?? this.rasi,
+        nakshatra: nakshatra ?? this.nakshatra,
+        maritalStatus: maritalStatus ?? this.maritalStatus,
+        state: state ?? this.state,
+        country: country ?? this.country,
+        motherTongue: motherTongue ?? this.motherTongue,
+        horoscopeMatchRequired:
+            horoscopeMatchRequired ?? this.horoscopeMatchRequired,
+      );
 }
 
 class ContactDetails {

@@ -77,7 +77,11 @@ class MyProfileTab extends ConsumerWidget {
                             ),
                           )
                         : OutlinedButton.icon(
-                            onPressed: () => context.push('/profile/${profile.id}/edit'),
+                            onPressed: () {
+                              debugPrint(
+                                  '[MyProfileTab] Edit Profile → /profile/${profile.id}/edit');
+                              context.push('/profile/${profile.id}/edit');
+                            },
                             icon: const Icon(Icons.edit_outlined),
                             label: const Text('Edit Profile'),
                             style: OutlinedButton.styleFrom(
@@ -102,13 +106,16 @@ class MyProfileTab extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           // Menu items
-          _buildMenuItem(context, Icons.language, 'Language / மொழி', '/language'),
-          _buildMenuItem(context, Icons.lock_outline, 'Privacy Settings', '/privacy'),
-          _buildMenuItem(context, Icons.star_border, 'Horoscope Details', '/horoscope'),
+          _buildMenuItem(context, Icons.person_outline, 'Personal Details', '/personal-details'),
+          _buildMenuItem(context, Icons.auto_awesome_outlined, 'Horoscope Details', '/horoscope'),
+          _buildMenuItem(context, Icons.tune, 'Partner Preferences', '/partner-preferences'),
           // "Porutham Analysis" self-serve removed — astrologer consultation
           // (Match → Compatibility → Connect Astrologer) is the only analysis flow.
-          _buildMenuItem(context, Icons.workspace_premium, 'Subscription Plans', '/subscription'),
+          _buildMenuItem(context, Icons.workspace_premium_outlined, 'Subscription Plans', '/subscription'),
+          _buildMenuItem(context, Icons.settings_outlined, 'Settings', '/settings'),
           _buildMenuItem(context, Icons.help_outline, 'Help & Support', '/help'),
+          _buildMenuItem(context, Icons.privacy_tip_outlined, 'Privacy Policy', '/privacy-policy'),
+          _buildMenuItem(context, Icons.description_outlined, 'Terms & Conditions', '/terms'),
           const SizedBox(height: 8),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
@@ -223,7 +230,10 @@ class MyProfileTab extends ConsumerWidget {
         leading: Icon(icon, color: AppColors.primary),
         title: Text(title),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: () => context.push(route),
+        onTap: () {
+          debugPrint('[MyProfileTab] menu "$title" → $route');
+          context.push(route);
+        },
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       );
 }

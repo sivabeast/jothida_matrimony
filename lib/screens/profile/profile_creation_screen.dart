@@ -15,7 +15,10 @@ import 'steps/step6_photos.dart';
 import 'steps/step7_contact.dart';
 
 class ProfileCreationScreen extends ConsumerStatefulWidget {
-  const ProfileCreationScreen({super.key});
+  /// When non-null, the wizard was opened to edit an existing profile via
+  /// Profile → "Edit Profile" (route `/profile/:id/edit`).
+  final String? editProfileId;
+  const ProfileCreationScreen({super.key, this.editProfileId});
 
   @override
   ConsumerState<ProfileCreationScreen> createState() => _ProfileCreationScreenState();
@@ -25,6 +28,17 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   final PageController _pageController = PageController();
   int _currentStep = 0;
   static const int _totalSteps = 7;
+
+  bool get _isEditMode => widget.editProfileId != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isEditMode) {
+      debugPrint(
+          '[ProfileCreation] opened in EDIT mode for profile ${widget.editProfileId}');
+    }
+  }
 
   final List<String> _stepTitles = [
     'Who Are You',
@@ -131,7 +145,9 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_stepTitles[_currentStep]),
+        title: Text(_isEditMode
+            ? 'Edit Profile · ${_stepTitles[_currentStep]}'
+            : _stepTitles[_currentStep]),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         leading: _currentStep > 0

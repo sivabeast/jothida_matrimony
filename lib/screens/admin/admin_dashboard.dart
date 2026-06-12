@@ -70,11 +70,35 @@ class AdminDashboard extends ConsumerWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StatCard(
+                        title: 'Astrologers',
+                        value: '${stats['totalAstrologers'] ?? 0}',
+                        icon: Icons.auto_awesome,
+                        color: AppColors.gold,
+                        onTap: () => context.go('/admin/astrologers'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StatCard(
+                        title: 'Consultations',
+                        value: '${stats['totalConsultations'] ?? 0}',
+                        icon: Icons.event_available,
+                        color: Colors.teal,
+                        onTap: () => context.go('/admin/analytics'),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
           const SizedBox(height: 24),
-          Text('Quick Actions', style: AppTextStyles.heading3),
+          Text('Management', style: AppTextStyles.heading3),
           const SizedBox(height: 12),
           GridView.count(
             shrinkWrap: true,
@@ -84,9 +108,15 @@ class AdminDashboard extends ConsumerWidget {
             mainAxisSpacing: 12,
             childAspectRatio: 2.5,
             children: [
-              _QuickAction('Profile Approvals', Icons.approval, () => context.go('/admin/approvals')),
               _QuickAction('User Management', Icons.manage_accounts, () => context.go('/admin/users')),
+              _QuickAction('Profile Approvals', Icons.approval, () => context.go('/admin/approvals')),
+              _QuickAction('Astrologer Mgmt', Icons.auto_awesome, () => context.go('/admin/astrologers')),
+              _QuickAction('Rating Mgmt', Icons.star_rate, () => context.go('/admin/ratings')),
+              _QuickAction('Banner Mgmt', Icons.view_carousel, () => context.go('/admin/banners')),
+              _QuickAction('Premium Mgmt', Icons.workspace_premium, () => context.go('/admin/premium')),
+              _QuickAction('Analytics', Icons.insights, () => context.go('/admin/analytics')),
               _QuickAction('Reports', Icons.report_problem, () => context.go('/admin/reports')),
+              _QuickAction('Settings', Icons.settings, () => context.go('/admin/settings')),
             ],
           ),
         ],
