@@ -53,20 +53,20 @@ final astrologersProvider = StreamProvider.autoDispose<List<Astrologer>>((ref) {
 
 /// Top rated astrologers (rating desc).
 final topRatedAstrologersProvider = Provider.autoDispose<List<Astrologer>>((ref) {
-  final list = [...(ref.watch(astrologersProvider).valueOrNull ?? const [])]
+  final list = [...(ref.watch(astrologersProvider).valueOrNull ?? const <Astrologer>[])]
     ..sort((a, b) => b.rating.compareTo(a.rating));
   return list.take(6).toList();
 });
 
 /// Editorially recommended astrologers.
 final recommendedAstrologersProvider = Provider.autoDispose<List<Astrologer>>((ref) =>
-    (ref.watch(astrologersProvider).valueOrNull ?? const [])
+    (ref.watch(astrologersProvider).valueOrNull ?? const <Astrologer>[])
         .where((a) => a.isRecommended)
         .toList());
 
 /// Recently active astrologers (most recent first).
 final recentlyActiveAstrologersProvider = Provider.autoDispose<List<Astrologer>>((ref) {
-  final list = [...(ref.watch(astrologersProvider).valueOrNull ?? const [])]
+  final list = [...(ref.watch(astrologersProvider).valueOrNull ?? const <Astrologer>[])]
     ..sort((a, b) => b.lastActive.compareTo(a.lastActive));
   return list.take(6).toList();
 });
@@ -74,7 +74,7 @@ final recentlyActiveAstrologersProvider = Provider.autoDispose<List<Astrologer>>
 /// Look up a single astrologer by id.
 final astrologerByIdProvider =
     Provider.autoDispose.family<Astrologer?, String>((ref, id) {
-  for (final a in ref.watch(astrologersProvider).valueOrNull ?? const []) {
+  for (final a in ref.watch(astrologersProvider).valueOrNull ?? const <Astrologer>[]) {
     if (a.id == id) return a;
   }
   return null;

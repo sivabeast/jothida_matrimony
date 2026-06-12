@@ -49,7 +49,8 @@ final deletionRequestsProvider =
 
 /// Number of pending requests — drives the admin notification badge.
 final pendingDeletionCountProvider = Provider.autoDispose<int>((ref) {
-  final reqs = ref.watch(deletionRequestsProvider).valueOrNull ?? const [];
+  final reqs =
+      ref.watch(deletionRequestsProvider).valueOrNull ?? const <AccountDeletionRequest>[];
   return reqs.where((r) => r.status == 'pending').length;
 });
 
