@@ -5,4 +5,5 @@
     <color name="splashBackground">#8B0000</color>
     <color name="brandPrimary">#8B0000</color>
     <color name="brandGold">#D4A843</color>
+	<color name="ic_launcher_background">#8B0000</color>
 </resources>
