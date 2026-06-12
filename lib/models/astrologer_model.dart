@@ -38,6 +38,7 @@ class Astrologer {
   final String id;
   final String name;
   final String photoUrl;
+  final String location;
   final double rating;
   final int reviewCount;
   final int experienceYears;
@@ -55,6 +56,7 @@ class Astrologer {
     required this.id,
     required this.name,
     required this.photoUrl,
+    this.location = '',
     required this.rating,
     required this.reviewCount,
     required this.experienceYears,
@@ -77,6 +79,7 @@ class Astrologer {
         id: id,
         name: m['name'] ?? '',
         photoUrl: m['photoUrl'] ?? '',
+        location: m['location'] ?? '',
         rating: (m['rating'] ?? 0).toDouble(),
         reviewCount: m['reviewCount'] ?? 0,
         experienceYears: m['experienceYears'] ?? 0,
@@ -96,6 +99,7 @@ class Astrologer {
   Map<String, dynamic> toMap() => {
         'name': name,
         'photoUrl': photoUrl,
+        'location': location,
         'rating': rating,
         'reviewCount': reviewCount,
         'experienceYears': experienceYears,

@@ -387,6 +387,7 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
 
       profiles = profiles.where((p) {
         if (myUid != null && p.userId == myUid) return false; // never self
+        if (p.isMarried) return false; // married users leave matchmaking
         if (minAge != null && p.age < minAge) return false;
         if (maxAge != null && p.age > maxAge) return false;
         if (education != null && education.isNotEmpty &&

@@ -52,6 +52,23 @@ class MyProfileTab extends ConsumerWidget {
                       ),
                       const SizedBox(height: 8),
                       _buildStatusChip(profile.status),
+                      if (profile.isMarried) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.gold.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.gold.withOpacity(0.5)),
+                          ),
+                          child: const Text('🎉 Married',
+                              style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                      ],
                     ],
                     const SizedBox(height: 16),
                     Row(
@@ -62,34 +79,25 @@ class MyProfileTab extends ConsumerWidget {
                         _buildStat('Matches', '0'),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    profile == null
-                        ? ElevatedButton.icon(
-                            onPressed: () => context.push('/profile/create'),
-                            icon: const Icon(Icons.add),
-                            label: const Text('Create Profile'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              minimumSize: const Size.fromHeight(44),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                            ),
-                          )
-                        : OutlinedButton.icon(
-                            onPressed: () {
-                              debugPrint(
-                                  '[MyProfileTab] Edit Profile → /profile/${profile.id}/edit');
-                              context.push('/profile/${profile.id}/edit');
-                            },
-                            icon: const Icon(Icons.edit_outlined),
-                            label: const Text('Edit Profile'),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(44),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                            ),
-                          ),
+                    // Profile editing now lives on the Personal Details page
+                    // (Edit icon, top-right) — the single, primary place to
+                    // manage the profile. Only the "Create Profile" action
+                    // appears here, and only when no profile exists yet.
+                    if (profile == null) ...[
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () => context.push('/profile/create'),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Create Profile'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size.fromHeight(44),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -4,512 +4,962 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/astrologer_model.dart';
 import '../../../providers/astrologer_provider.dart';
+import '../../../providers/profile_provider.dart';
 
-/// Astrology Services tab — shown as the "Astrologer" tab in the home bottom
-/// nav. Provides quick actions to book appointments, chat, get horoscope,
-/// check compatibility, and get gemstone suggestions.
+/// Astrologer Directory — the "Astrologer" tab.
 ///
-/// The "Top Astrologers" section shows only the aggregate rating and count —
-/// no individual review user names or comments, preserving anonymity.
-class AstrologyServicesTab extends ConsumerWidget {
+/// A dedicated marketplace that shows ONLY astrologers: a search bar (by name
+/// or location), a filter sheet (location / rating / fee / experience /
+/// language), horizontally-scrolling sections, and a detail bottom sheet.
+/// No banners, services grid, horoscope cards or promotional content.
+class AstrologyServicesTab extends ConsumerStatefulWidget {
   const AstrologyServicesTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Top-rated list from the in-memory (or Firestore-backed) provider.
-    final topRated = ref.watch(topRatedAstrologersProvider);
+  ConsumerState<AstrologyServicesTab> createState() =>
+      _AstrologyServicesTabState();
+}
 
-    return ListView(
-      padding: EdgeInsets.zero,
-      children: [
-        // ── Top Banner ────────────────────────────────────────────────────
-        _buildTopBanner(),
-        const SizedBox(height: 20),
+class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _query = '';
+  AstroFilters _filters = const AstroFilters();
 
-        // ── Quick Actions ─────────────────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Our Services',
-                  style: TextStyle(
-                      fontSize: 17,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: 14),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _ServiceAction(
-                    icon: Icons.calendar_month_outlined,
-                    label: 'Book\nAppointment',
-                    color: const Color(0xFFFFF3E0),
-                    iconColor: Colors.deepOrange,
-                    onTap: () => context.push('/astrologer-dashboard'),
-                  ),
-                  _ServiceAction(
-                    icon: Icons.chat_outlined,
-                    label: 'Chat with\nAstrologer',
-                    color: const Color(0xFFE8F5E9),
-                    iconColor: Colors.green,
-                    onTap: () => context.push('/chats'),
-                  ),
-                  _ServiceAction(
-                    icon: Icons.brightness_5_outlined,
-                    label: 'Get\nHoroscope',
-                    color: const Color(0xFFF3E5F5),
-                    iconColor: Colors.purple,
-                    onTap: () => context.push('/horoscope'),
-                  ),
-                  _ServiceAction(
-                    icon: Icons.compare_arrows_outlined,
-                    label: 'Match\nCompatibility',
-                    color: const Color(0xFFFCE4EC),
-                    iconColor: Colors.pinkAccent,
-                    onTap: () {},
-                  ),
-                  _ServiceAction(
-                    icon: Icons.diamond_outlined,
-                    label: 'Gemstone\nSuggestion',
-                    color: const Color(0xFFE3F2FD),
-                    iconColor: Colors.blue,
-                    onTap: () {},
-                  ),
-                ],
-              ),
-            ],
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  bool _matchesSearch(Astrologer a) {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    return a.name.toLowerCase().contains(q) ||
+        a.location.toLowerCase().contains(q);
+  }
+
+  void _clearAll() {
+    setState(() {
+      _query = '';
+      _searchCtrl.clear();
+      _filters = const AstroFilters();
+    });
+  }
+
+  Future<void> _openFilters() async {
+    final result = await showModalBottomSheet<AstroFilters>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => _FilterSheet(initial: _filters),
+    );
+    if (result != null) setState(() => _filters = result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final all = ref.watch(astrologersProvider);
+    final myCity = ref.watch(myProfileProvider).valueOrNull?.city ?? '';
+    final searching = _query.trim().isNotEmpty || _filters.isActive;
+    final matched =
+        all.where((a) => _matchesSearch(a) && _filters.matches(a)).toList();
+
+    return Container(
+      color: AppColors.scaffoldBg,
+      child: Column(
+        children: [
+          _searchBar(),
+          Expanded(
+            child: searching ? _resultsList(matched) : _sections(all, myCity),
           ),
-        ),
-        const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
 
-        // ── Featured Services ─────────────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Featured Services',
-                  style: TextStyle(
-                      fontSize: 17,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: 14),
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.4,
-                children: const [
-                  _FeaturedCard(
-                    icon: Icons.favorite_outline,
-                    title: 'Horoscope\nMatching',
-                    subtitle: 'Jathaka Porutham',
-                    gradient: LinearGradient(
-                        colors: [Color(0xFF800020), Color(0xFFAD1A45)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight),
-                  ),
-                  _FeaturedCard(
-                    icon: Icons.people_outline,
-                    title: 'Astrologer\nConsultation',
-                    subtitle: 'Expert guidance',
-                    gradient: LinearGradient(
-                        colors: [Color(0xFF4A148C), Color(0xFF7B1FA2)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight),
-                  ),
-                  _FeaturedCard(
-                    icon: Icons.auto_graph_outlined,
-                    title: 'Birth Chart\nAnalysis',
-                    subtitle: 'Jathakam',
-                    gradient: LinearGradient(
-                        colors: [Color(0xFF01579B), Color(0xFF0288D1)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight),
-                  ),
-                  _FeaturedCard(
-                    icon: Icons.diamond_outlined,
-                    title: 'Gemstone\nRecommendation',
-                    subtitle: 'Lucky stones',
-                    gradient: LinearGradient(
-                        colors: [Color(0xFF1B5E20), Color(0xFF388E3C)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
+  // ── Search + filter bar ────────────────────────────────────────────────────
 
-        // ── Top Astrologers ───────────────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Top Astrologers',
-                  style: TextStyle(
-                      fontSize: 17,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.bold)),
-              GestureDetector(
-                onTap: () {},
-                child: Row(
-                  children: [
-                    Text('View All',
-                        style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13)),
-                    const SizedBox(width: 2),
-                    Icon(Icons.arrow_forward_ios,
-                        size: 12, color: AppColors.primary),
-                  ],
+  Widget _searchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _searchCtrl,
+              onChanged: (v) => setState(() => _query = v),
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: 'Search astrologer...',
+                prefixIcon: const Icon(Icons.search, color: AppColors.primary),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: () => setState(() {
+                          _query = '';
+                          _searchCtrl.clear();
+                        }),
+                      ),
+                filled: true,
+                fillColor: Colors.white,
+                isDense: true,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: Colors.grey[200]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide:
+                      const BorderSide(color: AppColors.primary, width: 1.4),
                 ),
               ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          GestureDetector(
+            onTap: _openFilters,
+            child: Container(
+              height: 48,
+              width: 48,
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  const Icon(Icons.tune, color: Colors.white),
+                  if (_filters.isActive)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: AppColors.gold,
+                          shape: BoxShape.circle,
+                          border:
+                              Border.all(color: AppColors.primary, width: 1.5),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Horizontal sections (default view) ──────────────────────────────────────
+
+  Widget _sections(List<Astrologer> all, String myCity) {
+    final topRated = [...all]..sort((a, b) => b.rating.compareTo(a.rating));
+    final experienced = [...all]
+      ..sort((a, b) => b.experienceYears.compareTo(a.experienceYears));
+    var nearby = myCity.isEmpty
+        ? <Astrologer>[]
+        : all
+            .where((a) => a.location.toLowerCase() == myCity.toLowerCase())
+            .toList();
+    if (nearby.isEmpty) nearby = all; // fallback so the row is never empty
+
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 24),
+      children: [
+        _sectionHeader('Top Rated Astrologers'),
+        _horizontalRow(topRated),
+        _sectionHeader('Experienced Astrologers'),
+        _horizontalRow(experienced),
+        _sectionHeader(
+            myCity.isEmpty ? 'Nearby Astrologers' : 'Nearby Astrologers · $myCity'),
+        _horizontalRow(nearby),
+      ],
+    );
+  }
+
+  Widget _sectionHeader(String title) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+        child: Text(
+          title,
+          style: const TextStyle(
+              fontSize: 16,
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary),
+        ),
+      );
+
+  Widget _horizontalRow(List<Astrologer> list) {
+    return SizedBox(
+      height: 258,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: list.length,
+        itemBuilder: (_, i) => _AstrologerCard(
+          astrologer: list[i],
+          onTap: () => _showDetail(list[i]),
+        ),
+      ),
+    );
+  }
+
+  // ── Search / filter results (vertical list) ─────────────────────────────────
+
+  Widget _resultsList(List<Astrologer> list) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${list.length} astrologer${list.length == 1 ? '' : 's'} found',
+                  style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _clearAll,
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Clear'),
+                style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+              ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        ...topRated.take(5).map((a) => _AstrologerCard(astrologer: a)),
-        const SizedBox(height: 24),
-      ],
-    );
-  }
-
-  Widget _buildTopBanner() {
-    return Stack(
-      children: [
-        // Try real asset; fall back to branded gradient.
-        Image.asset(
-          'assets/images/astrology_banner.png',
-          height: 180,
-          width: double.infinity,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _fallbackBanner(),
+        Expanded(
+          child: list.isEmpty
+              ? _emptyState()
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  itemCount: list.length,
+                  itemBuilder: (_, i) => _AstrologerRow(
+                    astrologer: list[i],
+                    onTap: () => _showDetail(list[i]),
+                  ),
+                ),
         ),
       ],
     );
   }
 
-  Widget _fallbackBanner() {
-    return Container(
-      height: 180,
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF2C0B3F), Color(0xFF800020)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  Widget _emptyState() => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.search_off,
+                  size: 64, color: AppColors.primary.withOpacity(0.4)),
+              const SizedBox(height: 16),
+              const Text('No astrologers found',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text('Try adjusting your search or filters.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[600])),
+              const SizedBox(height: 16),
+              OutlinedButton(
+                onPressed: _clearAll,
+                style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary)),
+                child: const Text('Clear search & filters'),
+              ),
+            ],
+          ),
         ),
+      );
+
+  void _showDetail(Astrologer a) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _AstrologerDetailSheet(astrologer: a),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Filters
+// ─────────────────────────────────────────────────────────────────────────────
+
+class AstroFilters {
+  final String? location;
+  final double? minRating;
+  final int? minExperience;
+  final String? language;
+  final String? feeLabel;
+
+  const AstroFilters({
+    this.location,
+    this.minRating,
+    this.minExperience,
+    this.language,
+    this.feeLabel,
+  });
+
+  bool get isActive =>
+      location != null ||
+      minRating != null ||
+      minExperience != null ||
+      language != null ||
+      feeLabel != null;
+
+  bool matches(Astrologer a) {
+    if (location != null && a.location != location) return false;
+    if (minRating != null && a.rating < minRating!) return false;
+    if (minExperience != null && a.experienceYears < minExperience!) {
+      return false;
+    }
+    if (language != null && !a.languages.contains(language)) return false;
+    if (feeLabel != null) {
+      final fee = a.startingPrice;
+      switch (feeLabel) {
+        case 'Below ₹199':
+          if (fee >= 199) return false;
+          break;
+        case '₹199 - ₹499':
+          if (fee < 199 || fee > 499) return false;
+          break;
+        case '₹500 - ₹999':
+          if (fee < 500 || fee > 999) return false;
+          break;
+        case '₹1000+':
+          if (fee < 1000) return false;
+          break;
+      }
+    }
+    return true;
+  }
+}
+
+class _FilterSheet extends StatefulWidget {
+  final AstroFilters initial;
+  const _FilterSheet({required this.initial});
+
+  @override
+  State<_FilterSheet> createState() => _FilterSheetState();
+}
+
+class _FilterSheetState extends State<_FilterSheet> {
+  late String? _loc = widget.initial.location;
+  late double? _rating = widget.initial.minRating;
+  late int? _exp = widget.initial.minExperience;
+  late String? _lang = widget.initial.language;
+  late String? _fee = widget.initial.feeLabel;
+
+  static const _locations = ['Chennai', 'Coimbatore', 'Madurai', 'Trichy', 'Salem'];
+  static const _languages = ['Tamil', 'English', 'Telugu', 'Malayalam'];
+  static const _fees = ['Below ₹199', '₹199 - ₹499', '₹500 - ₹999', '₹1000+'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 12,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -30,
-            top: -30,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: AppColors.gold.withOpacity(0.2), width: 1),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2)),
               ),
             ),
-          ),
-          Positioned(
-            right: 10,
-            top: 10,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: AppColors.gold.withOpacity(0.35), width: 1),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 160, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
+            const Text('Filter Astrologers',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            _group<String>('📍 Location', [for (final l in _locations) (l, l)],
+                _loc, (v) => setState(() => _loc = v)),
+            _group<double>(
+                '⭐ Rating',
+                const [('4+ Stars', 4.0), ('4.5+ Stars', 4.5)],
+                _rating,
+                (v) => setState(() => _rating = v)),
+            _group<String>('💰 Consultation Fee',
+                [for (final f in _fees) (f, f)], _fee, (v) => setState(() => _fee = v)),
+            _group<int>('🕒 Experience', const [
+              ('1+ Years', 1),
+              ('5+ Years', 5),
+              ('10+ Years', 10),
+              ('15+ Years', 15),
+            ], _exp, (v) => setState(() => _exp = v)),
+            _group<String>('🌐 Language', [for (final l in _languages) (l, l)],
+                _lang, (v) => setState(() => _lang = v)),
+            const SizedBox(height: 8),
+            Row(
               children: [
-                const Text('✨ Jothida Sevai',
-                    style: TextStyle(
-                        color: AppColors.gold,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5)),
-                const SizedBox(height: 6),
-                const Text('Astrology\nServices',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.bold,
-                        height: 1.2)),
-                const SizedBox(height: 6),
-                Text(
-                  'Expert guidance for your\nperfect match',
-                  style: TextStyle(
-                      color: Colors.white.withOpacity(0.75), fontSize: 12),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => setState(() {
+                      _loc = null;
+                      _rating = null;
+                      _exp = null;
+                      _lang = null;
+                      _fee = null;
+                    }),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                      side: BorderSide(color: Colors.grey[400]!),
+                    ),
+                    child: const Text('Reset'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(
+                      context,
+                      AstroFilters(
+                        location: _loc,
+                        minRating: _rating,
+                        minExperience: _exp,
+                        language: _lang,
+                        feeLabel: _fee,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                    child: const Text('Apply Filters'),
+                  ),
                 ),
               ],
             ),
-          ),
-          Positioned(
-            right: 20,
-            top: 0,
-            bottom: 0,
-            child: Center(
-              child: Icon(
-                Icons.auto_awesome,
-                size: 90,
-                color: AppColors.gold.withOpacity(0.3),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _group<T>(String title, List<(String, T)> opts, T? selected,
+      ValueChanged<T?> onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: opts.map((o) {
+            final sel = selected == o.$2;
+            return ChoiceChip(
+              label: Text(o.$1),
+              selected: sel,
+              showCheckmark: false,
+              selectedColor: AppColors.primary.withOpacity(0.12),
+              backgroundColor: Colors.grey[100],
+              side:
+                  BorderSide(color: sel ? AppColors.primary : Colors.grey[300]!),
+              labelStyle: TextStyle(
+                color: sel ? AppColors.primary : Colors.black87,
+                fontWeight: sel ? FontWeight.w600 : FontWeight.normal,
+                fontSize: 13,
               ),
+              onSelected: (_) => onChanged(sel ? null : o.$2),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared image helper
+// ─────────────────────────────────────────────────────────────────────────────
+
+Widget _astroImage(String url,
+    {required double width, required double height, double radius = 12}) {
+  return ClipRRect(
+    borderRadius: BorderRadius.circular(radius),
+    child: Image.network(
+      url,
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Container(
+        width: width,
+        height: height,
+        color: AppColors.primary.withOpacity(0.08),
+        child: const Icon(Icons.person, color: AppColors.primary, size: 40),
+      ),
+      loadingBuilder: (ctx, child, progress) => progress == null
+          ? child
+          : Container(
+              width: width,
+              height: height,
+              color: AppColors.primary.withOpacity(0.05),
+              child: const Center(
+                  child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))),
             ),
-          ),
-        ],
-      ),
-    );
-  }
+    ),
+  );
 }
 
-// ── Service Action Button ─────────────────────────────────────────────────────
-
-class _ServiceAction extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final Color iconColor;
-  final VoidCallback onTap;
-
-  const _ServiceAction({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.iconColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            child: Icon(icon, color: iconColor, size: 24),
-          ),
-          const SizedBox(height: 7),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
-              height: 1.3,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Featured Service Card ─────────────────────────────────────────────────────
-
-class _FeaturedCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final LinearGradient gradient;
-
-  const _FeaturedCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.gradient,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: gradient,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Icon(icon, color: Colors.white.withOpacity(0.9), size: 28),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      height: 1.25)),
-              const SizedBox(height: 2),
-              Text(subtitle,
-                  style: TextStyle(
-                      color: Colors.white.withOpacity(0.7), fontSize: 10.5)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Astrologer Card ───────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Astrologer card (horizontal sections)
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _AstrologerCard extends StatelessWidget {
   final Astrologer astrologer;
-  const _AstrologerCard({required this.astrologer});
+  final VoidCallback onTap;
+  const _AstrologerCard({required this.astrologer, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final spec = astrologer.specializations.isNotEmpty
-        ? astrologer.specializations.first
-        : 'Vedic Astrology';
-
+    final a = astrologer;
     return GestureDetector(
-      onTap: () => context.push('/astrologer/${astrologer.id}'),
+      onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        padding: const EdgeInsets.all(14),
+        width: 200,
+        margin: const EdgeInsets.only(right: 12, top: 2, bottom: 4),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.07), blurRadius: 10)
+            BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)
           ],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Photo with availability indicator
             Stack(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: astrologer.photoUrl.isNotEmpty
-                      ? Image.network(
-                          astrologer.photoUrl,
-                          width: 58,
-                          height: 58,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _photoPlaceholder(),
-                        )
-                      : _photoPlaceholder(),
-                ),
-                if (astrologer.isAvailable)
-                  Positioned(
-                    bottom: 2,
-                    right: 2,
-                    child: Container(
-                      width: 13,
-                      height: 13,
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
+                _astroImage(a.photoUrl, width: 200, height: 112, radius: 16),
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: a.isAvailable ? AppColors.success : Colors.grey[600],
+                      borderRadius: BorderRadius.circular(10),
                     ),
+                    child: Text(a.isAvailable ? 'Available' : 'Offline',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold)),
                   ),
+                ),
               ],
             ),
-            const SizedBox(width: 14),
-            // Info
-            Expanded(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(astrologer.name,
+                  Text(a.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontSize: 13.5,
                           fontFamily: 'Poppins')),
-                  const SizedBox(height: 2),
-                  Text(spec,
-                      style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.star, color: AppColors.gold, size: 14),
+                      const SizedBox(width: 3),
+                      Text(a.rating.toStringAsFixed(1),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 12)),
+                      const SizedBox(width: 3),
+                      Text('(${a.reviewCount})',
+                          style:
+                              TextStyle(color: Colors.grey[500], fontSize: 11)),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  _iconLine(Icons.location_on_outlined, a.location),
                   const SizedBox(height: 3),
                   Row(
                     children: [
-                      Icon(Icons.work_outline,
-                          size: 12, color: Colors.grey[500]),
+                      const Icon(Icons.currency_rupee,
+                          size: 13, color: AppColors.primary),
+                      Text('${a.startingPrice}',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12.5,
+                              color: AppColors.primary)),
+                      const Spacer(),
+                      Icon(Icons.work_history_outlined,
+                          size: 12, color: Colors.grey[600]),
+                      const SizedBox(width: 2),
+                      Text('${a.experienceYears}y',
+                          style:
+                              TextStyle(color: Colors.grey[700], fontSize: 11)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.auto_awesome,
+                          size: 12, color: AppColors.gold),
                       const SizedBox(width: 4),
-                      Text('${astrologer.experienceYears} yrs exp',
-                          style: TextStyle(
-                              color: Colors.grey[600], fontSize: 11.5)),
+                      Expanded(
+                        child: Text(
+                          a.specializations.isEmpty
+                              ? 'Astrologer'
+                              : a.specializations.first,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 11, color: AppColors.primary),
+                        ),
+                      ),
                     ],
                   ),
                 ],
               ),
             ),
-            // Aggregate rating — anonymous (no user names, no individual comments)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.star_rounded,
-                        color: Colors.amber, size: 16),
-                    const SizedBox(width: 3),
-                    Text(
-                      astrologer.rating.toStringAsFixed(1),
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 13),
-                    ),
-                  ],
-                ),
-                Text('(${astrologer.reviewCount})',
-                    style:
-                        TextStyle(color: Colors.grey[500], fontSize: 11)),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 32,
-                  child: ElevatedButton(
-                    onPressed: () =>
-                        context.push('/astrologer/${astrologer.id}'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                      elevation: 0,
-                    ),
-                    child: const Text('Book',
-                        style: TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _iconLine(IconData icon, String text) => Row(
+        children: [
+          Icon(icon, size: 13, color: Colors.grey[500]),
+          const SizedBox(width: 3),
+          Expanded(
+            child: Text(text.isEmpty ? '—' : text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: Colors.grey[600], fontSize: 11.5)),
+          ),
+        ],
+      );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Astrologer row (search / filter results)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AstrologerRow extends StatelessWidget {
+  final Astrologer astrologer;
+  final VoidCallback onTap;
+  const _AstrologerRow({required this.astrologer, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final a = astrologer;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _astroImage(a.photoUrl, width: 78, height: 78, radius: 12),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(a.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                fontFamily: 'Poppins')),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.gold.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.star,
+                                color: AppColors.gold, size: 12),
+                            const SizedBox(width: 2),
+                            Text(a.rating.toStringAsFixed(1),
+                                style: const TextStyle(
+                                    fontSize: 11, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 3),
+                  Text('${a.location}  •  (${a.reviewCount} ratings)',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                  const SizedBox(height: 4),
+                  Text(
+                    a.specializations.isEmpty
+                        ? 'Astrologer'
+                        : a.specializations.first,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12, color: AppColors.primary),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.currency_rupee,
+                          size: 13, color: AppColors.primary),
+                      Text('${a.startingPrice}',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 12.5)),
+                      const SizedBox(width: 12),
+                      Icon(Icons.work_history_outlined,
+                          size: 13, color: Colors.grey[600]),
+                      const SizedBox(width: 3),
+                      Text('${a.experienceYears} yrs',
+                          style:
+                              TextStyle(color: Colors.grey[700], fontSize: 12)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Astrologer detail bottom sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AstrologerDetailSheet extends StatelessWidget {
+  final Astrologer astrologer;
+  const _AstrologerDetailSheet({required this.astrologer});
+
+  @override
+  Widget build(BuildContext context) {
+    final a = astrologer;
+    return DraggableScrollableSheet(
+      initialChildSize: 0.82,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (_, controller) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.scaffoldBg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 44,
+              height: 5,
+              decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(3)),
+            ),
+            Expanded(
+              child: ListView(
+                controller: controller,
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _astroImage(a.photoUrl, width: 92, height: 92, radius: 16),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(a.name,
+                                style: const TextStyle(
+                                    fontSize: 19,
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.star,
+                                    color: AppColors.gold, size: 16),
+                                const SizedBox(width: 4),
+                                Text(a.rating.toStringAsFixed(1),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold)),
+                                const SizedBox(width: 4),
+                                Text('(${a.reviewCount} ratings)',
+                                    style: TextStyle(
+                                        color: Colors.grey[600], fontSize: 12)),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(Icons.location_on_outlined,
+                                    size: 15, color: Colors.grey[600]),
+                                const SizedBox(width: 3),
+                                Text(a.location,
+                                    style: TextStyle(
+                                        color: Colors.grey[700], fontSize: 13)),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color:
+                                    (a.isAvailable ? AppColors.success : Colors.grey)
+                                        .withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                a.isAvailable
+                                    ? 'Available now'
+                                    : 'Currently offline',
+                                style: TextStyle(
+                                    color: a.isAvailable
+                                        ? AppColors.success
+                                        : Colors.grey[700],
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                          child: _statTile(Icons.currency_rupee, 'Consultation',
+                              '₹${a.startingPrice}')),
+                      const SizedBox(width: 12),
+                      Expanded(
+                          child: _statTile(Icons.work_history_outlined,
+                              'Experience', '${a.experienceYears} yrs')),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  _label('🌐 Languages Known'),
+                  _chips(a.languages),
+                  const SizedBox(height: 16),
+                  _label('🔮 Specializations'),
+                  _chips(a.specializations),
+                  const SizedBox(height: 16),
+                  _label('📝 About'),
+                  Text(a.about,
+                      style: const TextStyle(height: 1.5, fontSize: 13.5)),
+                  const SizedBox(height: 16),
+                  _label('📞 Consultation Availability'),
+                  Text(
+                    a.isAvailable
+                        ? 'Available for chat & booking now — typically responds quickly.'
+                        : 'Currently offline. You can still book a consultation and they will confirm a slot.',
+                    style: TextStyle(
+                        color: Colors.grey[700], fontSize: 13, height: 1.5),
+                  ),
+                  const SizedBox(height: 22),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            context.push('/chats');
+                          },
+                          icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                          label: const Text('Chat Now'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            side: const BorderSide(color: AppColors.primary),
+                            minimumSize: const Size.fromHeight(48),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            context.push('/astrologer/${a.id}');
+                          },
+                          icon: const Icon(Icons.event_available, size: 18),
+                          label: const Text('Book'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size.fromHeight(48),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        context.push('/astrologer/${a.id}');
+                      },
+                      icon: const Icon(Icons.open_in_new, size: 16),
+                      label: const Text('View Full Profile'),
+                      style:
+                          TextButton.styleFrom(foregroundColor: AppColors.primary),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -517,14 +967,53 @@ class _AstrologerCard extends StatelessWidget {
     );
   }
 
-  Widget _photoPlaceholder() => Container(
-        width: 58,
-        height: 58,
+  Widget _statTile(IconData icon, String label, String value) => Container(
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(30),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)
+          ],
         ),
-        child:
-            const Icon(Icons.person, color: AppColors.primary, size: 30),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.primary, size: 22),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(value,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 15)),
+                Text(label,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 11)),
+              ],
+            ),
+          ],
+        ),
+      );
+
+  Widget _label(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(text,
+            style: const TextStyle(
+                fontSize: 14,
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary)),
+      );
+
+  Widget _chips(List<String> items) => Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: (items.isEmpty ? ['—'] : items)
+            .map((t) => Chip(
+                  label: Text(t, style: const TextStyle(fontSize: 12)),
+                  backgroundColor: AppColors.primary.withOpacity(0.08),
+                  side: BorderSide(color: AppColors.primary.withOpacity(0.2)),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ))
+            .toList(),
       );
 }

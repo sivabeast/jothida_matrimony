@@ -7,6 +7,7 @@ import '../../models/profile_model.dart';
 import '../../models/interest_model.dart';
 import '../../models/subscription_model.dart';
 import '../../models/report_model.dart';
+import '../../models/account_deletion_request_model.dart';
 import '../../models/notification_model.dart';
 import '../../models/user_model.dart';
 
@@ -379,12 +380,115 @@ class FirestoreService {
         .count()
         .get();
     final reports = await _db.collection(AppConstants.reportsCollection).count().get();
+    final married = await _db
+        .collection(AppConstants.profilesCollection)
+        .where('isMarried', isEqualTo: true)
+        .count()
+        .get();
+    final pendingDeletions = await _db
+        .collection(AppConstants.accountDeletionRequestsCollection)
+        .where('status', isEqualTo: 'pending')
+        .count()
+        .get();
 
     return {
       'totalUsers': users.count,
       'totalProfiles': profiles.count,
       'pendingProfiles': pendingProfiles.count,
       'totalReports': reports.count,
+      'marriedUsers': married.count,
+      'pendingDeletions': pendingDeletions.count,
     };
+  }
+
+  // ── Marriage ───────────────────────────────────────────────────────────────
+  /// Marks a profile as married → leaves active matchmaking (isActive false)
+  /// while keeping the record and existing chats intact.
+  Future<void> markProfileMarried(String profileId) =>
+      _db.collection(AppConstants.profilesCollection).doc(profileId).update({
+        'isMarried': true,
+        'isActive': false,
+        'marriedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+  Future<List<ProfileModel>> getMarriedProfiles({int limit = 100}) async {
+    final snap = await _db
+        .collection(AppConstants.profilesCollection)
+        .where('isMarried', isEqualTo: true)
+        .limit(limit)
+        .get();
+    return snap.docs.map((d) => ProfileModel.fromFirestore(d)).toList();
+  }
+
+  // ── Account deletion requests ──────────────────────────────────────────────
+  Future<void> submitDeletionRequest(AccountDeletionRequest req) async {
+    await _db
+        .collection(AppConstants.accountDeletionRequestsCollection)
+        .doc(req.id)
+        .set(req.toFirestore());
+    await _db.collection(AppConstants.usersCollection).doc(req.userId).update({
+      'deletionRequested': true,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<List<AccountDeletionRequest>> getDeletionRequests() async {
+    final snap = await _db
+        .collection(AppConstants.accountDeletionRequestsCollection)
+        .orderBy('requestDate', descending: true)
+        .get();
+    return snap.docs
+        .map((d) => AccountDeletionRequest.fromFirestore(d))
+        .toList();
+  }
+
+  /// Approve → permanently remove the user's Firestore data and mark the
+  /// request approved. NOTE: deleting the Firebase Auth account itself requires
+  /// the Admin SDK (a Cloud Function) triggered on this status flip.
+  Future<void> approveDeletionRequest(AccountDeletionRequest req) async {
+    final batch = _db.batch();
+    final profiles = await _db
+        .collection(AppConstants.profilesCollection)
+        .where('userId', isEqualTo: req.userId)
+        .get();
+    for (final doc in profiles.docs) {
+      batch.delete(doc.reference);
+    }
+    final sent = await _db
+        .collection(AppConstants.interestsCollection)
+        .where('senderId', isEqualTo: req.userId)
+        .get();
+    for (final doc in sent.docs) {
+      batch.delete(doc.reference);
+    }
+    final received = await _db
+        .collection(AppConstants.interestsCollection)
+        .where('receiverId', isEqualTo: req.userId)
+        .get();
+    for (final doc in received.docs) {
+      batch.delete(doc.reference);
+    }
+    batch.delete(_db.collection(AppConstants.usersCollection).doc(req.userId));
+    batch.update(
+      _db.collection(AppConstants.accountDeletionRequestsCollection).doc(req.id),
+      {'status': 'approved', 'resolvedAt': FieldValue.serverTimestamp()},
+    );
+    await batch.commit();
+  }
+
+  Future<void> rejectDeletionRequest(String requestId, String userId) async {
+    final batch = _db.batch();
+    batch.update(
+      _db
+          .collection(AppConstants.accountDeletionRequestsCollection)
+          .doc(requestId),
+      {'status': 'rejected', 'resolvedAt': FieldValue.serverTimestamp()},
+    );
+    batch.update(
+      _db.collection(AppConstants.usersCollection).doc(userId),
+      {'deletionRequested': false, 'updatedAt': FieldValue.serverTimestamp()},
+    );
+    await batch.commit();
   }
 }

@@ -26,6 +26,7 @@ class UserModel {
   final String membershipType;
   final Map<String, bool> privacySettings;
   final String? fcmToken;
+  final bool deletionRequested; // true while an account-deletion request is pending
 
   const UserModel({
     required this.uid,
@@ -57,6 +58,7 @@ class UserModel {
       'hideAdditionalPhotos': false,
     },
     this.fcmToken,
+    this.deletionRequested = false,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -99,6 +101,7 @@ class UserModel {
         'hideAdditionalPhotos': false,
       }),
       fcmToken: data['fcmToken'],
+      deletionRequested: data['deletionRequested'] ?? false,
     );
   }
 
@@ -127,6 +130,7 @@ class UserModel {
         'membershipType': membershipType,
         'privacySettings': privacySettings,
         'fcmToken': fcmToken,
+        'deletionRequested': deletionRequested,
       };
 
   UserModel copyWith({
@@ -152,6 +156,7 @@ class UserModel {
     String? membershipType,
     Map<String, bool>? privacySettings,
     String? fcmToken,
+    bool? deletionRequested,
   }) =>
       UserModel(
         uid: uid ?? this.uid,
@@ -176,6 +181,7 @@ class UserModel {
         membershipType: membershipType ?? this.membershipType,
         privacySettings: privacySettings ?? this.privacySettings,
         fcmToken: fcmToken ?? this.fcmToken,
+        deletionRequested: deletionRequested ?? this.deletionRequested,
       );
 
   bool get hasActiveSubscription {

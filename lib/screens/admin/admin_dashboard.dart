@@ -2,9 +2,12 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/config/dev_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../providers/account_provider.dart';
 import '../../providers/admin_provider.dart';
+import '../../providers/auth_provider.dart';
 
 class AdminDashboard extends ConsumerWidget {
   const AdminDashboard({super.key});
@@ -12,6 +15,9 @@ class AdminDashboard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(adminStatsProvider);
+    final pendingDeletions = ref.watch(pendingDeletionCountProvider);
+    final canManageDeletions = kBypassAuth ||
+        (ref.watch(currentUserProvider).valueOrNull?.isSuperAdmin ?? false);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -20,6 +26,36 @@ class AdminDashboard extends ConsumerWidget {
         children: [
           Text('Dashboard', style: AppTextStyles.heading2),
           const SizedBox(height: 16),
+          // Super Admin notification — new account deletion requests.
+          if (canManageDeletions && pendingDeletions > 0) ...[
+            GestureDetector(
+              onTap: () => context.go('/admin/deletion-requests'),
+              child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.warning.withOpacity(0.4)),
+                ),
+                child: Row(
+                  children: [
+                    const Text('🔔', style: TextStyle(fontSize: 18)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '$pendingDeletions new account deletion request'
+                        '${pendingDeletions == 1 ? '' : 's'}',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios, size: 14),
+                  ],
+                ),
+              ),
+            ),
+          ],
           statsAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Text('Error: $e'),
@@ -115,8 +151,12 @@ class AdminDashboard extends ConsumerWidget {
               _QuickAction('Banner Mgmt', Icons.view_carousel, () => context.go('/admin/banners')),
               _QuickAction('Premium Mgmt', Icons.workspace_premium, () => context.go('/admin/premium')),
               _QuickAction('Analytics', Icons.insights, () => context.go('/admin/analytics')),
+              _QuickAction('Married Users', Icons.celebration, () => context.go('/admin/married')),
               _QuickAction('Reports', Icons.report_problem, () => context.go('/admin/reports')),
               _QuickAction('Settings', Icons.settings, () => context.go('/admin/settings')),
+              if (canManageDeletions)
+                _QuickAction('Deletion Requests', Icons.delete_sweep,
+                    () => context.go('/admin/deletion-requests')),
             ],
           ),
         ],

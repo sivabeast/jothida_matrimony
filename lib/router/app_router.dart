@@ -32,6 +32,7 @@ import '../screens/admin/admin_users_screen.dart';
 import '../screens/admin/admin_approvals_screen.dart';
 import '../screens/admin/admin_reports_screen.dart';
 import '../screens/admin/admin_management_screens.dart';
+import '../screens/admin/account_admin_screens.dart';
 import '../screens/horoscope/horoscope_details_screen.dart';
 import '../screens/profile/personal_details_screen.dart';
 import '../screens/preferences/partner_preferences_screen.dart';
@@ -294,6 +295,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/admin/premium', builder: (_, __) => const PremiumManagementScreen()),
           GoRoute(path: '/admin/analytics', builder: (_, __) => const AnalyticsScreen()),
           GoRoute(path: '/admin/settings', builder: (_, __) => const AdminSettingsScreen()),
+          GoRoute(path: '/admin/married', builder: (_, __) => const MarriedUsersScreen()),
+          GoRoute(path: '/admin/deletion-requests', builder: (_, __) => const AccountDeletionRequestsScreen()),
         ],
       ),
     ],

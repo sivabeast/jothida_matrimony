@@ -69,6 +69,7 @@ class ProfileModel {
   final DateTime updatedAt;
   final bool isFeatured;
   final bool isActive;
+  final bool isMarried; // true once the user marks themselves as married
 
   const ProfileModel({
     required this.id,
@@ -108,6 +109,7 @@ class ProfileModel {
     required this.updatedAt,
     this.isFeatured = false,
     this.isActive = true,
+    this.isMarried = false,
   });
 
   factory ProfileModel.fromFirestore(DocumentSnapshot doc) {
@@ -156,6 +158,7 @@ class ProfileModel {
           : DateTime.now(),
       isFeatured: d['isFeatured'] ?? false,
       isActive: d['isActive'] ?? true,
+      isMarried: d['isMarried'] ?? false,
     );
   }
 
@@ -196,6 +199,7 @@ class ProfileModel {
         'updatedAt': Timestamp.fromDate(updatedAt),
         'isFeatured': isFeatured,
         'isActive': isActive,
+        'isMarried': isMarried,
       };
 
   // ── Convenience getters used by UI ────────────────────────────────────
@@ -255,6 +259,23 @@ class ProfileModel {
 
   ProfileModel copyWith({
     String? fullName,
+    String? gender,
+    DateTime? dateOfBirth,
+    int? age,
+    String? height,
+    String? weight,
+    String? maritalStatus,
+    String? religion,
+    String? caste,
+    String? subCaste,
+    String? education,
+    String? occupation,
+    String? annualIncome,
+    String? country,
+    String? state,
+    String? city,
+    String? motherTongue,
+    String? aboutMe,
     String? profilePhotoUrl,
     List<String>? additionalPhotos,
     HoroscopeDetails? horoscope,
@@ -265,6 +286,7 @@ class ProfileModel {
     bool? isVerified,
     bool? isFeatured,
     bool? isActive,
+    bool? isMarried,
     int? reportCount,
     int? viewCount,
     int? interestCount,
@@ -276,23 +298,23 @@ class ProfileModel {
         profileCreatedBy: profileCreatedBy,
         profileCreatedFor: profileCreatedFor,
         fullName: fullName ?? this.fullName,
-        gender: gender,
-        dateOfBirth: dateOfBirth,
-        age: age,
-        height: height,
-        weight: weight,
-        maritalStatus: maritalStatus,
-        religion: religion,
-        caste: caste,
-        subCaste: subCaste,
-        education: education,
-        occupation: occupation,
-        annualIncome: annualIncome,
-        country: country,
-        state: state,
-        city: city,
-        motherTongue: motherTongue,
-        aboutMe: aboutMe,
+        gender: gender ?? this.gender,
+        dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+        age: age ?? this.age,
+        height: height ?? this.height,
+        weight: weight ?? this.weight,
+        maritalStatus: maritalStatus ?? this.maritalStatus,
+        religion: religion ?? this.religion,
+        caste: caste ?? this.caste,
+        subCaste: subCaste ?? this.subCaste,
+        education: education ?? this.education,
+        occupation: occupation ?? this.occupation,
+        annualIncome: annualIncome ?? this.annualIncome,
+        country: country ?? this.country,
+        state: state ?? this.state,
+        city: city ?? this.city,
+        motherTongue: motherTongue ?? this.motherTongue,
+        aboutMe: aboutMe ?? this.aboutMe,
         profilePhotoUrl: profilePhotoUrl ?? this.profilePhotoUrl,
         additionalPhotos: additionalPhotos ?? this.additionalPhotos,
         horoscope: horoscope ?? this.horoscope,
@@ -308,6 +330,7 @@ class ProfileModel {
         updatedAt: updatedAt ?? this.updatedAt,
         isFeatured: isFeatured ?? this.isFeatured,
         isActive: isActive ?? this.isActive,
+        isMarried: isMarried ?? this.isMarried,
       );
 }
 

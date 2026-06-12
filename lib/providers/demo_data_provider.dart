@@ -25,8 +25,10 @@ class DemoProfilesNotifier extends Notifier<List<ProfileModel>> {
   }
 
   /// Opposite-gender, active, approved profiles for the Discover feed.
-  List<ProfileModel> discover({required String gender}) =>
-      state.where((p) => p.gender == gender && p.isActive).toList();
+  /// Married users are excluded — once married they leave the matchmaking pool.
+  List<ProfileModel> discover({required String gender}) => state
+      .where((p) => p.gender == gender && p.isActive && !p.isMarried)
+      .toList();
 }
 
 final demoProfilesProvider =

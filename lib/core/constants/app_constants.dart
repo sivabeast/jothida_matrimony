@@ -18,6 +18,7 @@ class AppConstants {
   static const String bookingsCollection = 'bookings';
   static const String chatsCollection = 'chats';
   static const String messagesSubcollection = 'messages';
+  static const String accountDeletionRequestsCollection = 'account_deletion_requests';
 
   // Astrologer specializations
   static const List<String> astrologerSpecializations = [

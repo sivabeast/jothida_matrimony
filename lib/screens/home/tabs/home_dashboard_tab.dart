@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/profile_model.dart';
+import '../../../providers/account_provider.dart';
 import '../../../providers/profile_provider.dart';
 // ProfileCompletionCard available for future use:
 // import '../../../widgets/home/profile_completion_card.dart';
@@ -74,6 +75,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   Widget build(BuildContext context) {
     final discover = ref.watch(discoverProvider);
     final profiles = discover.profiles.take(6).toList();
+    final myProfile = ref.watch(myProfileProvider).valueOrNull;
 
     return RefreshIndicator(
       color: AppColors.primary,
@@ -87,6 +89,9 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           // ── Hero Banner Carousel ──────────────────────────────────────────
           _buildBannerCarousel(context),
           const SizedBox(height: 16),
+
+          // ── Married status prompt / badge ─────────────────────────────────
+          _buildMarriedSection(context, myProfile),
 
           // ── Quick Actions ────────────────────────────────────────────────
           _buildQuickActions(context),
@@ -117,11 +122,13 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   // ── Banner Carousel ────────────────────────────────────────────────────────
 
   Widget _buildBannerCarousel(BuildContext context) {
-    // The banner artwork is 3:2. Derive the height from the available width
-    // (screen width minus the 16px horizontal padding on each side) so the
-    // complete design is shown edge-to-edge without cropping any content.
-    final bannerWidth = MediaQuery.of(context).size.width - 32;
-    final bannerHeight = bannerWidth * (1024 / 1536);
+    // Wider + more compact than the source 3:2 art for a modern, premium feel:
+    //  • 12px side margins (was 16) → banner uses more width, never full-bleed.
+    //  • 0.60 height factor (was 0.667) → noticeably shorter, less vertical bulk.
+    // BoxFit.cover keeps the rounded card filled and scales every image; the
+    // small top/bottom trim stays clear of the headline and CTA in the artwork.
+    final bannerWidth = MediaQuery.of(context).size.width - 24;
+    final bannerHeight = bannerWidth * 0.60;
 
     return Column(
       children: [
@@ -203,6 +210,129 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         ],
       ),
     );
+  }
+
+  // ── Married Status ───────────────────────────────────────────────────────
+
+  Widget _buildMarriedSection(BuildContext context, ProfileModel? profile) {
+    if (profile == null) return const SizedBox.shrink();
+
+    // Already married → celebratory badge, no prompt.
+    if (profile.isMarried) {
+      return Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: AppColors.primaryGradient,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: const [
+            Icon(Icons.celebration, color: AppColors.gold, size: 28),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('🎉 Married',
+                      style: TextStyle(
+                          color: AppColors.gold,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          fontFamily: 'Poppins')),
+                  SizedBox(height: 2),
+                  Text(
+                      "Best wishes! Your profile has left the active matchmaking pool.",
+                      style: TextStyle(color: Colors.white70, fontSize: 12)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Not married → "Found Your Life Partner?" prompt.
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF0F0),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.primary.withOpacity(0.15)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                shape: BoxShape.circle),
+            child: const Icon(Icons.favorite, color: AppColors.primary, size: 24),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Found Your Life Partner?',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                SizedBox(height: 2),
+                Text('Mark your profile as married',
+                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: () => _confirmMarried(context, profile),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
+            child: const Text('Mark as\nMarried',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 11, fontWeight: FontWeight.w600, height: 1.1)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmMarried(BuildContext context, ProfileModel profile) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Congratulations! 🎉'),
+        content: const Text('Would you like to mark your profile as Married?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Mark as Married'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final messenger = ScaffoldMessenger.of(context);
+    await ref.read(accountControllerProvider.notifier).markMarried(profile);
+    // Refresh the discovery feed so the pool reflects the change immediately.
+    final gender = ref.read(matchGenderProvider);
+    ref.read(discoverProvider.notifier).load(gender: gender);
+    if (!mounted) return;
+    messenger.showSnackBar(const SnackBar(
+        content: Text('🎉 Congratulations! Your profile is now marked as Married.')));
   }
 
   // ── Verify Card ────────────────────────────────────────────────────────────
@@ -420,7 +550,7 @@ class _BannerSlide extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(18),
         child: Stack(
