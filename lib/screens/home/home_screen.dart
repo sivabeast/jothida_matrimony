@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:jothida_matrimony/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/notification_provider.dart';
-import '../../providers/profile_provider.dart';
-import '../astrologer/astrologers_tab.dart';
+import '../chat/chat_list_screen.dart';
+import 'tabs/astrology_services_tab.dart';
 import 'tabs/discover_tab.dart';
-import 'tabs/interests_tab.dart';
+import 'tabs/home_dashboard_tab.dart';
 import 'tabs/my_profile_tab.dart';
 import 'tabs/notifications_tab.dart';
 
@@ -22,151 +19,185 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedIndex = 0;
 
-  static const _tabs = [
-    DiscoverTab(),
-    AstrologersTab(),
-    InterestsTab(),
-    NotificationsTab(),
-    MyProfileTab(),
-  ];
-
-  static const _icons = [
-    Icons.home_outlined,
-    Icons.auto_awesome_outlined,
-    Icons.favorite_border,
-    Icons.notifications_none,
-    Icons.person_outline,
-  ];
-  static const _activeIcons = [
-    Icons.home,
-    Icons.auto_awesome,
-    Icons.favorite,
-    Icons.notifications,
-    Icons.person,
+  // Tab index → widget (Messages tab uses ChatListScreen inline).
+  static const _tabs = <Widget>[
+    HomeDashboardTab(),   // 0 – Home
+    DiscoverTab(),        // 1 – Matches
+    AstrologyServicesTab(), // 2 – Astrologer
+    ChatListScreen(),     // 3 – Messages
+    MyProfileTab(),       // 4 – Profile
   ];
 
   @override
   Widget build(BuildContext context) {
     final unread = ref.watch(unreadNotificationCountProvider);
-    final l10n = AppLocalizations.of(context);
-    final labels = [
-      l10n.discover,
-      l10n.astrologers,
-      l10n.interests,
-      l10n.alerts,
-      l10n.profile,
-    ];
-    // Header identity: prefer the matrimony profile, fall back to the auth
-    // user document, then a friendly default.
-    final myProfile = ref.watch(myProfileProvider).valueOrNull;
-    final myUser = ref.watch(currentUserProvider).valueOrNull;
-    final displayName =
-        myProfile?.fullName ?? myUser?.displayName ?? 'Welcome';
-    final photoUrl = myProfile?.profilePhotoUrl ?? myUser?.photoUrl;
 
     return Scaffold(
+      // ── AppBar ────────────────────────────────────────────────────────────
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         titleSpacing: 12,
+        automaticallyImplyLeading: false,   // no hamburger menu
         title: Row(
           children: [
-            // Profile avatar (taps to My Profile tab)
-            GestureDetector(
-              onTap: () => setState(() => _selectedIndex = 4),
-              child: CircleAvatar(
-                radius: 19,
-                backgroundColor: Colors.white24,
-                backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
-                    ? NetworkImage(photoUrl)
-                    : null,
-                child: (photoUrl == null || photoUrl.isEmpty)
-                    ? Text(
-                        displayName.isNotEmpty
-                            ? displayName[0].toUpperCase()
-                            : '?',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold),
-                      )
-                    : null,
-              ),
-            ),
-            const SizedBox(width: 8),
-            // User name
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('வணக்கம் 🙏',
-                      style: TextStyle(
-                          fontSize: 11, color: Colors.white.withOpacity(0.8))),
-                  Text(
-                    displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-            // Brand logo (centered brand identity in the app bar)
+            // App logo
             Image.asset(
               'assets/images/app_logo.png',
-              width: 38,
-              height: 38,
+              width: 40,
+              height: 40,
               fit: BoxFit.contain,
               errorBuilder: (_, __, ___) => const Icon(
                 Icons.favorite,
-                color: Color(0xFFD4A843),
-                size: 28,
+                color: AppColors.gold,
+                size: 30,
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 10),
+            // Brand name + subtitle
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Jothida Matrimony',
+                  style: TextStyle(
+                    color: AppColors.gold,
+                    fontSize: 17,
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                Text(
+                  'FIND YOUR PERFECT MATCH',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.80),
+                    fontSize: 9.5,
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.chat_bubble_outline),
-            onPressed: () => context.push('/chats'),
-            tooltip: 'Chats',
-          ),
-          // Notification icon (top-right)
+          // Notification icon (only icon in the AppBar)
           IconButton(
             icon: unread > 0
                 ? Badge(
-                    label: Text('$unread'),
-                    child: const Icon(Icons.notifications_none))
-                : const Icon(Icons.notifications_none),
-            onPressed: () => setState(() => _selectedIndex = 3),
+                    label: Text('$unread',
+                        style: const TextStyle(fontSize: 10)),
+                    backgroundColor: Colors.red,
+                    child: const Icon(Icons.notifications_none, size: 26),
+                  )
+                : const Icon(Icons.notifications_none, size: 26),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => Scaffold(
+                  appBar: AppBar(
+                    title: const Text('Notifications'),
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  body: const NotificationsTab(),
+                ),
+              ),
+            ),
             tooltip: 'Notifications',
           ),
           const SizedBox(width: 4),
         ],
       ),
+      // ── Body ─────────────────────────────────────────────────────────────
       body: _tabs[_selectedIndex],
-      bottomNavigationBar: NavigationBar(
+      // ── Bottom Navigation ─────────────────────────────────────────────────
+      bottomNavigationBar: _BottomNav(
         selectedIndex: _selectedIndex,
-        onDestinationSelected: (i) => setState(() => _selectedIndex = i),
-        backgroundColor: Colors.white,
-        indicatorColor: AppColors.primary.withOpacity(0.12),
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
-        destinations: List.generate(
-          _tabs.length,
-          (i) => NavigationDestination(
-            icon: i == 3 && unread > 0
-                ? Badge(label: Text('$unread'), child: Icon(_icons[i]))
-                : Icon(_icons[i]),
-            selectedIcon: Icon(_activeIcons[i], color: AppColors.primary),
-            label: labels[i],
-            tooltip: labels[i],
+        onTap: (i) => setState(() => _selectedIndex = i),
+      ),
+    );
+  }
+}
+
+// ── Custom Bottom Navigation Bar ─────────────────────────────────────────────
+
+class _BottomNav extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onTap;
+
+  const _BottomNav({required this.selectedIndex, required this.onTap});
+
+  static const _items = [
+    _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Home'),
+    _NavItem(icon: Icons.favorite_border, activeIcon: Icons.favorite, label: 'Matches'),
+    _NavItem(icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome, label: 'Astrologer'),
+    _NavItem(icon: Icons.chat_bubble_outline, activeIcon: Icons.chat_bubble, label: 'Messages'),
+    _NavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profile'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 62,
+          child: Row(
+            children: List.generate(_items.length, (i) {
+              final item = _items[i];
+              final active = i == selectedIndex;
+              return Expanded(
+                child: InkWell(
+                  onTap: () => onTap(i),
+                  splashColor: AppColors.primary.withOpacity(0.08),
+                  highlightColor: Colors.transparent,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        active ? item.activeIcon : item.icon,
+                        color: active ? AppColors.primary : Colors.grey[500],
+                        size: 24,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        item.label,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: active ? FontWeight.w600 : FontWeight.normal,
+                          color: active ? AppColors.primary : Colors.grey[500],
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
           ),
         ),
       ),
     );
   }
+}
+
+class _NavItem {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  const _NavItem({required this.icon, required this.activeIcon, required this.label});
 }
