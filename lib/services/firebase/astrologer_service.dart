@@ -62,6 +62,14 @@ class AstrologerService {
       .snapshots()
       .map((s) => s.docs.map(AstrologerAccount.fromFirestore).toList());
 
+  /// Every astrologer account (any status). The directory filters out rejected
+  /// accounts client-side so newly signed-up (pending) astrologers also appear,
+  /// and no composite index is needed.
+  Stream<List<AstrologerAccount>> watchAllAstrologers() => _db
+      .collection(AppConstants.astrologersCollection)
+      .snapshots()
+      .map((s) => s.docs.map(AstrologerAccount.fromFirestore).toList());
+
   // ── Requests (consultations / inquiries / horoscope matching) ──────────
   Future<void> createRequest(AstrologerRequestModel request) => _db
       .collection(AppConstants.astrologerRequestsCollection)

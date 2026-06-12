@@ -75,18 +75,28 @@ class FirestoreService {
           // account if its document was created before being whitelisted.
           final existing = snap.data() as Map<String, dynamic>?;
           final currentRole = existing?['role'];
+          final isWhitelisted = AdminConfig.isSuperAdminEmail(user.email);
           final promoteSuperAdmin =
-              AdminConfig.isSuperAdminEmail(user.email) &&
-                  currentRole != AdminConfig.roleSuperAdmin;
+              isWhitelisted && currentRole != AdminConfig.roleSuperAdmin;
+          // The whitelist is the single source of truth: an account that still
+          // holds super_admin but is no longer whitelisted is demoted to a
+          // normal user, so revoking access just means editing the whitelist.
+          final demoteSuperAdmin =
+              !isWhitelisted && currentRole == AdminConfig.roleSuperAdmin;
           if (promoteSuperAdmin) {
             debugPrint('[Firestore] ${user.uid}: promoting ${user.email} '
                 '→ super_admin');
+          }
+          if (demoteSuperAdmin) {
+            debugPrint('[Firestore] ${user.uid}: ${user.email} no longer '
+                'whitelisted → demoting super_admin to user');
           }
           txn.update(docRef, {
             'lastLoginAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
             if (loginProvider != null) 'loginProvider': loginProvider,
             if (promoteSuperAdmin) 'role': AdminConfig.roleSuperAdmin,
+            if (demoteSuperAdmin) 'role': AdminConfig.roleUser,
           });
         }
       });
@@ -201,24 +211,20 @@ class FirestoreService {
     DocumentSnapshot? lastDoc,
     int limit = 20,
   }) async {
-    Query query = _db
+    // Single-field equality (gender) ONLY. This uses Firestore's automatic
+    // index, so the query can never fail with "requires a composite index" —
+    // which previously threw and blanked the entire feed. Everything else
+    // (status, isActive, isMarried, self, age, city, …) is filtered
+    // client-side in DiscoverNotifier so freshly-created (pending) profiles are
+    // discoverable immediately, without waiting for admin approval.
+    final snap = await _db
         .collection(AppConstants.profilesCollection)
-        .where('status', isEqualTo: 'approved')
-        .where('isActive', isEqualTo: true)
-        .where('gender', isEqualTo: gender);
-
-    if (religion != null && religion != 'Any') {
-      query = query.where('religion', isEqualTo: religion);
-    }
-    if (city != null && city.isNotEmpty) {
-      query = query.where('city', isEqualTo: city);
-    }
-
-    query = query.orderBy('createdAt', descending: true).limit(limit);
-    if (lastDoc != null) query = query.startAfterDocument(lastDoc);
-
-    final snap = await query.get();
-    return snap.docs.map((d) => ProfileModel.fromFirestore(d)).toList();
+        .where('gender', isEqualTo: gender)
+        .limit(limit)
+        .get();
+    final list = snap.docs.map((d) => ProfileModel.fromFirestore(d)).toList();
+    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return list;
   }
 
   Future<void> incrementViewCount(String profileId) => _db
@@ -390,6 +396,12 @@ class FirestoreService {
         .where('status', isEqualTo: 'pending')
         .count()
         .get();
+    final astrologers =
+        await _db.collection(AppConstants.astrologersCollection).count().get();
+    final consultations = await _db
+        .collection(AppConstants.astrologerRequestsCollection)
+        .count()
+        .get();
 
     return {
       'totalUsers': users.count,
@@ -398,6 +410,8 @@ class FirestoreService {
       'totalReports': reports.count,
       'marriedUsers': married.count,
       'pendingDeletions': pendingDeletions.count,
+      'totalAstrologers': astrologers.count,
+      'totalConsultations': consultations.count,
     };
   }
 

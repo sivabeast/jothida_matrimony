@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/profile_completion.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
 
 /// Compact horizontal banner shown at the top of the Discover feed when the
@@ -16,9 +17,14 @@ class ProfileCompletionCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(myProfileProvider);
     final profile = profileAsync.valueOrNull;
+    final onboardingDone =
+        ref.watch(currentUserProvider).valueOrNull?.isProfileComplete ?? false;
     final completion = computeProfileCompletion(profile);
 
-    if (profileAsync.isLoading || completion.isComplete) {
+    // Hidden once onboarding is finished (or the profile reaches 100%). A user
+    // who completed their profile at signup is never nagged to complete it
+    // again.
+    if (profileAsync.isLoading || onboardingDone || completion.isComplete) {
       return const SizedBox.shrink();
     }
 
@@ -83,7 +89,7 @@ class ProfileCompletionCard extends ConsumerWidget {
           ),
           const SizedBox(width: 10),
           ElevatedButton(
-            onPressed: () => context.push('/profile/create'),
+            onPressed: () => context.push('/complete-profile'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,

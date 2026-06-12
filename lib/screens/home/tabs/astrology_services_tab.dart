@@ -60,11 +60,8 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
 
   @override
   Widget build(BuildContext context) {
-    final all = ref.watch(astrologersProvider);
+    final astrosAsync = ref.watch(astrologersProvider);
     final myCity = ref.watch(myProfileProvider).valueOrNull?.city ?? '';
-    final searching = _query.trim().isNotEmpty || _filters.isActive;
-    final matched =
-        all.where((a) => _matchesSearch(a) && _filters.matches(a)).toList();
 
     return Container(
       color: AppColors.scaffoldBg,
@@ -72,12 +69,52 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
         children: [
           _searchBar(),
           Expanded(
-            child: searching ? _resultsList(matched) : _sections(all, myCity),
+            child: astrosAsync.when(
+              loading: () => const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary)),
+              error: (e, _) => _stateMessage(
+                  Icons.error_outline, 'Could not load astrologers', '$e'),
+              data: (all) {
+                if (all.isEmpty) {
+                  return _stateMessage(
+                    Icons.person_search_outlined,
+                    'No astrologers yet',
+                    'Astrologers will appear here once they sign up.',
+                  );
+                }
+                final searching =
+                    _query.trim().isNotEmpty || _filters.isActive;
+                final matched = all
+                    .where((a) => _matchesSearch(a) && _filters.matches(a))
+                    .toList();
+                return searching ? _resultsList(matched) : _sections(all, myCity);
+              },
+            ),
           ),
         ],
       ),
     );
   }
+
+  Widget _stateMessage(IconData icon, String title, String subtitle) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 64, color: AppColors.primary.withOpacity(0.4)),
+              const SizedBox(height: 16),
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 17, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(subtitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[600])),
+            ],
+          ),
+        ),
+      );
 
   // ── Search + filter bar ────────────────────────────────────────────────────
 

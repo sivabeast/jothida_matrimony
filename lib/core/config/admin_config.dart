@@ -8,9 +8,10 @@
 class AdminConfig {
   AdminConfig._();
 
-  /// Whitelisted Super Admin accounts.
+  /// Whitelisted Super Admin accounts. ONLY these emails receive the
+  /// `super_admin` role (automatically, on login).
   static const List<String> superAdminEmails = <String>[
-    'stark.ai.india@gmail.com',
+    'sivabeast123123@gmail.com',
   ];
 
   static const String roleSuperAdmin = 'super_admin';

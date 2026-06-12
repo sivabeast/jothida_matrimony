@@ -35,6 +35,7 @@ import '../screens/admin/admin_management_screens.dart';
 import '../screens/admin/account_admin_screens.dart';
 import '../screens/horoscope/horoscope_details_screen.dart';
 import '../screens/profile/personal_details_screen.dart';
+import '../screens/profile/complete_profile_screen.dart';
 import '../screens/preferences/partner_preferences_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/support/help_support_screen.dart';
@@ -275,6 +276,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/language', builder: (_, __) => const LanguageScreen()),
       // ── Profile section screens ──────────────────────────────────────────
       GoRoute(path: '/personal-details', builder: (_, __) => const PersonalDetailsScreen()),
+      GoRoute(path: '/complete-profile', builder: (_, __) => const CompleteProfileScreen()),
       GoRoute(path: '/horoscope', builder: (_, __) => const HoroscopeDetailsScreen()),
       GoRoute(path: '/partner-preferences', builder: (_, __) => const PartnerPreferencesScreen()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),

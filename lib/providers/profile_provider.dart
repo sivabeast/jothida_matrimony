@@ -370,26 +370,28 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
 
     try {
       final f = filters ?? {};
-      // Gender is filtered at the Firestore query level (opposite-gender
-      // matching); the remaining lightweight filters refine the page locally.
-      var profiles = await ref.read(profileRepositoryProvider).searchProfiles(
-            gender: gender,
-            religion: f['religion'],
-            city: f['city'],
-            rasi: f['rasi'],
-          );
+      // Gender is the only DB-level filter (opposite-gender matching); every
+      // other rule is applied client-side so the feed can't be blanked by a
+      // missing Firestore composite index and pending profiles still show.
+      var profiles =
+          await ref.read(profileRepositoryProvider).searchProfiles(gender: gender);
 
       final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
       final minAge = f['minAge'] as int?;
       final maxAge = f['maxAge'] as int?;
+      final city = (f['city'] as String?)?.trim().toLowerCase();
       final education = (f['education'] as String?)?.trim().toLowerCase();
       final occupation = (f['occupation'] as String?)?.trim().toLowerCase();
 
       profiles = profiles.where((p) {
         if (myUid != null && p.userId == myUid) return false; // never self
-        if (p.isMarried) return false; // married users leave matchmaking
+        if (p.isMarried) return false;        // married → out of the pool
+        if (!p.isActive) return false;        // deleted / suspended accounts
+        if (p.status == 'rejected' || p.status == 'blocked') return false;
         if (minAge != null && p.age < minAge) return false;
         if (maxAge != null && p.age > maxAge) return false;
+        if (city != null && city.isNotEmpty &&
+            !p.city.toLowerCase().contains(city)) return false;
         if (education != null && education.isNotEmpty &&
             !p.education.toLowerCase().contains(education)) return false;
         if (occupation != null && occupation.isNotEmpty &&
@@ -400,7 +402,7 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
       state = state.copyWith(
         profiles: profiles,
         isLoading: false,
-        hasMore: profiles.length == 20,
+        hasMore: false,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../widgets/common/app_logo.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/service_providers.dart';
 
@@ -99,36 +100,24 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Brand logo — replaces the old heart icon.
-                  Image.asset(
-                    'assets/images/app_logo.png',
-                    width: 220,
-                    height: 220,
-                    fit: BoxFit.contain,
-                    // Graceful fallback if the asset hasn't been placed yet.
-                    errorBuilder: (_, __, ___) => Container(
-                      width: 140,
-                      height: 140,
-                      decoration: BoxDecoration(
-                        color: AppColors.white.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.gold, width: 2),
-                      ),
-                      child: const Icon(Icons.favorite,
-                          color: AppColors.gold, size: 64),
-                    ),
+                  // Official brand logo, prominently centred.
+                  const AppLogo(size: 190),
+                  const SizedBox(height: 18),
+                  Text(
+                    'Jothida Matrimony',
+                    style: AppTextStyles.appName
+                        .copyWith(color: AppColors.gold, fontSize: 26),
                   ),
-                  const SizedBox(height: 12),
-                  // Tamil subtitle (the logo already shows the English name)
+                  const SizedBox(height: 4),
                   Text(
                     'ஜோதிட மேட்ரிமோனி',
                     style: AppTextStyles.tamilBody.copyWith(
-                      color: AppColors.gold,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                      color: AppColors.gold.withOpacity(0.85),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 44),
                   const CircularProgressIndicator(
                     valueColor: AlwaysStoppedAnimation<Color>(AppColors.gold),
                     strokeWidth: 2,

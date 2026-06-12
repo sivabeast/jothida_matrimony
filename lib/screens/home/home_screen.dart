@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../widgets/common/app_logo.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../chat/chat_list_screen.dart';
@@ -46,18 +47,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         automaticallyImplyLeading: false,   // no hamburger menu
         title: Row(
           children: [
-            // App logo
-            Image.asset(
-              'assets/images/app_logo.png',
-              width: 40,
-              height: 40,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Icon(
-                Icons.favorite,
-                color: AppColors.gold,
-                size: 30,
-              ),
-            ),
+            // App logo (official brand medallion).
+            const AppLogo(size: 40),
             const SizedBox(width: 10),
             // Brand name + subtitle
             Column(
