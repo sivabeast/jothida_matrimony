@@ -97,22 +97,15 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           _buildQuickActions(context),
           const SizedBox(height: 16),
 
-          // ── Profile Completion / Verify Card ─────────────────────────────
+          // ── Premium Upgrade Banner (moved up to the former Verify slot) ───
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildVerifyCard(context),
+            child: _buildPremiumBanner(context),
           ),
           const SizedBox(height: 16),
 
           // ── Recommended Matches ──────────────────────────────────────────
           _buildMatchesSection(context, profiles),
-          const SizedBox(height: 16),
-
-          // ── Premium Upgrade Banner ────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildPremiumBanner(context),
-          ),
           const SizedBox(height: 24),
         ],
       ),
@@ -333,75 +326,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     if (!mounted) return;
     messenger.showSnackBar(const SnackBar(
         content: Text('🎉 Congratulations! Your profile is now marked as Married.')));
-  }
-
-  // ── Verify Card ────────────────────────────────────────────────────────────
-
-  Widget _buildVerifyCard(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF0F0),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primary.withOpacity(0.15)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Stack(
-              children: [
-                const Center(
-                  child: Icon(Icons.shield_outlined, color: AppColors.primary, size: 26),
-                ),
-                Positioned(
-                  top: 6, right: 6,
-                  child: Container(
-                    width: 14, height: 14,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Center(
-                      child: Text('!', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Verify Your Profile',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                Text('Increase trust and get more matches',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              elevation: 0,
-            ),
-            child: const Text('Verify Now', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-    );
   }
 
   // ── Recommended Matches ───────────────────────────────────────────────────
@@ -730,38 +654,20 @@ class _MatchCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Photo
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: SizedBox(
-                    height: 140,
-                    width: double.infinity,
-                    child: profile.photos.isNotEmpty
-                        ? Image.network(
-                            profile.photos.first,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _placeholder(),
-                          )
-                        : _placeholder(),
-                  ),
-                ),
-                // Online badge
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Text('Online',
-                        style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ],
+            // Photo (presence indicators intentionally removed)
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: SizedBox(
+                height: 140,
+                width: double.infinity,
+                child: profile.photos.isNotEmpty
+                    ? Image.network(
+                        profile.photos.first,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _placeholder(),
+                      )
+                    : _placeholder(),
+              ),
             ),
             // Info
             Padding(

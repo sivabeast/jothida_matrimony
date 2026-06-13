@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../../core/constants/app_constants.dart';
 import '../../models/astrologer_account_model.dart';
 import '../../models/astrologer_model.dart' as model;
@@ -55,6 +56,53 @@ class AstrologerService {
       .collection(AppConstants.astrologersCollection)
       .doc(uid)
       .update({...data, 'updatedAt': FieldValue.serverTimestamp()});
+
+  // ── Admin verification actions ─────────────────────────────────────────────
+  // Each method updates `astrologers/{uid}.status`. They log the attempt and
+  // any failure so the cause (permission denied, missing doc, offline) is
+  // visible in the console instead of surfacing as a vague "backend" error.
+
+  /// Sets an astrologer's verification status. [uid] is the astrologer's
+  /// Firestore document id (== their auth uid).
+  Future<void> setVerificationStatus(
+    String uid,
+    VerificationStatus status, {
+    String? rejectionReason,
+  }) async {
+    debugPrint('[AstrologerService] ✏️  setVerificationStatus('
+        'uid=$uid, status=${status.name}) → astrologers/$uid');
+    try {
+      await updateAccount(uid, {
+        'status': status.name,
+        if (status == VerificationStatus.rejected && rejectionReason != null)
+          'rejectionReason': rejectionReason,
+      });
+      debugPrint('[AstrologerService] ✅ status updated to ${status.name} for $uid');
+    } on FirebaseException catch (e) {
+      debugPrint('[AstrologerService] ❌ Firestore write failed '
+          '(code=${e.code}): ${e.message}');
+      rethrow;
+    } catch (e) {
+      debugPrint('[AstrologerService] ❌ unexpected write failure: $e');
+      rethrow;
+    }
+  }
+
+  /// Approve a pending astrologer → they become visible to users and their
+  /// dashboard verification banner clears on next load.
+  Future<void> approveAstrologer(String uid) =>
+      setVerificationStatus(uid, VerificationStatus.approved);
+
+  /// Reject an astrologer's application (optionally with a reason).
+  Future<void> rejectAstrologer(String uid, {String reason = ''}) =>
+      setVerificationStatus(uid, VerificationStatus.rejected,
+          rejectionReason: reason);
+
+  /// Suspend a previously-approved astrologer → moves them back to
+  /// "under review" (pending) so they lose live visibility without being
+  /// permanently rejected.
+  Future<void> suspendAstrologer(String uid) =>
+      setVerificationStatus(uid, VerificationStatus.pending);
 
   /// Replaces the embedded services list on the astrologer's account doc.
   Future<void> updateServices(
