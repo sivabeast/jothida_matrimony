@@ -1,11 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/account_provider.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/notification_provider.dart';
 import '../../../providers/profile_provider.dart';
+import 'notifications_tab.dart';
 // ProfileCompletionCard available for future use:
 // import '../../../widgets/home/profile_completion_card.dart';
 
@@ -86,8 +90,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          // ── Hero Banner Carousel ──────────────────────────────────────────
-          _buildBannerCarousel(context),
+          // ── Curved luxury header + overlapping hero banner ────────────────
+          _buildHeaderBanner(context),
           const SizedBox(height: 16),
 
           // ── Married status prompt / badge ─────────────────────────────────
@@ -110,6 +114,142 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         ],
       ),
     );
+  }
+
+  // ── Curved header + overlapping banner ─────────────────────────────────────
+
+  /// A premium curved maroon header (profile + name on the left, a single
+  /// notification bell on the right) whose background extends behind the hero
+  /// banner. The banner is positioned to overlap the curve so the two feel like
+  /// one connected, elevated unit.
+  Widget _buildHeaderBanner(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final topPad = media.padding.top;
+    const headerRowHeight = 56.0;
+    final bannerWidth = media.size.width - 24;
+    final bannerHeight = bannerWidth * 0.60;
+    // Banner starts just below the header row; the maroon header continues
+    // behind its top ~45% so the banner appears embedded into the header.
+    final bannerTop = topPad + headerRowHeight + 10;
+    final headerBgHeight = bannerTop + bannerHeight * 0.45;
+    final totalHeight = bannerTop + bannerHeight + 28; // + dots block
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light, // white status-bar icons over maroon
+      child: SizedBox(
+        height: totalHeight,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // Curved maroon header background.
+            ClipPath(
+              clipper: _HeaderCurveClipper(),
+              child: Container(
+                height: headerBgHeight,
+                decoration: const BoxDecoration(
+                    gradient: AppColors.primaryGradient),
+              ),
+            ),
+            // Header content: profile + name (left), notification (right).
+            Positioned(
+              top: topPad + 4,
+              left: 16,
+              right: 6,
+              height: headerRowHeight,
+              child: _buildHeaderRow(context),
+            ),
+            // Hero banner, overlapping the curved header.
+            Positioned(
+              top: bannerTop,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: _buildBannerCarousel(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderRow(BuildContext context) {
+    final myProfile = ref.watch(myProfileProvider).valueOrNull;
+    final user = ref.watch(currentUserProvider).valueOrNull;
+    final fullName = (myProfile?.fullName.trim().isNotEmpty ?? false)
+        ? myProfile!.fullName.trim()
+        : (user?.displayName?.trim().isNotEmpty ?? false)
+            ? user!.displayName!.trim()
+            : 'Guest';
+    final firstName = fullName.split(' ').first;
+    final photo = (myProfile?.profilePhotoUrl?.isNotEmpty ?? false)
+        ? myProfile!.profilePhotoUrl!
+        : (user?.photoUrl ?? '');
+    final unread = ref.watch(unreadNotificationCountProvider);
+
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 22,
+          backgroundColor: Colors.white24,
+          backgroundImage: photo.isNotEmpty ? NetworkImage(photo) : null,
+          child: photo.isEmpty
+              ? Text(firstName.isNotEmpty ? firstName[0].toUpperCase() : '?',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18))
+              : null,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Welcome back,',
+                  style: TextStyle(
+                      color: Colors.white.withOpacity(0.8), fontSize: 12.5)),
+              Text(firstName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 19,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+        IconButton(
+          tooltip: 'Notifications',
+          onPressed: () => _openNotifications(context),
+          icon: unread > 0
+              ? Badge(
+                  backgroundColor: AppColors.gold,
+                  label: Text('$unread',
+                      style: const TextStyle(
+                          fontSize: 10, color: AppColors.primary)),
+                  child: const Icon(Icons.notifications_none,
+                      color: Colors.white, size: 26),
+                )
+              : const Icon(Icons.notifications_none,
+                  color: Colors.white, size: 26),
+        ),
+      ],
+    );
+  }
+
+  void _openNotifications(BuildContext context) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => Scaffold(
+        appBar: AppBar(
+          title: const Text('Notifications'),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+        ),
+        body: const NotificationsTab(),
+      ),
+    ));
   }
 
   // ── Banner Carousel ────────────────────────────────────────────────────────
@@ -475,18 +615,32 @@ class _BannerSlide extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Try asset image first; fall back to branded gradient container.
-            Image.asset(
-              data.assetPath,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _fallbackBanner(),
+      child: Container(
+        // Soft shadow → premium elevation. The banner artwork itself is
+        // unchanged (rounded corners + image/text/CTA baked in).
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.22),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
             ),
           ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Try asset image first; fall back to branded gradient container.
+              Image.asset(
+                data.assetPath,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _fallbackBanner(),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -729,3 +883,23 @@ class _MatchCard extends StatelessWidget {
 
 // Search filters were replaced by the dedicated Partner Preferences screen
 // (route `/partner-preferences`).
+
+// ── Curved header clipper ─────────────────────────────────────────────────────
+
+/// Clips the maroon header background with a smooth convex bottom edge so the
+/// banner appears gently embedded into the header.
+class _HeaderCurveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path()
+      ..lineTo(0, size.height - 36)
+      ..quadraticBezierTo(
+          size.width / 2, size.height + 14, size.width, size.height - 36)
+      ..lineTo(size.width, 0)
+      ..close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}

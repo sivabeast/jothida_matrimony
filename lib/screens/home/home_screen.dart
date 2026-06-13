@@ -47,7 +47,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       },
       child: Scaffold(
       // ── AppBar ────────────────────────────────────────────────────────────
-      appBar: AppBar(
+      // The Home tab (index 0) renders its own curved header inside
+      // HomeDashboardTab, so the shared AppBar is hidden there. Every other tab
+      // keeps this AppBar unchanged.
+      appBar: _selectedIndex == 0
+          ? null
+          : AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         titleSpacing: 12,
