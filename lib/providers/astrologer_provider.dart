@@ -32,6 +32,8 @@ Astrologer astrologerFromAccount(AstrologerAccount a) {
     isRecommended: false,
     lastActive: DateTime.now(),
     about: a.about,
+    // Verified badge shows only once an admin approves the account.
+    verified: a.isApproved,
   );
 }
 

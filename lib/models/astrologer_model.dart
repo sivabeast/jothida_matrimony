@@ -81,6 +81,10 @@ class Astrologer {
   final bool isRecommended;
   final DateTime lastActive;
   final String about;
+  /// True only when an admin has approved this astrologer's account
+  /// (AstrologerAccount.status == approved). Drives the "Verified Astrologer"
+  /// badge on the user-facing directory.
+  final bool verified;
 
   const Astrologer({
     required this.id,
@@ -99,6 +103,7 @@ class Astrologer {
     required this.isRecommended,
     required this.lastActive,
     required this.about,
+    this.verified = false,
   });
 
   /// Lowest priced service — handy for "from ₹X" labels.
@@ -124,6 +129,7 @@ class Astrologer {
         isRecommended: m['isRecommended'] ?? false,
         lastActive: DateTime.now(),
         about: m['about'] ?? '',
+        verified: m['verified'] ?? false,
       );
 
   Map<String, dynamic> toMap() => {
@@ -140,5 +146,6 @@ class Astrologer {
         'isAvailable': isAvailable,
         'isRecommended': isRecommended,
         'about': about,
+        'verified': verified,
       };
 }

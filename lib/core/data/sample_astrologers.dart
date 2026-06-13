@@ -36,6 +36,7 @@ List<Astrologer> sampleAstrologers() {
     required String location,
     bool available = true,
     bool recommended = false,
+    bool verified = true,
     int activeMinsAgo = 5,
   }) =>
       Astrologer(
@@ -56,6 +57,7 @@ List<Astrologer> sampleAstrologers() {
         reviews: reviews,
         isAvailable: available,
         isRecommended: recommended,
+        verified: verified,
         lastActive: DateTime.now().subtract(Duration(minutes: activeMinsAgo)),
         about:
             '$name is a trusted Vedic astrologer with $exp years of experience in Tamil marriage matching, porutham analysis and horoscope consultation.',
@@ -82,10 +84,11 @@ List<Astrologer> sampleAstrologers() {
     a('astro_7', 'Guru Balasubramaniam', 8, 4.3, 280, 8,
         ['Tamil', 'English'], ['Horoscope Matching'], 299, location: 'Coimbatore', activeMinsAgo: 12),
     a('astro_8', 'Jothidar Selvaraj', 18, 4.2, 210, 14,
-        ['Tamil'], ['Porutham', 'Dosha Analysis'], 399, location: 'Madurai', available: false, activeMinsAgo: 240),
+        ['Tamil'], ['Porutham', 'Dosha Analysis'], 399, location: 'Madurai',
+        available: false, verified: false, activeMinsAgo: 240),
     a('astro_9', 'Pandit Hariharan', 28, 4.1, 160, 6,
         ['Tamil', 'Telugu', 'English'], ['General Astrology', 'Career'], 349,
-        location: 'Chennai', activeMinsAgo: 50),
+        location: 'Chennai', verified: false, activeMinsAgo: 50),
     a('astro_10', 'Astro Natarajan', 36, 4.0, 120, 25,
         ['Tamil', 'English'], ['Marriage Consultation', 'Muhurtham'], 699,
         location: 'Trichy', activeMinsAgo: 4),

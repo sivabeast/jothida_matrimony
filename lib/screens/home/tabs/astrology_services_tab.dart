@@ -198,32 +198,57 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
   // ── Horizontal sections (default view) ──────────────────────────────────────
 
   Widget _sections(List<Astrologer> all, String myCity) {
+    // ── Section 1: Nearby — user's city + adjacent cities ──
+    final nearby = _nearbyAstrologers(all, myCity);
+    // ── Section 2: Top Rated — highest rating first ──
     final topRated = [...all]..sort((a, b) => b.rating.compareTo(a.rating));
-    final experienced = [...all]
-      ..sort((a, b) => b.experienceYears.compareTo(a.experienceYears));
-    var nearby = myCity.isEmpty
-        ? <Astrologer>[]
-        : all
-            .where((a) => a.location.toLowerCase() == myCity.toLowerCase())
-            .toList();
-    if (nearby.isEmpty) nearby = all; // fallback so the row is never empty
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
       children: [
-        _sectionHeader('Top Rated Astrologers'),
+        // ── Section 1: Nearby ──────────────────────────────────────────────
+        _sectionHeader(myCity.isEmpty
+            ? '📍 Nearby Astrologers'
+            : '📍 Nearby Astrologers · $myCity'),
+        if (nearby.isEmpty)
+          _inlineHint(myCity.isEmpty
+              ? 'Set your location in your profile to see astrologers near you.'
+              : 'No astrologers near $myCity yet.')
+        else
+          _horizontalRow(nearby),
+        // ── Section 2: Top Rated ───────────────────────────────────────────
+        _sectionHeader('⭐ Top Rated Astrologers'),
         _horizontalRow(topRated),
-        _sectionHeader('Experienced Astrologers'),
-        _horizontalRow(experienced),
-        _sectionHeader(
-            myCity.isEmpty ? 'Nearby Astrologers' : 'Nearby Astrologers · $myCity'),
-        _horizontalRow(nearby),
+        // ── Section 3: All Astrologers (grid) ──────────────────────────────
+        _sectionHeader('🔮 All Astrologers'),
+        _allGrid(all),
       ],
     );
   }
 
+  /// Astrologers in the user's city plus a small set of adjacent cities.
+  List<Astrologer> _nearbyAstrologers(List<Astrologer> all, String myCity) {
+    if (myCity.trim().isEmpty) return const [];
+    final key = myCity.trim().toLowerCase();
+    final near = <String>{key, ..._nearbyCities[key] ?? const []};
+    return all
+        .where((a) => near.contains(a.location.trim().toLowerCase()))
+        .toList();
+  }
+
+  /// Lightweight adjacency map for common Tamil Nadu cities. Unknown cities
+  /// simply fall back to an exact city match (handled above).
+  static const Map<String, List<String>> _nearbyCities = {
+    'chennai': ['kanchipuram', 'chengalpattu', 'tiruvallur', 'vellore'],
+    'madurai': ['dindigul', 'virudhunagar', 'sivaganga', 'theni'],
+    'coimbatore': ['tirupur', 'erode', 'pollachi'],
+    'trichy': ['tiruchirappalli', 'thanjavur', 'karur', 'pudukkottai'],
+    'tiruchirappalli': ['trichy', 'thanjavur', 'karur', 'pudukkottai'],
+    'salem': ['namakkal', 'erode', 'dharmapuri'],
+  };
+
   Widget _sectionHeader(String title) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
         child: Text(
           title,
           style: const TextStyle(
@@ -234,9 +259,32 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
         ),
       );
 
+  Widget _inlineHint(String text) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.location_off_outlined,
+                  size: 18, color: Colors.grey[400]),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(text,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12.5)),
+              ),
+            ],
+          ),
+        ),
+      );
+
   Widget _horizontalRow(List<Astrologer> list) {
     return SizedBox(
-      height: 258,
+      height: 250,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -246,6 +294,26 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
           astrologer: list[i],
           onTap: () => _showDetail(list[i]),
         ),
+      ),
+    );
+  }
+
+  /// Section 3 — every astrologer in a 2-column vertical grid.
+  Widget _allGrid(List<Astrologer> list) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        mainAxisExtent: 250,
+      ),
+      itemCount: list.length,
+      itemBuilder: (_, i) => _AstrologerGridCard(
+        astrologer: list[i],
+        onTap: () => _showDetail(list[i]),
       ),
     );
   }
@@ -569,6 +637,43 @@ Widget _astroImage(String url,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Verified badge (shown only when admin-approved)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Small "✅ Verified" pill. Render only when [Astrologer.verified] is true.
+class _VerifiedBadge extends StatelessWidget {
+  final bool compact;
+  const _VerifiedBadge({this.compact = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+          horizontal: compact ? 7 : 9, vertical: compact ? 3 : 4),
+      decoration: BoxDecoration(
+        color: AppColors.success,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 4)
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.verified, color: Colors.white, size: compact ? 11 : 13),
+          SizedBox(width: compact ? 3 : 4),
+          Text(compact ? 'Verified' : 'Verified Astrologer',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: compact ? 9 : 10,
+                  fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Astrologer card (horizontal sections)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -598,23 +703,13 @@ class _AstrologerCard extends StatelessWidget {
             Stack(
               children: [
                 _astroImage(a.photoUrl, width: 200, height: 112, radius: 16),
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: a.isAvailable ? AppColors.success : Colors.grey[600],
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(a.isAvailable ? 'Available' : 'Offline',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold)),
+                // Verified badge — shown only for admin-approved astrologers.
+                if (a.verified)
+                  const Positioned(
+                    top: 8,
+                    left: 8,
+                    child: _VerifiedBadge(compact: true),
                   ),
-                ),
               ],
             ),
             Padding(
@@ -707,6 +802,148 @@ class _AstrologerCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Astrologer grid card (All Astrologers — 2 per row)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AstrologerGridCard extends StatelessWidget {
+  final Astrologer astrologer;
+  final VoidCallback onTap;
+  const _AstrologerGridCard({required this.astrologer, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final a = astrologer;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: Image.network(
+                    a.photoUrl,
+                    height: 112,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 112,
+                      color: AppColors.primary.withOpacity(0.08),
+                      child: const Icon(Icons.person,
+                          size: 44, color: AppColors.primary),
+                    ),
+                  ),
+                ),
+                if (a.verified)
+                  const Positioned(
+                    top: 8,
+                    left: 8,
+                    child: _VerifiedBadge(compact: true),
+                  ),
+              ],
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(a.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13.5,
+                            fontFamily: 'Poppins')),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.star, color: AppColors.gold, size: 14),
+                        const SizedBox(width: 3),
+                        Text(a.rating.toStringAsFixed(1),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w600, fontSize: 12)),
+                        const SizedBox(width: 3),
+                        Text('(${a.reviewCount})',
+                            style: TextStyle(
+                                color: Colors.grey[500], fontSize: 11)),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on_outlined,
+                            size: 13, color: Colors.grey[500]),
+                        const SizedBox(width: 3),
+                        Expanded(
+                          child: Text(a.location.isEmpty ? '—' : a.location,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  color: Colors.grey[600], fontSize: 11.5)),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        const Icon(Icons.currency_rupee,
+                            size: 13, color: AppColors.primary),
+                        Text('${a.startingPrice}',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12.5,
+                                color: AppColors.primary)),
+                        const Spacer(),
+                        Icon(Icons.work_history_outlined,
+                            size: 12, color: Colors.grey[600]),
+                        const SizedBox(width: 2),
+                        Text('${a.experienceYears}y',
+                            style: TextStyle(
+                                color: Colors.grey[700], fontSize: 11)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.auto_awesome,
+                            size: 12, color: AppColors.gold),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            a.specializations.isEmpty
+                                ? 'Astrologer'
+                                : a.specializations.first,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 11, color: AppColors.primary),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Astrologer row (search / filter results)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -741,7 +978,7 @@ class _AstrologerRow extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Expanded(
+                      Flexible(
                         child: Text(a.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -750,6 +987,12 @@ class _AstrologerRow extends StatelessWidget {
                                 fontSize: 14,
                                 fontFamily: 'Poppins')),
                       ),
+                      if (a.verified) ...[
+                        const SizedBox(width: 4),
+                        const Icon(Icons.verified,
+                            color: AppColors.success, size: 15),
+                      ],
+                      const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
@@ -887,28 +1130,10 @@ class _AstrologerDetailSheet extends StatelessWidget {
                                         color: Colors.grey[700], fontSize: 13)),
                               ],
                             ),
-                            const SizedBox(height: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color:
-                                    (a.isAvailable ? AppColors.success : Colors.grey)
-                                        .withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                a.isAvailable
-                                    ? 'Available now'
-                                    : 'Currently offline',
-                                style: TextStyle(
-                                    color: a.isAvailable
-                                        ? AppColors.success
-                                        : Colors.grey[700],
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600),
-                              ),
-                            ),
+                            if (a.verified) ...[
+                              const SizedBox(height: 8),
+                              const _VerifiedBadge(),
+                            ],
                           ],
                         ),
                       ),
@@ -936,15 +1161,6 @@ class _AstrologerDetailSheet extends StatelessWidget {
                   _label('📝 About'),
                   Text(a.about,
                       style: const TextStyle(height: 1.5, fontSize: 13.5)),
-                  const SizedBox(height: 16),
-                  _label('📞 Consultation Availability'),
-                  Text(
-                    a.isAvailable
-                        ? 'Available for chat & booking now — typically responds quickly.'
-                        : 'Currently offline. You can still book a consultation and they will confirm a slot.',
-                    style: TextStyle(
-                        color: Colors.grey[700], fontSize: 13, height: 1.5),
-                  ),
                   const SizedBox(height: 22),
                   Row(
                     children: [
@@ -971,7 +1187,7 @@ class _AstrologerDetailSheet extends StatelessWidget {
                             context.push('/astrologer/${a.id}');
                           },
                           icon: const Icon(Icons.event_available, size: 18),
-                          label: const Text('Book'),
+                          label: const Text('Book Consultation'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
