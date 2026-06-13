@@ -61,6 +61,14 @@ class AstrologerAccount {
   final List<AstrologerService> services;
   final double rating;
   final int reviewCount;
+  // Reputation breakdown: star (1-5) → number of reviews at that rating.
+  final Map<int, int> ratingBreakdown;
+  // Marketplace stats (populated by the platform; default 0 until tracked).
+  final int profileViews;
+  final int contactUnlocks;
+  // Subscription — the visibility gate for the marketplace.
+  final String subscriptionPlan; // '' | 'monthly' | 'yearly'
+  final DateTime? subscriptionExpiry;
   // When the astrologer account was first created (registration date). Read
   // from the Firestore `createdAt` server timestamp; may be null for older docs.
   final DateTime? createdAt;
@@ -96,10 +104,29 @@ class AstrologerAccount {
     this.services = const [],
     this.rating = 0,
     this.reviewCount = 0,
+    this.ratingBreakdown = const {},
+    this.profileViews = 0,
+    this.contactUnlocks = 0,
+    this.subscriptionPlan = '',
+    this.subscriptionExpiry,
     this.createdAt,
   });
 
   bool get isApproved => status == VerificationStatus.approved;
+
+  /// True while the subscription has not expired.
+  bool get subscriptionActive =>
+      subscriptionExpiry != null &&
+      subscriptionExpiry!.isAfter(DateTime.now());
+
+  /// Whole days left on the subscription (0 if none/expired).
+  int get subscriptionDaysRemaining => subscriptionExpiry == null
+      ? 0
+      : subscriptionExpiry!.difference(DateTime.now()).inDays.clamp(0, 100000);
+
+  /// Marketplace visibility gate: an astrologer is shown to users only when
+  /// approved by an admin AND holding an active subscription.
+  bool get isVisibleToUsers => isApproved && subscriptionActive;
 
   AstrologerAccount copyWith({
     String? fullName,
@@ -129,6 +156,11 @@ class AstrologerAccount {
     bool? profileCompleted,
     VerificationStatus? status,
     List<AstrologerService>? services,
+    Map<int, int>? ratingBreakdown,
+    int? profileViews,
+    int? contactUnlocks,
+    String? subscriptionPlan,
+    DateTime? subscriptionExpiry,
   }) =>
       AstrologerAccount(
         id: id,
@@ -159,6 +191,11 @@ class AstrologerAccount {
         profileCompleted: profileCompleted ?? this.profileCompleted,
         status: status ?? this.status,
         services: services ?? this.services,
+        ratingBreakdown: ratingBreakdown ?? this.ratingBreakdown,
+        profileViews: profileViews ?? this.profileViews,
+        contactUnlocks: contactUnlocks ?? this.contactUnlocks,
+        subscriptionPlan: subscriptionPlan ?? this.subscriptionPlan,
+        subscriptionExpiry: subscriptionExpiry ?? this.subscriptionExpiry,
         rating: rating,
         reviewCount: reviewCount,
         createdAt: createdAt,
@@ -209,10 +246,28 @@ class AstrologerAccount {
           .toList(),
       rating: (d['rating'] ?? 0).toDouble(),
       reviewCount: d['reviewCount'] ?? 0,
+      ratingBreakdown: _parseBreakdown(d['ratingBreakdown']),
+      profileViews: d['profileViews'] ?? 0,
+      contactUnlocks: d['contactUnlocks'] ?? 0,
+      subscriptionPlan: d['subscriptionPlan'] ?? '',
+      subscriptionExpiry: d['subscriptionExpiry'] is Timestamp
+          ? (d['subscriptionExpiry'] as Timestamp).toDate()
+          : null,
       createdAt: d['createdAt'] is Timestamp
           ? (d['createdAt'] as Timestamp).toDate()
           : null,
     );
+  }
+
+  /// Parses a Firestore `ratingBreakdown` map (string keys) into {star: count}.
+  static Map<int, int> _parseBreakdown(dynamic raw) {
+    if (raw is! Map) return const {};
+    final out = <int, int>{};
+    raw.forEach((k, v) {
+      final star = int.tryParse('$k');
+      if (star != null) out[star] = (v is int) ? v : int.tryParse('$v') ?? 0;
+    });
+    return out;
   }
 
   Map<String, dynamic> toFirestore() => {
@@ -247,5 +302,13 @@ class AstrologerAccount {
         'services': services.map((s) => s.toMap()).toList(),
         'rating': rating,
         'reviewCount': reviewCount,
+        'ratingBreakdown':
+            ratingBreakdown.map((k, v) => MapEntry(k.toString(), v)),
+        'profileViews': profileViews,
+        'contactUnlocks': contactUnlocks,
+        'subscriptionPlan': subscriptionPlan,
+        'subscriptionExpiry': subscriptionExpiry != null
+            ? Timestamp.fromDate(subscriptionExpiry!)
+            : null,
       };
 }

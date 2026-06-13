@@ -637,21 +637,29 @@ Widget _astroImage(String url,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Verified badge (shown only when admin-approved)
+// Status badge — green "Verified" when admin-approved, amber "Verification
+// Pending" otherwise. Always shown so admins/testers can tell status apart.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Small "✅ Verified" pill. Render only when [Astrologer.verified] is true.
-class _VerifiedBadge extends StatelessWidget {
+/// Small status pill. Green ✅ "Verified" for approved astrologers, amber ⏳
+/// "Verification Pending" for not-yet-approved ones.
+class _StatusBadge extends StatelessWidget {
+  final bool verified;
   final bool compact;
-  const _VerifiedBadge({this.compact = false});
+  const _StatusBadge({required this.verified, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
+    final color = verified ? AppColors.success : AppColors.warning;
+    final icon = verified ? Icons.verified : Icons.hourglass_top;
+    final label = verified
+        ? (compact ? 'Verified' : 'Verified Astrologer')
+        : (compact ? 'Pending' : 'Verification Pending');
     return Container(
       padding: EdgeInsets.symmetric(
           horizontal: compact ? 7 : 9, vertical: compact ? 3 : 4),
       decoration: BoxDecoration(
-        color: AppColors.success,
+        color: color,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 4)
@@ -660,9 +668,9 @@ class _VerifiedBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.verified, color: Colors.white, size: compact ? 11 : 13),
+          Icon(icon, color: Colors.white, size: compact ? 11 : 13),
           SizedBox(width: compact ? 3 : 4),
-          Text(compact ? 'Verified' : 'Verified Astrologer',
+          Text(label,
               style: TextStyle(
                   color: Colors.white,
                   fontSize: compact ? 9 : 10,
@@ -703,13 +711,12 @@ class _AstrologerCard extends StatelessWidget {
             Stack(
               children: [
                 _astroImage(a.photoUrl, width: 200, height: 112, radius: 16),
-                // Verified badge — shown only for admin-approved astrologers.
-                if (a.verified)
-                  const Positioned(
-                    top: 8,
-                    left: 8,
-                    child: _VerifiedBadge(compact: true),
-                  ),
+                // Status badge — Verified (green) or Verification Pending (amber).
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: _StatusBadge(verified: a.verified, compact: true),
+                ),
               ],
             ),
             Padding(
@@ -844,12 +851,11 @@ class _AstrologerGridCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (a.verified)
-                  const Positioned(
-                    top: 8,
-                    left: 8,
-                    child: _VerifiedBadge(compact: true),
-                  ),
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: _StatusBadge(verified: a.verified, compact: true),
+                ),
               ],
             ),
             Expanded(
@@ -987,11 +993,11 @@ class _AstrologerRow extends StatelessWidget {
                                 fontSize: 14,
                                 fontFamily: 'Poppins')),
                       ),
-                      if (a.verified) ...[
-                        const SizedBox(width: 4),
-                        const Icon(Icons.verified,
-                            color: AppColors.success, size: 15),
-                      ],
+                      const SizedBox(width: 4),
+                      Icon(a.verified ? Icons.verified : Icons.hourglass_top,
+                          color:
+                              a.verified ? AppColors.success : AppColors.warning,
+                          size: 15),
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -1130,10 +1136,8 @@ class _AstrologerDetailSheet extends StatelessWidget {
                                         color: Colors.grey[700], fontSize: 13)),
                               ],
                             ),
-                            if (a.verified) ...[
-                              const SizedBox(height: 8),
-                              const _VerifiedBadge(),
-                            ],
+                            const SizedBox(height: 8),
+                            _StatusBadge(verified: a.verified),
                           ],
                         ),
                       ),

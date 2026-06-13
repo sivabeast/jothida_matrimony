@@ -296,7 +296,7 @@ class AstrologerConsultationDetailsScreen extends ConsumerStatefulWidget {
 class _ConsultationState
     extends ConsumerState<AstrologerConsultationDetailsScreen> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _fee, _availability, _hours;
+  late TextEditingController _fee, _availability, _hours, _about;
   late String _mode;
   bool _saving = false;
 
@@ -308,6 +308,7 @@ class _ConsultationState
         text: (a?.consultationFee ?? 0).toStringAsFixed(0));
     _availability = TextEditingController(text: a?.availability ?? '');
     _hours = TextEditingController(text: a?.workingHours ?? '');
+    _about = TextEditingController(text: a?.about ?? '');
     _mode = _modes.contains(a?.consultationMode) ? a!.consultationMode : 'Online';
   }
 
@@ -316,6 +317,7 @@ class _ConsultationState
     _fee.dispose();
     _availability.dispose();
     _hours.dispose();
+    _about.dispose();
     super.dispose();
   }
 
@@ -332,6 +334,7 @@ class _ConsultationState
         availability: _availability.text.trim(),
         workingHours: _hours.text.trim(),
         consultationMode: _mode,
+        about: _about.text.trim(),
       ),
     );
     if (!mounted) return;
@@ -373,6 +376,11 @@ class _ConsultationState
                 options: _modes,
                 value: _mode,
                 onChanged: (v) => setState(() => _mode = v)),
+            ProfileTextField(
+                controller: _about,
+                label: 'About Me',
+                hint: 'Your background, approach and the guidance you offer…',
+                maxLines: 5),
             const SizedBox(height: 8),
             ProfileSaveButton(saving: _saving, onPressed: _save),
           ],

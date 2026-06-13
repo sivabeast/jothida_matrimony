@@ -2,20 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
-import '../../models/astrologer_request_model.dart';
 import '../../providers/astrologer_session_provider.dart';
-import '../../providers/chat_provider.dart';
 import '../../providers/notification_provider.dart';
-import '../home/tabs/notifications_tab.dart';
-import 'tabs/astrologer_appointments_tab.dart';
-import 'tabs/astrologer_messages_tab.dart';
+import '../../widgets/common/app_logo.dart';
+import 'tabs/astrologer_notifications_tab.dart';
 import 'tabs/astrologer_overview_tab.dart';
 import 'tabs/astrologer_profile_tab.dart';
-import 'tabs/astrologer_requests_tab.dart';
+import 'tabs/astrologer_reviews_tab.dart';
 
-/// The astrologer portal — a mobile-first shell with a 5-item bottom navigation
-/// (Dashboard · Requests · Appointments · Messages · Profile). Each destination
-/// is its own tab widget; all of them read real Firestore data.
+/// The astrologer portal — a focused marketplace experience with a 4-item
+/// bottom navigation (Dashboard · Reviews · Notifications · Profile).
+///
+/// Astrologers manage their profile, reputation, certificates and subscription.
+/// They never browse users, view user contacts, or manage appointments/leads —
+/// users contact astrologers, not the other way around.
 class AstrologerDashboardScreen extends ConsumerStatefulWidget {
   const AstrologerDashboardScreen({super.key});
 
@@ -30,52 +30,21 @@ class _AstrologerDashboardScreenState
 
   static const _tabs = <Widget>[
     AstrologerOverviewTab(),
-    AstrologerRequestsTab(),
-    AstrologerAppointmentsTab(),
-    AstrologerMessagesTab(),
+    AstrologerReviewsTab(),
+    AstrologerNotificationsTab(),
     AstrologerProfileTab(),
   ];
-
-  void _openNotifications() {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => Scaffold(
-        appBar: AppBar(
-          title: const Text('Notifications'),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-        ),
-        body: const NotificationsTab(),
-      ),
-    ));
-  }
 
   @override
   Widget build(BuildContext context) {
     final account = ref.watch(myAstrologerAccountProvider);
     if (account == null) {
-      // Router normally prevents reaching here un-onboarded — guard anyway.
       return const Scaffold(
         body: Center(child: Text('Please complete onboarding')),
       );
     }
 
-    // Live badge counts (read-only reuse of existing providers).
-    final pendingRequests = ref
-            .watch(astrologerRequestsProvider)
-            .valueOrNull
-            ?.where((r) => r.status == AstrologerRequestStatus.pending)
-            .length ??
-        0;
-    final myUid = ref.watch(myUidProvider) ?? '';
-    final unreadMessages = ref.watch(myChatThreadsProvider).valueOrNull?.fold<int>(
-              0,
-              (sum, t) => sum + t.unreadFor(myUid),
-            ) ??
-        0;
     final notifUnread = ref.watch(unreadNotificationCountProvider);
-    final initial = account.fullName.trim().isNotEmpty
-        ? account.fullName.trim()[0].toUpperCase()
-        : '?';
 
     return PopScope(
       canPop: false,
@@ -84,119 +53,87 @@ class _AstrologerDashboardScreenState
         _handleBackPress();
       },
       child: Scaffold(
-      backgroundColor: AppColors.scaffoldBg,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        automaticallyImplyLeading: false,
-        titleSpacing: 12,
-        // LEFT: profile photo + astrologer name (only).
-        title: Row(
-          children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: Colors.white24,
-              backgroundImage: account.photoUrl.isNotEmpty
-                  ? NetworkImage(account.photoUrl)
-                  : null,
-              child: account.photoUrl.isEmpty
-                  ? Text(initial,
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold))
-                  : null,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(account.fullName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.bold)),
-                  Text('Astrologer',
-                      style: TextStyle(
-                          fontSize: 10.5,
-                          color: Colors.white.withOpacity(0.8),
-                          letterSpacing: 0.5)),
-                ],
+        backgroundColor: AppColors.scaffoldBg,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          automaticallyImplyLeading: false,
+          titleSpacing: 12,
+          // LEFT: app logo + brand name (only).
+          title: Row(
+            children: [
+              const AppLogo(size: 36),
+              const SizedBox(width: 10),
+              const Text(
+                'Jothida Matrimony',
+                style: TextStyle(
+                  color: AppColors.gold,
+                  fontSize: 17,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
+                ),
               ),
+            ],
+          ),
+          // RIGHT: notification icon only → opens the Notifications tab.
+          actions: [
+            IconButton(
+              tooltip: 'Notifications',
+              onPressed: () => setState(() => _index = 2),
+              icon: notifUnread > 0
+                  ? Badge(
+                      backgroundColor: AppColors.gold,
+                      label: Text('$notifUnread',
+                          style: const TextStyle(
+                              fontSize: 10, color: AppColors.primary)),
+                      child: const Icon(Icons.notifications_none, size: 26),
+                    )
+                  : const Icon(Icons.notifications_none, size: 26),
+            ),
+            const SizedBox(width: 4),
+          ],
+        ),
+        body: IndexedStack(index: _index, children: _tabs),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _index,
+          onDestinationSelected: (i) => setState(() => _index = i),
+          backgroundColor: Colors.white,
+          indicatorColor: AppColors.primary.withOpacity(0.12),
+          destinations: [
+            const NavigationDestination(
+              icon: Icon(Icons.dashboard_outlined),
+              selectedIcon: Icon(Icons.dashboard, color: AppColors.primary),
+              label: 'Dashboard',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.star_outline),
+              selectedIcon: Icon(Icons.star, color: AppColors.primary),
+              label: 'Reviews',
+            ),
+            NavigationDestination(
+              icon: Badge(
+                isLabelVisible: notifUnread > 0,
+                label: Text('$notifUnread'),
+                child: const Icon(Icons.notifications_none),
+              ),
+              selectedIcon:
+                  const Icon(Icons.notifications, color: AppColors.primary),
+              label: 'Notifications',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person, color: AppColors.primary),
+              label: 'Profile',
             ),
           ],
         ),
-        // RIGHT: notification icon only.
-        actions: [
-          IconButton(
-            tooltip: 'Notifications',
-            icon: notifUnread > 0
-                ? Badge(
-                    label: Text('$notifUnread',
-                        style: const TextStyle(fontSize: 10)),
-                    backgroundColor: Colors.red,
-                    child: const Icon(Icons.notifications_none, size: 26),
-                  )
-                : const Icon(Icons.notifications_none, size: 26),
-            onPressed: _openNotifications,
-          ),
-          const SizedBox(width: 4),
-        ],
-      ),
-      body: IndexedStack(index: _index, children: _tabs),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        backgroundColor: Colors.white,
-        indicatorColor: AppColors.primary.withOpacity(0.12),
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard, color: AppColors.primary),
-            label: 'Dashboard',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: pendingRequests > 0,
-              label: Text('$pendingRequests'),
-              child: const Icon(Icons.assignment_outlined),
-            ),
-            selectedIcon: const Icon(Icons.assignment, color: AppColors.primary),
-            label: 'Requests',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.event_note_outlined),
-            selectedIcon: Icon(Icons.event_note, color: AppColors.primary),
-            label: 'Appointments',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: unreadMessages > 0,
-              label: Text('$unreadMessages'),
-              child: const Icon(Icons.chat_bubble_outline),
-            ),
-            selectedIcon:
-                const Icon(Icons.chat_bubble, color: AppColors.primary),
-            label: 'Messages',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person, color: AppColors.primary),
-            label: 'Profile',
-          ),
-        ],
-      ),
       ),
     );
   }
 
   DateTime? _lastBackPress;
 
-  /// Android system-back handling for the astrologer shell:
-  ///  • not on the Dashboard tab → switch back to the Dashboard tab
-  ///  • on the Dashboard tab      → "press back again to exit" within 2 seconds
   void _handleBackPress() {
     if (_index != 0) {
       setState(() => _index = 0);

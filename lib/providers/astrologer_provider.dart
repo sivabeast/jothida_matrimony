@@ -39,18 +39,26 @@ Astrologer astrologerFromAccount(AstrologerAccount a) {
 
 /// Directory astrologers shown to USERS.
 ///
-/// Demo mode → in-memory [sampleAstrologers]. Real mode → only admin-VERIFIED
-/// (status == approved) astrologers, via the server-side `status == approved`
-/// query. Pending and rejected accounts are NEVER shown to users (business
-/// "only verified astrologers appear" rule), and this query also satisfies the
-/// Firestore rule that limits astrologer reads to approved documents.
+/// ⚠️ TEMPORARY (development/testing): verification, subscription and approval
+/// filtering are DISABLED. Every astrologer is shown — both ✅ verified and ⏳
+/// pending — so we can test profile loading, cards, search and the
+/// Nearby/Top-Rated/All sections without gating. Only suspended astrologers
+/// (status == rejected) are excluded. The card still shows the correct status
+/// badge so verified vs. pending is identifiable.
 ///
-/// NOTE (Phase 2): active-subscription gating is layered on top of this — an
-/// approved astrologer whose subscription has expired must also be hidden here.
+/// TODO(restore): switch back to `watchApprovedAstrologers()` (verified-only,
+/// plus active-subscription gating) before production. Firestore security rules
+/// must also temporarily allow reading non-approved astrologer documents while
+/// this is in effect.
 final astrologersProvider = StreamProvider.autoDispose<List<Astrologer>>((ref) {
   if (kBypassAuth) return Stream.value(sampleAstrologers());
-  return ref.watch(astrologerServiceProvider).watchApprovedAstrologers().map(
-        (accounts) => accounts.map(astrologerFromAccount).toList(),
+  return ref.watch(astrologerServiceProvider).watchAllAstrologers().map(
+        (accounts) => accounts
+            // Exclude only suspended/rejected (and there is no separate
+            // "deleted" status — deleted docs simply don't exist).
+            .where((a) => a.status != VerificationStatus.rejected)
+            .map(astrologerFromAccount)
+            .toList(),
       );
 });
 

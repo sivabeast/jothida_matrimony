@@ -8,7 +8,6 @@ import '../../../providers/astrologer_session_provider.dart';
 import '../../../providers/service_providers.dart';
 import '../profile/astrologer_certificates_screen.dart';
 import '../profile/astrologer_profile_sections.dart';
-import '../profile/astrologer_services_screen.dart';
 import 'astrologer_common.dart';
 
 /// The astrologer's profile — a professional account-management home: identity
@@ -79,17 +78,11 @@ class _AstrologerProfileTabState extends ConsumerState<AstrologerProfileTab> {
             'Experience, specializations, qualification, languages',
             () => _open(const AstrologerProfessionalDetailsScreen())),
         _menuItem(Icons.payments_outlined, 'Consultation Details',
-            'Fee, availability, working hours, mode',
+            'Fee, timings, online/offline, about me',
             () => _open(const AstrologerConsultationDetailsScreen())),
-        _menuItem(Icons.room_service_outlined, 'My Services',
-            'Services you offer & their pricing',
-            () => _open(const AstrologerServicesScreen())),
         _menuItem(Icons.workspace_premium_outlined, 'Certificates',
             'Upload & manage verification documents',
             () => _open(const AstrologerCertificatesScreen())),
-        _menuItem(Icons.description_outlined, 'About Me',
-            'Professional biography & expertise',
-            () => _open(const AstrologerAboutScreen())),
         _menuItem(Icons.settings_outlined, 'Account Settings',
             'Verification status & sign out',
             () => _open(const AstrologerAccountSettingsScreen())),

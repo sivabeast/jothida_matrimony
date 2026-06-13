@@ -1,250 +1,231 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/astrologer_account_model.dart';
-import '../../../models/astrologer_request_model.dart';
-import '../../../models/chat_model.dart';
 import '../../../providers/astrologer_session_provider.dart';
-import '../../../providers/chat_provider.dart';
+import '../../../providers/notification_provider.dart';
 import 'astrologer_common.dart';
 
-/// Dashboard overview: headline stats + recent activity. All figures are
-/// computed from real Firestore data (requests, account rating, earnings).
+/// Dashboard overview for the marketplace astrologer: headline stats,
+/// subscription status, and recent activity. No appointments, leads or user
+/// data — just the astrologer's own performance and account.
 class AstrologerOverviewTab extends ConsumerWidget {
   const AstrologerOverviewTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final account = ref.watch(myAstrologerAccountProvider);
-    final requestsAsync = ref.watch(astrologerRequestsProvider);
-
     if (account == null) return const AstrologerLoading();
-
-    return requestsAsync.when(
-      loading: () => const AstrologerLoading(),
-      error: (_, __) => AstrologerErrorState(
-        onRetry: () => ref.invalidate(astrologerRequestsProvider),
-      ),
-      data: (requests) => _content(context, ref, account, requests),
-    );
-  }
-
-  Widget _content(
-    BuildContext context,
-    WidgetRef ref,
-    AstrologerAccount account,
-    List<AstrologerRequestModel> requests,
-  ) {
-    int countOf(AstrologerRequestStatus s) =>
-        requests.where((r) => r.status == s).length;
-
-    final total = requests.length;
-    final pending = countOf(AstrologerRequestStatus.pending);
-    final accepted = countOf(AstrologerRequestStatus.accepted);
-    final completed = countOf(AstrologerRequestStatus.completed);
-    final earnings = ref.watch(astrologerEarningsProvider).valueOrNull ?? 0;
-
-    final recentRequests = [
-      for (final r in requests)
-        if (r.status == AstrologerRequestStatus.pending) r,
-    ]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    final upcoming = [
-      for (final r in requests)
-        if (r.status == AstrologerRequestStatus.accepted) r,
-    ]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
         if (!account.isApproved) _verificationBanner(account),
-        // ── Stats grid ──────────────────────────────────────────────────
+        // ── Headline stats ──────────────────────────────────────────────
         GridView.count(
           crossAxisCount: 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
-          childAspectRatio: 1.45,
+          childAspectRatio: 1.5,
           children: [
-            _StatCard('Total Requests', '$total', Icons.assignment_outlined,
-                AppColors.primary),
-            _StatCard('Pending', '$pending',
-                Icons.hourglass_top_outlined, AppColors.warning),
-            _StatCard('Accepted', '$accepted',
-                Icons.check_circle_outline, AppColors.info),
-            _StatCard('Completed', '$completed',
-                Icons.task_alt_outlined, AppColors.success),
+            _StatCard('Profile Views', '${account.profileViews}',
+                Icons.visibility_outlined, AppColors.primary),
+            _StatCard('Contact Unlocks', '${account.contactUnlocks}',
+                Icons.lock_open_outlined, AppColors.info),
             _StatCard('Avg Rating', account.rating.toStringAsFixed(1),
                 Icons.star_outline, AppColors.gold),
-            _StatCard('Total Earnings', '₹$earnings',
-                Icons.payments_outlined, AppColors.success),
-            _StatCard('Profile Views', '0', Icons.visibility_outlined,
-                AppColors.textSecondary),
+            _StatCard('Total Reviews', '${account.reviewCount}',
+                Icons.reviews_outlined, AppColors.success),
           ],
         ),
-        const SizedBox(height: 18),
-        // ── Rating summary (aggregate only — never reviewer identities) ──
-        _ratingSummary(account),
+        const SizedBox(height: 20),
+        // ── Subscription ────────────────────────────────────────────────
+        const AstrologerSectionTitle('Subscription'),
+        _subscriptionCard(context, account),
         const SizedBox(height: 20),
         // ── Recent activity ─────────────────────────────────────────────
-        const AstrologerSectionTitle('New Consultation Requests'),
-        if (recentRequests.isEmpty)
-          _mutedTile('No new requests')
-        else
-          ...recentRequests.take(3).map((r) => _activityTile(
-                icon: Icons.assignment_outlined,
-                title: r.userName,
-                subtitle: r.type.label,
-                trailing: astrologerRelativeTime(r.createdAt),
-              )),
-        const SizedBox(height: 16),
-        const AstrologerSectionTitle('Upcoming Appointments'),
-        if (upcoming.isEmpty)
-          _mutedTile('No upcoming appointments')
-        else
-          ...upcoming.take(3).map((r) => _activityTile(
-                icon: Icons.event_available_outlined,
-                title: r.userName,
-                subtitle: r.type.label,
-                trailing: astrologerRelativeTime(r.createdAt),
-              )),
-        const SizedBox(height: 16),
-        const AstrologerSectionTitle('New Messages'),
-        _recentMessages(context, ref),
+        const AstrologerSectionTitle('Recent Activity'),
+        _recentActivity(ref),
       ],
     );
   }
 
-  Widget _recentMessages(BuildContext context, WidgetRef ref) {
-    final myUid = ref.watch(myUidProvider) ?? '';
-    final threads = ref.watch(myChatThreadsProvider).valueOrNull ?? const [];
-    if (threads.isEmpty) return _mutedTile('No messages yet');
-    return Column(
-      children: [
-        for (final ChatThread t in threads.take(3))
-          _activityTile(
-            icon: Icons.chat_bubble_outline,
-            title: t.otherName(myUid),
-            subtitle: t.lastMessage.isEmpty ? 'Say hello!' : t.lastMessage,
-            trailing: t.lastMessageAt != null
-                ? astrologerRelativeTime(t.lastMessageAt!)
-                : '',
-            badge: t.unreadFor(myUid),
-            onTap: () => context.push('/chat/${t.id}', extra: {
-              'name': t.otherName(myUid),
-              'photo': t.otherPhoto(myUid),
-            }),
-          ),
-      ],
-    );
-  }
+  // ── Subscription card ─────────────────────────────────────────────────
+  Widget _subscriptionCard(BuildContext context, AstrologerAccount a) {
+    final active = a.subscriptionActive;
+    final hasPlan = a.subscriptionExpiry != null;
+    final planLabel = a.subscriptionPlan == 'yearly'
+        ? 'Yearly Plan'
+        : a.subscriptionPlan == 'monthly'
+            ? 'Monthly Plan'
+            : 'No active plan';
+    final statusColor = active ? AppColors.success : AppColors.error;
+    final statusText = active
+        ? 'Active'
+        : hasPlan
+            ? 'Expired'
+            : 'Inactive';
 
-  Widget _ratingSummary(AstrologerAccount account) => AstrologerCard(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Text(account.rating.toStringAsFixed(1),
-                style: const TextStyle(
-                    fontSize: 34, fontWeight: FontWeight.bold)),
-            const SizedBox(width: 14),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: List.generate(
-                    5,
-                    (i) => Icon(
-                      i < account.rating.round()
-                          ? Icons.star
-                          : Icons.star_border,
-                      color: AppColors.gold,
-                      size: 18,
-                    ),
-                  ),
+    return AstrologerCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.workspace_premium, color: AppColors.gold),
+              const SizedBox(width: 10),
+              Text(planLabel,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 15)),
+              const Spacer(),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                const SizedBox(height: 4),
-                Text('${account.reviewCount} reviews',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-              ],
+                child: Text(statusText,
+                    style: TextStyle(
+                        color: statusColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+          if (hasPlan) ...[
+            const SizedBox(height: 12),
+            _subRow('Expiry Date', astrologerDateOnly(a.subscriptionExpiry!)),
+            _subRow('Days Remaining', '${a.subscriptionDaysRemaining} days'),
+          ] else ...[
+            const SizedBox(height: 8),
+            Text(
+                'Subscribe to a monthly or yearly plan to appear in user '
+                'listings, search and recommendations.',
+                style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
+          ],
+          if (!active) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline,
+                      size: 16, color: AppColors.warning),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                        'Your profile is hidden from users until your '
+                        'subscription is active. Editing stays available.',
+                        style: TextStyle(
+                            fontSize: 11.5, color: Colors.grey[800])),
+                  ),
+                ],
+              ),
             ),
+          ],
+          const SizedBox(height: 14),
+          ElevatedButton.icon(
+            onPressed: () => _renew(context),
+            icon: const Icon(Icons.autorenew),
+            label: const Text('Renew Subscription'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(46),
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _subRow(String label, String value) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+            Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
           ],
         ),
       );
 
-  Widget _activityTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String trailing,
-    int badge = 0,
-    VoidCallback? onTap,
-  }) =>
-      Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: AstrologerCard(
-          onTap: onTap,
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
-                child: Icon(icon, size: 18, color: AppColors.primary),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
-                    Text(subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style:
-                            TextStyle(fontSize: 12.5, color: Colors.grey[600])),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+  void _renew(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Renew Subscription'),
+        content: const Text(
+            'To renew your monthly or yearly plan, please contact the platform '
+            'admin. Your profile stays visible to users while your subscription '
+            'is active.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
+        ],
+      ),
+    );
+  }
+
+  // ── Recent activity (from the astrologer's notifications) ──────────────
+  Widget _recentActivity(WidgetRef ref) {
+    final items = ref.watch(notificationsProvider).valueOrNull ?? const [];
+    if (items.isEmpty) {
+      return AstrologerCard(
+        child: Row(
+          children: [
+            Icon(Icons.history, size: 18, color: Colors.grey[400]),
+            const SizedBox(width: 10),
+            Text('No recent activity',
+                style: TextStyle(color: Colors.grey[500])),
+          ],
+        ),
+      );
+    }
+    final recent = [...items]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return Column(
+      children: [
+        for (final n in recent.take(4))
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: AstrologerCard(
+              child: Row(
                 children: [
-                  if (trailing.isNotEmpty)
-                    Text(trailing,
-                        style:
-                            TextStyle(fontSize: 11, color: Colors.grey[500])),
-                  if (badge > 0) ...[
-                    const SizedBox(height: 4),
-                    CircleAvatar(
-                      radius: 9,
-                      backgroundColor: AppColors.primary,
-                      child: Text('$badge',
-                          style: const TextStyle(
-                              fontSize: 10, color: Colors.white)),
-                    ),
-                  ],
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                    child: const Icon(Icons.notifications_none,
+                        size: 16, color: AppColors.primary),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                        n.title.isEmpty ? 'Activity update' : n.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w500, fontSize: 13.5)),
+                  ),
+                  Text(astrologerRelativeTime(n.createdAt),
+                      style: TextStyle(fontSize: 11, color: Colors.grey[500])),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
-      );
-
-  Widget _mutedTile(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: AstrologerCard(
-          child: Row(
-            children: [
-              Icon(Icons.inbox_outlined, size: 18, color: Colors.grey[400]),
-              const SizedBox(width: 10),
-              Text(text, style: TextStyle(color: Colors.grey[500])),
-            ],
-          ),
-        ),
-      );
+      ],
+    );
+  }
 
   Widget _verificationBanner(AstrologerAccount a) {
     final rejected = a.status == VerificationStatus.rejected;
@@ -252,8 +233,8 @@ class AstrologerOverviewTab extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: (rejected ? AppColors.error : AppColors.warning)
-            .withOpacity(0.12),
+        color:
+            (rejected ? AppColors.error : AppColors.warning).withOpacity(0.12),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -294,7 +275,7 @@ class _StatCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             Text(label,
                 style: TextStyle(color: Colors.grey[600], fontSize: 12)),
           ],

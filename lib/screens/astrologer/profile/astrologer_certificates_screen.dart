@@ -226,7 +226,7 @@ class _CertificatesState extends ConsumerState<AstrologerCertificatesScreen> {
                   ],
                 ),
               ),
-              _verifiedBadge(c.verified),
+              _statusBadge(c.status),
             ],
           ),
           const Divider(height: 20),
@@ -247,19 +247,33 @@ class _CertificatesState extends ConsumerState<AstrologerCertificatesScreen> {
     );
   }
 
-  Widget _verifiedBadge(bool verified) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-        decoration: BoxDecoration(
-          color: (verified ? AppColors.success : AppColors.warning)
-              .withOpacity(0.12),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(verified ? 'Verified' : 'Pending',
-            style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: verified ? AppColors.success : AppColors.warning)),
-      );
+  Widget _statusBadge(String status) {
+    String label;
+    Color color;
+    switch (status) {
+      case 'approved':
+        label = 'Approved';
+        color = AppColors.success;
+        break;
+      case 'rejected':
+        label = 'Rejected';
+        color = AppColors.error;
+        break;
+      default:
+        label = 'Pending';
+        color = AppColors.warning;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(label,
+          style: TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+    );
+  }
 
   Widget _action(IconData icon, String label, VoidCallback onTap,
           {Color color = AppColors.textSecondary}) =>

@@ -2,17 +2,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// A certificate / qualification document an astrologer uploads for admin
 /// verification. Stored inside the astrologer account document under a
-/// `certificates` array so the Admin module can read, download and verify them.
+/// `certificates` array so the Admin module (Astrologer Verification) can read,
+/// download, approve and reject them.
 ///
 /// Firestore map:
-/// { id, name, url, fileType, uploadedAt, verified }
+/// { id, name, url, fileType, uploadedAt, status }
+///
+/// [status] is one of: pending · approved · rejected (set by an admin).
 class AstrologerCertificate {
   final String id;
   final String name;
   final String url; // public URL of the uploaded file (Cloudinary)
   final String fileType; // pdf | jpg | jpeg | png
   final DateTime uploadedAt;
-  final bool verified; // set true by an admin after review
+  final String status; // pending | approved | rejected
 
   const AstrologerCertificate({
     required this.id,
@@ -20,10 +23,12 @@ class AstrologerCertificate {
     required this.url,
     required this.fileType,
     required this.uploadedAt,
-    this.verified = false,
+    this.status = 'pending',
   });
 
   bool get isPdf => fileType.toLowerCase() == 'pdf';
+  bool get isApproved => status == 'approved';
+  bool get isRejected => status == 'rejected';
 
   factory AstrologerCertificate.fromMap(Map<String, dynamic> m) =>
       AstrologerCertificate(
@@ -34,7 +39,9 @@ class AstrologerCertificate {
         uploadedAt: m['uploadedAt'] is Timestamp
             ? (m['uploadedAt'] as Timestamp).toDate()
             : DateTime.tryParse('${m['uploadedAt']}') ?? DateTime.now(),
-        verified: m['verified'] ?? false,
+        // Back-compat: older docs used a `verified` bool.
+        status: m['status'] ??
+            ((m['verified'] == true) ? 'approved' : 'pending'),
       );
 
   Map<String, dynamic> toMap() => {
@@ -45,14 +52,14 @@ class AstrologerCertificate {
         // Stored as ISO string so it round-trips inside an array (array
         // elements can't hold server timestamps).
         'uploadedAt': uploadedAt.toIso8601String(),
-        'verified': verified,
+        'status': status,
       };
 
   AstrologerCertificate copyWith({
     String? name,
     String? url,
     String? fileType,
-    bool? verified,
+    String? status,
   }) =>
       AstrologerCertificate(
         id: id,
@@ -60,6 +67,6 @@ class AstrologerCertificate {
         url: url ?? this.url,
         fileType: fileType ?? this.fileType,
         uploadedAt: uploadedAt,
-        verified: verified ?? this.verified,
+        status: status ?? this.status,
       );
 }
