@@ -125,6 +125,23 @@ class _RequestCard extends ConsumerWidget {
                         ),
                       ],
                     ),
+                    if (request.userLocation.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Icon(Icons.location_on_outlined,
+                              size: 13, color: Colors.grey[500]),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(request.userLocation,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey[600])),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 2),
                     Row(
                       children: [
@@ -258,6 +275,8 @@ class _RequestCard extends ConsumerWidget {
             ),
             const SizedBox(height: 18),
             _detailRow('Service', request.type.label),
+            if (request.userLocation.isNotEmpty)
+              _detailRow('Location', request.userLocation),
             _detailRow('Requested', astrologerDateTime(request.createdAt)),
             if (request.respondedAt != null)
               _detailRow('Responded', astrologerDateTime(request.respondedAt!)),

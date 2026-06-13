@@ -136,16 +136,35 @@ class _AppointmentCard extends StatelessWidget {
                 Text(request.userName,
                     style: const TextStyle(
                         fontWeight: FontWeight.bold, fontSize: 15)),
-                const SizedBox(height: 2),
-                Text(request.type.label,
-                    style: TextStyle(fontSize: 12.5, color: Colors.grey[700])),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    Icon(Icons.auto_awesome_outlined,
+                        size: 12.5, color: Colors.grey[500]),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(request.type.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: 12.5, color: Colors.grey[700])),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
                 Row(
                   children: [
                     Icon(Icons.calendar_today_outlined,
                         size: 12.5, color: Colors.grey[500]),
                     const SizedBox(width: 4),
-                    Text(astrologerDateTime(when),
+                    Text(astrologerDateOnly(when),
+                        style:
+                            TextStyle(fontSize: 12, color: Colors.grey[500])),
+                    const SizedBox(width: 10),
+                    Icon(Icons.access_time,
+                        size: 12.5, color: Colors.grey[500]),
+                    const SizedBox(width: 4),
+                    Text(astrologerTimeOnly(when),
                         style:
                             TextStyle(fontSize: 12, color: Colors.grey[500])),
                   ],

@@ -84,12 +84,17 @@ class AstrologerService {
       .then((_) {});
 
   /// Realtime stream of every request addressed to this astrologer.
+  ///
+  /// NOTE: intentionally a single-field equality query with NO `orderBy` — that
+  /// combination would require a composite Firestore index and, until it was
+  /// created, the stream would error (and every astrologer tab would show the
+  /// "Try Again" state). The astrologer tabs already sort by `createdAt`
+  /// client-side, so ordering here is unnecessary.
   Stream<List<AstrologerRequestModel>> watchRequestsForAstrologer(
           String astrologerId) =>
       _db
           .collection(AppConstants.astrologerRequestsCollection)
           .where('astrologerId', isEqualTo: astrologerId)
-          .orderBy('createdAt', descending: true)
           .snapshots()
           .map((s) =>
               s.docs.map(AstrologerRequestModel.fromFirestore).toList());
@@ -115,11 +120,16 @@ class AstrologerService {
       });
 
   /// Sum of completed-request amounts → earnings shown on the dashboard.
+  ///
+  /// Filters by `astrologerId` only (single-field index, always available) and
+  /// applies the `status == completed` filter client-side. Two equality `where`
+  /// clauses on different fields would otherwise require a composite index, and
+  /// `amount` is read through `num` so a value stored as a double (e.g. 199.0)
+  /// can never crash the stream with a bad `as int` cast.
   Stream<int> watchEarnings(String astrologerId) => _db
       .collection(AppConstants.astrologerRequestsCollection)
       .where('astrologerId', isEqualTo: astrologerId)
-      .where('status', isEqualTo: 'completed')
       .snapshots()
-      .map((s) => s.docs
-          .fold<int>(0, (sum, d) => sum + ((d.data()['amount'] ?? 0) as int)));
+      .map((s) => s.docs.where((d) => d.data()['status'] == 'completed').fold<int>(
+          0, (sum, d) => sum + ((d.data()['amount'] ?? 0) as num).toInt()));
 }

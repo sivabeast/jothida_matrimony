@@ -48,6 +48,7 @@ class AstrologerRequestModel {
   final String userId;
   final String userName;
   final String userPhotoUrl;
+  final String userLocation;
   final AstrologerRequestType type;
   final AstrologerRequestStatus status;
   final String message;
@@ -63,6 +64,7 @@ class AstrologerRequestModel {
     required this.userId,
     required this.userName,
     this.userPhotoUrl = '',
+    this.userLocation = '',
     required this.type,
     this.status = AstrologerRequestStatus.pending,
     this.message = '',
@@ -81,6 +83,7 @@ class AstrologerRequestModel {
       userId: d['userId'] ?? '',
       userName: d['userName'] ?? 'User',
       userPhotoUrl: d['userPhotoUrl'] ?? '',
+      userLocation: d['userLocation'] ?? d['location'] ?? '',
       type: AstrologerRequestType.values.firstWhere(
         (t) => t.name == (d['type'] ?? 'inquiry'),
         orElse: () => AstrologerRequestType.inquiry,
@@ -107,6 +110,7 @@ class AstrologerRequestModel {
         'userId': userId,
         'userName': userName,
         'userPhotoUrl': userPhotoUrl,
+        'userLocation': userLocation,
         'type': type.name,
         'status': status.name,
         'message': message,
@@ -125,6 +129,7 @@ class AstrologerRequestModel {
         userId: userId,
         userName: userName,
         userPhotoUrl: userPhotoUrl,
+        userLocation: userLocation,
         type: type,
         status: status ?? this.status,
         message: message,

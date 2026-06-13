@@ -162,14 +162,27 @@ String astrologerRelativeTime(DateTime t) {
   return '${t.day}/${t.month}/${t.year}';
 }
 
-/// Short date + time, e.g. "13 Jun · 04:30 PM".
-String astrologerDateTime(DateTime t) {
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-  ];
+const _months = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+/// Date only, e.g. "13 Jun 2026".
+String astrologerDateOnly(DateTime t) =>
+    '${t.day} ${_months[t.month - 1]} ${t.year}';
+
+/// Time only, e.g. "04:30 PM".
+String astrologerTimeOnly(DateTime t) {
   final h = t.hour == 0 ? 12 : (t.hour > 12 ? t.hour - 12 : t.hour);
   final m = t.minute.toString().padLeft(2, '0');
   final ampm = t.hour >= 12 ? 'PM' : 'AM';
-  return '${t.day} ${months[t.month - 1]} · ${h.toString().padLeft(2, '0')}:$m $ampm';
+  return '${h.toString().padLeft(2, '0')}:$m $ampm';
+}
+
+/// Short date + time, e.g. "13 Jun · 04:30 PM".
+String astrologerDateTime(DateTime t) {
+  final h = t.hour == 0 ? 12 : (t.hour > 12 ? t.hour - 12 : t.hour);
+  final m = t.minute.toString().padLeft(2, '0');
+  final ampm = t.hour >= 12 ? 'PM' : 'AM';
+  return '${t.day} ${_months[t.month - 1]} · ${h.toString().padLeft(2, '0')}:$m $ampm';
 }
