@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
 import '../../providers/admin_provider.dart';
+import '../../widgets/common/data_states.dart';
 
 class AdminApprovalsScreen extends ConsumerWidget {
   const AdminApprovalsScreen({super.key});
@@ -12,8 +13,14 @@ class AdminApprovalsScreen extends ConsumerWidget {
     final profilesAsync = ref.watch(pendingProfilesProvider);
 
     return profilesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      loading: () => const LoadingState(message: 'Loading profiles...'),
+      error: (e, _) {
+        debugPrint('[AdminApprovals] load failed: $e');
+        return ErrorStateView(
+          message: 'Unable to load profiles. Please try again.',
+          onRetry: () => ref.invalidate(pendingProfilesProvider),
+        );
+      },
       data: (profiles) => profiles.isEmpty
           ? const Center(
               child: Column(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/admin_provider.dart';
+import '../../widgets/common/data_states.dart';
 
 /// Admin management section screens, registered under the admin ShellRoute:
 ///   /admin/astrologers · /admin/ratings · /admin/banners
@@ -381,9 +382,15 @@ class AnalyticsScreen extends ConsumerWidget {
         statsAsync.when(
           loading: () => const Padding(
             padding: EdgeInsets.all(24),
-            child: Center(child: CircularProgressIndicator()),
+            child: LoadingState(),
           ),
-          error: (e, _) => Text('Error: $e'),
+          error: (e, _) {
+            debugPrint('[Admin] analytics stats load failed: $e');
+            return const Padding(
+              padding: EdgeInsets.all(24),
+              child: ErrorStateView(message: 'No analytics data available.'),
+            );
+          },
           data: (s) => Column(
             children: [
               Row(children: [
@@ -478,6 +485,39 @@ class AdminSettingsScreen extends StatelessWidget {
           title: 'Content Settings',
           subtitle: 'Manage FAQs, policies and static content',
           onTap: () => _soon(context, 'Content Settings'),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🎫 Support Tickets
+// ─────────────────────────────────────────────────────────────────────────────
+
+class SupportTicketsScreen extends StatelessWidget {
+  const SupportTicketsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    debugPrint('[Admin] SupportTickets build — /admin/support');
+    return _adminScaffold(
+      title: 'Support Tickets',
+      icon: Icons.support_agent,
+      subtitle: 'User help requests and complaints',
+      children: [
+        _ActionTile(
+          icon: Icons.inbox_outlined,
+          title: 'Open Tickets',
+          subtitle: 'Review and respond to user issues',
+          onTap: () => _soon(context, 'Open Tickets'),
+        ),
+        _ActionTile(
+          icon: Icons.done_all,
+          title: 'Resolved Tickets',
+          subtitle: 'History of closed support requests',
+          color: AppColors.success,
+          onTap: () => _soon(context, 'Resolved Tickets'),
         ),
       ],
     );

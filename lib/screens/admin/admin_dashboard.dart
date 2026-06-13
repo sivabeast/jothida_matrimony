@@ -8,6 +8,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../providers/account_provider.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/common/data_states.dart';
 
 class AdminDashboard extends ConsumerWidget {
   const AdminDashboard({super.key});
@@ -57,8 +58,17 @@ class AdminDashboard extends ConsumerWidget {
             ),
           ],
           statsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Text('Error: $e'),
+            loading: () => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: LoadingState()),
+            error: (e, _) {
+              debugPrint('[AdminDashboard] stats load failed: $e');
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: ErrorStateView(
+                    message: 'Unable to load stats. Please try again.'),
+              );
+            },
             data: (stats) => Column(
               children: [
                 Row(
@@ -153,6 +163,7 @@ class AdminDashboard extends ConsumerWidget {
               _QuickAction('Analytics', Icons.insights, () => context.go('/admin/analytics')),
               _QuickAction('Married Users', Icons.celebration, () => context.go('/admin/married')),
               _QuickAction('Reports', Icons.report_problem, () => context.go('/admin/reports')),
+              _QuickAction('Support Tickets', Icons.support_agent, () => context.go('/admin/support')),
               _QuickAction('Settings', Icons.settings, () => context.go('/admin/settings')),
               if (canManageDeletions)
                 _QuickAction('Deletion Requests', Icons.delete_sweep,

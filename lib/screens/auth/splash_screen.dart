@@ -57,8 +57,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       if (userModel == null) {
         debugPrint('[Splash] No Firestore user doc found → /account-type');
         context.go('/account-type');
-      } else if (userModel.isAdmin) {
-        debugPrint('[Splash] Admin user → /admin');
+      } else if (userModel.role == 'admin') {
+        // Only a *pure* admin auto-lands on the dashboard. A super_admin is a
+        // normal user (with an extra Admin icon) and goes through the normal
+        // user flow below.
+        debugPrint('[Splash] Pure admin account → /admin');
         context.go('/admin');
       } else if (userModel.isAstrologer) {
         debugPrint('[Splash] Astrologer user → /astrologer-dashboard');

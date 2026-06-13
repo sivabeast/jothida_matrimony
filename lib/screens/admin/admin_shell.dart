@@ -33,6 +33,15 @@ class _AdminShellState extends ConsumerState<AdminShell> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         actions: [
+          // Return to the normal user app WITHOUT signing out. A super_admin is
+          // a normal matrimony user who just dipped into the admin area.
+          TextButton.icon(
+            onPressed: () => context.go('/home'),
+            icon: const Icon(Icons.home_outlined, color: Colors.white, size: 20),
+            label: const Text('User App',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.w600)),
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Sign Out',

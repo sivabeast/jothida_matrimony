@@ -172,11 +172,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           debugPrint('[Router] redirect: astrologer Google sign-in → /astrologer-register');
           return '/astrologer-register';
         }
-        // Admins/super-admins are exempt from the matrimony onboarding gate.
+        // A pure admin account is exempt from onboarding; a super_admin is a
+        // NORMAL matrimony user and onboards exactly like everyone else.
         if (user != null &&
             !user.isProfileComplete &&
             !user.isAstrologer &&
-            !user.isAdmin) {
+            user.role != 'admin') {
           debugPrint('[Router] redirect: profile incomplete → /profile/create');
           return '/profile/create';
         }
@@ -187,7 +188,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // before reaching any other authenticated screen (Home, chats, etc.).
       final onProfileCreate = loc == '/profile/create';
       if (user != null &&
-          !user.isAdmin &&
+          !onAdmin && // admins may still open /admin with an incomplete profile
           !user.isAstrologer &&
           !user.isProfileComplete &&
           !onProfileCreate &&
@@ -299,6 +300,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/admin/settings', builder: (_, __) => const AdminSettingsScreen()),
           GoRoute(path: '/admin/married', builder: (_, __) => const MarriedUsersScreen()),
           GoRoute(path: '/admin/deletion-requests', builder: (_, __) => const AccountDeletionRequestsScreen()),
+          GoRoute(path: '/admin/support', builder: (_, __) => const SupportTicketsScreen()),
         ],
       ),
     ],

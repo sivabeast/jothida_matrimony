@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/report_model.dart';
 import '../../providers/admin_provider.dart';
+import '../../widgets/common/data_states.dart';
 
 class AdminReportsScreen extends ConsumerWidget {
   const AdminReportsScreen({super.key});
@@ -12,10 +13,17 @@ class AdminReportsScreen extends ConsumerWidget {
     final reportsAsync = ref.watch(allReportsProvider);
 
     return reportsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      loading: () => const LoadingState(message: 'Loading reports...'),
+      error: (e, _) {
+        debugPrint('[AdminReports] load failed: $e');
+        return ErrorStateView(
+          message: 'Unable to load reports. Please try again.',
+          onRetry: () => ref.invalidate(allReportsProvider),
+        );
+      },
       data: (reports) => reports.isEmpty
-          ? const Center(child: Text('No reports'))
+          ? const EmptyState(
+              icon: Icons.report_off_outlined, message: 'No reports')
           : ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: reports.length,

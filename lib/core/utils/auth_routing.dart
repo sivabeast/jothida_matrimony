@@ -30,7 +30,9 @@ Future<void> routeAuthenticatedUser(
       debugPrint('[$tag] routeAuthenticatedUser: → /astrologer-dashboard');
       context.go('/astrologer-dashboard');
     }
-  } else if (user.isAdmin) {
+  } else if (user.role == 'admin') {
+    // Pure admin only. A super_admin is a normal matrimony user (with an extra
+    // Admin icon in the header) and falls through to the normal user flow.
     debugPrint('[$tag] routeAuthenticatedUser: admin account → /admin');
     context.go('/admin');
   } else if (!user.isProfileComplete) {

@@ -16,7 +16,10 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuthenticated() && getUserData().role == 'admin';
+      // 'super_admin' has the same data privileges as 'admin'. Without this,
+      // every admin query is rejected with permission-denied.
+      return isAuthenticated() &&
+          getUserData().role in ['admin', 'super_admin'];
     }
 
     function isAstrologer() {
@@ -92,6 +95,17 @@ service cloud.firestore {
       allow create: if isAuthenticated()
                     && request.resource.data.reporterUserId == request.auth.uid;
       allow update: if isAdmin();
+    }
+
+    // ── Account deletion requests ─────────────────────────────────────────
+    // A user files a request to delete their OWN account; only admins
+    // (super_admin) can review, approve or reject them.
+    match /account_deletion_requests/{requestId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated()
+                    && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     // ── Notifications ─────────────────────────────────────────────────────

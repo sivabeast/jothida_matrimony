@@ -6,6 +6,7 @@ import '../../models/account_deletion_request_model.dart';
 import '../../providers/account_provider.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/common/data_states.dart';
 
 /// True if the viewer may manage account deletions (Super Admin only; demo mode
 /// bypasses auth for local testing).
@@ -39,8 +40,12 @@ class AccountDeletionRequestsScreen extends ConsumerWidget {
         foregroundColor: Colors.white,
       ),
       body: reqsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        loading: () => const LoadingState(),
+        error: (e, _) {
+          debugPrint('[Admin] deletion requests load failed: $e');
+          return const ErrorStateView(
+              message: 'Unable to load deletion requests. Please try again.');
+        },
         data: (reqs) {
           if (reqs.isEmpty) {
             return const _Empty(
@@ -278,9 +283,16 @@ class MarriedUsersScreen extends ConsumerWidget {
           marriedAsync.when(
             loading: () => const Padding(
               padding: EdgeInsets.all(24),
-              child: Center(child: CircularProgressIndicator()),
+              child: LoadingState(),
             ),
-            error: (e, _) => Text('Error: $e'),
+            error: (e, _) {
+              debugPrint('[Admin] married users load failed: $e');
+              return const Padding(
+                padding: EdgeInsets.all(24),
+                child: ErrorStateView(
+                    message: 'Unable to load married users. Please try again.'),
+              );
+            },
             data: (list) {
               if (list.isEmpty) {
                 return const _Empty(
