@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/services/compatibility.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/profile_model.dart';
-import '../../../providers/chat_provider.dart';
 import '../../../providers/interest_provider.dart';
 import '../../../providers/profile_provider.dart';
 
@@ -93,21 +92,6 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     }
   }
 
-  Future<void> _message(ProfileModel profile) async {
-    final photo = profile.photos.isNotEmpty ? profile.photos.first : '';
-    try {
-      final threadId = await ref.read(chatControllerProvider).openChatWith(
-            otherUid: profile.userId,
-            otherName: profile.name,
-            otherPhoto: photo,
-          );
-      if (!mounted) return;
-      context.push('/chat/$threadId', extra: {'name': profile.name, 'photo': photo});
-    } catch (_) {
-      _snack('Could not open chat. Please try again.');
-    }
-  }
-
   void _snack(String msg) => ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(
@@ -143,7 +127,6 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
                     profile: profiles[i],
                     interestSent: _interestSent.contains(profiles[i].id),
                     onInterest: () => _sendInterest(profiles[i]),
-                    onMessage: () => _message(profiles[i]),
                   ),
                 ),
                 // Subtle left/right swipe affordances.
@@ -375,13 +358,11 @@ class _MatchProfilePage extends ConsumerWidget {
   final ProfileModel profile;
   final bool interestSent;
   final VoidCallback onInterest;
-  final VoidCallback onMessage;
 
   const _MatchProfilePage({
     required this.profile,
     required this.interestSent,
     required this.onInterest,
-    required this.onMessage,
   });
 
   @override
@@ -436,7 +417,7 @@ class _MatchProfilePage extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('${profile.name}, ${profile.age}',
+                          Text('${profile.name} | ${profile.age}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
@@ -483,6 +464,10 @@ class _MatchProfilePage extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Education + highlighted Occupation & Salary (key
+                    // matching factors).
+                    _careerEducation(),
+                    const SizedBox(height: 12),
                     _quickFacts(),
                     if (profile.about.trim().isNotEmpty) ...[
                       const SizedBox(height: 14),
@@ -539,12 +524,86 @@ class _MatchProfilePage extends ConsumerWidget {
     );
   }
 
+  /// Education shown clearly, with Occupation + Annual Salary highlighted side
+  /// by side — these are the most important matching factors.
+  Widget _careerEducation() {
+    final hasOcc = profile.occupation.trim().isNotEmpty;
+    final hasSalary = profile.annualIncome.trim().isNotEmpty;
+    final hasEdu = profile.education.trim().isNotEmpty;
+    if (!hasOcc && !hasSalary && !hasEdu) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (hasEdu) ...[
+          Row(
+            children: [
+              const Icon(Icons.school_outlined,
+                  size: 17, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(profile.education,
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+          if (hasOcc || hasSalary) const SizedBox(height: 10),
+        ],
+        if (hasOcc || hasSalary)
+          Row(
+            children: [
+              if (hasOcc)
+                Expanded(
+                  child: _highlightTile(Icons.work_outline, 'Occupation',
+                      profile.occupation, AppColors.primary),
+                ),
+              if (hasOcc && hasSalary) const SizedBox(width: 10),
+              if (hasSalary)
+                Expanded(
+                  child: _highlightTile(Icons.payments_outlined,
+                      'Annual Salary', profile.annualIncome, AppColors.success),
+                ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Widget _highlightTile(IconData icon, String label, String value, Color color) =>
+      Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.25)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 15, color: color),
+                const SizedBox(width: 5),
+                Text(label,
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: color,
+                        fontWeight: FontWeight.w600)),
+              ],
+            ),
+            const SizedBox(height: 5),
+            Text(value,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      );
+
   Widget _quickFacts() {
     final facts = <_Fact>[
-      if (profile.education.trim().isNotEmpty)
-        _Fact(Icons.school_outlined, profile.education),
-      if (profile.occupation.trim().isNotEmpty)
-        _Fact(Icons.work_outline, profile.occupation),
       if (profile.height.trim().isNotEmpty)
         _Fact(Icons.height, profile.height),
       if (profile.religion.trim().isNotEmpty)
@@ -552,10 +611,7 @@ class _MatchProfilePage extends ConsumerWidget {
       if ((profile.caste ?? '').trim().isNotEmpty)
         _Fact(Icons.groups_outlined, profile.caste!),
     ];
-    if (facts.isEmpty) {
-      return Text('No additional details provided',
-          style: TextStyle(color: Colors.grey[500], fontSize: 13));
-    }
+    if (facts.isEmpty) return const SizedBox.shrink();
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -620,34 +676,45 @@ class _MatchProfilePage extends ConsumerWidget {
           fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary));
 
   Widget _actionBar(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border(top: BorderSide(color: Colors.grey.shade200)),
         ),
         child: Row(
           children: [
-            _ActionButton(
-              icon: interestSent ? Icons.favorite : Icons.favorite_border,
-              label: interestSent ? 'Interested' : 'Interest',
-              filled: true,
-              active: interestSent,
-              onTap: interestSent ? null : onInterest,
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: interestSent ? null : onInterest,
+                icon: Icon(
+                    interestSent ? Icons.favorite : Icons.favorite_border,
+                    size: 20),
+                label: Text(interestSent ? 'Interested' : 'Interest'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
+                  disabledForegroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
             ),
-            _ActionButton(
-              icon: Icons.chat_bubble_outline,
-              label: 'Message',
-              onTap: onMessage,
-            ),
-            _ActionButton(
-              icon: Icons.auto_awesome_outlined,
-              label: 'Horoscope',
-              onTap: () => context.push('/match/${profile.id}'),
-            ),
-            _ActionButton(
-              icon: Icons.visibility_outlined,
-              label: 'Profile',
-              onTap: () => context.push('/profile/${profile.id}'),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => context.push('/match/${profile.id}'),
+                icon: const Icon(Icons.auto_awesome, size: 20),
+                label: const Text('Horoscope'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
             ),
           ],
         ),
@@ -658,60 +725,6 @@ class _Fact {
   final IconData icon;
   final String value;
   const _Fact(this.icon, this.value);
-}
-
-/// Bottom action: an icon over a small label, evenly sharing the row.
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool filled;
-  final bool active;
-  final VoidCallback? onTap;
-
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    this.filled = false,
-    this.active = false,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = filled ? AppColors.primary : AppColors.textSecondary;
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(9),
-                decoration: BoxDecoration(
-                  color: filled
-                      ? AppColors.primary.withOpacity(active ? 1 : 0.12)
-                      : Colors.transparent,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon,
-                    size: 20,
-                    color: filled && active ? Colors.white : color),
-              ),
-              const SizedBox(height: 3),
-              Text(label,
-                  style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w600,
-                      color: color)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 /// Swipeable photo gallery with a page-dots indicator. Horizontal swipes here
