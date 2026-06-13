@@ -4,10 +4,17 @@ import '../models/user_model.dart';
 import '../models/profile_model.dart';
 import '../models/report_model.dart';
 import '../models/astrologer_account_model.dart';
+import '../models/dashboard_analytics.dart';
 import 'service_providers.dart';
 
 final adminStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>(
     (ref) => ref.read(adminRepositoryProvider).getAdminStats());
+
+/// Full business-dashboard analytics (revenue, subscriptions, users,
+/// astrologers, consultations, marriage). Backed by one Firestore pass.
+final dashboardAnalyticsProvider =
+    FutureProvider.autoDispose<DashboardAnalytics>(
+        (ref) => ref.read(adminRepositoryProvider).getDashboardAnalytics());
 
 /// Live stream of every astrologer account (any status). Used by the admin
 /// Astrologer Management / verification screen. Reuses the index-free

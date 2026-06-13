@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -38,7 +39,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isSuperAdmin =
         ref.watch(currentUserProvider).valueOrNull?.isSuperAdmin ?? false;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _handleBackPress();
+      },
+      child: Scaffold(
       // ── AppBar ────────────────────────────────────────────────────────────
       appBar: AppBar(
         backgroundColor: AppColors.primary,
@@ -127,7 +134,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         selectedIndex: _selectedIndex,
         onTap: (i) => setState(() => _selectedIndex = i),
       ),
+      ),
     );
+  }
+
+  DateTime? _lastBackPress;
+
+  /// Android system-back handling for the home shell:
+  ///  • not on the Home tab → switch back to the Home tab (never exits)
+  ///  • on the Home tab      → "press back again to exit" within 2 seconds
+  void _handleBackPress() {
+    if (_selectedIndex != 0) {
+      setState(() => _selectedIndex = 0);
+      return;
+    }
+    final now = DateTime.now();
+    if (_lastBackPress == null ||
+        now.difference(_lastBackPress!) > const Duration(seconds: 2)) {
+      _lastBackPress = now;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(
+          content: Text('Press back again to exit'),
+          duration: Duration(seconds: 2),
+        ));
+      return;
+    }
+    SystemNavigator.pop();
   }
 }
 

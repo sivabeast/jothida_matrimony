@@ -10,6 +10,7 @@ import '../../models/report_model.dart';
 import '../../models/account_deletion_request_model.dart';
 import '../../models/notification_model.dart';
 import '../../models/user_model.dart';
+import '../../models/dashboard_analytics.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -413,6 +414,248 @@ class FirestoreService {
       'totalAstrologers': astrologers.count,
       'totalConsultations': consultations.count,
     };
+  }
+
+  /// Full business-dashboard analytics computed in one pass. Each section is
+  /// guarded independently so a single failing query never blanks the whole
+  /// dashboard — it just leaves that section at zero and logs the cause.
+  Future<DashboardAnalytics> getDashboardAnalytics() async {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final weekStart = todayStart.subtract(Duration(days: now.weekday - 1));
+    final monthStart = DateTime(now.year, now.month, 1);
+    final yearStart = DateTime(now.year, 1, 1);
+
+    int toInt(dynamic v) => v is num ? v.toInt() : 0;
+    DateTime? ts(dynamic v) => v is Timestamp ? v.toDate() : null;
+
+    // ── Revenue + subscriptions (from `subscriptions`) ──────────────────────
+    int revToday = 0, revWeek = 0, revMonth = 0, revYear = 0, revTotal = 0;
+    int monthlySubs = 0, yearlySubs = 0;
+    int activePremium = 0, expiredPremium = 0, cancelledSubs = 0;
+    final daily = List<int>.filled(7, 0);
+    final weekly = List<int>.filled(6, 0);
+    final monthly = List<int>.filled(6, 0);
+    final yearly = List<int>.filled(4, 0);
+    try {
+      final subs =
+          await _db.collection(AppConstants.subscriptionsCollection).get();
+      debugPrint('[Analytics] subscriptions: ${subs.docs.length}');
+      for (final d in subs.docs) {
+        final m = d.data();
+        final amount = toInt(m['amountPaid']);
+        revTotal += amount;
+        final created = ts(m['createdAt']);
+        final start = ts(m['startDate']);
+        final end = ts(m['endDate']);
+        final isActive = m['isActive'] ?? true;
+
+        if (created != null) {
+          if (!created.isBefore(todayStart)) revToday += amount;
+          if (!created.isBefore(weekStart)) revWeek += amount;
+          if (!created.isBefore(monthStart)) revMonth += amount;
+          if (!created.isBefore(yearStart)) revYear += amount;
+
+          final createdDay =
+              DateTime(created.year, created.month, created.day);
+          final dayDiff = todayStart.difference(createdDay).inDays;
+          if (dayDiff >= 0 && dayDiff < 7) daily[6 - dayDiff] += amount;
+          final weekDiff = dayDiff ~/ 7;
+          if (weekDiff >= 0 && weekDiff < 6) weekly[5 - weekDiff] += amount;
+          final monthDiff =
+              (now.year - created.year) * 12 + (now.month - created.month);
+          if (monthDiff >= 0 && monthDiff < 6) monthly[5 - monthDiff] += amount;
+          final yearDiff = now.year - created.year;
+          if (yearDiff >= 0 && yearDiff < 4) yearly[3 - yearDiff] += amount;
+        }
+
+        final expired = end != null && end.isBefore(now);
+        if (expired) {
+          expiredPremium++;
+        } else if (isActive == true) {
+          activePremium++;
+        } else {
+          cancelledSubs++;
+        }
+        if (start != null && end != null) {
+          (end.difference(start).inDays >= 300 ? () => yearlySubs++ : () => monthlySubs++)();
+        }
+      }
+    } catch (e) {
+      debugPrint('[Analytics] ❌ subscriptions failed: $e');
+    }
+
+    const wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const mo = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final revenueDaily = [
+      for (var i = 0; i < 7; i++)
+        RevenuePoint(
+            wd[todayStart.subtract(Duration(days: 6 - i)).weekday - 1],
+            daily[i]),
+    ];
+    final revenueWeekly = [
+      for (var i = 0; i < 6; i++) RevenuePoint('W${i + 1}', weekly[i]),
+    ];
+    final revenueMonthly = [
+      for (var i = 0; i < 6; i++)
+        RevenuePoint(mo[DateTime(now.year, now.month - (5 - i), 1).month - 1],
+            monthly[i]),
+    ];
+    final revenueYearly = [
+      for (var i = 0; i < 4; i++)
+        RevenuePoint('${now.year - (3 - i)}', yearly[i]),
+    ];
+
+    // ── Consultations (from `astrologer_requests`) ──────────────────────────
+    int cToday = 0, cWeek = 0, cMonth = 0, cCompleted = 0, cCancelled = 0;
+    final consultByAstro = <String, int>{};
+    try {
+      final reqs = await _db
+          .collection(AppConstants.astrologerRequestsCollection)
+          .get();
+      for (final d in reqs.docs) {
+        final m = d.data();
+        final created = ts(m['createdAt']);
+        final status = m['status'] ?? '';
+        if (created != null) {
+          if (!created.isBefore(todayStart)) cToday++;
+          if (!created.isBefore(weekStart)) cWeek++;
+          if (!created.isBefore(monthStart)) cMonth++;
+        }
+        if (status == 'completed') cCompleted++;
+        if (status == 'rejected') cCancelled++;
+        final aid = (m['astrologerId'] ?? '') as String;
+        if (aid.isNotEmpty) {
+          consultByAstro[aid] = (consultByAstro[aid] ?? 0) + 1;
+        }
+      }
+    } catch (e) {
+      debugPrint('[Analytics] ❌ consultations failed: $e');
+    }
+
+    // ── Astrologers (from `astrologers`) ────────────────────────────────────
+    int totalAstro = 0, pendingAstro = 0, verifiedAstro = 0;
+    var topRated = <AstrologerStatRow>[];
+    var mostConsulted = <AstrologerStatRow>[];
+    try {
+      final astro =
+          await _db.collection(AppConstants.astrologersCollection).get();
+      totalAstro = astro.docs.length;
+      final rows = <(String, AstrologerStatRow)>[];
+      for (final d in astro.docs) {
+        final m = d.data();
+        final status = m['status'] ?? 'pending';
+        if (status == 'approved') {
+          verifiedAstro++;
+        } else if (status == 'pending') {
+          pendingAstro++;
+        }
+        final row = AstrologerStatRow(
+          name: (m['fullName'] ?? '—') as String,
+          rating: (m['rating'] ?? 0).toDouble(),
+          reviewCount: toInt(m['reviewCount']),
+          consultations: consultByAstro[d.id] ?? 0,
+        );
+        rows.add((d.id, row));
+      }
+      topRated = [...rows.map((e) => e.$2)]
+        ..sort((a, b) => b.rating.compareTo(a.rating));
+      topRated = topRated.take(5).toList();
+      mostConsulted = [...rows.map((e) => e.$2)]
+        ..sort((a, b) => b.consultations.compareTo(a.consultations));
+      mostConsulted =
+          mostConsulted.where((r) => r.consultations > 0).take(5).toList();
+    } catch (e) {
+      debugPrint('[Analytics] ❌ astrologers failed: $e');
+    }
+
+    // ── Counts (cheap aggregate queries) ────────────────────────────────────
+    Future<int> countOf(Query q) async {
+      try {
+        return (await q.count().get()).count ?? 0;
+      } catch (e) {
+        debugPrint('[Analytics] ❌ count failed: $e');
+        return 0;
+      }
+    }
+
+    final users = _db.collection(AppConstants.usersCollection);
+    final profiles = _db.collection(AppConstants.profilesCollection);
+    final interests = _db.collection(AppConstants.interestsCollection);
+
+    final totalUsers = await countOf(users);
+    final newToday =
+        await countOf(users.where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(todayStart)));
+    final newWeek =
+        await countOf(users.where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(weekStart)));
+    final newMonth =
+        await countOf(users.where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(monthStart)));
+    final dau = await countOf(
+        users.where('lastLoginAt', isGreaterThanOrEqualTo: Timestamp.fromDate(todayStart)));
+    final mau = await countOf(
+        users.where('lastLoginAt', isGreaterThanOrEqualTo: Timestamp.fromDate(monthStart)));
+    final totalProfiles = await countOf(profiles);
+    final marriedUsers =
+        await countOf(profiles.where('isMarried', isEqualTo: true));
+    final matches =
+        await countOf(interests.where('status', isEqualTo: AppConstants.interestAccepted));
+
+    int totalMessages = 0;
+    try {
+      totalMessages = (await _db
+                  .collectionGroup(AppConstants.messagesSubcollection)
+                  .count()
+                  .get())
+              .count ??
+          0;
+    } catch (e) {
+      debugPrint('[Analytics] ❌ messages count failed (needs index?): $e');
+    }
+
+    final marriageRate =
+        totalProfiles > 0 ? (marriedUsers / totalProfiles) * 100 : 0.0;
+
+    return DashboardAnalytics(
+      totalUsers: totalUsers,
+      totalAstrologers: totalAstro,
+      totalMatches: matches,
+      totalMessages: totalMessages,
+      premiumSubscribers: activePremium,
+      marriedUsers: marriedUsers,
+      revenueToday: revToday,
+      revenueWeek: revWeek,
+      revenueMonth: revMonth,
+      revenueYear: revYear,
+      revenueTotal: revTotal,
+      revenueDaily: revenueDaily,
+      revenueWeekly: revenueWeekly,
+      revenueMonthly: revenueMonthly,
+      revenueYearly: revenueYearly,
+      monthlySubscribers: monthlySubs,
+      yearlySubscribers: yearlySubs,
+      activePremium: activePremium,
+      expiredPremium: expiredPremium,
+      cancelledSubscriptions: cancelledSubs,
+      newUsersToday: newToday,
+      newUsersWeek: newWeek,
+      newUsersMonth: newMonth,
+      dailyActiveUsers: dau,
+      monthlyActiveUsers: mau,
+      pendingAstrologers: pendingAstro,
+      verifiedAstrologers: verifiedAstro,
+      topRatedAstrologers: topRated,
+      mostConsultedAstrologers: mostConsulted,
+      consultationsToday: cToday,
+      consultationsWeek: cWeek,
+      consultationsMonth: cMonth,
+      consultationsCompleted: cCompleted,
+      consultationsCancelled: cCancelled,
+      successfulMatches: matches,
+      marriageSuccessRate: marriageRate,
+    );
   }
 
   // ── Marriage ───────────────────────────────────────────────────────────────

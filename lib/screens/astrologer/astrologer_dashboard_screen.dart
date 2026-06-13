@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/config/dev_config.dart';
@@ -76,7 +77,13 @@ class _AstrologerDashboardScreenState
             ) ??
         0;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _handleBackPress();
+      },
+      child: Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
@@ -133,6 +140,32 @@ class _AstrologerDashboardScreenState
           ),
         ],
       ),
+      ),
     );
+  }
+
+  DateTime? _lastBackPress;
+
+  /// Android system-back handling for the astrologer shell:
+  ///  • not on the Dashboard tab → switch back to the Dashboard tab
+  ///  • on the Dashboard tab      → "press back again to exit" within 2 seconds
+  void _handleBackPress() {
+    if (_index != 0) {
+      setState(() => _index = 0);
+      return;
+    }
+    final now = DateTime.now();
+    if (_lastBackPress == null ||
+        now.difference(_lastBackPress!) > const Duration(seconds: 2)) {
+      _lastBackPress = now;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(
+          content: Text('Press back again to exit'),
+          duration: Duration(seconds: 2),
+        ));
+      return;
+    }
+    SystemNavigator.pop();
   }
 }
