@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'astrologer_certificate.dart';
 import 'astrologer_model.dart';
 
 /// Certificate verification status set by the admin.
@@ -40,13 +41,19 @@ class AstrologerAccount {
   final List<String> languages;
   final String about;
   final List<String> consultationModes; // Chat, Audio Call, Video Call, In-Person
-  // Certification (mandatory)
+  final String qualification; // highest astrology/academic qualification
+  // Certification (legacy single-cert fields, kept for backward compatibility).
   final String certName;
   final String certOrg;
   final String certNumber;
   final String certFileName;
-  // Consultation fee (per session), in INR.
-  final double consultationFee;
+  // Uploaded certificate documents (for admin verification).
+  final List<AstrologerCertificate> certificates;
+  // Consultation
+  final double consultationFee; // per session, in INR
+  final String availability; // e.g. "Monday – Saturday"
+  final String workingHours; // e.g. "10:00 AM – 6:00 PM"
+  final String consultationMode; // Online | Offline | Both
   // Set once the astrologer has completed the post-Google profile setup.
   final bool profileCompleted;
   // Status & services
@@ -74,11 +81,16 @@ class AstrologerAccount {
     required this.languages,
     required this.about,
     required this.consultationModes,
+    this.qualification = '',
     required this.certName,
     required this.certOrg,
     required this.certNumber,
     required this.certFileName,
+    this.certificates = const [],
     this.consultationFee = 0,
+    this.availability = '',
+    this.workingHours = '',
+    this.consultationMode = 'Online',
     this.profileCompleted = false,
     this.status = VerificationStatus.pending,
     this.services = const [],
@@ -104,11 +116,16 @@ class AstrologerAccount {
     List<String>? languages,
     String? about,
     List<String>? consultationModes,
+    String? qualification,
     String? certName,
     String? certOrg,
     String? certNumber,
     String? certFileName,
+    List<AstrologerCertificate>? certificates,
     double? consultationFee,
+    String? availability,
+    String? workingHours,
+    String? consultationMode,
     bool? profileCompleted,
     VerificationStatus? status,
     List<AstrologerService>? services,
@@ -129,11 +146,16 @@ class AstrologerAccount {
         languages: languages ?? this.languages,
         about: about ?? this.about,
         consultationModes: consultationModes ?? this.consultationModes,
+        qualification: qualification ?? this.qualification,
         certName: certName ?? this.certName,
         certOrg: certOrg ?? this.certOrg,
         certNumber: certNumber ?? this.certNumber,
         certFileName: certFileName ?? this.certFileName,
+        certificates: certificates ?? this.certificates,
         consultationFee: consultationFee ?? this.consultationFee,
+        availability: availability ?? this.availability,
+        workingHours: workingHours ?? this.workingHours,
+        consultationMode: consultationMode ?? this.consultationMode,
         profileCompleted: profileCompleted ?? this.profileCompleted,
         status: status ?? this.status,
         services: services ?? this.services,
@@ -164,11 +186,19 @@ class AstrologerAccount {
       about: d['about'] ?? '',
       consultationModes:
           List<String>.from(d['consultationModes'] ?? const ['Chat']),
+      qualification: d['qualification'] ?? '',
       certName: cert['name'] ?? '',
       certOrg: cert['organization'] ?? '',
       certNumber: cert['number'] ?? '',
       certFileName: cert['fileName'] ?? '',
+      certificates: ((d['certificates'] as List?) ?? const [])
+          .map((c) =>
+              AstrologerCertificate.fromMap(Map<String, dynamic>.from(c)))
+          .toList(),
       consultationFee: (d['consultationFee'] ?? 0).toDouble(),
+      availability: d['availability'] ?? '',
+      workingHours: d['workingHours'] ?? '',
+      consultationMode: d['consultationMode'] ?? 'Online',
       profileCompleted: d['profileCompleted'] ?? false,
       status: VerificationStatus.values.firstWhere(
         (s) => s.name == (d['status'] ?? 'pending'),
@@ -200,13 +230,18 @@ class AstrologerAccount {
         'languages': languages,
         'about': about,
         'consultationModes': consultationModes,
+        'qualification': qualification,
         'certification': {
           'name': certName,
           'organization': certOrg,
           'number': certNumber,
           'fileName': certFileName,
         },
+        'certificates': certificates.map((c) => c.toMap()).toList(),
         'consultationFee': consultationFee,
+        'availability': availability,
+        'workingHours': workingHours,
+        'consultationMode': consultationMode,
         'profileCompleted': profileCompleted,
         'status': status.name,
         'services': services.map((s) => s.toMap()).toList(),

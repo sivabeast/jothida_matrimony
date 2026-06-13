@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import '../../core/constants/app_constants.dart';
 import '../../models/astrologer_account_model.dart';
 import '../../models/astrologer_model.dart' as model;
@@ -56,6 +59,37 @@ class AstrologerService {
       .collection(AppConstants.astrologersCollection)
       .doc(uid)
       .update({...data, 'updatedAt': FieldValue.serverTimestamp()});
+
+  // ── Certificate upload (Cloudinary unsigned) ──────────────────────────────
+  // Cloud name / preset are public client config (never the API secret).
+  static const String _cloudName = 'dh8hzjx5q';
+  static const String _uploadPreset = 'matrimony_profiles';
+
+  /// Uploads a certificate file and returns its public URL. PDFs use the `raw`
+  /// delivery type; images use `image`. Each upload gets a unique public_id so
+  /// multiple certificates never overwrite one another.
+  Future<String> uploadCertificate({
+    required String uid,
+    required File file,
+    required String fileType,
+  }) async {
+    final resourceType = fileType.toLowerCase() == 'pdf' ? 'raw' : 'image';
+    final uri = Uri.parse(
+        'https://api.cloudinary.com/v1_1/$_cloudName/$resourceType/upload');
+    final request = http.MultipartRequest('POST', uri)
+      ..fields['upload_preset'] = _uploadPreset
+      ..fields['folder'] = 'jothida_matrimony/astrologers/$uid/certificates'
+      ..fields['public_id'] = 'cert_${DateTime.now().millisecondsSinceEpoch}'
+      ..files.add(await http.MultipartFile.fromPath('file', file.path));
+
+    final response = await http.Response.fromStream(await request.send());
+    if (response.statusCode == 200) {
+      final url = (jsonDecode(response.body) as Map<String, dynamic>)['secure_url']
+          as String?;
+      if (url != null && url.isNotEmpty) return url;
+    }
+    throw Exception('Certificate upload failed (HTTP ${response.statusCode})');
+  }
 
   // ── Admin verification actions ─────────────────────────────────────────────
   // Each method updates `astrologers/{uid}.status`. They log the attempt and

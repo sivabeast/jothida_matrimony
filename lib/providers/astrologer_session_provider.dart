@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/dev_config.dart';
 import '../models/astrologer_account_model.dart';
+import '../models/astrologer_certificate.dart';
 import '../models/astrologer_model.dart';
 import '../models/astrologer_request_model.dart';
 import 'service_providers.dart';
@@ -53,6 +55,63 @@ class MyAstrologerAccountNotifier extends Notifier<AstrologerAccount?> {
           .updateServices(current.id, services);
     }
     state = current.copyWith(services: services);
+  }
+
+  /// General-purpose save used by the profile-section edit screens. Persists
+  /// every astrologer-editable field of [updated] in one write, but never
+  /// clobbers admin/server-managed fields (rating, reviewCount, status,
+  /// profileCompleted), then updates the local session immediately.
+  Future<void> saveAccount(AstrologerAccount updated) async {
+    final current = state;
+    if (current == null) return;
+    if (!kBypassAuth) {
+      final data = updated.toFirestore()
+        ..remove('rating')
+        ..remove('reviewCount')
+        ..remove('status')
+        ..remove('profileCompleted');
+      await ref.read(astrologerServiceProvider).updateAccount(current.id, data);
+    }
+    state = updated;
+  }
+
+  /// Uploads a certificate file (PDF/JPG/PNG) to storage, appends it to the
+  /// account's certificate list (with verified=false for admin review) and
+  /// persists. In demo mode the file is recorded without a remote upload.
+  Future<void> addCertificate(
+    File file, {
+    required String name,
+    required String fileType,
+  }) async {
+    final current = state;
+    if (current == null) return;
+    String url = '';
+    if (!kBypassAuth) {
+      url = await ref.read(astrologerServiceProvider).uploadCertificate(
+            uid: current.id,
+            file: file,
+            fileType: fileType,
+          );
+    }
+    final cert = AstrologerCertificate(
+      id: 'cert_${DateTime.now().millisecondsSinceEpoch}',
+      name: name,
+      url: url,
+      fileType: fileType,
+      uploadedAt: DateTime.now(),
+    );
+    await saveAccount(
+        current.copyWith(certificates: [...current.certificates, cert]));
+  }
+
+  /// Removes a certificate by id and persists.
+  Future<void> removeCertificate(String id) async {
+    final current = state;
+    if (current == null) return;
+    await saveAccount(current.copyWith(
+      certificates:
+          current.certificates.where((c) => c.id != id).toList(),
+    ));
   }
 
   void signOut() => state = null;

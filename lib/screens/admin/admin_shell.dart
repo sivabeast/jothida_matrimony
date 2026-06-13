@@ -1,9 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
-import '../../providers/auth_provider.dart';
 
 class AdminShell extends ConsumerWidget {
   final Widget child;
@@ -50,25 +48,20 @@ class AdminShell extends ConsumerWidget {
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           actions: [
-            // Return to the normal user app WITHOUT signing out. A super_admin is
-            // a normal matrimony user who just dipped into the admin area.
-            TextButton.icon(
-              onPressed: () => context.go('/home'),
-              icon:
-                  const Icon(Icons.home_outlined, color: Colors.white, size: 20),
-              label: const Text('User App',
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.w600)),
-            ),
-            IconButton(
-              icon: const Icon(Icons.logout),
-              tooltip: 'Sign Out',
-              onPressed: () async {
-                debugPrint('[AdminShell] Sign Out tapped');
-                await ref.read(authNotifierProvider.notifier).signOut();
-                debugPrint('[AdminShell] signOut() complete');
-                if (context.mounted) context.go('/account-type');
-              },
+            // The Admin Dashboard is only an extra access area for an account
+            // that is ALSO a normal user, so there is NO Logout here. This
+            // button simply returns to the user app and keeps the session fully
+            // intact — no sign-out, no session clear.
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: TextButton.icon(
+                onPressed: () => context.go('/home'),
+                icon: const Icon(Icons.home_outlined,
+                    color: Colors.white, size: 20),
+                label: const Text('Return to User App',
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.w600)),
+              ),
             ),
           ],
         ),

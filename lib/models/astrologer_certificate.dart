@@ -1,0 +1,65 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+/// A certificate / qualification document an astrologer uploads for admin
+/// verification. Stored inside the astrologer account document under a
+/// `certificates` array so the Admin module can read, download and verify them.
+///
+/// Firestore map:
+/// { id, name, url, fileType, uploadedAt, verified }
+class AstrologerCertificate {
+  final String id;
+  final String name;
+  final String url; // public URL of the uploaded file (Cloudinary)
+  final String fileType; // pdf | jpg | jpeg | png
+  final DateTime uploadedAt;
+  final bool verified; // set true by an admin after review
+
+  const AstrologerCertificate({
+    required this.id,
+    required this.name,
+    required this.url,
+    required this.fileType,
+    required this.uploadedAt,
+    this.verified = false,
+  });
+
+  bool get isPdf => fileType.toLowerCase() == 'pdf';
+
+  factory AstrologerCertificate.fromMap(Map<String, dynamic> m) =>
+      AstrologerCertificate(
+        id: m['id'] ?? '',
+        name: m['name'] ?? 'Certificate',
+        url: m['url'] ?? '',
+        fileType: (m['fileType'] ?? '').toString().toLowerCase(),
+        uploadedAt: m['uploadedAt'] is Timestamp
+            ? (m['uploadedAt'] as Timestamp).toDate()
+            : DateTime.tryParse('${m['uploadedAt']}') ?? DateTime.now(),
+        verified: m['verified'] ?? false,
+      );
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'name': name,
+        'url': url,
+        'fileType': fileType,
+        // Stored as ISO string so it round-trips inside an array (array
+        // elements can't hold server timestamps).
+        'uploadedAt': uploadedAt.toIso8601String(),
+        'verified': verified,
+      };
+
+  AstrologerCertificate copyWith({
+    String? name,
+    String? url,
+    String? fileType,
+    bool? verified,
+  }) =>
+      AstrologerCertificate(
+        id: id,
+        name: name ?? this.name,
+        url: url ?? this.url,
+        fileType: fileType ?? this.fileType,
+        uploadedAt: uploadedAt,
+        verified: verified ?? this.verified,
+      );
+}

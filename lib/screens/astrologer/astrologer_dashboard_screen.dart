@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import '../../core/config/dev_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../providers/astrologer_session_provider.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
+import '../../providers/notification_provider.dart';
+import '../home/tabs/notifications_tab.dart';
 import 'tabs/astrologer_appointments_tab.dart';
 import 'tabs/astrologer_messages_tab.dart';
 import 'tabs/astrologer_overview_tab.dart';
@@ -37,20 +36,17 @@ class _AstrologerDashboardScreenState
     AstrologerProfileTab(),
   ];
 
-  static const _titles = <String>[
-    'Dashboard',
-    'Requests',
-    'Appointments',
-    'Messages',
-    'Profile',
-  ];
-
-  Future<void> _signOut() async {
-    ref.read(myAstrologerAccountProvider.notifier).signOut();
-    if (!kBypassAuth) {
-      await ref.read(authNotifierProvider.notifier).signOut();
-    }
-    if (mounted) context.go('/account-type');
+  void _openNotifications() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => Scaffold(
+        appBar: AppBar(
+          title: const Text('Notifications'),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+        ),
+        body: const NotificationsTab(),
+      ),
+    ));
   }
 
   @override
@@ -76,6 +72,10 @@ class _AstrologerDashboardScreenState
               (sum, t) => sum + t.unreadFor(myUid),
             ) ??
         0;
+    final notifUnread = ref.watch(unreadNotificationCountProvider);
+    final initial = account.fullName.trim().isNotEmpty
+        ? account.fullName.trim()[0].toUpperCase()
+        : '?';
 
     return PopScope(
       canPop: false,
@@ -88,13 +88,61 @@ class _AstrologerDashboardScreenState
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        title: Text(_index == 0 ? account.fullName : _titles[_index]),
+        automaticallyImplyLeading: false,
+        titleSpacing: 12,
+        // LEFT: profile photo + astrologer name (only).
+        title: Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: Colors.white24,
+              backgroundImage: account.photoUrl.isNotEmpty
+                  ? NetworkImage(account.photoUrl)
+                  : null,
+              child: account.photoUrl.isEmpty
+                  ? Text(initial,
+                      style: const TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold))
+                  : null,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(account.fullName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.bold)),
+                  Text('Astrologer',
+                      style: TextStyle(
+                          fontSize: 10.5,
+                          color: Colors.white.withOpacity(0.8),
+                          letterSpacing: 0.5)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        // RIGHT: notification icon only.
         actions: [
           IconButton(
-            tooltip: 'Sign out',
-            icon: const Icon(Icons.logout),
-            onPressed: _signOut,
+            tooltip: 'Notifications',
+            icon: notifUnread > 0
+                ? Badge(
+                    label: Text('$notifUnread',
+                        style: const TextStyle(fontSize: 10)),
+                    backgroundColor: Colors.red,
+                    child: const Icon(Icons.notifications_none, size: 26),
+                  )
+                : const Icon(Icons.notifications_none, size: 26),
+            onPressed: _openNotifications,
           ),
+          const SizedBox(width: 4),
         ],
       ),
       body: IndexedStack(index: _index, children: _tabs),
