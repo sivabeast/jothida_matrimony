@@ -37,19 +37,20 @@ Astrologer astrologerFromAccount(AstrologerAccount a) {
   );
 }
 
-/// Directory astrologers.
+/// Directory astrologers shown to USERS.
 ///
-/// Demo mode → in-memory [sampleAstrologers]. Real mode → live Firestore
-/// `astrologers` collection (excluding `rejected` accounts), mapped to the
-/// display model. Pending + approved accounts are both shown so an astrologer
-/// who just signed up appears immediately.
+/// Demo mode → in-memory [sampleAstrologers]. Real mode → only admin-VERIFIED
+/// (status == approved) astrologers, via the server-side `status == approved`
+/// query. Pending and rejected accounts are NEVER shown to users (business
+/// "only verified astrologers appear" rule), and this query also satisfies the
+/// Firestore rule that limits astrologer reads to approved documents.
+///
+/// NOTE (Phase 2): active-subscription gating is layered on top of this — an
+/// approved astrologer whose subscription has expired must also be hidden here.
 final astrologersProvider = StreamProvider.autoDispose<List<Astrologer>>((ref) {
   if (kBypassAuth) return Stream.value(sampleAstrologers());
-  return ref.watch(astrologerServiceProvider).watchAllAstrologers().map(
-        (accounts) => accounts
-            .where((a) => a.status != VerificationStatus.rejected)
-            .map(astrologerFromAccount)
-            .toList(),
+  return ref.watch(astrologerServiceProvider).watchApprovedAstrologers().map(
+        (accounts) => accounts.map(astrologerFromAccount).toList(),
       );
 });
 

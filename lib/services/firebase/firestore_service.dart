@@ -169,7 +169,26 @@ class FirestoreService {
   // ── Profiles ──────────────────────────────────────────────────────────────
   Future<String> createProfile(ProfileModel profile) async {
     final doc = _db.collection(AppConstants.profilesCollection).doc();
-    await doc.set(profile.copyWith().toFirestore());
+    final batch = _db.batch();
+    // Public profile — note ProfileModel.toFirestore() no longer includes
+    // contact details.
+    batch.set(doc, profile.copyWith().toFirestore());
+    // Contact details go into the access-gated `contacts/{userId}` collection
+    // so they are never exposed by profile browsing.
+    if (profile.userId.isNotEmpty &&
+        (profile.contact.mobileNumber.isNotEmpty ||
+            (profile.contact.whatsappNumber ?? '').isNotEmpty)) {
+      batch.set(
+        _db.collection(AppConstants.contactsCollection).doc(profile.userId),
+        {
+          ...profile.contact.toMap(),
+          'userId': profile.userId,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+    }
+    await batch.commit();
     return doc.id;
   }
 
@@ -272,6 +291,56 @@ class FirestoreService {
     if (snap.docs.isEmpty) return null;
     return InterestModel.fromFirestore(snap.docs.first);
   }
+
+  Future<InterestModel?> getInterestById(String interestId) async {
+    final doc = await _db
+        .collection(AppConstants.interestsCollection)
+        .doc(interestId)
+        .get();
+    if (!doc.exists) return null;
+    return InterestModel.fromFirestore(doc);
+  }
+
+  /// Accepts an interest, then records a `connections/{pair}` document so BOTH
+  /// users can read each other's gated contact details.
+  ///
+  /// Two SEQUENTIAL writes (not a batch): Firestore security rules evaluate the
+  /// connection-create against the *committed* interest, so the interest must
+  /// already be 'accepted' before the connection is written.
+  Future<void> acceptInterestAndConnect(InterestModel interest) async {
+    await updateInterestStatus(interest.id, AppConstants.interestAccepted);
+    final a = interest.senderId;
+    final b = interest.receiverId;
+    final pair = a.compareTo(b) < 0 ? '${a}_$b' : '${b}_$a';
+    await _db.collection(AppConstants.connectionsCollection).doc(pair).set({
+      'uids': [a, b],
+      'interestId': interest.id,
+      'createdAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  // ── Contacts (gated phone / WhatsApp) ──────────────────────────────────────
+  /// Reads a user's contact details. The Firestore rules only permit this when
+  /// the caller is the owner, an admin, or has an accepted connection with the
+  /// owner; otherwise a permission error is thrown (treated as "locked" by UI).
+  Future<ContactDetails?> getContact(String userId) async {
+    final doc = await _db
+        .collection(AppConstants.contactsCollection)
+        .doc(userId)
+        .get();
+    if (!doc.exists) return null;
+    return ContactDetails.fromMap(doc.data()!);
+  }
+
+  /// Creates/updates the caller's own contact details.
+  Future<void> saveContact(String userId, ContactDetails contact) => _db
+      .collection(AppConstants.contactsCollection)
+      .doc(userId)
+      .set({
+        ...contact.toMap(),
+        'userId': userId,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
   // ── Subscriptions ─────────────────────────────────────────────────────────
   Future<void> saveSubscription(SubscriptionModel sub) => _db

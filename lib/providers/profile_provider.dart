@@ -37,6 +37,18 @@ final profileByIdProvider =
   return ref.watch(profileRepositoryProvider).watchProfile(profileId);
 });
 
+/// Another user's gated contact details, keyed by their USER id.
+///
+/// Resolves to the contact only when it is unlocked for the caller (owner /
+/// admin / mutually-accepted connection). Otherwise the underlying Firestore
+/// read is denied and this surfaces as an AsyncError, which the UI renders as
+/// a "locked" state. Returns null in demo mode.
+final contactByUserIdProvider =
+    FutureProvider.autoDispose.family<ContactDetails?, String>((ref, userId) {
+  if (kBypassAuth) return Future.value(null);
+  return ref.watch(profileRepositoryProvider).getContact(userId);
+});
+
 // Profile creation / editing notifier
 class ProfileCreationState {
   final Map<String, dynamic> data;

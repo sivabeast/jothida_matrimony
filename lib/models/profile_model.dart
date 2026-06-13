@@ -189,7 +189,10 @@ class ProfileModel {
         'horoscope': horoscope.toMap(),
         'family': family.toMap(),
         'partnerPreferences': partnerPreferences.toMap(),
-        'contact': contact.toMap(),
+        // Contact details are intentionally NOT written into the public profile
+        // document — they are stored in the access-gated `contacts/{userId}`
+        // collection and unlock only after a mutually-accepted interest.
+        // (See FirestoreService.createProfile / saveContact.)
         'status': status,
         'isVerified': isVerified,
         'reportCount': reportCount,

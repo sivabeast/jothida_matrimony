@@ -87,4 +87,15 @@ class ProfileRepository {
   }
 
   Future<void> incrementViewCount(String profileId) => _firestore.incrementViewCount(profileId);
+
+  /// Reads another user's contact details. Succeeds only when the caller is the
+  /// owner, an admin, or has a mutually-accepted connection — otherwise the
+  /// Firestore rules reject the read (surfaced as a permission error the UI
+  /// treats as "locked").
+  Future<ContactDetails?> getContact(String userId) => _firestore.getContact(userId);
+
+  /// Creates/updates the caller's own contact details in the gated
+  /// `contacts/{userId}` collection.
+  Future<void> saveContact(String userId, ContactDetails contact) =>
+      _firestore.saveContact(userId, contact);
 }

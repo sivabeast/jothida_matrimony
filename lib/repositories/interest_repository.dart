@@ -9,8 +9,16 @@ class InterestRepository {
 
   Future<void> sendInterest(InterestModel interest) => _firestore.sendInterest(interest);
 
-  Future<void> acceptInterest(String interestId) =>
-      _firestore.updateInterestStatus(interestId, 'accepted');
+  /// Accepts an interest AND records the connection that unlocks contact
+  /// details for both users. Falls back to a plain status update if the
+  /// interest document can't be loaded.
+  Future<void> acceptInterest(String interestId) async {
+    final interest = await _firestore.getInterestById(interestId);
+    if (interest == null) {
+      return _firestore.updateInterestStatus(interestId, 'accepted');
+    }
+    return _firestore.acceptInterestAndConnect(interest);
+  }
 
   Future<void> rejectInterest(String interestId) =>
       _firestore.updateInterestStatus(interestId, 'rejected');

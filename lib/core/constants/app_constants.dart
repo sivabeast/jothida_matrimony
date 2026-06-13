@@ -19,6 +19,10 @@ class AppConstants {
   static const String chatsCollection = 'chats';
   static const String messagesSubcollection = 'messages';
   static const String accountDeletionRequestsCollection = 'account_deletion_requests';
+  // Contact details live OUTSIDE the public profile and unlock only after a
+  // mutually-accepted interest (recorded in `connections`).
+  static const String contactsCollection = 'contacts';
+  static const String connectionsCollection = 'connections';
 
   // Astrologer specializations
   static const List<String> astrologerSpecializations = [

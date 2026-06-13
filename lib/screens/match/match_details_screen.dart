@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/requests_provider.dart';
+import '../../widgets/common/contact_reveal_card.dart';
 import '../astrologer/connect_astrologer_sheet.dart';
 
 /// Compares the logged-in user with a selected [profileId] and shows a full
@@ -74,6 +75,13 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen>
               _categoryCard(r),
               const SizedBox(height: 16),
               _strengthsCard(r),
+              const SizedBox(height: 16),
+              // Contact details — unlocked now that the two users have a
+              // mutually-accepted interest.
+              ContactRevealCard(
+                otherUserId: other.userId,
+                otherName: other.name,
+              ),
               const SizedBox(height: 16),
               _connectAstrologerCard(),
               const SizedBox(height: 24),

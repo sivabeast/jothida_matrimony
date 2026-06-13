@@ -26,33 +26,73 @@ service cloud.firestore {
       return isAuthenticated() && getUserData().role == 'astrologer';
     }
 
-    function isAdminOrAstrologer() {
-      return isAdmin() || isAstrologer();
+    // Deterministic id of the connection between two users (sorted, '_'-joined)
+    // so it can be looked up from either side.
+    function pairId(a, b) {
+      return a < b ? a + '_' + b : b + '_' + a;
     }
 
     // ── Users ─────────────────────────────────────────────────────────────
-    // A user can only read/write their OWN account document. Admins and
-    // astrologers may read any user (for moderation); only admins may delete.
+    // A user can only read/write their OWN account document. Admins may read
+    // any user (for moderation); only admins may delete.
+    // BUSINESS RULE: astrologers must NEVER browse the user database, so they
+    // have NO read access here (previously granted via isAdminOrAstrologer).
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdminOrAstrologer();
+      allow read: if isOwner(userId) || isAdmin();
       allow create: if isAuthenticated() && isOwner(userId);
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
     }
 
     // ── Profiles ─────────────────────────────────────────────────────────
+    // Public profile data (no contact details — those live in /contacts) is
+    // visible to signed-in MATRIMONY users. Astrologers must not browse the
+    // user database, so the blanket astrologer read was removed; only admins
+    // get full read access for moderation.
     match /profiles/{profileId} {
       allow read: if isAuthenticated()
                   && resource.data.status == 'approved'
                   && resource.data.isActive == true;
       allow read: if isAuthenticated()
                   && resource.data.userId == request.auth.uid;
-      allow read: if isAdminOrAstrologer();
+      allow read: if isAdmin();
       allow create: if isAuthenticated()
                     && request.resource.data.userId == request.auth.uid;
       allow update: if isAuthenticated()
                     && resource.data.userId == request.auth.uid;
       allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── Contacts (phone / WhatsApp) ───────────────────────────────────────
+    // A user's contact details live OUTSIDE their public profile so they are
+    // NEVER exposed by browsing. They unlock for another user only after an
+    // interest between the two has been accepted — i.e. a matching
+    // /connections/{pair} document exists. (User Premium "contact unlock"
+    // also flows through an accepted connection.)
+    match /contacts/{ownerId} {
+      allow read: if isOwner(ownerId)
+                  || isAdmin()
+                  || (isAuthenticated()
+                      && exists(/databases/$(database)/documents/connections/$(pairId(ownerId, request.auth.uid))));
+      allow create, update: if isOwner(ownerId);
+      allow delete: if isOwner(ownerId) || isAdmin();
+    }
+
+    // ── Connections (mutual-acceptance contact unlock) ─────────────────────
+    // Created when an interest between two users is accepted. A participant may
+    // create it ONLY when the referenced interest is actually 'accepted' and
+    // both of its parties are the two members of the connection — which blocks
+    // a user from self-granting access to an unrelated person's contact.
+    match /connections/{connId} {
+      allow read: if isAuthenticated()
+                  && request.auth.uid in resource.data.uids;
+      allow create: if isAuthenticated()
+        && request.resource.data.uids.size() == 2
+        && request.auth.uid in request.resource.data.uids
+        && get(/databases/$(database)/documents/interests/$(request.resource.data.interestId)).data.status == 'accepted'
+        && get(/databases/$(database)/documents/interests/$(request.resource.data.interestId)).data.senderId in request.resource.data.uids
+        && get(/databases/$(database)/documents/interests/$(request.resource.data.interestId)).data.receiverId in request.resource.data.uids;
       allow delete: if isAdmin();
     }
 
@@ -80,13 +120,15 @@ service cloud.firestore {
     }
 
     // ── Poruthams ─────────────────────────────────────────────────────────
+    // Horoscope-match requests belong to the requesting user. Astrologers do
+    // NOT get blanket access (user-data browsing); only the owner + admins.
     match /poruthams/{id} {
       allow read: if isAuthenticated()
                   && resource.data.requestedByUserId == request.auth.uid;
-      allow read: if isAdminOrAstrologer();
+      allow read: if isAdmin();
       allow create: if isAuthenticated()
                     && request.resource.data.requestedByUserId == request.auth.uid;
-      allow update: if isAdminOrAstrologer();
+      allow update: if isAdmin();
     }
 
     // ── Reports ───────────────────────────────────────────────────────────
@@ -109,12 +151,15 @@ service cloud.firestore {
     }
 
     // ── Notifications ─────────────────────────────────────────────────────
+    // BUSINESS RULE: astrologers must not contact users. Notifications are
+    // therefore created only by admins / privileged server logic — never by an
+    // astrologer pushing a message to a user.
     match /notifications/{notifId} {
       allow read: if isAuthenticated()
                   && resource.data.userId == request.auth.uid;
       allow update: if isAuthenticated()
                     && resource.data.userId == request.auth.uid;
-      allow create: if isAdminOrAstrologer();
+      allow create: if isAdmin();
       allow delete: if isAuthenticated()
                     && resource.data.userId == request.auth.uid;
     }
@@ -129,16 +174,26 @@ service cloud.firestore {
     }
 
     // ── Astrologers ───────────────────────────────────────────────────────
-    // Approved astrologers are public to signed-in users; the astrologer
-    // manages their own document; admins approve/reject.
+    // VISIBILITY RULE: only APPROVED (admin-verified) astrologers are visible
+    // to users. The astrologer manages their own document regardless of status
+    // (so an unverified / expired astrologer can still log in and edit), and
+    // admins can read everything for verification.
+    // NOTE: active-subscription gating is enforced in the app query layer
+    // (Phase 2) on top of this approved-only rule.
     match /astrologers/{astrologerId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated()
+                  && (resource.data.status == 'approved'
+                      || isOwner(astrologerId)
+                      || isAdmin());
       allow create: if isAuthenticated() && isOwner(astrologerId);
       allow update: if isOwner(astrologerId) || isAdmin();
       allow delete: if isAdmin();
     }
 
     // ── Astrologer requests (consultation / inquiry / matching) ──────────
+    // Direction is USER → ASTROLOGER: only the user creates a request; the
+    // astrologer may only respond (accept/complete/reject) to requests
+    // addressed to them.
     match /astrologer_requests/{requestId} {
       allow read: if isAuthenticated()
                   && (resource.data.userId == request.auth.uid
@@ -146,7 +201,6 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow create: if isAuthenticated()
                     && request.resource.data.userId == request.auth.uid;
-      // The astrologer answers (accept/complete/reject) their own requests.
       allow update: if isAuthenticated()
                     && resource.data.astrologerId == request.auth.uid;
       allow update: if isAdmin();
@@ -166,11 +220,14 @@ service cloud.firestore {
 
     // ── Chats ─────────────────────────────────────────────────────────────
     // Only the two participants may read or write a thread / its messages.
+    // BUSINESS RULE: astrologers must not initiate contact with users, so an
+    // astrologer cannot create a chat thread.
     match /chats/{threadId} {
       allow read, update: if isAuthenticated()
                           && request.auth.uid in resource.data.participantIds;
       allow create: if isAuthenticated()
-                    && request.auth.uid in request.resource.data.participantIds;
+                    && request.auth.uid in request.resource.data.participantIds
+                    && !isAstrologer();
 
       match /messages/{messageId} {
         allow read: if isAuthenticated()
