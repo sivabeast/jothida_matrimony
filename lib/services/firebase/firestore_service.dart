@@ -11,6 +11,7 @@ import '../../models/account_deletion_request_model.dart';
 import '../../models/notification_model.dart';
 import '../../models/user_model.dart';
 import '../../models/dashboard_analytics.dart';
+import '../../models/admin_activity.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -376,6 +377,125 @@ class FirestoreService {
         doc.reference.update({'status': 'blocked', 'isActive': false});
       }
     });
+  }
+
+  /// Re-enables a suspended (blocked) user and reactivates their profile(s).
+  Future<void> unblockUser(String userId) async {
+    await _db
+        .collection(AppConstants.usersCollection)
+        .doc(userId)
+        .update({'isBlocked': false});
+    final profiles = await _db
+        .collection(AppConstants.profilesCollection)
+        .where('userId', isEqualTo: userId)
+        .get();
+    for (final doc in profiles.docs) {
+      await doc.reference.update({'status': 'approved', 'isActive': true});
+    }
+  }
+
+  /// Permanently deletes a user account document and any associated profile
+  /// documents. (Chats / interests are left for a backend cleanup job.)
+  Future<void> deleteUser(String userId) async {
+    debugPrint('[Firestore] 🗑 deleteUser($userId)');
+    final profiles = await _db
+        .collection(AppConstants.profilesCollection)
+        .where('userId', isEqualTo: userId)
+        .get();
+    final batch = _db.batch();
+    for (final doc in profiles.docs) {
+      batch.delete(doc.reference);
+    }
+    batch.delete(_db.collection(AppConstants.usersCollection).doc(userId));
+    await batch.commit();
+  }
+
+  /// Recent platform events (newest first, max [limit]) for the Dashboard
+  /// activity feed: new users, new astrologers, new subscriptions and new
+  /// account-deletion requests. Each source is guarded independently.
+  Future<List<AdminActivity>> getRecentActivity({int limit = 5}) async {
+    final items = <AdminActivity>[];
+    DateTime? ts(dynamic v) => v is Timestamp ? v.toDate() : null;
+
+    try {
+      final s = await _db
+          .collection(AppConstants.usersCollection)
+          .orderBy('createdAt', descending: true)
+          .limit(limit)
+          .get();
+      for (final d in s.docs) {
+        final m = d.data();
+        items.add(AdminActivity(
+          type: AdminActivityType.user,
+          title: (m['displayName'] ?? m['email'] ?? 'New user').toString(),
+          subtitle: 'New user registered',
+          time: ts(m['createdAt']) ?? DateTime.now(),
+        ));
+      }
+    } catch (e) {
+      debugPrint('[Activity] users failed: $e');
+    }
+
+    try {
+      final s = await _db
+          .collection(AppConstants.astrologersCollection)
+          .orderBy('createdAt', descending: true)
+          .limit(limit)
+          .get();
+      for (final d in s.docs) {
+        final m = d.data();
+        items.add(AdminActivity(
+          type: AdminActivityType.astrologer,
+          title: (m['fullName'] ?? 'New astrologer').toString(),
+          subtitle: 'New astrologer registered',
+          time: ts(m['createdAt']) ?? DateTime.now(),
+        ));
+      }
+    } catch (e) {
+      debugPrint('[Activity] astrologers failed: $e');
+    }
+
+    try {
+      final s = await _db
+          .collection(AppConstants.subscriptionsCollection)
+          .orderBy('createdAt', descending: true)
+          .limit(limit)
+          .get();
+      for (final d in s.docs) {
+        final m = d.data();
+        final amount = (m['amountPaid'] is num) ? (m['amountPaid'] as num).toInt() : 0;
+        items.add(AdminActivity(
+          type: AdminActivityType.subscription,
+          title: '${m['plan'] ?? 'Plan'} · ₹$amount',
+          subtitle: 'New subscription purchased',
+          time: ts(m['createdAt']) ?? DateTime.now(),
+        ));
+      }
+    } catch (e) {
+      debugPrint('[Activity] subscriptions failed: $e');
+    }
+
+    try {
+      final s = await _db
+          .collection(AppConstants.accountDeletionRequestsCollection)
+          .orderBy('requestDate', descending: true)
+          .limit(limit)
+          .get();
+      for (final d in s.docs) {
+        final m = d.data();
+        items.add(AdminActivity(
+          type: AdminActivityType.deletion,
+          title: (m['userName'] ?? m['email'] ?? 'User').toString(),
+          subtitle: 'New account deletion request',
+          time: ts(m['requestDate']) ?? DateTime.now(),
+        ));
+      }
+    } catch (e) {
+      debugPrint('[Activity] deletion requests failed: $e');
+    }
+
+    items.sort((a, b) => b.time.compareTo(a.time));
+    return items.take(limit).toList();
   }
 
   Future<Map<String, dynamic>> getAdminStats() async {

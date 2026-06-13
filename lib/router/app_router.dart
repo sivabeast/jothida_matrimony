@@ -29,9 +29,9 @@ import '../screens/subscription/subscription_screen.dart';
 import '../screens/admin/admin_shell.dart';
 import '../screens/admin/admin_dashboard.dart';
 import '../screens/admin/admin_users_screen.dart';
-import '../screens/admin/admin_approvals_screen.dart';
 import '../screens/admin/admin_reports_screen.dart';
 import '../screens/admin/admin_management_screens.dart';
+import '../screens/admin/admin_reports_page.dart';
 import '../screens/admin/account_admin_screens.dart';
 import '../screens/horoscope/horoscope_details_screen.dart';
 import '../screens/profile/personal_details_screen.dart';
@@ -290,13 +290,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: '/admin', builder: (_, __) => const AdminDashboard()),
           GoRoute(path: '/admin/users', builder: (_, __) => const AdminUsersScreen()),
-          GoRoute(path: '/admin/approvals', builder: (_, __) => const AdminApprovalsScreen()),
           GoRoute(path: '/admin/reports', builder: (_, __) => const AdminReportsScreen()),
           GoRoute(path: '/admin/astrologers', builder: (_, __) => const AstrologerManagementScreen()),
           GoRoute(path: '/admin/ratings', builder: (_, __) => const RatingManagementScreen()),
           GoRoute(path: '/admin/banners', builder: (_, __) => const BannerManagementScreen()),
           GoRoute(path: '/admin/premium', builder: (_, __) => const PremiumManagementScreen()),
-          GoRoute(path: '/admin/analytics', builder: (_, __) => const AnalyticsScreen()),
+          GoRoute(path: '/admin/analytics', builder: (_, __) => const AdminReportsPage()),
           GoRoute(path: '/admin/settings', builder: (_, __) => const AdminSettingsScreen()),
           GoRoute(path: '/admin/married', builder: (_, __) => const MarriedUsersScreen()),
           GoRoute(path: '/admin/deletion-requests', builder: (_, __) => const AccountDeletionRequestsScreen()),

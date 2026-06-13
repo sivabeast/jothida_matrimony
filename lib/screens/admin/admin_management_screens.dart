@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/config/dev_config.dart';
@@ -451,115 +452,87 @@ class _PendingCard extends ConsumerWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
+            borderRadius: BorderRadius.circular(12),
             onTap: onView,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _avatar(account, 26),
-                const SizedBox(width: 12),
+                _largeAvatar(account),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(account.fullName.isEmpty ? '(no name)' : account.fullName,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 15)),
-                      if (account.expertise.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Row(children: [
-                          const Icon(Icons.auto_awesome,
-                              size: 12, color: AppColors.gold),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(account.expertise.first,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    fontSize: 12.5, color: Colors.grey[700])),
-                          ),
-                        ]),
-                      ],
-                      if (location.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Row(children: [
-                          Icon(Icons.location_on_outlined,
-                              size: 12, color: Colors.grey[500]),
-                          const SizedBox(width: 3),
-                          Expanded(
-                            child: Text(location,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    fontSize: 12, color: Colors.grey[500])),
-                          ),
-                        ]),
-                      ],
-                      const SizedBox(height: 2),
-                      Text('${account.experienceYears} years experience',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                      Text(
+                        account.fullName.isEmpty ? '(no name)' : account.fullName,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(height: 6),
+                      if (account.expertise.isNotEmpty)
+                        _cardLine(Icons.auto_awesome, account.expertise.first,
+                            iconColor: AppColors.gold,
+                            textColor: AppColors.primary),
+                      if (location.isNotEmpty)
+                        _cardLine(Icons.location_on_outlined, location),
+                      _cardLine(Icons.schedule,
+                          '${account.experienceYears} years experience'),
+                      const SizedBox(height: 10),
+                      _statusChip(account.status.label, statusColor),
                     ],
                   ),
                 ),
-                _statusChip(account.status.label, statusColor),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const Divider(height: 22),
           Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onView,
-                  icon: const Icon(Icons.visibility_outlined, size: 18),
-                  label: const Text('View'),
-                  style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary)),
-                ),
+              _IconAction(
+                icon: Icons.visibility_outlined,
+                color: AppColors.primary,
+                tooltip: 'View details',
+                onTap: onView,
               ),
-              const SizedBox(width: 8),
-              if (!rejected)
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: busy
-                        ? null
-                        : () => _confirmReject(context, ref, account),
-                    icon: const Icon(Icons.close, size: 18),
-                    label: const Text('Reject'),
-                    style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.error,
-                        side: const BorderSide(color: AppColors.error)),
-                  ),
+              const SizedBox(width: 12),
+              if (!rejected) ...[
+                _IconAction(
+                  icon: Icons.close,
+                  color: AppColors.error,
+                  tooltip: 'Reject',
+                  onTap:
+                      busy ? null : () => _confirmReject(context, ref, account),
                 ),
-              if (!rejected) const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: busy
-                      ? null
-                      : () => _runAction(
-                            context,
-                            ref,
-                            () => ref
-                                .read(adminActionsProvider.notifier)
-                                .approveAstrologer(account.id),
-                            'Astrologer approved & verified.',
-                          ),
-                  icon: const Icon(Icons.check, size: 18),
-                  label: const Text('Approve'),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.success,
-                      foregroundColor: Colors.white),
-                ),
+                const SizedBox(width: 12),
+              ],
+              _IconAction(
+                icon: Icons.check,
+                color: AppColors.success,
+                tooltip: 'Approve',
+                filled: true,
+                onTap: busy
+                    ? null
+                    : () => _runAction(
+                          context,
+                          ref,
+                          () => ref
+                              .read(adminActionsProvider.notifier)
+                              .approveAstrologer(account.id),
+                          'Astrologer approved & verified.',
+                        ),
               ),
             ],
           ),
@@ -585,22 +558,23 @@ class _VerifiedCard extends ConsumerWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
+            borderRadius: BorderRadius.circular(12),
             onTap: onView,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _avatar(account, 26),
-                const SizedBox(width: 12),
+                _largeAvatar(account),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -615,119 +589,82 @@ class _VerifiedCard extends ConsumerWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 15)),
+                                    fontWeight: FontWeight.bold, fontSize: 16)),
                           ),
                           const SizedBox(width: 6),
                           const Icon(Icons.verified,
-                              color: AppColors.success, size: 16),
+                              color: AppColors.success, size: 17),
                         ],
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 6),
                       Row(children: [
-                        const Icon(Icons.star, size: 13, color: AppColors.gold),
-                        const SizedBox(width: 3),
+                        const Icon(Icons.star, size: 14, color: AppColors.gold),
+                        const SizedBox(width: 4),
                         Text(account.rating.toStringAsFixed(1),
                             style: const TextStyle(
-                                fontSize: 12, fontWeight: FontWeight.w600)),
+                                fontSize: 12.5, fontWeight: FontWeight.w600)),
                         Text('  ·  ${account.reviewCount} reviews',
                             style: TextStyle(
                                 fontSize: 11.5, color: Colors.grey[500])),
                       ]),
-                      if (account.expertise.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(account.expertise.first,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                fontSize: 12.5, color: AppColors.primary)),
-                      ],
-                      if (location.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Row(children: [
-                          Icon(Icons.location_on_outlined,
-                              size: 12, color: Colors.grey[500]),
-                          const SizedBox(width: 3),
-                          Expanded(
-                            child: Text(location,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    fontSize: 12, color: Colors.grey[500])),
-                          ),
-                        ]),
-                      ],
+                      if (account.expertise.isNotEmpty)
+                        _cardLine(Icons.auto_awesome, account.expertise.first,
+                            iconColor: AppColors.gold,
+                            textColor: AppColors.primary),
+                      if (location.isNotEmpty)
+                        _cardLine(Icons.location_on_outlined, location),
+                      _cardLine(Icons.schedule,
+                          '${account.experienceYears} years  ·  ₹${account.consultationFee.toStringAsFixed(0)}'),
+                      const SizedBox(height: 10),
+                      _statusChip('✅ Verified Astrologer', AppColors.success),
                     ],
                   ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text('₹${account.consultationFee.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                            fontSize: 14)),
-                    Text('${account.experienceYears}y exp',
-                        style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                  ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const Divider(height: 22),
           Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onView,
-                  icon: const Icon(Icons.visibility_outlined, size: 18),
-                  label: const Text('View'),
-                  style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary)),
-                ),
+              _IconAction(
+                icon: Icons.visibility_outlined,
+                color: AppColors.primary,
+                tooltip: 'View details',
+                onTap: onView,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: busy
-                      ? null
-                      : () => _confirmReject(
-                            context,
-                            ref,
-                            account,
-                            title: 'Suspend Astrologer',
-                            actionLabel: 'Suspend',
-                            successMsg:
-                                'Astrologer suspended — hidden from users.',
-                          ),
-                  icon: const Icon(Icons.pause_circle_outline, size: 18),
-                  label: const Text('Suspend'),
-                  style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.error,
-                      side: const BorderSide(color: AppColors.error)),
-                ),
+              const SizedBox(width: 12),
+              _IconAction(
+                icon: Icons.pause_circle_outline,
+                color: AppColors.error,
+                tooltip: 'Suspend',
+                onTap: busy
+                    ? null
+                    : () => _confirmReject(
+                          context,
+                          ref,
+                          account,
+                          title: 'Suspend Astrologer',
+                          actionLabel: 'Suspend',
+                          successMsg:
+                              'Astrologer suspended — hidden from users.',
+                        ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: busy
-                      ? null
-                      : () => _runAction(
-                            context,
-                            ref,
-                            () => ref
-                                .read(adminActionsProvider.notifier)
-                                .suspendAstrologer(account.id),
-                            'Verification removed — back to pending.',
-                          ),
-                  icon: const Icon(Icons.gpp_maybe_outlined, size: 18),
-                  label: const Text('Unverify',
-                      style: TextStyle(fontSize: 12.5)),
-                  style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.warning,
-                      side: const BorderSide(color: AppColors.warning)),
-                ),
+              const SizedBox(width: 12),
+              _IconAction(
+                icon: Icons.gpp_maybe_outlined,
+                color: AppColors.warning,
+                tooltip: 'Remove verification',
+                onTap: busy
+                    ? null
+                    : () => _runAction(
+                          context,
+                          ref,
+                          () => ref
+                              .read(adminActionsProvider.notifier)
+                              .suspendAstrologer(account.id),
+                          'Verification removed — back to pending.',
+                        ),
               ),
             ],
           ),
@@ -764,6 +701,97 @@ Widget _statusChip(String label, Color color) => Container(
           style: TextStyle(
               fontSize: 10.5, color: color, fontWeight: FontWeight.w600)),
     );
+
+/// Large rounded-square profile image (~84px) with a coloured initial fallback.
+Widget _largeAvatar(AstrologerAccount account, {double size = 84}) {
+  final initial =
+      account.fullName.isNotEmpty ? account.fullName[0].toUpperCase() : '?';
+  return ClipRRect(
+    borderRadius: BorderRadius.circular(18),
+    child: SizedBox(
+      width: size,
+      height: size,
+      child: account.photoUrl.isNotEmpty
+          ? Image.network(
+              account.photoUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _avatarFallback(initial, size),
+            )
+          : _avatarFallback(initial, size),
+    ),
+  );
+}
+
+Widget _avatarFallback(String initial, double size) => Container(
+      color: AppColors.primary.withOpacity(0.10),
+      alignment: Alignment.center,
+      child: Text(initial,
+          style: TextStyle(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+              fontSize: size * 0.4)),
+    );
+
+/// One compact icon + text line used in the card info column.
+Widget _cardLine(IconData icon, String text, {Color? iconColor, Color? textColor}) =>
+    Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: Row(
+        children: [
+          Icon(icon, size: 13, color: iconColor ?? Colors.grey[500]),
+          const SizedBox(width: 5),
+          Expanded(
+            child: Text(text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 12.5, color: textColor ?? Colors.grey[600])),
+          ),
+        ],
+      ),
+    );
+
+/// A rounded, icon-only action button. [filled] gives it a solid colour fill
+/// (used for the primary "Approve" action); otherwise it's a soft tinted
+/// circle. A null [onTap] renders it disabled (greyed).
+class _IconAction extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final bool filled;
+  final VoidCallback? onTap;
+  const _IconAction({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    this.filled = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    final base = enabled ? color : Colors.grey;
+    final bg = filled ? base : base.withOpacity(0.12);
+    final fg = filled ? Colors.white : base;
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: bg,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: SizedBox(
+            width: 46,
+            height: 46,
+            child: Icon(icon, color: fg, size: 22),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Details modal
@@ -1479,28 +1507,81 @@ class _MiniStat extends StatelessWidget {
 // ⚙️ Admin Settings
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Settings hub — every platform control lives here, so the other tabs stay
+/// focused. Real management screens are linked directly; not-yet-built controls
+/// show a neutral "coming soon" notice.
 class AdminSettingsScreen extends StatelessWidget {
   const AdminSettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     debugPrint('[Admin] AdminSettings build — /admin/settings');
-    return _adminScaffold(
-      title: 'Admin Settings',
-      icon: Icons.settings,
-      subtitle: 'App and content configuration',
+    return ListView(
+      padding: const EdgeInsets.all(16),
       children: [
+        const _AdminHeader(
+          icon: Icons.settings,
+          title: 'Settings',
+          subtitle: 'Platform controls & configuration',
+        ),
+        const SizedBox(height: 16),
         _ActionTile(
-          icon: Icons.app_settings_alt_outlined,
-          title: 'App Settings',
-          subtitle: 'Maintenance mode, versions, feature flags',
-          onTap: () => _soon(context, 'App Settings'),
+          icon: Icons.view_carousel,
+          title: 'Banner Management',
+          subtitle: 'Home screen banners',
+          onTap: () => context.go('/admin/banners'),
         ),
         _ActionTile(
-          icon: Icons.article_outlined,
-          title: 'Content Settings',
-          subtitle: 'Manage FAQs, policies and static content',
-          onTap: () => _soon(context, 'Content Settings'),
+          icon: Icons.workspace_premium,
+          title: 'Subscription Plans',
+          subtitle: 'Premium plans & subscriptions',
+          color: AppColors.gold,
+          onTap: () => context.go('/admin/premium'),
+        ),
+        _ActionTile(
+          icon: Icons.support_agent,
+          title: 'Support Tickets',
+          subtitle: 'User help requests & complaints',
+          onTap: () => context.go('/admin/support'),
+        ),
+        _ActionTile(
+          icon: Icons.star_rate_rounded,
+          title: 'Ratings Management',
+          subtitle: 'Moderate astrologer ratings',
+          onTap: () => context.go('/admin/ratings'),
+        ),
+        _ActionTile(
+          icon: Icons.report_problem_outlined,
+          title: 'Reported Profiles',
+          subtitle: 'Review user reports & moderation',
+          color: AppColors.error,
+          onTap: () => context.go('/admin/reports'),
+        ),
+        _ActionTile(
+          icon: Icons.delete_sweep_outlined,
+          title: 'Account Deletion Requests',
+          subtitle: 'Approve or reject deletions',
+          color: AppColors.error,
+          onTap: () => context.go('/admin/deletion-requests'),
+        ),
+        const Divider(height: 28),
+        _ActionTile(
+          icon: Icons.notifications_outlined,
+          title: 'Notification Settings',
+          subtitle: 'Push & email preferences',
+          onTap: () => _soon(context, 'Notification Settings'),
+        ),
+        _ActionTile(
+          icon: Icons.tune,
+          title: 'Platform Settings',
+          subtitle: 'Maintenance mode, feature flags',
+          onTap: () => _soon(context, 'Platform Settings'),
+        ),
+        _ActionTile(
+          icon: Icons.app_settings_alt_outlined,
+          title: 'App Configuration',
+          subtitle: 'Versions & static content',
+          onTap: () => _soon(context, 'App Configuration'),
         ),
       ],
     );

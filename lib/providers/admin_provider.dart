@@ -5,6 +5,7 @@ import '../models/profile_model.dart';
 import '../models/report_model.dart';
 import '../models/astrologer_account_model.dart';
 import '../models/dashboard_analytics.dart';
+import '../models/admin_activity.dart';
 import 'service_providers.dart';
 
 final adminStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>(
@@ -27,6 +28,10 @@ final allAstrologersProvider =
 
 final allUsersProvider = FutureProvider.autoDispose<List<UserModel>>(
     (ref) => ref.read(adminRepositoryProvider).getAllUsers());
+
+/// Recent platform activity for the Dashboard feed (max 5).
+final recentActivityProvider = FutureProvider.autoDispose<List<AdminActivity>>(
+    (ref) => ref.read(adminRepositoryProvider).getRecentActivity());
 
 final pendingProfilesProvider = FutureProvider.autoDispose<List<ProfileModel>>(
     (ref) => ref.read(adminRepositoryProvider).getPendingProfiles());
@@ -54,6 +59,22 @@ class AdminActionsNotifier extends Notifier<AsyncValue<void>> {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
         () => ref.read(adminRepositoryProvider).blockUser(userId));
+  }
+
+  Future<void> unblockUser(String userId) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+        () => ref.read(adminRepositoryProvider).unblockUser(userId));
+  }
+
+  Future<void> deleteUser(String userId) async {
+    debugPrint('[AdminActions] deleteUser($userId)');
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+        () => ref.read(adminRepositoryProvider).deleteUser(userId));
+    if (state.hasError) {
+      debugPrint('[AdminActions] ❌ deleteUser failed: ${state.error}');
+    }
   }
 
   // ── Astrologer verification ────────────────────────────────────────────────
