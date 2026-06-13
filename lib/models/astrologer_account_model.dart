@@ -54,6 +54,9 @@ class AstrologerAccount {
   final List<AstrologerService> services;
   final double rating;
   final int reviewCount;
+  // When the astrologer account was first created (registration date). Read
+  // from the Firestore `createdAt` server timestamp; may be null for older docs.
+  final DateTime? createdAt;
 
   const AstrologerAccount({
     required this.id,
@@ -81,6 +84,7 @@ class AstrologerAccount {
     this.services = const [],
     this.rating = 0,
     this.reviewCount = 0,
+    this.createdAt,
   });
 
   bool get isApproved => status == VerificationStatus.approved;
@@ -135,6 +139,7 @@ class AstrologerAccount {
         services: services ?? this.services,
         rating: rating,
         reviewCount: reviewCount,
+        createdAt: createdAt,
       );
 
   factory AstrologerAccount.fromFirestore(DocumentSnapshot doc) {
@@ -174,6 +179,9 @@ class AstrologerAccount {
           .toList(),
       rating: (d['rating'] ?? 0).toDouble(),
       reviewCount: d['reviewCount'] ?? 0,
+      createdAt: d['createdAt'] is Timestamp
+          ? (d['createdAt'] as Timestamp).toDate()
+          : null,
     );
   }
 

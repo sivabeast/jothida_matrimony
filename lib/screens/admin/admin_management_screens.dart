@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photo_view/photo_view.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/config/dev_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_account_model.dart';
@@ -135,15 +137,43 @@ void _soon(BuildContext context, String feature) {
 // 🔮 Astrologer Management
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Live astrologer verification + management. Reads the `astrologers`
-/// collection in realtime, groups by verification status, and lets an admin
-/// Approve / Reject / Suspend — each action writes `status` back to Firestore
-/// and the list re-buckets automatically.
-class AstrologerManagementScreen extends ConsumerWidget {
+/// Astrologer verification + management, split into two tabs:
+///   ⏳ Pending Verification  (status != approved)
+///   ✅ Verified Astrologers  (status == approved)
+/// Reads the `astrologers` collection in realtime, supports search by name /
+/// location / specialization, a full details modal, a zoomable certificate
+/// viewer, and Approve / Reject / Suspend / Remove-Verification actions that
+/// write `status` back to Firestore (the lists re-bucket automatically).
+class AstrologerManagementScreen extends ConsumerStatefulWidget {
   const AstrologerManagementScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AstrologerManagementScreen> createState() =>
+      _AstrologerManagementScreenState();
+}
+
+class _AstrologerManagementScreenState
+    extends ConsumerState<AstrologerManagementScreen> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  bool _matches(AstrologerAccount a) {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    final loc = [a.city, a.state, a.country].join(' ').toLowerCase();
+    return a.fullName.toLowerCase().contains(q) ||
+        loc.contains(q) ||
+        a.expertise.any((e) => e.toLowerCase().contains(q));
+  }
+
+  @override
+  Widget build(BuildContext context) {
     debugPrint('[Admin] AstrologerManagement build — /admin/astrologers');
 
     // Role guard (defence in depth — the router already blocks non-admins).
@@ -167,367 +197,987 @@ class AstrologerManagementScreen extends ConsumerWidget {
 
     final astrologersAsync = ref.watch(allAstrologersProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.scaffoldBg,
-      appBar: AppBar(
-        title: const Text('Astrologer Management'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
-      body: astrologersAsync.when(
-        loading: () => const LoadingState(message: 'Loading astrologers...'),
-        error: (e, st) {
-          debugPrint('[Admin] ❌ astrologers load failed: $e');
-          return ErrorStateView(
-            message: 'Connection Error — unable to load astrologers.',
-            onRetry: () => ref.invalidate(allAstrologersProvider),
-          );
-        },
-        data: (list) {
-          debugPrint('[Admin] loaded ${list.length} astrologers');
-          if (list.isEmpty) {
-            return const EmptyState(
-              icon: Icons.auto_awesome_outlined,
-              message: 'No astrologers registered yet',
-            );
-          }
-          final pending = list
-              .where((a) => a.status == VerificationStatus.pending)
-              .toList();
-          final approved = list
-              .where((a) => a.status == VerificationStatus.approved)
-              .toList();
-          final rejected = list
-              .where((a) => a.status == VerificationStatus.rejected)
-              .toList();
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              const _AdminHeader(
-                icon: Icons.auto_awesome,
-                title: 'Astrologer Management',
-                subtitle: 'Approve, reject and suspend astrologers',
-              ),
-              const SizedBox(height: 16),
-              _SectionLabel('Pending Verification', pending.length,
-                  AppColors.warning),
-              if (pending.isEmpty)
-                _muted('No applications awaiting review.')
-              else
-                ...pending.map((a) => _AstrologerCard(account: a)),
-              const SizedBox(height: 14),
-              _SectionLabel('Approved', approved.length, AppColors.success),
-              if (approved.isEmpty)
-                _muted('No approved astrologers yet.')
-              else
-                ...approved.map((a) => _AstrologerCard(account: a)),
-              if (rejected.isNotEmpty) ...[
-                const SizedBox(height: 14),
-                _SectionLabel('Rejected', rejected.length, AppColors.error),
-                ...rejected.map((a) => _AstrologerCard(account: a)),
-              ],
-              const SizedBox(height: 24),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: AppColors.scaffoldBg,
+        appBar: AppBar(
+          title: const Text('Astrologer Management'),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          bottom: TabBar(
+            indicatorColor: AppColors.gold,
+            indicatorWeight: 3,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            labelStyle:
+                const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            tabs: const [
+              Tab(text: '⏳ Pending Verification'),
+              Tab(text: '✅ Verified'),
             ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-Widget _muted(String text) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-      child: Text(text, style: TextStyle(color: Colors.grey[500], fontSize: 13)),
-    );
-
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  final int count;
-  final Color color;
-  const _SectionLabel(this.label, this.count, this.color);
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(2, 4, 2, 8),
-        child: Row(
+          ),
+        ),
+        body: Column(
           children: [
-            Text(label,
-                style: const TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.bold)),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.14),
-                borderRadius: BorderRadius.circular(20),
+            _searchBar(),
+            Expanded(
+              child: astrologersAsync.when(
+                loading: () =>
+                    const LoadingState(message: 'Loading astrologers...'),
+                error: (e, st) {
+                  debugPrint('[Admin] ❌ astrologers load failed: $e');
+                  return ErrorStateView(
+                    message: 'Connection Error — unable to load astrologers.',
+                    onRetry: () => ref.invalidate(allAstrologersProvider),
+                  );
+                },
+                data: (list) {
+                  debugPrint('[Admin] loaded ${list.length} astrologers');
+                  final pending = list
+                      .where((a) =>
+                          a.status != VerificationStatus.approved &&
+                          _matches(a))
+                      .toList();
+                  final verified = list
+                      .where((a) =>
+                          a.status == VerificationStatus.approved &&
+                          _matches(a))
+                      .toList();
+                  return TabBarView(
+                    children: [
+                      _tabList(
+                        items: pending,
+                        emptyIcon: Icons.hourglass_empty,
+                        emptyMsg: _query.isEmpty
+                            ? 'No astrologers awaiting verification'
+                            : 'No pending astrologers match "$_query"',
+                        builder: (a) => _PendingCard(
+                            account: a, onView: () => _showDetails(a)),
+                      ),
+                      _tabList(
+                        items: verified,
+                        emptyIcon: Icons.verified_outlined,
+                        emptyMsg: _query.isEmpty
+                            ? 'No verified astrologers yet'
+                            : 'No verified astrologers match "$_query"',
+                        builder: (a) => _VerifiedCard(
+                            account: a, onView: () => _showDetails(a)),
+                      ),
+                    ],
+                  );
+                },
               ),
-              child: Text('$count',
-                  style: TextStyle(
-                      color: color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold)),
             ),
           ],
         ),
-      );
-}
-
-class _AstrologerCard extends ConsumerWidget {
-  final AstrologerAccount account;
-  const _AstrologerCard({required this.account});
-
-  /// Maps a raw error to a short, user-facing label per the requested set:
-  /// Permission Denied · Connection Error · generic retry.
-  String _friendlyError(Object? e) {
-    if (e is FirebaseException) {
-      switch (e.code) {
-        case 'permission-denied':
-          return 'Permission Denied — you cannot perform this action.';
-        case 'unavailable':
-        case 'deadline-exceeded':
-          return 'Connection Error — please check your network and try again.';
-        case 'not-found':
-          return 'This astrologer record no longer exists.';
-      }
-    }
-    return 'Could not complete the action. Please try again.';
-  }
-
-  Future<void> _run(
-    BuildContext context,
-    WidgetRef ref,
-    Future<void> Function() action,
-    String successMsg,
-  ) async {
-    final messenger = ScaffoldMessenger.of(context);
-    await action();
-    final result = ref.read(adminActionsProvider);
-    messenger.hideCurrentSnackBar();
-    if (result.hasError) {
-      messenger.showSnackBar(SnackBar(
-        content: Text(_friendlyError(result.error)),
-        backgroundColor: AppColors.error,
-      ));
-    } else {
-      messenger.showSnackBar(SnackBar(content: Text(successMsg)));
-    }
-  }
-
-  Future<void> _confirmReject(BuildContext context, WidgetRef ref) async {
-    final controller = TextEditingController();
-    final reason = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Reject Astrologer'),
-        content: TextField(
-          controller: controller,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: 'Reason (shown to the astrologer)',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error, foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('Reject'),
-          ),
-        ],
       ),
     );
-    if (reason == null) return;
-    if (!context.mounted) return;
-    await _run(
-      context,
-      ref,
-      () => ref
-          .read(adminActionsProvider.notifier)
-          .rejectAstrologer(account.id, reason: reason),
-      'Astrologer rejected.',
+  }
+
+  Widget _tabList({
+    required List<AstrologerAccount> items,
+    required IconData emptyIcon,
+    required String emptyMsg,
+    required Widget Function(AstrologerAccount) builder,
+  }) {
+    if (items.isEmpty) {
+      return EmptyState(icon: emptyIcon, message: emptyMsg);
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      itemCount: items.length,
+      itemBuilder: (_, i) => builder(items[i]),
     );
   }
+
+  Widget _searchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: TextField(
+        controller: _searchCtrl,
+        onChanged: (v) => setState(() => _query = v),
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'Search astrologer name, location or specialization…',
+          prefixIcon: const Icon(Icons.search, color: AppColors.primary),
+          suffixIcon: _query.isEmpty
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed: () => setState(() {
+                    _query = '';
+                    _searchCtrl.clear();
+                  }),
+                ),
+          filled: true,
+          fillColor: Colors.white,
+          isDense: true,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(color: Colors.grey[200]!),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDetails(AstrologerAccount account) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _AstrologerDetailsSheet(account: account),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared action helpers (used by cards + details sheet)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Maps a raw error to a short, user-facing label.
+String _friendlyError(Object? e) {
+  if (e is FirebaseException) {
+    switch (e.code) {
+      case 'permission-denied':
+        return 'Permission Denied — you cannot perform this action.';
+      case 'unavailable':
+      case 'deadline-exceeded':
+        return 'Connection Error — please check your network and try again.';
+      case 'not-found':
+        return 'This astrologer record no longer exists.';
+    }
+  }
+  return 'Could not complete the action. Please try again.';
+}
+
+/// Runs an admin action and shows a success/error SnackBar.
+Future<void> _runAction(
+  BuildContext context,
+  WidgetRef ref,
+  Future<void> Function() action,
+  String successMsg,
+) async {
+  final messenger = ScaffoldMessenger.of(context);
+  await action();
+  final result = ref.read(adminActionsProvider);
+  messenger.hideCurrentSnackBar();
+  if (result.hasError) {
+    messenger.showSnackBar(SnackBar(
+      content: Text(_friendlyError(result.error)),
+      backgroundColor: AppColors.error,
+    ));
+  } else {
+    messenger.showSnackBar(SnackBar(content: Text(successMsg)));
+  }
+}
+
+/// Prompts for an optional reason, then rejects the astrologer. [title] /
+/// [actionLabel] let the same dialog serve both "Reject" and "Suspend".
+Future<void> _confirmReject(
+  BuildContext context,
+  WidgetRef ref,
+  AstrologerAccount account, {
+  String title = 'Reject Astrologer',
+  String actionLabel = 'Reject',
+  String successMsg = 'Astrologer rejected.',
+}) async {
+  final controller = TextEditingController();
+  final reason = await showDialog<String>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(title),
+      content: TextField(
+        controller: controller,
+        maxLines: 3,
+        decoration: const InputDecoration(
+          hintText: 'Reason (optional — shown to the astrologer)',
+          border: OutlineInputBorder(),
+        ),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error, foregroundColor: Colors.white),
+          onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+          child: Text(actionLabel),
+        ),
+      ],
+    ),
+  );
+  if (reason == null) return; // cancelled
+  if (!context.mounted) return;
+  await _runAction(
+    context,
+    ref,
+    () => ref
+        .read(adminActionsProvider.notifier)
+        .rejectAstrologer(account.id, reason: reason),
+    successMsg,
+  );
+}
+
+String _accountLocation(AstrologerAccount a) =>
+    [a.city, a.state].where((s) => s.trim().isNotEmpty).join(', ');
+
+String _fmtDate(DateTime? d) => d == null
+    ? '—'
+    : '${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pending astrologer card
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PendingCard extends ConsumerWidget {
+  final AstrologerAccount account;
+  final VoidCallback onView;
+  const _PendingCard({required this.account, required this.onView});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final busy = ref.watch(adminActionsProvider).isLoading;
-    final status = account.status;
-    final statusColor = status == VerificationStatus.approved
-        ? AppColors.success
-        : status == VerificationStatus.rejected
-            ? AppColors.error
-            : AppColors.warning;
-    final location = [account.city, account.state]
-        .where((s) => s.trim().isNotEmpty)
-        .join(', ');
+    final rejected = account.status == VerificationStatus.rejected;
+    final statusColor = rejected ? AppColors.error : AppColors.warning;
+    final location = _accountLocation(account);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          InkWell(
+            onTap: onView,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _avatar(account, 26),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(account.fullName.isEmpty ? '(no name)' : account.fullName,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 15)),
+                      if (account.expertise.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Row(children: [
+                          const Icon(Icons.auto_awesome,
+                              size: 12, color: AppColors.gold),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(account.expertise.first,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    fontSize: 12.5, color: Colors.grey[700])),
+                          ),
+                        ]),
+                      ],
+                      if (location.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Row(children: [
+                          Icon(Icons.location_on_outlined,
+                              size: 12, color: Colors.grey[500]),
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(location,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey[500])),
+                          ),
+                        ]),
+                      ],
+                      const SizedBox(height: 2),
+                      Text('${account.experienceYears} years experience',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                    ],
+                  ),
+                ),
+                _statusChip(account.status.label, statusColor),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
-                backgroundImage: account.photoUrl.isNotEmpty
-                    ? NetworkImage(account.photoUrl)
-                    : null,
-                child: account.photoUrl.isEmpty
-                    ? Text(
-                        account.fullName.isNotEmpty
-                            ? account.fullName[0].toUpperCase()
-                            : '?',
-                        style: const TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold))
-                    : null,
-              ),
-              const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                        account.fullName.isEmpty
-                            ? '(no name)'
-                            : account.fullName,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15)),
-                    if (account.expertise.isNotEmpty)
-                      Text(account.expertise.join(' · '),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              TextStyle(fontSize: 12.5, color: Colors.grey[700])),
-                    if (location.isNotEmpty)
-                      Text(location,
-                          style:
-                              TextStyle(fontSize: 12, color: Colors.grey[500])),
-                  ],
+                child: OutlinedButton.icon(
+                  onPressed: onView,
+                  icon: const Icon(Icons.visibility_outlined, size: 18),
+                  label: const Text('View'),
+                  style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary)),
                 ),
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(20),
+              const SizedBox(width: 8),
+              if (!rejected)
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: busy
+                        ? null
+                        : () => _confirmReject(context, ref, account),
+                    icon: const Icon(Icons.close, size: 18),
+                    label: const Text('Reject'),
+                    style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        side: const BorderSide(color: AppColors.error)),
+                  ),
                 ),
-                child: Text(status.label,
-                    style: TextStyle(
-                        fontSize: 10.5,
-                        color: statusColor,
-                        fontWeight: FontWeight.w600)),
+              if (!rejected) const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: busy
+                      ? null
+                      : () => _runAction(
+                            context,
+                            ref,
+                            () => ref
+                                .read(adminActionsProvider.notifier)
+                                .approveAstrologer(account.id),
+                            'Astrologer approved & verified.',
+                          ),
+                  icon: const Icon(Icons.check, size: 18),
+                  label: const Text('Approve'),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                      foregroundColor: Colors.white),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          _detail('Experience', '${account.experienceYears} years'),
-          _detail('Languages',
-              account.languages.isEmpty ? '—' : account.languages.join(', ')),
-          _detail('Fee', '₹${account.consultationFee.toStringAsFixed(0)}'),
-          _detail(
-              'Certificate',
-              account.certName.isEmpty
-                  ? '—'
-                  : '${account.certName}'
-                      '${account.certOrg.isNotEmpty ? ' · ${account.certOrg}' : ''}'),
-          const SizedBox(height: 10),
-          _actions(context, ref, busy),
         ],
       ),
     );
   }
+}
 
-  Widget _actions(BuildContext context, WidgetRef ref, bool busy) {
-    final approve = ElevatedButton.icon(
-      onPressed: busy
-          ? null
-          : () => _run(
-                context,
-                ref,
-                () => ref
-                    .read(adminActionsProvider.notifier)
-                    .approveAstrologer(account.id),
-                'Astrologer approved.',
+// ─────────────────────────────────────────────────────────────────────────────
+// Verified astrologer card
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _VerifiedCard extends ConsumerWidget {
+  final AstrologerAccount account;
+  final VoidCallback onView;
+  const _VerifiedCard({required this.account, required this.onView});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final busy = ref.watch(adminActionsProvider).isLoading;
+    final location = _accountLocation(account);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: onView,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _avatar(account, 26),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                                account.fullName.isEmpty
+                                    ? '(no name)'
+                                    : account.fullName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 15)),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(Icons.verified,
+                              color: AppColors.success, size: 16),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Row(children: [
+                        const Icon(Icons.star, size: 13, color: AppColors.gold),
+                        const SizedBox(width: 3),
+                        Text(account.rating.toStringAsFixed(1),
+                            style: const TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w600)),
+                        Text('  ·  ${account.reviewCount} reviews',
+                            style: TextStyle(
+                                fontSize: 11.5, color: Colors.grey[500])),
+                      ]),
+                      if (account.expertise.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(account.expertise.first,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 12.5, color: AppColors.primary)),
+                      ],
+                      if (location.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Row(children: [
+                          Icon(Icons.location_on_outlined,
+                              size: 12, color: Colors.grey[500]),
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(location,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey[500])),
+                          ),
+                        ]),
+                      ],
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('₹${account.consultationFee.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                            fontSize: 14)),
+                    Text('${account.experienceYears}y exp',
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onView,
+                  icon: const Icon(Icons.visibility_outlined, size: 18),
+                  label: const Text('View'),
+                  style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary)),
+                ),
               ),
-      icon: const Icon(Icons.check, size: 18),
-      label: const Text('Approve'),
-      style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.success, foregroundColor: Colors.white),
-    );
-    final reject = OutlinedButton.icon(
-      onPressed: busy ? null : () => _confirmReject(context, ref),
-      icon: const Icon(Icons.close, size: 18),
-      label: const Text('Reject'),
-      style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.error,
-          side: const BorderSide(color: AppColors.error)),
-    );
-    final suspend = OutlinedButton.icon(
-      onPressed: busy
-          ? null
-          : () => _run(
-                context,
-                ref,
-                () => ref
-                    .read(adminActionsProvider.notifier)
-                    .suspendAstrologer(account.id),
-                'Astrologer suspended (moved back to pending).',
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: busy
+                      ? null
+                      : () => _confirmReject(
+                            context,
+                            ref,
+                            account,
+                            title: 'Suspend Astrologer',
+                            actionLabel: 'Suspend',
+                            successMsg:
+                                'Astrologer suspended — hidden from users.',
+                          ),
+                  icon: const Icon(Icons.pause_circle_outline, size: 18),
+                  label: const Text('Suspend'),
+                  style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      side: const BorderSide(color: AppColors.error)),
+                ),
               ),
-      icon: const Icon(Icons.pause_circle_outline, size: 18),
-      label: const Text('Suspend'),
-      style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.warning,
-          side: const BorderSide(color: AppColors.warning)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: busy
+                      ? null
+                      : () => _runAction(
+                            context,
+                            ref,
+                            () => ref
+                                .read(adminActionsProvider.notifier)
+                                .suspendAstrologer(account.id),
+                            'Verification removed — back to pending.',
+                          ),
+                  icon: const Icon(Icons.gpp_maybe_outlined, size: 18),
+                  label: const Text('Unverify',
+                      style: TextStyle(fontSize: 12.5)),
+                  style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.warning,
+                      side: const BorderSide(color: AppColors.warning)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Widget _avatar(AstrologerAccount account, double radius) => CircleAvatar(
+      radius: radius,
+      backgroundColor: AppColors.primary.withOpacity(0.1),
+      backgroundImage:
+          account.photoUrl.isNotEmpty ? NetworkImage(account.photoUrl) : null,
+      child: account.photoUrl.isEmpty
+          ? Text(
+              account.fullName.isNotEmpty
+                  ? account.fullName[0].toUpperCase()
+                  : '?',
+              style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: radius * 0.7))
+          : null,
     );
 
-    List<Widget> buttons;
-    switch (account.status) {
-      case VerificationStatus.pending:
-        buttons = [Expanded(child: reject), const SizedBox(width: 10), Expanded(child: approve)];
-        break;
-      case VerificationStatus.approved:
-        buttons = [Expanded(child: suspend)];
-        break;
-      case VerificationStatus.rejected:
-        buttons = [Expanded(child: approve)];
-        break;
-    }
-    return Row(children: buttons);
+Widget _statusChip(String label, Color color) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(label,
+          style: TextStyle(
+              fontSize: 10.5, color: color, fontWeight: FontWeight.w600)),
+    );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Details modal
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AstrologerDetailsSheet extends ConsumerWidget {
+  final AstrologerAccount account;
+  const _AstrologerDetailsSheet({required this.account});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final a = account;
+    final busy = ref.watch(adminActionsProvider).isLoading;
+    final approved = a.status == VerificationStatus.approved;
+    final hasCert = a.certFileName.trim().isNotEmpty;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (_, controller) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.scaffoldBg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 44,
+              height: 5,
+              decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(3)),
+            ),
+            Expanded(
+              child: ListView(
+                controller: controller,
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _avatar(a, 36),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(a.fullName.isEmpty ? '(no name)' : a.fullName,
+                                style: const TextStyle(
+                                    fontSize: 19,
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 6),
+                            if (approved)
+                              _statusChip('✅ Verified Astrologer',
+                                  AppColors.success)
+                            else
+                              _statusChip(a.status.label,
+                                  a.status == VerificationStatus.rejected
+                                      ? AppColors.error
+                                      : AppColors.warning),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  _info(Icons.email_outlined, 'Email', a.email),
+                  _info(Icons.phone_outlined, 'Mobile', a.mobile),
+                  _info(Icons.location_on_outlined, 'Location',
+                      _accountLocation(a)),
+                  _info(Icons.language_outlined, 'Languages',
+                      a.languages.isEmpty ? '—' : a.languages.join(', ')),
+                  _info(Icons.auto_awesome_outlined, 'Specializations',
+                      a.expertise.isEmpty ? '—' : a.expertise.join(', ')),
+                  _info(Icons.work_history_outlined, 'Experience',
+                      '${a.experienceYears} years'),
+                  _info(Icons.currency_rupee, 'Consultation Fee',
+                      '₹${a.consultationFee.toStringAsFixed(0)}'),
+                  _info(Icons.event_outlined, 'Registered',
+                      _fmtDate(a.createdAt)),
+                  const SizedBox(height: 14),
+                  const Text('📝 About',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: AppColors.primary)),
+                  const SizedBox(height: 6),
+                  Text(a.about.trim().isEmpty ? 'No description provided.' : a.about,
+                      style: const TextStyle(height: 1.5, fontSize: 13.5)),
+                  const SizedBox(height: 18),
+                  const Text('📄 Certificate',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: AppColors.primary)),
+                  const SizedBox(height: 8),
+                  _CertificateBlock(account: a, hasCert: hasCert),
+                  const SizedBox(height: 22),
+                  _sheetActions(context, ref, approved, busy),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  Widget _detail(String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
+  Widget _sheetActions(
+      BuildContext context, WidgetRef ref, bool approved, bool busy) {
+    if (approved) {
+      return Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: busy
+                  ? null
+                  : () async {
+                      await _confirmReject(context, ref, account,
+                          title: 'Suspend Astrologer',
+                          actionLabel: 'Suspend',
+                          successMsg: 'Astrologer suspended — hidden from users.');
+                      if (context.mounted) Navigator.pop(context);
+                    },
+              icon: const Icon(Icons.pause_circle_outline, size: 18),
+              label: const Text('Suspend'),
+              style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: const BorderSide(color: AppColors.error),
+                  minimumSize: const Size.fromHeight(48)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: busy
+                  ? null
+                  : () async {
+                      await _runAction(
+                          context,
+                          ref,
+                          () => ref
+                              .read(adminActionsProvider.notifier)
+                              .suspendAstrologer(account.id),
+                          'Verification removed — back to pending.');
+                      if (context.mounted) Navigator.pop(context);
+                    },
+              icon: const Icon(Icons.gpp_maybe_outlined, size: 18),
+              label: const Text('Remove Verification'),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.warning,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(48)),
+            ),
+          ),
+        ],
+      );
+    }
+    // Pending / rejected → Reject + Approve
+    final rejected = account.status == VerificationStatus.rejected;
+    return Row(
+      children: [
+        if (!rejected) ...[
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: busy
+                  ? null
+                  : () async {
+                      await _confirmReject(context, ref, account);
+                      if (context.mounted) Navigator.pop(context);
+                    },
+              icon: const Icon(Icons.close, size: 18),
+              label: const Text('Reject'),
+              style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: const BorderSide(color: AppColors.error),
+                  minimumSize: const Size.fromHeight(48)),
+            ),
+          ),
+          const SizedBox(width: 12),
+        ],
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: busy
+                ? null
+                : () async {
+                    await _runAction(
+                        context,
+                        ref,
+                        () => ref
+                            .read(adminActionsProvider.notifier)
+                            .approveAstrologer(account.id),
+                        'Astrologer approved & verified.');
+                    if (context.mounted) Navigator.pop(context);
+                  },
+            icon: const Icon(Icons.check, size: 18),
+            label: const Text('Approve'),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.success,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(48)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _info(IconData icon, String label, String value) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Icon(icon, size: 17, color: AppColors.primary),
+            const SizedBox(width: 10),
             SizedBox(
-                width: 92,
+                width: 104,
                 child: Text(label,
                     style: TextStyle(color: Colors.grey[600], fontSize: 12.5))),
             Expanded(
-                child: Text(value,
+                child: Text(value.trim().isEmpty ? '—' : value,
                     style: const TextStyle(
                         fontSize: 12.5, fontWeight: FontWeight.w500))),
           ],
         ),
       );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Certificate block + viewer
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CertificateBlock extends StatelessWidget {
+  final AstrologerAccount account;
+  final bool hasCert;
+  const _CertificateBlock({required this.account, required this.hasCert});
+
+  Future<void> _download(BuildContext context) async {
+    final uri = Uri.tryParse(account.certFileName);
+    if (uri == null) return;
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open the certificate link.')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!hasCert) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, size: 18, color: Colors.grey[500]),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'No certificate uploaded by this astrologer.',
+                style: TextStyle(color: Colors.grey[600], fontSize: 12.5),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    final certMeta = [
+      if (account.certName.isNotEmpty) account.certName,
+      if (account.certOrg.isNotEmpty) account.certOrg,
+      if (account.certNumber.isNotEmpty) 'No. ${account.certNumber}',
+    ].join(' · ');
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.description_outlined,
+                  color: AppColors.primary, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  certMeta.isEmpty ? 'Uploaded certificate' : certMeta,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => showDialog(
+                    context: context,
+                    builder: (_) => _CertificateViewer(
+                        url: account.certFileName, name: account.fullName),
+                  ),
+                  icon: const Icon(Icons.visibility_outlined, size: 18),
+                  label: const Text('View'),
+                  style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary)),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _download(context),
+                  icon: const Icon(Icons.download_outlined, size: 18),
+                  label: const Text('Download'),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Full-screen zoomable certificate viewer (image). For PDFs / non-image URLs
+/// the inline preview fails gracefully and the admin can open it externally.
+class _CertificateViewer extends StatelessWidget {
+  final String url;
+  final String name;
+  const _CertificateViewer({required this.url, required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog.fullscreen(
+      backgroundColor: Colors.black,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+          title: Text(name.isEmpty ? 'Certificate' : '$name · Certificate',
+              style: const TextStyle(fontSize: 15)),
+          actions: [
+            IconButton(
+              tooltip: 'Open / Download',
+              icon: const Icon(Icons.open_in_new),
+              onPressed: () async {
+                final uri = Uri.tryParse(url);
+                if (uri != null) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              },
+            ),
+          ],
+        ),
+        body: PhotoView(
+          imageProvider: NetworkImage(url),
+          backgroundDecoration: const BoxDecoration(color: Colors.black),
+          minScale: PhotoViewComputedScale.contained,
+          maxScale: PhotoViewComputedScale.covered * 4,
+          loadingBuilder: (_, __) => const Center(
+              child: CircularProgressIndicator(color: Colors.white)),
+          errorBuilder: (_, __, ___) => Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.picture_as_pdf_outlined,
+                    color: Colors.white54, size: 64),
+                const SizedBox(height: 12),
+                const Text(
+                  'Preview not available (file may be a PDF).',
+                  style: TextStyle(color: Colors.white70),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final uri = Uri.tryParse(url);
+                    if (uri != null) {
+                      await launchUrl(uri,
+                          mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  icon: const Icon(Icons.open_in_new),
+                  label: const Text('Open externally'),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
