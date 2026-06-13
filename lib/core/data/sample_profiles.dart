@@ -286,7 +286,7 @@ ProfileModel _build({
     isVerified: true,
     isFeatured: featured,
     isActive: true,
-    viewCount: 100 + (id.hashCode.abs() % 400),
+    viewCount: 0, // demo data only — real view counts come from Firestore
     createdAt: now,
     updatedAt: now,
   );

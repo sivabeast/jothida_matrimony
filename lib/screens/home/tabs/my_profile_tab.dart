@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/interest_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/subscription_provider.dart';
 
@@ -15,6 +16,30 @@ class MyProfileTab extends ConsumerWidget {
     final userAsync = ref.watch(authNotifierProvider);
     final profileAsync = ref.watch(myProfileProvider);
     final subAsync = ref.watch(activeSubscriptionProvider);
+
+    // Real interest/match counts from Firestore — never hardcoded. Both
+    // providers yield an empty list when signed-out or when there's no data,
+    // and we fall back to 0 on loading/error too, so the stats only ever show
+    // genuine counts (or 0).
+    final receivedAsync = ref.watch(receivedInterestsProvider);
+    final sentAsync = ref.watch(sentInterestsProvider);
+
+    // "Interests" = people who expressed interest in this user (received).
+    final interestsCount = receivedAsync.maybeWhen(
+      data: (list) => list.length,
+      orElse: () => 0,
+    );
+    // "Matches" = mutually-accepted connections: accepted interests this user
+    // received plus those they sent (the two sets are disjoint, so summing is
+    // correct).
+    final matchesCount = receivedAsync.maybeWhen(
+          data: (list) => list.where((i) => i.isAccepted).length,
+          orElse: () => 0,
+        ) +
+        sentAsync.maybeWhen(
+          data: (list) => list.where((i) => i.isAccepted).length,
+          orElse: () => 0,
+        );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -75,8 +100,8 @@ class MyProfileTab extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         _buildStat('Views', profile?.viewCount.toString() ?? '0'),
-                        _buildStat('Interests', '0'),
-                        _buildStat('Matches', '0'),
+                        _buildStat('Interests', interestsCount.toString()),
+                        _buildStat('Matches', matchesCount.toString()),
                       ],
                     ),
                     // Profile editing now lives on the Personal Details page
@@ -169,19 +194,24 @@ class MyProfileTab extends ConsumerWidget {
   }
 
   Widget _buildStatusChip(String status) {
-    Color color;
+    // No admin-approval step for normal users: once the profile is complete the
+    // account is ACTIVE. Legacy documents saved as 'pending' (before approval
+    // was removed) therefore also render as ACTIVE — no Firestore migration
+    // needed. Only explicit moderation states stay visually distinct.
+    final String label;
+    final Color color;
     switch (status) {
-      case 'approved':
-        color = Colors.green;
-        break;
-      case 'pending':
-        color = Colors.orange;
-        break;
       case 'rejected':
+        label = 'REJECTED';
+        color = Colors.red;
+        break;
+      case 'blocked':
+        label = 'BLOCKED';
         color = Colors.red;
         break;
       default:
-        color = Colors.grey;
+        label = 'ACTIVE';
+        color = Colors.green;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -191,7 +221,7 @@ class MyProfileTab extends ConsumerWidget {
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Text(
-        status.toUpperCase(),
+        label,
         style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
       ),
     );

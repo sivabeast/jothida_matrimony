@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/constants/app_constants.dart';
 import '../../models/astrologer_account_model.dart';
+import '../../models/astrologer_model.dart';
 import '../../models/astrologer_request_model.dart';
 
 /// Firestore CRUD + realtime streams for the astrologer side of the app:
@@ -54,6 +55,11 @@ class AstrologerService {
       .collection(AppConstants.astrologersCollection)
       .doc(uid)
       .update({...data, 'updatedAt': FieldValue.serverTimestamp()});
+
+  /// Replaces the embedded services list on the astrologer's account doc.
+  Future<void> updateServices(String uid, List<AstrologerService> services) =>
+      updateAccount(
+          uid, {'services': services.map((s) => s.toMap()).toList()});
 
   /// Approved astrologers visible to matrimony users.
   Stream<List<AstrologerAccount>> watchApprovedAstrologers() => _db

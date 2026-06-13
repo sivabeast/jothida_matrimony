@@ -203,7 +203,9 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
         'userId': userId,
         'photos': photoUrls,
         if (pdfUrl != null) 'horoscopeDetails.horoscopePdfUrl': pdfUrl,
-        'status': 'pending',
+        // Profiles are active immediately on completion — no admin approval
+        // step. ('rejected'/'blocked' remain available for moderation only.)
+        'status': 'approved',
         'isActive': true,
         'createdAt': DateTime.now(),
         'updatedAt': DateTime.now(),

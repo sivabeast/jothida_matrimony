@@ -1,23 +1,53 @@
 /// A service an astrologer offers, with its price (INR).
+///
+/// [durationMinutes] and [available] are optional and default safely, so older
+/// documents (and the user-facing browse, which only reads name/price/
+/// description) keep working unchanged.
 class AstrologerService {
   final String name;
   final int price;
   final String description;
+  final int durationMinutes; // typical session length, in minutes
+  final bool available; // whether the astrologer currently offers this service
 
   const AstrologerService({
     required this.name,
     required this.price,
     this.description = '',
+    this.durationMinutes = 30,
+    this.available = true,
   });
 
   factory AstrologerService.fromMap(Map<String, dynamic> m) => AstrologerService(
         name: m['name'] ?? '',
         price: m['price'] ?? 0,
         description: m['description'] ?? '',
+        durationMinutes: m['durationMinutes'] ?? 30,
+        available: m['available'] ?? true,
       );
 
-  Map<String, dynamic> toMap() =>
-      {'name': name, 'price': price, 'description': description};
+  Map<String, dynamic> toMap() => {
+        'name': name,
+        'price': price,
+        'description': description,
+        'durationMinutes': durationMinutes,
+        'available': available,
+      };
+
+  AstrologerService copyWith({
+    String? name,
+    int? price,
+    String? description,
+    int? durationMinutes,
+    bool? available,
+  }) =>
+      AstrologerService(
+        name: name ?? this.name,
+        price: price ?? this.price,
+        description: description ?? this.description,
+        durationMinutes: durationMinutes ?? this.durationMinutes,
+        available: available ?? this.available,
+      );
 }
 
 /// A short user review of an astrologer.

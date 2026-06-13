@@ -22,6 +22,21 @@ class ProfileViewScreen extends ConsumerStatefulWidget {
 class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
   int _photoIndex = 0;
 
+  /// Guards the one-time view-count increment for this screen instance.
+  bool _viewCounted = false;
+
+  /// Records a single profile view per screen-open, and never when the owner
+  /// views their own profile. This previously lived inside build(), so it fired
+  /// on every rebuild (photo swipes, scrolls, parent rebuilds) and also counted
+  /// self-views — which silently inflated viewCount into the hundreds.
+  void _recordViewOnce(ProfileModel profile) {
+    if (_viewCounted) return;
+    final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
+    if (myUid != null && myUid == profile.userId) return; // skip self-views
+    _viewCounted = true;
+    ref.read(profileRepositoryProvider).incrementViewCount(profile.id);
+  }
+
   Future<void> _sendInterest(ProfileModel profile) async {
     final userId = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
     if (userId == null) return;
@@ -61,8 +76,13 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
           if (profile == null) {
             return const Center(child: Text('Profile not found'));
           }
-          // Increment view count
-          ref.read(profileRepositoryProvider).incrementViewCount(profile.id);
+          // Record a single view after this frame — never mutate a provider
+          // during build. The guard inside _recordViewOnce ensures exactly one
+          // increment per screen-open and skips the owner's own visits.
+          if (!_viewCounted) {
+            WidgetsBinding.instance
+                .addPostFrameCallback((_) => _recordViewOnce(profile));
+          }
           return _buildProfileView(profile);
         },
       ),
