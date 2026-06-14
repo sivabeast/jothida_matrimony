@@ -1,0 +1,74 @@
+[
+  {
+    "id": "lag_mesha_lagnam",
+    "nameTamil": "மேஷ லக்னம்",
+    "nameEnglish": "Mesha Lagnam",
+    "order": 1
+  },
+  {
+    "id": "lag_rishaba_lagnam",
+    "nameTamil": "ரிஷப லக்னம்",
+    "nameEnglish": "Rishaba Lagnam",
+    "order": 2
+  },
+  {
+    "id": "lag_mithuna_lagnam",
+    "nameTamil": "மிதுன லக்னம்",
+    "nameEnglish": "Mithuna Lagnam",
+    "order": 3
+  },
+  {
+    "id": "lag_kadaga_lagnam",
+    "nameTamil": "கடக லக்னம்",
+    "nameEnglish": "Kadaga Lagnam",
+    "order": 4
+  },
+  {
+    "id": "lag_simma_lagnam",
+    "nameTamil": "சிம்ம லக்னம்",
+    "nameEnglish": "Simma Lagnam",
+    "order": 5
+  },
+  {
+    "id": "lag_kanni_lagnam",
+    "nameTamil": "கன்னி லக்னம்",
+    "nameEnglish": "Kanni Lagnam",
+    "order": 6
+  },
+  {
+    "id": "lag_thula_lagnam",
+    "nameTamil": "துல லக்னம்",
+    "nameEnglish": "Thula Lagnam",
+    "order": 7
+  },
+  {
+    "id": "lag_viruchiga_lagnam",
+    "nameTamil": "விருச்சிக லக்னம்",
+    "nameEnglish": "Viruchiga Lagnam",
+    "order": 8
+  },
+  {
+    "id": "lag_dhanusu_lagnam",
+    "nameTamil": "தனுசு லக்னம்",
+    "nameEnglish": "Dhanusu Lagnam",
+    "order": 9
+  },
+  {
+    "id": "lag_magara_lagnam",
+    "nameTamil": "மகர லக்னம்",
+    "nameEnglish": "Magara Lagnam",
+    "order": 10
+  },
+  {
+    "id": "lag_kumba_lagnam",
+    "nameTamil": "கும்ப லக்னம்",
+    "nameEnglish": "Kumba Lagnam",
+    "order": 11
+  },
+  {
+    "id": "lag_meena_lagnam",
+    "nameTamil": "மீன லக்னம்",
+    "nameEnglish": "Meena Lagnam",
+    "order": 12
+  }
+]

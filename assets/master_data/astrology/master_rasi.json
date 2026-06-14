@@ -1,0 +1,74 @@
+[
+  {
+    "id": "rasi_mesham",
+    "nameTamil": "மேஷம்",
+    "nameEnglish": "Mesham",
+    "order": 1
+  },
+  {
+    "id": "rasi_rishabam",
+    "nameTamil": "ரிஷபம்",
+    "nameEnglish": "Rishabam",
+    "order": 2
+  },
+  {
+    "id": "rasi_mithunam",
+    "nameTamil": "மிதுனம்",
+    "nameEnglish": "Mithunam",
+    "order": 3
+  },
+  {
+    "id": "rasi_kadagam",
+    "nameTamil": "கடகம்",
+    "nameEnglish": "Kadagam",
+    "order": 4
+  },
+  {
+    "id": "rasi_simmam",
+    "nameTamil": "சிம்மம்",
+    "nameEnglish": "Simmam",
+    "order": 5
+  },
+  {
+    "id": "rasi_kanni",
+    "nameTamil": "கன்னி",
+    "nameEnglish": "Kanni",
+    "order": 6
+  },
+  {
+    "id": "rasi_thulam",
+    "nameTamil": "துலாம்",
+    "nameEnglish": "Thulam",
+    "order": 7
+  },
+  {
+    "id": "rasi_viruchigam",
+    "nameTamil": "விருச்சிகம்",
+    "nameEnglish": "Viruchigam",
+    "order": 8
+  },
+  {
+    "id": "rasi_dhanusu",
+    "nameTamil": "தனுசு",
+    "nameEnglish": "Dhanusu",
+    "order": 9
+  },
+  {
+    "id": "rasi_magaram",
+    "nameTamil": "மகரம்",
+    "nameEnglish": "Magaram",
+    "order": 10
+  },
+  {
+    "id": "rasi_kumbam",
+    "nameTamil": "கும்பம்",
+    "nameEnglish": "Kumbam",
+    "order": 11
+  },
+  {
+    "id": "rasi_meenam",
+    "nameTamil": "மீனம்",
+    "nameEnglish": "Meenam",
+    "order": 12
+  }
+]

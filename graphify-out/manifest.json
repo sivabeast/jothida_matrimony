@@ -135,8 +135,8 @@
     "semantic_hash": ""
   },
   "lib/models/profile_model.dart": {
-    "mtime": 1781453818.9275067,
-    "ast_hash": "623cec833d81d1bdb8d771b382b5353a",
+    "mtime": 1781460299.2427752,
+    "ast_hash": "8bee150cd27facc0fe5dbefe14c8adc7",
     "semantic_hash": ""
   },
   "lib/models/report_model.dart": {
@@ -245,8 +245,8 @@
     "semantic_hash": ""
   },
   "lib/router/app_router.dart": {
-    "mtime": 1781453868.5788689,
-    "ast_hash": "4bd53de3aaa58624dc69797bf81f3a50",
+    "mtime": 1781455289.3859098,
+    "ast_hash": "8e92e9a6acc5a338a015f58356e42a92",
     "semantic_hash": ""
   },
   "lib/screens/admin/admin_approvals_screen.dart": {
@@ -405,8 +405,8 @@
     "semantic_hash": ""
   },
   "lib/screens/profile/steps/step3_horoscope.dart": {
-    "mtime": 1781114727.2297761,
-    "ast_hash": "1f7d635bde095b0431052afaff028425",
+    "mtime": 1781459226.5374703,
+    "ast_hash": "f01ef49490162afebef3289d26542a28",
     "semantic_hash": ""
   },
   "lib/screens/profile/steps/step4_family.dart": {
@@ -525,8 +525,8 @@
     "semantic_hash": ""
   },
   "pubspec.yaml": {
-    "mtime": 1781450482.342419,
-    "ast_hash": "b88d8c7b0ef2eba5967cfc5d4ae1c9cc",
+    "mtime": 1781459001.353978,
+    "ast_hash": "6a83cb633991b7233c19c5e1115dd8df",
     "semantic_hash": ""
   },
   "android/app/build.gradle": {
@@ -535,7 +535,7 @@
     "semantic_hash": ""
   },
   "android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java": {
-    "mtime": 1781453918.5640259,
+    "mtime": 1781460435.8313124,
     "ast_hash": "957f3f4fa91953a90f2d9690762329f7",
     "semantic_hash": ""
   },
@@ -865,13 +865,13 @@
     "semantic_hash": ""
   },
   "lib/screens/horoscope/horoscope_details_screen.dart": {
-    "mtime": 1781453881.5180318,
-    "ast_hash": "cf0f13cff5a07ad697c21878fd379c3f",
+    "mtime": 1781460396.5336704,
+    "ast_hash": "7140fc8f61eec29223b2750c8a60e189",
     "semantic_hash": ""
   },
   "lib/screens/interests/interests_center_screen.dart": {
-    "mtime": 1781453912.1860888,
-    "ast_hash": "13a2233a9c8eb547586b88b6634c90af",
+    "mtime": 1781455296.938787,
+    "ast_hash": "565d32c9fcd25c4da5e2bc87fbdda200",
     "semantic_hash": ""
   },
   "lib/screens/legal/privacy_policy_screen.dart": {
@@ -1062,6 +1062,66 @@
   "lib/screens/horoscope/member_horoscope_screen.dart": {
     "mtime": 1781453854.036274,
     "ast_hash": "2685aaff368a606b6f69853a3cfae49e",
+    "semantic_hash": ""
+  },
+  "lib/core/services/porutham_match.dart": {
+    "mtime": 1781455236.0089395,
+    "ast_hash": "6af5a2826ef782e55d88562b08d65f96",
+    "semantic_hash": ""
+  },
+  "lib/screens/horoscope/horoscope_match_screen.dart": {
+    "mtime": 1781455273.5229483,
+    "ast_hash": "bd8cb15154bc1422ce139bcbc4a4a2ce",
+    "semantic_hash": ""
+  },
+  "master_data/astrology/master_nakshatra_compatibility.json": {
+    "mtime": 1781456260.818975,
+    "ast_hash": "85fb4af6cedcb698b8d6a756f73b2811",
+    "semantic_hash": ""
+  },
+  "tool/generate_nakshatra_compatibility.dart": {
+    "mtime": 1781456252.7368162,
+    "ast_hash": "8cbb75cd9e0afc95be307fd3b73b6107",
+    "semantic_hash": ""
+  },
+  "master_data/astrology/NAKSHATRA_COMPATIBILITY_README.md": {
+    "mtime": 1781456342.5487003,
+    "ast_hash": "1b5be8d613f25d669bf2b3a008acc0f9",
+    "semantic_hash": ""
+  },
+  "assets/master_data/astrology/master_lagnam.json": {
+    "mtime": 1781458951.491312,
+    "ast_hash": "cb70b5c2b61cdb3c1bc6cb5bca415b39",
+    "semantic_hash": ""
+  },
+  "assets/master_data/astrology/master_nakshatra.json": {
+    "mtime": 1781458951.4893098,
+    "ast_hash": "4668962a7f55d5d771bb2ff1181d9b6b",
+    "semantic_hash": ""
+  },
+  "assets/master_data/astrology/master_rasi.json": {
+    "mtime": 1781458951.4862964,
+    "ast_hash": "c04bfa7df572beda5ab74e918b448f61",
+    "semantic_hash": ""
+  },
+  "lib/core/services/astrology_engine.dart": {
+    "mtime": 1781459039.109313,
+    "ast_hash": "75405e72c3d14d1106da8a880d673477",
+    "semantic_hash": ""
+  },
+  "lib/core/services/horoscope_calculation_service.dart": {
+    "mtime": 1781459829.3317454,
+    "ast_hash": "f0900951a3ddd9f1d36abc44b5ab4306",
+    "semantic_hash": ""
+  },
+  "lib/core/services/horoscope_geocoding_service.dart": {
+    "mtime": 1781459047.8730295,
+    "ast_hash": "41c2ba82b6610567c6b0fcc8a42406ee",
+    "semantic_hash": ""
+  },
+  "lib/core/services/master_astrology_data.dart": {
+    "mtime": 1781459017.738981,
+    "ast_hash": "e6bd88d362a613a5b258f1eec6c80f2f",
     "semantic_hash": ""
   }
 }

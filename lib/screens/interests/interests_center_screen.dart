@@ -313,15 +313,16 @@ class _InterestCard extends ConsumerWidget {
             const SizedBox(width: 10),
             Expanded(
               child: ElevatedButton.icon(
-                // Accepted → horoscope unlocked. Both members of a mutually
-                // accepted interest can view each other's horoscope (read from
-                // the public profile doc — no premium / compatibility gate).
+                // Accepted → opens the Horoscope Match Result page. It compares
+                // the logged-in user's horoscope with this member's horoscope
+                // and shows the compatibility (porutham) analysis only — the
+                // member's raw horoscope fields are never revealed.
                 onPressed: () {
                   if (otherUserId.isEmpty) {
-                    _snack(context, 'Horoscope unavailable for this match.');
+                    _snack(context, 'Horoscope match unavailable for this member.');
                     return;
                   }
-                  context.push('/horoscope-user/$otherUserId');
+                  context.push('/horoscope-match/$otherUserId');
                 },
                 icon: const Icon(Icons.auto_awesome, size: 18),
                 label: const Text('Horoscope'),

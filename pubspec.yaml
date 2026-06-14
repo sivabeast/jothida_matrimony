@@ -68,6 +68,11 @@ dependencies:
   geocoding: ^3.0.0
   fluttertoast: ^8.2.10
   dropdown_search: ^5.0.6
+  # ── Vedic astrology engine (Swiss Ephemeris via FFI) ──
+  # Used by AstrologyEngine to compute Rasi / Nakshatra / Lagnam. We use the
+  # built-in Moshier mode (SEFLG_MOSEPH) so NO ephemeris data files need to be
+  # bundled. Native build — verify on a real device after `flutter pub get`.
+  sweph: ^2.10.0
 
 dev_dependencies:
   flutter_test:
@@ -97,6 +102,7 @@ flutter:
     - assets/icons/
     - assets/master_data/
     - assets/master_data/location/
+    - assets/master_data/astrology/
     - .env
 
   fonts:
