@@ -166,6 +166,17 @@ class FirestoreService {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
+  /// Keeps the denormalized `users/{uid}.photoUrl` in sync with the profile
+  /// photo so the home header, chats and anywhere else reading it show the same
+  /// image. Pass null to clear it (photo removed).
+  Future<void> updateUserPhoto(String uid, String? url) => _db
+      .collection(AppConstants.usersCollection)
+      .doc(uid)
+      .set({
+        'photoUrl': url,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
   // ── Profiles ──────────────────────────────────────────────────────────────
   Future<String> createProfile(ProfileModel profile) async {
     final doc = _db.collection(AppConstants.profilesCollection).doc();
@@ -232,15 +243,20 @@ class FirestoreService {
     DocumentSnapshot? lastDoc,
     int limit = 20,
   }) async {
-    // Single-field equality (gender) ONLY. This uses Firestore's automatic
-    // index, so the query can never fail with "requires a composite index" —
-    // which previously threw and blanked the entire feed. Everything else
-    // (status, isActive, isMarried, self, age, city, …) is filtered
-    // client-side in DiscoverNotifier so freshly-created (pending) profiles are
-    // discoverable immediately, without waiting for admin approval.
+    // These server-side filters MUST mirror the `profiles` security rule, which
+    // only allows reading another user's profile when
+    // status == 'approved' && isActive == true. Firestore rejects a query with
+    // permission-denied unless its filters guarantee every matched document is
+    // readable — so filtering by gender ALONE (the old behaviour) made the whole
+    // Matches feed fail to load. All three are equality filters, so they need
+    // only Firestore's automatic single-field indexes (NO composite index).
+    // Remaining rules (self, married, age, city, …) are applied client-side in
+    // DiscoverNotifier.
     final snap = await _db
         .collection(AppConstants.profilesCollection)
         .where('gender', isEqualTo: gender)
+        .where('status', isEqualTo: 'approved')
+        .where('isActive', isEqualTo: true)
         .limit(limit)
         .get();
     final list = snap.docs.map((d) => ProfileModel.fromFirestore(d)).toList();

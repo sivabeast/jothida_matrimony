@@ -58,7 +58,11 @@ class CloudinaryStorageService implements StorageService {
       file: file,
       resourceType: 'image',
       folder: 'jothida_matrimony/profiles/$userId/photos',
-      publicId: 'photo_$index',
+      // Unique per upload (timestamp suffix) so replacing the profile photo
+      // ALWAYS yields a new secure_url. With a fixed public_id the URL stayed
+      // identical, and Flutter's image cache kept serving the OLD photo — so
+      // changing the photo appeared to do nothing.
+      publicId: 'photo_${index}_${DateTime.now().millisecondsSinceEpoch}',
       onProgress: onProgress,
     );
   }
@@ -135,11 +139,10 @@ class CloudinaryStorageService implements StorageService {
     required int index,
     void Function(double progress)? onProgress,
   }) {
-    // Re-uploading with the same folder/public_id replaces the asset as long
-    // as the upload preset has "Unique filename" off and "Overwrite" on
-    // (Cloudinary console → Upload presets → matrimony_profiles). The
-    // returned secure_url includes a fresh `version` segment, so callers
-    // should overwrite the stored URL (no extra cache-busting needed).
+    // Delegates to [uploadProfilePhoto], which uses a UNIQUE public_id per
+    // upload — so each replacement returns a brand-new secure_url that can
+    // never collide with the cached previous image (no dependency on the
+    // preset's overwrite setting).
     return uploadProfilePhoto(userId: userId, file: file, index: index, onProgress: onProgress);
   }
 

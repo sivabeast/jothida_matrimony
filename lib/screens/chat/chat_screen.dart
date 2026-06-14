@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
@@ -43,9 +44,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       await ref.read(chatControllerProvider).sendMessage(widget.threadId, text);
       _controller.clear();
     } catch (e) {
+      debugPrint('[ChatScreen] send failed: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not send: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Message couldn\'t be sent. Please try again.')),
+        );
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -92,8 +95,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             child: messagesAsync.when(
               loading: () =>
                   const Center(child: CircularProgressIndicator()),
-              error: (e, _) =>
-                  Center(child: Text('Could not load messages: $e')),
+              error: (e, _) {
+                debugPrint('[ChatScreen] messages error: $e');
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'Messages couldn\'t be loaded right now.\nPlease try again in a moment.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ),
+                );
+              },
               data: (messages) {
                 if (messages.isEmpty) {
                   return Center(

@@ -418,7 +418,13 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
         isLoading: false,
         hasMore: false,
       );
-    } catch (e) {
+    } on FirebaseException catch (e, st) {
+      // Log the REAL cause (e.g. permission-denied, failed-precondition) so the
+      // root issue is visible in logs instead of a silent generic error.
+      debugPrint('[Discover] Firestore error ${e.code}: ${e.message}\n$st');
+      state = state.copyWith(isLoading: false, error: e.code);
+    } catch (e, st) {
+      debugPrint('[Discover] load failed: $e\n$st');
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }

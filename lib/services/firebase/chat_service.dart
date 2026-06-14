@@ -36,11 +36,26 @@ class ChatService {
     return threadId;
   }
 
+  /// Threads for [uid], most-recent activity first.
+  ///
+  /// Intentionally a single `arrayContains` filter with NO server-side
+  /// `orderBy`. Combining `arrayContains` with `orderBy('lastMessageAt')`
+  /// requires a composite Firestore index; until that index exists the query
+  /// throws `failed-precondition` and the entire Chats list errors out. We sort
+  /// by `lastMessageAt` client-side instead, so the list ALWAYS loads — with or
+  /// without the composite index. (The index is still declared in
+  /// firestore.indexes.json for server-side ordering at scale.)
   Stream<List<ChatThread>> watchThreads(String uid) => _chats
       .where('participantIds', arrayContains: uid)
-      .orderBy('lastMessageAt', descending: true)
       .snapshots()
-      .map((s) => s.docs.map(ChatThread.fromFirestore).toList());
+      .map((s) {
+        final threads = s.docs.map(ChatThread.fromFirestore).toList();
+        threads.sort((a, b) =>
+            (b.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0))
+                .compareTo(
+                    a.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0)));
+        return threads;
+      });
 
   Stream<ChatThread?> watchThread(String threadId) => _chats
       .doc(threadId)

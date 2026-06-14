@@ -315,7 +315,15 @@ class _ProfilePhotoAvatarState extends ConsumerState<_ProfilePhotoAvatar> {
       await ref
           .read(profileRepositoryProvider)
           .updateProfile(profile.id, {'profilePhotoUrl': url});
+      // Keep the denormalized users/{uid}.photoUrl in sync so the new image
+      // also shows in the home header, chats and elsewhere that reads it.
+      await ref
+          .read(firestoreServiceProvider)
+          .updateUserPhoto(profile.userId, url);
+      // Both providers are one-shot (FutureProvider) — invalidate so every
+      // screen re-reads the updated photo immediately.
       ref.invalidate(myProfileProvider);
+      ref.invalidate(currentUserProvider);
     }
   }
 
@@ -406,7 +414,8 @@ class _ProfilePhotoAvatarState extends ConsumerState<_ProfilePhotoAvatar> {
   void _showOptions() {
     final profile = widget.profile;
     if (profile == null) return;
-    final hasPhoto = profile.photos.isNotEmpty;
+    final photoUrl = profile.profilePhotoUrl ?? '';
+    final hasPhoto = photoUrl.isNotEmpty;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -424,7 +433,7 @@ class _ProfilePhotoAvatarState extends ConsumerState<_ProfilePhotoAvatar> {
                 title: const Text('View Photo'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  _viewPhoto(profile.photos.first);
+                  _viewPhoto(photoUrl);
                 },
               ),
             ListTile(
@@ -457,7 +466,10 @@ class _ProfilePhotoAvatarState extends ConsumerState<_ProfilePhotoAvatar> {
   @override
   Widget build(BuildContext context) {
     final profile = widget.profile;
-    final hasPhoto = profile?.photos.isNotEmpty ?? false;
+    // Use the dedicated profile photo (not the gallery list) so removing it
+    // always falls back to the placeholder, even if gallery photos exist.
+    final photoUrl = profile?.profilePhotoUrl ?? '';
+    final hasPhoto = photoUrl.isNotEmpty;
     return GestureDetector(
       onTap: profile == null ? null : _showOptions,
       child: Stack(
@@ -465,8 +477,7 @@ class _ProfilePhotoAvatarState extends ConsumerState<_ProfilePhotoAvatar> {
           CircleAvatar(
             radius: 52,
             backgroundColor: AppColors.primary.withOpacity(0.1),
-            backgroundImage:
-                hasPhoto ? NetworkImage(profile!.photos.first) : null,
+            backgroundImage: hasPhoto ? NetworkImage(photoUrl) : null,
             child: hasPhoto
                 ? null
                 : const Icon(Icons.person, size: 52, color: AppColors.primary),

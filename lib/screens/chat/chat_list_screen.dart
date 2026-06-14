@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -23,23 +24,24 @@ class ChatListScreen extends ConsumerWidget {
       ),
       body: threadsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Could not load chats: $e')),
+        // Never surface the raw Firebase error (e.g. a missing-index
+        // failed-precondition) to users — log it and show a friendly state
+        // with a retry instead.
+        error: (e, _) {
+          debugPrint('[ChatListScreen] threads error: $e');
+          return _ChatsPlaceholder(
+            icon: Icons.cloud_off_rounded,
+            title: 'Couldn\'t load your chats',
+            subtitle: 'Please check your connection and try again.',
+            onRetry: () => ref.invalidate(myChatThreadsProvider),
+          );
+        },
         data: (threads) {
           if (threads.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.chat_bubble_outline,
-                      size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 12),
-                  const Text('No conversations yet'),
-                  const SizedBox(height: 4),
-                  Text('Start a chat from any profile card',
-                      style:
-                          TextStyle(color: Colors.grey[500], fontSize: 13)),
-                ],
-              ),
+            return const _ChatsPlaceholder(
+              icon: Icons.chat_bubble_outline,
+              title: 'No conversations yet',
+              subtitle: 'Send or receive an interest to start chatting.',
             );
           }
           return ListView.separated(
@@ -121,5 +123,61 @@ class _ThreadTile extends StatelessWidget {
     if (diff.inHours < 1) return '${diff.inMinutes}m';
     if (diff.inDays < 1) return '${diff.inHours}h';
     return '${t.day}/${t.month}';
+  }
+}
+
+/// Friendly, reusable placeholder for the Chats list — used for both the empty
+/// state and any load error, so a raw Firestore error is never shown to users.
+class _ChatsPlaceholder extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onRetry;
+
+  const _ChatsPlaceholder({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 14),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style:
+                  const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(height: 18),
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Try again'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
