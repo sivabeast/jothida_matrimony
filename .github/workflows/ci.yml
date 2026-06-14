@@ -2,10 +2,13 @@ name: Jothida Matrimony CI/CD
 
 on:
   push:
-    branches: [main, develop]
+    branches:
+      - main
+      - develop
+      - feat/**
   pull_request:
-    branches: [main]
-
+    branches:
+      - main
 jobs:
   build:
     runs-on: ubuntu-latest
