@@ -180,26 +180,27 @@ class FirestoreService {
   // ── Profiles ──────────────────────────────────────────────────────────────
   Future<String> createProfile(ProfileModel profile) async {
     final doc = _db.collection(AppConstants.profilesCollection).doc();
-    final batch = _db.batch();
-    // Public profile — note ProfileModel.toFirestore() no longer includes
-    // contact details.
-    batch.set(doc, profile.copyWith().toFirestore());
-    // Contact details go into the access-gated `contacts/{userId}` collection
-    // so they are never exposed by profile browsing.
+    // 1) Save the public profile FIRST. ProfileModel.toFirestore() no longer
+    //    includes contact details. This write succeeds under the standard
+    //    profile-create rule, so onboarding can never be blocked by the
+    //    separate contact write below.
+    await doc.set(profile.copyWith().toFirestore());
+
+    // 2) Store contact details in the access-gated `contacts/{userId}`
+    //    collection. This is intentionally NON-FATAL: if the `contacts`
+    //    security rule hasn't been deployed yet (firebase deploy --only
+    //    firestore:rules), the write is denied — but the profile must still
+    //    save, so we log and continue instead of failing the whole save.
     if (profile.userId.isNotEmpty &&
         (profile.contact.mobileNumber.isNotEmpty ||
             (profile.contact.whatsappNumber ?? '').isNotEmpty)) {
-      batch.set(
-        _db.collection(AppConstants.contactsCollection).doc(profile.userId),
-        {
-          ...profile.contact.toMap(),
-          'userId': profile.userId,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+      try {
+        await saveContact(profile.userId, profile.contact);
+      } catch (e) {
+        debugPrint('[FirestoreService] contact save skipped ($e). '
+            'Deploy firestore.rules to enable the contacts collection.');
+      }
     }
-    await batch.commit();
     return doc.id;
   }
 
@@ -324,15 +325,25 @@ class FirestoreService {
   /// connection-create against the *committed* interest, so the interest must
   /// already be 'accepted' before the connection is written.
   Future<void> acceptInterestAndConnect(InterestModel interest) async {
+    // Accepting the interest is the important part and must always succeed.
     await updateInterestStatus(interest.id, AppConstants.interestAccepted);
     final a = interest.senderId;
     final b = interest.receiverId;
     final pair = a.compareTo(b) < 0 ? '${a}_$b' : '${b}_$a';
-    await _db.collection(AppConstants.connectionsCollection).doc(pair).set({
-      'uids': [a, b],
-      'interestId': interest.id,
-      'createdAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    // Recording the connection (which unlocks contact details) is NON-FATAL:
+    // if the `connections` security rule hasn't been deployed yet the write is
+    // denied, but the acceptance itself must not fail. Contact simply stays
+    // locked until firestore.rules is deployed.
+    try {
+      await _db.collection(AppConstants.connectionsCollection).doc(pair).set({
+        'uids': [a, b],
+        'interestId': interest.id,
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('[FirestoreService] connection write skipped ($e). '
+          'Deploy firestore.rules to enable contact unlock.');
+    }
   }
 
   // ── Contacts (gated phone / WhatsApp) ──────────────────────────────────────
