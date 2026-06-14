@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/interest_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/common/contact_reveal_card.dart';
 import '../../widgets/common/gradient_button.dart';
 
 class ProfileViewScreen extends ConsumerStatefulWidget {
@@ -62,6 +63,98 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
 
   void _reportProfile(ProfileModel profile) {
     context.push('/report/${profile.id}');
+  }
+
+  void _showContact(ProfileModel profile) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ContactRevealCard(
+                otherUserId: profile.userId, otherName: profile.name),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Status-aware bottom action. Source of truth is the real Firestore interest
+  /// status, so an accepted interest never shows "Send Interest" again.
+  Widget _interestAction(ProfileModel profile) {
+    final accepted = ref.watch(isInterestAcceptedProvider(profile.id));
+    final alreadySent =
+        ref.watch(hasSentInterestToProfileProvider(profile.id));
+
+    if (accepted) {
+      return Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.check_circle, color: Colors.green, size: 18),
+                SizedBox(width: 8),
+                Text('Interest accepted',
+                    style: TextStyle(
+                        color: Colors.green, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _showContact(profile),
+              icon: const Icon(Icons.call),
+              label: const Text('View Contact'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(52),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (alreadySent) {
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: null,
+          icon: const Icon(Icons.check_circle),
+          label: const Text('Interest Sent'),
+          style: ElevatedButton.styleFrom(
+            disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
+            disabledForegroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(52),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: GradientButton(
+        onPressed: () => _sendInterest(profile),
+        text: 'Send Interest',
+      ),
+    );
   }
 
   @override
@@ -203,16 +296,10 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                   _InfoItem(Icons.place_outlined, 'Birth Place', profile.horoscopeDetails.birthPlace),
                 ]),
                 const SizedBox(height: 32),
-                // Action: Send Interest only. (Porutham Analysis removed —
-                // compatibility lives in Match Details, deeper analysis via
-                // Connect Astrologer.)
-                SizedBox(
-                  width: double.infinity,
-                  child: GradientButton(
-                    onPressed: () => _sendInterest(profile),
-                    text: 'Send Interest',
-                  ),
-                ),
+                // Status-aware action: accepted → View Contact (never "Send
+                // Interest" again); pending → "Interest Sent"; otherwise the
+                // Send Interest button.
+                _interestAction(profile),
                 const SizedBox(height: 32),
               ],
             ),

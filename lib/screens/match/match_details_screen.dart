@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/services/compatibility.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
+import '../../providers/interest_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/requests_provider.dart';
 import '../../widgets/common/contact_reveal_card.dart';
@@ -43,7 +44,11 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen>
   Widget build(BuildContext context) {
     final otherAsync = ref.watch(profileByIdProvider(widget.profileId));
     final me = ref.watch(myProfileProvider).valueOrNull;
-    final isMatched = ref.watch(isMatchedProvider(widget.profileId));
+    // Unlocked when the two users have a mutually-accepted interest. Source of
+    // truth is the REAL Firestore interest status (isInterestAcceptedProvider);
+    // the demo isMatchedProvider is kept only for demo-mode sample profiles.
+    final isMatched = ref.watch(isInterestAcceptedProvider(widget.profileId)) ||
+        ref.watch(isMatchedProvider(widget.profileId));
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
@@ -95,7 +100,9 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen>
   // Shown when the two users have not yet mutually accepted.
   Widget _lockedView(BuildContext context) {
     final other = ref.watch(profileByIdProvider(widget.profileId)).valueOrNull;
-    final alreadySent = ref.watch(hasSentInterestProvider(widget.profileId));
+    final alreadySent =
+        ref.watch(hasSentInterestToProfileProvider(widget.profileId)) ||
+            ref.watch(hasSentInterestProvider(widget.profileId));
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(28),
@@ -124,17 +131,9 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen>
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: alreadySent
-                    ? null
-                    : () {
-                        ref
-                            .read(requestsProvider.notifier)
-                            .sendInterest(widget.profileId);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Interest sent')),
-                        );
-                      },
-                icon: Icon(alreadySent ? Icons.check : Icons.favorite, size: 18),
+                onPressed: alreadySent ? null : () => _sendInterest(other),
+                icon: Icon(alreadySent ? Icons.check_circle : Icons.favorite,
+                    size: 18),
                 label: Text(alreadySent ? 'Interest Sent' : 'Send Interest'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -154,6 +153,33 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen>
         ),
       ),
     );
+  }
+
+  /// Sends an interest via the REAL Firestore flow (same path as the Matches
+  /// card). The deterministic interest id prevents duplicates.
+  Future<void> _sendInterest(ProfileModel? other) async {
+    final me = ref.read(myProfileProvider).valueOrNull;
+    if (me == null || other == null) {
+      _showSnack('Create your profile first to send interest');
+      return;
+    }
+    try {
+      await ref.read(interestNotifierProvider.notifier).sendInterest(
+            senderId: me.userId,
+            receiverId: other.userId,
+            senderProfileId: me.id,
+            receiverProfileId: other.id,
+          );
+      if (mounted) _showSnack('Interest sent');
+    } catch (_) {
+      if (mounted) _showSnack('Could not send interest. Please try again.');
+    }
+  }
+
+  void _showSnack(String m) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(m)));
   }
 
   // ── Compact header: [ photo ]  [ % ]  [ photo ] in a single short row ───

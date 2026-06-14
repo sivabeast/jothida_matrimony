@@ -295,7 +295,7 @@ class _InterestCard extends ConsumerWidget {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () => context.push('/match/$otherProfileId'),
+                onPressed: () => context.push('/profile/$otherProfileId'),
                 icon: const Icon(Icons.person_outline, size: 18),
                 label: const Text('View Profile'),
                 style: OutlinedButton.styleFrom(

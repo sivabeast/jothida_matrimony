@@ -57,3 +57,27 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
 
 final interestNotifierProvider =
     NotifierProvider<InterestNotifier, AsyncValue<void>>(() => InterestNotifier());
+
+/// True when there is an ACCEPTED interest between the signed-in user and the
+/// profile [profileId], in EITHER direction (I accepted theirs, or they
+/// accepted mine). Drives profile / compatibility / contact unlock on the
+/// Match Details screen — the source of truth is the Firestore `interests`
+/// status, NOT the in-memory demo store.
+final isInterestAcceptedProvider =
+    Provider.autoDispose.family<bool, String>((ref, profileId) {
+  final sent =
+      ref.watch(sentInterestsProvider).valueOrNull ?? const <InterestModel>[];
+  final received =
+      ref.watch(receivedInterestsProvider).valueOrNull ?? const <InterestModel>[];
+  return sent.any((i) => i.receiverProfileId == profileId && i.isAccepted) ||
+      received.any((i) => i.senderProfileId == profileId && i.isAccepted);
+});
+
+/// True if the signed-in user has already sent an interest to [profileId]
+/// (any status). Prevents asking them to send a duplicate.
+final hasSentInterestToProfileProvider =
+    Provider.autoDispose.family<bool, String>((ref, profileId) {
+  final sent =
+      ref.watch(sentInterestsProvider).valueOrNull ?? const <InterestModel>[];
+  return sent.any((i) => i.receiverProfileId == profileId);
+});
