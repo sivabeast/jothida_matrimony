@@ -19,6 +19,11 @@ class ProfileRepository {
 
   Future<ProfileModel?> getProfileByUserId(String userId) => _firestore.getProfileByUserId(userId);
 
+  /// Another user's PUBLIC profile by UID (approved + active only) — safe to
+  /// query for non-owners. See [FirestoreService.getApprovedProfileByUserId].
+  Future<ProfileModel?> getApprovedProfileByUserId(String userId) =>
+      _firestore.getApprovedProfileByUserId(userId);
+
   Stream<ProfileModel?> watchProfile(String profileId) => _firestore.watchProfile(profileId);
 
   Future<List<ProfileModel>> searchProfiles({
@@ -31,7 +36,7 @@ class ProfileRepository {
     String? nakshatra,
     String? city,
     DocumentSnapshot? lastDoc,
-    int limit = 20,
+    int limit = 60,
   }) =>
       _firestore.searchProfiles(
         gender: gender,

@@ -37,6 +37,31 @@ final profileByIdProvider =
   return ref.watch(profileRepositoryProvider).watchProfile(profileId);
 });
 
+/// Look up another user's PUBLIC profile by their owner USER id (UID).
+///
+/// Prefer this over [profileByIdProvider] whenever a reliable UID is available
+/// — e.g. an accepted interest's `senderId` / `receiverId`. The interest stores
+/// the two users' UIDs, which always identify the right profile; a profile
+/// *document* id copied into another record can be stale or missing, which is
+/// why opening an accepted match by document id failed to load.
+///
+/// Uses [ProfileRepository.getApprovedProfileByUserId], which filters
+/// userId + status == 'approved' + isActive — exactly mirroring the `profiles`
+/// read rule's public path so the query is permitted (a userId-only query is
+/// rejected with permission-denied for non-owners). An accepted match is, by
+/// definition, an approved & active profile, so it resolves correctly.
+final profileByUserIdProvider =
+    FutureProvider.autoDispose.family<ProfileModel?, String>((ref, userId) {
+  if (kBypassAuth) {
+    final all = ref.watch(demoProfilesProvider); // stays reactive to the store
+    for (final p in all) {
+      if (p.userId == userId) return Future.value(p);
+    }
+    return Future.value(null);
+  }
+  return ref.watch(profileRepositoryProvider).getApprovedProfileByUserId(userId);
+});
+
 /// Another user's gated contact details, keyed by their USER id.
 ///
 /// Resolves to the contact only when it is unlocked for the caller (owner /

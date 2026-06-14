@@ -183,11 +183,13 @@ class _InterestCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final amSender = interest.senderId == myUid;
-    final otherProfileId =
-        amSender ? interest.receiverProfileId : interest.senderProfileId;
     final otherUserId = amSender ? interest.receiverId : interest.senderId;
 
-    final profile = ref.watch(profileByIdProvider(otherProfileId)).valueOrNull;
+    // Resolve the other person's profile by their USER id (UID). The interest's
+    // senderId / receiverId always identify the right account, whereas a stored
+    // profile-document id can be stale or missing — which is what made "View
+    // Profile" fail to load on accepted matches.
+    final profile = ref.watch(profileByUserIdProvider(otherUserId)).valueOrNull;
     final name = profile?.name ?? 'Member';
     final age = profile?.age ?? 0;
     final location = profile == null
@@ -249,15 +251,14 @@ class _InterestCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
-          _actions(context, ref, otherProfileId, otherUserId, name,
-              profile?.contact),
+          _actions(context, ref, otherUserId, name, profile?.contact),
         ],
       ),
     );
   }
 
-  Widget _actions(BuildContext context, WidgetRef ref, String otherProfileId,
-      String otherUserId, String name, ContactDetails? contact) {
+  Widget _actions(BuildContext context, WidgetRef ref, String otherUserId,
+      String name, ContactDetails? contact) {
     switch (mode) {
       case _CardMode.received:
         return Row(
@@ -298,11 +299,11 @@ class _InterestCard extends ConsumerWidget {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: () {
-                  if (otherProfileId.isEmpty) {
+                  if (otherUserId.isEmpty) {
                     _snack(context, 'Profile unavailable for this match.');
                     return;
                   }
-                  context.push('/profile/$otherProfileId');
+                  context.push('/profile-user/$otherUserId');
                 },
                 icon: const Icon(Icons.person_outline, size: 18),
                 label: const Text('View Profile'),

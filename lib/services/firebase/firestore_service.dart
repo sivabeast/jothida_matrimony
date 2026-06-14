@@ -226,6 +226,27 @@ class FirestoreService {
     return ProfileModel.fromFirestore(snap.docs.first);
   }
 
+  /// Look up ANOTHER user's public profile by their UID.
+  ///
+  /// Unlike [getProfileByUserId] (used for the signed-in user's OWN profile,
+  /// which the rule allows via the `userId == auth.uid` owner path), this MUST
+  /// mirror the `profiles` read rule's public path — status == 'approved' &&
+  /// isActive == true — because Firestore validates a query against its filter
+  /// constraints, not its results. Filtering by userId alone would be rejected
+  /// with permission-denied for anyone but the owner/admin. All three are
+  /// equality filters, so only automatic single-field indexes are needed.
+  Future<ProfileModel?> getApprovedProfileByUserId(String userId) async {
+    final snap = await _db
+        .collection(AppConstants.profilesCollection)
+        .where('userId', isEqualTo: userId)
+        .where('status', isEqualTo: 'approved')
+        .where('isActive', isEqualTo: true)
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return null;
+    return ProfileModel.fromFirestore(snap.docs.first);
+  }
+
   Stream<ProfileModel?> watchProfile(String profileId) =>
       _db.collection(AppConstants.profilesCollection).doc(profileId).snapshots().map(
             (doc) => doc.exists ? ProfileModel.fromFirestore(doc) : null,
@@ -242,24 +263,25 @@ class FirestoreService {
     String? city,
     String? state,
     DocumentSnapshot? lastDoc,
-    int limit = 20,
+    int limit = 60,
   }) async {
     // These server-side filters MUST mirror the `profiles` security rule, which
     // only allows reading another user's profile when
     // status == 'approved' && isActive == true. Firestore rejects a query with
     // permission-denied unless its filters guarantee every matched document is
-    // readable — so filtering by gender ALONE (the old behaviour) made the whole
-    // Matches feed fail to load. All three are equality filters, so they need
-    // only Firestore's automatic single-field indexes (NO composite index).
-    // Remaining rules (self, married, age, city, …) are applied client-side in
-    // DiscoverNotifier.
-    final snap = await _db
+    // readable — so status + isActive are ALWAYS applied. Gender is optional:
+    // pass an empty string to load EVERY approved profile (the Matches page shows
+    // all members, no gender filter). All are equality filters, so they need only
+    // Firestore's automatic single-field indexes (NO composite index). Remaining
+    // rules (self, married, city, …) are applied client-side in DiscoverNotifier.
+    Query<Map<String, dynamic>> query = _db
         .collection(AppConstants.profilesCollection)
-        .where('gender', isEqualTo: gender)
         .where('status', isEqualTo: 'approved')
-        .where('isActive', isEqualTo: true)
-        .limit(limit)
-        .get();
+        .where('isActive', isEqualTo: true);
+    if (gender.isNotEmpty) {
+      query = query.where('gender', isEqualTo: gender);
+    }
+    final snap = await query.limit(limit).get();
     final list = snap.docs.map((d) => ProfileModel.fromFirestore(d)).toList();
     list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return list;

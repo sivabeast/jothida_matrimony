@@ -180,17 +180,16 @@ service cloud.firestore {
     }
 
     // ── Astrologers ───────────────────────────────────────────────────────
-    // VISIBILITY RULE: only APPROVED (admin-verified) astrologers are visible
-    // to users. The astrologer manages their own document regardless of status
-    // (so an unverified / expired astrologer can still log in and edit), and
-    // admins can read everything for verification.
-    // NOTE: active-subscription gating is enforced in the app query layer
-    // (Phase 2) on top of this approved-only rule.
+    // VISIBILITY RULE: astrologer listings are public BUSINESS profiles — any
+    // signed-in user may browse the directory. (A collection query that did not
+    // filter by status previously failed with permission-denied because the rule
+    // only allowed reading 'approved' docs; Firestore rejects the whole query
+    // unless every matched doc is readable. Allowing any authenticated read lets
+    // the directory load regardless of the client's query filters.)
+    // Writes stay locked down: an astrologer creates/edits ONLY their own
+    // document, and only admins may delete.
     match /astrologers/{astrologerId} {
-      allow read: if isAuthenticated()
-                  && (resource.data.status == 'approved'
-                      || isOwner(astrologerId)
-                      || isAdmin());
+      allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isOwner(astrologerId);
       allow update: if isOwner(astrologerId) || isAdmin();
       allow delete: if isAdmin();

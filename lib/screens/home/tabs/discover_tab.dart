@@ -30,8 +30,9 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   // heart can flip to "Interested ✓" immediately).
   final Set<String> _interestSent = {};
 
-  // Active filters.
-  RangeValues _ageRange = const RangeValues(21, 40);
+  // Optional, user-set filters. The Matches page shows ALL members by default —
+  // no gender filter, no age filter, no hidden filters — so an empty filter set
+  // returns every approved profile (the same source the Home page reads from).
   String _city = '';
   String _education = '';
   String _occupation = '';
@@ -49,10 +50,10 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   }
 
   Future<void> _applyFilters() async {
-    final matchGender = ref.read(matchGenderProvider);
-    await ref.read(discoverProvider.notifier).load(gender: matchGender, filters: {
-      'minAge': _ageRange.start.round(),
-      'maxAge': _ageRange.end.round(),
+    // gender: '' → every approved profile, both genders (no gender filter).
+    // No minAge/maxAge → no age filter. Only the explicit city/education/
+    // occupation refinements are passed through.
+    await ref.read(discoverProvider.notifier).load(gender: '', filters: {
       'city': _city,
       'education': _education,
       'occupation': _occupation,
@@ -64,11 +65,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   }
 
   bool get _hasActiveFilters =>
-      _city.isNotEmpty ||
-      _education.isNotEmpty ||
-      _occupation.isNotEmpty ||
-      _ageRange.start != 21 ||
-      _ageRange.end != 40;
+      _city.isNotEmpty || _education.isNotEmpty || _occupation.isNotEmpty;
 
   // ── Actions ─────────────────────────────────────────────────────────────
   Future<void> _sendInterest(ProfileModel profile) async {
@@ -100,10 +97,6 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(discoverProvider);
-    ref.listen<String>(matchGenderProvider, (prev, next) {
-      if (prev != next) _applyFilters();
-    });
-
     final profiles = state.profiles;
     final total = profiles.length;
 
@@ -174,7 +167,6 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
             TextButton(
               onPressed: () {
                 setState(() {
-                  _ageRange = const RangeValues(21, 40);
                   _city = '';
                   _education = '';
                   _occupation = '';
@@ -244,7 +236,6 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
 
   // ── Filter sheet ────────────────────────────────────────────────────────
   void _openFilterSheet() {
-    var age = _ageRange;
     final cityCtl = TextEditingController(text: _city);
     final eduCtl = TextEditingController(text: _education);
     final occCtl = TextEditingController(text: _occupation);
@@ -269,20 +260,11 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
             children: [
               const Text('Filter Matches',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              Text('Age: ${age.start.round()} - ${age.end.round()} yrs',
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
-              RangeSlider(
-                values: age,
-                min: 18,
-                max: 60,
-                divisions: 42,
-                activeColor: AppColors.primary,
-                labels:
-                    RangeLabels('${age.start.round()}', '${age.end.round()}'),
-                onChanged: (v) => setSheet(() => age = v),
-              ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
+              Text('Showing all members. Narrow by location, education or '
+                  'occupation if you like.',
+                  style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
+              const SizedBox(height: 16),
               TextField(
                 controller: cityCtl,
                 decoration: const InputDecoration(
@@ -313,7 +295,6 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
                     child: OutlinedButton(
                       onPressed: () {
                         setState(() {
-                          _ageRange = const RangeValues(21, 40);
                           _city = '';
                           _education = '';
                           _occupation = '';
@@ -329,7 +310,6 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
                     child: ElevatedButton(
                       onPressed: () {
                         setState(() {
-                          _ageRange = age;
                           _city = cityCtl.text.trim();
                           _education = eduCtl.text.trim();
                           _occupation = occCtl.text.trim();

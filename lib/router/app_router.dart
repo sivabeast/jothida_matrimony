@@ -243,6 +243,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/profile/:id',
         builder: (_, state) => ProfileViewScreen(profileId: state.pathParameters['id']!),
       ),
+      // Open a profile by the owner's USER id (UID). Used from accepted
+      // interests, where senderId / receiverId is the reliable key — never an
+      // interest-document id. Distinct path prefix so it can't collide with the
+      // '/profile/:id' document-id route above.
+      GoRoute(
+        path: '/profile-user/:uid',
+        builder: (_, state) =>
+            ProfileViewScreen(userId: state.pathParameters['uid']!),
+      ),
       // Edit an existing profile (Profile → "Edit Profile"). 3 path segments so
       // it never collides with the 2-segment '/profile/:id' view route above.
       GoRoute(

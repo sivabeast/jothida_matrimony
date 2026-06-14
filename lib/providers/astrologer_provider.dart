@@ -39,17 +39,14 @@ Astrologer astrologerFromAccount(AstrologerAccount a) {
 
 /// Directory astrologers shown to USERS.
 ///
-/// ⚠️ TEMPORARY (development/testing): verification, subscription and approval
-/// filtering are DISABLED. Every astrologer is shown — both ✅ verified and ⏳
-/// pending — so we can test profile loading, cards, search and the
-/// Nearby/Top-Rated/All sections without gating. Only suspended astrologers
-/// (status == rejected) are excluded. The card still shows the correct status
-/// badge so verified vs. pending is identifiable.
-///
-/// TODO(restore): switch back to `watchApprovedAstrologers()` (verified-only,
-/// plus active-subscription gating) before production. Firestore security rules
-/// must also temporarily allow reading non-approved astrologer documents while
-/// this is in effect.
+/// Astrologer listings are public BUSINESS profiles, so every signed-in user may
+/// browse the directory. This reads the whole collection (`watchAllAstrologers`)
+/// and the matching Firestore rule is `allow read: if isAuthenticated()` — the
+/// two MUST stay in sync: a query that reads docs the rule forbids is rejected
+/// wholesale with permission-denied (that was the old "Astrologer page" bug,
+/// when the rule only allowed reading `approved` docs). Only suspended
+/// astrologers (status == rejected) are excluded client-side; the card shows a
+/// status badge so verified vs. pending stays identifiable.
 final astrologersProvider = StreamProvider.autoDispose<List<Astrologer>>((ref) {
   if (kBypassAuth) return Stream.value(sampleAstrologers());
   return ref.watch(astrologerServiceProvider).watchAllAstrologers().map(

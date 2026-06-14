@@ -12,9 +12,18 @@ import '../../widgets/common/contact_reveal_card.dart';
 import '../../widgets/common/gradient_button.dart';
 
 class ProfileViewScreen extends ConsumerStatefulWidget {
-  final String profileId;
+  /// Open by profile-document id — used from Discover / Matches, where the id
+  /// comes straight from the loaded profile and is reliable.
+  final String? profileId;
 
-  const ProfileViewScreen({super.key, required this.profileId});
+  /// Open by the profile owner's USER id (UID) — preferred from accepted
+  /// interests, where the UID (senderId / receiverId) is the dependable key and
+  /// a stored profile-document id may be stale or missing.
+  final String? userId;
+
+  const ProfileViewScreen({super.key, this.profileId, this.userId})
+      : assert(profileId != null || userId != null,
+            'Provide either a profileId or a userId');
 
   @override
   ConsumerState<ProfileViewScreen> createState() => _ProfileViewScreenState();
@@ -166,9 +175,22 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     );
   }
 
+  /// Re-fetch whichever lookup this screen was opened with.
+  void _reloadProfile() {
+    if (widget.userId != null) {
+      ref.invalidate(profileByUserIdProvider(widget.userId!));
+    } else {
+      ref.invalidate(profileByIdProvider(widget.profileId!));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final profileAsync = ref.watch(profileByIdProvider(widget.profileId));
+    // Prefer the UID lookup when opened from an accepted interest; otherwise use
+    // the profile-document id. Both yield AsyncValue<ProfileModel?>.
+    final profileAsync = widget.userId != null
+        ? ref.watch(profileByUserIdProvider(widget.userId!))
+        : ref.watch(profileByIdProvider(widget.profileId!));
 
     return Scaffold(
       body: profileAsync.when(
@@ -186,8 +208,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                 ),
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
-                  onPressed: () =>
-                      ref.invalidate(profileByIdProvider(widget.profileId)),
+                  onPressed: _reloadProfile,
                   icon: const Icon(Icons.refresh),
                   label: const Text('Try Again'),
                   style: OutlinedButton.styleFrom(
