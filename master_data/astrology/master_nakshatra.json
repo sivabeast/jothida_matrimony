@@ -1,0 +1,164 @@
+[
+  {
+    "id": "nak_ashwini",
+    "nameTamil": "அஸ்வினி",
+    "nameEnglish": "Ashwini",
+    "order": 1
+  },
+  {
+    "id": "nak_bharani",
+    "nameTamil": "பரணி",
+    "nameEnglish": "Bharani",
+    "order": 2
+  },
+  {
+    "id": "nak_karthigai",
+    "nameTamil": "கார்த்திகை",
+    "nameEnglish": "Karthigai",
+    "order": 3
+  },
+  {
+    "id": "nak_rohini",
+    "nameTamil": "ரோகிணி",
+    "nameEnglish": "Rohini",
+    "order": 4
+  },
+  {
+    "id": "nak_mirugasirisham",
+    "nameTamil": "மிருகசீரிஷம்",
+    "nameEnglish": "Mirugasirisham",
+    "order": 5
+  },
+  {
+    "id": "nak_thiruvathirai",
+    "nameTamil": "திருவாதிரை",
+    "nameEnglish": "Thiruvathirai",
+    "order": 6
+  },
+  {
+    "id": "nak_punarpoosam",
+    "nameTamil": "புனர்பூசம்",
+    "nameEnglish": "Punarpoosam",
+    "order": 7
+  },
+  {
+    "id": "nak_poosam",
+    "nameTamil": "பூசம்",
+    "nameEnglish": "Poosam",
+    "order": 8
+  },
+  {
+    "id": "nak_ayilyam",
+    "nameTamil": "ஆயில்யம்",
+    "nameEnglish": "Ayilyam",
+    "order": 9
+  },
+  {
+    "id": "nak_magham",
+    "nameTamil": "மகம்",
+    "nameEnglish": "Magham",
+    "order": 10
+  },
+  {
+    "id": "nak_pooram",
+    "nameTamil": "பூரம்",
+    "nameEnglish": "Pooram",
+    "order": 11
+  },
+  {
+    "id": "nak_uthiram",
+    "nameTamil": "உத்திரம்",
+    "nameEnglish": "Uthiram",
+    "order": 12
+  },
+  {
+    "id": "nak_hastham",
+    "nameTamil": "அஸ்தம்",
+    "nameEnglish": "Hastham",
+    "order": 13
+  },
+  {
+    "id": "nak_chithirai",
+    "nameTamil": "சித்திரை",
+    "nameEnglish": "Chithirai",
+    "order": 14
+  },
+  {
+    "id": "nak_swathi",
+    "nameTamil": "சுவாதி",
+    "nameEnglish": "Swathi",
+    "order": 15
+  },
+  {
+    "id": "nak_visakam",
+    "nameTamil": "விசாகம்",
+    "nameEnglish": "Visakam",
+    "order": 16
+  },
+  {
+    "id": "nak_anusham",
+    "nameTamil": "அனுஷம்",
+    "nameEnglish": "Anusham",
+    "order": 17
+  },
+  {
+    "id": "nak_kettai",
+    "nameTamil": "கேட்டை",
+    "nameEnglish": "Kettai",
+    "order": 18
+  },
+  {
+    "id": "nak_moolam",
+    "nameTamil": "மூலம்",
+    "nameEnglish": "Moolam",
+    "order": 19
+  },
+  {
+    "id": "nak_pooradam",
+    "nameTamil": "பூராடம்",
+    "nameEnglish": "Pooradam",
+    "order": 20
+  },
+  {
+    "id": "nak_uthiradam",
+    "nameTamil": "உத்திராடம்",
+    "nameEnglish": "Uthiradam",
+    "order": 21
+  },
+  {
+    "id": "nak_thiruvonam",
+    "nameTamil": "திருவோணம்",
+    "nameEnglish": "Thiruvonam",
+    "order": 22
+  },
+  {
+    "id": "nak_avittam",
+    "nameTamil": "அவிட்டம்",
+    "nameEnglish": "Avittam",
+    "order": 23
+  },
+  {
+    "id": "nak_sathayam",
+    "nameTamil": "சதயம்",
+    "nameEnglish": "Sathayam",
+    "order": 24
+  },
+  {
+    "id": "nak_poorattadhi",
+    "nameTamil": "பூரட்டாதி",
+    "nameEnglish": "Poorattadhi",
+    "order": 25
+  },
+  {
+    "id": "nak_uthirattadhi",
+    "nameTamil": "உத்திரட்டாதி",
+    "nameEnglish": "Uthirattadhi",
+    "order": 26
+  },
+  {
+    "id": "nak_revathi",
+    "nameTamil": "ரேவதி",
+    "nameEnglish": "Revathi",
+    "order": 27
+  }
+]
