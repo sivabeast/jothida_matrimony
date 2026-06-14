@@ -3,6 +3,9 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- FCM notifications on Android 13+. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- "Use My Location" — GPS-based city/state/country detection. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <application
         android:label="Jothida Matrimony"
         android:name="${applicationName}"

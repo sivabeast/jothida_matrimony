@@ -9,6 +9,7 @@ import '../../models/profile_model.dart';
 import '../../providers/demo_data_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/common/use_my_location_button.dart';
 
 /// Personal Details — the primary profile-management screen.
 ///
@@ -648,6 +649,8 @@ class _LocationSheetState extends ConsumerState<_LocationSheet> {
   late String _state = widget.profile.state;
   late String _country =
       widget.profile.country.isEmpty ? 'India' : widget.profile.country;
+  double? _lat;
+  double? _lng;
   bool _saving = false;
 
   @override
@@ -664,6 +667,10 @@ class _LocationSheetState extends ConsumerState<_LocationSheet> {
       'city': _city.text.trim(),
       'state': _state,
       'country': _country,
+      // GPS coordinates (when detected via "Use My Location") — stored for
+      // future nearby-matching features.
+      if (_lat != null) 'latitude': _lat,
+      if (_lng != null) 'longitude': _lng,
     };
     final updated = widget.profile.copyWith(
       city: _city.text.trim(),
@@ -690,6 +697,17 @@ class _LocationSheetState extends ConsumerState<_LocationSheet> {
       saving: _saving,
       onSave: _save,
       children: [
+        UseMyLocationButton(
+          label: 'Update My Location',
+          onDetected: (loc) => setState(() {
+            if (loc.city.isNotEmpty) _city.text = loc.city;
+            if (loc.state.isNotEmpty) _state = loc.state;
+            if (loc.country.isNotEmpty) _country = loc.country;
+            _lat = loc.latitude;
+            _lng = loc.longitude;
+          }),
+        ),
+        const SizedBox(height: 14),
         _tf(_city, 'City'),
         _drop('State', _state, _optsWith(AppConstants.indianStates, _state),
             (v) => setState(() => _state = v!)),

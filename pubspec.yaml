@@ -63,6 +63,9 @@ dependencies:
   open_file: ^3.5.10
   path_provider: ^2.1.5
   connectivity_plus: ^6.1.1
+  # ── Location: "Use My Location" GPS detection + reverse geocoding ──
+  geolocator: ^13.0.1
+  geocoding: ^3.0.0
   fluttertoast: ^8.2.10
   dropdown_search: ^5.0.6
 

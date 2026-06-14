@@ -1,11 +1,17 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../core/config/dev_config.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../models/profile_model.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/demo_data_provider.dart';
 import '../../../providers/interest_provider.dart';
 import '../../../providers/profile_provider.dart';
+import '../../../providers/service_providers.dart';
 import '../../../providers/subscription_provider.dart';
 
 class MyProfileTab extends ConsumerWidget {
@@ -55,16 +61,7 @@ class MyProfileTab extends ConsumerWidget {
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
-                    CircleAvatar(
-                      radius: 52,
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
-                      backgroundImage: (profile?.photos.isNotEmpty ?? false)
-                          ? NetworkImage(profile!.photos.first)
-                          : null,
-                      child: (profile?.photos.isEmpty ?? true)
-                          ? const Icon(Icons.person, size: 52, color: AppColors.primary)
-                          : null,
-                    ),
+                    _ProfilePhotoAvatar(profile: profile),
                     const SizedBox(height: 12),
                     Text(
                       profile?.name ?? 'Complete your profile',
@@ -104,6 +101,21 @@ class MyProfileTab extends ConsumerWidget {
                         _buildStat('Matches', matchesCount.toString()),
                       ],
                     ),
+                    if (profile != null) ...[
+                      const SizedBox(height: 16),
+                      OutlinedButton.icon(
+                        onPressed: () => context.push('/personal-details'),
+                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        label: const Text('Edit Profile'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          minimumSize: const Size.fromHeight(44),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ],
                     // Profile editing now lives on the Personal Details page
                     // (Edit icon, top-right) — the single, primary place to
                     // manage the profile. Only the "Create Profile" action
@@ -274,4 +286,214 @@ class MyProfileTab extends ConsumerWidget {
         },
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       );
+}
+
+/// Tappable profile avatar with a camera badge. Tapping opens View / Change /
+/// Remove options. Changing uploads via Cloudinary and writes `profilePhotoUrl`
+/// to Firestore (then refreshes the profile); removing clears it. Editing never
+/// re-opens onboarding.
+class _ProfilePhotoAvatar extends ConsumerStatefulWidget {
+  final ProfileModel? profile;
+  const _ProfilePhotoAvatar({required this.profile});
+
+  @override
+  ConsumerState<_ProfilePhotoAvatar> createState() => _ProfilePhotoAvatarState();
+}
+
+class _ProfilePhotoAvatarState extends ConsumerState<_ProfilePhotoAvatar> {
+  bool _busy = false;
+
+  void _snack(String m) => ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(m)));
+
+  Future<void> _persist(String? url) async {
+    final profile = widget.profile!;
+    if (kBypassAuth) {
+      ref.read(demoProfilesProvider.notifier).upsert(profile.withProfilePhoto(url));
+    } else {
+      await ref
+          .read(profileRepositoryProvider)
+          .updateProfile(profile.id, {'profilePhotoUrl': url});
+      ref.invalidate(myProfileProvider);
+    }
+  }
+
+  Future<void> _changePhoto() async {
+    final picked = await ImagePicker()
+        .pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (picked == null || widget.profile == null) return;
+    setState(() => _busy = true);
+    try {
+      final url = await ref.read(storageServiceProvider).uploadProfilePhoto(
+            userId: widget.profile!.userId,
+            file: File(picked.path),
+            index: 0,
+          );
+      await _persist(url);
+      if (mounted) _snack('Profile photo updated');
+    } catch (_) {
+      if (mounted) _snack('Could not update photo. Please try again.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _removePhoto() async {
+    if (widget.profile == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Photo'),
+        content: const Text('Remove your profile photo?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    setState(() => _busy = true);
+    try {
+      await _persist(null);
+      if (mounted) _snack('Photo removed');
+    } catch (_) {
+      if (mounted) _snack('Could not remove photo. Please try again.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _viewPhoto(String url) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: const EdgeInsets.all(12),
+        child: Stack(
+          children: [
+            InteractiveViewer(
+              child: Center(
+                child: Image.network(url,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Padding(
+                          padding: EdgeInsets.all(40),
+                          child: Icon(Icons.broken_image,
+                              color: Colors.white, size: 64),
+                        )),
+              ),
+            ),
+            Positioned(
+              top: 4,
+              right: 4,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.pop(ctx),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showOptions() {
+    final profile = widget.profile;
+    if (profile == null) return;
+    final hasPhoto = profile.photos.isNotEmpty;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            if (hasPhoto)
+              ListTile(
+                leading: const Icon(Icons.visibility_outlined,
+                    color: AppColors.primary),
+                title: const Text('View Photo'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _viewPhoto(profile.photos.first);
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined,
+                  color: AppColors.primary),
+              title: Text(hasPhoto ? 'Change Photo' : 'Upload Photo'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _changePhoto();
+              },
+            ),
+            if (hasPhoto)
+              ListTile(
+                leading:
+                    const Icon(Icons.delete_outline, color: AppColors.error),
+                title: const Text('Remove Photo',
+                    style: TextStyle(color: AppColors.error)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _removePhoto();
+                },
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = widget.profile;
+    final hasPhoto = profile?.photos.isNotEmpty ?? false;
+    return GestureDetector(
+      onTap: profile == null ? null : _showOptions,
+      child: Stack(
+        children: [
+          CircleAvatar(
+            radius: 52,
+            backgroundColor: AppColors.primary.withOpacity(0.1),
+            backgroundImage:
+                hasPhoto ? NetworkImage(profile!.photos.first) : null,
+            child: hasPhoto
+                ? null
+                : const Icon(Icons.person, size: 52, color: AppColors.primary),
+          ),
+          if (_busy)
+            const Positioned.fill(
+              child: DecoratedBox(
+                decoration:
+                    BoxDecoration(shape: BoxShape.circle, color: Colors.black54),
+                child: Center(
+                    child: CircularProgressIndicator(color: Colors.white)),
+              ),
+            ),
+          if (profile != null && !_busy)
+            Positioned(
+              right: 2,
+              bottom: 2,
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                    color: AppColors.primary, shape: BoxShape.circle),
+                child:
+                    const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }

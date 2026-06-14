@@ -335,6 +335,50 @@ class ProfileModel {
         isActive: isActive ?? this.isActive,
         isMarried: isMarried ?? this.isMarried,
       );
+
+  /// Returns a copy with the primary profile photo set to [url] (or cleared
+  /// when null). [copyWith] can't clear a non-null field via `?? this.x`, so
+  /// this is the dedicated path for setting/removing the photo.
+  ProfileModel withProfilePhoto(String? url) => ProfileModel(
+        id: id,
+        userId: userId,
+        profileCreatedBy: profileCreatedBy,
+        profileCreatedFor: profileCreatedFor,
+        fullName: fullName,
+        gender: gender,
+        dateOfBirth: dateOfBirth,
+        age: age,
+        height: height,
+        weight: weight,
+        maritalStatus: maritalStatus,
+        religion: religion,
+        caste: caste,
+        subCaste: subCaste,
+        education: education,
+        occupation: occupation,
+        annualIncome: annualIncome,
+        country: country,
+        state: state,
+        city: city,
+        motherTongue: motherTongue,
+        aboutMe: aboutMe,
+        profilePhotoUrl: url,
+        additionalPhotos: additionalPhotos,
+        horoscope: horoscope,
+        family: family,
+        partnerPreferences: partnerPreferences,
+        contact: contact,
+        status: status,
+        isVerified: isVerified,
+        reportCount: reportCount,
+        viewCount: viewCount,
+        interestCount: interestCount,
+        createdAt: createdAt,
+        updatedAt: DateTime.now(),
+        isFeatured: isFeatured,
+        isActive: isActive,
+        isMarried: isMarried,
+      );
 }
 
 class HoroscopeDetails {

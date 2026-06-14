@@ -7,6 +7,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../models/astrologer_account_model.dart';
 import '../../../providers/astrologer_session_provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/service_providers.dart';
+import '../../../widgets/common/use_my_location_button.dart';
 import 'astrologer_profile_common.dart';
 
 const _genders = ['Male', 'Female', 'Other'];
@@ -48,6 +50,8 @@ class _PersonalState extends ConsumerState<AstrologerPersonalDetailsScreen> {
   late TextEditingController _name, _mobile, _email, _city, _state, _country;
   late String _gender;
   DateTime? _dob;
+  double? _lat;
+  double? _lng;
   bool _saving = false;
 
   @override
@@ -91,6 +95,15 @@ class _PersonalState extends ConsumerState<AstrologerPersonalDetailsScreen> {
         country: _country.text.trim(),
       ),
     );
+    // Persist GPS coordinates too (for nearby-astrologer features) when the
+    // location was detected via "Use My Location".
+    if (ok && _lat != null && !kBypassAuth) {
+      try {
+        await ref
+            .read(astrologerServiceProvider)
+            .updateAccount(a.id, {'latitude': _lat, 'longitude': _lng});
+      } catch (_) {/* coordinates are best-effort */}
+    }
     if (!mounted) return;
     if (ok) {
       Navigator.pop(context);
@@ -129,6 +142,16 @@ class _PersonalState extends ConsumerState<AstrologerPersonalDetailsScreen> {
                 controller: _email,
                 label: 'Email',
                 icon: Icons.email_outlined),
+            UseMyLocationButton(
+              onDetected: (loc) => setState(() {
+                if (loc.city.isNotEmpty) _city.text = loc.city;
+                if (loc.state.isNotEmpty) _state.text = loc.state;
+                if (loc.country.isNotEmpty) _country.text = loc.country;
+                _lat = loc.latitude;
+                _lng = loc.longitude;
+              }),
+            ),
+            const SizedBox(height: 14),
             ProfileTextField(
                 controller: _city,
                 label: 'City',

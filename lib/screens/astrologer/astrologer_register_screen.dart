@@ -21,6 +21,7 @@ import '../../providers/service_providers.dart';
 import '../../widgets/common/gradient_button.dart';
 import '../../widgets/common/app_text_field.dart';
 import '../../widgets/common/searchable_field.dart';
+import '../../widgets/common/use_my_location_button.dart';
 
 /// Astrologer Profile Setup — shown once, immediately after a successful
 /// "Continue with Google" sign-in, for an account that has no
@@ -352,6 +353,15 @@ class _AstrologerRegisterScreenState
                 onTap: _pickDob,
                 suffixIcon: const Icon(Icons.calendar_today),
                 validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              // ── Use My Location: auto-fills Country / State / City ──
+              UseMyLocationButton(
+                onDetected: (loc) => setState(() {
+                  if (loc.country.isNotEmpty) _country = loc.country;
+                  if (loc.state.isNotEmpty) _state = loc.state;
+                  if (loc.city.isNotEmpty) _city = loc.city;
+                }),
               ),
               const SizedBox(height: 16),
               SearchableField(
