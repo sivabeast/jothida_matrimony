@@ -129,4 +129,21 @@ class MasterLocationService {
     await _ensureLoaded();
     return List.unmodifiable(_citiesByDistrict![districtId] ?? const []);
   }
+
+  /// A flat, de-duplicated, alphabetically-sorted list of ALL city names in the
+  /// master data — used by the "Birth Place" searchable picker. Derived from
+  /// `master_cities.json`, so it covers the full dataset (thousands of cities).
+  Future<List<String>> getAllCityNames() async {
+    await _ensureLoaded();
+    final set = <String>{};
+    for (final list in _citiesByDistrict!.values) {
+      for (final c in list) {
+        final name = c.name.trim();
+        if (name.isNotEmpty) set.add(name);
+      }
+    }
+    final result = set.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return result;
+  }
 }

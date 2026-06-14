@@ -2050,7 +2050,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "icondata",
-      "community": 69,
+      "community": 191,
       "norm_label": "icondata?"
     },
     {
@@ -3100,7 +3100,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "services_porutham_match_poruthammatchresult",
-      "community": 77,
+      "community": 50,
       "norm_label": "poruthammatchresult"
     },
     {
@@ -4570,7 +4570,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "utils_auth_routing",
-      "community": 228,
+      "community": 61,
       "norm_label": "auth_routing.dart"
     },
     {
@@ -4580,7 +4580,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "utils_auth_routing_tag",
-      "community": 228,
+      "community": 61,
       "norm_label": "tag"
     },
     {
@@ -4590,7 +4590,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "utils_auth_routing_routeauthenticateduser",
-      "community": 228,
+      "community": 61,
       "norm_label": "routeauthenticateduser"
     },
     {
@@ -4600,7 +4600,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "package_flutter_foundation_dart",
-      "community": 21,
+      "community": 140,
       "norm_label": "package:flutter/foundation.dart"
     },
     {
@@ -4610,7 +4610,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "package_flutter_widgets_dart",
-      "community": 228,
+      "community": 61,
       "norm_label": "package:flutter/widgets.dart"
     },
     {
@@ -4620,7 +4620,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "package_flutter_riverpod_flutter_riverpod_dart",
-      "community": 135,
+      "community": 80,
       "norm_label": "package:flutter_riverpod/flutter_riverpod.dart"
     },
     {
@@ -4630,7 +4630,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "package_go_router_go_router_dart",
-      "community": 228,
+      "community": 73,
       "norm_label": "package:go_router/go_router.dart"
     },
     {
@@ -4640,7 +4640,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_user_model_dart",
-      "community": 32,
+      "community": 61,
       "norm_label": "../../models/user_model.dart"
     },
     {
@@ -4650,7 +4650,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_astrologer_session_provider_dart",
-      "community": 191,
+      "community": 61,
       "norm_label": "../../../providers/astrologer_session_provider.dart"
     },
     {
@@ -5020,7 +5020,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "lib_firebase_options",
-      "community": 21,
+      "community": 140,
       "norm_label": "firebase_options.dart"
     },
     {
@@ -5030,7 +5030,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "lib_firebase_options_defaultfirebaseoptions",
-      "community": 21,
+      "community": 140,
       "norm_label": "defaultfirebaseoptions"
     },
     {
@@ -5040,7 +5040,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "lib_firebase_options_android",
-      "community": 21,
+      "community": 140,
       "norm_label": "android"
     },
     {
@@ -5050,7 +5050,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "static_const_firebaseoptions",
-      "community": 21,
+      "community": 140,
       "norm_label": "static const firebaseoptions"
     },
     {
@@ -5060,7 +5060,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "package_firebase_core_firebase_core_dart",
-      "community": 21,
+      "community": 74,
       "norm_label": "package:firebase_core/firebase_core.dart"
     },
     {
@@ -5110,7 +5110,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "static_const",
-      "community": 74,
+      "community": 150,
       "norm_label": "static const"
     },
     {
@@ -7590,7 +7590,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_interest_request_model",
-      "community": 48,
+      "community": 136,
       "norm_label": "interest_request_model.dart"
     },
     {
@@ -7600,7 +7600,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_interest_request_model_requeststatus",
-      "community": 48,
+      "community": 136,
       "norm_label": "requeststatus"
     },
     {
@@ -7610,7 +7610,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_interest_request_model_requestdirection",
-      "community": 48,
+      "community": 136,
       "norm_label": "requestdirection"
     },
     {
@@ -7620,7 +7620,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_interest_request_model_interestrequest",
-      "community": 48,
+      "community": 136,
       "norm_label": "interestrequest"
     },
     {
@@ -7630,7 +7630,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_interest_request_model_id",
-      "community": 48,
+      "community": 136,
       "norm_label": "id"
     },
     {
@@ -7640,7 +7640,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_interest_request_model_profileid",
-      "community": 48,
+      "community": 136,
       "norm_label": "profileid"
     },
     {
@@ -7650,7 +7650,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_interest_request_model_direction",
-      "community": 48,
+      "community": 136,
       "norm_label": "direction"
     },
     {
@@ -7660,7 +7660,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_interest_request_model_status",
-      "community": 48,
+      "community": 136,
       "norm_label": "status"
     },
     {
@@ -7670,7 +7670,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_interest_request_model_timestamp",
-      "community": 48,
+      "community": 136,
       "norm_label": "timestamp"
     },
     {
@@ -7680,7 +7680,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_interest_request_model_isincoming",
-      "community": 48,
+      "community": 136,
       "norm_label": "isincoming"
     },
     {
@@ -7690,7 +7690,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_interest_request_model_isaccepted",
-      "community": 48,
+      "community": 136,
       "norm_label": "isaccepted"
     },
     {
@@ -7700,7 +7700,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_interest_request_model_copywith",
-      "community": 48,
+      "community": 136,
       "norm_label": "copywith"
     },
     {
@@ -8834,6 +8834,16 @@
       "norm_label": "birthplace"
     },
     {
+      "label": "birthPlaceType",
+      "file_type": "code",
+      "source_file": "lib/models/profile_model.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "models_profile_model_birthplacetype",
+      "community": 0,
+      "norm_label": "birthplacetype"
+    },
+    {
       "label": "horoscopeGenerated",
       "file_type": "code",
       "source_file": "lib/models/profile_model.dart",
@@ -8842,6 +8852,46 @@
       "id": "models_profile_model_horoscopegenerated",
       "community": 0,
       "norm_label": "horoscopegenerated"
+    },
+    {
+      "label": "generatedRasi",
+      "file_type": "code",
+      "source_file": "lib/models/profile_model.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "models_profile_model_generatedrasi",
+      "community": 0,
+      "norm_label": "generatedrasi"
+    },
+    {
+      "label": "generatedNakshatra",
+      "file_type": "code",
+      "source_file": "lib/models/profile_model.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "models_profile_model_generatednakshatra",
+      "community": 0,
+      "norm_label": "generatednakshatra"
+    },
+    {
+      "label": "generatedLagnam",
+      "file_type": "code",
+      "source_file": "lib/models/profile_model.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "models_profile_model_generatedlagnam",
+      "community": 0,
+      "norm_label": "generatedlagnam"
+    },
+    {
+      "label": "overrideEnabled",
+      "file_type": "code",
+      "source_file": "lib/models/profile_model.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "models_profile_model_overrideenabled",
+      "community": 0,
+      "norm_label": "overrideenabled"
     },
     {
       "label": "isAutoGenerated",
@@ -9160,7 +9210,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_report_model_reportmodel",
-      "community": 187,
+      "community": 35,
       "norm_label": "reportmodel"
     },
     {
@@ -9500,7 +9550,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_user_model_usermodel",
-      "community": 221,
+      "community": 115,
       "norm_label": "usermodel"
     },
     {
@@ -9870,7 +9920,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_account_provider_deletionrequestsprovider",
-      "community": 82,
+      "community": 218,
       "norm_label": "deletionrequestsprovider"
     },
     {
@@ -9910,7 +9960,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_account_provider_marriedprofilesprovider",
-      "community": 82,
+      "community": 218,
       "norm_label": "marriedprofilesprovider"
     },
     {
@@ -9920,7 +9970,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_account_provider_accountcontrollerprovider",
-      "community": 82,
+      "community": 38,
       "norm_label": "accountcontrollerprovider"
     },
     {
@@ -9980,7 +10030,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_account_provider_markmarried",
-      "community": 93,
+      "community": 129,
       "norm_label": "markmarried"
     },
     {
@@ -10020,7 +10070,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "core_config_dev_config_dart",
-      "community": 116,
+      "community": 164,
       "norm_label": "../../core/config/dev_config.dart"
     },
     {
@@ -10100,7 +10150,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_admin_provider_adminstatsprovider",
-      "community": 82,
+      "community": 218,
       "norm_label": "adminstatsprovider"
     },
     {
@@ -10290,7 +10340,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_astrologer_account_model_dart",
-      "community": 136,
+      "community": 61,
       "norm_label": "../../models/astrologer_account_model.dart"
     },
     {
@@ -10510,7 +10560,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_astrologer_session_provider_isastrologeronboardedprovider",
-      "community": 50,
+      "community": 20,
       "norm_label": "isastrologeronboardedprovider"
     },
     {
@@ -10520,7 +10570,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "class",
-      "community": 150,
+      "community": 17,
       "norm_label": "class"
     },
     {
@@ -10700,7 +10750,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_astrologer_certificate_dart",
-      "community": 22,
+      "community": 123,
       "norm_label": "../../../models/astrologer_certificate.dart"
     },
     {
@@ -10730,7 +10780,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_auth_provider_authnotifier",
-      "community": 221,
+      "community": 14,
       "norm_label": "authnotifier"
     },
     {
@@ -10740,7 +10790,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "asyncnotifier",
-      "community": 221,
+      "community": 14,
       "norm_label": "asyncnotifier"
     },
     {
@@ -10770,7 +10820,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_auth_provider_firebaseauthstreamprovider",
-      "community": 172,
+      "community": 221,
       "norm_label": "firebaseauthstreamprovider"
     },
     {
@@ -10780,7 +10830,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_auth_provider_currentuserprovider",
-      "community": 68,
+      "community": 174,
       "norm_label": "currentuserprovider"
     },
     {
@@ -10860,7 +10910,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_auth_provider_otpnotifierprovider",
-      "community": 140,
+      "community": 94,
       "norm_label": "otpnotifierprovider"
     },
     {
@@ -11210,7 +11260,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_chat_model_dart",
-      "community": 63,
+      "community": 62,
       "norm_label": "../../models/chat_model.dart"
     },
     {
@@ -11220,7 +11270,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_demo_data_provider",
-      "community": 93,
+      "community": 80,
       "norm_label": "demo_data_provider.dart"
     },
     {
@@ -11240,7 +11290,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_demo_data_provider_demoprofilesprovider",
-      "community": 93,
+      "community": 18,
       "norm_label": "demoprofilesprovider"
     },
     {
@@ -11250,7 +11300,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_demo_data_provider_mydemoprofileidprovider",
-      "community": 93,
+      "community": 18,
       "norm_label": "mydemoprofileidprovider"
     },
     {
@@ -11260,7 +11310,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_demo_data_provider_kdemouserid",
-      "community": 93,
+      "community": 80,
       "norm_label": "kdemouserid"
     },
     {
@@ -11270,7 +11320,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_demo_data_provider_build",
-      "community": 93,
+      "community": 80,
       "norm_label": "build"
     },
     {
@@ -11280,7 +11330,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_demo_data_provider_upsert",
-      "community": 93,
+      "community": 80,
       "norm_label": "upsert"
     },
     {
@@ -11290,7 +11340,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_demo_data_provider_byid",
-      "community": 93,
+      "community": 80,
       "norm_label": "byid"
     },
     {
@@ -11300,7 +11350,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_demo_data_provider_discover",
-      "community": 93,
+      "community": 80,
       "norm_label": "discover"
     },
     {
@@ -11310,7 +11360,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "core_data_sample_profiles_dart",
-      "community": 93,
+      "community": 80,
       "norm_label": "../core/data/sample_profiles.dart"
     },
     {
@@ -11340,7 +11390,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_interest_provider_sentinterestsprovider",
-      "community": 174,
+      "community": 104,
       "norm_label": "sentinterestsprovider"
     },
     {
@@ -11360,7 +11410,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_interest_provider_receivedinterestsprovider",
-      "community": 174,
+      "community": 104,
       "norm_label": "receivedinterestsprovider"
     },
     {
@@ -11774,6 +11824,16 @@
       "norm_label": "citiesprovider"
     },
     {
+      "label": "allCityNamesProvider",
+      "file_type": "code",
+      "source_file": "lib/providers/master_location_provider.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "providers_master_location_provider_allcitynamesprovider",
+      "community": 145,
+      "norm_label": "allcitynamesprovider"
+    },
+    {
       "label": "../../models/master_location_model.dart",
       "file_type": "code",
       "source_file": null,
@@ -11810,7 +11870,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_notification_provider_notificationnotifier",
-      "community": 93,
+      "community": 129,
       "norm_label": "notificationnotifier"
     },
     {
@@ -11820,7 +11880,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_notification_provider_notificationsprovider",
-      "community": 61,
+      "community": 135,
       "norm_label": "notificationsprovider"
     },
     {
@@ -11840,7 +11900,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_notification_provider_unreadnotificationcountprovider",
-      "community": 68,
+      "community": 174,
       "norm_label": "unreadnotificationcountprovider"
     },
     {
@@ -11930,7 +11990,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_profile_provider_profilecreationstate",
-      "community": 93,
+      "community": 18,
       "norm_label": "profilecreationstate"
     },
     {
@@ -11940,7 +12000,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_profile_provider_profilecreationnotifier",
-      "community": 93,
+      "community": 18,
       "norm_label": "profilecreationnotifier"
     },
     {
@@ -11950,7 +12010,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_profile_provider_discoverstate",
-      "community": 93,
+      "community": 18,
       "norm_label": "discoverstate"
     },
     {
@@ -11960,7 +12020,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_profile_provider_discovernotifier",
-      "community": 93,
+      "community": 18,
       "norm_label": "discovernotifier"
     },
     {
@@ -12110,7 +12170,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_profile_provider_profilecreationprovider",
-      "community": 80,
+      "community": 145,
       "norm_label": "profilecreationprovider"
     },
     {
@@ -12240,7 +12300,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_profile_provider_submitprofile",
-      "community": 93,
+      "community": 18,
       "norm_label": "submitprofile"
     },
     {
@@ -12470,7 +12530,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_service_providers_authserviceprovider",
-      "community": 45,
+      "community": 40,
       "norm_label": "authserviceprovider"
     },
     {
@@ -12480,7 +12540,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_service_providers_firestoreserviceprovider",
-      "community": 93,
+      "community": 129,
       "norm_label": "firestoreserviceprovider"
     },
     {
@@ -12490,7 +12550,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_service_providers_storageserviceprovider",
-      "community": 136,
+      "community": 133,
       "norm_label": "storageserviceprovider"
     },
     {
@@ -12510,7 +12570,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_service_providers_razorpayserviceprovider",
-      "community": 39,
+      "community": 117,
       "norm_label": "razorpayserviceprovider"
     },
     {
@@ -12550,7 +12610,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_service_providers_profilerepositoryprovider",
-      "community": 93,
+      "community": 68,
       "norm_label": "profilerepositoryprovider"
     },
     {
@@ -12570,7 +12630,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_service_providers_subscriptionrepositoryprovider",
-      "community": 39,
+      "community": 117,
       "norm_label": "subscriptionrepositoryprovider"
     },
     {
@@ -12600,7 +12660,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "services_firebase_firestore_service_dart",
-      "community": 79,
+      "community": 39,
       "norm_label": "../services/firebase/firestore_service.dart"
     },
     {
@@ -12730,7 +12790,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_subscription_provider_subscriptionnotifier",
-      "community": 39,
+      "community": 117,
       "norm_label": "subscriptionnotifier"
     },
     {
@@ -12820,7 +12880,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "models_subscription_model_dart",
-      "community": 117,
+      "community": 39,
       "norm_label": "../../models/subscription_model.dart"
     },
     {
@@ -13190,7 +13250,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "core_errors_auth_exception_dart",
-      "community": 50,
+      "community": 140,
       "norm_label": "../../core/errors/auth_exception.dart"
     },
     {
@@ -13470,7 +13530,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "repositories_subscription_repository",
-      "community": 79,
+      "community": 39,
       "norm_label": "subscription_repository.dart"
     },
     {
@@ -13480,7 +13540,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "repositories_subscription_repository_subscriptionrepository",
-      "community": 79,
+      "community": 39,
       "norm_label": "subscriptionrepository"
     },
     {
@@ -13490,7 +13550,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "repositories_subscription_repository_firestore",
-      "community": 79,
+      "community": 39,
       "norm_label": "_firestore"
     },
     {
@@ -13500,7 +13560,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "repositories_subscription_repository_savesubscription",
-      "community": 79,
+      "community": 39,
       "norm_label": "savesubscription"
     },
     {
@@ -13510,7 +13570,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "repositories_subscription_repository_getactivesubscription",
-      "community": 79,
+      "community": 39,
       "norm_label": "getactivesubscription"
     },
     {
@@ -13620,7 +13680,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_auth_provider_dart",
-      "community": 218,
+      "community": 164,
       "norm_label": "../../providers/auth_provider.dart"
     },
     {
@@ -13630,7 +13690,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_service_providers_dart",
-      "community": 91,
+      "community": 61,
       "norm_label": "../../providers/service_providers.dart"
     },
     {
@@ -14000,7 +14060,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "core_theme_app_colors_dart",
-      "community": 73,
+      "community": 164,
       "norm_label": "../../core/theme/app_colors.dart"
     },
     {
@@ -14030,7 +14090,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "admin_account_admin_screens_accountdeletionrequestsscreen",
-      "community": 82,
+      "community": 218,
       "norm_label": "accountdeletionrequestsscreen"
     },
     {
@@ -14060,7 +14120,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "admin_account_admin_screens_marriedusersscreen",
-      "community": 82,
+      "community": 218,
       "norm_label": "marriedusersscreen"
     },
     {
@@ -14170,7 +14230,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "admin_account_admin_screens_build",
-      "community": 82,
+      "community": 218,
       "norm_label": "build"
     },
     {
@@ -14180,7 +14240,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "admin_account_admin_screens_approve",
-      "community": 82,
+      "community": 38,
       "norm_label": "_approve"
     },
     {
@@ -14190,7 +14250,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "admin_account_admin_screens_reject",
-      "community": 82,
+      "community": 38,
       "norm_label": "_reject"
     },
     {
@@ -14240,7 +14300,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "widgets_common_data_states_dart",
-      "community": 124,
+      "community": 187,
       "norm_label": "../../widgets/common/data_states.dart"
     },
     {
@@ -14460,7 +14520,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "color",
-      "community": 191,
+      "community": 61,
       "norm_label": "color"
     },
     {
@@ -14590,7 +14650,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "core_theme_app_text_styles_dart",
-      "community": 83,
+      "community": 45,
       "norm_label": "../../core/theme/app_text_styles.dart"
     },
     {
@@ -14910,7 +14970,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "admin_admin_management_screens_bannermanagementscreen",
-      "community": 105,
+      "community": 91,
       "norm_label": "bannermanagementscreen"
     },
     {
@@ -14920,7 +14980,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "statefulwidget",
-      "community": 105,
+      "community": 91,
       "norm_label": "statefulwidget"
     },
     {
@@ -14930,7 +14990,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "admin_admin_management_screens_bannermanagementscreenstate",
-      "community": 105,
+      "community": 91,
       "norm_label": "_bannermanagementscreenstate"
     },
     {
@@ -14940,7 +15000,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "state",
-      "community": 105,
+      "community": 91,
       "norm_label": "state"
     },
     {
@@ -14960,7 +15020,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "admin_admin_management_screens_analyticsscreen",
-      "community": 82,
+      "community": 218,
       "norm_label": "analyticsscreen"
     },
     {
@@ -15060,7 +15120,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "texteditingcontroller",
-      "community": 91,
+      "community": 31,
       "norm_label": "texteditingcontroller"
     },
     {
@@ -15600,7 +15660,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "admin_admin_reports_page_revenuechartcard",
-      "community": 105,
+      "community": 91,
       "norm_label": "_revenuechartcard"
     },
     {
@@ -15610,7 +15670,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "admin_admin_reports_page_revenuechartcardstate",
-      "community": 105,
+      "community": 91,
       "norm_label": "_revenuechartcardstate"
     },
     {
@@ -15890,7 +15950,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "admin_admin_shell",
-      "community": 218,
+      "community": 150,
       "norm_label": "admin_shell.dart"
     },
     {
@@ -15900,7 +15960,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "admin_admin_shell_adminshell",
-      "community": 218,
+      "community": 150,
       "norm_label": "adminshell"
     },
     {
@@ -15910,7 +15970,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "admin_admin_shell_child",
-      "community": 218,
+      "community": 150,
       "norm_label": "child"
     },
     {
@@ -15920,7 +15980,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "widget",
-      "community": 218,
+      "community": 150,
       "norm_label": "widget?"
     },
     {
@@ -15930,7 +15990,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "admin_admin_shell_routes",
-      "community": 218,
+      "community": 150,
       "norm_label": "_routes"
     },
     {
@@ -15940,7 +16000,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "admin_admin_shell_indexforlocation",
-      "community": 218,
+      "community": 150,
       "norm_label": "_indexforlocation"
     },
     {
@@ -16230,7 +16290,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_astrologer_dashboard_screen_astrologerdashboardscreen",
-      "community": 150,
+      "community": 98,
       "norm_label": "astrologerdashboardscreen"
     },
     {
@@ -16240,7 +16300,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_astrologer_dashboard_screen_astrologerdashboardscreenstate",
-      "community": 150,
+      "community": 98,
       "norm_label": "_astrologerdashboardscreenstate"
     },
     {
@@ -16570,7 +16630,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_astrologer_login_screen",
-      "community": 50,
+      "community": 45,
       "norm_label": "astrologer_login_screen.dart"
     },
     {
@@ -16580,7 +16640,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_astrologer_login_screen_astrologerloginscreen",
-      "community": 50,
+      "community": 20,
       "norm_label": "astrologerloginscreen"
     },
     {
@@ -16590,7 +16650,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_astrologer_login_screen_astrologerloginscreenstate",
-      "community": 50,
+      "community": 20,
       "norm_label": "_astrologerloginscreenstate"
     },
     {
@@ -16610,7 +16670,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_astrologer_login_screen_formkey",
-      "community": 50,
+      "community": 45,
       "norm_label": "_formkey"
     },
     {
@@ -16620,7 +16680,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_astrologer_login_screen_emailcontroller",
-      "community": 50,
+      "community": 45,
       "norm_label": "_emailcontroller"
     },
     {
@@ -16630,7 +16690,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_astrologer_login_screen_passwordcontroller",
-      "community": 50,
+      "community": 45,
       "norm_label": "_passwordcontroller"
     },
     {
@@ -16640,7 +16700,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_astrologer_login_screen_obscurepassword",
-      "community": 50,
+      "community": 45,
       "norm_label": "_obscurepassword"
     },
     {
@@ -16650,7 +16710,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_astrologer_login_screen_createstate",
-      "community": 50,
+      "community": 45,
       "norm_label": "createstate"
     },
     {
@@ -16660,7 +16720,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_astrologer_login_screen_dispose",
-      "community": 50,
+      "community": 45,
       "norm_label": "dispose"
     },
     {
@@ -16670,7 +16730,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_astrologer_login_screen_afterauth",
-      "community": 97,
+      "community": 20,
       "norm_label": "_afterauth"
     },
     {
@@ -16680,7 +16740,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "route_astrologer_dashboard",
-      "community": 97,
+      "community": 20,
       "norm_label": "route /astrologer-dashboard"
     },
     {
@@ -16690,7 +16750,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "route_astrologer_register",
-      "community": 97,
+      "community": 20,
       "norm_label": "route /astrologer-register"
     },
     {
@@ -16700,7 +16760,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_astrologer_login_screen_signin",
-      "community": 50,
+      "community": 20,
       "norm_label": "_signin"
     },
     {
@@ -16710,7 +16770,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_astrologer_login_screen_signinwithgoogle",
-      "community": 50,
+      "community": 20,
       "norm_label": "_signinwithgoogle"
     },
     {
@@ -16720,7 +16780,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_astrologer_login_screen_build",
-      "community": 97,
+      "community": 20,
       "norm_label": "build"
     },
     {
@@ -16750,7 +16810,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "core_utils_validators_dart",
-      "community": 45,
+      "community": 17,
       "norm_label": "../../../core/utils/validators.dart"
     },
     {
@@ -16760,7 +16820,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "widgets_common_gradient_button_dart",
-      "community": 145,
+      "community": 45,
       "norm_label": "../../widgets/common/gradient_button.dart"
     },
     {
@@ -16770,7 +16830,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "widgets_common_app_text_field_dart",
-      "community": 17,
+      "community": 45,
       "norm_label": "../../../widgets/common/app_text_field.dart"
     },
     {
@@ -16790,7 +16850,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_astrologer_onboarding_screen_astrologeronboardingscreen",
-      "community": 17,
+      "community": 40,
       "norm_label": "astrologeronboardingscreen"
     },
     {
@@ -16800,7 +16860,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "annotation_deprecated",
-      "community": 17,
+      "community": 40,
       "norm_label": "@deprecated"
     },
     {
@@ -16810,7 +16870,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_astrologer_onboarding_screen_build",
-      "community": 97,
+      "community": 20,
       "norm_label": "build"
     },
     {
@@ -17220,7 +17280,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_astrologer_register_screen_initstate",
-      "community": 172,
+      "community": 221,
       "norm_label": "initstate"
     },
     {
@@ -17370,7 +17430,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "widgets_common_location_picker_section_dart",
-      "community": 17,
+      "community": 16,
       "norm_label": "../../../widgets/common/location_picker_section.dart"
     },
     {
@@ -17640,7 +17700,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "profile_astrologer_certificates_screen_remove",
-      "community": 123,
+      "community": 98,
       "norm_label": "_remove"
     },
     {
@@ -17870,7 +17930,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "valuechanged",
-      "community": 139,
+      "community": 69,
       "norm_label": "valuechanged"
     },
     {
@@ -18310,7 +18370,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "profile_astrologer_services_screen_servicesheet",
-      "community": 105,
+      "community": 91,
       "norm_label": "_servicesheet"
     },
     {
@@ -18320,7 +18380,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "profile_astrologer_services_screen_servicesheetstate",
-      "community": 105,
+      "community": 91,
       "norm_label": "_servicesheetstate"
     },
     {
@@ -18580,7 +18640,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "astrologer_common_dart",
-      "community": 62,
+      "community": 61,
       "norm_label": "astrologer_common.dart"
     },
     {
@@ -18910,7 +18970,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_notifications_tab",
-      "community": 69,
+      "community": 191,
       "norm_label": "astrologer_notifications_tab.dart"
     },
     {
@@ -18920,7 +18980,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_notifications_tab_astrologernotificationstab",
-      "community": 61,
+      "community": 135,
       "norm_label": "astrologernotificationstab"
     },
     {
@@ -18930,7 +18990,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_notifications_tab_notificationcard",
-      "community": 69,
+      "community": 191,
       "norm_label": "_notificationcard"
     },
     {
@@ -18940,7 +19000,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_notifications_tab_visual",
-      "community": 69,
+      "community": 191,
       "norm_label": "_visual"
     },
     {
@@ -18950,7 +19010,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_notifications_tab_notification",
-      "community": 69,
+      "community": 191,
       "norm_label": "notification"
     },
     {
@@ -18960,7 +19020,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_notifications_tab_icon",
-      "community": 69,
+      "community": 191,
       "norm_label": "icon"
     },
     {
@@ -18970,7 +19030,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_notifications_tab_color",
-      "community": 69,
+      "community": 191,
       "norm_label": "color"
     },
     {
@@ -18980,7 +19040,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_notifications_tab_build",
-      "community": 61,
+      "community": 135,
       "norm_label": "build"
     },
     {
@@ -18990,7 +19050,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_notifications_tab_visualfor",
-      "community": 69,
+      "community": 191,
       "norm_label": "_visualfor"
     },
     {
@@ -19010,7 +19070,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_overview_tab_astrologeroverviewtab",
-      "community": 61,
+      "community": 135,
       "norm_label": "astrologeroverviewtab"
     },
     {
@@ -19110,7 +19170,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_overview_tab_recentactivity",
-      "community": 61,
+      "community": 135,
       "norm_label": "_recentactivity"
     },
     {
@@ -19130,7 +19190,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_profile_tab",
-      "community": 136,
+      "community": 61,
       "norm_label": "astrologer_profile_tab.dart"
     },
     {
@@ -19140,7 +19200,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_profile_tab_astrologerprofiletab",
-      "community": 136,
+      "community": 40,
       "norm_label": "astrologerprofiletab"
     },
     {
@@ -19150,7 +19210,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_profile_tab_astrologerprofiletabstate",
-      "community": 136,
+      "community": 40,
       "norm_label": "_astrologerprofiletabstate"
     },
     {
@@ -19160,7 +19220,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_profile_tab_uploadingphoto",
-      "community": 136,
+      "community": 61,
       "norm_label": "_uploadingphoto"
     },
     {
@@ -19170,7 +19230,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_profile_tab_createstate",
-      "community": 136,
+      "community": 61,
       "norm_label": "createstate"
     },
     {
@@ -19180,7 +19240,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_profile_tab_changephoto",
-      "community": 136,
+      "community": 133,
       "norm_label": "_changephoto"
     },
     {
@@ -19190,7 +19250,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_profile_tab_open",
-      "community": 136,
+      "community": 61,
       "norm_label": "_open"
     },
     {
@@ -19200,7 +19260,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_profile_tab_build",
-      "community": 136,
+      "community": 61,
       "norm_label": "build"
     },
     {
@@ -19210,7 +19270,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_profile_tab_header",
-      "community": 136,
+      "community": 61,
       "norm_label": "_header"
     },
     {
@@ -19220,7 +19280,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_profile_tab_menuitem",
-      "community": 136,
+      "community": 61,
       "norm_label": "_menuitem"
     },
     {
@@ -19230,7 +19290,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "profile_astrologer_certificates_screen_dart",
-      "community": 136,
+      "community": 61,
       "norm_label": "../profile/astrologer_certificates_screen.dart"
     },
     {
@@ -19240,7 +19300,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "profile_astrologer_profile_sections_dart",
-      "community": 136,
+      "community": 61,
       "norm_label": "../profile/astrologer_profile_sections.dart"
     },
     {
@@ -19350,7 +19410,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_reviews_tab",
-      "community": 191,
+      "community": 61,
       "norm_label": "astrologer_reviews_tab.dart"
     },
     {
@@ -19360,7 +19420,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_reviews_tab_astrologerreviewstab",
-      "community": 191,
+      "community": 61,
       "norm_label": "astrologerreviewstab"
     },
     {
@@ -19370,7 +19430,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_reviews_tab_build",
-      "community": 191,
+      "community": 61,
       "norm_label": "build"
     },
     {
@@ -19380,7 +19440,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrologer_reviews_tab_breakdownrow",
-      "community": 191,
+      "community": 61,
       "norm_label": "_breakdownrow"
     },
     {
@@ -19400,7 +19460,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_account_type_screen_accounttypescreen",
-      "community": 12,
+      "community": 91,
       "norm_label": "accounttypescreen"
     },
     {
@@ -19410,7 +19470,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_account_type_screen_accounttypescreenstate",
-      "community": 12,
+      "community": 91,
       "norm_label": "_accounttypescreenstate"
     },
     {
@@ -19620,7 +19680,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_forgot_password_screen_forgotpasswordscreen",
-      "community": 45,
+      "community": 40,
       "norm_label": "forgotpasswordscreen"
     },
     {
@@ -19630,7 +19690,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_forgot_password_screen_forgotpasswordscreenstate",
-      "community": 45,
+      "community": 40,
       "norm_label": "_forgotpasswordscreenstate"
     },
     {
@@ -19700,7 +19760,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_forgot_password_screen_send",
-      "community": 45,
+      "community": 40,
       "norm_label": "_send"
     },
     {
@@ -19730,7 +19790,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_login_screen",
-      "community": 94,
+      "community": 140,
       "norm_label": "login_screen.dart"
     },
     {
@@ -19740,7 +19800,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_login_screen_loginmode",
-      "community": 94,
+      "community": 140,
       "norm_label": "loginmode"
     },
     {
@@ -19770,7 +19830,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_login_screen_mode",
-      "community": 94,
+      "community": 140,
       "norm_label": "_mode"
     },
     {
@@ -19780,7 +19840,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_login_screen_phonecontroller",
-      "community": 94,
+      "community": 140,
       "norm_label": "_phonecontroller"
     },
     {
@@ -19790,7 +19850,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_login_screen_emailcontroller",
-      "community": 94,
+      "community": 140,
       "norm_label": "_emailcontroller"
     },
     {
@@ -19800,7 +19860,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_login_screen_passwordcontroller",
-      "community": 94,
+      "community": 140,
       "norm_label": "_passwordcontroller"
     },
     {
@@ -19810,7 +19870,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_login_screen_formkey",
-      "community": 94,
+      "community": 140,
       "norm_label": "_formkey"
     },
     {
@@ -19820,7 +19880,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_login_screen_obscurepassword",
-      "community": 94,
+      "community": 140,
       "norm_label": "_obscurepassword"
     },
     {
@@ -19830,7 +19890,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_login_screen_createstate",
-      "community": 94,
+      "community": 140,
       "norm_label": "createstate"
     },
     {
@@ -19840,7 +19900,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_login_screen_dispose",
-      "community": 94,
+      "community": 140,
       "norm_label": "dispose"
     },
     {
@@ -19910,7 +19970,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_login_screen_buildtab",
-      "community": 94,
+      "community": 140,
       "norm_label": "_buildtab"
     },
     {
@@ -19940,7 +20000,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_otp_screen_otpscreen",
-      "community": 140,
+      "community": 94,
       "norm_label": "otpscreen"
     },
     {
@@ -19950,7 +20010,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_otp_screen_otpscreenstate",
-      "community": 140,
+      "community": 94,
       "norm_label": "_otpscreenstate"
     },
     {
@@ -20050,7 +20110,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_otp_screen_resend",
-      "community": 140,
+      "community": 94,
       "norm_label": "_resend"
     },
     {
@@ -20090,7 +20150,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_register_screen_registerscreen",
-      "community": 30,
+      "community": 40,
       "norm_label": "registerscreen"
     },
     {
@@ -20100,7 +20160,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "auth_register_screen_registerscreenstate",
-      "community": 30,
+      "community": 40,
       "norm_label": "_registerscreenstate"
     },
     {
@@ -20700,7 +20760,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "home_home_screen_homescreen",
-      "community": 68,
+      "community": 174,
       "norm_label": "homescreen"
     },
     {
@@ -20710,7 +20770,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "home_home_screen_homescreenstate",
-      "community": 68,
+      "community": 174,
       "norm_label": "_homescreenstate"
     },
     {
@@ -20830,7 +20890,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "home_home_screen_build",
-      "community": 68,
+      "community": 174,
       "norm_label": "build"
     },
     {
@@ -20840,7 +20900,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "materialpageroute",
-      "community": 8,
+      "community": 174,
       "norm_label": "materialpageroute"
     },
     {
@@ -20960,7 +21020,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrology_services_tab_filtersheet",
-      "community": 105,
+      "community": 91,
       "norm_label": "_filtersheet"
     },
     {
@@ -20970,7 +21030,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrology_services_tab_filtersheetstate",
-      "community": 105,
+      "community": 91,
       "norm_label": "_filtersheetstate"
     },
     {
@@ -21010,7 +21070,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_astrology_services_tab_astrologerrow",
-      "community": 77,
+      "community": 49,
       "norm_label": "_astrologerrow"
     },
     {
@@ -21470,7 +21530,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "route_chats",
-      "community": 68,
+      "community": 174,
       "norm_label": "route /chats"
     },
     {
@@ -21540,7 +21600,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_discover_tab_discovertab",
-      "community": 38,
+      "community": 15,
       "norm_label": "discovertab"
     },
     {
@@ -21550,7 +21610,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_discover_tab_discovertabstate",
-      "community": 38,
+      "community": 15,
       "norm_label": "_discovertabstate"
     },
     {
@@ -21580,7 +21640,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_discover_tab_photogallery",
-      "community": 105,
+      "community": 15,
       "norm_label": "_photogallery"
     },
     {
@@ -21590,7 +21650,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_discover_tab_photogallerystate",
-      "community": 105,
+      "community": 15,
       "norm_label": "_photogallerystate"
     },
     {
@@ -21960,7 +22020,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_home_dashboard_tab_homedashboardtab",
-      "community": 68,
+      "community": 38,
       "norm_label": "homedashboardtab"
     },
     {
@@ -21970,7 +22030,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_home_dashboard_tab_homedashboardtabstate",
-      "community": 68,
+      "community": 38,
       "norm_label": "_homedashboardtabstate"
     },
     {
@@ -22250,7 +22310,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_home_dashboard_tab_buildheaderrow",
-      "community": 68,
+      "community": 174,
       "norm_label": "_buildheaderrow"
     },
     {
@@ -22260,7 +22320,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_home_dashboard_tab_opennotifications",
-      "community": 8,
+      "community": 174,
       "norm_label": "_opennotifications"
     },
     {
@@ -22600,7 +22660,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_my_profile_tab_myprofiletab",
-      "community": 174,
+      "community": 104,
       "norm_label": "myprofiletab"
     },
     {
@@ -22740,7 +22800,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_my_profile_tab_persist",
-      "community": 93,
+      "community": 18,
       "norm_label": "_persist"
     },
     {
@@ -22750,7 +22810,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tabs_my_profile_tab_changephoto",
-      "community": 136,
+      "community": 133,
       "norm_label": "_changephoto"
     },
     {
@@ -22790,7 +22850,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "providers_subscription_provider_dart",
-      "community": 83,
+      "community": 45,
       "norm_label": "../../providers/subscription_provider.dart"
     },
     {
@@ -22870,7 +22930,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_details_screen_horoscopedetailsscreen",
-      "community": 93,
+      "community": 68,
       "norm_label": "horoscopedetailsscreen"
     },
     {
@@ -22880,7 +22940,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_details_screen_horoscopedetailsscreenstate",
-      "community": 93,
+      "community": 68,
       "norm_label": "_horoscopedetailsscreenstate"
     },
     {
@@ -22960,7 +23020,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "timeofday",
-      "community": 26,
+      "community": 95,
       "norm_label": "timeofday?"
     },
     {
@@ -23170,7 +23230,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_details_screen_save",
-      "community": 93,
+      "community": 68,
       "norm_label": "_save"
     },
     {
@@ -23224,14 +23284,14 @@
       "norm_label": "_agefromdob"
     },
     {
-      "label": "../../../core/data/selection_data.dart",
+      "label": "../../core/data/selection_data.dart",
       "file_type": "code",
       "source_file": null,
       "source_location": null,
       "_origin": "ast",
       "id": "core_data_selection_data_dart",
       "community": 17,
-      "norm_label": "../../../core/data/selection_data.dart"
+      "norm_label": "../../core/data/selection_data.dart"
     },
     {
       "label": "../../../core/services/horoscope_calculation_service.dart",
@@ -23240,7 +23300,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "core_services_horoscope_calculation_service_dart",
-      "community": 26,
+      "community": 95,
       "norm_label": "../../../core/services/horoscope_calculation_service.dart"
     },
     {
@@ -23250,7 +23310,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen",
-      "community": 77,
+      "community": 50,
       "norm_label": "horoscope_match_screen.dart"
     },
     {
@@ -23270,7 +23330,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen_resultview",
-      "community": 77,
+      "community": 50,
       "norm_label": "_resultview"
     },
     {
@@ -23280,7 +23340,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen_scorecard",
-      "community": 77,
+      "community": 50,
       "norm_label": "_scorecard"
     },
     {
@@ -23290,7 +23350,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen_summaryrow",
-      "community": 77,
+      "community": 50,
       "norm_label": "_summaryrow"
     },
     {
@@ -23300,7 +23360,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen_statbox",
-      "community": 77,
+      "community": 50,
       "norm_label": "_statbox"
     },
     {
@@ -23310,7 +23370,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen_poruthamgroup",
-      "community": 77,
+      "community": 50,
       "norm_label": "_poruthamgroup"
     },
     {
@@ -23320,7 +23380,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen_recommendationcard",
-      "community": 77,
+      "community": 50,
       "norm_label": "_recommendationcard"
     },
     {
@@ -23330,7 +23390,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen_message",
-      "community": 77,
+      "community": 50,
       "norm_label": "_message"
     },
     {
@@ -23340,7 +23400,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen_userid",
-      "community": 77,
+      "community": 50,
       "norm_label": "userid"
     },
     {
@@ -23350,7 +23410,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen_result",
-      "community": 77,
+      "community": 50,
       "norm_label": "result"
     },
     {
@@ -23360,7 +23420,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen_other",
-      "community": 77,
+      "community": 50,
       "norm_label": "other"
     },
     {
@@ -23370,7 +23430,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen_othername",
-      "community": 77,
+      "community": 50,
       "norm_label": "othername"
     },
     {
@@ -23380,7 +23440,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen_label",
-      "community": 77,
+      "community": 50,
       "norm_label": "label"
     },
     {
@@ -23390,7 +23450,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen_value",
-      "community": 77,
+      "community": 50,
       "norm_label": "value"
     },
     {
@@ -23400,7 +23460,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen_icon",
-      "community": 77,
+      "community": 50,
       "norm_label": "icon"
     },
     {
@@ -23410,7 +23470,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen_title",
-      "community": 77,
+      "community": 50,
       "norm_label": "title"
     },
     {
@@ -23420,7 +23480,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen_items",
-      "community": 77,
+      "community": 50,
       "norm_label": "items"
     },
     {
@@ -23430,7 +23490,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen_matched",
-      "community": 77,
+      "community": 50,
       "norm_label": "matched"
     },
     {
@@ -23440,7 +23500,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "horoscope_horoscope_match_screen_text",
-      "community": 77,
+      "community": 50,
       "norm_label": "text"
     },
     {
@@ -23460,7 +23520,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "core_services_porutham_match_dart",
-      "community": 77,
+      "community": 50,
       "norm_label": "../../core/services/porutham_match.dart"
     },
     {
@@ -23630,7 +23690,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "interests_interests_center_screen_interestscenterscreen",
-      "community": 174,
+      "community": 104,
       "norm_label": "interestscenterscreen"
     },
     {
@@ -23640,7 +23700,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "interests_interests_center_screen_interestscenterscreenstate",
-      "community": 174,
+      "community": 104,
       "norm_label": "_interestscenterscreenstate"
     },
     {
@@ -23810,7 +23870,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "interests_interests_center_screen_build",
-      "community": 174,
+      "community": 104,
       "norm_label": "build"
     },
     {
@@ -23990,7 +24050,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "match_match_details_screen_matchdetailsscreen",
-      "community": 40,
+      "community": 173,
       "norm_label": "matchdetailsscreen"
     },
     {
@@ -24710,7 +24770,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "privacy_privacy_settings_screen_privacysettingsscreen",
-      "community": 172,
+      "community": 221,
       "norm_label": "privacysettingsscreen"
     },
     {
@@ -24720,7 +24780,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "privacy_privacy_settings_screen_privacystate",
-      "community": 172,
+      "community": 221,
       "norm_label": "_privacystate"
     },
     {
@@ -24820,7 +24880,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "privacy_privacy_settings_screen_loadsettings",
-      "community": 172,
+      "community": 221,
       "norm_label": "_loadsettings"
     },
     {
@@ -24830,7 +24890,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "privacy_privacy_settings_screen_save",
-      "community": 93,
+      "community": 129,
       "norm_label": "_save"
     },
     {
@@ -24970,7 +25030,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "profile_personal_details_screen_basicinfosheet",
-      "community": 40,
+      "community": 43,
       "norm_label": "_basicinfosheet"
     },
     {
@@ -24980,7 +25040,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "profile_personal_details_screen_basicinfosheetstate",
-      "community": 40,
+      "community": 43,
       "norm_label": "_basicinfosheetstate"
     },
     {
@@ -25610,7 +25670,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "profile_personal_details_screen_savesection",
-      "community": 93,
+      "community": 18,
       "norm_label": "_savesection"
     },
     {
@@ -25760,7 +25820,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "profile_profile_creation_screen_profilecreationscreen",
-      "community": 40,
+      "community": 29,
       "norm_label": "profilecreationscreen"
     },
     {
@@ -25770,7 +25830,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "profile_profile_creation_screen_profilecreationscreenstate",
-      "community": 40,
+      "community": 29,
       "norm_label": "_profilecreationscreenstate"
     },
     {
@@ -25890,7 +25950,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "profile_profile_creation_screen_submitprofile",
-      "community": 172,
+      "community": 221,
       "norm_label": "_submitprofile"
     },
     {
@@ -25910,7 +25970,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "profile_profile_creation_screen_build",
-      "community": 80,
+      "community": 145,
       "norm_label": "build"
     },
     {
@@ -26110,7 +26170,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "profile_profile_view_screen_recordviewonce",
-      "community": 172,
+      "community": 221,
       "norm_label": "_recordviewonce"
     },
     {
@@ -26200,7 +26260,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step1_who_are_you",
-      "community": 145,
+      "community": 45,
       "norm_label": "step1_who_are_you.dart"
     },
     {
@@ -26210,7 +26270,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step1_who_are_you_step1whoareyou",
-      "community": 145,
+      "community": 40,
       "norm_label": "step1whoareyou"
     },
     {
@@ -26220,7 +26280,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step1_who_are_you_step1state",
-      "community": 145,
+      "community": 40,
       "norm_label": "_step1state"
     },
     {
@@ -26230,7 +26290,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step1_who_are_you_onnext",
-      "community": 145,
+      "community": 45,
       "norm_label": "onnext"
     },
     {
@@ -26240,7 +26300,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step1_who_are_you_profilefor",
-      "community": 145,
+      "community": 45,
       "norm_label": "_profilefor"
     },
     {
@@ -26250,7 +26310,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step1_who_are_you_gender",
-      "community": 145,
+      "community": 45,
       "norm_label": "_gender"
     },
     {
@@ -26260,7 +26320,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step1_who_are_you_profileforoptions",
-      "community": 145,
+      "community": 45,
       "norm_label": "_profileforoptions"
     },
     {
@@ -26270,7 +26330,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step1_who_are_you_createstate",
-      "community": 145,
+      "community": 45,
       "norm_label": "createstate"
     },
     {
@@ -26290,7 +26350,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step1_who_are_you_build",
-      "community": 145,
+      "community": 45,
       "norm_label": "build"
     },
     {
@@ -26300,7 +26360,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step1_who_are_you_gendercard",
-      "community": 145,
+      "community": 45,
       "norm_label": "_gendercard"
     },
     {
@@ -26650,7 +26710,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step2_personal_details_saveandnext",
-      "community": 80,
+      "community": 145,
       "norm_label": "_saveandnext"
     },
     {
@@ -26680,7 +26740,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step3_horoscope_step3horoscope",
-      "community": 26,
+      "community": 145,
       "norm_label": "step3horoscope"
     },
     {
@@ -26690,7 +26750,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step3_horoscope_step3state",
-      "community": 26,
+      "community": 145,
       "norm_label": "_step3state"
     },
     {
@@ -26700,8 +26760,28 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step3_horoscope_resultcard",
-      "community": 26,
+      "community": 77,
       "norm_label": "_resultcard"
+    },
+    {
+      "label": "_ErrorBox",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_errorbox",
+      "community": 26,
+      "norm_label": "_errorbox"
+    },
+    {
+      "label": "_kOthers",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_kothers",
+      "community": 26,
+      "norm_label": "_kothers"
     },
     {
       "label": "onNext",
@@ -26744,6 +26824,26 @@
       "norm_label": "_dobcontroller"
     },
     {
+      "label": "_customPlaceController",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_customplacecontroller",
+      "community": 26,
+      "norm_label": "_customplacecontroller"
+    },
+    {
+      "label": "_customDebounce",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_customdebounce",
+      "community": 26,
+      "norm_label": "_customdebounce"
+    },
+    {
       "label": "_dob",
       "file_type": "code",
       "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
@@ -26764,44 +26864,54 @@
       "norm_label": "_birthtime"
     },
     {
-      "label": "_birthPlace",
+      "label": "_selectedCity",
       "file_type": "code",
       "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
       "source_location": null,
       "_origin": "ast",
-      "id": "steps_step3_horoscope_birthplace",
+      "id": "steps_step3_horoscope_selectedcity",
       "community": 26,
-      "norm_label": "_birthplace"
+      "norm_label": "_selectedcity"
     },
     {
-      "label": "_rasi",
+      "label": "_isOthers",
       "file_type": "code",
       "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
       "source_location": null,
       "_origin": "ast",
-      "id": "steps_step3_horoscope_rasi",
+      "id": "steps_step3_horoscope_isothers",
       "community": 26,
-      "norm_label": "_rasi"
+      "norm_label": "_isothers"
     },
     {
-      "label": "_nakshatra",
+      "label": "_genRasi",
       "file_type": "code",
       "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
       "source_location": null,
       "_origin": "ast",
-      "id": "steps_step3_horoscope_nakshatra",
+      "id": "steps_step3_horoscope_genrasi",
       "community": 26,
-      "norm_label": "_nakshatra"
+      "norm_label": "_genrasi"
     },
     {
-      "label": "_lagnam",
+      "label": "_genNakshatra",
       "file_type": "code",
       "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
       "source_location": null,
       "_origin": "ast",
-      "id": "steps_step3_horoscope_lagnam",
+      "id": "steps_step3_horoscope_gennakshatra",
       "community": 26,
-      "norm_label": "_lagnam"
+      "norm_label": "_gennakshatra"
+    },
+    {
+      "label": "_genLagnam",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_genlagnam",
+      "community": 26,
+      "norm_label": "_genlagnam"
     },
     {
       "label": "_lat",
@@ -26824,6 +26934,76 @@
       "norm_label": "_lng"
     },
     {
+      "label": "_overrideEnabled",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_overrideenabled",
+      "community": 26,
+      "norm_label": "_overrideenabled"
+    },
+    {
+      "label": "_ovrRasi",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_ovrrasi",
+      "community": 26,
+      "norm_label": "_ovrrasi"
+    },
+    {
+      "label": "_ovrNakshatra",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_ovrnakshatra",
+      "community": 26,
+      "norm_label": "_ovrnakshatra"
+    },
+    {
+      "label": "_ovrLagnam",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_ovrlagnam",
+      "community": 26,
+      "norm_label": "_ovrlagnam"
+    },
+    {
+      "label": "_rasiOptions",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_rasioptions",
+      "community": 26,
+      "norm_label": "_rasioptions"
+    },
+    {
+      "label": "_nakOptions",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_nakoptions",
+      "community": 26,
+      "norm_label": "_nakoptions"
+    },
+    {
+      "label": "_lagnamOptions",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_lagnamoptions",
+      "community": 26,
+      "norm_label": "_lagnamoptions"
+    },
+    {
       "label": "_calculating",
       "file_type": "code",
       "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
@@ -26844,6 +27024,96 @@
       "norm_label": "_error"
     },
     {
+      "label": "_effRasi",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_effrasi",
+      "community": 26,
+      "norm_label": "_effrasi"
+    },
+    {
+      "label": "_effNakshatra",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_effnakshatra",
+      "community": 26,
+      "norm_label": "_effnakshatra"
+    },
+    {
+      "label": "_effLagnam",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_efflagnam",
+      "community": 26,
+      "norm_label": "_efflagnam"
+    },
+    {
+      "label": "_effectivePlace",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_effectiveplace",
+      "community": 26,
+      "norm_label": "_effectiveplace"
+    },
+    {
+      "label": "_hasGenerated",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_hasgenerated",
+      "community": 26,
+      "norm_label": "_hasgenerated"
+    },
+    {
+      "label": "rasi",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_rasi",
+      "community": 26,
+      "norm_label": "rasi"
+    },
+    {
+      "label": "nakshatra",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_nakshatra",
+      "community": 26,
+      "norm_label": "nakshatra"
+    },
+    {
+      "label": "lagnam",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_lagnam",
+      "community": 26,
+      "norm_label": "lagnam"
+    },
+    {
+      "label": "message",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_message",
+      "community": 26,
+      "norm_label": "message"
+    },
+    {
       "label": "createState",
       "file_type": "code",
       "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
@@ -26860,7 +27130,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step3_horoscope_initstate",
-      "community": 80,
+      "community": 145,
       "norm_label": "initstate"
     },
     {
@@ -26874,14 +27144,24 @@
       "norm_label": "dispose"
     },
     {
-      "label": "_fmtDate",
+      "label": "_loadMaster",
       "file_type": "code",
       "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
       "source_location": null,
       "_origin": "ast",
-      "id": "steps_step3_horoscope_fmtdate",
+      "id": "steps_step3_horoscope_loadmaster",
       "community": 26,
-      "norm_label": "_fmtdate"
+      "norm_label": "_loadmaster"
+    },
+    {
+      "label": "_prefill",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_prefill",
+      "community": 145,
+      "norm_label": "_prefill"
     },
     {
       "label": "_pickDob",
@@ -26914,6 +27194,26 @@
       "norm_label": "_onplacechanged"
     },
     {
+      "label": "_onCustomPlaceChanged",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_oncustomplacechanged",
+      "community": 26,
+      "norm_label": "_oncustomplacechanged"
+    },
+    {
+      "label": "_onOverrideToggled",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_onoverridetoggled",
+      "community": 26,
+      "norm_label": "_onoverridetoggled"
+    },
+    {
       "label": "_recalculate",
       "file_type": "code",
       "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
@@ -26930,7 +27230,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step3_horoscope_saveandnext",
-      "community": 80,
+      "community": 145,
       "norm_label": "_saveandnext"
     },
     {
@@ -26940,8 +27240,28 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step3_horoscope_build",
-      "community": 26,
+      "community": 145,
       "norm_label": "build"
+    },
+    {
+      "label": "_fmtDate",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_fmtdate",
+      "community": 26,
+      "norm_label": "_fmtdate"
+    },
+    {
+      "label": "_fmtTime",
+      "file_type": "code",
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "steps_step3_horoscope_fmttime",
+      "community": 26,
+      "norm_label": "_fmttime"
     },
     {
       "label": "_row",
@@ -26952,6 +27272,16 @@
       "id": "steps_step3_horoscope_row",
       "community": 26,
       "norm_label": "_row"
+    },
+    {
+      "label": "../../../core/services/master_astrology_data.dart",
+      "file_type": "code",
+      "source_file": null,
+      "source_location": null,
+      "_origin": "ast",
+      "id": "core_services_master_astrology_data_dart",
+      "community": 26,
+      "norm_label": "../../../core/services/master_astrology_data.dart"
     },
     {
       "label": "step4_family.dart",
@@ -27100,7 +27430,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step4_family_saveandnext",
-      "community": 80,
+      "community": 145,
       "norm_label": "_saveandnext"
     },
     {
@@ -27260,7 +27590,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step5_partner_prefs_saveandnext",
-      "community": 80,
+      "community": 145,
       "norm_label": "_saveandnext"
     },
     {
@@ -27300,7 +27630,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step6_photos_step6photos",
-      "community": 80,
+      "community": 40,
       "norm_label": "step6photos"
     },
     {
@@ -27310,7 +27640,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step6_photos_step6state",
-      "community": 80,
+      "community": 40,
       "norm_label": "_step6state"
     },
     {
@@ -27410,7 +27740,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step7_contact_step7contact",
-      "community": 58,
+      "community": 40,
       "norm_label": "step7contact"
     },
     {
@@ -27420,7 +27750,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step7_contact_step7state",
-      "community": 58,
+      "community": 40,
       "norm_label": "_step7state"
     },
     {
@@ -27550,7 +27880,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "steps_step7_contact_saveandnext",
-      "community": 80,
+      "community": 145,
       "norm_label": "_saveandnext"
     },
     {
@@ -27570,7 +27900,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "report_report_profile_screen",
-      "community": 91,
+      "community": 164,
       "norm_label": "report_profile_screen.dart"
     },
     {
@@ -27580,7 +27910,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "report_report_profile_screen_reportprofilescreen",
-      "community": 91,
+      "community": 40,
       "norm_label": "reportprofilescreen"
     },
     {
@@ -27590,7 +27920,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "report_report_profile_screen_reportprofilescreenstate",
-      "community": 91,
+      "community": 40,
       "norm_label": "_reportprofilescreenstate"
     },
     {
@@ -27600,7 +27930,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "report_report_profile_screen_profileid",
-      "community": 91,
+      "community": 164,
       "norm_label": "profileid"
     },
     {
@@ -27610,7 +27940,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "report_report_profile_screen_reason",
-      "community": 91,
+      "community": 164,
       "norm_label": "_reason"
     },
     {
@@ -27620,7 +27950,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "report_report_profile_screen_descctrl",
-      "community": 91,
+      "community": 164,
       "norm_label": "_descctrl"
     },
     {
@@ -27630,7 +27960,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "report_report_profile_screen_submitting",
-      "community": 91,
+      "community": 164,
       "norm_label": "_submitting"
     },
     {
@@ -27640,7 +27970,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "report_report_profile_screen_createstate",
-      "community": 91,
+      "community": 164,
       "norm_label": "createstate"
     },
     {
@@ -27650,7 +27980,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "report_report_profile_screen_dispose",
-      "community": 91,
+      "community": 164,
       "norm_label": "dispose"
     },
     {
@@ -27660,7 +27990,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "report_report_profile_screen_submit",
-      "community": 68,
+      "community": 174,
       "norm_label": "_submit"
     },
     {
@@ -27670,7 +28000,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "report_report_profile_screen_toast",
-      "community": 91,
+      "community": 164,
       "norm_label": "_toast"
     },
     {
@@ -27970,7 +28300,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "settings_settings_screen_requestdeletion",
-      "community": 82,
+      "community": 38,
       "norm_label": "_requestdeletion"
     },
     {
@@ -27990,7 +28320,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "subscription_subscription_screen",
-      "community": 83,
+      "community": 45,
       "norm_label": "subscription_screen.dart"
     },
     {
@@ -28020,7 +28350,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "subscription_subscription_screen_plan",
-      "community": 83,
+      "community": 45,
       "norm_label": "plan"
     },
     {
@@ -28030,7 +28360,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "subscription_subscription_screen_price",
-      "community": 83,
+      "community": 45,
       "norm_label": "price"
     },
     {
@@ -28040,7 +28370,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "subscription_subscription_screen_features",
-      "community": 83,
+      "community": 45,
       "norm_label": "features"
     },
     {
@@ -28050,7 +28380,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "subscription_subscription_screen_ispopular",
-      "community": 83,
+      "community": 45,
       "norm_label": "ispopular"
     },
     {
@@ -28060,7 +28390,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "subscription_subscription_screen_ispremium",
-      "community": 83,
+      "community": 45,
       "norm_label": "ispremium"
     },
     {
@@ -29260,7 +29590,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "firebase_firestore_service_firestoreservice",
-      "community": 79,
+      "community": 39,
       "norm_label": "firestoreservice"
     },
     {
@@ -30054,6 +30384,16 @@
       "norm_label": "getcities"
     },
     {
+      "label": "getAllCityNames",
+      "file_type": "code",
+      "source_file": "lib/services/firebase/master_location_service.dart",
+      "source_location": null,
+      "_origin": "ast",
+      "id": "firebase_master_location_service_getallcitynames",
+      "community": 131,
+      "norm_label": "getallcitynames"
+    },
+    {
       "label": "storage_service.dart",
       "file_type": "code",
       "source_file": "lib/services/firebase/storage_service.dart",
@@ -30410,7 +30750,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "common_app_logo",
-      "community": 73,
+      "community": 164,
       "norm_label": "app_logo.dart"
     },
     {
@@ -30420,7 +30760,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "common_app_logo_applogo",
-      "community": 73,
+      "community": 164,
       "norm_label": "applogo"
     },
     {
@@ -30430,7 +30770,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "common_app_logo_size",
-      "community": 73,
+      "community": 164,
       "norm_label": "size"
     },
     {
@@ -30440,7 +30780,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "common_app_logo_circle",
-      "community": 73,
+      "community": 164,
       "norm_label": "circle"
     },
     {
@@ -30450,7 +30790,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "common_app_logo_build",
-      "community": 73,
+      "community": 164,
       "norm_label": "build"
     },
     {
@@ -31900,7 +32240,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "home_profile_completion_card_profilecompletioncard",
-      "community": 68,
+      "community": 174,
       "norm_label": "profilecompletioncard"
     },
     {
@@ -34900,7 +35240,7 @@
       "source_location": null,
       "_origin": "ast",
       "id": "tool_generate_nakshatra_compatibility_file",
-      "community": 66,
+      "community": 18,
       "norm_label": "file"
     },
     {
@@ -38916,6 +39256,17 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "context": "variable_type",
+      "source": "steps_step3_horoscope",
+      "target": "bool_get"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
       "source_file": "lib/screens/home/tabs/astrology_services_tab.dart",
       "source_location": null,
       "weight": 1.0,
@@ -39203,6 +39554,17 @@
       "weight": 1.0,
       "context": "variable_type",
       "source": "services_porutham_match",
+      "target": "list"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "context": "variable_type",
+      "source": "steps_step3_horoscope",
       "target": "list"
     },
     {
@@ -40678,6 +41040,17 @@
       "weight": 1.0,
       "context": "variable_type",
       "source": "repositories_auth_repository",
+      "target": "string_get"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "context": "variable_type",
+      "source": "steps_step3_horoscope",
       "target": "string_get"
     },
     {
@@ -49654,6 +50027,16 @@
       "source_location": null,
       "weight": 1.0,
       "source": "models_profile_model",
+      "target": "models_profile_model_birthplacetype"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/models/profile_model.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "models_profile_model",
       "target": "models_profile_model_birthtime"
     },
     {
@@ -49927,6 +50310,36 @@
       "weight": 1.0,
       "source": "models_profile_model",
       "target": "models_profile_model_gender"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/models/profile_model.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "models_profile_model",
+      "target": "models_profile_model_generatedlagnam"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/models/profile_model.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "models_profile_model",
+      "target": "models_profile_model_generatednakshatra"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/models/profile_model.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "models_profile_model",
+      "target": "models_profile_model_generatedrasi"
     },
     {
       "relation": "defines",
@@ -50268,6 +50681,16 @@
       "weight": 1.0,
       "source": "models_profile_model",
       "target": "models_profile_model_occupation"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/models/profile_model.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "models_profile_model",
+      "target": "models_profile_model_overrideenabled"
     },
     {
       "relation": "references",
@@ -57093,6 +57516,16 @@
       "source_location": null,
       "weight": 1.0,
       "source": "providers_master_location_provider",
+      "target": "providers_master_location_provider_allcitynamesprovider"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/providers/master_location_provider.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "providers_master_location_provider",
       "target": "providers_master_location_provider_citiesprovider"
     },
     {
@@ -57320,6 +57753,28 @@
       "context": "riverpod_reference",
       "source": "common_location_picker_section_usemylocation",
       "target": "providers_master_location_provider_citiesprovider"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "context": "riverpod_reference",
+      "source": "steps_step3_horoscope_build",
+      "target": "providers_master_location_provider_allcitynamesprovider"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "context": "riverpod_reference",
+      "source": "steps_step3_horoscope_step3state",
+      "target": "providers_master_location_provider_allcitynamesprovider"
     },
     {
       "relation": "imports",
@@ -58738,6 +59193,17 @@
       "weight": 1.0,
       "context": "riverpod_reference",
       "source": "steps_step3_horoscope_initstate",
+      "target": "providers_profile_provider_profilecreationprovider"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "context": "riverpod_reference",
+      "source": "steps_step3_horoscope_prefill",
       "target": "providers_profile_provider_profilecreationprovider"
     },
     {
@@ -61782,6 +62248,16 @@
       "relation": "imports",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "dart_async"
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
       "source_file": "lib/screens/home/tabs/home_dashboard_tab.dart",
       "source_location": null,
       "weight": 1.0,
@@ -63807,6 +64283,16 @@
       "source_location": null,
       "weight": 1.0,
       "source": "settings_settings_screen_settingstile",
+      "target": "statelesswidget"
+    },
+    {
+      "relation": "inherits",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope_errorbox",
       "target": "statelesswidget"
     },
     {
@@ -75992,6 +76478,17 @@
       "target": "path"
     },
     {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "context": "variable_type",
+      "source": "steps_step3_horoscope",
+      "target": "timer"
+    },
+    {
       "relation": "navigates",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -78438,6 +78935,16 @@
       "relation": "imports",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "providers_master_location_provider_dart"
+    },
+    {
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
       "source_file": "lib/screens/profile/personal_details_screen.dart",
       "source_location": null,
       "weight": 1.0,
@@ -80486,14 +80993,14 @@
       "target": "steps_step2_personal_details_step2personaldetails"
     },
     {
-      "relation": "defines",
+      "relation": "imports",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
       "source_location": null,
       "weight": 1.0,
       "source": "steps_step3_horoscope",
-      "target": "steps_step3_horoscope_birthplace"
+      "target": "core_services_master_astrology_data_dart"
     },
     {
       "relation": "defines",
@@ -80563,6 +81070,26 @@
       "source_location": null,
       "weight": 1.0,
       "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_customdebounce"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_customplacecontroller"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
       "target": "steps_step3_horoscope_dispose"
     },
     {
@@ -80593,7 +81120,57 @@
       "source_location": null,
       "weight": 1.0,
       "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_effectiveplace"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_efflagnam"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_effnakshatra"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_effrasi"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
       "target": "steps_step3_horoscope_error"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_errorbox"
     },
     {
       "relation": "defines",
@@ -80613,6 +81190,56 @@
       "source_location": null,
       "weight": 1.0,
       "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_fmttime"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_genlagnam"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_gennakshatra"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_genrasi"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_hasgenerated"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
       "target": "steps_step3_horoscope_initstate"
     },
     {
@@ -80623,7 +81250,37 @@
       "source_location": null,
       "weight": 1.0,
       "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_isothers"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_kothers"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
       "target": "steps_step3_horoscope_lagnam"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_lagnamoptions"
     },
     {
       "relation": "defines",
@@ -80653,7 +81310,47 @@
       "source_location": null,
       "weight": 1.0,
       "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_loadmaster"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_message"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_nakoptions"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
       "target": "steps_step3_horoscope_nakshatra"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_oncustomplacechanged"
     },
     {
       "relation": "defines",
@@ -80673,7 +81370,57 @@
       "source_location": null,
       "weight": 1.0,
       "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_onoverridetoggled"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
       "target": "steps_step3_horoscope_onplacechanged"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_overrideenabled"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_ovrlagnam"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_ovrnakshatra"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_ovrrasi"
     },
     {
       "relation": "defines",
@@ -80703,7 +81450,27 @@
       "source_location": null,
       "weight": 1.0,
       "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_prefill"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
       "target": "steps_step3_horoscope_rasi"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_rasioptions"
     },
     {
       "relation": "defines",
@@ -80744,6 +81511,16 @@
       "weight": 1.0,
       "source": "steps_step3_horoscope",
       "target": "steps_step3_horoscope_saveandnext"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/profile/steps/step3_horoscope.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "steps_step3_horoscope",
+      "target": "steps_step3_horoscope_selectedcity"
     },
     {
       "relation": "defines",
@@ -83704,6 +84481,16 @@
       "weight": 1.0,
       "source": "firebase_master_location_service",
       "target": "firebase_master_location_service_ensureloaded"
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/services/firebase/master_location_service.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "firebase_master_location_service",
+      "target": "firebase_master_location_service_getallcitynames"
     },
     {
       "relation": "defines",
@@ -89196,5 +89983,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "0f24bdaaf13aeb04cd3b38954354f905faf1a23a"
+  "built_at_commit": "2c93f43fd2e19c1b810de31854d027464c5e082f"
 }

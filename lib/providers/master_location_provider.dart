@@ -30,3 +30,8 @@ final citiesProvider = FutureProvider.family<List<MasterCity>, String>(
   (ref, districtId) =>
       ref.watch(masterLocationServiceProvider).getCities(districtId),
 );
+
+/// Flat list of ALL city names (for the searchable Birth Place picker).
+final allCityNamesProvider = FutureProvider<List<String>>(
+  (ref) => ref.watch(masterLocationServiceProvider).getAllCityNames(),
+);

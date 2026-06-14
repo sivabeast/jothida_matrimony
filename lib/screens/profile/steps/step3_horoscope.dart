@@ -1,18 +1,26 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/data/selection_data.dart';
+
 import '../../../core/services/horoscope_calculation_service.dart';
+import '../../../core/services/master_astrology_data.dart';
+import '../../../providers/master_location_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
 import '../../../widgets/common/searchable_field.dart';
 
+/// Sentinel appended to the city list for "not in the list" birth places.
+const String _kOthers = 'Others';
+
 /// Step 3 — Horoscope.
 ///
-/// Rasi / Nakshatra / Lagnam are **calculated automatically** from Date of
-/// Birth + Time of Birth + Birth Place via the Vedic engine
-/// ([HoroscopeCalculationService]). The user can view the results but cannot
-/// edit them manually.
+/// Rasi / Nakshatra / Lagnam are calculated automatically from Date of Birth +
+/// Time of Birth + Birth Place via the Vedic engine. Birth Place is a
+/// searchable dropdown over the master cities (with an "Others" → custom input
+/// escape hatch). Users may optionally **override** the calculated values with
+/// manually-chosen ones from the master Rasi / Nakshatra / Lagnam lists.
 class Step3Horoscope extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   const Step3Horoscope({super.key, required this.onNext});
@@ -25,17 +33,33 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
   final _calc = HoroscopeCalculationService();
   final _birthTimeController = TextEditingController();
   final _dobController = TextEditingController();
+  final _customPlaceController = TextEditingController();
+  Timer? _customDebounce;
 
   DateTime? _dob;
   TimeOfDay? _birthTime;
-  String? _birthPlace;
 
-  // Calculated, read-only outputs.
-  String? _rasi;
-  String? _nakshatra;
-  String? _lagnam;
+  // Birth place
+  String? _selectedCity; // when a master city is chosen
+  bool _isOthers = false; // "Others" → custom text input
+
+  // Calculated (generated) values.
+  String? _genRasi;
+  String? _genNakshatra;
+  String? _genLagnam;
   double? _lat;
   double? _lng;
+
+  // Manual override.
+  bool _overrideEnabled = false;
+  String? _ovrRasi;
+  String? _ovrNakshatra;
+  String? _ovrLagnam;
+
+  // Master option lists (Tamil names) for the override dropdowns.
+  List<String> _rasiOptions = const [];
+  List<String> _nakOptions = const [];
+  List<String> _lagnamOptions = const [];
 
   bool _calculating = false;
   String? _error;
@@ -43,24 +67,90 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
   @override
   void initState() {
     super.initState();
-    // Pre-fill DOB from Step 2 if already collected.
-    final dobStr = ref.read(profileCreationProvider).data['dateOfBirth'] as String?;
-    if (dobStr != null) {
-      _dob = DateTime.tryParse(dobStr);
-      if (_dob != null) _dobController.text = _fmtDate(_dob!);
-    }
+    _prefill();
+    _loadMaster();
   }
 
   @override
   void dispose() {
+    _customDebounce?.cancel();
     _birthTimeController.dispose();
     _dobController.dispose();
+    _customPlaceController.dispose();
     super.dispose();
   }
 
-  static String _fmtDate(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}';
+  Future<void> _loadMaster() async {
+    final m = await MasterAstrologyData.load();
+    if (!mounted) return;
+    setState(() {
+      _rasiOptions = m.rasis.map((e) => e.nameTamil).toList();
+      _nakOptions = m.nakshatras.map((e) => e.nameTamil).toList();
+      _lagnamOptions = m.lagnams.map((e) => e.nameTamil).toList();
+    });
+  }
 
+  /// Prefill from the shared creation data (DOB from earlier steps, plus any
+  /// previously entered horoscope details when re-visiting / editing).
+  void _prefill() {
+    final data = ref.read(profileCreationProvider).data;
+    final dobStr = data['dateOfBirth'] as String?;
+    if (dobStr != null) {
+      _dob = DateTime.tryParse(dobStr);
+      if (_dob != null) _dobController.text = _fmtDate(_dob!);
+    }
+    final h = data['horoscopeDetails'] as Map<String, dynamic>?;
+    if (h != null) {
+      final t = HoroscopeCalculationService.parseStoredTime(
+          (h['birthTime'] as String?) ?? '');
+      if (t != null) {
+        _birthTime = t;
+        _birthTimeController.text = _fmtTime(t);
+      }
+      final place = (h['birthPlace'] as String?)?.trim() ?? '';
+      final type = (h['birthPlaceType'] as String?) ?? 'city';
+      if (place.isNotEmpty) {
+        if (type == 'custom') {
+          _isOthers = true;
+          _customPlaceController.text = place;
+        } else {
+          _selectedCity = place;
+        }
+      }
+      _genRasi = (h['generatedRasi'] as String?)?.isNotEmpty == true
+          ? h['generatedRasi'] as String
+          : h['rasi'] as String?;
+      _genNakshatra = (h['generatedNakshatra'] as String?)?.isNotEmpty == true
+          ? h['generatedNakshatra'] as String
+          : h['nakshatra'] as String?;
+      _genLagnam = (h['generatedLagnam'] as String?)?.isNotEmpty == true
+          ? h['generatedLagnam'] as String
+          : h['lagnam'] as String?;
+      _lat = (h['latitude'] as num?)?.toDouble();
+      _lng = (h['longitude'] as num?)?.toDouble();
+      _overrideEnabled = h['overrideEnabled'] == true;
+      if (_overrideEnabled) {
+        _ovrRasi = h['rasi'] as String?;
+        _ovrNakshatra = h['nakshatra'] as String?;
+        _ovrLagnam = h['lagnam'] as String?;
+      }
+    }
+  }
+
+  // ── Effective (display/save) values ──────────────────────────────────────
+  String? get _effRasi => _overrideEnabled ? _ovrRasi : _genRasi;
+  String? get _effNakshatra => _overrideEnabled ? _ovrNakshatra : _genNakshatra;
+  String? get _effLagnam => _overrideEnabled ? _ovrLagnam : _genLagnam;
+
+  String? get _effectivePlace =>
+      _isOthers ? _customPlaceController.text.trim() : _selectedCity;
+
+  bool get _hasGenerated =>
+      (_genRasi ?? '').isNotEmpty &&
+      (_genNakshatra ?? '').isNotEmpty &&
+      (_genLagnam ?? '').isNotEmpty;
+
+  // ── Pickers / inputs ─────────────────────────────────────────────────────
   Future<void> _pickDob() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
@@ -74,7 +164,6 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
         _dob = picked;
         _dobController.text = _fmtDate(picked);
       });
-      // Keep the shared creation data in sync so other steps see the change.
       ref
           .read(profileCreationProvider.notifier)
           .updateData({'dateOfBirth': picked.toIso8601String()});
@@ -90,26 +179,50 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
     if (picked != null) {
       setState(() {
         _birthTime = picked;
-        _birthTimeController.text = picked.format(context);
+        _birthTimeController.text = _fmtTime(picked);
       });
       _recalculate();
     }
   }
 
   void _onPlaceChanged(String? v) {
-    setState(() => _birthPlace = v);
-    _recalculate();
+    setState(() {
+      if (v == _kOthers) {
+        _isOthers = true;
+        _selectedCity = null;
+      } else {
+        _isOthers = false;
+        _selectedCity = v;
+      }
+    });
+    if (!_isOthers) _recalculate();
   }
 
-  /// Recalculate whenever all three inputs are present. Clears any previous
-  /// result/error while running.
+  void _onCustomPlaceChanged(String v) {
+    _customDebounce?.cancel();
+    _customDebounce =
+        Timer(const Duration(milliseconds: 700), () => _recalculate());
+  }
+
+  void _onOverrideToggled(bool on) {
+    setState(() {
+      _overrideEnabled = on;
+      if (on) {
+        // Seed manual selections from the generated values.
+        _ovrRasi ??= _genRasi;
+        _ovrNakshatra ??= _genNakshatra;
+        _ovrLagnam ??= _genLagnam;
+      }
+    });
+  }
+
+  /// Recalculate whenever DOB + Time + Place are all present.
   Future<void> _recalculate() async {
     final dob = _dob;
     final time = _birthTime;
-    final place = _birthPlace;
-    if (dob == null || time == null || place == null || place.trim().isEmpty) {
-      return;
-    }
+    final place = _effectivePlace;
+    if (dob == null || time == null || place == null || place.isEmpty) return;
+
     setState(() {
       _calculating = true;
       _error = null;
@@ -122,9 +235,9 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
       );
       if (!mounted) return;
       setState(() {
-        _rasi = res.rasi;
-        _nakshatra = res.nakshatra;
-        _lagnam = res.lagnam;
+        _genRasi = res.rasi;
+        _genNakshatra = res.nakshatra;
+        _genLagnam = res.lagnam;
         _lat = res.latitude;
         _lng = res.longitude;
         _calculating = false;
@@ -132,33 +245,60 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
     } on HoroscopeCalculationException catch (e) {
       if (!mounted) return;
       setState(() {
-        _rasi = _nakshatra = _lagnam = null;
+        _genRasi = _genNakshatra = _genLagnam = null;
         _lat = _lng = null;
-        _error = e.message;
         _calculating = false;
+        _error = e.message;
       });
     }
   }
 
   void _saveAndNext() {
-    if (_rasi == null || _nakshatra == null || _lagnam == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(kHoroscopeCalcErrorMessage)),
-      );
+    final messenger = ScaffoldMessenger.of(context);
+    if (_dob == null) {
+      messenger.showSnackBar(
+          const SnackBar(content: Text('Please select your date of birth')));
       return;
     }
+    if (_birthTime == null) {
+      messenger.showSnackBar(
+          const SnackBar(content: Text('Please select your time of birth')));
+      return;
+    }
+    if (_effectivePlace == null || _effectivePlace!.isEmpty) {
+      messenger.showSnackBar(
+          const SnackBar(content: Text('Please select your birth place')));
+      return;
+    }
+    if ((_effRasi ?? '').isEmpty ||
+        (_effNakshatra ?? '').isEmpty ||
+        (_effLagnam ?? '').isEmpty) {
+      messenger.showSnackBar(const SnackBar(content: Text(
+          'Unable to generate horoscope details. Please verify date, time and '
+          'birth place.')));
+      return;
+    }
+
     ref.read(profileCreationProvider.notifier).updateData({
       'horoscopeDetails': {
-        'rasi': _rasi,
-        'nakshatra': _nakshatra,
-        'lagnam': _lagnam,
+        // Effective values
+        'rasi': _effRasi,
+        'nakshatra': _effNakshatra,
+        'lagnam': _effLagnam,
+        // Generated values (always preserved)
+        'generatedRasi': _genRasi ?? '',
+        'generatedNakshatra': _genNakshatra ?? '',
+        'generatedLagnam': _genLagnam ?? '',
+        'overrideEnabled': _overrideEnabled,
+        // Birth details
         'birthTime': HoroscopeCalculationService.formatStoredTime(_birthTime!),
-        'birthPlace': _birthPlace ?? '',
+        'birthPlace': _effectivePlace,
+        'birthPlaceType': _isOthers ? 'custom' : 'city',
         'latitude': _lat ?? 0,
         'longitude': _lng ?? 0,
-        // Engine-calculated, not manually edited.
-        'isAutoGenerated': true,
-        'isUserEdited': false,
+        'horoscopeGenerated': true,
+        'isAutoGenerated': !_overrideEnabled,
+        'isUserEdited': _overrideEnabled,
         'isAstrologerVerified': false,
       },
     });
@@ -167,8 +307,11 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
 
   @override
   Widget build(BuildContext context) {
-    final hasResult =
-        _rasi != null && _nakshatra != null && _lagnam != null;
+    final citiesAsync = ref.watch(allCityNamesProvider);
+    final cityItems = <String>[
+      ...(citiesAsync.valueOrNull ?? const <String>[]),
+      _kOthers,
+    ];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -180,7 +323,7 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
           const SizedBox(height: 8),
           const Text(
             'Rasi, Nakshatra and Lagnam are calculated automatically from your '
-            'birth date, time and place. They cannot be edited manually.',
+            'birth date, time and place. Enable override to set them manually.',
             style: TextStyle(color: Colors.grey),
           ),
           const SizedBox(height: 24),
@@ -204,61 +347,123 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
             suffixIcon: const Icon(Icons.access_time),
           ),
           const SizedBox(height: 16),
-          SearchableField(
-            label: 'Birth Place',
-            items: SelectionData.allCities,
-            selectedItem: _birthPlace,
-            prefixIcon: Icons.location_on_outlined,
-            onChanged: _onPlaceChanged,
-          ),
+          if (citiesAsync.isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Row(children: [
+                SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2)),
+                SizedBox(width: 10),
+                Text('Loading cities…'),
+              ]),
+            )
+          else
+            SearchableField(
+              label: 'Birth Place',
+              isRequired: true,
+              items: cityItems,
+              selectedItem: _isOthers ? _kOthers : _selectedCity,
+              prefixIcon: Icons.location_on_outlined,
+              onChanged: _onPlaceChanged,
+            ),
+          if (_isOthers) ...[
+            const SizedBox(height: 12),
+            AppTextField(
+              controller: _customPlaceController,
+              label: 'Custom Birth Place',
+              hint: 'Village, town or city name',
+              prefixIcon: const Icon(Icons.edit_location_alt_outlined),
+              onChanged: _onCustomPlaceChanged,
+            ),
+          ],
           const SizedBox(height: 24),
 
-          // ── Result / status ─────────────────────────────────────────────
+          // ── Status / generated results ───────────────────────────────────
           if (_calculating)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                children: [
-                  SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2)),
-                  SizedBox(width: 12),
-                  Text('Calculating horoscope…'),
-                ],
-              ),
+              child: Row(children: [
+                SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2)),
+                SizedBox(width: 12),
+                Text('Calculating horoscope…'),
+              ]),
             )
           else if (_error != null)
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.red[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red[200]!),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.error_outline, color: Colors.red[400], size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                      child: Text(_error!,
-                          style: TextStyle(color: Colors.red[700], fontSize: 13))),
-                ],
-              ),
-            )
-          else if (hasResult)
-            _ResultCard(rasi: _rasi!, nakshatra: _nakshatra!, lagnam: _lagnam!)
-          else
+            _ErrorBox(message: _error!)
+          else if (_hasGenerated && !_overrideEnabled)
+            _ResultCard(
+                rasi: _genRasi!, nakshatra: _genNakshatra!, lagnam: _genLagnam!)
+          else if (!_hasGenerated)
             Text(
               'Select date, time and place to calculate your horoscope.',
               style: TextStyle(color: Colors.grey[600], fontSize: 13),
             ),
+
+          // ── Override ─────────────────────────────────────────────────────
+          if (_hasGenerated || _overrideEnabled) ...[
+            const SizedBox(height: 12),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: _overrideEnabled,
+              onChanged: _onOverrideToggled,
+              title: const Text('Override automatically calculated horoscope',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              subtitle: const Text(
+                  'Choose Rasi, Nakshatra and Lagnam manually.',
+                  style: TextStyle(fontSize: 12)),
+            ),
+          ],
+          if (_overrideEnabled) ...[
+            const SizedBox(height: 8),
+            SearchableField(
+              label: 'Rasi',
+              isRequired: true,
+              items: _rasiOptions,
+              selectedItem: _ovrRasi,
+              prefixIcon: Icons.brightness_3_outlined,
+              onChanged: (v) => setState(() => _ovrRasi = v),
+            ),
+            const SizedBox(height: 16),
+            SearchableField(
+              label: 'Nakshatra',
+              isRequired: true,
+              items: _nakOptions,
+              selectedItem: _ovrNakshatra,
+              prefixIcon: Icons.star_outline,
+              onChanged: (v) => setState(() => _ovrNakshatra = v),
+            ),
+            const SizedBox(height: 16),
+            SearchableField(
+              label: 'Lagnam',
+              isRequired: true,
+              items: _lagnamOptions,
+              selectedItem: _ovrLagnam,
+              prefixIcon: Icons.wb_twilight_outlined,
+              onChanged: (v) => setState(() => _ovrLagnam = v),
+            ),
+          ],
 
           const SizedBox(height: 32),
           GradientButton(onPressed: _saveAndNext, text: 'Next'),
         ],
       ),
     );
+  }
+
+  // ── Formatting helpers ──────────────────────────────────────────────────
+  static String _fmtDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}';
+
+  static String _fmtTime(TimeOfDay t) {
+    final h = t.hourOfPeriod == 0 ? 12 : t.hourOfPeriod;
+    final m = t.minute.toString().padLeft(2, '0');
+    final ap = t.period == DayPeriod.am ? 'AM' : 'PM';
+    return '$h:$m $ap';
   }
 }
 
@@ -313,7 +518,8 @@ class _ResultCard extends StatelessWidget {
             Expanded(
                 flex: 5,
                 child: Text(label,
-                    style: const TextStyle(color: Colors.black54, fontSize: 13))),
+                    style:
+                        const TextStyle(color: Colors.black54, fontSize: 13))),
             Expanded(
               flex: 6,
               child: Text(value,
@@ -323,4 +529,32 @@ class _ResultCard extends StatelessWidget {
           ],
         ),
       );
+}
+
+/// Themed error box for generation failures.
+class _ErrorBox extends StatelessWidget {
+  final String message;
+  const _ErrorBox({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.red[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red[200]!),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red[400], size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(message,
+                style: TextStyle(color: Colors.red[700], fontSize: 13)),
+          ),
+        ],
+      ),
+    );
+  }
 }
