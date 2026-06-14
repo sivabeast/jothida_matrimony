@@ -1,0 +1,2707 @@
+[
+  {
+    "id": "sub_hindu_adi_dravidar_adi_dravida",
+    "casteId": "cas_hindu_adi_dravidar",
+    "name": "Adi Dravida"
+  },
+  {
+    "id": "sub_hindu_adi_dravidar_paraiyar",
+    "casteId": "cas_hindu_adi_dravidar",
+    "name": "Paraiyar"
+  },
+  {
+    "id": "sub_hindu_adi_dravidar_sambavar",
+    "casteId": "cas_hindu_adi_dravidar",
+    "name": "Sambavar"
+  },
+  {
+    "id": "sub_hindu_adi_dravidar_valluvan",
+    "casteId": "cas_hindu_adi_dravidar",
+    "name": "Valluvan"
+  },
+  {
+    "id": "sub_hindu_adi_dravidar_pallan",
+    "casteId": "cas_hindu_adi_dravidar",
+    "name": "Pallan"
+  },
+  {
+    "id": "sub_hindu_agamudayar_agamudayar",
+    "casteId": "cas_hindu_agamudayar",
+    "name": "Agamudayar"
+  },
+  {
+    "id": "sub_hindu_agamudayar_arcot",
+    "casteId": "cas_hindu_agamudayar",
+    "name": "Arcot"
+  },
+  {
+    "id": "sub_hindu_agamudayar_thuluva_vellala",
+    "casteId": "cas_hindu_agamudayar",
+    "name": "Thuluva Vellala"
+  },
+  {
+    "id": "sub_hindu_agamudayar_rajakula_agamudayar",
+    "casteId": "cas_hindu_agamudayar",
+    "name": "Rajakula Agamudayar"
+  },
+  {
+    "id": "sub_hindu_agamudayar_servai",
+    "casteId": "cas_hindu_agamudayar",
+    "name": "Servai"
+  },
+  {
+    "id": "sub_hindu_agamudayar_maniyakaarar",
+    "casteId": "cas_hindu_agamudayar",
+    "name": "Maniyakaarar"
+  },
+  {
+    "id": "sub_hindu_agamudayar_agamudaya_mudaliar",
+    "casteId": "cas_hindu_agamudayar",
+    "name": "Agamudaya Mudaliar"
+  },
+  {
+    "id": "sub_hindu_ambalakarar_ambalakarar",
+    "casteId": "cas_hindu_ambalakarar",
+    "name": "Ambalakarar"
+  },
+  {
+    "id": "sub_hindu_ambalakarar_ambalakaran",
+    "casteId": "cas_hindu_ambalakarar",
+    "name": "Ambalakaran"
+  },
+  {
+    "id": "sub_hindu_ambalakarar_servai",
+    "casteId": "cas_hindu_ambalakarar",
+    "name": "Servai"
+  },
+  {
+    "id": "sub_hindu_arunthathiyar_arunthathiyar",
+    "casteId": "cas_hindu_arunthathiyar",
+    "name": "Arunthathiyar"
+  },
+  {
+    "id": "sub_hindu_arunthathiyar_chakkiliyan",
+    "casteId": "cas_hindu_arunthathiyar",
+    "name": "Chakkiliyan"
+  },
+  {
+    "id": "sub_hindu_arunthathiyar_madari",
+    "casteId": "cas_hindu_arunthathiyar",
+    "name": "Madari"
+  },
+  {
+    "id": "sub_hindu_arunthathiyar_madiga",
+    "casteId": "cas_hindu_arunthathiyar",
+    "name": "Madiga"
+  },
+  {
+    "id": "sub_hindu_arunthathiyar_pagadai",
+    "casteId": "cas_hindu_arunthathiyar",
+    "name": "Pagadai"
+  },
+  {
+    "id": "sub_hindu_arunthathiyar_thoti",
+    "casteId": "cas_hindu_arunthathiyar",
+    "name": "Thoti"
+  },
+  {
+    "id": "sub_hindu_arunthathiyar_adi_andhra",
+    "casteId": "cas_hindu_arunthathiyar",
+    "name": "Adi Andhra"
+  },
+  {
+    "id": "sub_hindu_arya_vysya_komati",
+    "casteId": "cas_hindu_arya_vysya",
+    "name": "Komati"
+  },
+  {
+    "id": "sub_hindu_arya_vysya_vaisya",
+    "casteId": "cas_hindu_arya_vysya",
+    "name": "Vaisya"
+  },
+  {
+    "id": "sub_hindu_arya_vysya_aryavysya",
+    "casteId": "cas_hindu_arya_vysya",
+    "name": "Aryavysya"
+  },
+  {
+    "id": "sub_hindu_arya_vysya_vysya",
+    "casteId": "cas_hindu_arya_vysya",
+    "name": "Vysya"
+  },
+  {
+    "id": "sub_hindu_arya_vysya_gavara_komati",
+    "casteId": "cas_hindu_arya_vysya",
+    "name": "Gavara Komati"
+  },
+  {
+    "id": "sub_hindu_badaga_badaga",
+    "casteId": "cas_hindu_badaga",
+    "name": "Badaga"
+  },
+  {
+    "id": "sub_hindu_badaga_lingayat_badaga",
+    "casteId": "cas_hindu_badaga",
+    "name": "Lingayat Badaga"
+  },
+  {
+    "id": "sub_hindu_badaga_wodeya",
+    "casteId": "cas_hindu_badaga",
+    "name": "Wodeya"
+  },
+  {
+    "id": "sub_hindu_balija_naidu_balija",
+    "casteId": "cas_hindu_balija_naidu",
+    "name": "Balija"
+  },
+  {
+    "id": "sub_hindu_balija_naidu_balija_naidu",
+    "casteId": "cas_hindu_balija_naidu",
+    "name": "Balija Naidu"
+  },
+  {
+    "id": "sub_hindu_balija_naidu_gajula_balija",
+    "casteId": "cas_hindu_balija_naidu",
+    "name": "Gajula Balija"
+  },
+  {
+    "id": "sub_hindu_balija_naidu_vada_balija",
+    "casteId": "cas_hindu_balija_naidu",
+    "name": "Vada Balija"
+  },
+  {
+    "id": "sub_hindu_balija_naidu_setti_balija",
+    "casteId": "cas_hindu_balija_naidu",
+    "name": "Setti Balija"
+  },
+  {
+    "id": "sub_hindu_balija_naidu_kavarai",
+    "casteId": "cas_hindu_balija_naidu",
+    "name": "Kavarai"
+  },
+  {
+    "id": "sub_hindu_bestha_bestha",
+    "casteId": "cas_hindu_bestha",
+    "name": "Bestha"
+  },
+  {
+    "id": "sub_hindu_bestha_besta",
+    "casteId": "cas_hindu_bestha",
+    "name": "Besta"
+  },
+  {
+    "id": "sub_hindu_bestha_siviar",
+    "casteId": "cas_hindu_bestha",
+    "name": "Siviar"
+  },
+  {
+    "id": "sub_hindu_bestha_gangaputra",
+    "casteId": "cas_hindu_bestha",
+    "name": "Gangaputra"
+  },
+  {
+    "id": "sub_hindu_bestha_boya_bestha",
+    "casteId": "cas_hindu_bestha",
+    "name": "Boya Bestha"
+  },
+  {
+    "id": "sub_hindu_bhandari_bhandari",
+    "casteId": "cas_hindu_bhandari",
+    "name": "Bhandari"
+  },
+  {
+    "id": "sub_hindu_bhandari_bandari",
+    "casteId": "cas_hindu_bhandari",
+    "name": "Bandari"
+  },
+  {
+    "id": "sub_hindu_bhandari_nayee_brahmin",
+    "casteId": "cas_hindu_bhandari",
+    "name": "Nayee Brahmin"
+  },
+  {
+    "id": "sub_hindu_bhandari_pronopokari",
+    "casteId": "cas_hindu_bhandari",
+    "name": "Pronopokari"
+  },
+  {
+    "id": "sub_hindu_boyar_boyar",
+    "casteId": "cas_hindu_boyar",
+    "name": "Boyar"
+  },
+  {
+    "id": "sub_hindu_boyar_boyer",
+    "casteId": "cas_hindu_boyar",
+    "name": "Boyer"
+  },
+  {
+    "id": "sub_hindu_boyar_boya",
+    "casteId": "cas_hindu_boyar",
+    "name": "Boya"
+  },
+  {
+    "id": "sub_hindu_boyar_oddar",
+    "casteId": "cas_hindu_boyar",
+    "name": "Oddar"
+  },
+  {
+    "id": "sub_hindu_boyar_naika",
+    "casteId": "cas_hindu_boyar",
+    "name": "Naika"
+  },
+  {
+    "id": "sub_hindu_brahmin_iyer",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Iyer"
+  },
+  {
+    "id": "sub_hindu_brahmin_iyengar",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Iyengar"
+  },
+  {
+    "id": "sub_hindu_brahmin_vadakalai",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Vadakalai"
+  },
+  {
+    "id": "sub_hindu_brahmin_thenkalai",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Thenkalai"
+  },
+  {
+    "id": "sub_hindu_brahmin_gurukkal",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Gurukkal"
+  },
+  {
+    "id": "sub_hindu_brahmin_smartha",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Smartha"
+  },
+  {
+    "id": "sub_hindu_brahmin_madhwa",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Madhwa"
+  },
+  {
+    "id": "sub_hindu_brahmin_vadama",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Vadama"
+  },
+  {
+    "id": "sub_hindu_brahmin_brahacharanam",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Brahacharanam"
+  },
+  {
+    "id": "sub_hindu_brahmin_vathima",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Vathima"
+  },
+  {
+    "id": "sub_hindu_brahmin_ashtasahasram",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Ashtasahasram"
+  },
+  {
+    "id": "sub_hindu_brahmin_mukkani",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Mukkani"
+  },
+  {
+    "id": "sub_hindu_brahmin_sri_vaishnava",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Sri Vaishnava"
+  },
+  {
+    "id": "sub_hindu_brahmin_sankethi",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Sankethi"
+  },
+  {
+    "id": "sub_hindu_brahmin_saiva_brahmin",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Saiva Brahmin"
+  },
+  {
+    "id": "sub_hindu_brahmin_dravida",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Dravida"
+  },
+  {
+    "id": "sub_hindu_brahmin_deshastha",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Deshastha"
+  },
+  {
+    "id": "sub_hindu_brahmin_kannada_brahmin",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Kannada Brahmin"
+  },
+  {
+    "id": "sub_hindu_brahmin_telugu_brahmin",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Telugu Brahmin"
+  },
+  {
+    "id": "sub_hindu_brahmin_niyogi",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Niyogi"
+  },
+  {
+    "id": "sub_hindu_brahmin_vaidiki",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Vaidiki"
+  },
+  {
+    "id": "sub_hindu_brahmin_marathi_brahmin",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Marathi Brahmin"
+  },
+  {
+    "id": "sub_hindu_brahmin_gujarati_brahmin",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Gujarati Brahmin"
+  },
+  {
+    "id": "sub_hindu_brahmin_saraswat",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Saraswat"
+  },
+  {
+    "id": "sub_hindu_brahmin_tuluva",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Tuluva"
+  },
+  {
+    "id": "sub_hindu_brahmin_havyaka",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Havyaka"
+  },
+  {
+    "id": "sub_hindu_brahmin_embranthiri",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Embranthiri"
+  },
+  {
+    "id": "sub_hindu_brahmin_nambudiri",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Nambudiri"
+  },
+  {
+    "id": "sub_hindu_brahmin_kongu_brahmin",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Kongu Brahmin"
+  },
+  {
+    "id": "sub_hindu_brahmin_goswami",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Goswami"
+  },
+  {
+    "id": "sub_hindu_brahmin_anavil",
+    "casteId": "cas_hindu_brahmin",
+    "name": "Anavil"
+  },
+  {
+    "id": "sub_hindu_chettiar_nagarathar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Nagarathar"
+  },
+  {
+    "id": "sub_hindu_chettiar_nattukottai_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Nattukottai Chettiar"
+  },
+  {
+    "id": "sub_hindu_chettiar_vaniya_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Vaniya Chettiar"
+  },
+  {
+    "id": "sub_hindu_chettiar_devanga_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Devanga Chettiar"
+  },
+  {
+    "id": "sub_hindu_chettiar_sozhia_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Sozhia Chettiar"
+  },
+  {
+    "id": "sub_hindu_chettiar_vellan_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Vellan Chettiar"
+  },
+  {
+    "id": "sub_hindu_chettiar_acharapakkam_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Acharapakkam Chettiar"
+  },
+  {
+    "id": "sub_hindu_chettiar_beri_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Beri Chettiar"
+  },
+  {
+    "id": "sub_hindu_chettiar_elur_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Elur Chettiar"
+  },
+  {
+    "id": "sub_hindu_chettiar_kasukara_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Kasukara Chettiar"
+  },
+  {
+    "id": "sub_hindu_chettiar_manjaputhur_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Manjaputhur Chettiar"
+  },
+  {
+    "id": "sub_hindu_chettiar_pattinavar_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Pattinavar Chettiar"
+  },
+  {
+    "id": "sub_hindu_chettiar_pannirandam_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Pannirandam Chettiar"
+  },
+  {
+    "id": "sub_hindu_chettiar_pudukkadai_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Pudukkadai Chettiar"
+  },
+  {
+    "id": "sub_hindu_chettiar_saiva_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Saiva Chettiar"
+  },
+  {
+    "id": "sub_hindu_chettiar_telugu_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Telugu Chettiar"
+  },
+  {
+    "id": "sub_hindu_chettiar_kongu_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Kongu Chettiar"
+  },
+  {
+    "id": "sub_hindu_chettiar_parvatha_rajakulam",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Parvatha Rajakulam"
+  },
+  {
+    "id": "sub_hindu_chettiar_ayira_vaisya",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Ayira Vaisya"
+  },
+  {
+    "id": "sub_hindu_chettiar_gandla",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Gandla"
+  },
+  {
+    "id": "sub_hindu_chettiar_24_manai_telugu_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "24 Manai Telugu Chettiar"
+  },
+  {
+    "id": "sub_hindu_chettiar_karpoora_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Karpoora Chettiar"
+  },
+  {
+    "id": "sub_hindu_chettiar_senaikudaiyar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Senaikudaiyar"
+  },
+  {
+    "id": "sub_hindu_chettiar_kasukkara_chettiar",
+    "casteId": "cas_hindu_chettiar",
+    "name": "Kasukkara Chettiar"
+  },
+  {
+    "id": "sub_hindu_devandra_kula_vellalar_pallar",
+    "casteId": "cas_hindu_devandra_kula_vellalar",
+    "name": "Pallar"
+  },
+  {
+    "id": "sub_hindu_devandra_kula_vellalar_devendrakulathan",
+    "casteId": "cas_hindu_devandra_kula_vellalar",
+    "name": "Devendrakulathan"
+  },
+  {
+    "id": "sub_hindu_devandra_kula_vellalar_kudumban",
+    "casteId": "cas_hindu_devandra_kula_vellalar",
+    "name": "Kudumban"
+  },
+  {
+    "id": "sub_hindu_devandra_kula_vellalar_kadaiyan",
+    "casteId": "cas_hindu_devandra_kula_vellalar",
+    "name": "Kadaiyan"
+  },
+  {
+    "id": "sub_hindu_devandra_kula_vellalar_kaladi",
+    "casteId": "cas_hindu_devandra_kula_vellalar",
+    "name": "Kaladi"
+  },
+  {
+    "id": "sub_hindu_devandra_kula_vellalar_pannadi",
+    "casteId": "cas_hindu_devandra_kula_vellalar",
+    "name": "Pannadi"
+  },
+  {
+    "id": "sub_hindu_devandra_kula_vellalar_vathiriyan",
+    "casteId": "cas_hindu_devandra_kula_vellalar",
+    "name": "Vathiriyan"
+  },
+  {
+    "id": "sub_hindu_devandra_kula_vellalar_devendra_kula_vellalan",
+    "casteId": "cas_hindu_devandra_kula_vellalar",
+    "name": "Devendra Kula Vellalan"
+  },
+  {
+    "id": "sub_hindu_devanga_devanga",
+    "casteId": "cas_hindu_devanga",
+    "name": "Devanga"
+  },
+  {
+    "id": "sub_hindu_devanga_devanga_chettiar",
+    "casteId": "cas_hindu_devanga",
+    "name": "Devanga Chettiar"
+  },
+  {
+    "id": "sub_hindu_devanga_sedar",
+    "casteId": "cas_hindu_devanga",
+    "name": "Sedar"
+  },
+  {
+    "id": "sub_hindu_devanga_settukkarar",
+    "casteId": "cas_hindu_devanga",
+    "name": "Settukkarar"
+  },
+  {
+    "id": "sub_hindu_devanga_dhevanga",
+    "casteId": "cas_hindu_devanga",
+    "name": "Dhevanga"
+  },
+  {
+    "id": "sub_hindu_gounder_kongu_vellala_gounder",
+    "casteId": "cas_hindu_gounder",
+    "name": "Kongu Vellala Gounder"
+  },
+  {
+    "id": "sub_hindu_gounder_vanniya_kula_kshatriya_gounder",
+    "casteId": "cas_hindu_gounder",
+    "name": "Vanniya Kula Kshatriya Gounder"
+  },
+  {
+    "id": "sub_hindu_gounder_vettuva_gounder",
+    "casteId": "cas_hindu_gounder",
+    "name": "Vettuva Gounder"
+  },
+  {
+    "id": "sub_hindu_gounder_nattu_gounder",
+    "casteId": "cas_hindu_gounder",
+    "name": "Nattu Gounder"
+  },
+  {
+    "id": "sub_hindu_gounder_urali_gounder",
+    "casteId": "cas_hindu_gounder",
+    "name": "Urali Gounder"
+  },
+  {
+    "id": "sub_hindu_gounder_kurumba_gounder",
+    "casteId": "cas_hindu_gounder",
+    "name": "Kurumba Gounder"
+  },
+  {
+    "id": "sub_hindu_gounder_anuppa_vellala_gounder",
+    "casteId": "cas_hindu_gounder",
+    "name": "Anuppa Vellala Gounder"
+  },
+  {
+    "id": "sub_hindu_gounder_padaithalai_gounder",
+    "casteId": "cas_hindu_gounder",
+    "name": "Padaithalai Gounder"
+  },
+  {
+    "id": "sub_hindu_gounder_sanku_gounder",
+    "casteId": "cas_hindu_gounder",
+    "name": "Sanku Gounder"
+  },
+  {
+    "id": "sub_hindu_gounder_pala_gounder",
+    "casteId": "cas_hindu_gounder",
+    "name": "Pala Gounder"
+  },
+  {
+    "id": "sub_hindu_gounder_poosari_gounder",
+    "casteId": "cas_hindu_gounder",
+    "name": "Poosari Gounder"
+  },
+  {
+    "id": "sub_hindu_gounder_kongu_gounder",
+    "casteId": "cas_hindu_gounder",
+    "name": "Kongu Gounder"
+  },
+  {
+    "id": "sub_hindu_gounder_vokkaliga_gounder",
+    "casteId": "cas_hindu_gounder",
+    "name": "Vokkaliga Gounder"
+  },
+  {
+    "id": "sub_hindu_gramani_gramani",
+    "casteId": "cas_hindu_gramani",
+    "name": "Gramani"
+  },
+  {
+    "id": "sub_hindu_gramani_sanar",
+    "casteId": "cas_hindu_gramani",
+    "name": "Sanar"
+  },
+  {
+    "id": "sub_hindu_gramani_hindu_nadar",
+    "casteId": "cas_hindu_gramani",
+    "name": "Hindu Nadar"
+  },
+  {
+    "id": "sub_hindu_isai_vellalar_isai_vellalar",
+    "casteId": "cas_hindu_isai_vellalar",
+    "name": "Isai Vellalar"
+  },
+  {
+    "id": "sub_hindu_isai_vellalar_melakkarar",
+    "casteId": "cas_hindu_isai_vellalar",
+    "name": "Melakkarar"
+  },
+  {
+    "id": "sub_hindu_isai_vellalar_nattuvar",
+    "casteId": "cas_hindu_isai_vellalar",
+    "name": "Nattuvar"
+  },
+  {
+    "id": "sub_hindu_isai_vellalar_thavil",
+    "casteId": "cas_hindu_isai_vellalar",
+    "name": "Thavil"
+  },
+  {
+    "id": "sub_hindu_isai_vellalar_nagaswaram",
+    "casteId": "cas_hindu_isai_vellalar",
+    "name": "Nagaswaram"
+  },
+  {
+    "id": "sub_hindu_jangam_jangam",
+    "casteId": "cas_hindu_jangam",
+    "name": "Jangam"
+  },
+  {
+    "id": "sub_hindu_jangam_lingayat",
+    "casteId": "cas_hindu_jangam",
+    "name": "Lingayat"
+  },
+  {
+    "id": "sub_hindu_jangam_veerasaiva",
+    "casteId": "cas_hindu_jangam",
+    "name": "Veerasaiva"
+  },
+  {
+    "id": "sub_hindu_kaikolar_sengunthar",
+    "casteId": "cas_hindu_kaikolar",
+    "name": "Sengunthar"
+  },
+  {
+    "id": "sub_hindu_kaikolar_kaikolar",
+    "casteId": "cas_hindu_kaikolar",
+    "name": "Kaikolar"
+  },
+  {
+    "id": "sub_hindu_kaikolar_senguntha_mudaliyar",
+    "casteId": "cas_hindu_kaikolar",
+    "name": "Senguntha Mudaliyar"
+  },
+  {
+    "id": "sub_hindu_kaikolar_senguntha_mudaliar",
+    "casteId": "cas_hindu_kaikolar",
+    "name": "Senguntha Mudaliar"
+  },
+  {
+    "id": "sub_hindu_kallar_piramalai_kallar",
+    "casteId": "cas_hindu_kallar",
+    "name": "Piramalai Kallar"
+  },
+  {
+    "id": "sub_hindu_kallar_esanattu_kallar",
+    "casteId": "cas_hindu_kallar",
+    "name": "Esanattu Kallar"
+  },
+  {
+    "id": "sub_hindu_kallar_kallar",
+    "casteId": "cas_hindu_kallar",
+    "name": "Kallar"
+  },
+  {
+    "id": "sub_hindu_kallar_gandarvakottai_kallar",
+    "casteId": "cas_hindu_kallar",
+    "name": "Gandarvakottai Kallar"
+  },
+  {
+    "id": "sub_hindu_kallar_kootappal_kallar",
+    "casteId": "cas_hindu_kallar",
+    "name": "Kootappal Kallar"
+  },
+  {
+    "id": "sub_hindu_kallar_periya_suriyur_kallar",
+    "casteId": "cas_hindu_kallar",
+    "name": "Periya Suriyur Kallar"
+  },
+  {
+    "id": "sub_hindu_kallar_ambalakarar",
+    "casteId": "cas_hindu_kallar",
+    "name": "Ambalakarar"
+  },
+  {
+    "id": "sub_hindu_kallar_thanjavur_kallar",
+    "casteId": "cas_hindu_kallar",
+    "name": "Thanjavur Kallar"
+  },
+  {
+    "id": "sub_hindu_kamma_naidu_kamma",
+    "casteId": "cas_hindu_kamma_naidu",
+    "name": "Kamma"
+  },
+  {
+    "id": "sub_hindu_kamma_naidu_kammavar_naidu",
+    "casteId": "cas_hindu_kamma_naidu",
+    "name": "Kammavar Naidu"
+  },
+  {
+    "id": "sub_hindu_kamma_naidu_kamma_naidu",
+    "casteId": "cas_hindu_kamma_naidu",
+    "name": "Kamma Naidu"
+  },
+  {
+    "id": "sub_hindu_kamma_naidu_choudary",
+    "casteId": "cas_hindu_kamma_naidu",
+    "name": "Choudary"
+  },
+  {
+    "id": "sub_hindu_kamma_naidu_kammavar",
+    "casteId": "cas_hindu_kamma_naidu",
+    "name": "Kammavar"
+  },
+  {
+    "id": "sub_hindu_kannadiyar_kannadiyan",
+    "casteId": "cas_hindu_kannadiyar",
+    "name": "Kannadiyan"
+  },
+  {
+    "id": "sub_hindu_kannadiyar_kannada_saineegar",
+    "casteId": "cas_hindu_kannadiyar",
+    "name": "Kannada Saineegar"
+  },
+  {
+    "id": "sub_hindu_kannadiyar_dasapalanji",
+    "casteId": "cas_hindu_kannadiyar",
+    "name": "Dasapalanji"
+  },
+  {
+    "id": "sub_hindu_karuneegar_karuneegar",
+    "casteId": "cas_hindu_karuneegar",
+    "name": "Karuneegar"
+  },
+  {
+    "id": "sub_hindu_karuneegar_kanakkar",
+    "casteId": "cas_hindu_karuneegar",
+    "name": "Kanakkar"
+  },
+  {
+    "id": "sub_hindu_karuneegar_sozhia_karuneegar",
+    "casteId": "cas_hindu_karuneegar",
+    "name": "Sozhia Karuneegar"
+  },
+  {
+    "id": "sub_hindu_karuneegar_kaikkattu_karuneegar",
+    "casteId": "cas_hindu_karuneegar",
+    "name": "Kaikkattu Karuneegar"
+  },
+  {
+    "id": "sub_hindu_konar_konar",
+    "casteId": "cas_hindu_konar",
+    "name": "Konar"
+  },
+  {
+    "id": "sub_hindu_konar_idaiyar",
+    "casteId": "cas_hindu_konar",
+    "name": "Idaiyar"
+  },
+  {
+    "id": "sub_hindu_konar_ayar",
+    "casteId": "cas_hindu_konar",
+    "name": "Ayar"
+  },
+  {
+    "id": "sub_hindu_konar_yadava",
+    "casteId": "cas_hindu_konar",
+    "name": "Yadava"
+  },
+  {
+    "id": "sub_hindu_konar_golla",
+    "casteId": "cas_hindu_konar",
+    "name": "Golla"
+  },
+  {
+    "id": "sub_hindu_konar_krishnan_vagaiyara",
+    "casteId": "cas_hindu_konar",
+    "name": "Krishnan Vagaiyara"
+  },
+  {
+    "id": "sub_hindu_konar_pillai_konar",
+    "casteId": "cas_hindu_konar",
+    "name": "Pillai Konar"
+  },
+  {
+    "id": "sub_hindu_koteyar_koteyar",
+    "casteId": "cas_hindu_koteyar",
+    "name": "Koteyar"
+  },
+  {
+    "id": "sub_hindu_koteyar_kotegara",
+    "casteId": "cas_hindu_koteyar",
+    "name": "Kotegara"
+  },
+  {
+    "id": "sub_hindu_kshatriya_raju_raju",
+    "casteId": "cas_hindu_kshatriya_raju",
+    "name": "Raju"
+  },
+  {
+    "id": "sub_hindu_kshatriya_raju_kshatriya_raju",
+    "casteId": "cas_hindu_kshatriya_raju",
+    "name": "Kshatriya Raju"
+  },
+  {
+    "id": "sub_hindu_kshatriya_raju_rajaka",
+    "casteId": "cas_hindu_kshatriya_raju",
+    "name": "Rajaka"
+  },
+  {
+    "id": "sub_hindu_kshatriya_raju_razu",
+    "casteId": "cas_hindu_kshatriya_raju",
+    "name": "Razu"
+  },
+  {
+    "id": "sub_hindu_kshatriya_raju_surya_vamsam",
+    "casteId": "cas_hindu_kshatriya_raju",
+    "name": "Surya Vamsam"
+  },
+  {
+    "id": "sub_hindu_kulalar_kulalar",
+    "casteId": "cas_hindu_kulalar",
+    "name": "Kulalar"
+  },
+  {
+    "id": "sub_hindu_kulalar_kuyavar",
+    "casteId": "cas_hindu_kulalar",
+    "name": "Kuyavar"
+  },
+  {
+    "id": "sub_hindu_kulalar_velar",
+    "casteId": "cas_hindu_kulalar",
+    "name": "Velar"
+  },
+  {
+    "id": "sub_hindu_kulalar_odde",
+    "casteId": "cas_hindu_kulalar",
+    "name": "Odde"
+  },
+  {
+    "id": "sub_hindu_kulalar_kummara",
+    "casteId": "cas_hindu_kulalar",
+    "name": "Kummara"
+  },
+  {
+    "id": "sub_hindu_kulalar_kusavan",
+    "casteId": "cas_hindu_kulalar",
+    "name": "Kusavan"
+  },
+  {
+    "id": "sub_hindu_kuravar_kuravan",
+    "casteId": "cas_hindu_kuravar",
+    "name": "Kuravan"
+  },
+  {
+    "id": "sub_hindu_kuravar_sidhanar",
+    "casteId": "cas_hindu_kuravar",
+    "name": "Sidhanar"
+  },
+  {
+    "id": "sub_hindu_kuravar_narikuravar",
+    "casteId": "cas_hindu_kuravar",
+    "name": "Narikuravar"
+  },
+  {
+    "id": "sub_hindu_kuravar_kurava",
+    "casteId": "cas_hindu_kuravar",
+    "name": "Kurava"
+  },
+  {
+    "id": "sub_hindu_kuravar_koravar",
+    "casteId": "cas_hindu_kuravar",
+    "name": "Koravar"
+  },
+  {
+    "id": "sub_hindu_kurumbar_kurumba",
+    "casteId": "cas_hindu_kurumbar",
+    "name": "Kurumba"
+  },
+  {
+    "id": "sub_hindu_kurumbar_kuruba_gowda",
+    "casteId": "cas_hindu_kurumbar",
+    "name": "Kuruba Gowda"
+  },
+  {
+    "id": "sub_hindu_kurumbar_halumatha",
+    "casteId": "cas_hindu_kurumbar",
+    "name": "Halumatha"
+  },
+  {
+    "id": "sub_hindu_kurumbar_kurumba_gounder",
+    "casteId": "cas_hindu_kurumbar",
+    "name": "Kurumba Gounder"
+  },
+  {
+    "id": "sub_hindu_kurumbar_pal_kuruba",
+    "casteId": "cas_hindu_kurumbar",
+    "name": "Pal Kuruba"
+  },
+  {
+    "id": "sub_hindu_maravar_maravar",
+    "casteId": "cas_hindu_maravar",
+    "name": "Maravar"
+  },
+  {
+    "id": "sub_hindu_maravar_agamudaya_maravar",
+    "casteId": "cas_hindu_maravar",
+    "name": "Agamudaya Maravar"
+  },
+  {
+    "id": "sub_hindu_maravar_easanattu_maravar",
+    "casteId": "cas_hindu_maravar",
+    "name": "Easanattu Maravar"
+  },
+  {
+    "id": "sub_hindu_maravar_kondaiyankottai_maravar",
+    "casteId": "cas_hindu_maravar",
+    "name": "Kondaiyankottai Maravar"
+  },
+  {
+    "id": "sub_hindu_maravar_sembanad_maravar",
+    "casteId": "cas_hindu_maravar",
+    "name": "Sembanad Maravar"
+  },
+  {
+    "id": "sub_hindu_meenavar_meenavar",
+    "casteId": "cas_hindu_meenavar",
+    "name": "Meenavar"
+  },
+  {
+    "id": "sub_hindu_meenavar_pattinavar",
+    "casteId": "cas_hindu_meenavar",
+    "name": "Pattinavar"
+  },
+  {
+    "id": "sub_hindu_meenavar_parvatharajakulam",
+    "casteId": "cas_hindu_meenavar",
+    "name": "Parvatharajakulam"
+  },
+  {
+    "id": "sub_hindu_meenavar_sembadavar",
+    "casteId": "cas_hindu_meenavar",
+    "name": "Sembadavar"
+  },
+  {
+    "id": "sub_hindu_meenavar_mukkuvar",
+    "casteId": "cas_hindu_meenavar",
+    "name": "Mukkuvar"
+  },
+  {
+    "id": "sub_hindu_meenavar_karaiyar",
+    "casteId": "cas_hindu_meenavar",
+    "name": "Karaiyar"
+  },
+  {
+    "id": "sub_hindu_meenavar_nulayar",
+    "casteId": "cas_hindu_meenavar",
+    "name": "Nulayar"
+  },
+  {
+    "id": "sub_hindu_meenavar_mogaveera",
+    "casteId": "cas_hindu_meenavar",
+    "name": "Mogaveera"
+  },
+  {
+    "id": "sub_hindu_meenavar_besta_meenavar",
+    "casteId": "cas_hindu_meenavar",
+    "name": "Besta Meenavar"
+  },
+  {
+    "id": "sub_hindu_moopanar_moopanar",
+    "casteId": "cas_hindu_moopanar",
+    "name": "Moopanar"
+  },
+  {
+    "id": "sub_hindu_moopanar_mooppanar",
+    "casteId": "cas_hindu_moopanar",
+    "name": "Mooppanar"
+  },
+  {
+    "id": "sub_hindu_moopanar_nattaman",
+    "casteId": "cas_hindu_moopanar",
+    "name": "Nattaman"
+  },
+  {
+    "id": "sub_hindu_moopanar_malayaman",
+    "casteId": "cas_hindu_moopanar",
+    "name": "Malayaman"
+  },
+  {
+    "id": "sub_hindu_mudaliar_arcot_mudaliar",
+    "casteId": "cas_hindu_mudaliar",
+    "name": "Arcot Mudaliar"
+  },
+  {
+    "id": "sub_hindu_mudaliar_thuluva_vellala",
+    "casteId": "cas_hindu_mudaliar",
+    "name": "Thuluva Vellala"
+  },
+  {
+    "id": "sub_hindu_mudaliar_saiva_mudaliar",
+    "casteId": "cas_hindu_mudaliar",
+    "name": "Saiva Mudaliar"
+  },
+  {
+    "id": "sub_hindu_mudaliar_senguntha_mudaliar",
+    "casteId": "cas_hindu_mudaliar",
+    "name": "Senguntha Mudaliar"
+  },
+  {
+    "id": "sub_hindu_mudaliar_isai_vellala_mudaliar",
+    "casteId": "cas_hindu_mudaliar",
+    "name": "Isai Vellala Mudaliar"
+  },
+  {
+    "id": "sub_hindu_mudaliar_mudaliar_vellalar",
+    "casteId": "cas_hindu_mudaliar",
+    "name": "Mudaliar Vellalar"
+  },
+  {
+    "id": "sub_hindu_mudaliar_agamudaya_mudaliar",
+    "casteId": "cas_hindu_mudaliar",
+    "name": "Agamudaya Mudaliar"
+  },
+  {
+    "id": "sub_hindu_mudaliar_kongu_mudaliar",
+    "casteId": "cas_hindu_mudaliar",
+    "name": "Kongu Mudaliar"
+  },
+  {
+    "id": "sub_hindu_mudaliar_sozhia_vellalar",
+    "casteId": "cas_hindu_mudaliar",
+    "name": "Sozhia Vellalar"
+  },
+  {
+    "id": "sub_hindu_mudaliar_karkathar",
+    "casteId": "cas_hindu_mudaliar",
+    "name": "Karkathar"
+  },
+  {
+    "id": "sub_hindu_mudaliar_thondaimandala_mudaliar",
+    "casteId": "cas_hindu_mudaliar",
+    "name": "Thondaimandala Mudaliar"
+  },
+  {
+    "id": "sub_hindu_mukkulathor_agamudayar",
+    "casteId": "cas_hindu_mukkulathor",
+    "name": "Agamudayar"
+  },
+  {
+    "id": "sub_hindu_mukkulathor_kallar",
+    "casteId": "cas_hindu_mukkulathor",
+    "name": "Kallar"
+  },
+  {
+    "id": "sub_hindu_mukkulathor_maravar",
+    "casteId": "cas_hindu_mukkulathor",
+    "name": "Maravar"
+  },
+  {
+    "id": "sub_hindu_mukkulathor_thevar",
+    "casteId": "cas_hindu_mukkulathor",
+    "name": "Thevar"
+  },
+  {
+    "id": "sub_hindu_mukkulathor_mukkulathor",
+    "casteId": "cas_hindu_mukkulathor",
+    "name": "Mukkulathor"
+  },
+  {
+    "id": "sub_hindu_mutharaiyar_muthuraja",
+    "casteId": "cas_hindu_mutharaiyar",
+    "name": "Muthuraja"
+  },
+  {
+    "id": "sub_hindu_mutharaiyar_mutharaiyar",
+    "casteId": "cas_hindu_mutharaiyar",
+    "name": "Mutharaiyar"
+  },
+  {
+    "id": "sub_hindu_mutharaiyar_muthuraiyar",
+    "casteId": "cas_hindu_mutharaiyar",
+    "name": "Muthuraiyar"
+  },
+  {
+    "id": "sub_hindu_mutharaiyar_mutracha",
+    "casteId": "cas_hindu_mutharaiyar",
+    "name": "Mutracha"
+  },
+  {
+    "id": "sub_hindu_mutharaiyar_ambalakarar",
+    "casteId": "cas_hindu_mutharaiyar",
+    "name": "Ambalakarar"
+  },
+  {
+    "id": "sub_hindu_mutharaiyar_servai",
+    "casteId": "cas_hindu_mutharaiyar",
+    "name": "Servai"
+  },
+  {
+    "id": "sub_hindu_mutharaiyar_thuraiyar",
+    "casteId": "cas_hindu_mutharaiyar",
+    "name": "Thuraiyar"
+  },
+  {
+    "id": "sub_hindu_nadar_hindu_nadar",
+    "casteId": "cas_hindu_nadar",
+    "name": "Hindu Nadar"
+  },
+  {
+    "id": "sub_hindu_nadar_gramani",
+    "casteId": "cas_hindu_nadar",
+    "name": "Gramani"
+  },
+  {
+    "id": "sub_hindu_nadar_shanar",
+    "casteId": "cas_hindu_nadar",
+    "name": "Shanar"
+  },
+  {
+    "id": "sub_hindu_nadar_nadar",
+    "casteId": "cas_hindu_nadar",
+    "name": "Nadar"
+  },
+  {
+    "id": "sub_hindu_nadar_kongu_nadar",
+    "casteId": "cas_hindu_nadar",
+    "name": "Kongu Nadar"
+  },
+  {
+    "id": "sub_hindu_nadar_karukku_pattayam",
+    "casteId": "cas_hindu_nadar",
+    "name": "Karukku Pattayam"
+  },
+  {
+    "id": "sub_hindu_nadar_mel_nadar",
+    "casteId": "cas_hindu_nadar",
+    "name": "Mel Nadar"
+  },
+  {
+    "id": "sub_hindu_nadar_nattathi_nadar",
+    "casteId": "cas_hindu_nadar",
+    "name": "Nattathi Nadar"
+  },
+  {
+    "id": "sub_hindu_nadar_santror",
+    "casteId": "cas_hindu_nadar",
+    "name": "Santror"
+  },
+  {
+    "id": "sub_hindu_naicker_vanniya_naicker",
+    "casteId": "cas_hindu_naicker",
+    "name": "Vanniya Naicker"
+  },
+  {
+    "id": "sub_hindu_naicker_telugu_naicker",
+    "casteId": "cas_hindu_naicker",
+    "name": "Telugu Naicker"
+  },
+  {
+    "id": "sub_hindu_naicker_kannada_naicker",
+    "casteId": "cas_hindu_naicker",
+    "name": "Kannada Naicker"
+  },
+  {
+    "id": "sub_hindu_naicker_vaduga_naicker",
+    "casteId": "cas_hindu_naicker",
+    "name": "Vaduga Naicker"
+  },
+  {
+    "id": "sub_hindu_naicker_tottiya_naicker",
+    "casteId": "cas_hindu_naicker",
+    "name": "Tottiya Naicker"
+  },
+  {
+    "id": "sub_hindu_naicker_urali_naicker",
+    "casteId": "cas_hindu_naicker",
+    "name": "Urali Naicker"
+  },
+  {
+    "id": "sub_hindu_naicker_palayakkara_naicker",
+    "casteId": "cas_hindu_naicker",
+    "name": "Palayakkara Naicker"
+  },
+  {
+    "id": "sub_hindu_naidu_balija_naidu",
+    "casteId": "cas_hindu_naidu",
+    "name": "Balija Naidu"
+  },
+  {
+    "id": "sub_hindu_naidu_gavara_naidu",
+    "casteId": "cas_hindu_naidu",
+    "name": "Gavara Naidu"
+  },
+  {
+    "id": "sub_hindu_naidu_kamma_naidu",
+    "casteId": "cas_hindu_naidu",
+    "name": "Kamma Naidu"
+  },
+  {
+    "id": "sub_hindu_naidu_kapu_naidu",
+    "casteId": "cas_hindu_naidu",
+    "name": "Kapu Naidu"
+  },
+  {
+    "id": "sub_hindu_naidu_velama_naidu",
+    "casteId": "cas_hindu_naidu",
+    "name": "Velama Naidu"
+  },
+  {
+    "id": "sub_hindu_naidu_telaga",
+    "casteId": "cas_hindu_naidu",
+    "name": "Telaga"
+  },
+  {
+    "id": "sub_hindu_naidu_yadava_naidu",
+    "casteId": "cas_hindu_naidu",
+    "name": "Yadava Naidu"
+  },
+  {
+    "id": "sub_hindu_naidu_ediga",
+    "casteId": "cas_hindu_naidu",
+    "name": "Ediga"
+  },
+  {
+    "id": "sub_hindu_naidu_tottiyan",
+    "casteId": "cas_hindu_naidu",
+    "name": "Tottiyan"
+  },
+  {
+    "id": "sub_hindu_naidu_munnuru_kapu",
+    "casteId": "cas_hindu_naidu",
+    "name": "Munnuru Kapu"
+  },
+  {
+    "id": "sub_hindu_naidu_perika_naidu",
+    "casteId": "cas_hindu_naidu",
+    "name": "Perika Naidu"
+  },
+  {
+    "id": "sub_hindu_nair_nair",
+    "casteId": "cas_hindu_nair",
+    "name": "Nair"
+  },
+  {
+    "id": "sub_hindu_nair_menon",
+    "casteId": "cas_hindu_nair",
+    "name": "Menon"
+  },
+  {
+    "id": "sub_hindu_nair_kurup",
+    "casteId": "cas_hindu_nair",
+    "name": "Kurup"
+  },
+  {
+    "id": "sub_hindu_nair_nambiar",
+    "casteId": "cas_hindu_nair",
+    "name": "Nambiar"
+  },
+  {
+    "id": "sub_hindu_nair_pillai",
+    "casteId": "cas_hindu_nair",
+    "name": "Pillai"
+  },
+  {
+    "id": "sub_hindu_nair_kartha",
+    "casteId": "cas_hindu_nair",
+    "name": "Kartha"
+  },
+  {
+    "id": "sub_hindu_pandaram_pandaram",
+    "casteId": "cas_hindu_pandaram",
+    "name": "Pandaram"
+  },
+  {
+    "id": "sub_hindu_pandaram_andi_pandaram",
+    "casteId": "cas_hindu_pandaram",
+    "name": "Andi Pandaram"
+  },
+  {
+    "id": "sub_hindu_pandaram_pandaaram",
+    "casteId": "cas_hindu_pandaram",
+    "name": "Pandaaram"
+  },
+  {
+    "id": "sub_hindu_pandithar_pandithar",
+    "casteId": "cas_hindu_pandithar",
+    "name": "Pandithar"
+  },
+  {
+    "id": "sub_hindu_pandithar_vaidyar",
+    "casteId": "cas_hindu_pandithar",
+    "name": "Vaidyar"
+  },
+  {
+    "id": "sub_hindu_pandithar_navithar",
+    "casteId": "cas_hindu_pandithar",
+    "name": "Navithar"
+  },
+  {
+    "id": "sub_hindu_pandithar_ambattar",
+    "casteId": "cas_hindu_pandithar",
+    "name": "Ambattar"
+  },
+  {
+    "id": "sub_hindu_parkavakulam_udayar",
+    "casteId": "cas_hindu_parkavakulam",
+    "name": "Udayar"
+  },
+  {
+    "id": "sub_hindu_parkavakulam_malayaman",
+    "casteId": "cas_hindu_parkavakulam",
+    "name": "Malayaman"
+  },
+  {
+    "id": "sub_hindu_parkavakulam_surutiman",
+    "casteId": "cas_hindu_parkavakulam",
+    "name": "Surutiman"
+  },
+  {
+    "id": "sub_hindu_parkavakulam_nattaman",
+    "casteId": "cas_hindu_parkavakulam",
+    "name": "Nattaman"
+  },
+  {
+    "id": "sub_hindu_parkavakulam_moopanar",
+    "casteId": "cas_hindu_parkavakulam",
+    "name": "Moopanar"
+  },
+  {
+    "id": "sub_hindu_pillai_saiva_pillai",
+    "casteId": "cas_hindu_pillai",
+    "name": "Saiva Pillai"
+  },
+  {
+    "id": "sub_hindu_pillai_karkartha_vellalar",
+    "casteId": "cas_hindu_pillai",
+    "name": "Karkartha Vellalar"
+  },
+  {
+    "id": "sub_hindu_pillai_thondaimandala_vellalar",
+    "casteId": "cas_hindu_pillai",
+    "name": "Thondaimandala Vellalar"
+  },
+  {
+    "id": "sub_hindu_pillai_arunattu_vellalar",
+    "casteId": "cas_hindu_pillai",
+    "name": "Arunattu Vellalar"
+  },
+  {
+    "id": "sub_hindu_pillai_kodikal_pillai",
+    "casteId": "cas_hindu_pillai",
+    "name": "Kodikal Pillai"
+  },
+  {
+    "id": "sub_hindu_pillai_nanjil_vellalar",
+    "casteId": "cas_hindu_pillai",
+    "name": "Nanjil Vellalar"
+  },
+  {
+    "id": "sub_hindu_pillai_sozhia_vellalar",
+    "casteId": "cas_hindu_pillai",
+    "name": "Sozhia Vellalar"
+  },
+  {
+    "id": "sub_hindu_pillai_karaikattu_vellalar",
+    "casteId": "cas_hindu_pillai",
+    "name": "Karaikattu Vellalar"
+  },
+  {
+    "id": "sub_hindu_pillai_agamudaya_vellalar",
+    "casteId": "cas_hindu_pillai",
+    "name": "Agamudaya Vellalar"
+  },
+  {
+    "id": "sub_hindu_pillai_pandya_vellalar",
+    "casteId": "cas_hindu_pillai",
+    "name": "Pandya Vellalar"
+  },
+  {
+    "id": "sub_hindu_pillai_illaththu_pillai",
+    "casteId": "cas_hindu_pillai",
+    "name": "Illaththu Pillai"
+  },
+  {
+    "id": "sub_hindu_pillai_vellala_pillai",
+    "casteId": "cas_hindu_pillai",
+    "name": "Vellala Pillai"
+  },
+  {
+    "id": "sub_hindu_reddiar_reddy",
+    "casteId": "cas_hindu_reddiar",
+    "name": "Reddy"
+  },
+  {
+    "id": "sub_hindu_reddiar_reddiar",
+    "casteId": "cas_hindu_reddiar",
+    "name": "Reddiar"
+  },
+  {
+    "id": "sub_hindu_reddiar_ganjam_reddy",
+    "casteId": "cas_hindu_reddiar",
+    "name": "Ganjam Reddy"
+  },
+  {
+    "id": "sub_hindu_reddiar_motati_reddy",
+    "casteId": "cas_hindu_reddiar",
+    "name": "Motati Reddy"
+  },
+  {
+    "id": "sub_hindu_reddiar_palli_reddy",
+    "casteId": "cas_hindu_reddiar",
+    "name": "Palli Reddy"
+  },
+  {
+    "id": "sub_hindu_reddiar_pakanati",
+    "casteId": "cas_hindu_reddiar",
+    "name": "Pakanati"
+  },
+  {
+    "id": "sub_hindu_reddiar_velnati",
+    "casteId": "cas_hindu_reddiar",
+    "name": "Velnati"
+  },
+  {
+    "id": "sub_hindu_reddiar_desuru_reddy",
+    "casteId": "cas_hindu_reddiar",
+    "name": "Desuru Reddy"
+  },
+  {
+    "id": "sub_hindu_reddiar_gandla",
+    "casteId": "cas_hindu_reddiar",
+    "name": "Gandla"
+  },
+  {
+    "id": "sub_hindu_reddiar_desai",
+    "casteId": "cas_hindu_reddiar",
+    "name": "Desai"
+  },
+  {
+    "id": "sub_hindu_saliyar_saliyar",
+    "casteId": "cas_hindu_saliyar",
+    "name": "Saliyar"
+  },
+  {
+    "id": "sub_hindu_saliyar_sali",
+    "casteId": "cas_hindu_saliyar",
+    "name": "Sali"
+  },
+  {
+    "id": "sub_hindu_saliyar_pattariyar",
+    "casteId": "cas_hindu_saliyar",
+    "name": "Pattariyar"
+  },
+  {
+    "id": "sub_hindu_saliyar_karaikattu_saliyar",
+    "casteId": "cas_hindu_saliyar",
+    "name": "Karaikattu Saliyar"
+  },
+  {
+    "id": "sub_hindu_saliyar_padmasaliyar",
+    "casteId": "cas_hindu_saliyar",
+    "name": "Padmasaliyar"
+  },
+  {
+    "id": "sub_hindu_saliyar_sourashtra_sali",
+    "casteId": "cas_hindu_saliyar",
+    "name": "Sourashtra Sali"
+  },
+  {
+    "id": "sub_hindu_saliyar_sale",
+    "casteId": "cas_hindu_saliyar",
+    "name": "Sale"
+  },
+  {
+    "id": "sub_hindu_senaithalaivar_senaithalaivar",
+    "casteId": "cas_hindu_senaithalaivar",
+    "name": "Senaithalaivar"
+  },
+  {
+    "id": "sub_hindu_senaithalaivar_senaikudaiyar",
+    "casteId": "cas_hindu_senaithalaivar",
+    "name": "Senaikudaiyar"
+  },
+  {
+    "id": "sub_hindu_senaithalaivar_illaivaniar",
+    "casteId": "cas_hindu_senaithalaivar",
+    "name": "Illaivaniar"
+  },
+  {
+    "id": "sub_hindu_senaithalaivar_anuppan",
+    "casteId": "cas_hindu_senaithalaivar",
+    "name": "Anuppan"
+  },
+  {
+    "id": "sub_hindu_sourashtra_sourashtra",
+    "casteId": "cas_hindu_sourashtra",
+    "name": "Sourashtra"
+  },
+  {
+    "id": "sub_hindu_sourashtra_patnulkaran",
+    "casteId": "cas_hindu_sourashtra",
+    "name": "Patnulkaran"
+  },
+  {
+    "id": "sub_hindu_sourashtra_pattunoolkarar",
+    "casteId": "cas_hindu_sourashtra",
+    "name": "Pattunoolkarar"
+  },
+  {
+    "id": "sub_hindu_sourashtra_khatri",
+    "casteId": "cas_hindu_sourashtra",
+    "name": "Khatri"
+  },
+  {
+    "id": "sub_hindu_sourashtra_saurashtra",
+    "casteId": "cas_hindu_sourashtra",
+    "name": "Saurashtra"
+  },
+  {
+    "id": "sub_hindu_udayar_udayar",
+    "casteId": "cas_hindu_udayar",
+    "name": "Udayar"
+  },
+  {
+    "id": "sub_hindu_udayar_vellala_udayar",
+    "casteId": "cas_hindu_udayar",
+    "name": "Vellala Udayar"
+  },
+  {
+    "id": "sub_hindu_udayar_moopanar",
+    "casteId": "cas_hindu_udayar",
+    "name": "Moopanar"
+  },
+  {
+    "id": "sub_hindu_udayar_gangai_vamsam",
+    "casteId": "cas_hindu_udayar",
+    "name": "Gangai Vamsam"
+  },
+  {
+    "id": "sub_hindu_vannar_vannar",
+    "casteId": "cas_hindu_vannar",
+    "name": "Vannar"
+  },
+  {
+    "id": "sub_hindu_vannar_ekali",
+    "casteId": "cas_hindu_vannar",
+    "name": "Ekali"
+  },
+  {
+    "id": "sub_hindu_vannar_salavai_thozhilalar",
+    "casteId": "cas_hindu_vannar",
+    "name": "Salavai Thozhilalar"
+  },
+  {
+    "id": "sub_hindu_vannar_puthirai_vannan",
+    "casteId": "cas_hindu_vannar",
+    "name": "Puthirai Vannan"
+  },
+  {
+    "id": "sub_hindu_vannar_rajaka",
+    "casteId": "cas_hindu_vannar",
+    "name": "Rajaka"
+  },
+  {
+    "id": "sub_hindu_vannar_dhobi",
+    "casteId": "cas_hindu_vannar",
+    "name": "Dhobi"
+  },
+  {
+    "id": "sub_hindu_vanniyar_vanniyar",
+    "casteId": "cas_hindu_vanniyar",
+    "name": "Vanniyar"
+  },
+  {
+    "id": "sub_hindu_vanniyar_vanniya_kula_kshatriyar",
+    "casteId": "cas_hindu_vanniyar",
+    "name": "Vanniya Kula Kshatriyar"
+  },
+  {
+    "id": "sub_hindu_vanniyar_padayachi",
+    "casteId": "cas_hindu_vanniyar",
+    "name": "Padayachi"
+  },
+  {
+    "id": "sub_hindu_vanniyar_palli",
+    "casteId": "cas_hindu_vanniyar",
+    "name": "Palli"
+  },
+  {
+    "id": "sub_hindu_vanniyar_naicker",
+    "casteId": "cas_hindu_vanniyar",
+    "name": "Naicker"
+  },
+  {
+    "id": "sub_hindu_vanniyar_gounder",
+    "casteId": "cas_hindu_vanniyar",
+    "name": "Gounder"
+  },
+  {
+    "id": "sub_hindu_vanniyar_agnikula_kshatriya",
+    "casteId": "cas_hindu_vanniyar",
+    "name": "Agnikula Kshatriya"
+  },
+  {
+    "id": "sub_hindu_vanniyar_vanniar",
+    "casteId": "cas_hindu_vanniyar",
+    "name": "Vanniar"
+  },
+  {
+    "id": "sub_hindu_vellalar_karkathar",
+    "casteId": "cas_hindu_vellalar",
+    "name": "Karkathar"
+  },
+  {
+    "id": "sub_hindu_vellalar_thondaimandala_saiva_vellalar",
+    "casteId": "cas_hindu_vellalar",
+    "name": "Thondaimandala Saiva Vellalar"
+  },
+  {
+    "id": "sub_hindu_vellalar_arunattu_vellalar",
+    "casteId": "cas_hindu_vellalar",
+    "name": "Arunattu Vellalar"
+  },
+  {
+    "id": "sub_hindu_vellalar_kongu_vellalar",
+    "casteId": "cas_hindu_vellalar",
+    "name": "Kongu Vellalar"
+  },
+  {
+    "id": "sub_hindu_vellalar_nanjil_vellalar",
+    "casteId": "cas_hindu_vellalar",
+    "name": "Nanjil Vellalar"
+  },
+  {
+    "id": "sub_hindu_vellalar_sozhia_vellalar",
+    "casteId": "cas_hindu_vellalar",
+    "name": "Sozhia Vellalar"
+  },
+  {
+    "id": "sub_hindu_vellalar_karaikattu_vellalar",
+    "casteId": "cas_hindu_vellalar",
+    "name": "Karaikattu Vellalar"
+  },
+  {
+    "id": "sub_hindu_vellalar_pandya_vellalar",
+    "casteId": "cas_hindu_vellalar",
+    "name": "Pandya Vellalar"
+  },
+  {
+    "id": "sub_hindu_vellalar_saiva_vellalar",
+    "casteId": "cas_hindu_vellalar",
+    "name": "Saiva Vellalar"
+  },
+  {
+    "id": "sub_hindu_vellalar_sirukudi_vellalar",
+    "casteId": "cas_hindu_vellalar",
+    "name": "Sirukudi Vellalar"
+  },
+  {
+    "id": "sub_hindu_vellalar_panneeru_vellalar",
+    "casteId": "cas_hindu_vellalar",
+    "name": "Panneeru Vellalar"
+  },
+  {
+    "id": "sub_hindu_vellalar_vellan",
+    "casteId": "cas_hindu_vellalar",
+    "name": "Vellan"
+  },
+  {
+    "id": "sub_hindu_vellalar_chozhia_vellalar",
+    "casteId": "cas_hindu_vellalar",
+    "name": "Chozhia Vellalar"
+  },
+  {
+    "id": "sub_hindu_vettuva_gounder_vettuvar",
+    "casteId": "cas_hindu_vettuva_gounder",
+    "name": "Vettuvar"
+  },
+  {
+    "id": "sub_hindu_vettuva_gounder_vettuva_gounder",
+    "casteId": "cas_hindu_vettuva_gounder",
+    "name": "Vettuva Gounder"
+  },
+  {
+    "id": "sub_hindu_vettuva_gounder_vettuva",
+    "casteId": "cas_hindu_vettuva_gounder",
+    "name": "Vettuva"
+  },
+  {
+    "id": "sub_hindu_vishwakarma_achari",
+    "casteId": "cas_hindu_vishwakarma",
+    "name": "Achari"
+  },
+  {
+    "id": "sub_hindu_vishwakarma_asari",
+    "casteId": "cas_hindu_vishwakarma",
+    "name": "Asari"
+  },
+  {
+    "id": "sub_hindu_vishwakarma_kammalar",
+    "casteId": "cas_hindu_vishwakarma",
+    "name": "Kammalar"
+  },
+  {
+    "id": "sub_hindu_vishwakarma_kannar",
+    "casteId": "cas_hindu_vishwakarma",
+    "name": "Kannar"
+  },
+  {
+    "id": "sub_hindu_vishwakarma_kollar",
+    "casteId": "cas_hindu_vishwakarma",
+    "name": "Kollar"
+  },
+  {
+    "id": "sub_hindu_vishwakarma_thattar",
+    "casteId": "cas_hindu_vishwakarma",
+    "name": "Thattar"
+  },
+  {
+    "id": "sub_hindu_vishwakarma_thatchar",
+    "casteId": "cas_hindu_vishwakarma",
+    "name": "Thatchar"
+  },
+  {
+    "id": "sub_hindu_vishwakarma_sirpi",
+    "casteId": "cas_hindu_vishwakarma",
+    "name": "Sirpi"
+  },
+  {
+    "id": "sub_hindu_vishwakarma_pancha_kammalar",
+    "casteId": "cas_hindu_vishwakarma",
+    "name": "Pancha Kammalar"
+  },
+  {
+    "id": "sub_hindu_vishwakarma_vishwabrahmin",
+    "casteId": "cas_hindu_vishwakarma",
+    "name": "Vishwabrahmin"
+  },
+  {
+    "id": "sub_hindu_vishwakarma_viswakarma",
+    "casteId": "cas_hindu_vishwakarma",
+    "name": "Viswakarma"
+  },
+  {
+    "id": "sub_hindu_yadava_yadava",
+    "casteId": "cas_hindu_yadava",
+    "name": "Yadava"
+  },
+  {
+    "id": "sub_hindu_yadava_konar",
+    "casteId": "cas_hindu_yadava",
+    "name": "Konar"
+  },
+  {
+    "id": "sub_hindu_yadava_idaiyar",
+    "casteId": "cas_hindu_yadava",
+    "name": "Idaiyar"
+  },
+  {
+    "id": "sub_hindu_yadava_ayar",
+    "casteId": "cas_hindu_yadava",
+    "name": "Ayar"
+  },
+  {
+    "id": "sub_hindu_yadava_golla",
+    "casteId": "cas_hindu_yadava",
+    "name": "Golla"
+  },
+  {
+    "id": "sub_hindu_yadava_asthathra_golla",
+    "casteId": "cas_hindu_yadava",
+    "name": "Asthathra Golla"
+  },
+  {
+    "id": "sub_hindu_yadava_pakanati_golla",
+    "casteId": "cas_hindu_yadava",
+    "name": "Pakanati Golla"
+  },
+  {
+    "id": "sub_hindu_yogeeswarar_yogi",
+    "casteId": "cas_hindu_yogeeswarar",
+    "name": "Yogi"
+  },
+  {
+    "id": "sub_hindu_yogeeswarar_yogeeswarar",
+    "casteId": "cas_hindu_yogeeswarar",
+    "name": "Yogeeswarar"
+  },
+  {
+    "id": "sub_hindu_yogeeswarar_jogi",
+    "casteId": "cas_hindu_yogeeswarar",
+    "name": "Jogi"
+  },
+  {
+    "id": "sub_hindu_yogeeswarar_yogeeswara",
+    "casteId": "cas_hindu_yogeeswarar",
+    "name": "Yogeeswara"
+  },
+  {
+    "id": "sub_hindu_veerasaiva_lingayat_lingayat",
+    "casteId": "cas_hindu_veerasaiva_lingayat",
+    "name": "Lingayat"
+  },
+  {
+    "id": "sub_hindu_veerasaiva_lingayat_veerasaiva",
+    "casteId": "cas_hindu_veerasaiva_lingayat",
+    "name": "Veerasaiva"
+  },
+  {
+    "id": "sub_hindu_veerasaiva_lingayat_jangam",
+    "casteId": "cas_hindu_veerasaiva_lingayat",
+    "name": "Jangam"
+  },
+  {
+    "id": "sub_hindu_veerasaiva_lingayat_banajiga",
+    "casteId": "cas_hindu_veerasaiva_lingayat",
+    "name": "Banajiga"
+  },
+  {
+    "id": "sub_hindu_veerasaiva_lingayat_sadar_lingayat",
+    "casteId": "cas_hindu_veerasaiva_lingayat",
+    "name": "Sadar Lingayat"
+  },
+  {
+    "id": "sub_hindu_other_hindu_caste_no_bar",
+    "casteId": "cas_hindu_other_hindu",
+    "name": "Caste No Bar"
+  },
+  {
+    "id": "sub_hindu_other_hindu_other",
+    "casteId": "cas_hindu_other_hindu",
+    "name": "Other"
+  },
+  {
+    "id": "sub_muslim_sunni_sunni",
+    "casteId": "cas_muslim_sunni",
+    "name": "Sunni"
+  },
+  {
+    "id": "sub_muslim_sunni_hanafi",
+    "casteId": "cas_muslim_sunni",
+    "name": "Hanafi"
+  },
+  {
+    "id": "sub_muslim_sunni_shafi",
+    "casteId": "cas_muslim_sunni",
+    "name": "Shafi"
+  },
+  {
+    "id": "sub_muslim_sunni_sunni_hanafi",
+    "casteId": "cas_muslim_sunni",
+    "name": "Sunni Hanafi"
+  },
+  {
+    "id": "sub_muslim_sunni_sunni_shafi",
+    "casteId": "cas_muslim_sunni",
+    "name": "Sunni Shafi"
+  },
+  {
+    "id": "sub_muslim_shia_shia",
+    "casteId": "cas_muslim_shia",
+    "name": "Shia"
+  },
+  {
+    "id": "sub_muslim_shia_ithna_ashari",
+    "casteId": "cas_muslim_shia",
+    "name": "Ithna Ashari"
+  },
+  {
+    "id": "sub_muslim_shia_bohra",
+    "casteId": "cas_muslim_shia",
+    "name": "Bohra"
+  },
+  {
+    "id": "sub_muslim_shia_ismaili",
+    "casteId": "cas_muslim_shia",
+    "name": "Ismaili"
+  },
+  {
+    "id": "sub_muslim_shia_dawoodi_bohra",
+    "casteId": "cas_muslim_shia",
+    "name": "Dawoodi Bohra"
+  },
+  {
+    "id": "sub_muslim_sheikh_sheikh",
+    "casteId": "cas_muslim_sheikh",
+    "name": "Sheikh"
+  },
+  {
+    "id": "sub_muslim_sheikh_shaik",
+    "casteId": "cas_muslim_sheikh",
+    "name": "Shaik"
+  },
+  {
+    "id": "sub_muslim_syed_syed",
+    "casteId": "cas_muslim_syed",
+    "name": "Syed"
+  },
+  {
+    "id": "sub_muslim_syed_sayyad",
+    "casteId": "cas_muslim_syed",
+    "name": "Sayyad"
+  },
+  {
+    "id": "sub_muslim_syed_sayyid",
+    "casteId": "cas_muslim_syed",
+    "name": "Sayyid"
+  },
+  {
+    "id": "sub_muslim_pathan_pathan",
+    "casteId": "cas_muslim_pathan",
+    "name": "Pathan"
+  },
+  {
+    "id": "sub_muslim_pathan_khan",
+    "casteId": "cas_muslim_pathan",
+    "name": "Khan"
+  },
+  {
+    "id": "sub_muslim_pathan_pashtun",
+    "casteId": "cas_muslim_pathan",
+    "name": "Pashtun"
+  },
+  {
+    "id": "sub_muslim_mughal_mughal",
+    "casteId": "cas_muslim_mughal",
+    "name": "Mughal"
+  },
+  {
+    "id": "sub_muslim_mughal_mogal",
+    "casteId": "cas_muslim_mughal",
+    "name": "Mogal"
+  },
+  {
+    "id": "sub_muslim_labbai_labbai",
+    "casteId": "cas_muslim_labbai",
+    "name": "Labbai"
+  },
+  {
+    "id": "sub_muslim_labbai_lebbai",
+    "casteId": "cas_muslim_labbai",
+    "name": "Lebbai"
+  },
+  {
+    "id": "sub_muslim_labbai_labba",
+    "casteId": "cas_muslim_labbai",
+    "name": "Labba"
+  },
+  {
+    "id": "sub_muslim_labbai_sunni_labbai",
+    "casteId": "cas_muslim_labbai",
+    "name": "Sunni Labbai"
+  },
+  {
+    "id": "sub_muslim_marakayar_marakayar",
+    "casteId": "cas_muslim_marakayar",
+    "name": "Marakayar"
+  },
+  {
+    "id": "sub_muslim_marakayar_marakkayar",
+    "casteId": "cas_muslim_marakayar",
+    "name": "Marakkayar"
+  },
+  {
+    "id": "sub_muslim_marakayar_maraikkayar",
+    "casteId": "cas_muslim_marakayar",
+    "name": "Maraikkayar"
+  },
+  {
+    "id": "sub_muslim_marakayar_marakkar",
+    "casteId": "cas_muslim_marakayar",
+    "name": "Marakkar"
+  },
+  {
+    "id": "sub_muslim_rowther_rowther",
+    "casteId": "cas_muslim_rowther",
+    "name": "Rowther"
+  },
+  {
+    "id": "sub_muslim_rowther_ravuthar",
+    "casteId": "cas_muslim_rowther",
+    "name": "Ravuthar"
+  },
+  {
+    "id": "sub_muslim_rowther_rawther",
+    "casteId": "cas_muslim_rowther",
+    "name": "Rawther"
+  },
+  {
+    "id": "sub_muslim_rowther_ravuther",
+    "casteId": "cas_muslim_rowther",
+    "name": "Ravuther"
+  },
+  {
+    "id": "sub_muslim_kayalar_kayalar",
+    "casteId": "cas_muslim_kayalar",
+    "name": "Kayalar"
+  },
+  {
+    "id": "sub_muslim_kayalar_kayal",
+    "casteId": "cas_muslim_kayalar",
+    "name": "Kayal"
+  },
+  {
+    "id": "sub_muslim_kayalar_kayalan",
+    "casteId": "cas_muslim_kayalar",
+    "name": "Kayalan"
+  },
+  {
+    "id": "sub_muslim_dudekula_dudekula",
+    "casteId": "cas_muslim_dudekula",
+    "name": "Dudekula"
+  },
+  {
+    "id": "sub_muslim_dudekula_pinjari",
+    "casteId": "cas_muslim_dudekula",
+    "name": "Pinjari"
+  },
+  {
+    "id": "sub_muslim_dudekula_laddaf",
+    "casteId": "cas_muslim_dudekula",
+    "name": "Laddaf"
+  },
+  {
+    "id": "sub_muslim_ansari_ansari",
+    "casteId": "cas_muslim_ansari",
+    "name": "Ansari"
+  },
+  {
+    "id": "sub_muslim_ansari_julaha",
+    "casteId": "cas_muslim_ansari",
+    "name": "Julaha"
+  },
+  {
+    "id": "sub_muslim_ansari_momin",
+    "casteId": "cas_muslim_ansari",
+    "name": "Momin"
+  },
+  {
+    "id": "sub_muslim_mappila_mappila",
+    "casteId": "cas_muslim_mappila",
+    "name": "Mappila"
+  },
+  {
+    "id": "sub_muslim_mappila_mapilla",
+    "casteId": "cas_muslim_mappila",
+    "name": "Mapilla"
+  },
+  {
+    "id": "sub_muslim_mappila_moplah",
+    "casteId": "cas_muslim_mappila",
+    "name": "Moplah"
+  },
+  {
+    "id": "sub_muslim_memon_memon",
+    "casteId": "cas_muslim_memon",
+    "name": "Memon"
+  },
+  {
+    "id": "sub_muslim_memon_kutchi_memon",
+    "casteId": "cas_muslim_memon",
+    "name": "Kutchi Memon"
+  },
+  {
+    "id": "sub_muslim_dekkani_dekkani",
+    "casteId": "cas_muslim_dekkani",
+    "name": "Dekkani"
+  },
+  {
+    "id": "sub_muslim_dekkani_deccani",
+    "casteId": "cas_muslim_dekkani",
+    "name": "Deccani"
+  },
+  {
+    "id": "sub_muslim_dekkani_urdu_muslim",
+    "casteId": "cas_muslim_dekkani",
+    "name": "Urdu Muslim"
+  },
+  {
+    "id": "sub_muslim_other_muslim_tamil_muslim",
+    "casteId": "cas_muslim_other_muslim",
+    "name": "Tamil Muslim"
+  },
+  {
+    "id": "sub_muslim_other_muslim_caste_no_bar",
+    "casteId": "cas_muslim_other_muslim",
+    "name": "Caste No Bar"
+  },
+  {
+    "id": "sub_muslim_other_muslim_other",
+    "casteId": "cas_muslim_other_muslim",
+    "name": "Other"
+  },
+  {
+    "id": "sub_christian_roman_catholic_roman_catholic",
+    "casteId": "cas_christian_roman_catholic",
+    "name": "Roman Catholic"
+  },
+  {
+    "id": "sub_christian_roman_catholic_latin_catholic",
+    "casteId": "cas_christian_roman_catholic",
+    "name": "Latin Catholic"
+  },
+  {
+    "id": "sub_christian_roman_catholic_syrian_catholic",
+    "casteId": "cas_christian_roman_catholic",
+    "name": "Syrian Catholic"
+  },
+  {
+    "id": "sub_christian_roman_catholic_rc",
+    "casteId": "cas_christian_roman_catholic",
+    "name": "RC"
+  },
+  {
+    "id": "sub_christian_church_of_south_india_csi",
+    "casteId": "cas_christian_church_of_south_india",
+    "name": "CSI"
+  },
+  {
+    "id": "sub_christian_church_of_south_india_church_of_south_india",
+    "casteId": "cas_christian_church_of_south_india",
+    "name": "Church Of South India"
+  },
+  {
+    "id": "sub_christian_church_of_south_india_anglican",
+    "casteId": "cas_christian_church_of_south_india",
+    "name": "Anglican"
+  },
+  {
+    "id": "sub_christian_protestant_protestant",
+    "casteId": "cas_christian_protestant",
+    "name": "Protestant"
+  },
+  {
+    "id": "sub_christian_protestant_lutheran",
+    "casteId": "cas_christian_protestant",
+    "name": "Lutheran"
+  },
+  {
+    "id": "sub_christian_protestant_methodist",
+    "casteId": "cas_christian_protestant",
+    "name": "Methodist"
+  },
+  {
+    "id": "sub_christian_protestant_reformed",
+    "casteId": "cas_christian_protestant",
+    "name": "Reformed"
+  },
+  {
+    "id": "sub_christian_protestant_presbyterian",
+    "casteId": "cas_christian_protestant",
+    "name": "Presbyterian"
+  },
+  {
+    "id": "sub_christian_pentecostal_pentecostal",
+    "casteId": "cas_christian_pentecostal",
+    "name": "Pentecostal"
+  },
+  {
+    "id": "sub_christian_pentecostal_assembly_of_god",
+    "casteId": "cas_christian_pentecostal",
+    "name": "Assembly Of God"
+  },
+  {
+    "id": "sub_christian_pentecostal_the_pentecostal_mission",
+    "casteId": "cas_christian_pentecostal",
+    "name": "The Pentecostal Mission"
+  },
+  {
+    "id": "sub_christian_pentecostal_indian_pentecostal_church",
+    "casteId": "cas_christian_pentecostal",
+    "name": "Indian Pentecostal Church"
+  },
+  {
+    "id": "sub_christian_pentecostal_charismatic",
+    "casteId": "cas_christian_pentecostal",
+    "name": "Charismatic"
+  },
+  {
+    "id": "sub_christian_baptist_baptist",
+    "casteId": "cas_christian_baptist",
+    "name": "Baptist"
+  },
+  {
+    "id": "sub_christian_baptist_evangelical_baptist",
+    "casteId": "cas_christian_baptist",
+    "name": "Evangelical Baptist"
+  },
+  {
+    "id": "sub_christian_seventh_day_adventist_seventh_day_adventist",
+    "casteId": "cas_christian_seventh_day_adventist",
+    "name": "Seventh Day Adventist"
+  },
+  {
+    "id": "sub_christian_seventh_day_adventist_adventist",
+    "casteId": "cas_christian_seventh_day_adventist",
+    "name": "Adventist"
+  },
+  {
+    "id": "sub_christian_born_again_born_again",
+    "casteId": "cas_christian_born_again",
+    "name": "Born Again"
+  },
+  {
+    "id": "sub_christian_born_again_non_denominational",
+    "casteId": "cas_christian_born_again",
+    "name": "Non Denominational"
+  },
+  {
+    "id": "sub_christian_evangelical_evangelical",
+    "casteId": "cas_christian_evangelical",
+    "name": "Evangelical"
+  },
+  {
+    "id": "sub_christian_evangelical_brethren",
+    "casteId": "cas_christian_evangelical",
+    "name": "Brethren"
+  },
+  {
+    "id": "sub_christian_marthoma_marthoma",
+    "casteId": "cas_christian_marthoma",
+    "name": "Marthoma"
+  },
+  {
+    "id": "sub_christian_marthoma_mar_thoma",
+    "casteId": "cas_christian_marthoma",
+    "name": "Mar Thoma"
+  },
+  {
+    "id": "sub_christian_jacobite_jacobite",
+    "casteId": "cas_christian_jacobite",
+    "name": "Jacobite"
+  },
+  {
+    "id": "sub_christian_jacobite_syrian_jacobite",
+    "casteId": "cas_christian_jacobite",
+    "name": "Syrian Jacobite"
+  },
+  {
+    "id": "sub_christian_orthodox_orthodox",
+    "casteId": "cas_christian_orthodox",
+    "name": "Orthodox"
+  },
+  {
+    "id": "sub_christian_orthodox_syrian_orthodox",
+    "casteId": "cas_christian_orthodox",
+    "name": "Syrian Orthodox"
+  },
+  {
+    "id": "sub_christian_orthodox_malankara_orthodox",
+    "casteId": "cas_christian_orthodox",
+    "name": "Malankara Orthodox"
+  },
+  {
+    "id": "sub_christian_syro_malabar_syro_malabar",
+    "casteId": "cas_christian_syro_malabar",
+    "name": "Syro Malabar"
+  },
+  {
+    "id": "sub_christian_syro_malankara_syro_malankara",
+    "casteId": "cas_christian_syro_malankara",
+    "name": "Syro Malankara"
+  },
+  {
+    "id": "sub_christian_knanaya_knanaya",
+    "casteId": "cas_christian_knanaya",
+    "name": "Knanaya"
+  },
+  {
+    "id": "sub_christian_knanaya_knanaya_catholic",
+    "casteId": "cas_christian_knanaya",
+    "name": "Knanaya Catholic"
+  },
+  {
+    "id": "sub_christian_knanaya_knanaya_jacobite",
+    "casteId": "cas_christian_knanaya",
+    "name": "Knanaya Jacobite"
+  },
+  {
+    "id": "sub_christian_salvation_army_salvation_army",
+    "casteId": "cas_christian_salvation_army",
+    "name": "Salvation Army"
+  },
+  {
+    "id": "sub_christian_nadar_christian_nadar_christian",
+    "casteId": "cas_christian_nadar_christian",
+    "name": "Nadar Christian"
+  },
+  {
+    "id": "sub_christian_nadar_christian_christian_nadar",
+    "casteId": "cas_christian_nadar_christian",
+    "name": "Christian Nadar"
+  },
+  {
+    "id": "sub_christian_adi_dravida_christian_adi_dravida_christian",
+    "casteId": "cas_christian_adi_dravida_christian",
+    "name": "Adi Dravida Christian"
+  },
+  {
+    "id": "sub_christian_adi_dravida_christian_dalit_christian",
+    "casteId": "cas_christian_adi_dravida_christian",
+    "name": "Dalit Christian"
+  },
+  {
+    "id": "sub_christian_paravar_paravar",
+    "casteId": "cas_christian_paravar",
+    "name": "Paravar"
+  },
+  {
+    "id": "sub_christian_paravar_bharathar",
+    "casteId": "cas_christian_paravar",
+    "name": "Bharathar"
+  },
+  {
+    "id": "sub_christian_paravar_mukkuvar_christian",
+    "casteId": "cas_christian_paravar",
+    "name": "Mukkuvar Christian"
+  },
+  {
+    "id": "sub_christian_paravar_fernando",
+    "casteId": "cas_christian_paravar",
+    "name": "Fernando"
+  },
+  {
+    "id": "sub_christian_vellalar_christian_vellalar_christian",
+    "casteId": "cas_christian_vellalar_christian",
+    "name": "Vellalar Christian"
+  },
+  {
+    "id": "sub_christian_vellalar_christian_christian_vellalar",
+    "casteId": "cas_christian_vellalar_christian",
+    "name": "Christian Vellalar"
+  },
+  {
+    "id": "sub_christian_other_christian_caste_no_bar",
+    "casteId": "cas_christian_other_christian",
+    "name": "Caste No Bar"
+  },
+  {
+    "id": "sub_christian_other_christian_other",
+    "casteId": "cas_christian_other_christian",
+    "name": "Other"
+  },
+  {
+    "id": "sub_jain_digambar_digambar",
+    "casteId": "cas_jain_digambar",
+    "name": "Digambar"
+  },
+  {
+    "id": "sub_jain_digambar_digambara",
+    "casteId": "cas_jain_digambar",
+    "name": "Digambara"
+  },
+  {
+    "id": "sub_jain_svetambar_svetambar",
+    "casteId": "cas_jain_svetambar",
+    "name": "Svetambar"
+  },
+  {
+    "id": "sub_jain_svetambar_shwetambar",
+    "casteId": "cas_jain_svetambar",
+    "name": "Shwetambar"
+  },
+  {
+    "id": "sub_jain_svetambar_swetambar",
+    "casteId": "cas_jain_svetambar",
+    "name": "Swetambar"
+  },
+  {
+    "id": "sub_jain_tamil_jain_tamil_jain",
+    "casteId": "cas_jain_tamil_jain",
+    "name": "Tamil Jain"
+  },
+  {
+    "id": "sub_jain_tamil_jain_samanar",
+    "casteId": "cas_jain_tamil_jain",
+    "name": "Samanar"
+  },
+  {
+    "id": "sub_jain_tamil_jain_nainar",
+    "casteId": "cas_jain_tamil_jain",
+    "name": "Nainar"
+  },
+  {
+    "id": "sub_jain_oswal_oswal",
+    "casteId": "cas_jain_oswal",
+    "name": "Oswal"
+  },
+  {
+    "id": "sub_jain_oswal_osval",
+    "casteId": "cas_jain_oswal",
+    "name": "Osval"
+  },
+  {
+    "id": "sub_jain_bania_jain_bania",
+    "casteId": "cas_jain_bania_jain",
+    "name": "Bania"
+  },
+  {
+    "id": "sub_jain_bania_jain_vania",
+    "casteId": "cas_jain_bania_jain",
+    "name": "Vania"
+  },
+  {
+    "id": "sub_jain_bania_jain_vaishya_jain",
+    "casteId": "cas_jain_bania_jain",
+    "name": "Vaishya Jain"
+  },
+  {
+    "id": "sub_jain_marwari_jain_marwari_jain",
+    "casteId": "cas_jain_marwari_jain",
+    "name": "Marwari Jain"
+  },
+  {
+    "id": "sub_jain_marwari_jain_marwadi",
+    "casteId": "cas_jain_marwari_jain",
+    "name": "Marwadi"
+  },
+  {
+    "id": "sub_jain_gujarati_jain_gujarati_jain",
+    "casteId": "cas_jain_gujarati_jain",
+    "name": "Gujarati Jain"
+  },
+  {
+    "id": "sub_jain_other_jain_sarak",
+    "casteId": "cas_jain_other_jain",
+    "name": "Sarak"
+  },
+  {
+    "id": "sub_jain_other_jain_caste_no_bar",
+    "casteId": "cas_jain_other_jain",
+    "name": "Caste No Bar"
+  },
+  {
+    "id": "sub_jain_other_jain_other",
+    "casteId": "cas_jain_other_jain",
+    "name": "Other"
+  },
+  {
+    "id": "sub_sikh_jat_sikh_jat_sikh",
+    "casteId": "cas_sikh_jat_sikh",
+    "name": "Jat Sikh"
+  },
+  {
+    "id": "sub_sikh_jat_sikh_jat",
+    "casteId": "cas_sikh_jat_sikh",
+    "name": "Jat"
+  },
+  {
+    "id": "sub_sikh_khatri_sikh_khatri",
+    "casteId": "cas_sikh_khatri_sikh",
+    "name": "Khatri"
+  },
+  {
+    "id": "sub_sikh_khatri_sikh_khatri_sikh",
+    "casteId": "cas_sikh_khatri_sikh",
+    "name": "Khatri Sikh"
+  },
+  {
+    "id": "sub_sikh_arora_arora",
+    "casteId": "cas_sikh_arora",
+    "name": "Arora"
+  },
+  {
+    "id": "sub_sikh_arora_arora_sikh",
+    "casteId": "cas_sikh_arora",
+    "name": "Arora Sikh"
+  },
+  {
+    "id": "sub_sikh_ramgarhia_ramgarhia",
+    "casteId": "cas_sikh_ramgarhia",
+    "name": "Ramgarhia"
+  },
+  {
+    "id": "sub_sikh_ramgarhia_ramgharia",
+    "casteId": "cas_sikh_ramgarhia",
+    "name": "Ramgharia"
+  },
+  {
+    "id": "sub_sikh_ahluwalia_ahluwalia",
+    "casteId": "cas_sikh_ahluwalia",
+    "name": "Ahluwalia"
+  },
+  {
+    "id": "sub_sikh_ahluwalia_kalal",
+    "casteId": "cas_sikh_ahluwalia",
+    "name": "Kalal"
+  },
+  {
+    "id": "sub_sikh_saini_saini",
+    "casteId": "cas_sikh_saini",
+    "name": "Saini"
+  },
+  {
+    "id": "sub_sikh_mazhabi_mazhabi",
+    "casteId": "cas_sikh_mazhabi",
+    "name": "Mazhabi"
+  },
+  {
+    "id": "sub_sikh_mazhabi_majhabi",
+    "casteId": "cas_sikh_mazhabi",
+    "name": "Majhabi"
+  },
+  {
+    "id": "sub_sikh_mazhabi_ramdasia",
+    "casteId": "cas_sikh_mazhabi",
+    "name": "Ramdasia"
+  },
+  {
+    "id": "sub_sikh_other_sikh_caste_no_bar",
+    "casteId": "cas_sikh_other_sikh",
+    "name": "Caste No Bar"
+  },
+  {
+    "id": "sub_sikh_other_sikh_other",
+    "casteId": "cas_sikh_other_sikh",
+    "name": "Other"
+  },
+  {
+    "id": "sub_buddhist_navayana_navayana",
+    "casteId": "cas_buddhist_navayana",
+    "name": "Navayana"
+  },
+  {
+    "id": "sub_buddhist_navayana_neo_buddhist",
+    "casteId": "cas_buddhist_navayana",
+    "name": "Neo Buddhist"
+  },
+  {
+    "id": "sub_buddhist_navayana_ambedkarite_buddhist",
+    "casteId": "cas_buddhist_navayana",
+    "name": "Ambedkarite Buddhist"
+  },
+  {
+    "id": "sub_buddhist_theravada_theravada",
+    "casteId": "cas_buddhist_theravada",
+    "name": "Theravada"
+  },
+  {
+    "id": "sub_buddhist_theravada_hinayana",
+    "casteId": "cas_buddhist_theravada",
+    "name": "Hinayana"
+  },
+  {
+    "id": "sub_buddhist_mahayana_mahayana",
+    "casteId": "cas_buddhist_mahayana",
+    "name": "Mahayana"
+  },
+  {
+    "id": "sub_buddhist_tamil_buddhist_tamil_buddhist",
+    "casteId": "cas_buddhist_tamil_buddhist",
+    "name": "Tamil Buddhist"
+  },
+  {
+    "id": "sub_buddhist_other_buddhist_caste_no_bar",
+    "casteId": "cas_buddhist_other_buddhist",
+    "name": "Caste No Bar"
+  },
+  {
+    "id": "sub_buddhist_other_buddhist_other",
+    "casteId": "cas_buddhist_other_buddhist",
+    "name": "Other"
+  },
+  {
+    "id": "sub_parsi_parsi_parsi",
+    "casteId": "cas_parsi_parsi",
+    "name": "Parsi"
+  },
+  {
+    "id": "sub_parsi_parsi_zoroastrian",
+    "casteId": "cas_parsi_parsi",
+    "name": "Zoroastrian"
+  },
+  {
+    "id": "sub_parsi_irani_irani",
+    "casteId": "cas_parsi_irani",
+    "name": "Irani"
+  },
+  {
+    "id": "sub_others_inter_caste_inter_caste",
+    "casteId": "cas_others_inter_caste",
+    "name": "Inter Caste"
+  },
+  {
+    "id": "sub_others_spiritual_spiritual",
+    "casteId": "cas_others_spiritual",
+    "name": "Spiritual"
+  },
+  {
+    "id": "sub_others_spiritual_believer_in_god",
+    "casteId": "cas_others_spiritual",
+    "name": "Believer In God"
+  },
+  {
+    "id": "sub_others_no_religion_no_religion",
+    "casteId": "cas_others_no_religion",
+    "name": "No Religion"
+  },
+  {
+    "id": "sub_others_no_religion_atheist",
+    "casteId": "cas_others_no_religion",
+    "name": "Atheist"
+  },
+  {
+    "id": "sub_others_no_religion_agnostic",
+    "casteId": "cas_others_no_religion",
+    "name": "Agnostic"
+  },
+  {
+    "id": "sub_others_brahmo_brahmo_samaj",
+    "casteId": "cas_others_brahmo",
+    "name": "Brahmo Samaj"
+  },
+  {
+    "id": "sub_others_other_caste_no_bar",
+    "casteId": "cas_others_other",
+    "name": "Caste No Bar"
+  },
+  {
+    "id": "sub_others_other_other",
+    "casteId": "cas_others_other",
+    "name": "Other"
+  }
+]
