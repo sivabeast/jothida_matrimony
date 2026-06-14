@@ -6,7 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../widgets/common/app_logo.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/notification_provider.dart';
-import '../chat/chat_list_screen.dart';
+import '../interests/interests_center_screen.dart';
 import 'tabs/astrology_services_tab.dart';
 import 'tabs/discover_tab.dart';
 import 'tabs/home_dashboard_tab.dart';
@@ -23,13 +23,14 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedIndex = 0;
 
-  // Tab index → widget (Messages tab uses ChatListScreen inline).
+  // Tab index → widget. Tab 3 is the Interest Management Center (replaces the
+  // old chat/messages page).
   static const _tabs = <Widget>[
-    HomeDashboardTab(),   // 0 – Home
-    DiscoverTab(),        // 1 – Matches
-    AstrologyServicesTab(), // 2 – Astrologer
-    ChatListScreen(),     // 3 – Messages
-    MyProfileTab(),       // 4 – Profile
+    HomeDashboardTab(),       // 0 – Home
+    DiscoverTab(),            // 1 – Matches
+    AstrologyServicesTab(),   // 2 – Astrologer
+    InterestsCenterScreen(),  // 3 – Interests
+    MyProfileTab(),           // 4 – Profile
   ];
 
   @override
@@ -181,7 +182,7 @@ class _BottomNav extends StatelessWidget {
     _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Home'),
     _NavItem(icon: Icons.favorite_border, activeIcon: Icons.favorite, label: 'Matches'),
     _NavItem(icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome, label: 'Astrologer'),
-    _NavItem(icon: Icons.chat_bubble_outline, activeIcon: Icons.chat_bubble, label: 'Messages'),
+    _NavItem(icon: Icons.people_outline, activeIcon: Icons.people, label: 'Interests'),
     _NavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profile'),
   ];
 

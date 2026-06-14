@@ -479,10 +479,6 @@ class _MatchProfilePage extends ConsumerWidget {
                               height: 1.4,
                               color: Colors.grey[800])),
                     ],
-                    const SizedBox(height: 14),
-                    _sectionLabel('Horoscope'),
-                    const SizedBox(height: 6),
-                    _horoscopeSummary(),
                   ],
                 ),
               ),
@@ -638,39 +634,6 @@ class _MatchProfilePage extends ConsumerWidget {
     );
   }
 
-  Widget _horoscopeSummary() {
-    final h = profile.horoscope;
-    final parts = <String>[
-      if (h.rasi.trim().isNotEmpty) 'Rasi: ${h.rasi}',
-      if (h.nakshatra.trim().isNotEmpty) 'Nakshatra: ${h.nakshatra}',
-      if (h.lagnam.trim().isNotEmpty) 'Lagnam: ${h.lagnam}',
-    ];
-    if (parts.isEmpty) {
-      return Text('Horoscope not added yet',
-          style: TextStyle(color: Colors.grey[500], fontSize: 13));
-    }
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.gold.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.gold.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.auto_awesome, size: 18, color: AppColors.gold),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(parts.join('   •   '),
-                style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w500)),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _sectionLabel(String text) => Text(text,
       style: const TextStyle(
           fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary));
@@ -687,9 +650,9 @@ class _MatchProfilePage extends ConsumerWidget {
               child: ElevatedButton.icon(
                 onPressed: interestSent ? null : onInterest,
                 icon: Icon(
-                    interestSent ? Icons.favorite : Icons.favorite_border,
+                    interestSent ? Icons.check_circle : Icons.favorite_border,
                     size: 20),
-                label: Text(interestSent ? 'Interested' : 'Interest'),
+                label: Text(interestSent ? 'Interest Sent' : 'Interest'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,

@@ -281,19 +281,29 @@ class FirestoreService {
       .doc(interestId)
       .update({'status': status, 'respondedAt': FieldValue.serverTimestamp()});
 
+  // NOTE: no server-side `orderBy` — combining a `where` equality with
+  // `orderBy('sentAt')` on a different field requires a composite index, and
+  // without it the stream throws `failed-precondition` and the Interests page
+  // errors out. We sort by `sentAt` client-side instead so it always loads.
   Stream<List<InterestModel>> watchSentInterests(String userId) => _db
       .collection(AppConstants.interestsCollection)
       .where('senderId', isEqualTo: userId)
-      .orderBy('sentAt', descending: true)
       .snapshots()
-      .map((s) => s.docs.map((d) => InterestModel.fromFirestore(d)).toList());
+      .map((s) {
+        final list = s.docs.map((d) => InterestModel.fromFirestore(d)).toList();
+        list.sort((a, b) => b.sentAt.compareTo(a.sentAt));
+        return list;
+      });
 
   Stream<List<InterestModel>> watchReceivedInterests(String userId) => _db
       .collection(AppConstants.interestsCollection)
       .where('receiverId', isEqualTo: userId)
-      .orderBy('sentAt', descending: true)
       .snapshots()
-      .map((s) => s.docs.map((d) => InterestModel.fromFirestore(d)).toList());
+      .map((s) {
+        final list = s.docs.map((d) => InterestModel.fromFirestore(d)).toList();
+        list.sort((a, b) => b.sentAt.compareTo(a.sentAt));
+        return list;
+      });
 
   Future<InterestModel?> getInterestBetweenProfiles(
     String senderProfileId,
