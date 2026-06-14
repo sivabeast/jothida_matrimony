@@ -9,7 +9,7 @@ import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
 import '../../../widgets/common/religion_caste_fields.dart';
 import '../../../widgets/common/searchable_field.dart';
-import '../../../widgets/common/use_my_location_button.dart';
+import '../../../widgets/common/location_picker_section.dart';
 
 class Step2PersonalDetails extends ConsumerStatefulWidget {
   final VoidCallback onNext;
@@ -41,7 +41,10 @@ class _Step2State extends ConsumerState<Step2PersonalDetails> {
   String? _annualIncome;
   String? _country = 'India';
   String? _state;
+  String? _district;
   String? _city;
+  double? _lat;
+  double? _lng;
   DateTime? _dob;
 
   @override
@@ -106,7 +109,10 @@ class _Step2State extends ConsumerState<Step2PersonalDetails> {
       'annualIncome': _annualIncome ?? '',
       'country': _country,
       'state': _state ?? '',
+      'district': _district ?? '',
       'city': _city,
+      'latitude': _lat,
+      'longitude': _lng,
       'about': _aboutController.text.trim(),
     });
     widget.onNext();
@@ -224,49 +230,31 @@ class _Step2State extends ConsumerState<Step2PersonalDetails> {
               onChanged: (v) => setState(() => _annualIncome = v),
             ),
             const SizedBox(height: 16),
-            // ── Use My Location: auto-fills Country / State / City ──
-            UseMyLocationButton(
-              onDetected: (loc) => setState(() {
-                if (loc.country.isNotEmpty) _country = loc.country;
-                if (loc.state.isNotEmpty) _state = loc.state;
-                if (loc.city.isNotEmpty) _city = loc.city;
-              }),
-            ),
-            const SizedBox(height: 16),
-            // ── Country → State → City (dependent) ──
+            // ── Country (kept; the master location data below is India-focused) ──
             SearchableField(
               label: 'Country',
               isRequired: true,
               items: SelectionData.countries,
               selectedItem: _country,
               prefixIcon: Icons.public,
-              onChanged: (v) => setState(() {
-                _country = v;
-                _state = null;
-                _city = null;
-              }),
+              onChanged: (v) => setState(() => _country = v),
             ),
             const SizedBox(height: 16),
-            SearchableField(
-              label: 'State',
-              items: _country == 'India'
-                  ? SelectionData.indianStates
-                  : const ['Other'],
-              selectedItem: _state,
-              onChanged: (v) => setState(() {
-                _state = v;
-                _city = null;
+            // ── State → District → City (Firestore master data) + a
+            // "📍 Use My Location" button that GPS-detects and auto-fills. ──
+            LocationPickerSection(
+              initialState: _state,
+              initialDistrict: _district,
+              initialCity: _city,
+              initialLatitude: _lat,
+              initialLongitude: _lng,
+              onChanged: (loc) => setState(() {
+                _state = loc.state.isEmpty ? null : loc.state;
+                _district = loc.district.isEmpty ? null : loc.district;
+                _city = loc.city.isEmpty ? null : loc.city;
+                _lat = loc.latitude;
+                _lng = loc.longitude;
               }),
-            ),
-            const SizedBox(height: 16),
-            SearchableField(
-              label: 'City',
-              isRequired: true,
-              items: SelectionData.citiesFor(_state),
-              selectedItem: _city,
-              enabled: _state != null,
-              prefixIcon: Icons.location_city,
-              onChanged: (v) => setState(() => _city = v),
             ),
             const SizedBox(height: 16),
             AppTextField(

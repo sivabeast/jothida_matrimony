@@ -1,0 +1,34 @@
+[
+  {
+    "id": "rel_hindu",
+    "name": "Hindu"
+  },
+  {
+    "id": "rel_muslim",
+    "name": "Muslim"
+  },
+  {
+    "id": "rel_christian",
+    "name": "Christian"
+  },
+  {
+    "id": "rel_jain",
+    "name": "Jain"
+  },
+  {
+    "id": "rel_sikh",
+    "name": "Sikh"
+  },
+  {
+    "id": "rel_buddhist",
+    "name": "Buddhist"
+  },
+  {
+    "id": "rel_parsi",
+    "name": "Parsi"
+  },
+  {
+    "id": "rel_others",
+    "name": "Others"
+  }
+]

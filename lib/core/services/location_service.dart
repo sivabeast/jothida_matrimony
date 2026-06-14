@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 class DetectedLocation {
   final String country;
   final String state;
+  final String district;
   final String city;
   final double latitude;
   final double longitude;
@@ -12,6 +13,7 @@ class DetectedLocation {
   const DetectedLocation({
     required this.country,
     required this.state,
+    required this.district,
     required this.city,
     required this.latitude,
     required this.longitude,
@@ -69,10 +71,15 @@ class LocationService {
           'Could not get your location. Please try again or select manually.');
     }
 
-    // 4) Reverse geocode → country / state / city. If this fails we still
-    // return the coordinates (the user can fill the names manually).
+    // 4) Reverse geocode → country / state / district / city. If this fails we
+    // still return the coordinates (the user can fill the names manually).
+    // In India's administrative hierarchy, geocoding maps roughly as:
+    //   administrativeArea     → State    (e.g. "Tamil Nadu")
+    //   subAdministrativeArea  → District (e.g. "Coimbatore")
+    //   locality / subLocality → City     (e.g. "Pollachi")
     String country = '';
     String state = '';
+    String district = '';
     String city = '';
     try {
       final placemarks =
@@ -81,9 +88,13 @@ class LocationService {
         final p = placemarks.first;
         country = p.country ?? '';
         state = p.administrativeArea ?? '';
-        city = (p.locality != null && p.locality!.trim().isNotEmpty)
-            ? p.locality!
-            : (p.subAdministrativeArea ?? '');
+        district = p.subAdministrativeArea ?? '';
+        // Prefer the most specific populated place name for the city.
+        final locality = p.locality?.trim() ?? '';
+        final subLocality = p.subLocality?.trim() ?? '';
+        city = locality.isNotEmpty
+            ? locality
+            : (subLocality.isNotEmpty ? subLocality : district);
       }
     } catch (_) {
       // Geocoding unavailable — keep coordinates, leave names blank.
@@ -92,6 +103,7 @@ class LocationService {
     return DetectedLocation(
       country: country,
       state: state,
+      district: district,
       city: city,
       latitude: position.latitude,
       longitude: position.longitude,

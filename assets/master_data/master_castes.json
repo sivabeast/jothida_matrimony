@@ -1,0 +1,607 @@
+[
+  {
+    "id": "cas_hindu_adi_dravidar",
+    "religionId": "rel_hindu",
+    "name": "Adi Dravidar"
+  },
+  {
+    "id": "cas_hindu_agamudayar",
+    "religionId": "rel_hindu",
+    "name": "Agamudayar"
+  },
+  {
+    "id": "cas_hindu_ambalakarar",
+    "religionId": "rel_hindu",
+    "name": "Ambalakarar"
+  },
+  {
+    "id": "cas_hindu_arunthathiyar",
+    "religionId": "rel_hindu",
+    "name": "Arunthathiyar"
+  },
+  {
+    "id": "cas_hindu_arya_vysya",
+    "religionId": "rel_hindu",
+    "name": "Arya Vysya"
+  },
+  {
+    "id": "cas_hindu_badaga",
+    "religionId": "rel_hindu",
+    "name": "Badaga"
+  },
+  {
+    "id": "cas_hindu_balija_naidu",
+    "religionId": "rel_hindu",
+    "name": "Balija Naidu"
+  },
+  {
+    "id": "cas_hindu_bestha",
+    "religionId": "rel_hindu",
+    "name": "Bestha"
+  },
+  {
+    "id": "cas_hindu_bhandari",
+    "religionId": "rel_hindu",
+    "name": "Bhandari"
+  },
+  {
+    "id": "cas_hindu_boyar",
+    "religionId": "rel_hindu",
+    "name": "Boyar"
+  },
+  {
+    "id": "cas_hindu_brahmin",
+    "religionId": "rel_hindu",
+    "name": "Brahmin"
+  },
+  {
+    "id": "cas_hindu_chettiar",
+    "religionId": "rel_hindu",
+    "name": "Chettiar"
+  },
+  {
+    "id": "cas_hindu_devandra_kula_vellalar",
+    "religionId": "rel_hindu",
+    "name": "Devandra Kula Vellalar"
+  },
+  {
+    "id": "cas_hindu_devanga",
+    "religionId": "rel_hindu",
+    "name": "Devanga"
+  },
+  {
+    "id": "cas_hindu_gounder",
+    "religionId": "rel_hindu",
+    "name": "Gounder"
+  },
+  {
+    "id": "cas_hindu_gramani",
+    "religionId": "rel_hindu",
+    "name": "Gramani"
+  },
+  {
+    "id": "cas_hindu_isai_vellalar",
+    "religionId": "rel_hindu",
+    "name": "Isai Vellalar"
+  },
+  {
+    "id": "cas_hindu_jangam",
+    "religionId": "rel_hindu",
+    "name": "Jangam"
+  },
+  {
+    "id": "cas_hindu_kaikolar",
+    "religionId": "rel_hindu",
+    "name": "Kaikolar"
+  },
+  {
+    "id": "cas_hindu_kallar",
+    "religionId": "rel_hindu",
+    "name": "Kallar"
+  },
+  {
+    "id": "cas_hindu_kamma_naidu",
+    "religionId": "rel_hindu",
+    "name": "Kamma Naidu"
+  },
+  {
+    "id": "cas_hindu_kannadiyar",
+    "religionId": "rel_hindu",
+    "name": "Kannadiyar"
+  },
+  {
+    "id": "cas_hindu_karuneegar",
+    "religionId": "rel_hindu",
+    "name": "Karuneegar"
+  },
+  {
+    "id": "cas_hindu_konar",
+    "religionId": "rel_hindu",
+    "name": "Konar"
+  },
+  {
+    "id": "cas_hindu_koteyar",
+    "religionId": "rel_hindu",
+    "name": "Koteyar"
+  },
+  {
+    "id": "cas_hindu_kshatriya_raju",
+    "religionId": "rel_hindu",
+    "name": "Kshatriya Raju"
+  },
+  {
+    "id": "cas_hindu_kulalar",
+    "religionId": "rel_hindu",
+    "name": "Kulalar"
+  },
+  {
+    "id": "cas_hindu_kuravar",
+    "religionId": "rel_hindu",
+    "name": "Kuravar"
+  },
+  {
+    "id": "cas_hindu_kurumbar",
+    "religionId": "rel_hindu",
+    "name": "Kurumbar"
+  },
+  {
+    "id": "cas_hindu_maravar",
+    "religionId": "rel_hindu",
+    "name": "Maravar"
+  },
+  {
+    "id": "cas_hindu_meenavar",
+    "religionId": "rel_hindu",
+    "name": "Meenavar"
+  },
+  {
+    "id": "cas_hindu_moopanar",
+    "religionId": "rel_hindu",
+    "name": "Moopanar"
+  },
+  {
+    "id": "cas_hindu_mudaliar",
+    "religionId": "rel_hindu",
+    "name": "Mudaliar"
+  },
+  {
+    "id": "cas_hindu_mukkulathor",
+    "religionId": "rel_hindu",
+    "name": "Mukkulathor"
+  },
+  {
+    "id": "cas_hindu_mutharaiyar",
+    "religionId": "rel_hindu",
+    "name": "Mutharaiyar"
+  },
+  {
+    "id": "cas_hindu_nadar",
+    "religionId": "rel_hindu",
+    "name": "Nadar"
+  },
+  {
+    "id": "cas_hindu_naicker",
+    "religionId": "rel_hindu",
+    "name": "Naicker"
+  },
+  {
+    "id": "cas_hindu_naidu",
+    "religionId": "rel_hindu",
+    "name": "Naidu"
+  },
+  {
+    "id": "cas_hindu_nair",
+    "religionId": "rel_hindu",
+    "name": "Nair"
+  },
+  {
+    "id": "cas_hindu_pandaram",
+    "religionId": "rel_hindu",
+    "name": "Pandaram"
+  },
+  {
+    "id": "cas_hindu_pandithar",
+    "religionId": "rel_hindu",
+    "name": "Pandithar"
+  },
+  {
+    "id": "cas_hindu_parkavakulam",
+    "religionId": "rel_hindu",
+    "name": "Parkavakulam"
+  },
+  {
+    "id": "cas_hindu_pillai",
+    "religionId": "rel_hindu",
+    "name": "Pillai"
+  },
+  {
+    "id": "cas_hindu_reddiar",
+    "religionId": "rel_hindu",
+    "name": "Reddiar"
+  },
+  {
+    "id": "cas_hindu_saliyar",
+    "religionId": "rel_hindu",
+    "name": "Saliyar"
+  },
+  {
+    "id": "cas_hindu_senaithalaivar",
+    "religionId": "rel_hindu",
+    "name": "Senaithalaivar"
+  },
+  {
+    "id": "cas_hindu_sourashtra",
+    "religionId": "rel_hindu",
+    "name": "Sourashtra"
+  },
+  {
+    "id": "cas_hindu_udayar",
+    "religionId": "rel_hindu",
+    "name": "Udayar"
+  },
+  {
+    "id": "cas_hindu_vannar",
+    "religionId": "rel_hindu",
+    "name": "Vannar"
+  },
+  {
+    "id": "cas_hindu_vanniyar",
+    "religionId": "rel_hindu",
+    "name": "Vanniyar"
+  },
+  {
+    "id": "cas_hindu_vellalar",
+    "religionId": "rel_hindu",
+    "name": "Vellalar"
+  },
+  {
+    "id": "cas_hindu_vettuva_gounder",
+    "religionId": "rel_hindu",
+    "name": "Vettuva Gounder"
+  },
+  {
+    "id": "cas_hindu_vishwakarma",
+    "religionId": "rel_hindu",
+    "name": "Vishwakarma"
+  },
+  {
+    "id": "cas_hindu_yadava",
+    "religionId": "rel_hindu",
+    "name": "Yadava"
+  },
+  {
+    "id": "cas_hindu_yogeeswarar",
+    "religionId": "rel_hindu",
+    "name": "Yogeeswarar"
+  },
+  {
+    "id": "cas_hindu_veerasaiva_lingayat",
+    "religionId": "rel_hindu",
+    "name": "Veerasaiva Lingayat"
+  },
+  {
+    "id": "cas_hindu_other_hindu",
+    "religionId": "rel_hindu",
+    "name": "Other Hindu"
+  },
+  {
+    "id": "cas_muslim_sunni",
+    "religionId": "rel_muslim",
+    "name": "Sunni"
+  },
+  {
+    "id": "cas_muslim_shia",
+    "religionId": "rel_muslim",
+    "name": "Shia"
+  },
+  {
+    "id": "cas_muslim_sheikh",
+    "religionId": "rel_muslim",
+    "name": "Sheikh"
+  },
+  {
+    "id": "cas_muslim_syed",
+    "religionId": "rel_muslim",
+    "name": "Syed"
+  },
+  {
+    "id": "cas_muslim_pathan",
+    "religionId": "rel_muslim",
+    "name": "Pathan"
+  },
+  {
+    "id": "cas_muslim_mughal",
+    "religionId": "rel_muslim",
+    "name": "Mughal"
+  },
+  {
+    "id": "cas_muslim_labbai",
+    "religionId": "rel_muslim",
+    "name": "Labbai"
+  },
+  {
+    "id": "cas_muslim_marakayar",
+    "religionId": "rel_muslim",
+    "name": "Marakayar"
+  },
+  {
+    "id": "cas_muslim_rowther",
+    "religionId": "rel_muslim",
+    "name": "Rowther"
+  },
+  {
+    "id": "cas_muslim_kayalar",
+    "religionId": "rel_muslim",
+    "name": "Kayalar"
+  },
+  {
+    "id": "cas_muslim_dudekula",
+    "religionId": "rel_muslim",
+    "name": "Dudekula"
+  },
+  {
+    "id": "cas_muslim_ansari",
+    "religionId": "rel_muslim",
+    "name": "Ansari"
+  },
+  {
+    "id": "cas_muslim_mappila",
+    "religionId": "rel_muslim",
+    "name": "Mappila"
+  },
+  {
+    "id": "cas_muslim_memon",
+    "religionId": "rel_muslim",
+    "name": "Memon"
+  },
+  {
+    "id": "cas_muslim_dekkani",
+    "religionId": "rel_muslim",
+    "name": "Dekkani"
+  },
+  {
+    "id": "cas_muslim_other_muslim",
+    "religionId": "rel_muslim",
+    "name": "Other Muslim"
+  },
+  {
+    "id": "cas_christian_roman_catholic",
+    "religionId": "rel_christian",
+    "name": "Roman Catholic"
+  },
+  {
+    "id": "cas_christian_church_of_south_india",
+    "religionId": "rel_christian",
+    "name": "Church Of South India"
+  },
+  {
+    "id": "cas_christian_protestant",
+    "religionId": "rel_christian",
+    "name": "Protestant"
+  },
+  {
+    "id": "cas_christian_pentecostal",
+    "religionId": "rel_christian",
+    "name": "Pentecostal"
+  },
+  {
+    "id": "cas_christian_baptist",
+    "religionId": "rel_christian",
+    "name": "Baptist"
+  },
+  {
+    "id": "cas_christian_seventh_day_adventist",
+    "religionId": "rel_christian",
+    "name": "Seventh Day Adventist"
+  },
+  {
+    "id": "cas_christian_born_again",
+    "religionId": "rel_christian",
+    "name": "Born Again"
+  },
+  {
+    "id": "cas_christian_evangelical",
+    "religionId": "rel_christian",
+    "name": "Evangelical"
+  },
+  {
+    "id": "cas_christian_marthoma",
+    "religionId": "rel_christian",
+    "name": "Marthoma"
+  },
+  {
+    "id": "cas_christian_jacobite",
+    "religionId": "rel_christian",
+    "name": "Jacobite"
+  },
+  {
+    "id": "cas_christian_orthodox",
+    "religionId": "rel_christian",
+    "name": "Orthodox"
+  },
+  {
+    "id": "cas_christian_syro_malabar",
+    "religionId": "rel_christian",
+    "name": "Syro Malabar"
+  },
+  {
+    "id": "cas_christian_syro_malankara",
+    "religionId": "rel_christian",
+    "name": "Syro Malankara"
+  },
+  {
+    "id": "cas_christian_knanaya",
+    "religionId": "rel_christian",
+    "name": "Knanaya"
+  },
+  {
+    "id": "cas_christian_salvation_army",
+    "religionId": "rel_christian",
+    "name": "Salvation Army"
+  },
+  {
+    "id": "cas_christian_nadar_christian",
+    "religionId": "rel_christian",
+    "name": "Nadar Christian"
+  },
+  {
+    "id": "cas_christian_adi_dravida_christian",
+    "religionId": "rel_christian",
+    "name": "Adi Dravida Christian"
+  },
+  {
+    "id": "cas_christian_paravar",
+    "religionId": "rel_christian",
+    "name": "Paravar"
+  },
+  {
+    "id": "cas_christian_vellalar_christian",
+    "religionId": "rel_christian",
+    "name": "Vellalar Christian"
+  },
+  {
+    "id": "cas_christian_other_christian",
+    "religionId": "rel_christian",
+    "name": "Other Christian"
+  },
+  {
+    "id": "cas_jain_digambar",
+    "religionId": "rel_jain",
+    "name": "Digambar"
+  },
+  {
+    "id": "cas_jain_svetambar",
+    "religionId": "rel_jain",
+    "name": "Svetambar"
+  },
+  {
+    "id": "cas_jain_tamil_jain",
+    "religionId": "rel_jain",
+    "name": "Tamil Jain"
+  },
+  {
+    "id": "cas_jain_oswal",
+    "religionId": "rel_jain",
+    "name": "Oswal"
+  },
+  {
+    "id": "cas_jain_bania_jain",
+    "religionId": "rel_jain",
+    "name": "Bania Jain"
+  },
+  {
+    "id": "cas_jain_marwari_jain",
+    "religionId": "rel_jain",
+    "name": "Marwari Jain"
+  },
+  {
+    "id": "cas_jain_gujarati_jain",
+    "religionId": "rel_jain",
+    "name": "Gujarati Jain"
+  },
+  {
+    "id": "cas_jain_other_jain",
+    "religionId": "rel_jain",
+    "name": "Other Jain"
+  },
+  {
+    "id": "cas_sikh_jat_sikh",
+    "religionId": "rel_sikh",
+    "name": "Jat Sikh"
+  },
+  {
+    "id": "cas_sikh_khatri_sikh",
+    "religionId": "rel_sikh",
+    "name": "Khatri Sikh"
+  },
+  {
+    "id": "cas_sikh_arora",
+    "religionId": "rel_sikh",
+    "name": "Arora"
+  },
+  {
+    "id": "cas_sikh_ramgarhia",
+    "religionId": "rel_sikh",
+    "name": "Ramgarhia"
+  },
+  {
+    "id": "cas_sikh_ahluwalia",
+    "religionId": "rel_sikh",
+    "name": "Ahluwalia"
+  },
+  {
+    "id": "cas_sikh_saini",
+    "religionId": "rel_sikh",
+    "name": "Saini"
+  },
+  {
+    "id": "cas_sikh_mazhabi",
+    "religionId": "rel_sikh",
+    "name": "Mazhabi"
+  },
+  {
+    "id": "cas_sikh_other_sikh",
+    "religionId": "rel_sikh",
+    "name": "Other Sikh"
+  },
+  {
+    "id": "cas_buddhist_navayana",
+    "religionId": "rel_buddhist",
+    "name": "Navayana"
+  },
+  {
+    "id": "cas_buddhist_theravada",
+    "religionId": "rel_buddhist",
+    "name": "Theravada"
+  },
+  {
+    "id": "cas_buddhist_mahayana",
+    "religionId": "rel_buddhist",
+    "name": "Mahayana"
+  },
+  {
+    "id": "cas_buddhist_tamil_buddhist",
+    "religionId": "rel_buddhist",
+    "name": "Tamil Buddhist"
+  },
+  {
+    "id": "cas_buddhist_other_buddhist",
+    "religionId": "rel_buddhist",
+    "name": "Other Buddhist"
+  },
+  {
+    "id": "cas_parsi_parsi",
+    "religionId": "rel_parsi",
+    "name": "Parsi"
+  },
+  {
+    "id": "cas_parsi_irani",
+    "religionId": "rel_parsi",
+    "name": "Irani"
+  },
+  {
+    "id": "cas_others_inter_caste",
+    "religionId": "rel_others",
+    "name": "Inter Caste"
+  },
+  {
+    "id": "cas_others_spiritual",
+    "religionId": "rel_others",
+    "name": "Spiritual"
+  },
+  {
+    "id": "cas_others_no_religion",
+    "religionId": "rel_others",
+    "name": "No Religion"
+  },
+  {
+    "id": "cas_others_brahmo",
+    "religionId": "rel_others",
+    "name": "Brahmo"
+  },
+  {
+    "id": "cas_others_other",
+    "religionId": "rel_others",
+    "name": "Other"
+  }
+]

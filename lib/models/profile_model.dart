@@ -42,7 +42,10 @@ class ProfileModel {
   final String annualIncome;
   final String country;
   final String state;
+  final String district;
   final String city;
+  final double? latitude;
+  final double? longitude;
   final String motherTongue;
   final String? aboutMe;
 
@@ -97,7 +100,10 @@ class ProfileModel {
     required this.annualIncome,
     required this.country,
     required this.state,
+    this.district = '',
     required this.city,
+    this.latitude,
+    this.longitude,
     required this.motherTongue,
     this.aboutMe,
     this.profilePhotoUrl,
@@ -145,7 +151,10 @@ class ProfileModel {
       annualIncome: d['annualIncome'] ?? '',
       country: d['country'] ?? 'India',
       state: d['state'] ?? '',
+      district: d['district'] ?? '',
       city: d['city'] ?? '',
+      latitude: (d['latitude'] as num?)?.toDouble(),
+      longitude: (d['longitude'] as num?)?.toDouble(),
       motherTongue: d['motherTongue'] ?? 'Tamil',
       aboutMe: d['aboutMe'],
       profilePhotoUrl: d['profilePhotoUrl'],
@@ -193,7 +202,10 @@ class ProfileModel {
         'annualIncome': annualIncome,
         'country': country,
         'state': state,
+        'district': district,
         'city': city,
+        'latitude': latitude,
+        'longitude': longitude,
         'motherTongue': motherTongue,
         'aboutMe': aboutMe,
         'profilePhotoUrl': profilePhotoUrl,
@@ -260,7 +272,10 @@ class ProfileModel {
       annualIncome: d['annualIncome'] ?? '',
       country: d['country'] ?? 'India',
       state: d['state'] ?? '',
+      district: d['district'] ?? '',
       city: d['city'] ?? '',
+      latitude: (d['latitude'] as num?)?.toDouble(),
+      longitude: (d['longitude'] as num?)?.toDouble(),
       motherTongue: d['motherTongue'] ?? 'Tamil',
       aboutMe: d['about'],
       profilePhotoUrl: photos.isNotEmpty ? photos.first : null,
@@ -294,7 +309,10 @@ class ProfileModel {
     String? annualIncome,
     String? country,
     String? state,
+    String? district,
     String? city,
+    double? latitude,
+    double? longitude,
     String? motherTongue,
     String? aboutMe,
     String? profilePhotoUrl,
@@ -336,7 +354,10 @@ class ProfileModel {
         annualIncome: annualIncome ?? this.annualIncome,
         country: country ?? this.country,
         state: state ?? this.state,
+        district: district ?? this.district,
         city: city ?? this.city,
+        latitude: latitude ?? this.latitude,
+        longitude: longitude ?? this.longitude,
         motherTongue: motherTongue ?? this.motherTongue,
         aboutMe: aboutMe ?? this.aboutMe,
         profilePhotoUrl: profilePhotoUrl ?? this.profilePhotoUrl,
@@ -383,7 +404,10 @@ class ProfileModel {
         annualIncome: annualIncome,
         country: country,
         state: state,
+        district: district,
         city: city,
+        latitude: latitude,
+        longitude: longitude,
         motherTongue: motherTongue,
         aboutMe: aboutMe,
         profilePhotoUrl: url,

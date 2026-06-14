@@ -18,6 +18,12 @@ class Religion {
     final d = doc.data() as Map<String, dynamic>? ?? const {};
     return Religion(id: doc.id, name: (d['name'] ?? '').toString());
   }
+
+  /// Parse a bundled-JSON record (the `id` is a field, not a doc id).
+  factory Religion.fromMap(Map<String, dynamic> m) => Religion(
+        id: (m['id'] ?? '').toString(),
+        name: (m['name'] ?? '').toString(),
+      );
 }
 
 class Caste {
@@ -34,6 +40,12 @@ class Caste {
       name: (d['name'] ?? '').toString(),
     );
   }
+
+  factory Caste.fromMap(Map<String, dynamic> m) => Caste(
+        id: (m['id'] ?? '').toString(),
+        religionId: (m['religionId'] ?? '').toString(),
+        name: (m['name'] ?? '').toString(),
+      );
 }
 
 class Subcaste {
@@ -50,4 +62,10 @@ class Subcaste {
       name: (d['name'] ?? '').toString(),
     );
   }
+
+  factory Subcaste.fromMap(Map<String, dynamic> m) => Subcaste(
+        id: (m['id'] ?? '').toString(),
+        casteId: (m['casteId'] ?? '').toString(),
+        name: (m['name'] ?? '').toString(),
+      );
 }

@@ -33,7 +33,10 @@ class AstrologerAccount {
   final String email;
   final String city;
   final String state;
+  final String district;
   final String country;
+  final double? latitude;
+  final double? longitude;
   final String photoUrl;
   // Professional
   final int experienceYears;
@@ -82,7 +85,10 @@ class AstrologerAccount {
     required this.email,
     required this.city,
     required this.state,
+    this.district = '',
     required this.country,
+    this.latitude,
+    this.longitude,
     this.photoUrl = '',
     required this.experienceYears,
     required this.expertise,
@@ -136,7 +142,10 @@ class AstrologerAccount {
     String? email,
     String? city,
     String? state,
+    String? district,
     String? country,
+    double? latitude,
+    double? longitude,
     String? photoUrl,
     int? experienceYears,
     List<String>? expertise,
@@ -171,7 +180,10 @@ class AstrologerAccount {
         email: email ?? this.email,
         city: city ?? this.city,
         state: state ?? this.state,
+        district: district ?? this.district,
         country: country ?? this.country,
+        latitude: latitude ?? this.latitude,
+        longitude: longitude ?? this.longitude,
         photoUrl: photoUrl ?? this.photoUrl,
         experienceYears: experienceYears ?? this.experienceYears,
         expertise: expertise ?? this.expertise,
@@ -213,7 +225,10 @@ class AstrologerAccount {
       email: d['email'] ?? '',
       city: d['city'] ?? '',
       state: d['state'] ?? '',
+      district: d['district'] ?? '',
       country: d['country'] ?? 'India',
+      latitude: (d['latitude'] as num?)?.toDouble(),
+      longitude: (d['longitude'] as num?)?.toDouble(),
       photoUrl: d['photoUrl'] ?? '',
       experienceYears: (d['experienceYears'] ?? 0) is int
           ? d['experienceYears'] ?? 0
@@ -278,7 +293,10 @@ class AstrologerAccount {
         'email': email,
         'city': city,
         'state': state,
+        'district': district,
         'country': country,
+        'latitude': latitude,
+        'longitude': longitude,
         'photoUrl': photoUrl,
         'experienceYears': experienceYears,
         'expertise': expertise,

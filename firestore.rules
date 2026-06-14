@@ -32,6 +32,24 @@ service cloud.firestore {
       return a < b ? a + '_' + b : b + '_' + a;
     }
 
+    // ── Master location data (states / districts / cities) ────────────────
+    // Read-only REFERENCE data that powers the cascading State → District →
+    // City pickers. Any signed-in user may read it; only admins maintain it.
+    // App queries: master_states (all) · master_districts where stateId == X ·
+    // master_cities where districtId == X — all allowed by the open read.
+    match /master_states/{stateId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    match /master_districts/{districtId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    match /master_cities/{cityId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
     // ── Users ─────────────────────────────────────────────────────────────
     // A user can only read/write their OWN account document. Admins may read
     // any user (for moderation); only admins may delete.
