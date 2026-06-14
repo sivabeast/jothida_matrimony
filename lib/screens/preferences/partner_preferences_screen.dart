@@ -5,6 +5,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
 import '../../providers/demo_data_provider.dart';
+import '../../providers/master_location_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/religion_caste_fields.dart';
@@ -48,7 +49,15 @@ class _PartnerPreferencesScreenState
   String? _casteId;
 
   // Option lists
-  List<String> get _stateOpts => [_any, ...AppConstants.indianStates];
+  // States come from the bundled JSON master data (no hardcoded list). The
+  // "Any" filter option is prepended; the current value is kept selectable even
+  // while the data is still loading.
+  List<String> get _stateOpts {
+    final states = ref.watch(statesProvider).valueOrNull ?? const [];
+    final opts = [_any, ...states.map((s) => s.name)];
+    if (_state != _any && !opts.contains(_state)) opts.add(_state);
+    return opts;
+  }
   List<String> get _countryOpts => [_any, ...AppConstants.countryList];
   List<String> get _incomeOpts => [_any, ...AppConstants.incomeList];
   List<String> get _maritalOpts => [_any, ...AppConstants.maritalStatusList];

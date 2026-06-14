@@ -96,6 +96,7 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/master_data/
+    - assets/master_data/location/
     - .env
 
   fonts:

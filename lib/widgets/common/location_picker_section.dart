@@ -6,10 +6,9 @@ import '../../models/master_location_model.dart';
 import '../../providers/master_location_provider.dart';
 import 'searchable_field.dart';
 
-/// Cascading, searchable **State → District → City** picker backed by the
-/// Firestore master data (`master_states` / `master_districts` /
-/// `master_cities`), plus a "📍 Use My Location" button that GPS-detects and
-/// auto-fills all three.
+/// Cascading, searchable **Country → State → District → City** picker backed by
+/// the bundled JSON master data (`assets/master_data/location/*.json`), plus a
+/// "📍 Use My Location" button that GPS-detects and auto-fills all fields.
 ///
 /// Behaviour:
 ///  • Selecting a state loads only that state's districts; selecting a district
@@ -25,6 +24,7 @@ import 'searchable_field.dart';
 /// [onChanged] and persists `state` / `district` / `city` / `latitude` /
 /// `longitude`.
 class LocationPickerSection extends ConsumerStatefulWidget {
+  final String? initialCountry;
   final String? initialState;
   final String? initialDistrict;
   final String? initialCity;
@@ -32,11 +32,14 @@ class LocationPickerSection extends ConsumerStatefulWidget {
   final double? initialLongitude;
   final ValueChanged<LocationSelection> onChanged;
 
-  /// Marks the District/City fields required (adds the Form validator).
+  /// When true the **City** field is marked required (adds the Form validator).
+  /// The State field is always required; the District field is always optional
+  /// (it may be absent in the master data for some locations).
   final bool isRequired;
 
   const LocationPickerSection({
     super.key,
+    this.initialCountry,
     this.initialState,
     this.initialDistrict,
     this.initialCity,
@@ -52,9 +55,10 @@ class LocationPickerSection extends ConsumerStatefulWidget {
 }
 
 class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
+  String? _country;
   String? _stateId, _stateName;
   String? _districtId, _districtName;
-  String? _cityName;
+  String? _cityId, _cityName;
   double? _lat, _lng;
 
   bool _detecting = false;
@@ -63,6 +67,9 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
   @override
   void initState() {
     super.initState();
+    _country = (widget.initialCountry ?? '').trim().isEmpty
+        ? 'India'
+        : widget.initialCountry!.trim();
     _lat = widget.initialLatitude;
     _lng = widget.initialLongitude;
     // Pre-select any saved location (edit mode) once the master data resolves.
@@ -104,7 +111,10 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
       final cities = await ref.read(citiesProvider(di.id).future);
       final ci = _match(cities, widget.initialCity ?? '', (c) => c.name);
       if (ci != null && mounted) {
-        setState(() => _cityName = ci.name);
+        setState(() {
+          _cityId = ci.id;
+          _cityName = ci.name;
+        });
       }
       _emit();
     } catch (_) {
@@ -123,13 +133,20 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
       _lat = loc.latitude;
       _lng = loc.longitude;
 
+      // Match the detected country against the local country list (default India).
+      if (loc.country.trim().isNotEmpty) {
+        final countries = await ref.read(countriesProvider.future);
+        final matchedCountry = _matchString(countries, loc.country);
+        _country = matchedCountry ?? _country ?? 'India';
+      }
+
       // Match the reverse-geocoded names against the master data and select.
       final states = await ref.read(statesProvider.future);
       final st = _match(states, loc.state, (s) => s.name);
       if (st != null) {
         _stateId = st.id;
         _stateName = st.name;
-        _districtId = _districtName = _cityName = null;
+        _districtId = _districtName = _cityId = _cityName = null;
 
         final districts = await ref.read(districtsProvider(st.id).future);
         final di = _match(districts, loc.district, (d) => d.name);
@@ -139,7 +156,10 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
 
           final cities = await ref.read(citiesProvider(di.id).future);
           final ci = _match(cities, loc.city, (c) => c.name);
-          if (ci != null) _cityName = ci.name;
+          if (ci != null) {
+            _cityId = ci.id;
+            _cityName = ci.name;
+          }
         }
       }
       if (!mounted) return;
@@ -158,12 +178,24 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
   }
 
   // ── Manual selection handlers ─────────────────────────────────────────────
+  void _onCountryPicked(String? c) {
+    setState(() {
+      _country = c;
+      // Changing country invalidates the India-specific cascade below it.
+      _stateId = _stateName = null;
+      _districtId = _districtName = null;
+      _cityId = _cityName = null;
+      _locError = null;
+    });
+    _emit();
+  }
+
   void _onStatePicked(MasterState? s) {
     setState(() {
       _stateId = s?.id;
       _stateName = s?.name;
       _districtId = _districtName = null; // reset children
-      _cityName = null;
+      _cityId = _cityName = null;
       _locError = null;
     });
     _emit();
@@ -173,20 +205,27 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
     setState(() {
       _districtId = d?.id;
       _districtName = d?.name;
-      _cityName = null; // reset child
+      _cityId = _cityName = null; // reset child
     });
     _emit();
   }
 
   void _onCityPicked(MasterCity? c) {
-    setState(() => _cityName = c?.name);
+    setState(() {
+      _cityId = c?.id;
+      _cityName = c?.name;
+    });
     _emit();
   }
 
   void _emit() => widget.onChanged(LocationSelection(
+        country: _country ?? 'India',
         state: _stateName ?? '',
+        stateId: _stateId ?? '',
         district: _districtName ?? '',
+        districtId: _districtId ?? '',
         city: _cityName ?? '',
+        cityId: _cityId ?? '',
         latitude: _lat,
         longitude: _lng,
       ));
@@ -198,6 +237,12 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
       .replaceAll(RegExp(r'[^a-z0-9 ]'), ' ')
       .replaceAll(RegExp(r'\s+'), ' ')
       .trim();
+
+  /// Normalised match against a plain string list (used for Country).
+  String? _matchString(List<String> list, String name) {
+    final hit = _match(list, name, (s) => s);
+    return hit;
+  }
 
   T? _match<T>(List<T> list, String name, String Function(T) nameOf) {
     if (name.trim().isEmpty) return null;
@@ -245,6 +290,8 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
           ),
         const SizedBox(height: 16),
 
+        _countryField(),
+        const SizedBox(height: 16),
         _stateField(),
         const SizedBox(height: 16),
         _districtField(),
@@ -273,6 +320,23 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _countryField() {
+    final async = ref.watch(countriesProvider);
+    return async.when(
+      loading: () => _loadingField('Country', required: true),
+      error: (_, __) =>
+          _errorField('Country', () => ref.invalidate(countriesProvider)),
+      data: (countries) => SearchableField(
+        label: 'Country',
+        isRequired: true,
+        prefixIcon: Icons.public,
+        items: countries,
+        selectedItem: _country,
+        onChanged: _onCountryPicked,
+      ),
     );
   }
 
@@ -312,7 +376,7 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
           'District', () => ref.invalidate(districtsProvider(_stateId!))),
       data: (districts) => SearchableField(
         label: 'District',
-        isRequired: widget.isRequired,
+        isRequired: false, // District is optional (may be absent for a location)
         prefixIcon: Icons.account_balance_outlined,
         items: districts.map((d) => d.name).toList(),
         selectedItem: _districtName,

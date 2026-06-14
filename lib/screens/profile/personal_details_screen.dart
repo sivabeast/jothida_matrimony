@@ -9,8 +9,8 @@ import '../../models/profile_model.dart';
 import '../../providers/demo_data_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/common/location_picker_section.dart';
 import '../../widgets/common/religion_caste_fields.dart';
-import '../../widgets/common/use_my_location_button.dart';
 
 /// Personal Details — the primary profile-management screen.
 ///
@@ -670,38 +670,48 @@ class _LocationSheet extends ConsumerStatefulWidget {
 }
 
 class _LocationSheetState extends ConsumerState<_LocationSheet> {
-  late final TextEditingController _city =
-      TextEditingController(text: widget.profile.city);
-  late String _state = widget.profile.state;
   late String _country =
       widget.profile.country.isEmpty ? 'India' : widget.profile.country;
-  double? _lat;
-  double? _lng;
+  late String _state = widget.profile.state;
+  late String _stateId = widget.profile.stateId;
+  late String _district = widget.profile.district;
+  late String _districtId = widget.profile.districtId;
+  late String _city = widget.profile.city;
+  late String _cityId = widget.profile.cityId;
+  late double? _lat = widget.profile.latitude;
+  late double? _lng = widget.profile.longitude;
   bool _saving = false;
-
-  @override
-  void dispose() {
-    _city.dispose();
-    super.dispose();
-  }
 
   Future<void> _save() async {
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     setState(() => _saving = true);
     final data = {
-      'city': _city.text.trim(),
-      'state': _state,
       'country': _country,
+      'state': _state,
+      'stateId': _stateId,
+      'stateName': _state,
+      'district': _district,
+      'districtId': _districtId,
+      'districtName': _district,
+      'city': _city,
+      'cityId': _cityId,
+      'cityName': _city,
       // GPS coordinates (when detected via "Use My Location") — stored for
       // future nearby-matching features.
       if (_lat != null) 'latitude': _lat,
       if (_lng != null) 'longitude': _lng,
     };
     final updated = widget.profile.copyWith(
-      city: _city.text.trim(),
-      state: _state,
       country: _country,
+      state: _state,
+      stateId: _stateId,
+      district: _district,
+      districtId: _districtId,
+      city: _city,
+      cityId: _cityId,
+      latitude: _lat,
+      longitude: _lng,
     );
     try {
       await _saveSection(ref, widget.profile, data, updated);
@@ -723,23 +733,27 @@ class _LocationSheetState extends ConsumerState<_LocationSheet> {
       saving: _saving,
       onSave: _save,
       children: [
-        UseMyLocationButton(
-          label: 'Update My Location',
-          onDetected: (loc) => setState(() {
-            if (loc.city.isNotEmpty) _city.text = loc.city;
-            if (loc.state.isNotEmpty) _state = loc.state;
-            if (loc.country.isNotEmpty) _country = loc.country;
+        // Cascading Country → State → District → City picker (bundled JSON
+        // master data) with its own "📍 Update My Location" button.
+        LocationPickerSection(
+          initialCountry: _country,
+          initialState: _state,
+          initialDistrict: _district,
+          initialCity: _city,
+          initialLatitude: _lat,
+          initialLongitude: _lng,
+          onChanged: (loc) => setState(() {
+            _country = loc.country.isEmpty ? 'India' : loc.country;
+            _state = loc.state;
+            _stateId = loc.stateId;
+            _district = loc.district;
+            _districtId = loc.districtId;
+            _city = loc.city;
+            _cityId = loc.cityId;
             _lat = loc.latitude;
             _lng = loc.longitude;
           }),
         ),
-        const SizedBox(height: 14),
-        _tf(_city, 'City'),
-        _drop('State', _state, _optsWith(AppConstants.indianStates, _state),
-            (v) => setState(() => _state = v!)),
-        _drop('Country', _country,
-            _optsWith(AppConstants.countryList, _country),
-            (v) => setState(() => _country = v!)),
       ],
     );
   }

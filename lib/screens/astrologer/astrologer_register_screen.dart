@@ -10,7 +10,6 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/config/dev_config.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/data/sample_astrologer_dashboard.dart';
-import '../../core/data/selection_data.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/validators.dart';
@@ -20,8 +19,8 @@ import '../../providers/astrologer_session_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/gradient_button.dart';
 import '../../widgets/common/app_text_field.dart';
+import '../../widgets/common/location_picker_section.dart';
 import '../../widgets/common/searchable_field.dart';
-import '../../widgets/common/use_my_location_button.dart';
 
 /// Astrologer Profile Setup — shown once, immediately after a successful
 /// "Continue with Google" sign-in, for an account that has no
@@ -355,46 +354,17 @@ class _AstrologerRegisterScreenState
                 validator: (v) => v == null || v.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
-              // ── Use My Location: auto-fills Country / State / City ──
-              UseMyLocationButton(
-                onDetected: (loc) => setState(() {
-                  if (loc.country.isNotEmpty) _country = loc.country;
-                  if (loc.state.isNotEmpty) _state = loc.state;
-                  if (loc.city.isNotEmpty) _city = loc.city;
+              // ── Country → State → District → City (bundled JSON master data)
+              // with a built-in "📍 Use My Location" button. ──
+              LocationPickerSection(
+                initialCountry: _country,
+                initialState: _state,
+                initialCity: _city,
+                onChanged: (loc) => setState(() {
+                  _country = loc.country.isEmpty ? 'India' : loc.country;
+                  _state = loc.state.isEmpty ? null : loc.state;
+                  _city = loc.city.isEmpty ? null : loc.city;
                 }),
-              ),
-              const SizedBox(height: 16),
-              SearchableField(
-                label: 'Country',
-                isRequired: true,
-                items: SelectionData.countries,
-                selectedItem: _country,
-                onChanged: (v) => setState(() {
-                  _country = v;
-                  _state = null;
-                  _city = null;
-                }),
-              ),
-              const SizedBox(height: 16),
-              SearchableField(
-                label: 'State',
-                items: _country == 'India'
-                    ? SelectionData.indianStates
-                    : const ['Other'],
-                selectedItem: _state,
-                onChanged: (v) => setState(() {
-                  _state = v;
-                  _city = null;
-                }),
-              ),
-              const SizedBox(height: 16),
-              SearchableField(
-                label: 'City',
-                isRequired: true,
-                items: SelectionData.citiesFor(_state),
-                selectedItem: _city,
-                enabled: _state != null,
-                onChanged: (v) => setState(() => _city = v),
               ),
               const SizedBox(height: 16),
               AppTextField(

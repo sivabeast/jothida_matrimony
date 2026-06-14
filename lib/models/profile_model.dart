@@ -42,8 +42,11 @@ class ProfileModel {
   final String annualIncome;
   final String country;
   final String state;
+  final String stateId;
   final String district;
+  final String districtId;
   final String city;
+  final String cityId;
   final double? latitude;
   final double? longitude;
   final String motherTongue;
@@ -100,8 +103,11 @@ class ProfileModel {
     required this.annualIncome,
     required this.country,
     required this.state,
+    this.stateId = '',
     this.district = '',
+    this.districtId = '',
     required this.city,
+    this.cityId = '',
     this.latitude,
     this.longitude,
     required this.motherTongue,
@@ -150,9 +156,12 @@ class ProfileModel {
       occupation: d['occupation'] ?? '',
       annualIncome: d['annualIncome'] ?? '',
       country: d['country'] ?? 'India',
-      state: d['state'] ?? '',
-      district: d['district'] ?? '',
-      city: d['city'] ?? '',
+      state: d['state'] ?? d['stateName'] ?? '',
+      stateId: d['stateId'] ?? '',
+      district: d['district'] ?? d['districtName'] ?? '',
+      districtId: d['districtId'] ?? '',
+      city: d['city'] ?? d['cityName'] ?? '',
+      cityId: d['cityId'] ?? '',
       latitude: (d['latitude'] as num?)?.toDouble(),
       longitude: (d['longitude'] as num?)?.toDouble(),
       motherTongue: d['motherTongue'] ?? 'Tamil',
@@ -201,9 +210,16 @@ class ProfileModel {
         'occupation': occupation,
         'annualIncome': annualIncome,
         'country': country,
+        // Both human-readable names and stable master-data ids are persisted.
         'state': state,
+        'stateId': stateId,
+        'stateName': state,
         'district': district,
+        'districtId': districtId,
+        'districtName': district,
         'city': city,
+        'cityId': cityId,
+        'cityName': city,
         'latitude': latitude,
         'longitude': longitude,
         'motherTongue': motherTongue,
@@ -271,9 +287,12 @@ class ProfileModel {
       occupation: d['occupation'] ?? '',
       annualIncome: d['annualIncome'] ?? '',
       country: d['country'] ?? 'India',
-      state: d['state'] ?? '',
-      district: d['district'] ?? '',
-      city: d['city'] ?? '',
+      state: d['state'] ?? d['stateName'] ?? '',
+      stateId: d['stateId'] ?? '',
+      district: d['district'] ?? d['districtName'] ?? '',
+      districtId: d['districtId'] ?? '',
+      city: d['city'] ?? d['cityName'] ?? '',
+      cityId: d['cityId'] ?? '',
       latitude: (d['latitude'] as num?)?.toDouble(),
       longitude: (d['longitude'] as num?)?.toDouble(),
       motherTongue: d['motherTongue'] ?? 'Tamil',
@@ -309,8 +328,11 @@ class ProfileModel {
     String? annualIncome,
     String? country,
     String? state,
+    String? stateId,
     String? district,
+    String? districtId,
     String? city,
+    String? cityId,
     double? latitude,
     double? longitude,
     String? motherTongue,
@@ -354,8 +376,11 @@ class ProfileModel {
         annualIncome: annualIncome ?? this.annualIncome,
         country: country ?? this.country,
         state: state ?? this.state,
+        stateId: stateId ?? this.stateId,
         district: district ?? this.district,
+        districtId: districtId ?? this.districtId,
         city: city ?? this.city,
+        cityId: cityId ?? this.cityId,
         latitude: latitude ?? this.latitude,
         longitude: longitude ?? this.longitude,
         motherTongue: motherTongue ?? this.motherTongue,

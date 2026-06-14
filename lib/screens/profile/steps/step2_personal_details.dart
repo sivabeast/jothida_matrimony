@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/data/selection_data.dart';
 import '../../../core/utils/validators.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
@@ -41,8 +40,11 @@ class _Step2State extends ConsumerState<Step2PersonalDetails> {
   String? _annualIncome;
   String? _country = 'India';
   String? _state;
+  String? _stateId;
   String? _district;
+  String? _districtId;
   String? _city;
+  String? _cityId;
   double? _lat;
   double? _lng;
   DateTime? _dob;
@@ -109,8 +111,14 @@ class _Step2State extends ConsumerState<Step2PersonalDetails> {
       'annualIncome': _annualIncome ?? '',
       'country': _country,
       'state': _state ?? '',
+      'stateId': _stateId ?? '',
+      'stateName': _state ?? '',
       'district': _district ?? '',
+      'districtId': _districtId ?? '',
+      'districtName': _district ?? '',
       'city': _city,
+      'cityId': _cityId ?? '',
+      'cityName': _city ?? '',
       'latitude': _lat,
       'longitude': _lng,
       'about': _aboutController.text.trim(),
@@ -230,28 +238,23 @@ class _Step2State extends ConsumerState<Step2PersonalDetails> {
               onChanged: (v) => setState(() => _annualIncome = v),
             ),
             const SizedBox(height: 16),
-            // ── Country (kept; the master location data below is India-focused) ──
-            SearchableField(
-              label: 'Country',
-              isRequired: true,
-              items: SelectionData.countries,
-              selectedItem: _country,
-              prefixIcon: Icons.public,
-              onChanged: (v) => setState(() => _country = v),
-            ),
-            const SizedBox(height: 16),
-            // ── State → District → City (Firestore master data) + a
-            // "📍 Use My Location" button that GPS-detects and auto-fills. ──
+            // ── Country → State → District → City (bundled JSON master data) +
+            // a "📍 Use My Location" button that GPS-detects and auto-fills. ──
             LocationPickerSection(
+              initialCountry: _country,
               initialState: _state,
               initialDistrict: _district,
               initialCity: _city,
               initialLatitude: _lat,
               initialLongitude: _lng,
               onChanged: (loc) => setState(() {
+                _country = loc.country.isEmpty ? 'India' : loc.country;
                 _state = loc.state.isEmpty ? null : loc.state;
+                _stateId = loc.stateId.isEmpty ? null : loc.stateId;
                 _district = loc.district.isEmpty ? null : loc.district;
+                _districtId = loc.districtId.isEmpty ? null : loc.districtId;
                 _city = loc.city.isEmpty ? null : loc.city;
+                _cityId = loc.cityId.isEmpty ? null : loc.cityId;
                 _lat = loc.latitude;
                 _lng = loc.longitude;
               }),
