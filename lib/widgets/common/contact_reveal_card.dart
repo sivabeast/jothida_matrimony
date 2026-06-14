@@ -2,30 +2,45 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
+import '../../models/profile_model.dart';
 import '../../providers/profile_provider.dart';
 
 /// Shows a matched user's contact details (phone / WhatsApp).
 ///
-/// Contact details live in the access-gated `contacts/{userId}` collection and
-/// unlock ONLY after a mutually-accepted interest. If they are still locked
-/// (the Firestore read is denied) or unavailable, a friendly locked state is
-/// shown instead of the numbers — so this widget is safe to drop into any
-/// profile/match screen.
+/// Once an interest is mutually accepted, the caller passes the accepted user's
+/// [contact] (read straight from their already-loaded, readable profile
+/// document). That is the source of truth — no dependency on the gated
+/// `contacts/{uid}` collection, a `connections` document, or Firestore rules
+/// being deployed. If no embedded contact is supplied, it falls back to the
+/// gated collection and finally to a friendly locked state — so it's safe to
+/// drop anywhere.
 class ContactRevealCard extends ConsumerWidget {
   final String otherUserId;
   final String otherName;
+
+  /// The accepted user's contact, taken from their profile document. When this
+  /// has a number, contact is shown immediately (the interest is already
+  /// accepted, so it is unlocked).
+  final ContactDetails? contact;
 
   const ContactRevealCard({
     super.key,
     required this.otherUserId,
     required this.otherName,
+    this.contact,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // No user id (e.g. demo data) → nothing to unlock.
-    if (otherUserId.isEmpty) return _shell(child: _locked());
+    // 1) Preferred: the contact embedded in the readable profile document.
+    final pMobile = contact?.mobileNumber.trim() ?? '';
+    final pWhatsapp = contact?.whatsappNumber?.trim() ?? '';
+    if (pMobile.isNotEmpty || pWhatsapp.isNotEmpty) {
+      return _shell(child: _revealed(pMobile, pWhatsapp));
+    }
 
+    // 2) Fallback: the gated contacts/{uid} collection (legacy storage).
+    if (otherUserId.isEmpty) return _shell(child: _locked());
     final contactAsync = ref.watch(contactByUserIdProvider(otherUserId));
     return _shell(
       child: contactAsync.when(
@@ -39,8 +54,6 @@ class ContactRevealCard extends ConsumerWidget {
             ),
           ),
         ),
-        // A denied read (still locked) lands here — show the locked state, not
-        // a raw error.
         error: (_, __) => _locked(),
         data: (c) {
           final mobile = c?.mobileNumber ?? '';
@@ -48,39 +61,41 @@ class ContactRevealCard extends ConsumerWidget {
           if (c == null || (mobile.isEmpty && whatsapp.isEmpty)) {
             return _locked();
           }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _title(unlocked: true),
-              const SizedBox(height: 12),
-              if (mobile.isNotEmpty)
-                _contactRow(
-                  icon: Icons.call,
-                  label: mobile,
-                  actionLabel: 'Call',
-                  onTap: () => _launch('tel:$mobile'),
-                ),
-              if (whatsapp.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                _contactRow(
-                  icon: Icons.chat,
-                  label: whatsapp,
-                  actionLabel: 'WhatsApp',
-                  onTap: () =>
-                      _launch('https://wa.me/${_digits(whatsapp)}'),
-                ),
-              ],
-              const SizedBox(height: 8),
-              Text(
-                'You matched with $otherName — you can now connect directly.',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-            ],
-          );
+          return _revealed(mobile, whatsapp);
         },
       ),
     );
   }
+
+  // ── revealed (unlocked) state ───────────────────────────────────────────
+  Widget _revealed(String mobile, String whatsapp) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _title(unlocked: true),
+          const SizedBox(height: 12),
+          if (mobile.isNotEmpty)
+            _contactRow(
+              icon: Icons.call,
+              label: mobile,
+              actionLabel: 'Call',
+              onTap: () => _launch('tel:$mobile'),
+            ),
+          if (whatsapp.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _contactRow(
+              icon: Icons.chat,
+              label: whatsapp,
+              actionLabel: 'WhatsApp',
+              onTap: () => _launch('https://wa.me/${_digits(whatsapp)}'),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Text(
+            'You matched with $otherName — you can now connect directly.',
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+        ],
+      );
 
   // ── pieces ────────────────────────────────────────────────────────────────
   Widget _shell({required Widget child}) => Container(

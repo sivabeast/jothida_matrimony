@@ -95,6 +95,7 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen>
               ContactRevealCard(
                 otherUserId: other.userId,
                 otherName: other.name,
+                contact: other.contact,
               ),
               const SizedBox(height: 16),
               _connectAstrologerCard(),

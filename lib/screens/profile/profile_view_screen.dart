@@ -35,7 +35,12 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
     if (myUid != null && myUid == profile.userId) return; // skip self-views
     _viewCounted = true;
-    ref.read(profileRepositoryProvider).incrementViewCount(profile.id);
+    // Best-effort: a non-owner view-count write may be denied by Firestore
+    // rules — swallow it so it can NEVER surface as a "couldn't load" error.
+    ref
+        .read(profileRepositoryProvider)
+        .incrementViewCount(profile.id)
+        .catchError((_) {});
   }
 
   Future<void> _sendInterest(ProfileModel profile) async {
@@ -75,7 +80,9 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ContactRevealCard(
-                otherUserId: profile.userId, otherName: profile.name),
+                otherUserId: profile.userId,
+                otherName: profile.name,
+                contact: profile.contact),
           ],
         ),
       ),
@@ -114,18 +121,9 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () async {
-                // Ensure the unlock connection exists for this accepted match
-                // (backfill), then reveal contact.
-                final interest =
-                    ref.read(acceptedInterestForProfileProvider(profile.id));
-                if (interest != null) {
-                  await ref
-                      .read(interestNotifierProvider.notifier)
-                      .ensureConnection(interest);
-                }
-                if (mounted) _showContact(profile);
-              },
+              // Interest is accepted → contact is unlocked. Reveal it straight
+              // from the (readable) profile document — no connection/gated read.
+              onPressed: () => _showContact(profile),
               icon: const Icon(Icons.call),
               label: const Text('View Contact'),
               style: ElevatedButton.styleFrom(
@@ -175,13 +173,28 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     return Scaffold(
       body: profileAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => const Center(
+        error: (e, _) => Center(
           child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Text(
-              'Couldn\'t load this profile right now. Please try again.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Couldn\'t load this profile right now. Please try again.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      ref.invalidate(profileByIdProvider(widget.profileId)),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Try Again'),
+                  style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary)),
+                ),
+              ],
             ),
           ),
         ),
