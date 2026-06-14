@@ -3,18 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/interest_model.dart';
-import '../../models/profile_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/interest_provider.dart';
 import '../../providers/profile_provider.dart';
-import '../../widgets/common/contact_reveal_card.dart';
 
 /// Interest Management Center — replaces the old chat/messages page.
 ///
 /// Four tabs over the Firestore `interests` collection:
 ///  • Received  — pending interests others sent me (Accept / Reject)
 ///  • Sent      — interests I sent (with status)
-///  • Accepted  — mutually accepted (View Profile / View Contact)
+///  • Accepted  — mutually accepted (View Profile / Horoscope)
 ///  • Rejected  — declined history
 class InterestsCenterScreen extends ConsumerStatefulWidget {
   const InterestsCenterScreen({super.key});
@@ -251,14 +249,14 @@ class _InterestCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
-          _actions(context, ref, otherUserId, name, profile?.contact),
+          _actions(context, ref, otherUserId, name),
         ],
       ),
     );
   }
 
-  Widget _actions(BuildContext context, WidgetRef ref, String otherUserId,
-      String name, ContactDetails? contact) {
+  Widget _actions(
+      BuildContext context, WidgetRef ref, String otherUserId, String name) {
     switch (mode) {
       case _CardMode.received:
         return Row(
@@ -315,12 +313,18 @@ class _InterestCard extends ConsumerWidget {
             const SizedBox(width: 10),
             Expanded(
               child: ElevatedButton.icon(
-                // Accepted → contact unlocked. Reveal directly from the
-                // (readable) profile contact; no connection/gated-read needed.
-                onPressed: () =>
-                    _showContact(context, otherUserId, name, contact),
-                icon: const Icon(Icons.call, size: 18),
-                label: const Text('View Contact'),
+                // Accepted → horoscope unlocked. Both members of a mutually
+                // accepted interest can view each other's horoscope (read from
+                // the public profile doc — no premium / compatibility gate).
+                onPressed: () {
+                  if (otherUserId.isEmpty) {
+                    _snack(context, 'Horoscope unavailable for this match.');
+                    return;
+                  }
+                  context.push('/horoscope-user/$otherUserId');
+                },
+                icon: const Icon(Icons.auto_awesome, size: 18),
+                label: const Text('Horoscope'),
                 style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white),
@@ -349,23 +353,6 @@ class _InterestCard extends ConsumerWidget {
     }
   }
 
-  void _showContact(BuildContext context, String otherUserId, String name,
-      ContactDetails? contact) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ContactRevealCard(
-                otherUserId: otherUserId, otherName: name, contact: contact),
-          ],
-        ),
-      ),
-    );
-  }
 
   void _snack(BuildContext context, String msg) =>
       ScaffoldMessenger.of(context)

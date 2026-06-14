@@ -103,6 +103,13 @@ class HoroscopeDetailsScreen extends ConsumerWidget {
                           r, profile, 'lagnam', v, h.copyWith(lagnam: v))),
                 ),
                 _EditRow(
+                  label: 'Dosham',
+                  value: h.dosham,
+                  onEdit: () => _openField(context, 'Edit Dosham', h.dosham,
+                      null, (r, v) => _saveField(
+                          r, profile, 'dosham', v, h.copyWith(dosham: v))),
+                ),
+                _EditRow(
                   label: 'Dasa Balance',
                   value: h.dasaBalance,
                   onEdit: () => _openField(context, 'Edit Dasa Balance',

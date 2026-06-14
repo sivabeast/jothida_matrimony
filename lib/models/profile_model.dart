@@ -458,6 +458,7 @@ class HoroscopeDetails {
   final String rasi;
   final String nakshatra;
   final String lagnam;
+  final String dosham;
   final String dasaBalance;
   final String yogam;
   final String karanam;
@@ -475,6 +476,7 @@ class HoroscopeDetails {
     required this.rasi,
     required this.nakshatra,
     required this.lagnam,
+    this.dosham = '',
     required this.dasaBalance,
     required this.yogam,
     required this.karanam,
@@ -493,6 +495,7 @@ class HoroscopeDetails {
         rasi: map['rasi'] ?? '',
         nakshatra: map['nakshatra'] ?? '',
         lagnam: map['lagnam'] ?? '',
+        dosham: map['dosham'] ?? '',
         dasaBalance: map['dasaBalance'] ?? '',
         yogam: map['yogam'] ?? '',
         karanam: map['karanam'] ?? '',
@@ -511,6 +514,7 @@ class HoroscopeDetails {
         'rasi': rasi,
         'nakshatra': nakshatra,
         'lagnam': lagnam,
+        'dosham': dosham,
         'dasaBalance': dasaBalance,
         'yogam': yogam,
         'karanam': karanam,
@@ -529,6 +533,7 @@ class HoroscopeDetails {
     String? rasi,
     String? nakshatra,
     String? lagnam,
+    String? dosham,
     String? dasaBalance,
     String? yogam,
     String? karanam,
@@ -542,6 +547,7 @@ class HoroscopeDetails {
         rasi: rasi ?? this.rasi,
         nakshatra: nakshatra ?? this.nakshatra,
         lagnam: lagnam ?? this.lagnam,
+        dosham: dosham ?? this.dosham,
         dasaBalance: dasaBalance ?? this.dasaBalance,
         yogam: yogam ?? this.yogam,
         karanam: karanam ?? this.karanam,

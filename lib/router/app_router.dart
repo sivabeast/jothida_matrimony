@@ -34,6 +34,7 @@ import '../screens/admin/admin_management_screens.dart';
 import '../screens/admin/admin_reports_page.dart';
 import '../screens/admin/account_admin_screens.dart';
 import '../screens/horoscope/horoscope_details_screen.dart';
+import '../screens/horoscope/member_horoscope_screen.dart';
 import '../screens/profile/personal_details_screen.dart';
 import '../screens/profile/complete_profile_screen.dart';
 import '../screens/preferences/partner_preferences_screen.dart';
@@ -288,6 +289,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/personal-details', builder: (_, __) => const PersonalDetailsScreen()),
       GoRoute(path: '/complete-profile', builder: (_, __) => const CompleteProfileScreen()),
       GoRoute(path: '/horoscope', builder: (_, __) => const HoroscopeDetailsScreen()),
+      // Read-only horoscope of an accepted match (Interests → Accepted → Horoscope).
+      GoRoute(
+        path: '/horoscope-user/:uid',
+        builder: (_, state) =>
+            MemberHoroscopeScreen(userId: state.pathParameters['uid']!),
+      ),
       GoRoute(path: '/partner-preferences', builder: (_, __) => const PartnerPreferencesScreen()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
       GoRoute(path: '/help', builder: (_, __) => const HelpSupportScreen()),
