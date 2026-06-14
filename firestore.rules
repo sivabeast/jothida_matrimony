@@ -102,6 +102,22 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ── Master data (religions / castes / subcastes) ──────────────────────
+    // Public reference data: any signed-in user may read; only admins write.
+    // Seeded via scripts in master_data/seed_master_data.js.
+    match /master_religions/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    match /master_castes/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    match /master_subcastes/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
     // ── Interests ─────────────────────────────────────────────────────────
     match /interests/{interestId} {
       allow read: if isAuthenticated()
