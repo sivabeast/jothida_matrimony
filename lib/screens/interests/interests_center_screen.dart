@@ -306,7 +306,14 @@ class _InterestCard extends ConsumerWidget {
             const SizedBox(width: 10),
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () => _showContact(context, otherUserId, name),
+                onPressed: () async {
+                  // Ensure the unlock connection exists (backfills matches
+                  // accepted before connections were created), then reveal.
+                  await ref
+                      .read(interestNotifierProvider.notifier)
+                      .ensureConnection(interest);
+                  if (context.mounted) _showContact(context, otherUserId, name);
+                },
                 icon: const Icon(Icons.call, size: 18),
                 label: const Text('View Contact'),
                 style: ElevatedButton.styleFrom(

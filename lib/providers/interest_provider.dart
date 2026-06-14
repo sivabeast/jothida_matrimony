@@ -53,6 +53,11 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
       () => ref.read(interestRepositoryProvider).rejectInterest(interestId),
     );
   }
+
+  /// Ensures the contact-unlock connection exists for an accepted interest —
+  /// backfills matches accepted before connections were created.
+  Future<void> ensureConnection(InterestModel interest) =>
+      ref.read(interestRepositoryProvider).ensureConnection(interest);
 }
 
 final interestNotifierProvider =
@@ -80,4 +85,22 @@ final hasSentInterestToProfileProvider =
   final sent =
       ref.watch(sentInterestsProvider).valueOrNull ?? const <InterestModel>[];
   return sent.any((i) => i.receiverProfileId == profileId);
+});
+
+/// The ACCEPTED interest (if any) between the signed-in user and [profileId],
+/// in either direction. Used to backfill the contact-unlock connection when
+/// the user opens contact for an accepted match.
+final acceptedInterestForProfileProvider =
+    Provider.autoDispose.family<InterestModel?, String>((ref, profileId) {
+  final sent =
+      ref.watch(sentInterestsProvider).valueOrNull ?? const <InterestModel>[];
+  final received =
+      ref.watch(receivedInterestsProvider).valueOrNull ?? const <InterestModel>[];
+  for (final i in sent) {
+    if (i.receiverProfileId == profileId && i.isAccepted) return i;
+  }
+  for (final i in received) {
+    if (i.senderProfileId == profileId && i.isAccepted) return i;
+  }
+  return null;
 });

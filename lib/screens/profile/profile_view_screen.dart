@@ -114,7 +114,18 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => _showContact(profile),
+              onPressed: () async {
+                // Ensure the unlock connection exists for this accepted match
+                // (backfill), then reveal contact.
+                final interest =
+                    ref.read(acceptedInterestForProfileProvider(profile.id));
+                if (interest != null) {
+                  await ref
+                      .read(interestNotifierProvider.notifier)
+                      .ensureConnection(interest);
+                }
+                if (mounted) _showContact(profile);
+              },
               icon: const Icon(Icons.call),
               label: const Text('View Contact'),
               style: ElevatedButton.styleFrom(
@@ -164,7 +175,16 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     return Scaffold(
       body: profileAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
+        error: (e, _) => const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text(
+              'Couldn\'t load this profile right now. Please try again.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+        ),
         data: (profile) {
           if (profile == null) {
             return const Center(child: Text('Profile not found'));

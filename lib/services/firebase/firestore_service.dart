@@ -265,10 +265,18 @@ class FirestoreService {
     return list;
   }
 
-  Future<void> incrementViewCount(String profileId) => _db
-      .collection(AppConstants.profilesCollection)
-      .doc(profileId)
-      .update({'viewCount': FieldValue.increment(1)});
+  // Fail-safe: a non-owner viewing a profile bumps viewCount, but if the rule
+  // (or deploy) disallows it we must NOT let that surface as a screen error.
+  Future<void> incrementViewCount(String profileId) async {
+    try {
+      await _db
+          .collection(AppConstants.profilesCollection)
+          .doc(profileId)
+          .update({'viewCount': FieldValue.increment(1)});
+    } catch (e) {
+      debugPrint('[FirestoreService] viewCount increment skipped: $e');
+    }
+  }
 
   // ── Interests ─────────────────────────────────────────────────────────────
   Future<void> sendInterest(InterestModel interest) => _db
@@ -337,13 +345,18 @@ class FirestoreService {
   Future<void> acceptInterestAndConnect(InterestModel interest) async {
     // Accepting the interest is the important part and must always succeed.
     await updateInterestStatus(interest.id, AppConstants.interestAccepted);
+    await createConnection(interest);
+  }
+
+  /// Creates the `connections/{pair}` document that unlocks contact details for
+  /// BOTH users of an accepted interest. Idempotent (merge) and NON-FATAL, so
+  /// it doubles as a backfill for interests that were accepted before this
+  /// existed (or before firestore.rules was deployed). Security rules only
+  /// allow the write when the referenced interest is actually accepted.
+  Future<void> createConnection(InterestModel interest) async {
     final a = interest.senderId;
     final b = interest.receiverId;
     final pair = a.compareTo(b) < 0 ? '${a}_$b' : '${b}_$a';
-    // Recording the connection (which unlocks contact details) is NON-FATAL:
-    // if the `connections` security rule hasn't been deployed yet the write is
-    // denied, but the acceptance itself must not fail. Contact simply stays
-    // locked until firestore.rules is deployed.
     try {
       await _db.collection(AppConstants.connectionsCollection).doc(pair).set({
         'uids': [a, b],

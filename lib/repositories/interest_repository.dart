@@ -20,6 +20,10 @@ class InterestRepository {
     return _firestore.acceptInterestAndConnect(interest);
   }
 
+  /// Backfills the contact-unlock connection for an already-accepted interest.
+  Future<void> ensureConnection(InterestModel interest) =>
+      _firestore.createConnection(interest);
+
   Future<void> rejectInterest(String interestId) =>
       _firestore.updateInterestStatus(interestId, 'rejected');
 

@@ -60,6 +60,12 @@ service cloud.firestore {
                     && request.resource.data.userId == request.auth.uid;
       allow update: if isAuthenticated()
                     && resource.data.userId == request.auth.uid;
+      // Any signed-in user may bump engagement counters (view / interest
+      // counts) on a profile they can read — but NOTHING else. This powers
+      // incrementViewCount without exposing the rest of the document to edits.
+      allow update: if isAuthenticated()
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['viewCount', 'interestCount', 'updatedAt']);
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }

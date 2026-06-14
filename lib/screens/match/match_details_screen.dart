@@ -62,7 +62,16 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen>
           ? _lockedView(context)
           : otherAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
+        error: (e, _) => const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text(
+              'Couldn\'t load this profile right now. Please try again.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+        ),
         data: (other) {
           if (other == null) {
             return const Center(child: Text('Profile not found'));
