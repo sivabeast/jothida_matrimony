@@ -32,8 +32,11 @@ class ProfileModel {
   final String weight;
   final String maritalStatus;
   final String religion;
+  final String? religionId;
   final String? caste;
+  final String? casteId;
   final String? subCaste;
+  final String? subCasteId;
   final String education;
   final String occupation;
   final String annualIncome;
@@ -84,8 +87,11 @@ class ProfileModel {
     required this.weight,
     required this.maritalStatus,
     required this.religion,
+    this.religionId,
     this.caste,
+    this.casteId,
     this.subCaste,
+    this.subCasteId,
     required this.education,
     required this.occupation,
     required this.annualIncome,
@@ -129,8 +135,11 @@ class ProfileModel {
       weight: d['weight'] ?? '',
       maritalStatus: d['maritalStatus'] ?? '',
       religion: d['religion'] ?? '',
+      religionId: d['religionId'],
       caste: d['caste'],
+      casteId: d['casteId'],
       subCaste: d['subCaste'],
+      subCasteId: d['subCasteId'],
       education: d['education'] ?? '',
       occupation: d['occupation'] ?? '',
       annualIncome: d['annualIncome'] ?? '',
@@ -174,8 +183,11 @@ class ProfileModel {
         'weight': weight,
         'maritalStatus': maritalStatus,
         'religion': religion,
+        'religionId': religionId,
         'caste': caste,
+        'casteId': casteId,
         'subCaste': subCaste,
+        'subCasteId': subCasteId,
         'education': education,
         'occupation': occupation,
         'annualIncome': annualIncome,
@@ -238,8 +250,11 @@ class ProfileModel {
       weight: d['weight'] ?? '',
       maritalStatus: d['maritalStatus'] ?? '',
       religion: d['religion'] ?? '',
+      religionId: d['religionId'],
       caste: d['caste'],
+      casteId: d['casteId'],
       subCaste: d['subCaste'],
+      subCasteId: d['subCasteId'],
       education: d['education'] ?? '',
       occupation: d['occupation'] ?? '',
       annualIncome: d['annualIncome'] ?? '',
@@ -269,8 +284,11 @@ class ProfileModel {
     String? weight,
     String? maritalStatus,
     String? religion,
+    String? religionId,
     String? caste,
+    String? casteId,
     String? subCaste,
+    String? subCasteId,
     String? education,
     String? occupation,
     String? annualIncome,
@@ -308,8 +326,11 @@ class ProfileModel {
         weight: weight ?? this.weight,
         maritalStatus: maritalStatus ?? this.maritalStatus,
         religion: religion ?? this.religion,
+        religionId: religionId ?? this.religionId,
         caste: caste ?? this.caste,
+        casteId: casteId ?? this.casteId,
         subCaste: subCaste ?? this.subCaste,
+        subCasteId: subCasteId ?? this.subCasteId,
         education: education ?? this.education,
         occupation: occupation ?? this.occupation,
         annualIncome: annualIncome ?? this.annualIncome,
@@ -352,8 +373,11 @@ class ProfileModel {
         weight: weight,
         maritalStatus: maritalStatus,
         religion: religion,
+        religionId: religionId,
         caste: caste,
+        casteId: casteId,
         subCaste: subCaste,
+        subCasteId: subCasteId,
         education: education,
         occupation: occupation,
         annualIncome: annualIncome,
@@ -543,7 +567,9 @@ class PartnerPreferences {
   final List<String> occupation;
   final String income;
   final String religion;
+  final String? religionId;
   final String? caste;
+  final String? casteId;
   final String? city;
   final String? rasi;
   final String? nakshatra;
@@ -563,7 +589,9 @@ class PartnerPreferences {
     this.occupation = const [],
     this.income = 'Any',
     this.religion = 'Any',
+    this.religionId,
     this.caste,
+    this.casteId,
     this.city,
     this.rasi,
     this.nakshatra,
@@ -583,7 +611,9 @@ class PartnerPreferences {
         occupation: toStringList(map['occupation']),
         income: map['income'] ?? 'Any',
         religion: map['religion'] ?? 'Any',
+        religionId: map['religionId'],
         caste: map['caste'],
+        casteId: map['casteId'],
         city: map['city'],
         rasi: map['rasi'],
         nakshatra: map['nakshatra'],
@@ -603,7 +633,9 @@ class PartnerPreferences {
         'occupation': occupation,
         'income': income,
         'religion': religion,
+        'religionId': religionId,
         'caste': caste,
+        'casteId': casteId,
         'city': city,
         'rasi': rasi,
         'nakshatra': nakshatra,
@@ -623,7 +655,9 @@ class PartnerPreferences {
     List<String>? occupation,
     String? income,
     String? religion,
+    String? religionId,
     String? caste,
+    String? casteId,
     String? city,
     String? rasi,
     String? nakshatra,
@@ -642,7 +676,9 @@ class PartnerPreferences {
         occupation: occupation ?? this.occupation,
         income: income ?? this.income,
         religion: religion ?? this.religion,
+        religionId: religionId ?? this.religionId,
         caste: caste ?? this.caste,
+        casteId: casteId ?? this.casteId,
         city: city ?? this.city,
         rasi: rasi ?? this.rasi,
         nakshatra: nakshatra ?? this.nakshatra,

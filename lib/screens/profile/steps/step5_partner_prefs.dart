@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/gradient_button.dart';
+import '../../../widgets/common/religion_caste_fields.dart';
 
 class Step5PartnerPrefs extends ConsumerStatefulWidget {
   final VoidCallback onNext;
@@ -15,7 +16,9 @@ class Step5PartnerPrefs extends ConsumerStatefulWidget {
 class _Step5State extends ConsumerState<Step5PartnerPrefs> {
   RangeValues _ageRange = const RangeValues(22, 35);
   String? _religion;
+  String? _religionId;
   String? _caste;
+  String? _casteId;
   String? _education;
   String? _rasi;
 
@@ -25,7 +28,9 @@ class _Step5State extends ConsumerState<Step5PartnerPrefs> {
         'minAge': _ageRange.start.round(),
         'maxAge': _ageRange.end.round(),
         'religion': _religion ?? 'Any',
+        'religionId': _religionId,
         'caste': _caste ?? 'Any',
+        'casteId': _casteId,
         // education is a List<String> in the model — send a list, not a scalar.
         'education':
             (_education != null && _education != 'Any') ? [_education] : <String>[],
@@ -64,11 +69,30 @@ class _Step5State extends ConsumerState<Step5PartnerPrefs> {
             onChanged: (v) => setState(() => _ageRange = v),
           ),
           const SizedBox(height: 16),
-          _buildDropdown('Preferred Religion', ['Any', ...AppConstants.religions], _religion,
-              (v) => setState(() => _religion = v)),
-          const SizedBox(height: 16),
-          _buildDropdown('Preferred Caste', ['Any', ...AppConstants.castes], _caste,
-              (v) => setState(() => _caste = v)),
+          // Preferred Religion → Caste (Firestore master data; optional, no
+          // sub-caste preference). Leaving them blank means "Any".
+          ReligionCasteFields(
+            religionId: _religionId,
+            religionName: _religion,
+            casteId: _casteId,
+            casteName: _caste,
+            subCasteId: null,
+            subCasteName: null,
+            showSubcaste: false,
+            religionRequired: false,
+            casteRequired: false,
+            onReligionChanged: (id, name) => setState(() {
+              _religionId = id;
+              _religion = name;
+              _casteId = null;
+              _caste = null;
+            }),
+            onCasteChanged: (id, name) => setState(() {
+              _casteId = id;
+              _caste = name;
+            }),
+            onSubcasteChanged: (_, __) {},
+          ),
           const SizedBox(height: 16),
           _buildDropdown('Preferred Education', ['Any', ...AppConstants.educations], _education,
               (v) => setState(() => _education = v)),

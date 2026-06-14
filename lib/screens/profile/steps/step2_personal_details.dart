@@ -7,6 +7,7 @@ import '../../../core/utils/validators.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
+import '../../../widgets/common/religion_caste_fields.dart';
 import '../../../widgets/common/searchable_field.dart';
 import '../../../widgets/common/use_my_location_button.dart';
 
@@ -28,8 +29,11 @@ class _Step2State extends ConsumerState<Step2PersonalDetails> {
   // Dependent / searchable selections
   String? _height;
   String? _religion;
+  String? _religionId;
   String? _caste;
+  String? _casteId;
   String? _subCaste;
+  String? _subCasteId;
   String? _motherTongue;
   String? _maritalStatus;
   String? _education;
@@ -90,8 +94,11 @@ class _Step2State extends ConsumerState<Step2PersonalDetails> {
       'height': _height ?? '',
       'weight': _weightController.text.trim(),
       'religion': _religion,
+      'religionId': _religionId,
       'caste': _caste ?? '',
+      'casteId': _casteId,
       'subCaste': _subCaste ?? '',
+      'subCasteId': _subCasteId,
       'motherTongue': _motherTongue ?? 'Tamil',
       'maritalStatus': _maritalStatus,
       'education': _education,
@@ -149,37 +156,32 @@ class _Step2State extends ConsumerState<Step2PersonalDetails> {
               ],
             ),
             const SizedBox(height: 16),
-            // ── Religion → Caste → Sub-caste (dependent) ──
-            SearchableField(
-              label: 'Religion',
-              isRequired: true,
-              items: AppConstants.religions,
-              selectedItem: _religion,
-              prefixIcon: Icons.spa_outlined,
-              onChanged: (v) => setState(() {
-                _religion = v;
-                _caste = null; // reset dependents
+            // ── Religion → Caste → Sub-caste (Firestore master data) ──
+            ReligionCasteFields(
+              religionId: _religionId,
+              religionName: _religion,
+              casteId: _casteId,
+              casteName: _caste,
+              subCasteId: _subCasteId,
+              subCasteName: _subCaste,
+              onReligionChanged: (id, name) => setState(() {
+                _religionId = id;
+                _religion = name;
+                _casteId = null;
+                _caste = null;
+                _subCasteId = null;
                 _subCaste = null;
               }),
-            ),
-            const SizedBox(height: 16),
-            SearchableField(
-              label: 'Caste',
-              items: SelectionData.castesFor(_religion),
-              selectedItem: _caste,
-              enabled: _religion != null,
-              onChanged: (v) => setState(() {
-                _caste = v;
+              onCasteChanged: (id, name) => setState(() {
+                _casteId = id;
+                _caste = name;
+                _subCasteId = null;
                 _subCaste = null;
               }),
-            ),
-            const SizedBox(height: 16),
-            SearchableField(
-              label: 'Sub Caste',
-              items: SelectionData.subCastesFor(_caste),
-              selectedItem: _subCaste,
-              enabled: _caste != null,
-              onChanged: (v) => setState(() => _subCaste = v),
+              onSubcasteChanged: (id, name) => setState(() {
+                _subCasteId = id;
+                _subCaste = name;
+              }),
             ),
             const SizedBox(height: 16),
             SearchableField(

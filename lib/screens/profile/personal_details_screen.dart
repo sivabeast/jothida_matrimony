@@ -9,6 +9,7 @@ import '../../models/profile_model.dart';
 import '../../providers/demo_data_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/common/religion_caste_fields.dart';
 import '../../widgets/common/use_my_location_button.dart';
 
 /// Personal Details — the primary profile-management screen.
@@ -516,34 +517,38 @@ class _CommunitySheet extends ConsumerStatefulWidget {
 }
 
 class _CommunitySheetState extends ConsumerState<_CommunitySheet> {
-  late String _religion =
-      widget.profile.religion.isEmpty ? 'Hindu' : widget.profile.religion;
-  late final TextEditingController _caste =
-      TextEditingController(text: widget.profile.caste ?? '');
-  late final TextEditingController _subCaste =
-      TextEditingController(text: widget.profile.subCaste ?? '');
+  late String? _religion =
+      widget.profile.religion.isEmpty ? null : widget.profile.religion;
+  late String? _religionId = widget.profile.religionId;
+  late String? _caste =
+      (widget.profile.caste ?? '').isEmpty ? null : widget.profile.caste;
+  late String? _casteId = widget.profile.casteId;
+  late String? _subCaste =
+      (widget.profile.subCaste ?? '').isEmpty ? null : widget.profile.subCaste;
+  late String? _subCasteId = widget.profile.subCasteId;
   bool _saving = false;
-
-  @override
-  void dispose() {
-    _caste.dispose();
-    _subCaste.dispose();
-    super.dispose();
-  }
 
   Future<void> _save() async {
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     setState(() => _saving = true);
+    // The `data` map is written to Firestore verbatim (so cleared values/ids
+    // persist as null); `updated` is the optimistic local copy.
     final data = {
-      'religion': _religion,
-      'caste': _caste.text.trim(),
-      'subCaste': _subCaste.text.trim(),
+      'religion': _religion ?? '',
+      'religionId': _religionId,
+      'caste': _caste ?? '',
+      'casteId': _casteId,
+      'subCaste': _subCaste ?? '',
+      'subCasteId': _subCasteId,
     };
     final updated = widget.profile.copyWith(
-      religion: _religion,
-      caste: _caste.text.trim(),
-      subCaste: _subCaste.text.trim(),
+      religion: _religion ?? '',
+      religionId: _religionId,
+      caste: _caste ?? '',
+      casteId: _casteId,
+      subCaste: _subCaste ?? '',
+      subCasteId: _subCasteId,
     );
     try {
       await _saveSection(ref, widget.profile, data, updated);
@@ -565,11 +570,32 @@ class _CommunitySheetState extends ConsumerState<_CommunitySheet> {
       saving: _saving,
       onSave: _save,
       children: [
-        _drop('Religion', _religion,
-            _optsWith(AppConstants.religionList, _religion),
-            (v) => setState(() => _religion = v!)),
-        _tf(_caste, 'Caste'),
-        _tf(_subCaste, 'Sub Caste'),
+        ReligionCasteFields(
+          religionId: _religionId,
+          religionName: _religion,
+          casteId: _casteId,
+          casteName: _caste,
+          subCasteId: _subCasteId,
+          subCasteName: _subCaste,
+          onReligionChanged: (id, name) => setState(() {
+            _religionId = id;
+            _religion = name;
+            _casteId = null;
+            _caste = null;
+            _subCasteId = null;
+            _subCaste = null;
+          }),
+          onCasteChanged: (id, name) => setState(() {
+            _casteId = id;
+            _caste = name;
+            _subCasteId = null;
+            _subCaste = null;
+          }),
+          onSubcasteChanged: (id, name) => setState(() {
+            _subCasteId = id;
+            _subCaste = name;
+          }),
+        ),
       ],
     );
   }

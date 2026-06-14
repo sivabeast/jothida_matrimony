@@ -7,6 +7,7 @@ import '../../models/profile_model.dart';
 import '../../providers/demo_data_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/common/religion_caste_fields.dart';
 
 /// Partner Preferences — lets the user configure preferred match criteria.
 /// Registered at `/partner-preferences`. Reached from the Home dashboard
@@ -42,6 +43,9 @@ class _PartnerPreferencesScreenState
   bool _horoMatch = true;
   String _language = _any;
   String _religion = _any;
+  String? _religionId;
+  String _caste = _any;
+  String? _casteId;
 
   // Option lists
   List<String> get _stateOpts => [_any, ...AppConstants.indianStates];
@@ -51,7 +55,6 @@ class _PartnerPreferencesScreenState
   List<String> get _rasiOpts => [_any, ...AppConstants.rasiEnList];
   List<String> get _nakshatraOpts => [_any, ...AppConstants.nakshatraList];
   List<String> get _languageOpts => [_any, ...AppConstants.motherTongueList];
-  List<String> get _religionOpts => [_any, ...AppConstants.religionList];
 
   @override
   void dispose() {
@@ -87,7 +90,10 @@ class _PartnerPreferencesScreenState
     _nakshatra = _safe(p.nakshatra, _nakshatraOpts);
     _horoMatch = p.horoscopeMatchRequired;
     _language = _safe(p.motherTongue, _languageOpts);
-    _religion = _safe(p.religion, _religionOpts);
+    _religion = p.religion.isEmpty ? _any : p.religion;
+    _religionId = p.religionId;
+    _caste = (p.caste ?? '').isEmpty ? _any : p.caste!;
+    _casteId = p.casteId;
   }
 
   String _safe(String? value, List<String> opts) =>
@@ -102,6 +108,9 @@ class _PartnerPreferencesScreenState
         occupation: _occupation.toList(),
         income: _income,
         religion: _religion,
+        religionId: _religionId,
+        caste: _caste == _any ? null : _caste,
+        casteId: _casteId,
         city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
         state: _state == _any ? null : _state,
         country: _country == _any ? null : _country,
@@ -290,8 +299,28 @@ class _PartnerPreferencesScreenState
           _card(
             icon: Icons.diversity_3_outlined,
             title: 'Religion / Community Preference',
-            child: _dropdown('Religion', _religion, _religionOpts,
-                (v) => setState(() => _religion = v!)),
+            child: ReligionCasteFields(
+              religionId: _religionId,
+              religionName: _religion == _any ? null : _religion,
+              casteId: _casteId,
+              casteName: _caste == _any ? null : _caste,
+              subCasteId: null,
+              subCasteName: null,
+              showSubcaste: false,
+              religionRequired: false,
+              casteRequired: false,
+              onReligionChanged: (id, name) => setState(() {
+                _religionId = id;
+                _religion = name ?? _any;
+                _casteId = null;
+                _caste = _any;
+              }),
+              onCasteChanged: (id, name) => setState(() {
+                _casteId = id;
+                _caste = name ?? _any;
+              }),
+              onSubcasteChanged: (_, __) {},
+            ),
           ),
           const SizedBox(height: 8),
           SizedBox(
