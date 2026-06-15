@@ -6,11 +6,11 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
-import 'steps/step1_who_are_you.dart';
+import 'steps/step_profile_for.dart';
+import 'steps/step_gender.dart';
 import 'steps/step2_personal_details.dart';
 import 'steps/step3_horoscope.dart';
 import 'steps/step4_family.dart';
-import 'steps/step5_partner_prefs.dart';
 import 'steps/step6_photos.dart';
 import 'steps/step7_contact.dart';
 
@@ -41,11 +41,11 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   }
 
   final List<String> _stepTitles = [
-    'Who Are You',
+    'Profile For',
+    'Gender',
     'Personal Details',
     'Horoscope',
     'Family',
-    'Partner Preferences',
     'Photos',
     'Contact Details',
   ];
@@ -72,6 +72,40 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
       _pageController.previousPage(
           duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     }
+  }
+
+  /// Asks for confirmation, then signs out (Firebase + Google), clears the
+  /// local session and returns to the Login screen.
+  Future<void> _confirmLogout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+    if (shouldLogout == true) await _logout();
+  }
+
+  Future<void> _logout() async {
+    // Discard any in-progress profile data so the next session starts clean.
+    ref.invalidate(profileCreationProvider);
+    // Signs out of Firebase Auth + Google Sign-In and clears auth state.
+    await ref.read(authNotifierProvider.notifier).signOut();
+    if (!mounted) return;
+    context.go('/login');
   }
 
   Future<void> _submitProfile() async {
@@ -150,9 +184,21 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
             : _stepTitles[_currentStep]),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        leading: _currentStep > 0
-            ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: _prevStep)
-            : null,
+        // During registration the top-left is a Logout control (not a back
+        // button). When editing an existing profile, keep step-back navigation.
+        automaticallyImplyLeading: false,
+        leading: _isEditMode
+            ? (_currentStep > 0
+                ? IconButton(
+                    icon: const Icon(Icons.arrow_back), onPressed: _prevStep)
+                : IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => context.pop()))
+            : IconButton(
+                icon: const Icon(Icons.logout),
+                tooltip: 'Logout',
+                onPressed: _confirmLogout,
+              ),
       ),
       body: Column(
         children: [
@@ -188,11 +234,11 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
               controller: _pageController,
               physics: const NeverScrollableScrollPhysics(),
               children: [
-                Step1WhoAreYou(onNext: _nextStep),
+                ProfileForStep(onNext: _nextStep),
+                GenderStep(onNext: _nextStep),
                 Step2PersonalDetails(onNext: _nextStep),
                 Step3Horoscope(onNext: _nextStep),
                 Step4Family(onNext: _nextStep),
-                Step5PartnerPrefs(onNext: _nextStep),
                 Step6Photos(onNext: _nextStep),
                 Step7Contact(
                   onNext: _nextStep,

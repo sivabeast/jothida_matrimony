@@ -5,33 +5,34 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/gradient_button.dart';
 
-class Step1WhoAreYou extends ConsumerStatefulWidget {
+/// Step 2 — "Select Gender".
+///
+/// A single required selection (Male / Female). Stored as `gender`, it is the
+/// only field that drives opposite-gender matching downstream.
+class GenderStep extends ConsumerStatefulWidget {
   final VoidCallback onNext;
-
-  const Step1WhoAreYou({super.key, required this.onNext});
+  const GenderStep({super.key, required this.onNext});
 
   @override
-  ConsumerState<Step1WhoAreYou> createState() => _Step1State();
+  ConsumerState<GenderStep> createState() => _GenderStepState();
 }
 
-class _Step1State extends ConsumerState<Step1WhoAreYou> {
-  String? _profileFor;
+class _GenderStepState extends ConsumerState<GenderStep> {
   String? _gender;
 
-  static const _profileForOptions = [
-    'Myself', 'Son', 'Daughter', 'Brother', 'Sister', 'Friend',
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _gender = ref.read(profileCreationProvider).data['gender'] as String?;
+  }
 
   void _saveAndNext() {
-    if (_profileFor == null || _gender == null) {
+    if (_gender == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select all options')));
+          const SnackBar(content: Text('Please select a gender')));
       return;
     }
-    ref.read(profileCreationProvider.notifier).updateData({
-      'profileFor': _profileFor,
-      'gender': _gender,
-    });
+    ref.read(profileCreationProvider.notifier).updateData({'gender': _gender});
     widget.onNext();
   }
 
@@ -42,30 +43,13 @@ class _Step1State extends ConsumerState<Step1WhoAreYou> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Profile is for', style: AppTextStyles.heading2),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: _profileForOptions.map((opt) {
-              final selected = _profileFor == opt;
-              return ChoiceChip(
-                label: Text(opt),
-                selected: selected,
-                onSelected: (_) => setState(() => _profileFor = opt),
-                selectedColor: AppColors.primary,
-                labelStyle: TextStyle(
-                  color: selected ? Colors.white : Colors.black87,
-                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                ),
-                backgroundColor: Colors.grey[100],
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              );
-            }).toList(),
+          Text('Select Gender', style: AppTextStyles.heading2),
+          const SizedBox(height: 8),
+          const Text(
+            'This is used to show you matches of the opposite gender.',
+            style: TextStyle(color: Colors.grey),
           ),
-          const SizedBox(height: 32),
-          Text('Gender', style: AppTextStyles.heading2),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Row(
             children: [
               Expanded(child: _genderCard('Male', Icons.male)),

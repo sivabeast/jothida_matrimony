@@ -98,12 +98,60 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     );
   }
 
+  Future<void> _acceptInterest(String interestId) async {
+    await ref.read(interestNotifierProvider.notifier).acceptInterest(interestId);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Interest accepted — it\'s a match!')));
+    }
+  }
+
   /// Status-aware bottom action. Source of truth is the real Firestore interest
-  /// status, so an accepted interest never shows "Send Interest" again.
+  /// status, so an accepted interest never shows "Send Interest" again, and an
+  /// interest the other user already sent us offers "Accept" rather than a
+  /// duplicate "Send Interest".
   Widget _interestAction(ProfileModel profile) {
-    final accepted = ref.watch(isInterestAcceptedProvider(profile.id));
-    final alreadySent =
-        ref.watch(hasSentInterestToProfileProvider(profile.id));
+    final status = ref.watch(interestStatusForProfileProvider(profile.id));
+    final accepted = status == InterestUiStatus.accepted;
+    final alreadySent = status == InterestUiStatus.sent;
+
+    if (status == InterestUiStatus.rejected) {
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: null,
+          icon: const Icon(Icons.cancel),
+          label: const Text('Interest Rejected'),
+          style: ElevatedButton.styleFrom(
+            disabledBackgroundColor: Colors.grey.shade400,
+            disabledForegroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(52),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      );
+    }
+
+    if (status == InterestUiStatus.receivedPending) {
+      final pending =
+          ref.watch(pendingReceivedInterestFromProfileProvider(profile.id));
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: pending == null ? null : () => _acceptInterest(pending.id),
+          icon: const Icon(Icons.favorite),
+          label: const Text('Accept Interest'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.success,
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(52),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      );
+    }
 
     if (accepted) {
       return Column(
@@ -153,7 +201,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
         width: double.infinity,
         child: ElevatedButton.icon(
           onPressed: null,
-          icon: const Icon(Icons.check_circle),
+          icon: const Icon(Icons.hourglass_top),
           label: const Text('Interest Sent'),
           style: ElevatedButton.styleFrom(
             disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
@@ -336,10 +384,15 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                 ],
                 _buildInfoSection('Personal Details', [
                   _InfoItem(Icons.cake_outlined, 'Age', '${profile.age} years'),
+                  _InfoItem(Icons.height, 'Height', profile.height),
+                  _InfoItem(Icons.place_outlined, 'Location',
+                      [profile.city, profile.state].where((s) => s.trim().isNotEmpty).join(', ')),
                   _InfoItem(Icons.school_outlined, 'Education', profile.education),
                   _InfoItem(Icons.work_outline, 'Occupation', profile.occupation),
+                  _InfoItem(Icons.payments_outlined, 'Annual Salary', profile.annualIncome),
                   _InfoItem(Icons.church_outlined, 'Religion', profile.religion),
-                  _InfoItem(Icons.people_outline, 'Caste', profile.caste ?? 'Not specified'),
+                  _InfoItem(Icons.people_outline, 'Caste', profile.caste ?? ''),
+                  _InfoItem(Icons.groups_2_outlined, 'Sub-caste', profile.subCaste ?? ''),
                   _InfoItem(Icons.wc, 'Marital Status', profile.maritalStatus),
                 ]),
                 const SizedBox(height: 20),
@@ -347,8 +400,10 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                   _InfoItem(Icons.stars, 'Rasi', profile.horoscopeDetails.rasi),
                   _InfoItem(Icons.star_border, 'Nakshatra', profile.horoscopeDetails.nakshatra),
                   _InfoItem(Icons.wb_twilight, 'Lagnam', profile.horoscopeDetails.lagnam),
-                  _InfoItem(Icons.place_outlined, 'Birth Place', profile.horoscopeDetails.birthPlace),
+                  _InfoItem(Icons.place_outlined, 'Birth City', profile.horoscopeDetails.birthPlace),
                 ]),
+                const SizedBox(height: 20),
+                ..._partnerPreferenceSection(profile.partnerPreferences),
                 const SizedBox(height: 32),
                 // Status-aware action: accepted → View Contact (never "Send
                 // Interest" again); pending → "Interest Sent"; otherwise the
@@ -361,6 +416,32 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
         ),
       ],
     );
+  }
+
+  /// Partner Preferences section — rendered only when at least one meaningful
+  /// preference is set (so an all-default block isn't shown).
+  List<Widget> _partnerPreferenceSection(PartnerPreferences p) {
+    final items = <_InfoItem>[
+      _InfoItem(Icons.cake_outlined, 'Age', '${p.minAge} - ${p.maxAge} yrs'),
+      _InfoItem(Icons.height, 'Height', '${p.minHeight} - ${p.maxHeight}'),
+      if (p.education.isNotEmpty)
+        _InfoItem(Icons.school_outlined, 'Education', p.education.join(', ')),
+      if (p.occupation.isNotEmpty)
+        _InfoItem(Icons.work_outline, 'Occupation', p.occupation.join(', ')),
+      if (p.income != 'Any' && p.income.trim().isNotEmpty)
+        _InfoItem(Icons.payments_outlined, 'Income', p.income),
+      if (p.religion != 'Any' && p.religion.trim().isNotEmpty)
+        _InfoItem(Icons.church_outlined, 'Religion', p.religion),
+      if ((p.caste ?? '').trim().isNotEmpty)
+        _InfoItem(Icons.people_outline, 'Caste', p.caste!),
+      if (p.maritalStatus != 'Any' && p.maritalStatus.trim().isNotEmpty)
+        _InfoItem(Icons.wc, 'Marital Status', p.maritalStatus),
+      if (p.motherTongue != 'Any' && p.motherTongue.trim().isNotEmpty)
+        _InfoItem(Icons.translate, 'Mother Tongue', p.motherTongue),
+      _InfoItem(Icons.auto_awesome, 'Horoscope Match',
+          p.horoscopeMatchRequired ? 'Required' : 'Not required'),
+    ];
+    return [_buildInfoSection('Partner Preferences', items)];
   }
 
   Widget _buildInfoSection(String title, List<_InfoItem> items) {

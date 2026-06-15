@@ -73,6 +73,20 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     }
   }
 
+  /// Accept a pending interest the target sent us — turns the pair into a
+  /// match right from the card.
+  Future<void> _acceptInterest(ProfileModel profile, String interestId) async {
+    try {
+      await ref
+          .read(interestNotifierProvider.notifier)
+          .acceptInterest(interestId);
+      if (!mounted) return;
+      _snack('You matched with ${profile.name}');
+    } catch (_) {
+      _snack('Could not accept interest. Please try again.');
+    }
+  }
+
   void _snack(String msg) => ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(
@@ -110,6 +124,8 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
                     profile: profiles[i],
                     interestSent: _interestSent.contains(profiles[i].id),
                     onInterest: () => _sendInterest(profiles[i]),
+                    onAccept: (interestId) =>
+                        _acceptInterest(profiles[i], interestId),
                   ),
                 ),
                 // Subtle left/right swipe affordances.
@@ -218,18 +234,31 @@ class _MatchProfilePage extends ConsumerWidget {
   final ProfileModel profile;
   final bool interestSent;
   final VoidCallback onInterest;
+  final ValueChanged<String> onAccept;
 
   const _MatchProfilePage({
     required this.profile,
     required this.interestSent,
     required this.onInterest,
+    required this.onAccept,
   });
+
+  /// Open the full Profile Details screen for this match.
+  void _openProfile(BuildContext context) =>
+      context.push('/profile/${profile.id}');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final location = [profile.city, profile.state]
         .where((s) => s.trim().isNotEmpty)
         .join(', ');
+
+    // Live relationship status (Firestore), with an instant local override so
+    // the button flips to "Interest Sent" the moment it's tapped.
+    var status = ref.watch(interestStatusForProfileProvider(profile.id));
+    if (status == InterestUiStatus.none && interestSent) {
+      status = InterestUiStatus.sent;
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
@@ -244,108 +273,147 @@ class _MatchProfilePage extends ConsumerWidget {
         ),
         child: Column(
           children: [
-            // ── Photo gallery + identity overlay + match badge ───────────
+            // Tapping anywhere on the photo/details area opens the full
+            // profile. The action bar below handles its own taps.
             Expanded(
-              flex: 5,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  _PhotoGallery(photos: profile.photos),
-                  // Scrim so the name is always legible.
-                  IgnorePointer(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.center,
-                          colors: [
-                            Colors.black.withOpacity(0.65),
-                            Colors.transparent,
+              flex: 9,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _openProfile(context),
+                child: Column(
+                  children: [
+                    // ── Photo gallery + identity overlay + match badge ─────
+                    Expanded(
+                      flex: 5,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          _PhotoGallery(photos: profile.photos),
+                          // Scrim so the name is always legible.
+                          IgnorePointer(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.center,
+                                  colors: [
+                                    Colors.black.withOpacity(0.65),
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Identity overlay.
+                          Positioned(
+                            left: 16,
+                            right: 16,
+                            bottom: 14,
+                            child: IgnorePointer(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('${profile.name} | ${profile.age}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 24,
+                                          fontFamily: 'Poppins',
+                                          fontWeight: FontWeight.bold)),
+                                  if (location.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.location_on,
+                                            size: 15, color: Colors.white70),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Text(location,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                  color: Colors.white70,
+                                                  fontSize: 13.5)),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                          // 10-porutham compatibility CATEGORY badge (no
+                          // percentage). Informational only.
+                          Positioned(
+                            top: 14,
+                            right: 14,
+                            child: IgnorePointer(
+                              child: HoroscopeMatchBadge(target: profile),
+                            ),
+                          ),
+                          // "Tap to view" affordance.
+                          Positioned(
+                            top: 14,
+                            left: 14,
+                            child: IgnorePointer(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.35),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.visibility_outlined,
+                                        size: 14, color: Colors.white),
+                                    SizedBox(width: 5),
+                                    Text('Tap to view profile',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // ── Scrollable details ─────────────────────────────────
+                    Expanded(
+                      flex: 4,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _careerEducation(),
+                            const SizedBox(height: 12),
+                            _quickFacts(),
+                            if (profile.about.trim().isNotEmpty) ...[
+                              const SizedBox(height: 14),
+                              _sectionLabel('About Me'),
+                              const SizedBox(height: 4),
+                              Text(profile.about,
+                                  style: TextStyle(
+                                      fontSize: 13.5,
+                                      height: 1.4,
+                                      color: Colors.grey[800])),
+                            ],
                           ],
                         ),
                       ),
                     ),
-                  ),
-                  // Identity overlay.
-                  Positioned(
-                    left: 16,
-                    right: 16,
-                    bottom: 14,
-                    child: IgnorePointer(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('${profile.name} | ${profile.age}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontFamily: 'Poppins',
-                                  fontWeight: FontWeight.bold)),
-                          if (location.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(Icons.location_on,
-                                    size: 15, color: Colors.white70),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(location,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 13.5)),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                  // 10-porutham compatibility CATEGORY badge (no percentage).
-                  // Informational only — never hides the profile.
-                  Positioned(
-                    top: 14,
-                    right: 14,
-                    child: IgnorePointer(
-                      child: HoroscopeMatchBadge(target: profile),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // ── Scrollable details (vertical scroll; horizontal swipe pages)
-            Expanded(
-              flex: 4,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Education + highlighted Occupation & Salary (key
-                    // matching factors).
-                    _careerEducation(),
-                    const SizedBox(height: 12),
-                    _quickFacts(),
-                    if (profile.about.trim().isNotEmpty) ...[
-                      const SizedBox(height: 14),
-                      _sectionLabel('About Me'),
-                      const SizedBox(height: 4),
-                      Text(profile.about,
-                          style: TextStyle(
-                              fontSize: 13.5,
-                              height: 1.4,
-                              color: Colors.grey[800])),
-                    ],
                   ],
                 ),
               ),
             ),
             // ── Action bar ───────────────────────────────────────────────
-            _actionBar(context),
+            _actionBar(context, ref, status),
           ],
         ),
       ),
@@ -471,7 +539,8 @@ class _MatchProfilePage extends ConsumerWidget {
       style: const TextStyle(
           fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary));
 
-  Widget _actionBar(BuildContext context) => Container(
+  Widget _actionBar(BuildContext context, WidgetRef ref, InterestUiStatus status) =>
+      Container(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -479,24 +548,7 @@ class _MatchProfilePage extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: interestSent ? null : onInterest,
-                icon: Icon(
-                    interestSent ? Icons.check_circle : Icons.favorite_border,
-                    size: 20),
-                label: Text(interestSent ? 'Interest Sent' : 'Interest'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
-                  disabledForegroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
+            Expanded(child: _interestButton(context, ref, status)),
             const SizedBox(width: 12),
             Expanded(
               child: OutlinedButton.icon(
@@ -513,6 +565,82 @@ class _MatchProfilePage extends ConsumerWidget {
               ),
             ),
           ],
+        ),
+      );
+
+  /// Status-aware left action. The relationship status is the source of truth,
+  /// so once an interest exists (sent / accepted / rejected) the plain "Send
+  /// Interest" button is never shown again.
+  Widget _interestButton(
+      BuildContext context, WidgetRef ref, InterestUiStatus status) {
+    switch (status) {
+      case InterestUiStatus.accepted:
+        return _statusButton(
+          icon: Icons.check_circle,
+          label: 'Matched',
+          background: AppColors.success,
+        );
+      case InterestUiStatus.sent:
+        return _statusButton(
+          icon: Icons.hourglass_top,
+          label: 'Interest Sent',
+          background: Colors.grey.shade500,
+        );
+      case InterestUiStatus.rejected:
+        return _statusButton(
+          icon: Icons.cancel,
+          label: 'Rejected',
+          background: Colors.grey.shade600,
+        );
+      case InterestUiStatus.receivedPending:
+        // They're interested in us — accept it in place to become a match.
+        final pending =
+            ref.watch(pendingReceivedInterestFromProfileProvider(profile.id));
+        return ElevatedButton.icon(
+          onPressed:
+              pending == null ? null : () => onAccept(pending.id),
+          icon: const Icon(Icons.favorite, size: 20),
+          label: const Text('Accept Interest'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.success,
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(48),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      case InterestUiStatus.none:
+        return ElevatedButton.icon(
+          onPressed: onInterest,
+          icon: const Icon(Icons.favorite, size: 20),
+          label: const Text('Interest'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(48),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+    }
+  }
+
+  /// A disabled, status-coloured button (Matched / Interest Sent / Rejected).
+  Widget _statusButton({
+    required IconData icon,
+    required String label,
+    required Color background,
+  }) =>
+      ElevatedButton.icon(
+        onPressed: null,
+        icon: Icon(icon, size: 20),
+        label: Text(label),
+        style: ElevatedButton.styleFrom(
+          disabledBackgroundColor: background,
+          disabledForegroundColor: Colors.white,
+          minimumSize: const Size.fromHeight(48),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
 }

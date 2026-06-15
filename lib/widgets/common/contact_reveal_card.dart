@@ -73,6 +73,14 @@ class ContactRevealCard extends ConsumerWidget {
         children: [
           _title(unlocked: true),
           const SizedBox(height: 12),
+          // Matched user's name — shown above the phone number. Falls back to
+          // "Not Available" when the profile has no name.
+          _infoRow(
+            icon: Icons.person_outline,
+            label: 'Name',
+            value: otherName.trim().isNotEmpty ? otherName.trim() : 'Not Available',
+          ),
+          const SizedBox(height: 8),
           if (mobile.isNotEmpty)
             _contactRow(
               icon: Icons.call,
@@ -129,6 +137,35 @@ class ContactRevealCard extends ConsumerWidget {
           Text(
             'Contact details unlock once your interest is mutually accepted.',
             style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+          ),
+        ],
+      );
+
+  /// A non-actionable detail row (label + value), used for the matched user's
+  /// name. Matches the spacing/iconography of [_contactRow] but has no trailing
+  /// action button.
+  Widget _infoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) =>
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(icon, size: 20, color: AppColors.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                const SizedBox(height: 2),
+                Text(value,
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w600)),
+              ],
+            ),
           ),
         ],
       );
