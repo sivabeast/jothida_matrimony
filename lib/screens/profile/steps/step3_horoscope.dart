@@ -361,11 +361,12 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
             )
           else
             SearchableField(
-              label: 'Birth Place',
+              label: 'Birth City',
               isRequired: true,
               items: cityItems,
               selectedItem: _isOthers ? _kOthers : _selectedCity,
               prefixIcon: Icons.location_on_outlined,
+              popupMode: SearchablePopupMode.modalBottomSheet,
               onChanged: _onPlaceChanged,
             ),
           if (_isOthers) ...[
@@ -426,6 +427,7 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
               items: _rasiOptions,
               selectedItem: _ovrRasi,
               prefixIcon: Icons.brightness_3_outlined,
+              popupMode: SearchablePopupMode.modalBottomSheet,
               onChanged: (v) => setState(() => _ovrRasi = v),
             ),
             const SizedBox(height: 16),
@@ -435,6 +437,7 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
               items: _nakOptions,
               selectedItem: _ovrNakshatra,
               prefixIcon: Icons.star_outline,
+              popupMode: SearchablePopupMode.modalBottomSheet,
               onChanged: (v) => setState(() => _ovrNakshatra = v),
             ),
             const SizedBox(height: 16),
@@ -444,6 +447,7 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
               items: _lagnamOptions,
               selectedItem: _ovrLagnam,
               prefixIcon: Icons.wb_twilight_outlined,
+              popupMode: SearchablePopupMode.modalBottomSheet,
               onChanged: (v) => setState(() => _ovrLagnam = v),
             ),
           ],

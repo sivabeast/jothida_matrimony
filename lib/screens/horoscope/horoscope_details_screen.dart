@@ -3,24 +3,36 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/config/dev_config.dart';
-import '../../core/data/selection_data.dart';
 import '../../core/services/horoscope_calculation_service.dart';
+import '../../core/services/master_astrology_data.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
 import '../../providers/demo_data_provider.dart';
+import '../../providers/master_location_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/app_text_field.dart';
 import '../../widgets/common/gradient_button.dart';
 import '../../widgets/common/searchable_field.dart';
 
+/// Sentinel appended to the city list for birth places not in the master data.
+const String _kOthers = 'Others';
+
 /// Horoscope Details — generate Rasi / Nakshatra / Lagnam from birth details.
 ///
-/// The user enters Date of Birth, Time of Birth and Birth Place and taps
-/// **Generate Horoscope**. The app geocodes the place, runs the Swiss
-/// Ephemeris (sidereal, Lahiri) engine via [HoroscopeCalculationService] and
-/// shows the calculated values in result cards, then persists them to
-/// Firestore. Re-running with changed inputs recalculates and updates.
+/// Flow:
+/// 1. User enters Date of Birth, Time of Birth.
+/// 2. User picks a **Birth City** from the searchable master-cities dropdown,
+///    or selects **Others** and types a **Custom Birth Place**.
+/// 3. User taps **Generate Horoscope** — only then does the app geocode the
+///    place, run the Swiss Ephemeris (sidereal, Lahiri) engine via
+///    [HoroscopeCalculationService] and show the calculated Rasi/Nakshatra/
+///    Lagnam, persisting them to Firestore.
+/// 4. Optionally the user enables **Override Horoscope Details** to replace the
+///    generated values with manual selections from the master lists.
+///
+/// The city/override dropdowns open as modal bottom sheets so they never
+/// overlap the result cards (the previous anchored-menu overlap bug).
 class HoroscopeDetailsScreen extends ConsumerStatefulWidget {
   const HoroscopeDetailsScreen({super.key});
 
@@ -34,16 +46,33 @@ class _HoroscopeDetailsScreenState
   final _calc = HoroscopeCalculationService();
   final _dobController = TextEditingController();
   final _timeController = TextEditingController();
+  final _customPlaceController = TextEditingController();
 
   DateTime? _dob;
   TimeOfDay? _time;
-  String? _place;
 
-  // Calculated, read-only results.
-  String? _rasi;
-  String? _nakshatra;
-  String? _lagnam;
+  // Birth place: a master city, or a free-typed custom place via "Others".
+  String? _selectedCity;
+  bool _isOthers = false;
+
+  // Engine-calculated (generated) values — always preserved.
+  String? _genRasi;
+  String? _genNakshatra;
+  String? _genLagnam;
+  double? _lat;
+  double? _lng;
   bool _generated = false;
+
+  // Manual override.
+  bool _overrideEnabled = false;
+  String? _ovrRasi;
+  String? _ovrNakshatra;
+  String? _ovrLagnam;
+
+  // Master option lists (Tamil names) for the override dropdowns.
+  List<String> _rasiOptions = const [];
+  List<String> _nakOptions = const [];
+  List<String> _lagnamOptions = const [];
 
   bool _loading = false;
   bool _showValidation = false;
@@ -53,6 +82,7 @@ class _HoroscopeDetailsScreenState
   @override
   void initState() {
     super.initState();
+    _loadMaster();
     // Prefill immediately if the profile is already in cache.
     final p = ref.read(myProfileProvider).valueOrNull;
     if (p != null) _prefill(p);
@@ -62,7 +92,18 @@ class _HoroscopeDetailsScreenState
   void dispose() {
     _dobController.dispose();
     _timeController.dispose();
+    _customPlaceController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadMaster() async {
+    final m = await MasterAstrologyData.load();
+    if (!mounted) return;
+    setState(() {
+      _rasiOptions = m.rasis.map((e) => e.nameTamil).toList();
+      _nakOptions = m.nakshatras.map((e) => e.nameTamil).toList();
+      _lagnamOptions = m.lagnams.map((e) => e.nameTamil).toList();
+    });
   }
 
   /// Populate inputs/results from an existing profile (edit support).
@@ -78,15 +119,41 @@ class _HoroscopeDetailsScreenState
       _time = t;
       _timeController.text = _fmtTime(t);
     }
-    if (h.birthPlace.trim().isNotEmpty) _place = h.birthPlace.trim();
+
+    final place = h.birthPlace.trim();
+    if (place.isNotEmpty) {
+      if (h.birthPlaceType == 'custom') {
+        _isOthers = true;
+        _customPlaceController.text = place;
+      } else {
+        _selectedCity = place;
+      }
+    }
+    _lat = h.latitude != 0 ? h.latitude : null;
+    _lng = h.longitude != 0 ? h.longitude : null;
 
     if (h.horoscopeGenerated) {
-      _rasi = h.rasi;
-      _nakshatra = h.nakshatra;
-      _lagnam = h.lagnam;
-      _generated = h.rasi.isNotEmpty;
+      _genRasi = h.generatedRasi.isNotEmpty ? h.generatedRasi : h.rasi;
+      _genNakshatra =
+          h.generatedNakshatra.isNotEmpty ? h.generatedNakshatra : h.nakshatra;
+      _genLagnam = h.generatedLagnam.isNotEmpty ? h.generatedLagnam : h.lagnam;
+      _generated = (_genRasi ?? '').isNotEmpty;
+      _overrideEnabled = h.overrideEnabled;
+      if (_overrideEnabled) {
+        _ovrRasi = h.rasi;
+        _ovrNakshatra = h.nakshatra;
+        _ovrLagnam = h.lagnam;
+      }
     }
   }
+
+  // ── Effective (display/save) values ──────────────────────────────────────
+  String? get _effRasi => _overrideEnabled ? _ovrRasi : _genRasi;
+  String? get _effNakshatra => _overrideEnabled ? _ovrNakshatra : _genNakshatra;
+  String? get _effLagnam => _overrideEnabled ? _ovrLagnam : _genLagnam;
+
+  String? get _effectivePlace =>
+      _isOthers ? _customPlaceController.text.trim() : _selectedCity;
 
   // ── Pickers ────────────────────────────────────────────────────────────
   Future<void> _pickDob() async {
@@ -118,11 +185,39 @@ class _HoroscopeDetailsScreenState
     }
   }
 
+  void _onPlaceChanged(String? v) {
+    setState(() {
+      if (v == _kOthers) {
+        _isOthers = true;
+        _selectedCity = null;
+      } else {
+        _isOthers = false;
+        _selectedCity = v;
+        _customPlaceController.clear();
+      }
+    });
+  }
+
+  void _onOverrideToggled(bool on) {
+    setState(() {
+      _overrideEnabled = on;
+      if (on) {
+        // Seed manual selections from the generated values.
+        _ovrRasi ??= _genRasi;
+        _ovrNakshatra ??= _genNakshatra;
+        _ovrLagnam ??= _genLagnam;
+      }
+    });
+    // Override changes the effective values → persist them.
+    if (_generated) _save();
+  }
+
   // ── Generate ───────────────────────────────────────────────────────────
   Future<void> _generate() async {
+    FocusScope.of(context).unfocus();
     setState(() => _showValidation = true);
-    final placeEmpty = _place == null || _place!.trim().isEmpty;
-    if (_dob == null || _time == null || placeEmpty) {
+    final place = _effectivePlace;
+    if (_dob == null || _time == null || place == null || place.isEmpty) {
       return; // inline field errors are shown
     }
 
@@ -134,17 +229,19 @@ class _HoroscopeDetailsScreenState
       final res = await _calc.calculate(
         dateOfBirth: _dob!,
         birthTime: _time!,
-        birthPlace: _place!,
+        birthPlace: place,
       );
-      await _save(res);
       if (!mounted) return;
       setState(() {
-        _rasi = res.rasi;
-        _nakshatra = res.nakshatra;
-        _lagnam = res.lagnam;
+        _genRasi = res.rasi;
+        _genNakshatra = res.nakshatra;
+        _genLagnam = res.lagnam;
+        _lat = res.latitude;
+        _lng = res.longitude;
         _generated = true;
         _loading = false;
       });
+      await _save();
     } catch (_) {
       // Any failure (geocoding, engine, validation, save) → single message.
       if (!mounted) return;
@@ -158,24 +255,34 @@ class _HoroscopeDetailsScreenState
     }
   }
 
-  Future<void> _save(HoroscopeCalcResult res) async {
+  Future<void> _save() async {
     final profile = ref.read(myProfileProvider).valueOrNull;
     if (profile == null) return; // nothing to attach the horoscope to
     final age = _ageFromDob(_dob!);
     final birthTime = HoroscopeCalculationService.formatStoredTime(_time!);
-    final place = _place!.trim();
+    final place = _effectivePlace ?? '';
+    final placeType = _isOthers ? 'custom' : 'city';
+
+    final effRasi = _effRasi ?? '';
+    final effNak = _effNakshatra ?? '';
+    final effLag = _effLagnam ?? '';
 
     if (kBypassAuth) {
       final horo = profile.horoscope.copyWith(
         birthTime: birthTime,
         birthPlace: place,
-        latitude: res.latitude,
-        longitude: res.longitude,
-        rasi: res.rasi,
-        nakshatra: res.nakshatra,
-        lagnam: res.lagnam,
+        birthPlaceType: placeType,
+        latitude: _lat ?? 0,
+        longitude: _lng ?? 0,
+        rasi: effRasi,
+        nakshatra: effNak,
+        lagnam: effLag,
+        generatedRasi: _genRasi ?? '',
+        generatedNakshatra: _genNakshatra ?? '',
+        generatedLagnam: _genLagnam ?? '',
+        overrideEnabled: _overrideEnabled,
         horoscopeGenerated: true,
-        isUserEdited: false,
+        isUserEdited: _overrideEnabled,
       );
       ref.read(demoProfilesProvider.notifier).upsert(
             profile.copyWith(dateOfBirth: _dob!, age: age, horoscope: horo),
@@ -186,14 +293,19 @@ class _HoroscopeDetailsScreenState
         'age': age,
         'horoscope.birthTime': birthTime,
         'horoscope.birthPlace': place,
-        'horoscope.latitude': res.latitude,
-        'horoscope.longitude': res.longitude,
-        'horoscope.rasi': res.rasi,
-        'horoscope.nakshatra': res.nakshatra,
-        'horoscope.lagnam': res.lagnam,
+        'horoscope.birthPlaceType': placeType,
+        'horoscope.latitude': _lat ?? 0,
+        'horoscope.longitude': _lng ?? 0,
+        'horoscope.rasi': effRasi,
+        'horoscope.nakshatra': effNak,
+        'horoscope.lagnam': effLag,
+        'horoscope.generatedRasi': _genRasi ?? '',
+        'horoscope.generatedNakshatra': _genNakshatra ?? '',
+        'horoscope.generatedLagnam': _genLagnam ?? '',
+        'horoscope.overrideEnabled': _overrideEnabled,
         'horoscope.horoscopeGenerated': true,
-        'horoscope.isAutoGenerated': true,
-        'horoscope.isUserEdited': false,
+        'horoscope.isAutoGenerated': !_overrideEnabled,
+        'horoscope.isUserEdited': _overrideEnabled,
       });
       ref.invalidate(myProfileProvider);
     }
@@ -206,6 +318,14 @@ class _HoroscopeDetailsScreenState
       final p = next.valueOrNull;
       if (p != null && !_prefilled && mounted) setState(() => _prefill(p));
     });
+
+    final citiesAsync = ref.watch(allCityNamesProvider);
+    final cityItems = <String>[
+      ...(citiesAsync.valueOrNull ?? const <String>[]),
+      _kOthers,
+    ];
+    final placeMissing =
+        _effectivePlace == null || _effectivePlace!.trim().isEmpty;
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
@@ -250,23 +370,48 @@ class _HoroscopeDetailsScreenState
               'Please select your time of birth'),
           const SizedBox(height: 16),
 
-          // Birth Place
-          SearchableField(
-            label: 'Birth Place',
-            isRequired: true,
-            items: SelectionData.allCities,
-            selectedItem: _place,
-            prefixIcon: Icons.location_on_outlined,
-            onChanged: (v) => setState(() => _place = v),
-          ),
-          _fieldError(
-              _showValidation && (_place == null || _place!.trim().isEmpty),
-              'Please select your birth place'),
+          // Birth City (searchable, modal bottom sheet so it never overlaps)
+          if (citiesAsync.isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Row(children: [
+                SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2)),
+                SizedBox(width: 10),
+                Text('Loading cities…'),
+              ]),
+            )
+          else
+            SearchableField(
+              label: 'Birth City',
+              isRequired: true,
+              items: cityItems,
+              selectedItem: _isOthers ? _kOthers : _selectedCity,
+              prefixIcon: Icons.location_on_outlined,
+              popupMode: SearchablePopupMode.modalBottomSheet,
+              onChanged: _onPlaceChanged,
+            ),
+
+          // Custom Birth Place (only when "Others" is chosen)
+          if (_isOthers) ...[
+            const SizedBox(height: 12),
+            AppTextField(
+              controller: _customPlaceController,
+              label: 'Custom Birth Place',
+              hint: 'Village, town or foreign / unknown place',
+              prefixIcon: const Icon(Icons.edit_location_alt_outlined),
+              onChanged: (_) => setState(() {}),
+            ),
+          ],
+          _fieldError(_showValidation && placeMissing,
+              'Please select or enter your birth city'),
           const SizedBox(height: 24),
 
           // Generate
           GradientButton(
-            text: 'Generate Horoscope',
+            text: _generated ? 'Regenerate Horoscope' : 'Generate Horoscope',
             isLoading: _loading,
             onPressed: _loading ? null : _generate,
           ),
@@ -280,26 +425,102 @@ class _HoroscopeDetailsScreenState
           // Results (hidden until generated)
           if (_generated && _error == null) ...[
             const SizedBox(height: 24),
-            const Text('Your Horoscope',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.bold)),
+            Row(
+              children: [
+                const Icon(Icons.auto_awesome,
+                    size: 18, color: AppColors.primary),
+                const SizedBox(width: 8),
+                const Text('Calculated Horoscope',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.bold)),
+                const Spacer(),
+                if (_overrideEnabled)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.orange[50],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text('Overridden',
+                        style: TextStyle(
+                            fontSize: 11, color: Colors.orange[800])),
+                  ),
+              ],
+            ),
             const SizedBox(height: 12),
             _ResultCard(
                 icon: Icons.brightness_3_outlined,
                 label: 'Rasi',
-                value: _rasi ?? '—'),
+                value: _effRasi ?? '—'),
             const SizedBox(height: 12),
             _ResultCard(
                 icon: Icons.star_outline,
                 label: 'Nakshatra',
-                value: _nakshatra ?? '—'),
+                value: _effNakshatra ?? '—'),
             const SizedBox(height: 12),
             _ResultCard(
                 icon: Icons.wb_twilight_outlined,
                 label: 'Lagnam',
-                value: _lagnam ?? '—'),
+                value: _effLagnam ?? '—'),
+
+            // ── Manual override ────────────────────────────────────────────
+            const SizedBox(height: 8),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: _overrideEnabled,
+              onChanged: _onOverrideToggled,
+              activeColor: AppColors.primary,
+              title: const Text('Override Horoscope Details',
+                  style:
+                      TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              subtitle: const Text(
+                  'Choose Rasi, Nakshatra and Lagnam manually.',
+                  style: TextStyle(fontSize: 12)),
+            ),
+            if (_overrideEnabled) ...[
+              const SizedBox(height: 8),
+              SearchableField(
+                label: 'Rasi',
+                isRequired: true,
+                items: _rasiOptions,
+                selectedItem: _ovrRasi,
+                prefixIcon: Icons.brightness_3_outlined,
+                popupMode: SearchablePopupMode.modalBottomSheet,
+                onChanged: (v) {
+                  setState(() => _ovrRasi = v);
+                  _save();
+                },
+              ),
+              const SizedBox(height: 16),
+              SearchableField(
+                label: 'Nakshatra',
+                isRequired: true,
+                items: _nakOptions,
+                selectedItem: _ovrNakshatra,
+                prefixIcon: Icons.star_outline,
+                popupMode: SearchablePopupMode.modalBottomSheet,
+                onChanged: (v) {
+                  setState(() => _ovrNakshatra = v);
+                  _save();
+                },
+              ),
+              const SizedBox(height: 16),
+              SearchableField(
+                label: 'Lagnam',
+                isRequired: true,
+                items: _lagnamOptions,
+                selectedItem: _ovrLagnam,
+                prefixIcon: Icons.wb_twilight_outlined,
+                popupMode: SearchablePopupMode.modalBottomSheet,
+                onChanged: (v) {
+                  setState(() => _ovrLagnam = v);
+                  _save();
+                },
+              ),
+            ],
           ],
         ],
       ),
