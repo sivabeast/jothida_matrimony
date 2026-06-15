@@ -820,9 +820,7 @@ class _MatchCard extends StatelessWidget {
                     Positioned(
                       top: 6,
                       left: 6,
-                      child: HoroscopeMatchBadge(
-                          targetNakshatra: profile.horoscope.nakshatra,
-                          compact: true),
+                      child: HoroscopeMatchBadge(target: profile, compact: true),
                     ),
                   ],
                 ),

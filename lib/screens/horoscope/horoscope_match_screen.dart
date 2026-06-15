@@ -74,8 +74,6 @@ class _ResultView extends StatelessWidget {
       children: [
         _ScoreCard(result: result, otherName: other.name),
         const SizedBox(height: 16),
-        _SummaryRow(result: result),
-        const SizedBox(height: 16),
         _PoruthamGroup(
           title: 'Matching Poruthams',
           items: result.matching,
@@ -125,88 +123,34 @@ class _ScoreCard extends StatelessWidget {
           Text('Compatibility with $otherName',
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.white70, fontSize: 13)),
-          const SizedBox(height: 10),
-          Text('${result.matchPercent}%',
+          const SizedBox(height: 14),
+          Text(result.category.emoji, style: const TextStyle(fontSize: 30)),
+          const SizedBox(height: 6),
+          // Category label only — no percentage, no score.
+          Text(result.category.label,
+              textAlign: TextAlign.center,
               style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 46,
+                  fontSize: 24,
                   fontFamily: 'Poppins',
                   fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(
-            List.filled(result.stars, '★').join() +
-                List.filled(5 - result.stars, '☆').join(),
-            style: const TextStyle(color: AppColors.gold, fontSize: 24),
-          ),
-          const SizedBox(height: 6),
-          Text(result.verdict,
+          const SizedBox(height: 8),
+          // A count of matched poruthams (e.g. "8 of 10") — not a percentage.
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '${result.matchedCount} of ${result.totalCount} poruthams matched',
               style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
-  }
-}
-
-class _SummaryRow extends StatelessWidget {
-  final PoruthamMatchResult result;
-  const _SummaryRow({required this.result});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _StatBox(
-            label: 'Poruthams Matched',
-            value: '${result.matchedCount} / ${result.totalCount}',
-            icon: Icons.verified_outlined,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600),
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _StatBox(
-            label: 'Compatibility Score',
-            value: '${result.matchPercent} / 100',
-            icon: Icons.insights_outlined,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatBox extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  const _StatBox(
-      {required this.label, required this.value, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: AppColors.primary, size: 22),
-          const SizedBox(height: 8),
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(label,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
         ],
       ),
     );

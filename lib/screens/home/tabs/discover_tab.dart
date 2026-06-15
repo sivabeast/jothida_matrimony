@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/services/compatibility.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/interest_provider.dart';
@@ -228,8 +227,6 @@ class _MatchProfilePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final me = ref.watch(myProfileProvider).valueOrNull;
-    final matchPercent = computeCompatibility(me, profile).matchPercent;
     final location = [profile.city, profile.state]
         .where((s) => s.trim().isNotEmpty)
         .join(', ');
@@ -308,20 +305,13 @@ class _MatchProfilePage extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  // Partner match percentage badge.
+                  // 10-porutham compatibility CATEGORY badge (no percentage).
+                  // Informational only — never hides the profile.
                   Positioned(
                     top: 14,
                     right: 14,
-                    child: IgnorePointer(child: _matchBadge(matchPercent)),
-                  ),
-                  // Informational nakshatra "Horoscope Match" badge (never
-                  // hides the profile — only shown when compatible).
-                  Positioned(
-                    top: 16,
-                    left: 14,
                     child: IgnorePointer(
-                      child: HoroscopeMatchBadge(
-                          targetNakshatra: profile.horoscope.nakshatra),
+                      child: HoroscopeMatchBadge(target: profile),
                     ),
                   ),
                 ],
@@ -362,34 +352,6 @@ class _MatchProfilePage extends ConsumerWidget {
     );
   }
 
-  Widget _matchBadge(int percent) {
-    final color = percent >= 80
-        ? AppColors.success
-        : percent >= 65
-            ? AppColors.gold
-            : AppColors.primary;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 6),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('$percent%',
-              style: TextStyle(
-                  color: color, fontSize: 17, fontWeight: FontWeight.bold)),
-          Text('Match',
-              style: TextStyle(
-                  color: color, fontSize: 10, fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
-  }
 
   /// Education shown clearly, with Occupation + Annual Salary highlighted side
   /// by side — these are the most important matching factors.

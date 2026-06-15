@@ -18,28 +18,57 @@ class PoruthamResult {
   });
 }
 
+/// Final compatibility category, derived ONLY from how many of the 10
+/// poruthams matched — there is no percentage / score anywhere.
+enum MatchCategory { excellent, veryGood, good, average, notRecommended }
+
+extension MatchCategoryInfo on MatchCategory {
+  /// Human label shown to the user.
+  String get label => switch (this) {
+        MatchCategory.excellent => 'Excellent Match',
+        MatchCategory.veryGood => 'Very Good Match',
+        MatchCategory.good => 'Good Match',
+        MatchCategory.average => 'Average Match',
+        MatchCategory.notRecommended => 'Not Recommended',
+      };
+
+  /// Status emoji used on the profile-card badge.
+  String get emoji => switch (this) {
+        MatchCategory.excellent => '🟢',
+        MatchCategory.veryGood => '🟢',
+        MatchCategory.good => '🟡',
+        MatchCategory.average => '🟠',
+        MatchCategory.notRecommended => '🔴',
+      };
+}
+
+/// Map matched-porutham count (0-10) → category, per the traditional bands:
+/// 10 → Excellent · 8-9 → Very Good · 6-7 → Good · 4-5 → Average · 0-3 → Not Recommended.
+MatchCategory categoryFromMatched(int matched) {
+  if (matched >= 10) return MatchCategory.excellent;
+  if (matched >= 8) return MatchCategory.veryGood;
+  if (matched >= 6) return MatchCategory.good;
+  if (matched >= 4) return MatchCategory.average;
+  return MatchCategory.notRecommended;
+}
+
 /// Overall Thirumana Porutham (10-porutham) compatibility between two members.
 ///
 /// Computed from each member's **Nakshatra** (star) and **Rasi** (moon sign)
-/// using the classical South-Indian rules — NOT a random heuristic. Only the
-/// derived compatibility is exposed; the raw horoscope fields of either member
-/// are never returned, so privacy is preserved.
+/// using the classical South-Indian rules — NOT a percentage / heuristic. The
+/// result is purely the count of matched poruthams and the derived category.
 class PoruthamMatchResult {
-  final int matchPercent; // 0-100 weighted score
   final int matchedCount; // poruthams that matched (0-10)
   final int totalCount; // always 10
   final List<PoruthamResult> poruthams;
-  final int stars; // 1-5
-  final String verdict; // "Excellent Match", etc.
+  final MatchCategory category;
   final String recommendation;
 
   const PoruthamMatchResult({
-    required this.matchPercent,
     required this.matchedCount,
     required this.totalCount,
     required this.poruthams,
-    required this.stars,
-    required this.verdict,
+    required this.category,
     required this.recommendation,
   });
 
@@ -75,41 +104,22 @@ PoruthamMatchResult? computePorutham(ProfileModel me, ProfileModel other) {
   ];
 
   final matched = results.where((r) => r.matched).length;
-  final earned = results.fold<int>(0, (s, r) => s + r.points);
-  final maxTotal = results.fold<int>(0, (s, r) => s + r.maxPoints);
-  final pct = maxTotal == 0 ? 0 : ((earned / maxTotal) * 100).round();
-
-  final stars = pct >= 80
-      ? 5
-      : pct >= 65
-          ? 4
-          : pct >= 50
-              ? 3
-              : pct >= 35
-                  ? 2
-                  : 1;
-  final verdict = switch (stars) {
-    5 => 'Excellent Match',
-    4 => 'Good Match',
-    3 => 'Average Match',
-    2 => 'Poor Match',
-    _ => 'Not Recommended',
-  };
-  final recommendation = switch (stars) {
-    5 => 'Excellent marriage compatibility.',
-    4 => 'Good marriage compatibility.',
-    3 => 'Average compatibility — astrologer consultation suggested.',
-    2 => 'Poor compatibility — please consult an astrologer.',
-    _ => 'Not recommended — astrologer guidance strongly advised.',
+  final category = categoryFromMatched(matched);
+  final recommendation = switch (category) {
+    MatchCategory.excellent => 'Excellent marriage compatibility.',
+    MatchCategory.veryGood => 'Very good marriage compatibility.',
+    MatchCategory.good => 'Good marriage compatibility.',
+    MatchCategory.average =>
+      'Average compatibility — astrologer consultation suggested.',
+    MatchCategory.notRecommended =>
+      'Not recommended — astrologer guidance strongly advised.',
   };
 
   return PoruthamMatchResult(
-    matchPercent: pct,
     matchedCount: matched,
     totalCount: results.length,
     poruthams: results,
-    stars: stars,
-    verdict: verdict,
+    category: category,
     recommendation: recommendation,
   );
 }
@@ -250,7 +260,7 @@ PoruthamResult _rasiAdhipathi(_Chart bride, _Chart groom) {
   final l2 = _rasiLord[groom.rasi - 1];
   final ok = l1 == l2 || _planetFriends[l1]!.contains(l2);
   return PoruthamResult(
-    name: 'Rasi Adhipathi Porutham',
+    name: 'Rasi Athipathi Porutham',
     matched: ok,
     points: ok ? 10 : 0,
     maxPoints: 10,

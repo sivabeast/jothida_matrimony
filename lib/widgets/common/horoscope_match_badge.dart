@@ -1,44 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/services/porutham_match.dart';
 import '../../core/theme/app_colors.dart';
-import '../../providers/nakshatra_compatibility_provider.dart';
+import '../../models/profile_model.dart';
 import '../../providers/profile_provider.dart';
 
-/// A small green "Horoscope Match" badge shown when the current user's
-/// nakshatra is compatible with [targetNakshatra].
+/// Colour for each compatibility category (matches the spec's emoji dots).
+Color categoryColor(MatchCategory c) => switch (c) {
+      MatchCategory.excellent => AppColors.success,
+      MatchCategory.veryGood => AppColors.success,
+      MatchCategory.good => const Color(0xFFEAB308), // 🟡 amber
+      MatchCategory.average => const Color(0xFFF97316), // 🟠 orange
+      MatchCategory.notRecommended => AppColors.error, // 🔴 red
+    };
+
+/// Profile-card badge showing the traditional 10-porutham compatibility
+/// CATEGORY between the logged-in user and [target] — e.g. "🟢 Excellent Match".
 ///
-/// IMPORTANT: this is purely informational. It renders nothing (an empty box)
-/// when the pair is not compatible, when data is missing, or while the dataset
-/// is still loading — it must NEVER be used to hide or filter a profile.
+/// There is NO percentage. It renders nothing when the horoscope data needed to
+/// compute the poruthams is missing — it must NEVER hide or filter a profile.
 class HoroscopeMatchBadge extends ConsumerWidget {
-  final String? targetNakshatra;
+  final ProfileModel target;
 
   /// Compact variant for dense cards (smaller padding/text).
   final bool compact;
 
   const HoroscopeMatchBadge({
     super.key,
-    required this.targetNakshatra,
+    required this.target,
     this.compact = false,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final mine = ref.watch(myProfileProvider).valueOrNull?.horoscope.nakshatra;
-    final compat = ref.watch(nakshatraCompatibilityProvider).valueOrNull;
-    if (compat == null) return const SizedBox.shrink();
-    if (!compat.isCompatible(mine, targetNakshatra)) {
-      return const SizedBox.shrink();
-    }
+    final me = ref.watch(myProfileProvider).valueOrNull;
+    if (me == null) return const SizedBox.shrink();
 
+    final result = computePorutham(me, target);
+    if (result == null) return const SizedBox.shrink();
+
+    final color = categoryColor(result.category);
     final pad = compact
         ? const EdgeInsets.symmetric(horizontal: 7, vertical: 3)
         : const EdgeInsets.symmetric(horizontal: 10, vertical: 5);
     return Container(
       padding: pad,
       decoration: BoxDecoration(
-        color: AppColors.success,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4),
@@ -47,12 +56,13 @@ class HoroscopeMatchBadge extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.verified, color: Colors.white, size: compact ? 11 : 14),
+          Text(result.category.emoji,
+              style: TextStyle(fontSize: compact ? 9 : 11)),
           SizedBox(width: compact ? 3 : 5),
           Text(
-            compact ? 'Match' : 'Horoscope Match',
+            result.category.label,
             style: TextStyle(
-              color: Colors.white,
+              color: color,
               fontSize: compact ? 9.5 : 11.5,
               fontWeight: FontWeight.w700,
             ),
