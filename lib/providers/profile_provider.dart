@@ -1,10 +1,12 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart' show DocumentSnapshot;
 import 'package:firebase_core/firebase_core.dart' show FirebaseException;
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/dev_config.dart';
 import '../models/profile_model.dart';
 import '../services/cloudinary/cloudinary_exception.dart';
+import '../services/firebase/firestore_service.dart' show ProfilePage;
 import 'demo_data_provider.dart';
 import 'service_providers.dart';
 import 'auth_provider.dart';
@@ -338,114 +340,91 @@ final matchGenderProvider = Provider.autoDispose<String>((ref) {
   return myGender == 'Female' ? 'Male' : 'Female';
 });
 
-// Discover / search
+// ── Discover / Matches feed ────────────────────────────────────────────────
+//
+// MATCHING RULE: the ONLY matching filter is gender (opposite gender). No age,
+// caste, religion, district or horoscope filtering. Horoscope compatibility is
+// surfaced as an informational badge only — it never removes a profile.
+const int _kDiscoverPageSize = 20;
+
 class DiscoverState {
   final List<ProfileModel> profiles;
-  final bool isLoading;
+  final bool isLoading; // initial page
+  final bool isLoadingMore; // pagination
   final bool hasMore;
   final String? error;
-  final Map<String, dynamic> filters;
 
   const DiscoverState({
     this.profiles = const [],
     this.isLoading = false,
+    this.isLoadingMore = false,
     this.hasMore = true,
     this.error,
-    this.filters = const {},
   });
 
   DiscoverState copyWith({
     List<ProfileModel>? profiles,
     bool? isLoading,
+    bool? isLoadingMore,
     bool? hasMore,
     String? error,
-    Map<String, dynamic>? filters,
   }) =>
       DiscoverState(
         profiles: profiles ?? this.profiles,
         isLoading: isLoading ?? this.isLoading,
+        isLoadingMore: isLoadingMore ?? this.isLoadingMore,
         hasMore: hasMore ?? this.hasMore,
         error: error,
-        filters: filters ?? this.filters,
       );
 }
 
 class DiscoverNotifier extends Notifier<DiscoverState> {
+  DocumentSnapshot<Map<String, dynamic>>? _lastDoc;
+  String _gender = '';
+
   @override
   DiscoverState build() => const DiscoverState();
 
-  Future<void> load({String gender = 'Female', Map<String, dynamic>? filters}) async {
-    state = DiscoverState(isLoading: true, filters: filters ?? {});
+  /// Data-integrity excludes only (NOT matching filters): never show the user
+  /// themselves, married members, or deactivated / blocked accounts.
+  bool _keep(ProfileModel p, String? myUid) {
+    if (myUid != null && p.userId == myUid) return false;
+    if (p.isMarried) return false;
+    if (!p.isActive) return false;
+    if (p.status == 'rejected' || p.status == 'blocked') return false;
+    return true;
+  }
 
-    // ── Demo mode: read from the in-memory sample store + apply filters ──
+  /// Load the first page of opposite-gender matches.
+  Future<void> load() async {
+    _gender = ref.read(matchGenderProvider);
+    _lastDoc = null;
+    state = const DiscoverState(isLoading: true);
+
+    // ── Demo mode: in-memory store, no pagination ──
     if (kBypassAuth) {
-      final f = filters ?? {};
-      var profiles =
-          ref.read(demoProfilesProvider.notifier).discover(gender: gender);
-
-      final minAge = f['minAge'] as int?;
-      final maxAge = f['maxAge'] as int?;
-      final city = (f['city'] as String?)?.trim();
-      final education = (f['education'] as String?)?.trim();
-      final occupation = (f['occupation'] as String?)?.trim();
-
-      profiles = profiles.where((p) {
-        if (minAge != null && p.age < minAge) return false;
-        if (maxAge != null && p.age > maxAge) return false;
-        if (city != null && city.isNotEmpty &&
-            !p.city.toLowerCase().contains(city.toLowerCase())) return false;
-        if (education != null && education.isNotEmpty &&
-            !p.education.toLowerCase().contains(education.toLowerCase())) return false;
-        if (occupation != null && occupation.isNotEmpty &&
-            !p.occupation.toLowerCase().contains(occupation.toLowerCase())) {
-          return false;
-        }
-        return true;
-      }).toList();
-
-      state = state.copyWith(profiles: profiles, isLoading: false, hasMore: false);
+      final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
+      final profiles = ref
+          .read(demoProfilesProvider.notifier)
+          .discover(gender: _gender)
+          .where((p) => _keep(p, myUid))
+          .toList();
+      state = DiscoverState(profiles: profiles, isLoading: false, hasMore: false);
       return;
     }
 
     try {
-      final f = filters ?? {};
-      // Gender is the only DB-level filter (opposite-gender matching); every
-      // other rule is applied client-side so the feed can't be blanked by a
-      // missing Firestore composite index and pending profiles still show.
-      var profiles =
-          await ref.read(profileRepositoryProvider).searchProfiles(gender: gender);
-
       final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
-      final minAge = f['minAge'] as int?;
-      final maxAge = f['maxAge'] as int?;
-      final city = (f['city'] as String?)?.trim().toLowerCase();
-      final education = (f['education'] as String?)?.trim().toLowerCase();
-      final occupation = (f['occupation'] as String?)?.trim().toLowerCase();
-
-      profiles = profiles.where((p) {
-        if (myUid != null && p.userId == myUid) return false; // never self
-        if (p.isMarried) return false;        // married → out of the pool
-        if (!p.isActive) return false;        // deleted / suspended accounts
-        if (p.status == 'rejected' || p.status == 'blocked') return false;
-        if (minAge != null && p.age < minAge) return false;
-        if (maxAge != null && p.age > maxAge) return false;
-        if (city != null && city.isNotEmpty &&
-            !p.city.toLowerCase().contains(city)) return false;
-        if (education != null && education.isNotEmpty &&
-            !p.education.toLowerCase().contains(education)) return false;
-        if (occupation != null && occupation.isNotEmpty &&
-            !p.occupation.toLowerCase().contains(occupation)) return false;
-        return true;
-      }).toList();
-
-      state = state.copyWith(
-        profiles: profiles,
+      final ProfilePage page = await ref
+          .read(profileRepositoryProvider)
+          .searchProfilesPage(gender: _gender, limit: _kDiscoverPageSize);
+      _lastDoc = page.lastDoc;
+      state = DiscoverState(
+        profiles: page.profiles.where((p) => _keep(p, myUid)).toList(),
         isLoading: false,
-        hasMore: false,
+        hasMore: page.hasMore,
       );
     } on FirebaseException catch (e, st) {
-      // Log the REAL cause (e.g. permission-denied, failed-precondition) so the
-      // root issue is visible in logs instead of a silent generic error.
       debugPrint('[Discover] Firestore error ${e.code}: ${e.message}\n$st');
       state = state.copyWith(isLoading: false, error: e.code);
     } catch (e, st) {
@@ -454,8 +433,70 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
     }
   }
 
-  void setFilters(Map<String, dynamic> filters) => state = state.copyWith(filters: filters);
+  /// Append the next page (called as the user nears the end of the feed).
+  Future<void> loadMore() async {
+    if (kBypassAuth) return; // demo store has no further pages
+    if (state.isLoading || state.isLoadingMore || !state.hasMore) return;
+    if (_lastDoc == null) return;
+
+    state = state.copyWith(isLoadingMore: true);
+    try {
+      final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
+      final ProfilePage page = await ref
+          .read(profileRepositoryProvider)
+          .searchProfilesPage(
+              gender: _gender, limit: _kDiscoverPageSize, startAfter: _lastDoc);
+      _lastDoc = page.lastDoc;
+
+      // Append, de-duplicating by id so a re-fetched boundary doc can't double.
+      final existing = state.profiles.map((p) => p.id).toSet();
+      final added = page.profiles
+          .where((p) => _keep(p, myUid) && !existing.contains(p.id))
+          .toList();
+      state = state.copyWith(
+        profiles: [...state.profiles, ...added],
+        isLoadingMore: false,
+        hasMore: page.hasMore,
+      );
+    } catch (e, st) {
+      debugPrint('[Discover] loadMore failed: $e\n$st');
+      state = state.copyWith(isLoadingMore: false);
+    }
+  }
 }
 
 final discoverProvider =
     NotifierProvider<DiscoverNotifier, DiscoverState>(() => DiscoverNotifier());
+
+/// Home "Recommended Matches": the latest 10 opposite-gender registrations
+/// (createdAt DESC, limit 10). Gender is the only filter; horoscope
+/// compatibility is shown as a badge, never used to exclude.
+final recommendedMatchesProvider =
+    FutureProvider.autoDispose<List<ProfileModel>>((ref) async {
+  final gender = ref.watch(matchGenderProvider);
+  final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+
+  if (kBypassAuth) {
+    return ref
+        .read(demoProfilesProvider.notifier)
+        .discover(gender: gender)
+        .where((p) => p.userId != myUid)
+        .take(10)
+        .toList();
+  }
+
+  // Fetch a small buffer beyond 10 so client-side self/married excludes can't
+  // leave us short.
+  final page = await ref
+      .read(profileRepositoryProvider)
+      .searchProfilesPage(gender: gender, limit: 14);
+  return page.profiles
+      .where((p) =>
+          p.userId != myUid &&
+          !p.isMarried &&
+          p.isActive &&
+          p.status != 'rejected' &&
+          p.status != 'blocked')
+      .take(10)
+      .toList();
+});

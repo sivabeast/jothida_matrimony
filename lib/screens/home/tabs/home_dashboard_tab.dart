@@ -9,6 +9,7 @@ import '../../../providers/account_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../providers/profile_provider.dart';
+import '../../../widgets/common/horoscope_match_badge.dart';
 import 'notifications_tab.dart';
 // ProfileCompletionCard available for future use:
 // import '../../../widgets/home/profile_completion_card.dart';
@@ -50,10 +51,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   void initState() {
     super.initState();
     _startAutoScroll();
-    Future.microtask(() {
-      final gender = ref.read(matchGenderProvider);
-      ref.read(discoverProvider.notifier).load(gender: gender);
-    });
+    // Recommended matches load lazily via recommendedMatchesProvider (watched
+    // in build) — no manual fetch needed here.
   }
 
   @override
@@ -77,16 +76,13 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
 
   @override
   Widget build(BuildContext context) {
-    final discover = ref.watch(discoverProvider);
-    final profiles = discover.profiles.take(6).toList();
+    final recommended = ref.watch(recommendedMatchesProvider);
+    final profiles = recommended.valueOrNull ?? const <ProfileModel>[];
     final myProfile = ref.watch(myProfileProvider).valueOrNull;
 
     return RefreshIndicator(
       color: AppColors.primary,
-      onRefresh: () async {
-        final gender = ref.read(matchGenderProvider);
-        ref.read(discoverProvider.notifier).load(gender: gender);
-      },
+      onRefresh: () async => ref.invalidate(recommendedMatchesProvider),
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -314,11 +310,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             icon: Icons.people_outline,
             label: 'Matches',
             onTap: () {
-              // Matches quick-action: find parent HomeScreen and switch to tab 1.
-              // Navigation is handled by the bottom nav; tapping here
-              // scrolls the list to the top or reloads profiles.
-              final gender = ref.read(matchGenderProvider);
-              ref.read(discoverProvider.notifier).load(gender: gender);
+              // Matches quick-action: refresh the recommended list.
+              ref.invalidate(recommendedMatchesProvider);
             },
           ),
           _QuickAction(
@@ -460,9 +453,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     if (confirmed != true) return;
     final messenger = ScaffoldMessenger.of(context);
     await ref.read(accountControllerProvider.notifier).markMarried(profile);
-    // Refresh the discovery feed so the pool reflects the change immediately.
-    final gender = ref.read(matchGenderProvider);
-    ref.read(discoverProvider.notifier).load(gender: gender);
+    // Refresh the recommended list so the pool reflects the change immediately.
+    ref.invalidate(recommendedMatchesProvider);
     if (!mounted) return;
     messenger.showSnackBar(const SnackBar(
         content: Text('🎉 Congratulations! Your profile is now marked as Married.')));
@@ -808,19 +800,32 @@ class _MatchCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Photo (presence indicators intentionally removed)
+            // Photo with an informational "Match" badge when the nakshatra is
+            // compatible (never hides the card).
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               child: SizedBox(
                 height: 140,
                 width: double.infinity,
-                child: profile.photos.isNotEmpty
-                    ? Image.network(
-                        profile.photos.first,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _placeholder(),
-                      )
-                    : _placeholder(),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    profile.photos.isNotEmpty
+                        ? Image.network(
+                            profile.photos.first,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _placeholder(),
+                          )
+                        : _placeholder(),
+                    Positioned(
+                      top: 6,
+                      left: 6,
+                      child: HoroscopeMatchBadge(
+                          targetNakshatra: profile.horoscope.nakshatra,
+                          compact: true),
+                    ),
+                  ],
+                ),
               ),
             ),
             // Info

@@ -284,7 +284,7 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
 
   Widget _horizontalRow(List<Astrologer> list) {
     return SizedBox(
-      height: 250,
+      height: 320,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -308,7 +308,7 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        mainAxisExtent: 250,
+        mainAxisExtent: 320,
       ),
       itemCount: list.length,
       itemBuilder: (_, i) => _AstrologerGridCard(
@@ -636,13 +636,54 @@ Widget _astroImage(String url,
   );
 }
 
+/// Full-bleed card top image that shows the WHOLE photo (BoxFit.contain) on a
+/// soft tinted backdrop — no aggressive cropping / half-hidden faces. Used by
+/// the listing cards (Top Rated + All Astrologers). The backdrop fills the
+/// fixed [height] so cards stay aligned regardless of photo aspect ratio.
+Widget _cardTopImage(String url, double height) {
+  Widget fallback(IconData icon) => Container(
+        height: height,
+        width: double.infinity,
+        color: AppColors.primary.withOpacity(0.06),
+        alignment: Alignment.center,
+        child: Icon(icon, color: AppColors.primary, size: 46),
+      );
+
+  return ClipRRect(
+    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+    child: Container(
+      height: height,
+      width: double.infinity,
+      color: AppColors.primary.withOpacity(0.06),
+      child: Image.network(
+        url,
+        height: height,
+        width: double.infinity,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => fallback(Icons.person),
+        loadingBuilder: (ctx, child, progress) => progress == null
+            ? child
+            : Container(
+                height: height,
+                width: double.infinity,
+                alignment: Alignment.center,
+                child: const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2)),
+              ),
+      ),
+    ),
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Status badge — green "Verified" when admin-approved, amber "Verification
-// Pending" otherwise. Always shown so admins/testers can tell status apart.
+// Status badge — green "Verified" pill shown ONLY for admin-approved
+// astrologers. Pending / unverified astrologers get NO badge at all.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Small status pill. Green ✅ "Verified" for approved astrologers, amber ⏳
-/// "Verification Pending" for not-yet-approved ones.
+/// Green ✅ "Verified" pill. Renders nothing when the astrologer is not
+/// verified — there is no "Pending" badge.
 class _StatusBadge extends StatelessWidget {
   final bool verified;
   final bool compact;
@@ -650,16 +691,12 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = verified ? AppColors.success : AppColors.warning;
-    final icon = verified ? Icons.verified : Icons.hourglass_top;
-    final label = verified
-        ? (compact ? 'Verified' : 'Verified Astrologer')
-        : (compact ? 'Pending' : 'Verification Pending');
+    if (!verified) return const SizedBox.shrink();
     return Container(
       padding: EdgeInsets.symmetric(
           horizontal: compact ? 7 : 9, vertical: compact ? 3 : 4),
       decoration: BoxDecoration(
-        color: color,
+        color: AppColors.success,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 4)
@@ -668,9 +705,9 @@ class _StatusBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.white, size: compact ? 11 : 13),
+          Icon(Icons.verified, color: Colors.white, size: compact ? 11 : 13),
           SizedBox(width: compact ? 3 : 4),
-          Text(label,
+          Text(compact ? 'Verified' : 'Verified Astrologer',
               style: TextStyle(
                   color: Colors.white,
                   fontSize: compact ? 9 : 10,
@@ -696,8 +733,10 @@ class _AstrologerCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 200,
-        margin: const EdgeInsets.only(right: 12, top: 2, bottom: 4),
+        width: 210,
+        // Fills the taller horizontal row (height set in _horizontalRow).
+        height: double.infinity,
+        margin: const EdgeInsets.only(right: 12, top: 2, bottom: 6),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -710,8 +749,9 @@ class _AstrologerCard extends StatelessWidget {
           children: [
             Stack(
               children: [
-                _astroImage(a.photoUrl, width: 200, height: 112, radius: 16),
-                // Status badge — Verified (green) or Verification Pending (amber).
+                // Larger image (~50% of card height), whole photo visible.
+                _cardTopImage(a.photoUrl, 158),
+                // Verified pill only — nothing when pending.
                 Positioned(
                   top: 8,
                   left: 8,
@@ -719,11 +759,12 @@ class _AstrologerCard extends StatelessWidget {
                 ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   Text(a.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -785,7 +826,8 @@ class _AstrologerCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -835,22 +877,10 @@ class _AstrologerGridCard extends StatelessWidget {
           children: [
             Stack(
               children: [
-                ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: Image.network(
-                    a.photoUrl,
-                    height: 112,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 112,
-                      color: AppColors.primary.withOpacity(0.08),
-                      child: const Icon(Icons.person,
-                          size: 44, color: AppColors.primary),
-                    ),
-                  ),
-                ),
+                // Larger image (~47% of card height); whole photo visible
+                // (BoxFit.contain) so faces are never cropped or half-hidden.
+                _cardTopImage(a.photoUrl, 150),
+                // Verified pill only — nothing when pending.
                 Positioned(
                   top: 8,
                   left: 8,
@@ -993,11 +1023,11 @@ class _AstrologerRow extends StatelessWidget {
                                 fontSize: 14,
                                 fontFamily: 'Poppins')),
                       ),
-                      const SizedBox(width: 4),
-                      Icon(a.verified ? Icons.verified : Icons.hourglass_top,
-                          color:
-                              a.verified ? AppColors.success : AppColors.warning,
-                          size: 15),
+                      if (a.verified) ...[
+                        const SizedBox(width: 4),
+                        const Icon(Icons.verified,
+                            color: AppColors.success, size: 15),
+                      ],
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(

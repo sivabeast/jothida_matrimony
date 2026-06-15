@@ -1,0 +1,1312 @@
+{
+  "_meta": {
+    "title": "Tamil Nakshatra Marriage Compatibility (27×27)",
+    "convention": "Top-level key = girl/bride nakshatra; bucket entries = boy/groom nakshatra.",
+    "categories": [
+      "excellent",
+      "good",
+      "average",
+      "poor"
+    ],
+    "derivation": "Computed by applying the classical Porutham/Koota rules (Dina/Tara, Gana, Yoni, Mahendra, Sthree Dheerga, Rajju, Nadi, Vedha). Not transcribed from a per-pair lookup and not invented.",
+    "criticalDoshas": [
+      "Rajju (same group)",
+      "Nadi (same group)"
+    ],
+    "generatedBy": "tool/generate_nakshatra_compatibility.dart"
+  },
+  "ashwini": {
+    "excellent": [
+      "rohini",
+      "pooram",
+      "anusham",
+      "pooradam",
+      "thiruvonam",
+      "uthirattadhi"
+    ],
+    "good": [
+      "bharani",
+      "mirugasirisham",
+      "poosam",
+      "chithirai",
+      "visakam",
+      "uthiradam",
+      "avittam"
+    ],
+    "average": [
+      "karthigai",
+      "swathi"
+    ],
+    "poor": [
+      "thiruvathirai",
+      "punarpoosam",
+      "ayilyam",
+      "magham",
+      "uthiram",
+      "hastham",
+      "kettai",
+      "moolam",
+      "sathayam",
+      "poorattadhi",
+      "revathi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "bharani": {
+    "excellent": [
+      "ashwini",
+      "uthiram",
+      "uthiradam",
+      "revathi"
+    ],
+    "good": [
+      "karthigai",
+      "rohini",
+      "thiruvathirai",
+      "punarpoosam",
+      "ayilyam",
+      "magham",
+      "hastham",
+      "swathi",
+      "visakam",
+      "kettai",
+      "moolam",
+      "thiruvonam",
+      "sathayam"
+    ],
+    "average": [
+      "poorattadhi"
+    ],
+    "poor": [
+      "mirugasirisham",
+      "poosam",
+      "pooram",
+      "chithirai",
+      "anusham",
+      "pooradam",
+      "avittam",
+      "uthirattadhi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "karthigai": {
+    "excellent": [
+      "kettai",
+      "moolam",
+      "sathayam"
+    ],
+    "good": [
+      "ashwini",
+      "bharani",
+      "thiruvathirai",
+      "poosam",
+      "pooram",
+      "hastham",
+      "chithirai",
+      "anusham",
+      "avittam",
+      "uthirattadhi"
+    ],
+    "average": [
+      "mirugasirisham",
+      "pooradam"
+    ],
+    "poor": [
+      "rohini",
+      "punarpoosam",
+      "ayilyam",
+      "magham",
+      "uthiram",
+      "swathi",
+      "visakam",
+      "uthiradam",
+      "thiruvonam",
+      "poorattadhi",
+      "revathi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "rohini": {
+    "excellent": [
+      "ashwini",
+      "bharani",
+      "punarpoosam",
+      "pooradam",
+      "poorattadhi"
+    ],
+    "good": [
+      "mirugasirisham",
+      "poosam",
+      "pooram",
+      "uthiram",
+      "chithirai",
+      "anusham",
+      "kettai",
+      "moolam",
+      "avittam",
+      "uthirattadhi"
+    ],
+    "average": [],
+    "poor": [
+      "karthigai",
+      "thiruvathirai",
+      "ayilyam",
+      "magham",
+      "hastham",
+      "swathi",
+      "visakam",
+      "uthiradam",
+      "thiruvonam",
+      "sathayam",
+      "revathi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "mirugasirisham": {
+    "excellent": [
+      "ashwini",
+      "rohini",
+      "swathi",
+      "thiruvonam"
+    ],
+    "good": [
+      "karthigai",
+      "thiruvathirai",
+      "punarpoosam",
+      "magham",
+      "uthiram",
+      "hastham",
+      "visakam",
+      "kettai",
+      "moolam",
+      "sathayam",
+      "poorattadhi",
+      "revathi"
+    ],
+    "average": [
+      "ayilyam",
+      "uthiradam"
+    ],
+    "poor": [
+      "bharani",
+      "poosam",
+      "pooram",
+      "chithirai",
+      "anusham",
+      "pooradam",
+      "avittam",
+      "uthirattadhi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "thiruvathirai": {
+    "excellent": [
+      "bharani",
+      "mirugasirisham",
+      "pooradam",
+      "uthiradam",
+      "revathi"
+    ],
+    "good": [
+      "karthigai",
+      "poosam",
+      "ayilyam",
+      "pooram",
+      "chithirai",
+      "visakam",
+      "avittam",
+      "uthirattadhi"
+    ],
+    "average": [
+      "magham",
+      "anusham"
+    ],
+    "poor": [
+      "ashwini",
+      "rohini",
+      "punarpoosam",
+      "uthiram",
+      "hastham",
+      "swathi",
+      "kettai",
+      "moolam",
+      "thiruvonam",
+      "sathayam",
+      "poorattadhi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "punarpoosam": {
+    "excellent": [
+      "rohini",
+      "mirugasirisham",
+      "anusham",
+      "thiruvonam",
+      "uthirattadhi"
+    ],
+    "good": [
+      "bharani",
+      "poosam",
+      "chithirai",
+      "swathi",
+      "pooradam",
+      "avittam",
+      "revathi"
+    ],
+    "average": [
+      "ayilyam",
+      "magham",
+      "pooram"
+    ],
+    "poor": [
+      "ashwini",
+      "karthigai",
+      "thiruvathirai",
+      "uthiram",
+      "hastham",
+      "visakam",
+      "kettai",
+      "moolam",
+      "uthiradam",
+      "sathayam",
+      "poorattadhi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "poosam": {
+    "excellent": [
+      "rohini",
+      "thiruvathirai",
+      "punarpoosam",
+      "poorattadhi",
+      "revathi"
+    ],
+    "good": [
+      "ashwini",
+      "karthigai",
+      "ayilyam",
+      "uthiram",
+      "hastham",
+      "swathi",
+      "visakam",
+      "kettai",
+      "moolam",
+      "uthiradam",
+      "sathayam"
+    ],
+    "average": [
+      "magham",
+      "thiruvonam"
+    ],
+    "poor": [
+      "bharani",
+      "mirugasirisham",
+      "pooram",
+      "chithirai",
+      "anusham",
+      "pooradam",
+      "avittam",
+      "uthirattadhi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "ayilyam": {
+    "excellent": [
+      "avittam",
+      "sathayam"
+    ],
+    "good": [
+      "bharani",
+      "mirugasirisham",
+      "thiruvathirai",
+      "punarpoosam",
+      "poosam",
+      "uthiram",
+      "chithirai",
+      "anusham",
+      "pooradam",
+      "poorattadhi",
+      "uthirattadhi"
+    ],
+    "average": [
+      "pooram",
+      "hastham"
+    ],
+    "poor": [
+      "ashwini",
+      "karthigai",
+      "rohini",
+      "magham",
+      "swathi",
+      "visakam",
+      "kettai",
+      "moolam",
+      "uthiradam",
+      "thiruvonam",
+      "revathi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "magham": {
+    "excellent": [
+      "sathayam"
+    ],
+    "good": [
+      "bharani",
+      "mirugasirisham",
+      "thiruvathirai",
+      "poosam",
+      "pooram",
+      "hastham",
+      "chithirai",
+      "anusham",
+      "pooradam",
+      "avittam",
+      "poorattadhi",
+      "uthirattadhi"
+    ],
+    "average": [
+      "punarpoosam",
+      "uthiram"
+    ],
+    "poor": [
+      "ashwini",
+      "karthigai",
+      "rohini",
+      "ayilyam",
+      "swathi",
+      "visakam",
+      "kettai",
+      "moolam",
+      "uthiradam",
+      "thiruvonam",
+      "revathi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "pooram": {
+    "excellent": [
+      "ashwini",
+      "uthiradam",
+      "poorattadhi",
+      "revathi"
+    ],
+    "good": [
+      "karthigai",
+      "rohini",
+      "thiruvathirai",
+      "magham",
+      "uthiram",
+      "hastham",
+      "swathi",
+      "visakam",
+      "kettai",
+      "moolam",
+      "thiruvonam",
+      "sathayam"
+    ],
+    "average": [
+      "punarpoosam",
+      "ayilyam"
+    ],
+    "poor": [
+      "bharani",
+      "mirugasirisham",
+      "poosam",
+      "chithirai",
+      "anusham",
+      "pooradam",
+      "avittam",
+      "uthirattadhi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "uthiram": {
+    "excellent": [
+      "bharani",
+      "rohini",
+      "poosam",
+      "pooram",
+      "swathi",
+      "thiruvonam",
+      "uthirattadhi",
+      "revathi"
+    ],
+    "good": [
+      "mirugasirisham",
+      "ayilyam",
+      "magham",
+      "anusham",
+      "pooradam",
+      "avittam"
+    ],
+    "average": [
+      "chithirai"
+    ],
+    "poor": [
+      "ashwini",
+      "karthigai",
+      "thiruvathirai",
+      "punarpoosam",
+      "hastham",
+      "visakam",
+      "kettai",
+      "moolam",
+      "uthiradam",
+      "sathayam",
+      "poorattadhi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "hastham": {
+    "excellent": [
+      "bharani",
+      "mirugasirisham",
+      "pooram",
+      "revathi"
+    ],
+    "good": [
+      "karthigai",
+      "poosam",
+      "ayilyam",
+      "magham",
+      "chithirai",
+      "visakam",
+      "anusham",
+      "pooradam",
+      "uthiradam",
+      "avittam",
+      "uthirattadhi"
+    ],
+    "average": [],
+    "poor": [
+      "ashwini",
+      "rohini",
+      "thiruvathirai",
+      "punarpoosam",
+      "uthiram",
+      "swathi",
+      "kettai",
+      "moolam",
+      "thiruvonam",
+      "sathayam",
+      "poorattadhi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "chithirai": {
+    "excellent": [
+      "karthigai",
+      "magham",
+      "sathayam"
+    ],
+    "good": [
+      "ashwini",
+      "rohini",
+      "thiruvathirai",
+      "punarpoosam",
+      "ayilyam",
+      "hastham",
+      "swathi",
+      "visakam",
+      "kettai",
+      "moolam",
+      "uthiradam",
+      "thiruvonam",
+      "poorattadhi",
+      "revathi"
+    ],
+    "average": [
+      "uthiram"
+    ],
+    "poor": [
+      "bharani",
+      "mirugasirisham",
+      "poosam",
+      "pooram",
+      "anusham",
+      "pooradam",
+      "avittam",
+      "uthirattadhi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "swathi": {
+    "excellent": [
+      "bharani",
+      "mirugasirisham",
+      "punarpoosam",
+      "pooram",
+      "uthiram",
+      "poorattadhi"
+    ],
+    "good": [
+      "poosam",
+      "chithirai",
+      "anusham",
+      "kettai",
+      "pooradam",
+      "avittam",
+      "uthirattadhi"
+    ],
+    "average": [
+      "ashwini",
+      "moolam"
+    ],
+    "poor": [
+      "karthigai",
+      "rohini",
+      "thiruvathirai",
+      "ayilyam",
+      "magham",
+      "hastham",
+      "visakam",
+      "uthiradam",
+      "thiruvonam",
+      "sathayam",
+      "revathi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "visakam": {
+    "excellent": [
+      "ashwini",
+      "chithirai",
+      "moolam"
+    ],
+    "good": [
+      "bharani",
+      "mirugasirisham",
+      "thiruvathirai",
+      "poosam",
+      "pooram",
+      "hastham",
+      "anusham",
+      "kettai",
+      "avittam",
+      "sathayam"
+    ],
+    "average": [
+      "pooradam",
+      "uthirattadhi"
+    ],
+    "poor": [
+      "karthigai",
+      "rohini",
+      "punarpoosam",
+      "ayilyam",
+      "magham",
+      "uthiram",
+      "swathi",
+      "uthiradam",
+      "thiruvonam",
+      "poorattadhi",
+      "revathi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "anusham": {
+    "excellent": [
+      "rohini",
+      "punarpoosam",
+      "hastham",
+      "swathi",
+      "revathi"
+    ],
+    "good": [
+      "ashwini",
+      "karthigai",
+      "ayilyam",
+      "magham",
+      "uthiram",
+      "visakam",
+      "kettai",
+      "uthiradam",
+      "thiruvonam",
+      "sathayam",
+      "poorattadhi"
+    ],
+    "average": [
+      "thiruvathirai",
+      "moolam"
+    ],
+    "poor": [
+      "bharani",
+      "mirugasirisham",
+      "poosam",
+      "pooram",
+      "chithirai",
+      "pooradam",
+      "avittam",
+      "uthirattadhi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "kettai": {
+    "excellent": [
+      "karthigai",
+      "chithirai",
+      "visakam"
+    ],
+    "good": [
+      "bharani",
+      "rohini",
+      "mirugasirisham",
+      "poosam",
+      "pooram",
+      "swathi",
+      "anusham",
+      "uthiradam",
+      "avittam",
+      "uthirattadhi"
+    ],
+    "average": [
+      "pooradam",
+      "thiruvonam"
+    ],
+    "poor": [
+      "ashwini",
+      "thiruvathirai",
+      "punarpoosam",
+      "ayilyam",
+      "magham",
+      "uthiram",
+      "hastham",
+      "moolam",
+      "sathayam",
+      "poorattadhi",
+      "revathi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "moolam": {
+    "excellent": [
+      "rohini",
+      "visakam"
+    ],
+    "good": [
+      "bharani",
+      "karthigai",
+      "mirugasirisham",
+      "poosam",
+      "pooram",
+      "chithirai",
+      "swathi",
+      "pooradam",
+      "thiruvonam",
+      "avittam",
+      "uthirattadhi"
+    ],
+    "average": [
+      "anusham",
+      "uthiradam"
+    ],
+    "poor": [
+      "ashwini",
+      "thiruvathirai",
+      "punarpoosam",
+      "ayilyam",
+      "magham",
+      "uthiram",
+      "hastham",
+      "kettai",
+      "sathayam",
+      "poorattadhi",
+      "revathi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "pooradam": {
+    "excellent": [
+      "punarpoosam",
+      "uthiram"
+    ],
+    "good": [
+      "ashwini",
+      "rohini",
+      "thiruvathirai",
+      "ayilyam",
+      "magham",
+      "hastham",
+      "swathi",
+      "visakam",
+      "kettai",
+      "moolam",
+      "uthiradam",
+      "thiruvonam",
+      "poorattadhi",
+      "revathi"
+    ],
+    "average": [
+      "karthigai",
+      "sathayam"
+    ],
+    "poor": [
+      "bharani",
+      "mirugasirisham",
+      "poosam",
+      "pooram",
+      "chithirai",
+      "anusham",
+      "avittam",
+      "uthirattadhi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "uthiradam": {
+    "excellent": [
+      "thiruvathirai",
+      "poosam",
+      "pooram",
+      "hastham",
+      "anusham",
+      "pooradam"
+    ],
+    "good": [
+      "ashwini",
+      "bharani",
+      "chithirai",
+      "kettai",
+      "moolam",
+      "sathayam",
+      "uthirattadhi"
+    ],
+    "average": [
+      "mirugasirisham",
+      "avittam"
+    ],
+    "poor": [
+      "karthigai",
+      "rohini",
+      "punarpoosam",
+      "ayilyam",
+      "magham",
+      "uthiram",
+      "swathi",
+      "visakam",
+      "thiruvonam",
+      "poorattadhi",
+      "revathi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "thiruvonam": {
+    "excellent": [
+      "mirugasirisham",
+      "punarpoosam",
+      "pooram",
+      "uthiram",
+      "pooradam",
+      "poorattadhi"
+    ],
+    "good": [
+      "ashwini",
+      "bharani",
+      "chithirai",
+      "anusham",
+      "kettai",
+      "moolam",
+      "avittam",
+      "uthirattadhi"
+    ],
+    "average": [
+      "poosam"
+    ],
+    "poor": [
+      "karthigai",
+      "rohini",
+      "thiruvathirai",
+      "ayilyam",
+      "magham",
+      "hastham",
+      "swathi",
+      "visakam",
+      "uthiradam",
+      "sathayam",
+      "revathi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "avittam": {
+    "excellent": [
+      "magham",
+      "moolam"
+    ],
+    "good": [
+      "ashwini",
+      "karthigai",
+      "rohini",
+      "thiruvathirai",
+      "punarpoosam",
+      "ayilyam",
+      "uthiram",
+      "hastham",
+      "swathi",
+      "visakam",
+      "kettai",
+      "uthiradam",
+      "thiruvonam",
+      "sathayam"
+    ],
+    "average": [
+      "poorattadhi",
+      "revathi"
+    ],
+    "poor": [
+      "bharani",
+      "mirugasirisham",
+      "poosam",
+      "pooram",
+      "chithirai",
+      "anusham",
+      "pooradam",
+      "uthirattadhi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "sathayam": {
+    "excellent": [
+      "ayilyam",
+      "chithirai",
+      "visakam",
+      "avittam"
+    ],
+    "good": [
+      "bharani",
+      "karthigai",
+      "mirugasirisham",
+      "poosam",
+      "magham",
+      "pooram",
+      "anusham",
+      "pooradam",
+      "uthiradam",
+      "revathi"
+    ],
+    "average": [
+      "uthirattadhi"
+    ],
+    "poor": [
+      "ashwini",
+      "rohini",
+      "thiruvathirai",
+      "punarpoosam",
+      "uthiram",
+      "hastham",
+      "swathi",
+      "kettai",
+      "moolam",
+      "thiruvonam",
+      "poorattadhi"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "poorattadhi": {
+    "excellent": [
+      "poosam",
+      "magham",
+      "swathi",
+      "anusham",
+      "thiruvonam"
+    ],
+    "good": [
+      "rohini",
+      "mirugasirisham",
+      "ayilyam",
+      "pooram",
+      "chithirai",
+      "pooradam",
+      "avittam",
+      "uthirattadhi"
+    ],
+    "average": [
+      "bharani",
+      "revathi"
+    ],
+    "poor": [
+      "ashwini",
+      "karthigai",
+      "thiruvathirai",
+      "punarpoosam",
+      "uthiram",
+      "hastham",
+      "visakam",
+      "kettai",
+      "moolam",
+      "uthiradam",
+      "sathayam"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "uthirattadhi": {
+    "excellent": [
+      "hastham",
+      "swathi",
+      "thiruvonam",
+      "poorattadhi"
+    ],
+    "good": [
+      "ashwini",
+      "rohini",
+      "thiruvathirai",
+      "punarpoosam",
+      "ayilyam",
+      "magham",
+      "uthiram",
+      "kettai",
+      "moolam",
+      "uthiradam",
+      "sathayam",
+      "revathi"
+    ],
+    "average": [
+      "karthigai",
+      "visakam"
+    ],
+    "poor": [
+      "bharani",
+      "mirugasirisham",
+      "poosam",
+      "pooram",
+      "chithirai",
+      "anusham",
+      "pooradam",
+      "avittam"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  },
+  "revathi": {
+    "excellent": [
+      "uthiram",
+      "anusham",
+      "uthirattadhi"
+    ],
+    "good": [
+      "bharani",
+      "mirugasirisham",
+      "thiruvathirai",
+      "punarpoosam",
+      "poosam",
+      "pooram",
+      "hastham",
+      "chithirai",
+      "pooradam",
+      "sathayam"
+    ],
+    "average": [
+      "avittam",
+      "poorattadhi"
+    ],
+    "poor": [
+      "ashwini",
+      "karthigai",
+      "rohini",
+      "ayilyam",
+      "magham",
+      "swathi",
+      "visakam",
+      "kettai",
+      "moolam",
+      "uthiradam",
+      "thiruvonam"
+    ],
+    "sources": [
+      {
+        "reference": "Traditional Tamil Thirumana Porutham tables (Dina, Gana, Mahendra, Sthree Dheerga, Yoni, Rajju, Vedha)",
+        "type": "Book / Astrology Table",
+        "notes": "Standard ten-porutham marriage-matching system used in Tamil Nadu."
+      },
+      {
+        "reference": "Ashtakoota Guna Milan — Nadi koota and Yoni koota classifications (classical Vedic, after Brihat Parashara Hora Shastra)",
+        "type": "Classical Vedic Reference",
+        "notes": "Used for the Nadi grouping and Yoni animal/enmity classifications."
+      }
+    ]
+  }
+}

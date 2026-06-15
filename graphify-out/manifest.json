@@ -200,8 +200,8 @@
     "semantic_hash": ""
   },
   "lib/providers/profile_provider.dart": {
-    "mtime": 1781429949.0338035,
-    "ast_hash": "b45b50a76d2399a7fdb4215e461689ce",
+    "mtime": 1781494673.6779692,
+    "ast_hash": "f57e0d57124a604b58b9152851174808",
     "semantic_hash": ""
   },
   "lib/providers/requests_provider.dart": {
@@ -235,8 +235,8 @@
     "semantic_hash": ""
   },
   "lib/repositories/profile_repository.dart": {
-    "mtime": 1781429924.6907024,
-    "ast_hash": "9cd76ca3f48d364f0959ca014382a0f3",
+    "mtime": 1781494596.8190048,
+    "ast_hash": "7ddc8dddb2a5747c3e9c0d47395991bf",
     "semantic_hash": ""
   },
   "lib/repositories/subscription_repository.dart": {
@@ -355,8 +355,8 @@
     "semantic_hash": ""
   },
   "lib/screens/home/tabs/discover_tab.dart": {
-    "mtime": 1781429370.0980098,
-    "ast_hash": "343c54a540a4c24ea1b3c8be9cb18283",
+    "mtime": 1781494792.8002374,
+    "ast_hash": "50c1df2a5f7ec6bea7f96bd5ef01f8b5",
     "semantic_hash": ""
   },
   "lib/screens/home/tabs/interests_tab.dart": {
@@ -460,8 +460,8 @@
     "semantic_hash": ""
   },
   "lib/services/firebase/firestore_service.dart": {
-    "mtime": 1781429878.3678648,
-    "ast_hash": "935240e86a75ea778c3c4e3aa5096c94",
+    "mtime": 1781494583.5420377,
+    "ast_hash": "277040a47c349e52d1a8d16a3d341120",
     "semantic_hash": ""
   },
   "lib/services/firebase/storage_service.dart": {
@@ -535,7 +535,7 @@
     "semantic_hash": ""
   },
   "android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java": {
-    "mtime": 1781462254.4532287,
+    "mtime": 1781496238.8418908,
     "ast_hash": "957f3f4fa91953a90f2d9690762329f7",
     "semantic_hash": ""
   },
@@ -565,8 +565,8 @@
     "semantic_hash": ""
   },
   "firestore.indexes.json": {
-    "mtime": 1781411873.7509103,
-    "ast_hash": "e253ff7b99baaeadee238454eed7d791",
+    "mtime": 1781494694.0016026,
+    "ast_hash": "f3dd4903179bccc0134cf26d4256c670",
     "semantic_hash": ""
   },
   "lib/core/utils/auth_routing.dart": {
@@ -575,13 +575,13 @@
     "semantic_hash": ""
   },
   "lib/screens/home/tabs/astrology_services_tab.dart": {
-    "mtime": 1781374333.0459049,
-    "ast_hash": "4550b079057560d88f5a97128615384c",
+    "mtime": 1781496232.2953568,
+    "ast_hash": "4ba42e8780bbbedf829adeab71f8e960",
     "semantic_hash": ""
   },
   "lib/screens/home/tabs/home_dashboard_tab.dart": {
-    "mtime": 1781357163.349,
-    "ast_hash": "0696f69712c40c45c2f9868b7accfcee",
+    "mtime": 1781494872.269714,
+    "ast_hash": "43f67515aaf855d0809987b0241aa57b",
     "semantic_hash": ""
   },
   "lib/services/cloudinary/cloudinary_exception.dart": {
@@ -1122,6 +1122,26 @@
   "lib/core/services/master_astrology_data.dart": {
     "mtime": 1781459017.738981,
     "ast_hash": "e6bd88d362a613a5b258f1eec6c80f2f",
+    "semantic_hash": ""
+  },
+  "assets/master_data/astrology/master_nakshatra_compatibility.json": {
+    "mtime": 1781494509.8710923,
+    "ast_hash": "85fb4af6cedcb698b8d6a756f73b2811",
+    "semantic_hash": ""
+  },
+  "lib/core/services/nakshatra_compatibility.dart": {
+    "mtime": 1781494526.1211672,
+    "ast_hash": "2fd1bb3123d258574e3da4df1180faca",
+    "semantic_hash": ""
+  },
+  "lib/providers/nakshatra_compatibility_provider.dart": {
+    "mtime": 1781494536.0497696,
+    "ast_hash": "f9444173d9bfca6c2975300d647e41a1",
+    "semantic_hash": ""
+  },
+  "lib/widgets/common/horoscope_match_badge.dart": {
+    "mtime": 1781494548.5963962,
+    "ast_hash": "43525a2a04e820fb0c71e3f10dea8e34",
     "semantic_hash": ""
   }
 }

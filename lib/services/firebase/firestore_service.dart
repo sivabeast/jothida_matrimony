@@ -13,6 +13,13 @@ import '../../models/user_model.dart';
 import '../../models/dashboard_analytics.dart';
 import '../../models/admin_activity.dart';
 
+/// A single page of search results plus the cursor for the next page.
+typedef ProfilePage = ({
+  List<ProfileModel> profiles,
+  DocumentSnapshot<Map<String, dynamic>>? lastDoc,
+  bool hasMore,
+});
+
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
@@ -285,6 +292,56 @@ class FirestoreService {
     final list = snap.docs.map((d) => ProfileModel.fromFirestore(d)).toList();
     list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return list;
+  }
+
+  /// Cursor-paginated search ordered by `createdAt` DESC (newest first) — the
+  /// query the Matches feed and Home "Recommended" section use:
+  ///
+  ///   where(status==approved) where(isActive==true) where(gender==X)
+  ///   orderBy(createdAt, desc).startAfter(cursor).limit(n)
+  ///
+  /// This needs a composite index (see firestore.indexes.json). If that index
+  /// is still building / missing, we fall back to a single unordered page so the
+  /// feed degrades gracefully instead of erroring out.
+  Future<ProfilePage> searchProfilesPage({
+    required String gender,
+    int limit = 20,
+    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+  }) async {
+    Query<Map<String, dynamic>> base = _db
+        .collection(AppConstants.profilesCollection)
+        .where('status', isEqualTo: 'approved')
+        .where('isActive', isEqualTo: true);
+    if (gender.isNotEmpty) {
+      base = base.where('gender', isEqualTo: gender);
+    }
+
+    try {
+      Query<Map<String, dynamic>> q = base.orderBy('createdAt', descending: true);
+      if (startAfter != null) q = q.startAfterDocument(startAfter);
+      final snap = await q.limit(limit).get();
+      final profiles =
+          snap.docs.map((d) => ProfileModel.fromFirestore(d)).toList();
+      return (
+        profiles: profiles,
+        lastDoc: snap.docs.isEmpty ? null : snap.docs.last,
+        hasMore: snap.docs.length == limit,
+      );
+    } on FirebaseException catch (e) {
+      // Missing or still-building composite index → unordered fallback so the
+      // feed isn't blanked. (One page only; no cursor.)
+      if (e.code == 'failed-precondition') {
+        debugPrint('[FirestoreService] searchProfilesPage index unavailable '
+            '(${e.message}); falling back to unordered fetch.');
+        final snap = await base.limit(limit).get();
+        final profiles = snap.docs
+            .map((d) => ProfileModel.fromFirestore(d))
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return (profiles: profiles, lastDoc: null, hasMore: false);
+      }
+      rethrow;
+    }
   }
 
   // Fail-safe: a non-owner viewing a profile bumps viewCount, but if the rule

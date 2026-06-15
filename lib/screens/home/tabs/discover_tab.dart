@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/interest_provider.dart';
 import '../../../providers/profile_provider.dart';
+import '../../../widgets/common/horoscope_match_badge.dart';
 
 /// The Matches experience — a premium "matrimony profile book".
 ///
@@ -30,17 +31,10 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   // heart can flip to "Interested ✓" immediately).
   final Set<String> _interestSent = {};
 
-  // Optional, user-set filters. The Matches page shows ALL members by default —
-  // no gender filter, no age filter, no hidden filters — so an empty filter set
-  // returns every approved profile (the same source the Home page reads from).
-  String _city = '';
-  String _education = '';
-  String _occupation = '';
-
   @override
   void initState() {
     super.initState();
-    Future.microtask(_applyFilters);
+    Future.microtask(_load);
   }
 
   @override
@@ -49,23 +43,14 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     super.dispose();
   }
 
-  Future<void> _applyFilters() async {
-    // gender: '' → every approved profile, both genders (no gender filter).
-    // No minAge/maxAge → no age filter. Only the explicit city/education/
-    // occupation refinements are passed through.
-    await ref.read(discoverProvider.notifier).load(gender: '', filters: {
-      'city': _city,
-      'education': _education,
-      'occupation': _occupation,
-    });
-    // Snap back to the first match whenever the result set changes.
+  /// Load (or reload) the matches feed. The ONLY filter is gender (opposite
+  /// gender) — no age / caste / religion / district / horoscope filtering.
+  Future<void> _load() async {
+    await ref.read(discoverProvider.notifier).load();
     if (!mounted) return;
     setState(() => _currentIndex = 0);
     if (_pageController.hasClients) _pageController.jumpToPage(0);
   }
-
-  bool get _hasActiveFilters =>
-      _city.isNotEmpty || _education.isNotEmpty || _occupation.isNotEmpty;
 
   // ── Actions ─────────────────────────────────────────────────────────────
   Future<void> _sendInterest(ProfileModel profile) async {
@@ -115,7 +100,13 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
                 PageView.builder(
                   controller: _pageController,
                   itemCount: total,
-                  onPageChanged: (i) => setState(() => _currentIndex = i),
+                  onPageChanged: (i) {
+                    setState(() => _currentIndex = i);
+                    // Prefetch the next page as the user nears the end.
+                    if (i >= total - 3) {
+                      ref.read(discoverProvider.notifier).loadMore();
+                    }
+                  },
                   itemBuilder: (_, i) => _MatchProfilePage(
                     profile: profiles[i],
                     interestSent: _interestSent.contains(profiles[i].id),
@@ -163,22 +154,10 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
                       fontWeight: FontWeight.w600)),
             ),
           const Spacer(),
-          if (_hasActiveFilters)
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _city = '';
-                  _education = '';
-                  _occupation = '';
-                });
-                _applyFilters();
-              },
-              child: const Text('Clear'),
-            ),
           IconButton(
-            onPressed: _openFilterSheet,
-            icon: const Icon(Icons.tune, color: AppColors.primary),
-            tooltip: 'Filters',
+            onPressed: _load,
+            icon: const Icon(Icons.refresh, color: AppColors.primary),
+            tooltip: 'Refresh',
           ),
         ],
       ),
@@ -216,13 +195,13 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
             child: Text(
                 isError
                     ? 'Check your connection and try again'
-                    : 'Try adjusting your filters',
+                    : 'New members appear here as they join',
                 style: const TextStyle(color: Colors.grey)),
           ),
           const SizedBox(height: 16),
           Center(
             child: OutlinedButton.icon(
-              onPressed: _applyFilters,
+              onPressed: _load,
               icon: const Icon(Icons.refresh),
               label: const Text('Try Again'),
               style: OutlinedButton.styleFrom(
@@ -233,104 +212,6 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
           ),
         ],
       );
-
-  // ── Filter sheet ────────────────────────────────────────────────────────
-  void _openFilterSheet() {
-    final cityCtl = TextEditingController(text: _city);
-    final eduCtl = TextEditingController(text: _education);
-    final occCtl = TextEditingController(text: _occupation);
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheet) => Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Filter Matches',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text('Showing all members. Narrow by location, education or '
-                  'occupation if you like.',
-                  style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
-              const SizedBox(height: 16),
-              TextField(
-                controller: cityCtl,
-                decoration: const InputDecoration(
-                    labelText: 'Location / City',
-                    prefixIcon: Icon(Icons.location_on_outlined),
-                    border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: eduCtl,
-                decoration: const InputDecoration(
-                    labelText: 'Education',
-                    prefixIcon: Icon(Icons.school_outlined),
-                    border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: occCtl,
-                decoration: const InputDecoration(
-                    labelText: 'Occupation',
-                    prefixIcon: Icon(Icons.work_outline),
-                    border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        setState(() {
-                          _city = '';
-                          _education = '';
-                          _occupation = '';
-                        });
-                        Navigator.pop(ctx);
-                        _applyFilters();
-                      },
-                      child: const Text('Reset'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _city = cityCtl.text.trim();
-                          _education = eduCtl.text.trim();
-                          _occupation = occCtl.text.trim();
-                        });
-                        Navigator.pop(ctx);
-                        _applyFilters();
-                      },
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white),
-                      child: const Text('Apply'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 /// A single full-screen match — the "page" in the profile book.
@@ -432,6 +313,16 @@ class _MatchProfilePage extends ConsumerWidget {
                     top: 14,
                     right: 14,
                     child: IgnorePointer(child: _matchBadge(matchPercent)),
+                  ),
+                  // Informational nakshatra "Horoscope Match" badge (never
+                  // hides the profile — only shown when compatible).
+                  Positioned(
+                    top: 16,
+                    left: 14,
+                    child: IgnorePointer(
+                      child: HoroscopeMatchBadge(
+                          targetNakshatra: profile.horoscope.nakshatra),
+                    ),
                   ),
                 ],
               ),

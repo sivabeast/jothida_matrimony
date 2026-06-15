@@ -51,6 +51,19 @@ class ProfileRepository {
         limit: limit,
       );
 
+  /// Cursor-paginated, createdAt-ordered search (Matches feed + Home
+  /// "Recommended"). Gender is the only matching filter applied at the DB level.
+  Future<ProfilePage> searchProfilesPage({
+    required String gender,
+    int limit = 20,
+    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+  }) =>
+      _firestore.searchProfilesPage(
+        gender: gender,
+        limit: limit,
+        startAfter: startAfter,
+      );
+
   Future<List<String>> uploadPhotos({
     required String userId,
     required List<File> files,
