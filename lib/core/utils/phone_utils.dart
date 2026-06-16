@@ -51,6 +51,17 @@ String toE164(String phone) {
   return n.isEmpty ? '' : '+$n';
 }
 
+/// Human-friendly display form, e.g. `+91 98765 43210`. Falls back to the plain
+/// E.164 string for numbers that aren't a 12-digit `91…` value.
+String formatIndianPhoneDisplay(String phone) {
+  final n = normalizeIndianPhone(phone);
+  if (n.length == 12 && n.startsWith('91')) {
+    final local = n.substring(2);
+    return '+91 ${local.substring(0, 5)} ${local.substring(5)}';
+  }
+  return toE164(phone);
+}
+
 /// `tel:+91…` URI for a phone call.
 Uri phoneCallUri(String phone) => Uri.parse('tel:${toE164(phone)}');
 

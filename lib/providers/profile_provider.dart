@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart' show FirebaseException;
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/dev_config.dart';
+import '../core/services/porutham_match.dart';
 import '../models/profile_model.dart';
 import '../services/cloudinary/cloudinary_exception.dart';
 import '../services/firebase/firestore_service.dart' show ProfilePage;
@@ -342,10 +343,104 @@ final matchGenderProvider = Provider.autoDispose<String>((ref) {
 
 // ── Discover / Matches feed ────────────────────────────────────────────────
 //
-// MATCHING RULE: the ONLY matching filter is gender (opposite gender). No age,
-// caste, religion, district or horoscope filtering. Horoscope compatibility is
-// surfaced as an informational badge only — it never removes a profile.
+// MATCHING RULE: gender (opposite gender) is always applied first. On top of
+// that the user may apply OPTIONAL [MatchFilters] — every field is nullable and
+// an unset field is ignored. Horoscope compatibility is also exposed as an
+// informational badge that never removes a profile (only the explicit
+// match-quality filter can).
 const int _kDiscoverPageSize = 20;
+
+/// Optional, user-chosen Matches filters. Every field is nullable; a `null`
+/// field means "ignore this filter". Applied client-side AFTER the gender
+/// restriction, so any combination (none / one / all) works.
+class MatchFilters {
+  final int? minAge;
+  final int? maxAge;
+  final String? state;
+  final String? district;
+  final String? city;
+  final String? religion;
+  final String? caste;
+  final String? education;
+  final String? occupation;
+  final String? maritalStatus;
+  final String? rasi;
+  final String? nakshatra;
+  // 'Excellent Match' | 'Good Match' | 'Average Match'
+  final String? matchQuality;
+
+  const MatchFilters({
+    this.minAge,
+    this.maxAge,
+    this.state,
+    this.district,
+    this.city,
+    this.religion,
+    this.caste,
+    this.education,
+    this.occupation,
+    this.maritalStatus,
+    this.rasi,
+    this.nakshatra,
+    this.matchQuality,
+  });
+
+  bool get isActive =>
+      minAge != null ||
+      maxAge != null ||
+      _has(state) ||
+      _has(district) ||
+      _has(city) ||
+      _has(religion) ||
+      _has(caste) ||
+      _has(education) ||
+      _has(occupation) ||
+      _has(maritalStatus) ||
+      _has(rasi) ||
+      _has(nakshatra) ||
+      _has(matchQuality);
+
+  static bool _has(String? s) => s != null && s.trim().isNotEmpty;
+  static bool _eq(String a, String? b) =>
+      b == null || b.trim().isEmpty || a.trim().toLowerCase() == b.trim().toLowerCase();
+
+  /// Whether [p] passes every SET filter. [me] is only needed to evaluate the
+  /// optional match-quality (porutham) filter.
+  bool matches(ProfileModel p, ProfileModel? me) {
+    if (minAge != null && p.age < minAge!) return false;
+    if (maxAge != null && p.age > maxAge!) return false;
+    if (!_eq(p.state, state)) return false;
+    if (!_eq(p.district, district)) return false;
+    if (!_eq(p.city, city)) return false;
+    if (!_eq(p.religion, religion)) return false;
+    if (!_eq(p.caste ?? '', caste)) return false;
+    if (!_eq(p.education, education)) return false;
+    if (!_eq(p.occupation, occupation)) return false;
+    if (!_eq(p.maritalStatus, maritalStatus)) return false;
+    if (!_eq(p.horoscope.rasi, rasi)) return false;
+    if (!_eq(p.horoscope.nakshatra, nakshatra)) return false;
+    if (_has(matchQuality)) {
+      if (me == null) return false; // can't evaluate without my horoscope
+      final result = computePorutham(me, p);
+      if (result == null) return false;
+      final c = result.category;
+      switch (matchQuality) {
+        case 'Excellent Match':
+          if (c != MatchCategory.excellent && c != MatchCategory.veryGood) {
+            return false;
+          }
+          break;
+        case 'Good Match':
+          if (c != MatchCategory.good) return false;
+          break;
+        case 'Average Match':
+          if (c != MatchCategory.average) return false;
+          break;
+      }
+    }
+    return true;
+  }
+}
 
 class DiscoverState {
   final List<ProfileModel> profiles;
@@ -381,9 +476,27 @@ class DiscoverState {
 class DiscoverNotifier extends Notifier<DiscoverState> {
   DocumentSnapshot<Map<String, dynamic>>? _lastDoc;
   String _gender = '';
+  MatchFilters _filters = const MatchFilters();
+
+  /// When an active filter makes a single fetched page sparse, keep fetching up
+  /// to this many extra pages so the feed isn't empty just because the first
+  /// page happened to contain no matches.
+  static const int _kMaxAutoPages = 6;
 
   @override
   DiscoverState build() => const DiscoverState();
+
+  /// The currently applied optional filters (read by the UI for the badge).
+  MatchFilters get filters => _filters;
+
+  /// Replace the optional filters and reload from the first page.
+  Future<void> applyFilters(MatchFilters filters) async {
+    _filters = filters;
+    await load();
+  }
+
+  /// Clear all optional filters and reload.
+  Future<void> clearFilters() => applyFilters(const MatchFilters());
 
   /// Data-integrity excludes only (NOT matching filters): never show the user
   /// themselves, married members, or deactivated / blocked accounts.
@@ -395,34 +508,53 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
     return true;
   }
 
+  /// Passes the data-integrity check AND any active optional filters (applied
+  /// after the gender restriction baked into the query / demo source).
+  bool _accept(ProfileModel p, String? myUid, ProfileModel? me) =>
+      _keep(p, myUid) && _filters.matches(p, me);
+
   /// Load the first page of opposite-gender matches.
   Future<void> load() async {
     _gender = ref.read(matchGenderProvider);
     _lastDoc = null;
     state = const DiscoverState(isLoading: true);
 
+    final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
+    final me = ref.read(myProfileProvider).valueOrNull;
+
     // ── Demo mode: in-memory store, no pagination ──
     if (kBypassAuth) {
-      final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
       final profiles = ref
           .read(demoProfilesProvider.notifier)
           .discover(gender: _gender)
-          .where((p) => _keep(p, myUid))
+          .where((p) => _accept(p, myUid, me))
           .toList();
       state = DiscoverState(profiles: profiles, isLoading: false, hasMore: false);
       return;
     }
 
     try {
-      final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
-      final ProfilePage page = await ref
-          .read(profileRepositoryProvider)
-          .searchProfilesPage(gender: _gender, limit: _kDiscoverPageSize);
-      _lastDoc = page.lastDoc;
+      final repo = ref.read(profileRepositoryProvider);
+      final accepted = <ProfileModel>[];
+      var hasMore = true;
+      // Fetch the first page; if filters are active and it yields nothing,
+      // keep paging (bounded) so a sparse first page isn't shown as "empty".
+      for (var i = 0; i < _kMaxAutoPages && hasMore; i++) {
+        final ProfilePage page = await repo.searchProfilesPage(
+          gender: _gender,
+          limit: _kDiscoverPageSize,
+          startAfter: _lastDoc,
+        );
+        _lastDoc = page.lastDoc;
+        hasMore = page.hasMore;
+        accepted.addAll(page.profiles.where((p) => _accept(p, myUid, me)));
+        // Enough to show, or filters inactive → stop after the first page.
+        if (!_filters.isActive || accepted.isNotEmpty) break;
+      }
       state = DiscoverState(
-        profiles: page.profiles.where((p) => _keep(p, myUid)).toList(),
+        profiles: accepted,
         isLoading: false,
-        hasMore: page.hasMore,
+        hasMore: hasMore,
       );
     } on FirebaseException catch (e, st) {
       debugPrint('[Discover] Firestore error ${e.code}: ${e.message}\n$st');
@@ -442,6 +574,7 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
     state = state.copyWith(isLoadingMore: true);
     try {
       final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
+      final me = ref.read(myProfileProvider).valueOrNull;
       final ProfilePage page = await ref
           .read(profileRepositoryProvider)
           .searchProfilesPage(
@@ -451,7 +584,7 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
       // Append, de-duplicating by id so a re-fetched boundary doc can't double.
       final existing = state.profiles.map((p) => p.id).toSet();
       final added = page.profiles
-          .where((p) => _keep(p, myUid) && !existing.contains(p.id))
+          .where((p) => _accept(p, myUid, me) && !existing.contains(p.id))
           .toList();
       state = state.copyWith(
         profiles: [...state.profiles, ...added],

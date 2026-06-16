@@ -1,3 +1,9 @@
+import 'astrologer_certificate.dart';
+
+// Re-exported so screens that take an [Astrologer] can render its certificate
+// documents (type [AstrologerCertificate]) without importing the account model.
+export 'astrologer_certificate.dart';
+
 /// A service an astrologer offers, with its price (INR).
 ///
 /// [durationMinutes] and [available] are optional and default safely, so older
@@ -85,6 +91,11 @@ class Astrologer {
   /// (AstrologerAccount.status == approved). Drives the "Verified Astrologer"
   /// badge on the user-facing directory.
   final bool verified;
+  /// Contact number (used for the profile's Call / WhatsApp actions). Empty
+  /// when the underlying account has no mobile on file.
+  final String phone;
+  /// Uploaded certificate documents, shown read-only on the public profile.
+  final List<AstrologerCertificate> certificateDocs;
 
   const Astrologer({
     required this.id,
@@ -104,7 +115,23 @@ class Astrologer {
     required this.lastActive,
     required this.about,
     this.verified = false,
+    this.phone = '',
+    this.certificateDocs = const [],
   });
+
+  /// All distinct service / specialization names the astrologer offers, with no
+  /// pricing — drives the profile's "Services Offered" section. Combines the
+  /// named service catalogue with the expertise/specialization tags.
+  List<String> get serviceNames {
+    final seen = <String>{};
+    final out = <String>[];
+    for (final s in [...services.map((s) => s.name), ...specializations]) {
+      final t = s.trim();
+      if (t.isEmpty) continue;
+      if (seen.add(t.toLowerCase())) out.add(t);
+    }
+    return out;
+  }
 
   /// Lowest priced service — handy for "from ₹X" labels.
   int get startingPrice =>

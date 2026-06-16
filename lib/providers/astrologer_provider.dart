@@ -34,6 +34,10 @@ Astrologer astrologerFromAccount(AstrologerAccount a) {
     about: a.about,
     // Verified badge shows only once an admin approves the account.
     verified: a.isApproved,
+    // Direct-contact details + read-only certificate documents for the profile.
+    phone: a.mobile,
+    certificateDocs:
+        a.certificates.where((c) => c.url.isNotEmpty && !c.isRejected).toList(),
   );
 }
 

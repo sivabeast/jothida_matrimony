@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../models/master_location_model.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/interest_provider.dart';
+import '../../../providers/master_location_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/horoscope_match_badge.dart';
+import '../../../widgets/common/searchable_field.dart';
 
 /// The Matches experience — a premium "matrimony profile book".
 ///
@@ -29,6 +33,9 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   // Profiles the user has expressed interest in during this session (so the
   // heart can flip to "Interested ✓" immediately).
   final Set<String> _interestSent = {};
+
+  // Currently applied optional filters (gender restriction is always separate).
+  MatchFilters _filters = const MatchFilters();
 
   @override
   void initState() {
@@ -85,6 +92,23 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     } catch (_) {
       _snack('Could not accept interest. Please try again.');
     }
+  }
+
+  /// Open the optional-filters bottom sheet, then apply the result.
+  Future<void> _openFilters() async {
+    final result = await showModalBottomSheet<MatchFilters>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _FilterMatchesSheet(initial: _filters),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _filters = result;
+      _currentIndex = 0;
+    });
+    await ref.read(discoverProvider.notifier).applyFilters(result);
+    if (mounted && _pageController.hasClients) _pageController.jumpToPage(0);
   }
 
   void _snack(String msg) => ScaffoldMessenger.of(context)
@@ -169,6 +193,32 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
                       fontWeight: FontWeight.w600)),
             ),
           const Spacer(),
+          // Filter — opens the optional "Filter Matches" sheet. A gold dot marks
+          // that one or more filters are active.
+          IconButton(
+            onPressed: _openFilters,
+            tooltip: 'Filter Matches',
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(Icons.tune, color: AppColors.primary),
+                if (_filters.isActive)
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      width: 9,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        color: AppColors.gold,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
           IconButton(
             onPressed: _load,
             icon: const Icon(Icons.refresh, color: AppColors.primary),
@@ -726,5 +776,307 @@ class _PhotoGalleryState extends State<_PhotoGallery> {
         color: Colors.grey[200],
         child: const Center(
             child: Icon(Icons.person, size: 96, color: Colors.grey)),
+      );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Filter Matches — optional, multi-field filter bottom sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// The "Filter Matches" bottom sheet. Every field is OPTIONAL — leaving one
+/// empty ignores that filter. Returns the chosen [MatchFilters] on Apply, or
+/// `const MatchFilters()` on Reset; returns `null` if dismissed without action.
+class _FilterMatchesSheet extends ConsumerStatefulWidget {
+  final MatchFilters initial;
+  const _FilterMatchesSheet({required this.initial});
+
+  @override
+  ConsumerState<_FilterMatchesSheet> createState() =>
+      _FilterMatchesSheetState();
+}
+
+class _FilterMatchesSheetState extends ConsumerState<_FilterMatchesSheet> {
+  int? _minAge;
+  int? _maxAge;
+  String? _state;
+  String? _district;
+  String? _city;
+  String? _religion;
+  String? _caste;
+  String? _education;
+  String? _occupation;
+  String? _maritalStatus;
+  String? _rasi;
+  String? _nakshatra;
+  String? _matchQuality;
+
+  static final List<String> _ages = [for (var i = 18; i <= 70; i++) '$i'];
+  static const List<String> _maritalStatuses = [
+    'Never Married',
+    'Divorced',
+    'Widowed',
+  ];
+  static const List<String> _matchQualities = [
+    'Excellent Match',
+    'Good Match',
+    'Average Match',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    final f = widget.initial;
+    _minAge = f.minAge;
+    _maxAge = f.maxAge;
+    _state = f.state;
+    _district = f.district;
+    _city = f.city;
+    _religion = f.religion;
+    _caste = f.caste;
+    _education = f.education;
+    _occupation = f.occupation;
+    _maritalStatus = f.maritalStatus;
+    _rasi = f.rasi;
+    _nakshatra = f.nakshatra;
+    _matchQuality = f.matchQuality;
+  }
+
+  /// Id of the first master entry whose name matches [name] (case-insensitive).
+  String? _idForName<T>(List<T> list, String? name, String Function(T) getName,
+      String Function(T) getId) {
+    if (name == null || name.trim().isEmpty) return null;
+    for (final e in list) {
+      if (getName(e).trim().toLowerCase() == name.trim().toLowerCase()) {
+        return getId(e);
+      }
+    }
+    return null;
+  }
+
+  void _reset() {
+    setState(() {
+      _minAge = _maxAge = null;
+      _state = _district = _city = null;
+      _religion = _caste = _education = _occupation = null;
+      _maritalStatus = _rasi = _nakshatra = _matchQuality = null;
+    });
+  }
+
+  void _apply() {
+    // Normalise the age range so a swapped min/max never yields an empty feed.
+    var lo = _minAge, hi = _maxAge;
+    if (lo != null && hi != null && lo > hi) {
+      final t = lo;
+      lo = hi;
+      hi = t;
+    }
+    Navigator.pop(
+      context,
+      MatchFilters(
+        minAge: lo,
+        maxAge: hi,
+        state: _state,
+        district: _district,
+        city: _city,
+        religion: _religion,
+        caste: _caste,
+        education: _education,
+        occupation: _occupation,
+        maritalStatus: _maritalStatus,
+        rasi: _rasi,
+        nakshatra: _nakshatra,
+        matchQuality: _matchQuality,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // ── Dependent location options (State → District → City) ──
+    final states =
+        ref.watch(statesProvider).valueOrNull ?? const <MasterState>[];
+    final stateNames = states.map((s) => s.name).toList();
+    final stateId =
+        _idForName<MasterState>(states, _state, (s) => s.name, (s) => s.id);
+
+    final districts = stateId == null
+        ? const <MasterDistrict>[]
+        : (ref.watch(districtsProvider(stateId)).valueOrNull ??
+            const <MasterDistrict>[]);
+    final districtNames = districts.map((d) => d.name).toList();
+    final districtId = _idForName<MasterDistrict>(
+        districts, _district, (d) => d.name, (d) => d.id);
+
+    final List<String> cityNames = districtId != null
+        ? ((ref.watch(citiesProvider(districtId)).valueOrNull ??
+                const <MasterCity>[])
+            .map((c) => c.name)
+            .toList())
+        : (ref.watch(allCityNamesProvider).valueOrNull ?? const <String>[]);
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.9,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (_, controller) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.scaffoldBg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 44,
+              height: 5,
+              decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(3)),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.tune, color: AppColors.primary, size: 20),
+                  const SizedBox(width: 8),
+                  const Text('Filter Matches',
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  Text('All optional',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                controller: controller,
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                children: [
+                  _groupLabel('Age Range'),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _dropdown('Min Age', _ages, _minAge?.toString(),
+                            (v) => setState(() {
+                                  _minAge = v == null ? null : int.tryParse(v);
+                                })),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _dropdown('Max Age', _ages, _maxAge?.toString(),
+                            (v) => setState(() {
+                                  _maxAge = v == null ? null : int.tryParse(v);
+                                })),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _groupLabel('Location'),
+                  _dropdown('State', stateNames, _state, (v) => setState(() {
+                        _state = v;
+                        _district = null; // dependent fields reset
+                        _city = null;
+                      })),
+                  const SizedBox(height: 12),
+                  _dropdown('District', districtNames, _district,
+                      (v) => setState(() {
+                            _district = v;
+                            _city = null;
+                          })),
+                  const SizedBox(height: 12),
+                  _dropdown('City', cityNames, _city,
+                      (v) => setState(() => _city = v)),
+                  const SizedBox(height: 8),
+                  _groupLabel('Community'),
+                  _dropdown('Religion', AppConstants.religionList, _religion,
+                      (v) => setState(() => _religion = v)),
+                  const SizedBox(height: 12),
+                  _dropdown('Caste', AppConstants.castList, _caste,
+                      (v) => setState(() => _caste = v)),
+                  const SizedBox(height: 8),
+                  _groupLabel('Education & Career'),
+                  _dropdown('Education', AppConstants.educationList, _education,
+                      (v) => setState(() => _education = v)),
+                  const SizedBox(height: 12),
+                  _dropdown('Occupation', AppConstants.occupations, _occupation,
+                      (v) => setState(() => _occupation = v)),
+                  const SizedBox(height: 8),
+                  _groupLabel('Marital Status'),
+                  _dropdown('Marital Status', _maritalStatuses, _maritalStatus,
+                      (v) => setState(() => _maritalStatus = v)),
+                  const SizedBox(height: 8),
+                  _groupLabel('Horoscope'),
+                  _dropdown('Rasi', AppConstants.rasiList, _rasi,
+                      (v) => setState(() => _rasi = v)),
+                  const SizedBox(height: 12),
+                  _dropdown('Nakshatra', AppConstants.nakshatraList, _nakshatra,
+                      (v) => setState(() => _nakshatra = v)),
+                  const SizedBox(height: 12),
+                  _dropdown('Match Quality', _matchQualities, _matchQuality,
+                      (v) => setState(() => _matchQuality = v)),
+                ],
+              ),
+            ),
+            // ── Reset / Apply ──
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _reset,
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(50),
+                          side: BorderSide(color: Colors.grey[400]!),
+                          foregroundColor: AppColors.primary,
+                        ),
+                        child: const Text('Reset Filters'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _apply,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size.fromHeight(50),
+                        ),
+                        child: const Text('Apply Filters'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _groupLabel(String text) => Padding(
+        padding: const EdgeInsets.only(top: 8, bottom: 10),
+        child: Text(text,
+            style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary)),
+      );
+
+  Widget _dropdown(String label, List<String> items, String? value,
+          ValueChanged<String?> onChanged) =>
+      SearchableField(
+        label: label,
+        items: items,
+        selectedItem: value,
+        popupMode: SearchablePopupMode.modalBottomSheet,
+        onChanged: onChanged,
       );
 }
