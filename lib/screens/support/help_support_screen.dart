@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/utils/phone_utils.dart';
 
 /// Help & Support — contact options + FAQ. Registered at `/help`.
 class HelpSupportScreen extends StatelessWidget {
@@ -64,14 +65,13 @@ class HelpSupportScreen extends StatelessWidget {
             icon: Icons.call_outlined,
             title: 'Call Us',
             subtitle: '+91 90000 00000',
-            onTap: () => _launch(context, Uri(scheme: 'tel', path: supportPhone)),
+            onTap: () => _launch(context, phoneCallUri(supportPhone)),
           ),
           _ContactTile(
             icon: Icons.chat_outlined,
             title: 'WhatsApp',
             subtitle: 'Chat with support',
-            onTap: () => _launch(
-                context, Uri.parse('https://wa.me/$supportPhone')),
+            onTap: () => _launch(context, whatsappUri(supportPhone)),
           ),
           const SizedBox(height: 24),
           const Text('Frequently Asked Questions',

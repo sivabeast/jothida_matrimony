@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/phone_utils.dart';
 import '../../models/profile_model.dart';
 import '../../providers/profile_provider.dart';
 
@@ -86,7 +87,7 @@ class ContactRevealCard extends ConsumerWidget {
               icon: Icons.call,
               label: mobile,
               actionLabel: 'Call',
-              onTap: () => _launch('tel:$mobile'),
+              onTap: () => _launch(phoneCallUri(mobile)),
             ),
           if (whatsapp.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -94,7 +95,7 @@ class ContactRevealCard extends ConsumerWidget {
               icon: Icons.chat,
               label: whatsapp,
               actionLabel: 'WhatsApp',
-              onTap: () => _launch('https://wa.me/${_digits(whatsapp)}'),
+              onTap: () => _launch(whatsappUri(whatsapp)),
             ),
           ],
           const SizedBox(height: 8),
@@ -189,10 +190,7 @@ class ContactRevealCard extends ConsumerWidget {
         ],
       );
 
-  String _digits(String s) => s.replaceAll(RegExp(r'[^0-9]'), '');
-
-  Future<void> _launch(String url) async {
-    final uri = Uri.parse(url);
+  Future<void> _launch(Uri uri) async {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
