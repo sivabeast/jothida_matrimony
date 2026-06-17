@@ -131,8 +131,21 @@ class AstrologerProfileScreen extends ConsumerWidget {
                 width: 22,
                 child: CircularProgressIndicator(strokeWidth: 2)),
           )),
-          error: (_, __) => Text('Could not load reviews.',
-              style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+          error: (_, __) => Row(
+            children: [
+              Expanded(
+                child: Text('Could not load reviews.',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+              ),
+              TextButton.icon(
+                onPressed: () =>
+                    ref.invalidate(astrologerReviewsProvider(a.id)),
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Retry'),
+                style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+              ),
+            ],
+          ),
           data: (reviews) {
             if (reviews.isEmpty) {
               return Text('No reviews yet. Be the first to rate.',
@@ -236,9 +249,11 @@ class AstrologerProfileScreen extends ConsumerWidget {
               CircleAvatar(
                 radius: 48,
                 backgroundColor: Colors.white,
+                // Only set backgroundImage when a URL exists. Passing
+                // onBackgroundImageError with a null image asserts/crashes —
+                // the `child` fallback covers the no-photo case instead.
                 backgroundImage:
                     a.photoUrl.isNotEmpty ? NetworkImage(a.photoUrl) : null,
-                onBackgroundImageError: (_, __) {},
                 child: a.photoUrl.isEmpty
                     ? const Icon(Icons.person,
                         size: 46, color: AppColors.primary)

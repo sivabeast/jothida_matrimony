@@ -100,9 +100,12 @@ class AstrologerSheetCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 30,
-                  backgroundImage: NetworkImage(a.photoUrl),
-                  onBackgroundImageError: (_, __) {},
                   backgroundColor: AppColors.primary.withOpacity(0.1),
+                  backgroundImage:
+                      a.photoUrl.isNotEmpty ? NetworkImage(a.photoUrl) : null,
+                  child: a.photoUrl.isEmpty
+                      ? const Icon(Icons.person, color: AppColors.primary)
+                      : null,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

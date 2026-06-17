@@ -1,11 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/dev_config.dart';
+import '../core/utils/profile_completion.dart';
 import '../models/astrologer_review_model.dart';
 import 'astrologer_provider.dart';
 import 'auth_provider.dart';
 import 'demo_data_provider.dart';
 import 'profile_provider.dart';
 import 'service_providers.dart';
+
+/// Minimum profile completeness (%) accepted when the `users` doc flag is stale.
+const int _kRateCompletionThreshold = 60;
 
 /// Whether the signed-in account is allowed to rate astrologers.
 ///
@@ -15,14 +19,22 @@ import 'service_providers.dart';
 ///     can't rate, per the business rules / security rules).
 ///  2. The user is logged in and their matrimony **profile is completed**.
 ///
-/// In demo mode the gate is open so the feature is testable offline.
+/// "Completed" is satisfied by EITHER the `users/{uid}.isProfileComplete` flag
+/// OR the actual computed completeness of the matrimony profile (≥ threshold).
+/// The flag can lag behind real data (e.g. profiles finished before it was
+/// written), so the computed fallback prevents a falsely-locked rating UI.
 final canRateAstrologerProvider = Provider.autoDispose<bool>((ref) {
   if (kBypassAuth) return true;
 
   final user = ref.watch(currentUserProvider).valueOrNull;
   if (user == null) return false;
   if (user.role != 'user') return false; // astrologers / admins cannot rate
-  return user.isProfileComplete;
+  if (user.isProfileComplete) return true;
+
+  // Fallback: trust the actual profile data when the flag hasn't caught up.
+  final profile = ref.watch(myProfileProvider).valueOrNull;
+  if (profile == null) return false;
+  return computeProfileCompletion(profile).percent >= _kRateCompletionThreshold;
 });
 
 /// Live reviews for an astrologer (newest first).

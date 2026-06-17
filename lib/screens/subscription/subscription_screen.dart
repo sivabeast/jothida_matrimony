@@ -4,6 +4,7 @@ import '../../core/config/dev_config.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../models/subscription_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/subscription_provider.dart';
 import '../../widgets/common/gradient_button.dart';
@@ -155,12 +156,34 @@ class _PlanCard extends ConsumerWidget {
     this.isPremium = false,
   });
 
+  static int _rank(String p) => switch (p) {
+        AppConstants.planPremium => 3,
+        AppConstants.planMedium => 2,
+        _ => 1,
+      };
+
+  static String _fmtDate(DateTime d) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${d.day} ${months[d.month - 1]} ${d.year}';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(authNotifierProvider);
     final user = userAsync.valueOrNull;
     final subNotifier = ref.read(subscriptionNotifierProvider.notifier);
     final color = isPremium ? AppColors.gold : isPopular ? AppColors.primary : Colors.grey[700]!;
+
+    // Authoritative active subscription (index-free fetch). Drives the
+    // Current-Plan badge and Upgrade/Switch button labels.
+    final activeSub = ref.watch(activeSubscriptionProvider).valueOrNull;
+    final hasActive = activeSub != null && !activeSub.isExpired;
+    final isCurrent = hasActive && activeSub.plan == plan;
+    final switchLabel =
+        hasActive && _rank(plan) > _rank(activeSub.plan) ? 'Upgrade Plan' : 'Switch Plan';
 
     return Stack(
       children: [
@@ -211,39 +234,70 @@ class _PlanCard extends ConsumerWidget {
                       ),
                     )),
                 const SizedBox(height: 20),
-                GradientButton(
-                  onPressed: user == null
-                      ? null
-                      : () async {
-                          if (kSubscriptionTestMode) {
-                            await subNotifier.activatePlan(
-                              plan: plan,
-                              userId: user.uid,
-                              type: 'monthly',
-                            );
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                  content: Text(
-                                      '${plan[0].toUpperCase()}${plan.substring(1)} plan activated (test mode).')));
+                if (isCurrent)
+                  _currentPlanStatus(activeSub)
+                else
+                  GradientButton(
+                    onPressed: user == null
+                        ? null
+                        : () async {
+                            if (kSubscriptionTestMode) {
+                              await subNotifier.activatePlan(
+                                plan: plan,
+                                userId: user.uid,
+                                type: 'monthly',
+                              );
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                    content: Text(
+                                        '${plan[0].toUpperCase()}${plan.substring(1)} plan activated (test mode).')));
+                              }
+                            } else {
+                              subNotifier.purchase(
+                                plan: plan,
+                                userId: user.uid,
+                                userPhone: user.phone ?? '',
+                                userEmail: user.email ?? '',
+                                userName: user.displayName ?? 'User',
+                              );
                             }
-                          } else {
-                            subNotifier.purchase(
-                              plan: plan,
-                              userId: user.uid,
-                              userPhone: user.phone ?? '',
-                              userEmail: user.email ?? '',
-                              userName: user.displayName ?? 'User',
-                            );
-                          }
-                        },
-                  text: kSubscriptionTestMode ? 'Activate Plan' : 'Subscribe',
-                  gradient: isPremium ? AppColors.goldGradient : AppColors.primaryGradient,
-                ),
+                          },
+                    text: hasActive
+                        ? switchLabel
+                        : (kSubscriptionTestMode ? 'Activate Plan' : 'Subscribe'),
+                    gradient: isPremium
+                        ? AppColors.goldGradient
+                        : AppColors.primaryGradient,
+                  ),
               ],
             ),
           ),
         ),
-        if (isPopular)
+        if (isCurrent)
+          Positioned(
+            top: 0,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: const BoxDecoration(
+                color: AppColors.success,
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white, size: 13),
+                  SizedBox(width: 4),
+                  Text('CURRENT PLAN',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          )
+        else if (isPopular)
           Positioned(
             top: 0,
             right: 16,
@@ -262,4 +316,69 @@ class _PlanCard extends ConsumerWidget {
       ],
     );
   }
+
+  /// Active-plan status block (replaces the action button on the current plan):
+  /// ✅ Active · expiry date · days remaining, with a disabled "Current Plan".
+  Widget _currentPlanStatus(SubscriptionModel sub) {
+    final days = sub.daysRemaining < 0 ? 0 : sub.daysRemaining;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.success.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.success.withOpacity(0.35)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.check_circle, color: AppColors.success, size: 18),
+                  SizedBox(width: 6),
+                  Text('ACTIVE',
+                      style: TextStyle(
+                          color: AppColors.success,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _statusRow('Expires', _fmtDate(sub.endDate)),
+              const SizedBox(height: 3),
+              _statusRow('Remaining', '$days days'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: null,
+            style: ElevatedButton.styleFrom(
+              disabledBackgroundColor: AppColors.success.withOpacity(0.5),
+              disabledForegroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(48),
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Current Plan'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _statusRow(String label, String value) => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: Colors.grey[700], fontSize: 13)),
+          Text(value,
+              style:
+                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+        ],
+      );
 }
