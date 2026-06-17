@@ -107,6 +107,21 @@ class AdminActionsNotifier extends Notifier<AsyncValue<void>> {
       debugPrint('[AdminActions] ❌ suspendAstrologer failed: ${state.error}');
     }
   }
+
+  /// Permanently deletes an astrologer and ALL their data (account doc,
+  /// embedded services/certificates, consultation requests and review
+  /// references). No soft-delete — records are physically removed, so the
+  /// astrologer disappears from every listing immediately (the directory and
+  /// admin screen read live streams).
+  Future<void> deleteAstrologer(String uid) async {
+    debugPrint('[AdminActions] deleteAstrologer($uid)');
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() =>
+        ref.read(firestoreServiceProvider).deleteAstrologerAccountData(uid));
+    if (state.hasError) {
+      debugPrint('[AdminActions] ❌ deleteAstrologer failed: ${state.error}');
+    }
+  }
 }
 
 final adminActionsProvider =

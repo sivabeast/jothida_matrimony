@@ -502,15 +502,21 @@ class FirestoreService {
       .set(sub.toFirestore());
 
   Future<SubscriptionModel?> getActiveSubscription(String userId) async {
+    // Single-field query (no composite index needed): fetch the user's
+    // subscriptions and pick the latest that is active AND not expired,
+    // client-side. The previous `where(isActive) + orderBy(createdAt)` combo
+    // required a composite index and silently failed (failed-precondition),
+    // which is why a freshly-activated plan didn't register as premium.
     final snap = await _db
         .collection(AppConstants.subscriptionsCollection)
         .where('userId', isEqualTo: userId)
-        .where('isActive', isEqualTo: true)
-        .orderBy('createdAt', descending: true)
-        .limit(1)
         .get();
-    if (snap.docs.isEmpty) return null;
-    return SubscriptionModel.fromFirestore(snap.docs.first);
+    final active = snap.docs
+        .map(SubscriptionModel.fromFirestore)
+        .where((s) => s.isActive && !s.isExpired)
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return active.isEmpty ? null : active.first;
   }
 
   // ── Reports ───────────────────────────────────────────────────────────────
@@ -716,6 +722,9 @@ class FirestoreService {
     debugPrint('[Firestore] 🗑 deleteAstrologerAccountData($uid)');
     await _deleteWhere(
         AppConstants.astrologerRequestsCollection, 'astrologerId', uid);
+    // Review / rating references about this astrologer.
+    await _deleteWhere(
+        AppConstants.astrologerReviewsCollection, 'astrologerId', uid);
     await _deleteWhere(
         AppConstants.accountDeletionRequestsCollection, 'userId', uid);
     await _deleteDocSafe(AppConstants.astrologersCollection, uid);

@@ -6,16 +6,15 @@ import 'auth_provider.dart';
 import 'demo_data_provider.dart';
 import 'profile_provider.dart';
 import 'service_providers.dart';
-import 'subscription_provider.dart';
 
 /// Whether the signed-in account is allowed to rate astrologers.
 ///
-/// ALL of these must hold (per spec):
-///  1. Account type is a normal **user** (never an astrologer / admin).
-///  2. The user's matrimony **profile is completed**.
-///  3. The user has an **active (non-expired) premium subscription**.
+/// Any registered USER with a completed profile may rate — NO subscription is
+/// required. Conditions:
+///  1. Account type is a normal **user** (never an astrologer / admin — they
+///     can't rate, per the business rules / security rules).
+///  2. The user is logged in and their matrimony **profile is completed**.
 ///
-/// Contact-viewed / call-made / verified-user are intentionally NOT required.
 /// In demo mode the gate is open so the feature is testable offline.
 final canRateAstrologerProvider = Provider.autoDispose<bool>((ref) {
   if (kBypassAuth) return true;
@@ -23,17 +22,7 @@ final canRateAstrologerProvider = Provider.autoDispose<bool>((ref) {
   final user = ref.watch(currentUserProvider).valueOrNull;
   if (user == null) return false;
   if (user.role != 'user') return false; // astrologers / admins cannot rate
-  if (!user.isProfileComplete) return false;
-
-  // Active premium — accept either a live subscription document or the mirrored
-  // membership fields on the user doc, as long as it hasn't expired.
-  final sub = ref.watch(activeSubscriptionProvider).valueOrNull;
-  final subActive = sub != null && sub.isActive && !sub.isExpired;
-  final now = DateTime.now();
-  final membershipActive = user.membershipType != 'free' &&
-      user.subscriptionExpiry != null &&
-      user.subscriptionExpiry!.isAfter(now);
-  return subActive || membershipActive;
+  return user.isProfileComplete;
 });
 
 /// Live reviews for an astrologer (newest first).

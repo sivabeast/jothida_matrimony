@@ -150,8 +150,8 @@
     "semantic_hash": ""
   },
   "lib/providers/admin_provider.dart": {
-    "mtime": 1781352280.550185,
-    "ast_hash": "c0c4569f298947a4578208da0735d09f",
+    "mtime": 1781712413.5110676,
+    "ast_hash": "f26aafbd5e0eb5430e9e6e3930d2d548",
     "semantic_hash": ""
   },
   "lib/providers/astrologer_provider.dart": {
@@ -210,8 +210,8 @@
     "semantic_hash": ""
   },
   "lib/providers/subscription_provider.dart": {
-    "mtime": 1781693089.4747722,
-    "ast_hash": "df7ae9858ba2a33e4fe41a3c3938b85d",
+    "mtime": 1781712337.9570122,
+    "ast_hash": "91eff2f58eed497dac4be794ad2e63e0",
     "semantic_hash": ""
   },
   "lib/repositories/admin_repository.dart": {
@@ -285,8 +285,8 @@
     "semantic_hash": ""
   },
   "lib/screens/astrologer/astrologer_profile_screen.dart": {
-    "mtime": 1781670542.9410844,
-    "ast_hash": "eb9768b3759a95346ca7657354f68dc8",
+    "mtime": 1781712370.2639635,
+    "ast_hash": "a9dda04838bdafec8abe58ee11357289",
     "semantic_hash": ""
   },
   "lib/screens/astrologer/astrologer_register_screen.dart": {
@@ -445,8 +445,8 @@
     "semantic_hash": ""
   },
   "lib/services/firebase/firestore_service.dart": {
-    "mtime": 1781693718.7061226,
-    "ast_hash": "4578b6dba1707f35f1084e47efbb01b1",
+    "mtime": 1781712382.5149589,
+    "ast_hash": "d0075476329d7b6c75870280390b6356",
     "semantic_hash": ""
   },
   "lib/services/firebase/storage_service.dart": {
@@ -520,7 +520,7 @@
     "semantic_hash": ""
   },
   "android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java": {
-    "mtime": 1781694093.3151798,
+    "mtime": 1781712531.7055867,
     "ast_hash": "957f3f4fa91953a90f2d9690762329f7",
     "semantic_hash": ""
   },
@@ -775,8 +775,8 @@
     "semantic_hash": ""
   },
   "lib/screens/admin/admin_management_screens.dart": {
-    "mtime": 1781352499.4080725,
-    "ast_hash": "a8bdf607404929d974ca26fee123151d",
+    "mtime": 1781712484.2836077,
+    "ast_hash": "32242c8c91fd33851534141a6e2fb81d",
     "semantic_hash": ""
   },
   "lib/screens/admin/admin_reports_page.dart": {
@@ -1140,8 +1140,8 @@
     "semantic_hash": ""
   },
   "lib/providers/astrologer_review_provider.dart": {
-    "mtime": 1781670342.6803272,
-    "ast_hash": "094facd619dd80a3885c0f6cd2dad537",
+    "mtime": 1781712363.0804424,
+    "ast_hash": "d0b161b0313407196810232266173c8a",
     "semantic_hash": ""
   },
   "lib/models/announcement_model.dart": {

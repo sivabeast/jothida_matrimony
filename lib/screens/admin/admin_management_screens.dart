@@ -169,6 +169,8 @@ class _AstrologerManagementScreenState
     if (q.isEmpty) return true;
     final loc = [a.city, a.state, a.country].join(' ').toLowerCase();
     return a.fullName.toLowerCase().contains(q) ||
+        a.mobile.toLowerCase().contains(q) ||
+        a.email.toLowerCase().contains(q) ||
         loc.contains(q) ||
         a.expertise.any((e) => e.toLowerCase().contains(q));
   }
@@ -300,7 +302,7 @@ class _AstrologerManagementScreenState
         onChanged: (v) => setState(() => _query = v),
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
-          hintText: 'Search astrologer name, location or specialization…',
+          hintText: 'Search name, phone, email, location…',
           prefixIcon: const Icon(Icons.search, color: AppColors.primary),
           suffixIcon: _query.isEmpty
               ? null
@@ -895,6 +897,20 @@ class _AstrologerDetailsSheet extends ConsumerWidget {
                   _CertificateBlock(account: a, hasCert: hasCert),
                   const SizedBox(height: 22),
                   _sheetActions(context, ref, approved, busy),
+                  const SizedBox(height: 10),
+                  // Permanent delete — hard cleanup, removes the astrologer
+                  // everywhere (no soft-delete).
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton.icon(
+                      onPressed:
+                          busy ? null : () => _confirmDelete(context, ref),
+                      icon: const Icon(Icons.delete_forever, size: 18),
+                      label: const Text('Delete Permanently'),
+                      style:
+                          TextButton.styleFrom(foregroundColor: AppColors.error),
+                    ),
+                  ),
                   const SizedBox(height: 8),
                 ],
               ),
@@ -903,6 +919,39 @@ class _AstrologerDetailsSheet extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Astrologer'),
+        content: Text(
+          'Permanently delete ${account.fullName.isEmpty ? 'this astrologer' : account.fullName}? '
+          'Their profile, certificates, consultation requests and all reviews '
+          'will be removed. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    await _runAction(
+      context,
+      ref,
+      () => ref.read(adminActionsProvider.notifier).deleteAstrologer(account.id),
+      'Astrologer deleted permanently.',
+    );
+    if (context.mounted) Navigator.pop(context); // close the details sheet
   }
 
   Widget _sheetActions(

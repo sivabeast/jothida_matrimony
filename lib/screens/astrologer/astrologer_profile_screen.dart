@@ -109,11 +109,11 @@ class AstrologerProfileScreen extends ConsumerWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.workspace_premium_outlined,
+                const Icon(Icons.info_outline,
                     size: 18, color: AppColors.gold),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text('Premium members can rate astrologers.',
+                  child: Text('Complete your profile to rate astrologers.',
                       style: TextStyle(
                           color: Colors.grey[800], fontSize: 12.5)),
                 ),

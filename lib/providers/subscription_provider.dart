@@ -13,6 +13,18 @@ final activeSubscriptionProvider =
   return ref.watch(subscriptionRepositoryProvider).getActiveSubscription(userId);
 });
 
+/// Single source of truth for "does the signed-in user have premium access".
+/// True when the user document reflects an active (non-expired) plan OR a live
+/// subscription record exists. Reflects a test-mode activation instantly.
+final isPremiumProvider = Provider.autoDispose<bool>((ref) {
+  final user = ref.watch(currentUserProvider).valueOrNull;
+  if (user != null && (user.membershipType != 'free' || user.hasActiveSubscription)) {
+    return true;
+  }
+  final sub = ref.watch(activeSubscriptionProvider).valueOrNull;
+  return sub != null && sub.isActive && !sub.isExpired;
+});
+
 class SubscriptionNotifier extends Notifier<AsyncValue<SubscriptionModel?>> {
   @override
   AsyncValue<SubscriptionModel?> build() => const AsyncData(null);
