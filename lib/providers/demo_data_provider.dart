@@ -24,6 +24,9 @@ class DemoProfilesNotifier extends Notifier<List<ProfileModel>> {
     return null;
   }
 
+  /// Remove a profile (used by demo-mode account deletion).
+  void remove(String id) => state = state.where((p) => p.id != id).toList();
+
   /// Opposite-gender, active, approved profiles for the Discover feed.
   /// Married users are excluded — once married they leave the matchmaking pool.
   List<ProfileModel> discover({required String gender}) => state

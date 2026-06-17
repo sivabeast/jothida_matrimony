@@ -7,6 +7,7 @@ import '../../core/constants/app_constants.dart';
 import '../../models/astrologer_account_model.dart';
 import '../../models/astrologer_model.dart' as model;
 import '../../models/astrologer_request_model.dart';
+import '../../models/astrologer_review_model.dart';
 
 /// Firestore CRUD + realtime streams for the astrologer side of the app:
 /// `astrologers/{uid}` accounts and `astrologer_requests` (consultations,
@@ -200,6 +201,91 @@ class AstrologerService {
         'status': status.name,
         'respondedAt': FieldValue.serverTimestamp(),
       });
+
+  // ── Ratings & reviews (astrologer_reviews) ─────────────────────────────────
+  // Each user has at most one review per astrologer (deterministic doc id). The
+  // astrologer document's `rating` / `reviewCount` / `ratingBreakdown` are kept
+  // as a denormalised aggregate so the directory cards and Top-Rated section can
+  // sort/show without reading every review.
+
+  /// Live reviews for an astrologer, newest first. No `orderBy` in the query
+  /// (would need a composite index); sorted client-side.
+  Stream<List<AstrologerReviewModel>> watchReviews(String astrologerId) => _db
+      .collection(AppConstants.astrologerReviewsCollection)
+      .where('astrologerId', isEqualTo: astrologerId)
+      .snapshots()
+      .map((s) {
+        final list =
+            s.docs.map(AstrologerReviewModel.fromFirestore).toList();
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return list;
+      });
+
+  /// The signed-in user's own review of [astrologerId], or null if none.
+  Future<AstrologerReviewModel?> getMyReview(
+      String astrologerId, String userId) async {
+    final doc = await _db
+        .collection(AppConstants.astrologerReviewsCollection)
+        .doc(AstrologerReviewModel.docId(astrologerId, userId))
+        .get();
+    return doc.exists ? AstrologerReviewModel.fromFirestore(doc) : null;
+  }
+
+  /// Creates or edits the user's single review, then refreshes the astrologer's
+  /// aggregate rating. The deterministic id makes a re-submit an edit, never a
+  /// duplicate.
+  Future<void> submitReview({
+    required String astrologerId,
+    required String userId,
+    required String userName,
+    required int rating,
+    String review = '',
+  }) async {
+    final ref = _db
+        .collection(AppConstants.astrologerReviewsCollection)
+        .doc(AstrologerReviewModel.docId(astrologerId, userId));
+    final existing = await ref.get();
+    await ref.set({
+      'astrologerId': astrologerId,
+      'userId': userId,
+      'userName': userName,
+      'rating': rating,
+      'review': review,
+      if (!existing.exists) 'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    await _recomputeAstrologerRating(astrologerId);
+  }
+
+  /// Recomputes `rating` (mean), `reviewCount` and `ratingBreakdown` on the
+  /// astrologer document from all of its reviews. Updates only those aggregate
+  /// fields (a write the security rules allow any signed-in user to make).
+  Future<void> _recomputeAstrologerRating(String astrologerId) async {
+    final snap = await _db
+        .collection(AppConstants.astrologerReviewsCollection)
+        .where('astrologerId', isEqualTo: astrologerId)
+        .get();
+    final ratings = snap.docs
+        .map((d) => (d.data()['rating'] as num?)?.toInt() ?? 0)
+        .where((r) => r >= 1 && r <= 5)
+        .toList();
+    final count = ratings.length;
+    final avg =
+        count == 0 ? 0.0 : ratings.reduce((a, b) => a + b) / count;
+    final breakdown = <String, int>{};
+    for (final r in ratings) {
+      breakdown['$r'] = (breakdown['$r'] ?? 0) + 1;
+    }
+    await _db
+        .collection(AppConstants.astrologersCollection)
+        .doc(astrologerId)
+        .set({
+      'rating': double.parse(avg.toStringAsFixed(2)),
+      'reviewCount': count,
+      'ratingBreakdown': breakdown,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
 
   /// Sum of completed-request amounts → earnings shown on the dashboard.
   ///

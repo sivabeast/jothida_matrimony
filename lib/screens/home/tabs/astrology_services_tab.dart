@@ -200,8 +200,12 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
   Widget _sections(List<Astrologer> all, String myCity) {
     // ── Section 1: Nearby — user's city + adjacent cities ──
     final nearby = _nearbyAstrologers(all, myCity);
-    // ── Section 2: Top Rated — highest rating first ──
-    final topRated = [...all]..sort((a, b) => b.rating.compareTo(a.rating));
+    // ── Section 2: Top Rated — rating DESC, then review count DESC ──
+    final topRated = [...all]
+      ..sort((a, b) {
+        final byRating = b.rating.compareTo(a.rating);
+        return byRating != 0 ? byRating : b.reviewCount.compareTo(a.reviewCount);
+      });
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),

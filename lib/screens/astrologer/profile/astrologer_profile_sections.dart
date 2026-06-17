@@ -5,6 +5,7 @@ import '../../../core/config/dev_config.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/astrologer_account_model.dart';
+import '../../../providers/account_provider.dart';
 import '../../../providers/astrologer_session_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/service_providers.dart';
@@ -528,6 +529,55 @@ class AstrologerAccountSettingsScreen extends ConsumerWidget {
     if (context.mounted) context.go('/account-type');
   }
 
+  /// Permanently deletes the astrologer account immediately (no admin approval)
+  /// and returns to the Login screen with the stack cleared.
+  Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: const Text(
+          'This action is permanent and cannot be undone.\n'
+          'All your astrologer profile, services, certificates, ratings, '
+          'reviews and account information will be permanently deleted.',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete Account'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    try {
+      await ref
+          .read(accountControllerProvider.notifier)
+          .deleteAccount(isAstrologer: true);
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).pop(); // dismiss progress
+      context.go('/login');
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      messenger.showSnackBar(SnackBar(
+          content:
+              Text('Could not delete your account. Please try again.\n$e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final account = ref.watch(myAstrologerAccountProvider);
@@ -581,6 +631,21 @@ class AstrologerAccountSettingsScreen extends ConsumerWidget {
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             onTap: () => _signOut(context, ref),
+          ),
+          const SizedBox(height: 12),
+          ListTile(
+            leading: const Icon(Icons.delete_outline, color: AppColors.error),
+            title: const Text('Delete Account',
+                style: TextStyle(
+                    color: AppColors.error, fontWeight: FontWeight.w600)),
+            subtitle:
+                const Text('Permanently delete your account and all data'),
+            tileColor: AppColors.error.withOpacity(0.06),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: AppColors.error.withOpacity(0.25)),
+            ),
+            onTap: () => _deleteAccount(context, ref),
           ),
         ],
       ),

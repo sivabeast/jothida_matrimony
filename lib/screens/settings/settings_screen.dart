@@ -5,7 +5,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../providers/account_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/profile_provider.dart';
 
 /// Settings hub — groups app preferences and links to legal/support pages.
 /// Registered at `/settings`. Reached from Profile → "Settings".
@@ -15,7 +14,6 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     debugPrint('[SettingsScreen] build — route /settings opened');
-    final deletionPending = ref.watch(deletionPendingProvider);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
@@ -62,8 +60,7 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           const _GroupLabel('Account'),
           _DeleteAccountTile(
-            pending: deletionPending,
-            onTap: () => _requestDeletion(context, ref),
+            onTap: () => _deleteAccount(context, ref),
           ),
           const SizedBox(height: 24),
           Center(
@@ -79,15 +76,17 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-/// Sends an account deletion request to the admin (nothing is deleted now).
-Future<void> _requestDeletion(BuildContext context, WidgetRef ref) async {
+/// Permanently deletes the account immediately (no admin approval) and returns
+/// the user to the Login screen with the navigation stack cleared.
+Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Request Account Deletion'),
+      title: const Text('Delete Account'),
       content: const Text(
-        'Your account deletion request will be sent to the administrator for '
-        'review. Your account will remain active until the request is approved.',
+        'This action is permanent and cannot be undone.\n'
+        'All your profile data, photos, interests, horoscope details and '
+        'account information will be permanently deleted.',
       ),
       actions: [
         TextButton(
@@ -97,33 +96,43 @@ Future<void> _requestDeletion(BuildContext context, WidgetRef ref) async {
           style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error, foregroundColor: Colors.white),
           onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Submit Request'),
+          child: const Text('Delete Account'),
         ),
       ],
     ),
   );
-  if (confirmed != true) return;
+  if (confirmed != true || !context.mounted) return;
 
   final messenger = ScaffoldMessenger.of(context);
-  final user = ref.read(currentUserProvider).valueOrNull;
-  final profile = ref.read(myProfileProvider).valueOrNull;
-  final userId = user?.uid ?? profile?.userId ?? 'demo-user';
-  final userName = user?.displayName ?? profile?.name ?? 'User';
-  final email = user?.email ?? 'demo@jothida.app';
+  final isAstrologer =
+      ref.read(currentUserProvider).valueOrNull?.isAstrologer ?? false;
 
-  await ref.read(accountControllerProvider.notifier).submitDeletionRequest(
-        userId: userId,
-        userName: userName,
-        email: email,
-      );
-  messenger.showSnackBar(const SnackBar(
-      content: Text('Deletion request submitted. An admin will review it.')));
+  // Blocking progress while we delete.
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const Center(child: CircularProgressIndicator()),
+  );
+
+  try {
+    await ref
+        .read(accountControllerProvider.notifier)
+        .deleteAccount(isAstrologer: isAstrologer);
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop(); // dismiss progress
+    // Reset the navigation stack to Login — no back-button return.
+    context.go('/login');
+  } catch (e) {
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop(); // dismiss progress
+    messenger.showSnackBar(SnackBar(
+        content: Text('Could not delete your account. Please try again.\n$e')));
+  }
 }
 
 class _DeleteAccountTile extends StatelessWidget {
-  final bool pending;
   final VoidCallback onTap;
-  const _DeleteAccountTile({required this.pending, required this.onTap});
+  const _DeleteAccountTile({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -139,25 +148,10 @@ class _DeleteAccountTile extends StatelessWidget {
         leading: const Icon(Icons.delete_outline, color: AppColors.error),
         title: const Text('Delete Account',
             style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
-        subtitle: Text(pending
-            ? 'Deletion request pending admin review'
-            : 'Request account deletion'),
-        trailing: pending
-            ? Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text('Pending',
-                    style: TextStyle(
-                        color: AppColors.warning,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold)),
-              )
-            : const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.error),
-        onTap: pending ? null : onTap,
+        subtitle: const Text('Permanently delete your account and all data'),
+        trailing:
+            const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.error),
+        onTap: onTap,
       ),
     );
   }

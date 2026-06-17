@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/config/dev_config.dart';
 import '../models/account_deletion_request_model.dart';
 import '../models/profile_model.dart';
+import 'astrologer_session_provider.dart';
 import 'auth_provider.dart';
 import 'demo_data_provider.dart';
 import 'profile_provider.dart';
@@ -113,6 +115,47 @@ class AccountController extends Notifier<AsyncValue<void>> {
         ref.invalidate(currentUserProvider);
       }
     });
+  }
+
+  /// Immediately and permanently deletes the signed-in account (no admin
+  /// approval). Removes all Firestore data, deletes the Firebase Auth user,
+  /// signs out of Google + Firebase, clears local caches, and resets in-memory
+  /// session providers. The caller navigates to the Login screen on success.
+  Future<void> deleteAccount({required bool isAstrologer}) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final repo = ref.read(authRepositoryProvider);
+      final uid = repo.currentUserId;
+
+      if (kBypassAuth) {
+        // Demo mode: drop the locally-created profile / astrologer session.
+        final demoId = ref.read(myDemoProfileIdProvider);
+        if (demoId != null) {
+          ref.read(demoProfilesProvider.notifier).remove(demoId);
+        }
+        ref.read(myDemoProfileIdProvider.notifier).state = null;
+      } else if (uid != null) {
+        await repo.deleteAccount(uid, isAstrologer: isAstrologer);
+      }
+
+      // Local cleanup — SharedPreferences holds cached login/role/onboarding
+      // state. (This app does not use flutter_secure_storage.)
+      await _clearLocalStorage();
+
+      // Reset in-memory session so nothing stale survives into the next login.
+      ref.read(myAstrologerAccountProvider.notifier).signOut();
+      ref.invalidate(currentUserProvider);
+      ref.invalidate(myProfileProvider);
+    });
+  }
+
+  Future<void> _clearLocalStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+    } catch (_) {
+      // Best-effort: never let a cache-clear failure block the deletion.
+    }
   }
 
   Future<void> approveDeletion(AccountDeletionRequest req) async {

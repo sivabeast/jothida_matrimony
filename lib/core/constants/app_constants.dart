@@ -15,6 +15,7 @@ class AppConstants {
   static const String adminCollection = 'admin';
   static const String astrologersCollection = 'astrologers';
   static const String astrologerRequestsCollection = 'astrologer_requests';
+  static const String astrologerReviewsCollection = 'astrologer_reviews';
   static const String bookingsCollection = 'bookings';
   static const String chatsCollection = 'chats';
   static const String messagesSubcollection = 'messages';

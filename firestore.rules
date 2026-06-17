@@ -59,7 +59,9 @@ service cloud.firestore {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if isAuthenticated() && isOwner(userId);
       allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isAdmin();
+      // Self-service account deletion: a user may delete their OWN account
+      // document immediately (no admin approval). Admins may delete any.
+      allow delete: if isOwner(userId) || isAdmin();
     }
 
     // ── Profiles ─────────────────────────────────────────────────────────
@@ -85,7 +87,11 @@ service cloud.firestore {
                     && request.resource.data.diff(resource.data).affectedKeys()
                         .hasOnly(['viewCount', 'interestCount', 'updatedAt']);
       allow update: if isAdmin();
-      allow delete: if isAdmin();
+      // The owner may delete their own profile (self-service account deletion);
+      // admins may delete any profile for moderation.
+      allow delete: if isAdmin()
+                    || (isAuthenticated()
+                        && resource.data.userId == request.auth.uid);
     }
 
     // ── Contacts (phone / WhatsApp) ───────────────────────────────────────
@@ -117,7 +123,11 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/interests/$(request.resource.data.interestId)).data.status == 'accepted'
         && get(/databases/$(database)/documents/interests/$(request.resource.data.interestId)).data.senderId in request.resource.data.uids
         && get(/databases/$(database)/documents/interests/$(request.resource.data.interestId)).data.receiverId in request.resource.data.uids;
-      allow delete: if isAdmin();
+      // A participant may delete their own connection (account deletion cleanup);
+      // admins may delete any.
+      allow delete: if isAdmin()
+                    || (isAuthenticated()
+                        && request.auth.uid in resource.data.uids);
     }
 
     // ── Master data (religions / castes / subcastes) ──────────────────────
@@ -145,8 +155,11 @@ service cloud.firestore {
                     && request.resource.data.senderId == request.auth.uid;
       allow update: if isAuthenticated()
                     && resource.data.receiverId == request.auth.uid;
+      // Either party may delete the interest — the sender withdrawing it, or
+      // either party clearing it during account deletion.
       allow delete: if isAuthenticated()
-                    && resource.data.senderId == request.auth.uid;
+                    && (resource.data.senderId == request.auth.uid
+                        || resource.data.receiverId == request.auth.uid);
     }
 
     // ── Subscriptions ─────────────────────────────────────────────────────
@@ -187,7 +200,11 @@ service cloud.firestore {
       allow create: if isAuthenticated()
                     && request.resource.data.userId == request.auth.uid;
       allow update: if isAdmin();
-      allow delete: if isAdmin();
+      // The owner may clear their own (stale) request as part of self-service
+      // account deletion; admins may delete any.
+      allow delete: if isAdmin()
+                    || (isAuthenticated()
+                        && resource.data.userId == request.auth.uid);
     }
 
     // ── Notifications ─────────────────────────────────────────────────────
@@ -226,7 +243,36 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isOwner(astrologerId);
       allow update: if isOwner(astrologerId) || isAdmin();
-      allow delete: if isAdmin();
+      // Any signed-in user may update ONLY the aggregate rating fields (so a
+      // rating recompute can write back the new average / count) — nothing else
+      // on the document is editable by a non-owner. Mirrors the profiles
+      // viewCount pattern.
+      allow update: if isAuthenticated()
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['rating', 'reviewCount', 'ratingBreakdown', 'updatedAt']);
+      // Self-service account deletion: an astrologer may delete their OWN
+      // account document immediately. Admins may delete any.
+      allow delete: if isOwner(astrologerId) || isAdmin();
+    }
+
+    // ── Astrologer reviews (premium-user ratings) ─────────────────────────
+    // One review per user per astrologer (doc id = "{astrologerId}_{userId}").
+    // Anyone signed in may READ reviews. Only a normal USER may write, and only
+    // their OWN review — astrologers and admins can never rate. (The premium /
+    // profile-completed gate is enforced in the app; ownership + role are
+    // enforced here.) The matching doc-id check stops a user writing a review
+    // attributed to someone else.
+    match /astrologer_reviews/{reviewId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated()
+                    && getUserData().role == 'user'
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.rating is int
+                    && request.resource.data.rating >= 1
+                    && request.resource.data.rating <= 5
+                    && reviewId == request.resource.data.astrologerId + '_' + request.auth.uid;
+      allow delete: if isAdmin()
+                    || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
     // ── Astrologer requests (consultation / inquiry / matching) ──────────
@@ -243,6 +289,12 @@ service cloud.firestore {
       allow update: if isAuthenticated()
                     && resource.data.astrologerId == request.auth.uid;
       allow update: if isAdmin();
+      // Either party may delete their own request as part of account deletion;
+      // admins may delete any.
+      allow delete: if isAdmin()
+                    || (isAuthenticated()
+                        && (resource.data.astrologerId == request.auth.uid
+                            || resource.data.userId == request.auth.uid));
     }
 
     // ── Bookings / appointments ───────────────────────────────────────────

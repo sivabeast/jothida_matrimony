@@ -166,6 +166,34 @@ class AuthService {
     await _auth.signOut();
   }
 
+  /// Permanently deletes the Firebase Auth account, then clears the Google +
+  /// Firebase sessions.
+  ///
+  /// `currentUser.delete()` can fail with `requires-recent-login` when the
+  /// credential is stale; in that case the account doc is already gone from
+  /// Firestore, so we log and fall through to a normal sign-out rather than
+  /// blocking the user. Either way the local session is fully ended.
+  Future<void> deleteCurrentUser() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      try {
+        await user.delete();
+        debugPrint('[AuthService] deleteCurrentUser: auth account deleted.');
+      } on FirebaseAuthException catch (e) {
+        debugPrint('[AuthService] deleteCurrentUser: delete failed '
+            '(${e.code}); signing out instead.');
+      } catch (e) {
+        debugPrint('[AuthService] deleteCurrentUser: unexpected error: $e');
+      }
+    }
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
+    try {
+      await _auth.signOut();
+    } catch (_) {}
+  }
+
   // ── Helper ──────────────────────────────────────────────────────────────────
   Future<T> _guard<T>(Future<T> Function() action) async {
     try {

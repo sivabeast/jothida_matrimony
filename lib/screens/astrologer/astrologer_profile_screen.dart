@@ -6,7 +6,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/phone_utils.dart';
 import '../../models/astrologer_model.dart';
+import '../../models/astrologer_review_model.dart';
 import '../../providers/astrologer_provider.dart';
+import '../../providers/astrologer_review_provider.dart';
 
 /// Full astrologer profile (read-only, contact-only).
 ///
@@ -57,6 +59,8 @@ class AstrologerProfileScreen extends ConsumerWidget {
                   if (a.certificateDocs.isNotEmpty)
                     _section('📜 Certificates', _certificates(context, a)),
                   _section('📞 Contact Details', _contactDetails(context, a)),
+                  _section('⭐ Ratings & Reviews',
+                      _ratingsAndReviews(context, ref, a)),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -64,6 +68,154 @@ class AstrologerProfileScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  // ── Ratings & reviews ──────────────────────────────────────────────────────
+  Widget _ratingsAndReviews(BuildContext context, WidgetRef ref, Astrologer a) {
+    final canRate = ref.watch(canRateAstrologerProvider);
+    final myReview = ref.watch(myAstrologerReviewProvider(a.id)).valueOrNull;
+    final reviewsAsync = ref.watch(astrologerReviewsProvider(a.id));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Rate / Edit action — premium users only; hidden for everyone else.
+        if (canRate)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _openRatingForm(context, ref, a, myReview),
+              icon: Icon(myReview == null ? Icons.star_outline : Icons.edit,
+                  size: 18),
+              label: Text(
+                  myReview == null ? 'Rate Astrologer' : 'Edit Your Rating'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          )
+        else
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.gold.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.workspace_premium_outlined,
+                    size: 18, color: AppColors.gold),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Premium members can rate astrologers.',
+                      style: TextStyle(
+                          color: Colors.grey[800], fontSize: 12.5)),
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 16),
+        // Reviews list.
+        reviewsAsync.when(
+          loading: () => const Center(
+              child: Padding(
+            padding: EdgeInsets.all(12),
+            child: SizedBox(
+                height: 22,
+                width: 22,
+                child: CircularProgressIndicator(strokeWidth: 2)),
+          )),
+          error: (_, __) => Text('Could not load reviews.',
+              style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+          data: (reviews) {
+            if (reviews.isEmpty) {
+              return Text('No reviews yet. Be the first to rate.',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13));
+            }
+            return Column(
+              children: reviews.map(_reviewCard).toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _reviewCard(AstrologerReviewModel r) => Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 15,
+                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  child: Text(
+                    r.userName.isNotEmpty ? r.userName[0].toUpperCase() : 'U',
+                    style: const TextStyle(
+                        color: AppColors.primary, fontSize: 13),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(r.userName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                ),
+                _starRow(r.rating, size: 14),
+              ],
+            ),
+            if (r.review.trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(r.review,
+                  style: TextStyle(fontSize: 13, color: Colors.grey[800])),
+            ],
+            const SizedBox(height: 6),
+            Text(_fmtDate(r.updatedAt),
+                style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+          ],
+        ),
+      );
+
+  static Widget _starRow(int rating, {double size = 16}) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(
+          5,
+          (i) => Icon(i < rating ? Icons.star : Icons.star_border,
+              size: size, color: AppColors.gold),
+        ),
+      );
+
+  static String _fmtDate(DateTime d) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    if (d.millisecondsSinceEpoch == 0) return '';
+    return '${d.day} ${months[d.month - 1]} ${d.year}';
+  }
+
+  void _openRatingForm(BuildContext context, WidgetRef ref, Astrologer a,
+      AstrologerReviewModel? existing) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _RatingFormSheet(astrologer: a, existing: existing),
     );
   }
 
@@ -99,6 +251,25 @@ class AstrologerProfileScreen extends ConsumerWidget {
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              // ⭐ 4.8 (126 Reviews)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.star, color: AppColors.gold, size: 18),
+                  const SizedBox(width: 4),
+                  Text(a.rating.toStringAsFixed(1),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(width: 6),
+                  Text(
+                      '(${a.reviewCount} ${a.reviewCount == 1 ? 'Review' : 'Reviews'})',
+                      style: const TextStyle(
+                          color: Colors.white70, fontSize: 13)),
+                ],
+              ),
               const SizedBox(height: 6),
               if (a.verified)
                 Container(
@@ -428,4 +599,155 @@ class _CertificateViewer extends StatelessWidget {
           ),
         ),
       );
+}
+
+/// Bottom-sheet form to create or edit a rating (1–5 stars) + optional review.
+class _RatingFormSheet extends ConsumerStatefulWidget {
+  final Astrologer astrologer;
+  final AstrologerReviewModel? existing;
+  const _RatingFormSheet({required this.astrologer, this.existing});
+
+  @override
+  ConsumerState<_RatingFormSheet> createState() => _RatingFormSheetState();
+}
+
+class _RatingFormSheetState extends ConsumerState<_RatingFormSheet> {
+  late int _rating = widget.existing?.rating ?? 0;
+  late final TextEditingController _review =
+      TextEditingController(text: widget.existing?.review ?? '');
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _review.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_rating < 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a star rating')));
+      return;
+    }
+    setState(() => _submitting = true);
+    try {
+      await ref.read(astrologerReviewControllerProvider.notifier).submit(
+            astrologerId: widget.astrologer.id,
+            rating: _rating,
+            review: _review.text,
+          );
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(widget.existing == null
+              ? 'Thank you! Your rating has been submitted.'
+              : 'Your rating has been updated.')));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Could not submit your rating. Please try again.')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 5,
+                decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(3)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              widget.existing == null
+                  ? 'Rate ${widget.astrologer.name}'
+                  : 'Edit your rating',
+              style: const TextStyle(
+                  fontSize: 18,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            // Star selector.
+            Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(5, (i) {
+                  final star = i + 1;
+                  return IconButton(
+                    iconSize: 40,
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    constraints: const BoxConstraints(),
+                    onPressed: () => setState(() => _rating = star),
+                    icon: Icon(
+                      star <= _rating ? Icons.star : Icons.star_border,
+                      color: AppColors.gold,
+                    ),
+                  );
+                }),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('Review (optional)',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _review,
+              maxLines: 4,
+              maxLength: 500,
+              decoration: InputDecoration(
+                hintText: 'Share your experience…',
+                filled: true,
+                fillColor: Colors.grey[50],
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _submitting ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(50),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: _submitting
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Text('Submit Review'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

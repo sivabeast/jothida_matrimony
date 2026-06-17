@@ -188,4 +188,23 @@ class AuthRepository {
   Future<UserModel?> getUserModel(String uid) => _firestore.getUser(uid);
 
   Future<void> signOut() => _auth.signOut();
+
+  /// Immediately and permanently deletes the signed-in account — no admin
+  /// approval, no waiting period.
+  ///
+  /// Firestore data is removed FIRST (while the user is still authenticated, so
+  /// the owner-only security rules permit it), then the Firebase Auth account is
+  /// deleted and the Google + Firebase sessions are cleared. After this the
+  /// `users/{uid}` (and `astrologers/{uid}`) documents no longer exist, so the
+  /// same Google account signing in again is treated as a brand-new user.
+  Future<void> deleteAccount(String uid, {required bool isAstrologer}) async {
+    debugPrint('[AuthRepository] deleteAccount($uid, isAstrologer=$isAstrologer)');
+    if (isAstrologer) {
+      await _firestore.deleteAstrologerAccountData(uid);
+    } else {
+      await _firestore.deleteUserAccountData(uid);
+    }
+    await _auth.deleteCurrentUser();
+    debugPrint('[AuthRepository] deleteAccount: done.');
+  }
 }

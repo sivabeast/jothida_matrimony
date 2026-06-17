@@ -63,10 +63,14 @@ final astrologersProvider = StreamProvider.autoDispose<List<Astrologer>>((ref) {
       );
 });
 
-/// Top rated astrologers (rating desc).
+/// Top rated astrologers — average rating DESC, then review count DESC as the
+/// tie-breaker (a 4.8 with 120 reviews ranks above a 4.8 with 2).
 final topRatedAstrologersProvider = Provider.autoDispose<List<Astrologer>>((ref) {
   final list = [...(ref.watch(astrologersProvider).valueOrNull ?? const <Astrologer>[])]
-    ..sort((a, b) => b.rating.compareTo(a.rating));
+    ..sort((a, b) {
+      final byRating = b.rating.compareTo(a.rating);
+      return byRating != 0 ? byRating : b.reviewCount.compareTo(a.reviewCount);
+    });
   return list.take(6).toList();
 });
 

@@ -608,6 +608,89 @@ class FirestoreService {
     await batch.commit();
   }
 
+  // ── Self-service account deletion (immediate, no admin approval) ────────────
+
+  /// Permanently deletes ALL Firestore data owned by a normal user: profile(s),
+  /// interests (sent + received, any status), contact details, match
+  /// connections, notifications, any stale deletion request, and finally the
+  /// `users/{uid}` document. Each step is independently guarded so a single
+  /// failure (e.g. a rules-blocked collection) can never abort the rest — the
+  /// user document is always removed so the account reads as "deleted".
+  Future<void> deleteUserAccountData(String uid) async {
+    debugPrint('[Firestore] 🗑 deleteUserAccountData($uid)');
+    await _deleteWhere(AppConstants.profilesCollection, 'userId', uid);
+    await _deleteWhere(AppConstants.interestsCollection, 'senderId', uid);
+    await _deleteWhere(AppConstants.interestsCollection, 'receiverId', uid);
+    await _deleteWhere(AppConstants.notificationsCollection, 'userId', uid);
+    await _deleteWhere(
+        AppConstants.accountDeletionRequestsCollection, 'userId', uid);
+    await _deleteArrayContains(
+        AppConstants.connectionsCollection, 'uids', uid);
+    await _deleteDocSafe(AppConstants.contactsCollection, uid);
+    await _deleteDocSafe(AppConstants.usersCollection, uid);
+  }
+
+  /// Permanently deletes ALL Firestore data owned by an astrologer: their
+  /// `astrologers/{uid}` account (services / certificates / ratings / reviews
+  /// are embedded in that document, so they go with it), every
+  /// `astrologer_requests` addressed to them, any stale deletion request, and
+  /// the `users/{uid}` role document.
+  Future<void> deleteAstrologerAccountData(String uid) async {
+    debugPrint('[Firestore] 🗑 deleteAstrologerAccountData($uid)');
+    await _deleteWhere(
+        AppConstants.astrologerRequestsCollection, 'astrologerId', uid);
+    await _deleteWhere(
+        AppConstants.accountDeletionRequestsCollection, 'userId', uid);
+    await _deleteDocSafe(AppConstants.astrologersCollection, uid);
+    await _deleteDocSafe(AppConstants.usersCollection, uid);
+  }
+
+  /// Deletes every document in [collection] where [field] == [value].
+  Future<void> _deleteWhere(String collection, String field, String value) async {
+    try {
+      final snap =
+          await _db.collection(collection).where(field, isEqualTo: value).get();
+      await _deleteDocs(snap.docs);
+    } catch (e) {
+      debugPrint('[Firestore] deleteWhere($collection.$field==$value) skipped: $e');
+    }
+  }
+
+  /// Deletes every document in [collection] whose [arrayField] contains [value].
+  Future<void> _deleteArrayContains(
+      String collection, String arrayField, String value) async {
+    try {
+      final snap = await _db
+          .collection(collection)
+          .where(arrayField, arrayContains: value)
+          .get();
+      await _deleteDocs(snap.docs);
+    } catch (e) {
+      debugPrint('[Firestore] deleteArrayContains($collection.$arrayField) skipped: $e');
+    }
+  }
+
+  /// Commits deletes in chunks that stay under Firestore's 500-write batch cap.
+  Future<void> _deleteDocs(List<QueryDocumentSnapshot> docs) async {
+    const chunk = 450;
+    for (var i = 0; i < docs.length; i += chunk) {
+      final batch = _db.batch();
+      for (final d in docs.skip(i).take(chunk)) {
+        batch.delete(d.reference);
+      }
+      await batch.commit();
+    }
+  }
+
+  /// Deletes a single document, swallowing a missing-doc / permission error.
+  Future<void> _deleteDocSafe(String collection, String id) async {
+    try {
+      await _db.collection(collection).doc(id).delete();
+    } catch (e) {
+      debugPrint('[Firestore] delete $collection/$id skipped: $e');
+    }
+  }
+
   /// Recent platform events (newest first, max [limit]) for the Dashboard
   /// activity feed: new users, new astrologers, new subscriptions and new
   /// account-deletion requests. Each source is guarded independently.
