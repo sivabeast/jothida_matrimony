@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../widgets/common/app_logo.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/announcement_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../interests/interests_center_screen.dart';
 import 'tabs/astrology_services_tab.dart';
@@ -35,7 +36,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final unread = ref.watch(unreadNotificationCountProvider);
+    final unread = ref.watch(unreadNotificationCountProvider) +
+        ref.watch(unreadAnnouncementsCountProvider);
     // Admin icon visibility — only true for whitelisted Super Admin accounts.
     final isSuperAdmin =
         ref.watch(currentUserProvider).valueOrNull?.isSuperAdmin ?? false;

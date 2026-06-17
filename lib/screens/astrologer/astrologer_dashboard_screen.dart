@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../providers/announcement_provider.dart';
 import '../../providers/astrologer_session_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/common/app_logo.dart';
@@ -28,11 +29,11 @@ class _AstrologerDashboardScreenState
     extends ConsumerState<AstrologerDashboardScreen> {
   int _index = 0;
 
-  static const _tabs = <Widget>[
-    AstrologerOverviewTab(),
-    AstrologerReviewsTab(),
-    AstrologerNotificationsTab(),
-    AstrologerProfileTab(),
+  late final List<Widget> _tabs = <Widget>[
+    AstrologerOverviewTab(onSelectTab: (i) => setState(() => _index = i)),
+    const AstrologerReviewsTab(),
+    const AstrologerNotificationsTab(),
+    const AstrologerProfileTab(),
   ];
 
   @override
@@ -44,7 +45,8 @@ class _AstrologerDashboardScreenState
       );
     }
 
-    final notifUnread = ref.watch(unreadNotificationCountProvider);
+    final notifUnread = ref.watch(unreadNotificationCountProvider) +
+        ref.watch(unreadAnnouncementsCountProvider);
 
     return PopScope(
       canPop: false,

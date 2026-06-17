@@ -45,10 +45,17 @@ class _InterestsCenterScreenState extends ConsumerState<InterestsCenterScreen>
 
     // Tab contents. Received shows only PENDING (actionable) interests; once
     // accepted/rejected they move to the Accepted / Rejected tabs.
+    //
+    // Accepted/Rejected merge BOTH directions (interests I sent + interests I
+    // received), so the same person can appear twice — once per direction, or
+    // from a duplicate interest doc. De-duplicate by the OTHER user's id so each
+    // matched profile is shown exactly once.
     final receivedPending = _sorted(received.where((i) => i.isPending));
     final sentAll = _sorted(sent);
-    final accepted = _sorted([...sent, ...received].where((i) => i.isAccepted));
-    final rejected = _sorted([...sent, ...received].where((i) => i.isRejected));
+    final accepted = _dedupByCounterpart(
+        _sorted([...sent, ...received].where((i) => i.isAccepted)), myUid);
+    final rejected = _dedupByCounterpart(
+        _sorted([...sent, ...received].where((i) => i.isRejected)), myUid);
 
     return Column(
       children: [
@@ -122,6 +129,21 @@ class _InterestsCenterScreenState extends ConsumerState<InterestsCenterScreen>
   List<InterestModel> _sorted(Iterable<InterestModel> it) {
     final list = it.toList()..sort((a, b) => b.sentAt.compareTo(a.sentAt));
     return list;
+  }
+
+  /// Keeps only the first interest per counterpart (the other user's id), so a
+  /// profile never appears more than once. [items] should already be sorted
+  /// newest-first so the most recent interest is the one kept.
+  List<InterestModel> _dedupByCounterpart(
+      List<InterestModel> items, String myUid) {
+    final seen = <String>{};
+    final out = <InterestModel>[];
+    for (final i in items) {
+      final otherId = i.senderId == myUid ? i.receiverId : i.senderId;
+      if (otherId.isEmpty) continue;
+      if (seen.add(otherId)) out.add(i);
+    }
+    return out;
   }
 }
 

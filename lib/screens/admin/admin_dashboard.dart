@@ -105,6 +105,8 @@ class AdminDashboard extends ConsumerWidget {
             () => context.go('/admin/users')),
         _ActionTile('Manage Astrologers', Icons.auto_awesome, AppColors.gold,
             () => context.go('/admin/astrologers')),
+        _ActionTile('Notifications', Icons.campaign, AppColors.gold,
+            () => context.go('/admin/notifications')),
         _ActionTile('View Revenue Reports', Icons.insights, AppColors.primary,
             () => context.go('/admin/analytics')),
         _ActionTile('Support Requests', Icons.support_agent, Colors.teal,

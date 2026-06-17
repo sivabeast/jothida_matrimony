@@ -9,6 +9,7 @@ import '../../models/subscription_model.dart';
 import '../../models/report_model.dart';
 import '../../models/account_deletion_request_model.dart';
 import '../../models/notification_model.dart';
+import '../../models/announcement_model.dart';
 import '../../models/user_model.dart';
 import '../../models/dashboard_analytics.dart';
 import '../../models/admin_activity.dart';
@@ -181,6 +182,29 @@ class FirestoreService {
       .doc(uid)
       .set({
         'photoUrl': url,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+  /// Writes the user's subscription status onto `users/{uid}` so premium access
+  /// is reflected instantly. Stores BOTH the explicit status fields and the
+  /// app's existing `membershipType` / `subscriptionPlan` / `subscriptionExpiry`
+  /// fields that the premium-access checks already read.
+  Future<void> updateUserSubscription(
+    String uid, {
+    required String plan, // tier: basic | medium | premium
+    required String type, // 'monthly' | 'yearly'
+    required DateTime activatedAt,
+    required DateTime expiresAt,
+  }) =>
+      _db.collection(AppConstants.usersCollection).doc(uid).set({
+        'subscriptionActive': true,
+        'subscriptionPlan': plan,
+        'subscriptionType': type,
+        'subscriptionStatus': 'active',
+        'membershipType': plan,
+        'subscriptionExpiry': Timestamp.fromDate(expiresAt),
+        'activatedAt': Timestamp.fromDate(activatedAt),
+        'expiresAt': Timestamp.fromDate(expiresAt),
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
@@ -534,6 +558,59 @@ class FirestoreService {
       .collection(AppConstants.notificationsCollection)
       .doc(notificationId)
       .update({'isRead': true});
+
+  // ── Announcements (admin broadcast → all users & astrologers) ───────────────
+  /// Live active announcements, newest first. Filters `isActive` only and sorts
+  /// client-side (no composite index needed).
+  Stream<List<AnnouncementModel>> watchAnnouncements() => _db
+      .collection(AppConstants.announcementsCollection)
+      .where('isActive', isEqualTo: true)
+      .snapshots()
+      .map((s) {
+        final list =
+            s.docs.map(AnnouncementModel.fromFirestore).toList();
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return list;
+      });
+
+  /// All announcements (any status) for the admin management screen.
+  Stream<List<AnnouncementModel>> watchAllAnnouncements() => _db
+      .collection(AppConstants.announcementsCollection)
+      .snapshots()
+      .map((s) {
+        final list =
+            s.docs.map(AnnouncementModel.fromFirestore).toList();
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return list;
+      });
+
+  Future<void> createAnnouncement(
+          {required String title, required String message}) =>
+      _db.collection(AppConstants.announcementsCollection).add({
+        'title': title,
+        'message': message,
+        'createdBy': 'admin',
+        'isActive': true,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+  Future<void> updateAnnouncement(
+    String id, {
+    required String title,
+    required String message,
+    required bool isActive,
+  }) =>
+      _db.collection(AppConstants.announcementsCollection).doc(id).update({
+        'title': title,
+        'message': message,
+        'isActive': isActive,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+  Future<void> deleteAnnouncement(String id) => _db
+      .collection(AppConstants.announcementsCollection)
+      .doc(id)
+      .delete();
 
   // ── Admin ─────────────────────────────────────────────────────────────────
   Future<List<UserModel>> getAllUsers({int limit = 50}) async {

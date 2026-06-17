@@ -207,6 +207,13 @@ service cloud.firestore {
                         && resource.data.userId == request.auth.uid);
     }
 
+    // ── Announcements (admin broadcast → all users & astrologers) ──────────
+    // Any signed-in account may READ; only admins create / edit / delete.
+    match /announcements/{announcementId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
     // ── Notifications ─────────────────────────────────────────────────────
     // BUSINESS RULE: astrologers must not contact users. Notifications are
     // therefore created only by admins / privileged server logic — never by an

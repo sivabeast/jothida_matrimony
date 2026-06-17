@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/dev_config.dart';
 import '../models/astrologer_account_model.dart';
@@ -112,6 +113,29 @@ class MyAstrologerAccountNotifier extends Notifier<AstrologerAccount?> {
       certificates:
           current.certificates.where((c) => c.id != id).toList(),
     ));
+  }
+
+  /// TEST MODE subscription activation — no payment. [type] is 'monthly'
+  /// (30 days) or 'yearly' (365 days). Writes the plan + expiry (and the
+  /// explicit status fields) so the astrologer becomes visible to users
+  /// immediately, then updates the local session.
+  Future<void> activateSubscription(String type) async {
+    final current = state;
+    if (current == null) return;
+    final now = DateTime.now();
+    final end = now.add(Duration(days: type == 'yearly' ? 365 : 30));
+    if (!kBypassAuth) {
+      await ref.read(astrologerServiceProvider).updateAccount(current.id, {
+        'subscriptionPlan': type,
+        'subscriptionType': type,
+        'subscriptionExpiry': Timestamp.fromDate(end),
+        'subscriptionActive': true,
+        'subscriptionStatus': 'active',
+        'activatedAt': Timestamp.fromDate(now),
+        'expiresAt': Timestamp.fromDate(end),
+      });
+    }
+    state = current.copyWith(subscriptionPlan: type, subscriptionExpiry: end);
   }
 
   void signOut() => state = null;

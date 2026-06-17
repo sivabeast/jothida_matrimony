@@ -1,42 +1,113 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../models/announcement_model.dart';
 import '../../../models/notification_model.dart';
+import '../../../providers/announcement_provider.dart';
 import '../../../providers/notification_provider.dart';
 import 'astrologer_common.dart';
 
-/// The astrologer's notifications — certificate approvals/rejections,
-/// subscription expiry/renewal, admin announcements and platform updates.
-/// Reads the astrologer's own notification stream (their uid).
-class AstrologerNotificationsTab extends ConsumerWidget {
+/// The astrologer's notifications — admin announcements plus their own
+/// certificate approvals/rejections, subscription and platform updates.
+class AstrologerNotificationsTab extends ConsumerStatefulWidget {
   const AstrologerNotificationsTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(notificationsProvider);
+  ConsumerState<AstrologerNotificationsTab> createState() =>
+      _AstrologerNotificationsTabState();
+}
 
-    return async.when(
-      loading: () => const AstrologerLoading(),
-      error: (_, __) => AstrologerErrorState(
-        onRetry: () => ref.invalidate(notificationsProvider),
+class _AstrologerNotificationsTabState
+    extends ConsumerState<AstrologerNotificationsTab> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(announcementsLastSeenProvider.notifier).markSeen();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final async = ref.watch(notificationsProvider);
+    final announcements = ref.watch(announcementsProvider).valueOrNull ??
+        const <AnnouncementModel>[];
+    final notifs = async.valueOrNull ?? const <NotificationModel>[];
+
+    if (async.isLoading && announcements.isEmpty && notifs.isEmpty) {
+      return const AstrologerLoading();
+    }
+    if (announcements.isEmpty && notifs.isEmpty) {
+      return const AstrologerEmptyState(
+        icon: Icons.notifications_none,
+        message: 'No notifications yet',
+        hint: 'Announcements, certificate and subscription updates appear here.',
+      );
+    }
+
+    // Merge admin announcements + the astrologer's own notifications.
+    final rows = <_Row>[
+      ...announcements.map((a) => _Row(a.createdAt, _AnnouncementCard(a))),
+      ...notifs.map(
+          (n) => _Row(n.createdAt, _NotificationCard(notification: n))),
+    ]..sort((a, b) => b.date.compareTo(a.date));
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: rows.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (_, i) => rows[i].child,
+    );
+  }
+}
+
+class _Row {
+  final DateTime date;
+  final Widget child;
+  const _Row(this.date, this.child);
+}
+
+/// Admin announcement card (read-only).
+class _AnnouncementCard extends StatelessWidget {
+  final AnnouncementModel announcement;
+  const _AnnouncementCard(this.announcement);
+
+  @override
+  Widget build(BuildContext context) {
+    return AstrologerCard(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              color: AppColors.gold.withOpacity(0.14),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.campaign, size: 20, color: AppColors.gold),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(announcement.title,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 14)),
+                if (announcement.message.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(announcement.message,
+                      style:
+                          TextStyle(fontSize: 13, color: Colors.grey[700])),
+                ],
+                const SizedBox(height: 5),
+                Text(astrologerRelativeTime(announcement.createdAt),
+                    style: TextStyle(fontSize: 11.5, color: Colors.grey[500])),
+              ],
+            ),
+          ),
+        ],
       ),
-      data: (items) {
-        if (items.isEmpty) {
-          return const AstrologerEmptyState(
-            icon: Icons.notifications_none,
-            message: 'No notifications yet',
-            hint: 'Certificate, subscription and platform updates appear here.',
-          );
-        }
-        final sorted = [...items]
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: sorted.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
-          itemBuilder: (_, i) => _NotificationCard(notification: sorted[i]),
-        );
-      },
     );
   }
 }

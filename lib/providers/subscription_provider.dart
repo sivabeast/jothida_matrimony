@@ -60,6 +60,47 @@ class SubscriptionNotifier extends Notifier<AsyncValue<SubscriptionModel?>> {
     );
   }
 
+  /// TEST MODE activation — no payment. Creates the subscription record and
+  /// updates the user's premium status/expiry exactly as a real purchase would.
+  /// [type] is 'monthly' (30 days) or 'yearly' (365 days).
+  Future<void> activatePlan({
+    required String plan,
+    required String userId,
+    String type = 'monthly',
+  }) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final now = DateTime.now();
+      final end = now.add(Duration(days: type == 'yearly' ? 365 : 30));
+      final sub = SubscriptionModel(
+        id: '${userId}_${now.millisecondsSinceEpoch}',
+        userId: userId,
+        plan: plan,
+        amountPaid: 0, // bypassed in test mode
+        razorpayPaymentId: 'test_mode',
+        razorpayOrderId: 'test_mode',
+        startDate: now,
+        endDate: end,
+        isActive: true,
+        createdAt: now,
+      );
+      final repo = ref.read(subscriptionRepositoryProvider);
+      await repo.saveSubscription(sub);
+      // Reflect premium status on the user document so access checks pass now.
+      await ref.read(firestoreServiceProvider).updateUserSubscription(
+            userId,
+            plan: plan,
+            type: type,
+            activatedAt: now,
+            expiresAt: end,
+          );
+      // Refresh anything that reads subscription / premium state.
+      ref.invalidate(activeSubscriptionProvider);
+      ref.invalidate(currentUserProvider);
+      return sub;
+    });
+  }
+
   int _planPrice(String plan) {
     switch (plan) {
       case AppConstants.planBasic:

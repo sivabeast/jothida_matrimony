@@ -33,6 +33,7 @@ import '../screens/admin/admin_reports_screen.dart';
 import '../screens/admin/admin_management_screens.dart';
 import '../screens/admin/admin_reports_page.dart';
 import '../screens/admin/account_admin_screens.dart';
+import '../screens/admin/announcement_management_screen.dart';
 import '../screens/horoscope/horoscope_details_screen.dart';
 import '../screens/horoscope/member_horoscope_screen.dart';
 import '../screens/horoscope/horoscope_match_screen.dart';
@@ -319,6 +320,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/admin/astrologers', builder: (_, __) => const AstrologerManagementScreen()),
           GoRoute(path: '/admin/ratings', builder: (_, __) => const RatingManagementScreen()),
           GoRoute(path: '/admin/banners', builder: (_, __) => const BannerManagementScreen()),
+          GoRoute(path: '/admin/notifications', builder: (_, __) => const AnnouncementManagementScreen()),
           GoRoute(path: '/admin/premium', builder: (_, __) => const PremiumManagementScreen()),
           GoRoute(path: '/admin/analytics', builder: (_, __) => const AdminReportsPage()),
           GoRoute(path: '/admin/settings', builder: (_, __) => const AdminSettingsScreen()),
