@@ -714,21 +714,41 @@ class FirestoreService {
   }
 
   /// Permanently deletes ALL Firestore data owned by an astrologer: their
-  /// `astrologers/{uid}` account (services / certificates / ratings / reviews
-  /// are embedded in that document, so they go with it), every
+  /// `astrologers/{uid}` account (services / certificates are embedded in that
+  /// document), the `astrologers/{uid}/reviews` subcollection (Firestore does
+  /// NOT cascade-delete subcollections, so it must be cleared explicitly), every
   /// `astrologer_requests` addressed to them, any stale deletion request, and
   /// the `users/{uid}` role document.
   Future<void> deleteAstrologerAccountData(String uid) async {
     debugPrint('[Firestore] 🗑 deleteAstrologerAccountData($uid)');
     await _deleteWhere(
         AppConstants.astrologerRequestsCollection, 'astrologerId', uid);
-    // Review / rating references about this astrologer.
-    await _deleteWhere(
-        AppConstants.astrologerReviewsCollection, 'astrologerId', uid);
+    // Reviews about this astrologer live in astrologers/{uid}/reviews.
+    await _deleteSubcollection(
+        AppConstants.astrologersCollection, uid,
+        AppConstants.astrologerReviewsSubcollection);
     await _deleteWhere(
         AppConstants.accountDeletionRequestsCollection, 'userId', uid);
     await _deleteDocSafe(AppConstants.astrologersCollection, uid);
     await _deleteDocSafe(AppConstants.usersCollection, uid);
+  }
+
+  /// Deletes every document in the `{parentCollection}/{parentId}/{sub}`
+  /// subcollection. Guarded so a failure (e.g. rules) can't abort the wider
+  /// account-deletion sequence.
+  Future<void> _deleteSubcollection(
+      String parentCollection, String parentId, String sub) async {
+    try {
+      final snap = await _db
+          .collection(parentCollection)
+          .doc(parentId)
+          .collection(sub)
+          .get();
+      await _deleteDocs(snap.docs);
+    } catch (e) {
+      debugPrint('[Firestore] deleteSubcollection('
+          '$parentCollection/$parentId/$sub) skipped: $e');
+    }
   }
 
   /// Deletes every document in [collection] where [field] == [value].

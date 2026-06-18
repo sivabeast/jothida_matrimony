@@ -58,3 +58,37 @@ ProfileCompletion computeProfileCompletion(ProfileModel? profile) {
 
   return ProfileCompletion(percent: percent, missingFields: missing);
 }
+
+/// Whether a profile has enough CORE data to count as "completed" for gating
+/// actions such as rating astrologers.
+///
+/// This is deliberately computed from the ACTUAL Firestore profile fields (not
+/// the `users/{uid}.isProfileComplete` flag, which can lag behind real data and
+/// wrongly lock a finished profile out). It also avoids penalising fields that
+/// never live on the public profile document — contact details are stored in
+/// the gated `contacts/{uid}` collection, and partner preferences / "about me"
+/// are optional — so a user who finished Personal + Horoscope + Family + Photos
+/// is correctly treated as complete.
+///
+/// Rule: the profile must exist, have a name, and have at least 3 of the four
+/// core sections (photo, personal, horoscope, family) filled in.
+bool isProfileCompleteEnough(ProfileModel? p) {
+  if (p == null) return false;
+  final hasIdentity = p.fullName.trim().isNotEmpty;
+  if (!hasIdentity) return false;
+
+  final hasPhoto =
+      (p.profilePhotoUrl ?? '').trim().isNotEmpty || p.additionalPhotos.isNotEmpty;
+  final hasPersonal = p.education.trim().isNotEmpty ||
+      p.occupation.trim().isNotEmpty ||
+      p.height.trim().isNotEmpty;
+  final hasHoroscope = p.horoscope.rasi.trim().isNotEmpty ||
+      p.horoscope.nakshatra.trim().isNotEmpty ||
+      p.horoscope.birthTime.trim().isNotEmpty;
+  final hasFamily = p.family.fatherName.trim().isNotEmpty ||
+      p.family.motherName.trim().isNotEmpty;
+
+  final coreSections =
+      [hasPhoto, hasPersonal, hasHoroscope, hasFamily].where((b) => b).length;
+  return coreSections >= 3;
+}

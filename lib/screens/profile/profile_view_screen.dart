@@ -192,6 +192,25 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          // Family Tree of the matched member — available ONLY once the interest
+          // is accepted (this branch). Random users never see this button.
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () =>
+                  context.push('/family-tree-user/${profile.userId}'),
+              icon: const Icon(Icons.account_tree_outlined),
+              label: const Text('🌳 Family Details'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                minimumSize: const Size.fromHeight(52),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
         ],
       );
     }

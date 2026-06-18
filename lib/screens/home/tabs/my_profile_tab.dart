@@ -9,7 +9,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/demo_data_provider.dart';
-import '../../../providers/interest_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/service_providers.dart';
 import '../../../providers/subscription_provider.dart';
@@ -19,33 +18,8 @@ class MyProfileTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userAsync = ref.watch(authNotifierProvider);
     final profileAsync = ref.watch(myProfileProvider);
     final subAsync = ref.watch(activeSubscriptionProvider);
-
-    // Real interest/match counts from Firestore — never hardcoded. Both
-    // providers yield an empty list when signed-out or when there's no data,
-    // and we fall back to 0 on loading/error too, so the stats only ever show
-    // genuine counts (or 0).
-    final receivedAsync = ref.watch(receivedInterestsProvider);
-    final sentAsync = ref.watch(sentInterestsProvider);
-
-    // "Interests" = people who expressed interest in this user (received).
-    final interestsCount = receivedAsync.maybeWhen(
-      data: (list) => list.length,
-      orElse: () => 0,
-    );
-    // "Matches" = mutually-accepted connections: accepted interests this user
-    // received plus those they sent (the two sets are disjoint, so summing is
-    // correct).
-    final matchesCount = receivedAsync.maybeWhen(
-          data: (list) => list.where((i) => i.isAccepted).length,
-          orElse: () => 0,
-        ) +
-        sentAsync.maybeWhen(
-          data: (list) => list.where((i) => i.isAccepted).length,
-          orElse: () => 0,
-        );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -72,10 +46,8 @@ class MyProfileTab extends ConsumerWidget {
                         '${profile.age} yrs • ${profile.city}',
                         style: TextStyle(color: Colors.grey[600]),
                       ),
-                      const SizedBox(height: 8),
-                      _buildStatusChip(profile.status),
                       if (profile.isMarried) ...[
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 4),
@@ -92,34 +64,10 @@ class MyProfileTab extends ConsumerWidget {
                         ),
                       ],
                     ],
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildStat('Views', profile?.viewCount.toString() ?? '0'),
-                        _buildStat('Interests', interestsCount.toString()),
-                        _buildStat('Matches', matchesCount.toString()),
-                      ],
-                    ),
-                    if (profile != null) ...[
-                      const SizedBox(height: 16),
-                      OutlinedButton.icon(
-                        onPressed: () => context.push('/personal-details'),
-                        icon: const Icon(Icons.edit_outlined, size: 18),
-                        label: const Text('Edit Profile'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          side: const BorderSide(color: AppColors.primary),
-                          minimumSize: const Size.fromHeight(44),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ],
-                    // Profile editing now lives on the Personal Details page
-                    // (Edit icon, top-right) — the single, primary place to
-                    // manage the profile. Only the "Create Profile" action
-                    // appears here, and only when no profile exists yet.
+                    // Profile editing lives on the Personal Details page (and the
+                    // menu items below) — the single, primary place to manage the
+                    // profile. Only the "Create Profile" action appears here, and
+                    // only when no profile exists yet.
                     if (profile == null) ...[
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
@@ -153,6 +101,7 @@ class MyProfileTab extends ConsumerWidget {
           // Menu items
           _buildMenuItem(context, Icons.person_outline, 'Personal Details', '/personal-details'),
           _buildMenuItem(context, Icons.auto_awesome_outlined, 'Horoscope Details', '/horoscope'),
+          _buildMenuItem(context, Icons.family_restroom_outlined, 'Family Details', '/family-tree'),
           _buildMenuItem(context, Icons.tune, 'Partner Preferences', '/partner-preferences'),
           // "Porutham Analysis" self-serve removed — astrologer consultation
           // (Match → Compatibility → Connect Astrologer) is the only analysis flow.
@@ -204,47 +153,6 @@ class MyProfileTab extends ConsumerWidget {
       ),
     );
   }
-
-  Widget _buildStatusChip(String status) {
-    // No admin-approval step for normal users: once the profile is complete the
-    // account is ACTIVE. Legacy documents saved as 'pending' (before approval
-    // was removed) therefore also render as ACTIVE — no Firestore migration
-    // needed. Only explicit moderation states stay visually distinct.
-    final String label;
-    final Color color;
-    switch (status) {
-      case 'rejected':
-        label = 'REJECTED';
-        color = Colors.red;
-        break;
-      case 'blocked':
-        label = 'BLOCKED';
-        color = Colors.red;
-        break;
-      default:
-        label = 'ACTIVE';
-        color = Colors.green;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-
-  Widget _buildStat(String label, String value) => Column(
-        children: [
-          Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-        ],
-      );
 
   Widget _buildUpgradeCard(BuildContext context) => Card(
         color: AppColors.primary,

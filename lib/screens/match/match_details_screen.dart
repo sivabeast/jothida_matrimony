@@ -84,6 +84,26 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen> {
                       contact: other.contact,
                     ),
                     const SizedBox(height: 16),
+                    // Family Tree of the matched member — this whole view is
+                    // already gated behind `isMatched`, so it's only reachable
+                    // for an accepted match.
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () =>
+                            context.push('/family-tree-user/${other.userId}'),
+                        icon: const Icon(Icons.account_tree_outlined),
+                        label: const Text('🌳 Family Details'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          minimumSize: const Size.fromHeight(50),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     _connectAstrologerCard(),
                     const SizedBox(height: 24),
                   ],

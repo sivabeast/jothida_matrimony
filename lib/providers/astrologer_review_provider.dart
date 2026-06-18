@@ -8,9 +8,6 @@ import 'demo_data_provider.dart';
 import 'profile_provider.dart';
 import 'service_providers.dart';
 
-/// Minimum profile completeness (%) accepted when the `users` doc flag is stale.
-const int _kRateCompletionThreshold = 60;
-
 /// Whether the signed-in account is allowed to rate astrologers.
 ///
 /// Any registered USER with a completed profile may rate — NO subscription is
@@ -19,22 +16,28 @@ const int _kRateCompletionThreshold = 60;
 ///     can't rate, per the business rules / security rules).
 ///  2. The user is logged in and their matrimony **profile is completed**.
 ///
-/// "Completed" is satisfied by EITHER the `users/{uid}.isProfileComplete` flag
-/// OR the actual computed completeness of the matrimony profile (≥ threshold).
-/// The flag can lag behind real data (e.g. profiles finished before it was
-/// written), so the computed fallback prevents a falsely-locked rating UI.
+/// Completeness is decided from the ACTUAL Firestore profile data first
+/// ([isProfileCompleteEnough]) and only falls back to the
+/// `users/{uid}.isProfileComplete` flag. The flag is frequently stale (e.g. a
+/// profile finished through the registration steps before the flag was written,
+/// or contact details that live in the gated `contacts/{uid}` collection drag a
+/// naive percentage below threshold), which previously left finished profiles
+/// wrongly showing "Complete your profile to rate astrologers." Trusting the
+/// real profile fields fixes that.
 final canRateAstrologerProvider = Provider.autoDispose<bool>((ref) {
   if (kBypassAuth) return true;
 
   final user = ref.watch(currentUserProvider).valueOrNull;
   if (user == null) return false;
   if (user.role != 'user') return false; // astrologers / admins cannot rate
-  if (user.isProfileComplete) return true;
 
-  // Fallback: trust the actual profile data when the flag hasn't caught up.
+  // Primary source of truth: the actual matrimony profile document.
   final profile = ref.watch(myProfileProvider).valueOrNull;
-  if (profile == null) return false;
-  return computeProfileCompletion(profile).percent >= _kRateCompletionThreshold;
+  if (isProfileCompleteEnough(profile)) return true;
+
+  // Fallback: honour the persisted completion flag (covers the brief window
+  // before the profile stream resolves, and any edge profile shapes).
+  return user.isProfileComplete;
 });
 
 /// Live reviews for an astrologer (newest first).
@@ -111,6 +114,16 @@ class AstrologerReviewController extends Notifier<AsyncValue<void>> {
       ref.invalidate(astrologerReviewsProvider(astrologerId));
       ref.invalidate(astrologersProvider);
     });
+
+    // CRITICAL: AsyncValue.guard swallows the exception into `state`. Without
+    // re-throwing, the caller's `await submit()` always completes "normally"
+    // and the UI shows a success toast even when the Firestore write was
+    // denied — exactly the "Rating submitted successfully but nothing saved"
+    // bug. Re-throw so the rating sheet shows the real outcome.
+    final result = state;
+    if (result is AsyncError) {
+      Error.throwWithStackTrace(result.error, result.stackTrace);
+    }
   }
 }
 

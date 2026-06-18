@@ -260,26 +260,27 @@ service cloud.firestore {
       // Self-service account deletion: an astrologer may delete their OWN
       // account document immediately. Admins may delete any.
       allow delete: if isOwner(astrologerId) || isAdmin();
-    }
 
-    // ── Astrologer reviews (premium-user ratings) ─────────────────────────
-    // One review per user per astrologer (doc id = "{astrologerId}_{userId}").
-    // Anyone signed in may READ reviews. Only a normal USER may write, and only
-    // their OWN review — astrologers and admins can never rate. (The premium /
-    // profile-completed gate is enforced in the app; ownership + role are
-    // enforced here.) The matching doc-id check stops a user writing a review
-    // attributed to someone else.
-    match /astrologer_reviews/{reviewId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated()
-                    && getUserData().role == 'user'
-                    && request.resource.data.userId == request.auth.uid
-                    && request.resource.data.rating is int
-                    && request.resource.data.rating >= 1
-                    && request.resource.data.rating <= 5
-                    && reviewId == request.resource.data.astrologerId + '_' + request.auth.uid;
-      allow delete: if isAdmin()
-                    || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      // ── Astrologer reviews (subcollection) ──────────────────────────────
+      // astrologers/{astrologerId}/reviews/{userId}. The document id is the
+      // rater's uid → exactly one review per user per astrologer, and ownership
+      // is enforced straight from the path. Anyone signed in may READ. Only a
+      // normal USER may create/edit their OWN review (uid must match the doc id
+      // and the userId field); astrologers and admins can never rate. The
+      // profile-completed gate is enforced in the app; ownership + role + a
+      // valid 1–5 rating are enforced here.
+      match /reviews/{userId} {
+        allow read: if isAuthenticated();
+        allow create, update: if isAuthenticated()
+                      && request.auth.uid == userId
+                      && getUserData().role == 'user'
+                      && request.resource.data.userId == request.auth.uid
+                      && request.resource.data.rating is int
+                      && request.resource.data.rating >= 1
+                      && request.resource.data.rating <= 5;
+        allow delete: if isAdmin()
+                      || (isAuthenticated() && request.auth.uid == userId);
+      }
     }
 
     // ── Astrologer requests (consultation / inquiry / matching) ──────────

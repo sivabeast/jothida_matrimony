@@ -16,7 +16,9 @@ class AppConstants {
   static const String adminCollection = 'admin';
   static const String astrologersCollection = 'astrologers';
   static const String astrologerRequestsCollection = 'astrologer_requests';
-  static const String astrologerReviewsCollection = 'astrologer_reviews';
+  // Reviews live in a subcollection of each astrologer document:
+  //   astrologers/{astrologerId}/reviews/{userId}
+  static const String astrologerReviewsSubcollection = 'reviews';
   static const String bookingsCollection = 'bookings';
   static const String chatsCollection = 'chats';
   static const String messagesSubcollection = 'messages';

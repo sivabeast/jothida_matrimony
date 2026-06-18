@@ -39,6 +39,7 @@ import '../screens/horoscope/member_horoscope_screen.dart';
 import '../screens/horoscope/horoscope_match_screen.dart';
 import '../screens/profile/personal_details_screen.dart';
 import '../screens/profile/complete_profile_screen.dart';
+import '../screens/family/family_tree_screen.dart';
 import '../screens/preferences/partner_preferences_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/support/help_support_screen.dart';
@@ -304,6 +305,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/horoscope-match/:uid',
         builder: (_, state) =>
             HoroscopeMatchScreen(userId: state.pathParameters['uid']!),
+      ),
+      // Family Tree — own (/family-tree) and an accepted match's
+      // (/family-tree-user/:uid). The matched-user entry button is only shown on
+      // a profile whose interest has been accepted.
+      GoRoute(
+          path: '/family-tree',
+          builder: (_, __) => const FamilyTreeScreen()),
+      GoRoute(
+        path: '/family-tree-user/:uid',
+        builder: (_, state) =>
+            FamilyTreeScreen(userId: state.pathParameters['uid']!),
       ),
       GoRoute(path: '/partner-preferences', builder: (_, __) => const PartnerPreferencesScreen()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),

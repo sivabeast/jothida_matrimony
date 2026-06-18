@@ -1,16 +1,16 @@
-# Graph Report - jothida_matrimony  (2026-06-17)
+# Graph Report - jothida_matrimony  (2026-06-18)
 
 ## Corpus Check
-- 215 files · ~585,419 words
+- 219 files · ~589,806 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3971 nodes · 5843 edges · 254 communities (244 shown, 10 thin omitted)
+- 4226 nodes · 6135 edges · 260 communities (249 shown, 11 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c77f41c2`
+- Built from commit: `08715c15`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -223,6 +223,7 @@
 - [[_COMMUNITY_Community 218|Community 218]]
 - [[_COMMUNITY_Community 219|Community 219]]
 - [[_COMMUNITY_Community 220|Community 220]]
+- [[_COMMUNITY_Community 221|Community 221]]
 - [[_COMMUNITY_Community 228|Community 228]]
 - [[_COMMUNITY_Community 229|Community 229]]
 - [[_COMMUNITY_Community 230|Community 230]]
@@ -247,12 +248,17 @@
 - [[_COMMUNITY_Community 249|Community 249]]
 - [[_COMMUNITY_Community 250|Community 250]]
 - [[_COMMUNITY_Community 251|Community 251]]
+- [[_COMMUNITY_Community 252|Community 252]]
 - [[_COMMUNITY_Community 253|Community 253]]
+- [[_COMMUNITY_Community 254|Community 254]]
+- [[_COMMUNITY_Community 255|Community 255]]
 - [[_COMMUNITY_Community 256|Community 256]]
+- [[_COMMUNITY_Community 257|Community 257]]
+- [[_COMMUNITY_Community 258|Community 258]]
 - [[_COMMUNITY_Community 260|Community 260]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `myProfileProvider` - 41 edges
+1. `myProfileProvider` - 43 edges
 2. `myAstrologerAccountProvider` - 32 edges
 3. `dateTime` - 29 edges
 4. `authNotifierProvider` - 27 edges
@@ -266,19 +272,19 @@
 ## Surprising Connections (you probably didn't know these)
 - `_reject` --references--> `adminActionsProvider`  [EXTRACTED]
   lib/screens/admin/admin_approvals_screen.dart → lib/providers/admin_provider.dart
+- `initState` --references--> `myAstrologerAccountProvider`  [EXTRACTED]
+  lib/screens/astrologer/astrologer_edit_profile_screen.dart → lib/providers/astrologer_session_provider.dart
+- `_save` --references--> `myAstrologerAccountProvider`  [EXTRACTED]
+  lib/screens/astrologer/astrologer_edit_profile_screen.dart → lib/providers/astrologer_session_provider.dart
 - `_remove` --references--> `myAstrologerAccountProvider`  [EXTRACTED]
   lib/screens/astrologer/profile/astrologer_certificates_screen.dart → lib/providers/astrologer_session_provider.dart
 - `build` --references--> `myAstrologerAccountProvider`  [EXTRACTED]
   lib/screens/astrologer/tabs/astrologer_profile_tab.dart → lib/providers/astrologer_session_provider.dart
-- `build` --references--> `myAstrologerAccountProvider`  [EXTRACTED]
-  lib/screens/astrologer/tabs/astrologer_reviews_tab.dart → lib/providers/astrologer_session_provider.dart
-- `build` --references--> `authNotifierProvider`  [EXTRACTED]
-  lib/screens/auth/otp_screen.dart → lib/providers/auth_provider.dart
 
 ## Import Cycles
 - None detected.
 
-## Communities (254 total, 10 thin omitted)
+## Communities (260 total, 11 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.02
@@ -289,8 +295,8 @@ Cohesion: 0.02
 Nodes (84): accountDeletionRequestsCollection, adminCollection, announcementsCollection, AppConstants, appName, appTagline, appVersion, astrologerRequestsCollection (+76 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.11
-Nodes (20): AstrologerProfileScreen, build, _ratingsAndReviews, astrologer_provider.dart, demo_data_provider.dart, ../../models/astrologer_review_model.dart, profile_provider.dart, astrologerByIdProvider (+12 more)
+Cohesion: 0.17
+Nodes (12): astrologer_provider.dart, ../../core/utils/profile_completion.dart, ../../models/astrologer_review_model.dart, AstrologerReviewController, build, demoAstrologerReviewsProvider, profile, submit (+4 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.06
@@ -305,16 +311,16 @@ Cohesion: 0.06
 Nodes (31): app_colors.dart, app_text_styles.dart, static const TextStyle, static ThemeData get, appName, AppTextStyles, badge, bodyLarge (+23 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.06
-Nodes (37): build, MarriedUsersScreen, _ActionTile, _ActivityRow, AdminDashboard, build, _card, count (+29 more)
+Cohesion: 0.07
+Nodes (27): icon, _InfoChip, label, profile, _reject, _ActionTile, _ActivityRow, _card (+19 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.03
-Nodes (65): ../../core/config/admin_config.dart, acceptInterestAndConnect, approveDeletionRequest, approveProfile, blockUser, createAnnouncement, createConnection, createOrUpdateUserOnLogin (+57 more)
+Nodes (66): ../../core/config/admin_config.dart, acceptInterestAndConnect, approveDeletionRequest, approveProfile, blockUser, createAnnouncement, createConnection, createOrUpdateUserOnLogin (+58 more)
 
 ### Community 8 - "Community 8"
 Cohesion: 0.06
-Nodes (35): notifications_tab.dart, RangeValues, Route /subscription, SystemUiOverlayStyle, assetPath, _bannerCtrl, _BannerData, _bannerPage (+27 more)
+Nodes (33): notifications_tab.dart, RangeValues, SystemUiOverlayStyle, assetPath, _bannerCtrl, _BannerData, _bannerPage, _banners (+25 more)
 
 ### Community 9 - "Community 9"
 Cohesion: 0.04
@@ -322,7 +328,7 @@ Nodes (50): astrologer_model.dart, about, availability, certFileName, certificat
 
 ### Community 10 - "Community 10"
 Cohesion: 0.04
-Nodes (45): ChangeNotifier, GoRouter, authRepo, dispose, GoRouterRefreshStream, refreshStream, _subscription, ../screens/admin/account_admin_screens.dart (+37 more)
+Nodes (46): ChangeNotifier, GoRouter, authRepo, dispose, GoRouterRefreshStream, refreshStream, _subscription, ../screens/admin/account_admin_screens.dart (+38 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.06
@@ -338,7 +344,7 @@ Nodes (21): astrology_engine.dart, horoscope_geocoding_service.dart, master_astr
 
 ### Community 14 - "Community 14"
 Cohesion: 0.13
-Nodes (20): authAsync, build, codeSent, copyWith, error, isLoading, OtpNotifier, OtpState (+12 more)
+Nodes (21): _loadSettings, authAsync, build, codeSent, copyWith, error, isLoading, OtpNotifier (+13 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.04
@@ -346,11 +352,11 @@ Nodes (51): static final List, _acceptInterest, _actionBar, _ages, _apply, _care
 
 ### Community 16 - "Community 16"
 Cohesion: 0.06
-Nodes (33): _aboutController, _annualIncome, build, _caste, _casteId, _city, _cityId, _country (+25 more)
+Nodes (35): _aboutController, _annualIncome, build, _caste, _casteId, _city, _cityId, _country (+27 more)
 
 ### Community 17 - "Community 17"
 Cohesion: 0.06
-Nodes (32): _aboutController, _buildAccount, _chipGroup, _city, _country, createState, dispose, _dob (+24 more)
+Nodes (37): _aboutController, _buildAccount, _chipGroup, _city, _country, createState, dispose, _dob (+29 more)
 
 ### Community 18 - "Community 18"
 Cohesion: 0.04
@@ -361,8 +367,8 @@ Cohesion: 0.09
 Nodes (21): _client, cloudName, deleteFile, deleteProfilePhotos, _endpoint, maxRetries, _send, updateProfilePhoto (+13 more)
 
 ### Community 20 - "Community 20"
-Cohesion: 0.15
-Nodes (22): build, build, _signInWithEmail, _signInWithGoogle, _verify, _register, _navigate, AstrologerAccountSettingsScreen (+14 more)
+Cohesion: 0.11
+Nodes (27): build, AstrologerDashboardScreen, build, build, build, build, _signInWithEmail, _signInWithGoogle (+19 more)
 
 ### Community 21 - "Community 21"
 Cohesion: 0.15
@@ -370,15 +376,15 @@ Nodes (12): ../../core/constants/razorpay_constants.dart, package:razorpay_flutt
 
 ### Community 22 - "Community 22"
 Cohesion: 0.10
-Nodes (22): ../../core/data/sample_astrologer_dashboard.dart, AstrologerAccount, approveAstrologer, suspendAstrologer, account, activateSubscription, addCertificate, astrologerEarningsProvider (+14 more)
+Nodes (22): AstrologerAccount, ../../../models/astrologer_certificate.dart, approveAstrologer, suspendAstrologer, account, activateSubscription, addCertificate, astrologerEarningsProvider (+14 more)
 
 ### Community 23 - "Community 23"
-Cohesion: 0.13
-Nodes (17): build, _buildSuccess, createState, dispose, _emailController, ForgotPasswordScreen, _ForgotPasswordScreenState, _formKey (+9 more)
+Cohesion: 0.16
+Nodes (13): build, _buildSuccess, createState, dispose, _emailController, ForgotPasswordScreen, _ForgotPasswordScreenState, _formKey (+5 more)
 
 ### Community 24 - "Community 24"
-Cohesion: 0.10
-Nodes (20): _sendInterest, _acceptInterest, _buildInfoSection, _buildProfileView, createState, icon, _InfoItem, label (+12 more)
+Cohesion: 0.07
+Nodes (33): initState, _sendInterest, _submitProfile, _acceptInterest, _buildInfoSection, _buildProfileView, createState, icon (+25 more)
 
 ### Community 25 - "Community 25"
 Cohesion: 0.11
@@ -386,7 +392,7 @@ Nodes (18): _auth, authStateChanges, createUserDocumentAfterAuth, currentUser, c
 
 ### Community 26 - "Community 26"
 Cohesion: 0.04
-Nodes (46): _birthTime, _birthTimeController, _calc, _calculating, createState, _customDebounce, _customPlaceController, dispose (+38 more)
+Nodes (49): ../../../core/services/horoscope_calculation_service.dart, _birthTime, _birthTimeController, _calc, _calculating, createState, _customDebounce, _customPlaceController (+41 more)
 
 ### Community 27 - "Community 27"
 Cohesion: 0.03
@@ -402,7 +408,7 @@ Nodes (23): PageController, _confirmLogout, createState, _currentStep, dispose, 
 
 ### Community 30 - "Community 30"
 Cohesion: 0.11
-Nodes (18): build, _confirmPasswordController, createState, dispose, _dob, _dobController, _emailController, _formKey (+10 more)
+Nodes (19): _confirmPasswordController, createState, dispose, _dob, _dobController, _emailController, _formKey, _gender (+11 more)
 
 ### Community 31 - "Community 31"
 Cohesion: 0.12
@@ -413,12 +419,12 @@ Cohesion: 0.13
 Nodes (14): ../../models/admin_activity.dart, AdminRepository, approveProfile, blockUser, deleteUser, _firestore, getAdminStats, getAllReports (+6 more)
 
 ### Community 33 - "Community 33"
-Cohesion: 0.15
-Nodes (18): ../core/data/sample_profiles.dart, HoroscopeDetailsScreen, _HoroscopeDetailsScreenState, _save, _saveSection, build, byId, demoProfilesProvider (+10 more)
+Cohesion: 0.03
+Nodes (75): app_localizations_en.dart, app_localizations_ta.dart, accept, accepted, alerts, appTitle, astrologerPortal, astrologers (+67 more)
 
 ### Community 34 - "Community 34"
 Cohesion: 0.10
-Nodes (20): activeIcon, _BottomNav, createState, _handleBackPress, HomeScreen, _HomeScreenState, icon, _items (+12 more)
+Nodes (19): activeIcon, _BottomNav, createState, _handleBackPress, HomeScreen, icon, _items, label (+11 more)
 
 ### Community 35 - "Community 35"
 Cohesion: 0.12
@@ -438,11 +444,11 @@ Nodes (21): amount, astrologerId, AstrologerRequestStatus, AstrologerRequestStat
 
 ### Community 39 - "Community 39"
 Cohesion: 0.09
-Nodes (21): AuthService, FirestoreService, ../../models/subscription_model.dart, chatServiceProvider, fcmServiceProvider, ../repositories/admin_repository.dart, AuthRepository, ../repositories/auth_repository.dart (+13 more)
+Nodes (21): AstrologerService, FirestoreService, ../../models/subscription_model.dart, chatServiceProvider, fcmServiceProvider, ../repositories/admin_repository.dart, AuthRepository, ../repositories/auth_repository.dart (+13 more)
 
 ### Community 40 - "Community 40"
-Cohesion: 0.10
-Nodes (27): AstrologerManagementScreen, _AstrologerManagementScreenState, @Deprecated, AstrologerOnboardingScreen, AstrologerRegisterScreen, _AstrologerRegisterScreenState, RegisterScreen, _RegisterScreenState (+19 more)
+Cohesion: 0.12
+Nodes (16): @Deprecated, AstrologerOnboardingScreen, ConsumerStatefulWidget, PartnerPreferencesScreen, _AboutSheet, _AboutSheetState, _BasicInfoSheet, _BasicInfoSheetState (+8 more)
 
 ### Community 41 - "Community 41"
 Cohesion: 0.12
@@ -454,27 +460,27 @@ Nodes (14): @pragma, buildPayload, _db, deleteToken, FcmService, _firebaseMessag
 
 ### Community 43 - "Community 43"
 Cohesion: 0.03
-Nodes (64): FamilyDetails, _about, actionLabel, age, _ageFromDob, _brothers, _caste, _casteId (+56 more)
+Nodes (63): _about, actionLabel, age, _ageFromDob, _brothers, _caste, _casteId, _city (+55 more)
 
 ### Community 44 - "Community 44"
-Cohesion: 0.06
-Nodes (33): astrologer, astrologerId, certificate, _certificates, _CertificateViewer, _chips, _contactDetails, _contactLine (+25 more)
+Cohesion: 0.07
+Nodes (29): astrologer, astrologerId, certificate, _certificates, _CertificateViewer, _chips, _contactDetails, _contactLine (+21 more)
 
 ### Community 45 - "Community 45"
-Cohesion: 0.12
-Nodes (19): announcementsProvider, notificationsProvider, announcement, _AnnouncementCard, AstrologerNotificationsTab, _AstrologerNotificationsTabState, build, child (+11 more)
+Cohesion: 0.15
+Nodes (12): announcement, _AnnouncementCard, child, color, createState, date, icon, notification (+4 more)
 
 ### Community 46 - "Community 46"
 Cohesion: 0.13
 Nodes (18): _Bubble, build, ChatScreen, _ChatScreenState, _controller, createState, dispose, extra (+10 more)
 
 ### Community 47 - "Community 47"
-Cohesion: 0.08
-Nodes (25): approveAstrologer, AstrologerService, _cloudName, createAccount, createRequest, _db, getAccount, getMyReview (+17 more)
+Cohesion: 0.07
+Nodes (26): approveAstrologer, AstrologerService, _cloudName, createAccount, createRequest, _db, getAccount, getMyReview (+18 more)
 
 ### Community 48 - "Community 48"
-Cohesion: 0.15
-Nodes (20): _cityField, _countryField, _districtField, LocationPickerSection, _LocationPickerSectionState, _resolveInitial, _stateField, _useMyLocation (+12 more)
+Cohesion: 0.16
+Nodes (19): _cityField, _countryField, _districtField, LocationPickerSection, _LocationPickerSectionState, _resolveInitial, _stateField, _useMyLocation (+11 more)
 
 ### Community 49 - "Community 49"
 Cohesion: 0.04
@@ -485,8 +491,8 @@ Cohesion: 0.17
 Nodes (11): astrologerId, AstrologerReviewModel, createdAt, docId, fromFirestore, id, rating, review (+3 more)
 
 ### Community 51 - "Community 51"
-Cohesion: 0.12
-Nodes (20): AstrologersTab, build, build, _ConnectAstrologerSheet, ../../core/config/dev_config.dart, ../core/data/sample_astrologers.dart, astrologerFromAccount, astrologersProvider (+12 more)
+Cohesion: 0.14
+Nodes (17): AstrologersTab, build, build, _ConnectAstrologerSheet, ../../core/config/dev_config.dart, ../core/data/sample_astrologers.dart, astrologerFromAccount, list (+9 more)
 
 ### Community 52 - "Community 52"
 Cohesion: 0.12
@@ -497,12 +503,12 @@ Cohesion: 0.04
 Nodes (49): account, _accountLocation, action, actionLabel, _adminScaffold, _avatar, _avatarFallback, _banners (+41 more)
 
 ### Community 54 - "Community 54"
-Cohesion: 0.13
-Nodes (17): build, profileCreationProvider, _saveAndNext, initState, _prefill, _saveAndNext, _saveAndNext, _saveAndNext (+9 more)
+Cohesion: 0.08
+Nodes (30): ../../core/theme/app_text_styles.dart, build, profileCreationProvider, static const, _saveAndNext, initState, _prefill, _saveAndNext (+22 more)
 
 ### Community 55 - "Community 55"
 Cohesion: 0.11
-Nodes (17): createProfile, _firestore, getApprovedProfileByUserId, getContact, getProfile, getProfileByUserId, incrementViewCount, ProfileRepository (+9 more)
+Nodes (17): createProfile, _firestore, getApprovedProfileByUserId, getContact, getProfile, getProfileByUserId, incrementViewCount, saveContact (+9 more)
 
 ### Community 56 - "Community 56"
 Cohesion: 0.15
@@ -513,8 +519,8 @@ Cohesion: 0.15
 Nodes (12): ../constants/app_constants.dart, calculateAge, calculateDasaBalance, calculateKaranam, calculateLagnam, calculateNakshatra, calculateRasi, calculateYogam (+4 more)
 
 ### Community 58 - "Community 58"
-Cohesion: 0.14
-Nodes (13): build, createState, dispose, _formKey, isLoading, _mobileController, _nameController, onNext (+5 more)
+Cohesion: 0.13
+Nodes (15): build, createState, dispose, _formKey, isLoading, _mobileController, _nameController, onNext (+7 more)
 
 ### Community 59 - "Community 59"
 Cohesion: 0.15
@@ -525,12 +531,12 @@ Cohesion: 0.15
 Nodes (12): Map, body, createdAt, data, fromFirestore, id, isRead, NotificationModel (+4 more)
 
 ### Community 61 - "Community 61"
-Cohesion: 0.11
-Nodes (17): MaterialPageRoute, _activate, color, _customersRow, icon, label, _planTile, _profileStatusCard (+9 more)
+Cohesion: 0.06
+Nodes (33): astrologer_common.dart, Color, MaterialPageRoute, ../../models/astrologer_account_model.dart, ../profile/astrologer_certificates_screen.dart, ../profile/astrologer_profile_sections.dart, _activate, color (+25 more)
 
 ### Community 62 - "Community 62"
-Cohesion: 0.13
-Nodes (21): AccountDeletionRequestsScreen, _approve, _reject, build, accountControllerProvider, deletionRequestsProvider, discoverProvider, load (+13 more)
+Cohesion: 0.07
+Nodes (51): _approve, _reject, _AstrologerDashboardScreenState, build, ConsumerState, build, FamilyTreeScreen, build (+43 more)
 
 ### Community 63 - "Community 63"
 Cohesion: 0.17
@@ -553,32 +559,32 @@ Cohesion: 0.20
 Nodes (10): amount, AstrologerBooking, BookingStatus, BookingStatusX, id, mode, serviceName, status (+2 more)
 
 ### Community 68 - "Community 68"
-Cohesion: 0.13
-Nodes (20): initState, build, ProfileCompletionCard, initState, build, _save, _save, PersonalDetailsScreen (+12 more)
+Cohesion: 0.17
+Nodes (16): _ApprovalCard, _AstrologerDetailsSheet, _confirmDelete, _PendingCard, _runAction, _VerifiedCard, AdminReportsScreen, build (+8 more)
 
 ### Community 69 - "Community 69"
-Cohesion: 0.08
-Nodes (22): build, EmptyState, ErrorStateView, icon, LoadingState, message, onRetry, build (+14 more)
+Cohesion: 0.13
+Nodes (14): build, _buildPopupProps, enabled, isRequired, items, label, onChanged, popupMode (+6 more)
 
 ### Community 70 - "Community 70"
 Cohesion: 0.15
 Nodes (13): color, Animation, AnimationController, build, _controller, createState, dispose, _fadeAnim (+5 more)
 
 ### Community 71 - "Community 71"
-Cohesion: 0.18
-Nodes (10): bool get, checks, computeProfileCompletion, filled, isComplete, missing, missingFields, percent (+2 more)
+Cohesion: 0.06
+Nodes (29): ../core/data/sample_profiles.dart, _build, featured, now, sampleProfiles, ../../models/profile_model.dart, build, byId (+21 more)
 
 ### Community 72 - "Community 72"
 Cohesion: 0.18
 Nodes (10): build, gradient, GradientButton, height, isLoading, onPressed, text, width (+2 more)
 
 ### Community 73 - "Community 73"
-Cohesion: 0.15
-Nodes (13): Astrologer, astrologer, _AstrologerCard, _intro, _section, astrologer, AstrologerSheetCard, _availabilityDot (+5 more)
+Cohesion: 0.08
+Nodes (30): AdminShell, child, _indexForLocation, _routes, Astrologer, astrologer, _AstrologerCard, _intro (+22 more)
 
 ### Community 74 - "Community 74"
-Cohesion: 0.09
-Nodes (21): AdminShell, child, _indexForLocation, _routes, core/theme/app_theme.dart, firebase_options.dart, android, DefaultFirebaseOptions (+13 more)
+Cohesion: 0.12
+Nodes (18): core/theme/app_theme.dart, firebase_options.dart, android, DefaultFirebaseOptions, build, JothidaMatrimonyApp, _localizationsDelegates, main (+10 more)
 
 ### Community 75 - "Community 75"
 Cohesion: 0.18
@@ -586,35 +592,35 @@ Nodes (10): 1. Create the Firebase project, 2. Generate the config files, 3. Ena
 
 ### Community 76 - "Community 76"
 Cohesion: 0.05
-Nodes (40): _age, _any, _buildPrefs, _card, _caste, _casteId, _chips, _cityCtrl (+32 more)
+Nodes (40): _age, _any, build, _buildPrefs, _card, _caste, _casteId, _chips (+32 more)
 
 ### Community 77 - "Community 77"
-Cohesion: 0.09
-Nodes (22): build, categoryColor, compact, HoroscopeMatchBadge, target, ../../core/services/porutham_match.dart, icon, items (+14 more)
+Cohesion: 0.03
+Nodes (65): app_localizations.dart, accept, accepted, alerts, appTitle, astrologerPortal, astrologers, bookConsultation (+57 more)
 
 ### Community 78 - "Community 78"
-Cohesion: 0.14
-Nodes (17): build, JothidaMatrimonyApp, Locale?, package:shared_preferences/shared_preferences.dart, build, code, initialLocaleProvider, _kLocaleKey (+9 more)
+Cohesion: 0.20
+Nodes (9): Locale?, package:shared_preferences/shared_preferences.dart, build, code, _kLocaleKey, LocaleNotifier, prefs, setLocale (+1 more)
 
 ### Community 79 - "Community 79"
 Cohesion: 0.18
 Nodes (10): ../../models/interest_model.dart, acceptInterest, ensureConnection, _firestore, getInterestBetweenProfiles, InterestRepository, rejectInterest, sendInterest (+2 more)
 
 ### Community 80 - "Community 80"
-Cohesion: 0.18
-Nodes (18): build, _lockedView, MatchDetailsScreen, _MatchDetailsScreenState, build, _interestAction, ProfileViewScreen, _ProfileViewScreenState (+10 more)
+Cohesion: 0.03
+Nodes (64): accept, accepted, alerts, appTitle, astrologerPortal, astrologers, bookConsultation, brides (+56 more)
 
 ### Community 81 - "Community 81"
-Cohesion: 0.09
-Nodes (32): astrologer_session_provider.dart, AsyncValue, List, ../../models/account_deletion_request_model.dart, Notifier, AccountController, add, approveDeletion (+24 more)
+Cohesion: 0.10
+Nodes (34): AsyncValue, HoroscopeDetailsScreen, _HoroscopeDetailsScreenState, _save, List, Notifier, PrivacySettingsScreen, _PrivacyState (+26 more)
 
 ### Community 82 - "Community 82"
-Cohesion: 0.15
-Nodes (13): build, _canResend, createState, initState, _otp, OtpScreen, _OtpScreenState, phone (+5 more)
+Cohesion: 0.06
+Nodes (34): CustomPainter, accent, actionLabel, _AttributeCard, brothers, color, _Empty, family (+26 more)
 
 ### Community 83 - "Community 83"
-Cohesion: 0.17
-Nodes (10): astrologer_common.dart, Color, ../../models/user_model.dart, package:flutter/widgets.dart, ../../../providers/astrologer_session_provider.dart, AstrologerReviewsTab, _breakdownRow, build (+2 more)
+Cohesion: 0.12
+Nodes (18): build, _quickActions, _RecentActivity, AstrologerManagementScreen, _AstrologerManagementScreenState, build, allAstrologersProvider, recentActivityProvider (+10 more)
 
 ### Community 84 - "Community 84"
 Cohesion: 0.06
@@ -626,28 +632,27 @@ Nodes (8): 1. Current State Assessment, 2. Migration Plan (step-by-step), 3. Ope
 
 ### Community 86 - "Community 86"
 Cohesion: 0.05
-Nodes (41): _ActionTile, _AdminHeader, AdminSettingsScreen, _CertificateBlock, _CertificateViewer, _IconAction, _MiniStat, PremiumManagementScreen (+33 more)
+Nodes (42): _ActionTile, _AdminHeader, AdminSettingsScreen, _CertificateBlock, _CertificateViewer, _IconAction, _MiniStat, PremiumManagementScreen (+34 more)
 
 ### Community 87 - "Community 87"
-Cohesion: 0.12
-Nodes (18): ../../providers/interest_provider.dart, storageServiceProvider, _changePhoto, _buildMenuItem, _buildStat, _buildStatusChip, _buildSubCard, _buildUpgradeCard (+10 more)
+Cohesion: 0.10
+Nodes (21): AstrologerRegisterScreen, _AstrologerRegisterScreenState, _submit, ../../providers/interest_provider.dart, storageServiceProvider, Route /astrologer-dashboard, _changePhoto, _buildMenuItem (+13 more)
 
 ### Community 88 - "Community 88"
-Cohesion: 0.13
-Nodes (14): ../astrologer/connect_astrologer_sheet.dart, _card, _categoryCenter, _connectAstrologerCard, createState, _header, _photoFallback, _poruthamCard (+6 more)
+Cohesion: 0.10
+Nodes (24): ../astrologer/connect_astrologer_sheet.dart, build, _card, _categoryCenter, _connectAstrologerCard, createState, _header, _lockedView (+16 more)
 
 ### Community 89 - "Community 89"
 Cohesion: 0.18
 Nodes (10): Compatibility logic (scoring → category), Data layout, Data limitations (please read before relying on this in production), Files, Methodology, Record counts, Rules applied (all nakshatra-derivable), Sources used (+2 more)
 
 ### Community 90 - "Community 90"
-Cohesion: 0.33
-Nodes (5): a, reviews, s, sampleAstrologers, services
+Cohesion: 0.22
+Nodes (7): defaultAstrologerServices, a, reviews, s, sampleAstrologers, services, ../../models/astrologer_model.dart
 
 ### Community 91 - "Community 91"
-Cohesion: 0.29
-Nodes (6): _build, featured, now, sampleProfiles, ../../models/profile_model.dart, required int prefMaxAge,
-  bool
+Cohesion: 0.14
+Nodes (15): astrologer_session_provider.dart, demo_data_provider.dart, ../../models/account_deletion_request_model.dart, add, approveDeletion, build, _clearLocalStorage, deleteAccount (+7 more)
 
 ### Community 92 - "Community 92"
 Cohesion: 0.29
@@ -663,35 +668,35 @@ Nodes (27): ../../../models/interest_request_model.dart, ../../providers/demo_da
 
 ### Community 95 - "Community 95"
 Cohesion: 0.04
-Nodes (49): ../../../core/services/horoscope_calculation_service.dart, ../../../core/services/master_astrology_data.dart, _ageFromDob, _calc, createState, _customPlaceController, dispose, _dob (+41 more)
+Nodes (49): ../../../core/services/master_astrology_data.dart, _ageFromDob, _calc, createState, _customPlaceController, dispose, _dob, _dobController (+41 more)
 
 ### Community 96 - "Community 96"
 Cohesion: 0.07
 Nodes (28): casteId, casteName, _casteOther, _casteOtherCtl, casteRequired, createState, dispose, gap (+20 more)
 
 ### Community 97 - "Community 97"
-Cohesion: 0.07
-Nodes (29): _AccessDenied, _Empty, _fmtDate, icon, _isSuperAdmin, message, onApprove, onReject (+21 more)
+Cohesion: 0.14
+Nodes (13): _AccessDenied, _Empty, _fmtDate, icon, _isSuperAdmin, message, onApprove, onReject (+5 more)
 
 ### Community 98 - "Community 98"
 Cohesion: 0.07
-Nodes (38): initState, _save, build, _about, _AboutState, AstrologerAboutScreen, AstrologerConsultationDetailsScreen, AstrologerPersonalDetailsScreen (+30 more)
+Nodes (36): build, _about, _AboutState, AstrologerAboutScreen, AstrologerConsultationDetailsScreen, AstrologerPersonalDetailsScreen, AstrologerProfessionalDetailsScreen, build (+28 more)
 
 ### Community 104 - "Community 104"
 Cohesion: 0.09
 Nodes (26): _actions, build, _CardMode, createState, _dedupByCounterpart, dispose, _EmptyState, emptyText (+18 more)
 
 ### Community 105 - "Community 105"
-Cohesion: 0.09
-Nodes (22): AdminReportsPage, analytics, build, color, _content, createState, _ExportChip, _grid (+14 more)
+Cohesion: 0.10
+Nodes (19): analytics, color, _content, createState, _ExportChip, _grid, icon, label (+11 more)
 
 ### Community 106 - "Community 106"
 Cohesion: 0.08
 Nodes (24): EdgeInsetsGeometry, ampm, AstrologerCard, astrologerDateOnly, astrologerDateTime, AstrologerEmptyState, AstrologerErrorState, AstrologerLoading (+16 more)
 
 ### Community 110 - "Community 110"
-Cohesion: 0.12
-Nodes (17): build, ChatController, copyWith, DemoChatNotifier, demoChatProvider, DemoChatState, markRead, messages (+9 more)
+Cohesion: 0.11
+Nodes (18): profile_provider.dart, build, ChatController, copyWith, DemoChatNotifier, demoChatProvider, DemoChatState, markRead (+10 more)
 
 ### Community 114 - "Community 114"
 Cohesion: 0.08
@@ -699,23 +704,23 @@ Nodes (24): city, cityId, copyWith, country, display, district, districtId, dist
 
 ### Community 115 - "Community 115"
 Cohesion: 0.13
-Nodes (16): acceptedEither, acceptedInterestForProfileProvider, acceptInterest, any, build, ensureConnection, InterestNotifier, InterestUiStatus (+8 more)
+Nodes (15): acceptedEither, acceptedInterestForProfileProvider, acceptInterest, any, build, ensureConnection, InterestUiStatus, null (+7 more)
 
 ### Community 116 - "Community 116"
-Cohesion: 0.10
-Nodes (21): AstrologerRequestModel, ../../models/astrologer_request_model.dart, AppointmentBucket, AstrologerRequestAppointmentX, astrologerRequestsProvider, _AppointmentCard, AstrologerAppointmentsTab, bucket (+13 more)
+Cohesion: 0.09
+Nodes (23): AstrologerRequestModel, ../../models/astrologer_request_model.dart, AppointmentBucket, AstrologerRequestAppointmentX, astrologerRequestsProvider, ../../providers/service_providers.dart, _AppointmentCard, AstrologerAppointmentsTab (+15 more)
 
 ### Community 117 - "Community 117"
-Cohesion: 0.20
-Nodes (9): auth_provider.dart, ../../models/notification_model.dart, build, markRead, notifs, userId, watch, where (+1 more)
+Cohesion: 0.22
+Nodes (8): auth_provider.dart, ../../models/notification_model.dart, build, markRead, notifs, userId, watch, where
 
 ### Community 118 - "Community 118"
 Cohesion: 0.11
-Nodes (18): AstrologerService, _addOrEdit, _available, createState, _delete, _desc, dispose, _fee (+10 more)
+Nodes (17): _addOrEdit, _available, createState, _delete, _desc, dispose, _fee, _field (+9 more)
 
 ### Community 119 - "Community 119"
-Cohesion: 0.13
-Nodes (15): ../../providers/account_provider.dart, deletionPendingProvider, build, confirmed, _DeleteAccountTile, _GroupLabel, icon, isAstrologer (+7 more)
+Cohesion: 0.14
+Nodes (14): deletionPendingProvider, build, confirmed, _DeleteAccountTile, _GroupLabel, icon, isAstrologer, messenger (+6 more)
 
 ### Community 120 - "Community 120"
 Cohesion: 0.10
@@ -727,19 +732,19 @@ Nodes (12): deleteFile, deleteProfilePhotos, _storage, updateProfilePhoto, uploa
 
 ### Community 122 - "Community 122"
 Cohesion: 0.12
-Nodes (16): _about, AstrologerEditProfileScreen, _AstrologerEditProfileScreenState, build, createState, dispose, _exp, _fee (+8 more)
+Nodes (17): _about, AstrologerEditProfileScreen, _AstrologerEditProfileScreenState, build, createState, dispose, _exp, _fee (+9 more)
 
 ### Community 123 - "Community 123"
 Cohesion: 0.12
-Nodes (17): astrologer_profile_common.dart, ../../../models/astrologer_certificate.dart, package:file_picker/file_picker.dart, _action, _allowedExtensions, _askName, AstrologerCertificatesScreen, _busy (+9 more)
+Nodes (16): astrologer_profile_common.dart, package:file_picker/file_picker.dart, _action, _allowedExtensions, _askName, AstrologerCertificatesScreen, _busy, _certCard (+8 more)
 
 ### Community 124 - "Community 124"
 Cohesion: 0.13
-Nodes (14): ../../core/utils/phone_utils.dart, answer, build, _ContactTile, _FaqTile, HelpSupportScreen, icon, _launch (+6 more)
+Nodes (14): package:url_launcher/url_launcher.dart, answer, build, _ContactTile, _FaqTile, HelpSupportScreen, icon, _launch (+6 more)
 
 ### Community 125 - "Community 125"
-Cohesion: 0.19
-Nodes (12): AstrologerLoginScreen, _AstrologerLoginScreenState, createState, dispose, _emailController, _formKey, _obscurePassword, _passwordController (+4 more)
+Cohesion: 0.15
+Nodes (15): _afterAuth, AstrologerLoginScreen, _AstrologerLoginScreenState, createState, dispose, _emailController, _formKey, _obscurePassword (+7 more)
 
 ### Community 126 - "Community 126"
 Cohesion: 0.12
@@ -774,40 +779,40 @@ Cohesion: 0.20
 Nodes (9): CloudinaryResponse, errorMessage, format, fromJsonString, publicId, resourceType, secureUrl, version (+1 more)
 
 ### Community 134 - "Community 134"
-Cohesion: 0.06
-Nodes (35): AppLogo, build, circle, size, ../../core/theme/app_colors.dart, ../../core/utils/profile_completion.dart, package:flutter/material.dart, package:flutter_test/flutter_test.dart (+27 more)
+Cohesion: 0.08
+Nodes (23): build, categoryColor, compact, HoroscopeMatchBadge, target, ../../core/services/porutham_match.dart, _centered, CompleteProfileScreen (+15 more)
 
 ### Community 135 - "Community 135"
 Cohesion: 0.14
 Nodes (16): activeSubscriptionProvider, ../../providers/subscription_provider.dart, subscriptionNotifierProvider, build, _currentPlanStatus, features, _fmtDate, isPopular (+8 more)
 
 ### Community 136 - "Community 136"
-Cohesion: 0.17
-Nodes (11): copyWith, direction, id, InterestRequest, isAccepted, isIncoming, profileId, RequestDirection (+3 more)
+Cohesion: 0.15
+Nodes (12): bool get, copyWith, direction, id, InterestRequest, isAccepted, isIncoming, profileId (+4 more)
 
 ### Community 137 - "Community 137"
 Cohesion: 0.14
 Nodes (13): AstrologerCertificate, copyWith, fileType, fromMap, id, isApproved, isPdf, isRejected (+5 more)
 
 ### Community 138 - "Community 138"
-Cohesion: 0.17
-Nodes (12): package:image_picker/image_picker.dart, build, createState, onNext, _photos, _picker, _pickPhoto, _removePhoto (+4 more)
+Cohesion: 0.18
+Nodes (11): package:image_picker/image_picker.dart, build, createState, onNext, _photos, _picker, _pickPhoto, _removePhoto (+3 more)
 
 ### Community 139 - "Community 139"
 Cohesion: 0.17
 Nodes (12): build, _busy, createState, _detect, _detected, _error, label, onDetected (+4 more)
 
 ### Community 140 - "Community 140"
-Cohesion: 0.18
-Nodes (11): ../../models/astrologer_account_model.dart, ../profile/astrologer_certificates_screen.dart, ../profile/astrologer_profile_sections.dart, AstrologerProfileTab, _AstrologerProfileTabState, build, createState, _header (+3 more)
+Cohesion: 0.15
+Nodes (12): _fmtDate, _HeaderCard, label, profile, _Row, rows, _Section, title (+4 more)
 
 ### Community 141 - "Community 141"
-Cohesion: 0.11
-Nodes (18): _auth, authStateChanges, currentUser, currentUserId, deleteCurrentUser, _googleSignIn, registerWithEmail, sendPasswordReset (+10 more)
+Cohesion: 0.10
+Nodes (19): _auth, AuthService, authStateChanges, currentUser, currentUserId, deleteCurrentUser, _googleSignIn, registerWithEmail (+11 more)
 
 ### Community 142 - "Community 142"
-Cohesion: 0.18
-Nodes (10): dart:convert, _assetDir, castesCollection, _db, getCastes, getReligions, getSubcastes, _loadJson (+2 more)
+Cohesion: 0.20
+Nodes (9): _assetDir, castesCollection, _db, getCastes, getReligions, getSubcastes, _loadJson, religionsCollection (+1 more)
 
 ### Community 143 - "Community 143"
 Cohesion: 0.17
@@ -818,28 +823,28 @@ Cohesion: 0.11
 Nodes (18): package:sweph/sweph.dart, ascendantLongitude, AstrologyEngine, AstroResult, compute, _ensureInit, _initialized, lagnamIndex (+10 more)
 
 ### Community 145 - "Community 145"
-Cohesion: 0.53
-Nodes (6): build, ChatListScreen, myChatThreadsProvider, myUidProvider, AstrologerMessagesTab, build
+Cohesion: 0.21
+Nodes (12): build, ChatListScreen, ChatThread, ../../models/chat_model.dart, ../../providers/chat_provider.dart, myChatThreadsProvider, myUidProvider, AstrologerMessagesTab (+4 more)
 
 ### Community 146 - "Community 146"
 Cohesion: 0.18
-Nodes (11): ../../core/theme/app_text_styles.dart, build, createState, initState, onNext, _options, _optionTile, _profileFor (+3 more)
+Nodes (12): AccountDeletionRequestsScreen, build, MarriedUsersScreen, AdminDashboard, AnalyticsScreen, AdminReportsPage, build, deletionRequestsProvider (+4 more)
 
 ### Community 147 - "Community 147"
-Cohesion: 0.18
-Nodes (10): Caste, casteId, fromDoc, fromMap, id, name, Religion, religionId (+2 more)
+Cohesion: 0.20
+Nodes (9): Caste, casteId, fromDoc, fromMap, id, name, Religion, religionId (+1 more)
 
 ### Community 148 - "Community 148"
 Cohesion: 0.18
 Nodes (6): fs, LAGNAM, NAKSHATRA, outDir, path, RASI
 
 ### Community 149 - "Community 149"
-Cohesion: 0.13
-Nodes (15): _ChatsPlaceholder, icon, myUid, onRetry, subtitle, thread, _ThreadTile, title (+7 more)
+Cohesion: 0.11
+Nodes (18): _ChatsPlaceholder, icon, myUid, onRetry, subtitle, thread, _ThreadTile, title (+10 more)
 
 ### Community 150 - "Community 150"
-Cohesion: 0.14
-Nodes (14): build, createState, initState, _loading, _loadSettings, onChanged, PrivacySettingsScreen, _PrivacyState (+6 more)
+Cohesion: 0.18
+Nodes (10): AnnouncementsSeenNotifier, build, create, _kLastSeenKey, lastSeen, list, _load, markSeen (+2 more)
 
 ### Community 151 - "Community 151"
 Cohesion: 0.20
@@ -854,12 +859,12 @@ Cohesion: 0.20
 Nodes (9): Correction layer, Coverage, Data source, Files, IDs, Import into Firestore, India Location Master Database — State → District → City, Regenerate (+1 more)
 
 ### Community 154 - "Community 154"
-Cohesion: 0.20
-Nodes (9): AccountDeletionRequest, email, fromFirestore, id, requestDate, status, toFirestore, userId (+1 more)
+Cohesion: 0.18
+Nodes (10): AccountDeletionRequest, email, fromFirestore, id, requestDate, status, toFirestore, userId (+2 more)
 
 ### Community 155 - "Community 155"
-Cohesion: 0.15
-Nodes (16): AstrologerDashboardScreen, _AstrologerDashboardScreenState, build, createState, _handleBackPress, _index, _lastBackPress, _tabs (+8 more)
+Cohesion: 0.12
+Nodes (15): createState, _handleBackPress, _index, _lastBackPress, _tabs, ../../models/user_model.dart, package:flutter/widgets.dart, ../../../providers/astrologer_session_provider.dart (+7 more)
 
 ### Community 156 - "Community 156"
 Cohesion: 0.11
@@ -894,8 +899,8 @@ Cohesion: 0.29
 Nodes (6): Astrology Master Database — Rasi / Nakshatra / Lagnam, Files, IDs, Import into Firestore, Regenerate, Statistics
 
 ### Community 164 - "Community 164"
-Cohesion: 0.25
-Nodes (8): _afterAuth, build, build, _submit, build, Route /astrologer-dashboard, Route /astrologer-login, Route /astrologer-register
+Cohesion: 0.22
+Nodes (10): ../../providers/locale_provider.dart, localeProvider, build, _choose, LanguageScreen, _LanguageTile, onTap, selected (+2 more)
 
 ### Community 165 - "Community 165"
 Cohesion: 0.33
@@ -914,20 +919,20 @@ Cohesion: 0.29
 Nodes (6): ashwini, average, excellent, good, poor, sources
 
 ### Community 172 - "Community 172"
-Cohesion: 0.24
-Nodes (11): DashboardAnalytics, AdminActionsNotifier, approveProfile, blockUser, build, deleteUser, read, rejectAstrologer (+3 more)
+Cohesion: 0.18
+Nodes (14): AdminApprovalsScreen, build, DashboardAnalytics, AdminActionsNotifier, approveProfile, blockUser, build, deleteUser (+6 more)
 
 ### Community 173 - "Community 173"
-Cohesion: 0.12
-Nodes (19): announcementsLastSeenProvider, ../../../providers/notification_provider.dart, notificationNotifierProvider, initState, announcement, _announcementTile, build, createState (+11 more)
+Cohesion: 0.13
+Nodes (18): announcementsLastSeenProvider, notificationNotifierProvider, initState, announcement, _announcementTile, build, createState, date (+10 more)
 
 ### Community 174 - "Community 174"
 Cohesion: 0.29
 Nodes (7): _meta, categories, convention, criticalDoshas, derivation, generatedBy, title
 
 ### Community 178 - "Community 178"
-Cohesion: 0.11
-Nodes (20): AnnouncementManagementScreen, build, _card, _confirmDelete, _fmtDate, _openForm, ../../models/announcement_model.dart, allAnnouncementsProvider (+12 more)
+Cohesion: 0.22
+Nodes (10): AnnouncementManagementScreen, build, _card, _confirmDelete, _fmtDate, _openForm, ../../models/announcement_model.dart, allAnnouncementsProvider (+2 more)
 
 ### Community 179 - "Community 179"
 Cohesion: 0.22
@@ -938,11 +943,11 @@ Cohesion: 0.29
 Nodes (6): CloudinaryUploadException, isRetryable, message, statusCode, toString, int?
 
 ### Community 186 - "Community 186"
-Cohesion: 0.07
-Nodes (39): _ApprovalCard, _AstrologerDetailsSheet, _confirmDelete, _PendingCard, _runAction, _VerifiedCard, _ReportTile, _act (+31 more)
+Cohesion: 0.10
+Nodes (21): AdminUsersScreen, _AdminUsersScreenState, build, _chip, createState, dispose, _filter, _filterChips (+13 more)
 
 ### Community 187 - "Community 187"
-Cohesion: 0.33
+Cohesion: 0.29
 Nodes (6): ashwini, average, excellent, good, poor, sources
 
 ### Community 188 - "Community 188"
@@ -1077,6 +1082,10 @@ Nodes (10): AnnouncementModel, createdAt, createdBy, fromFirestore, id, isActive
 Cohesion: 0.67
 Nodes (3): AsyncNotifier, UserModel, AuthNotifier
 
+### Community 221 - "Community 221"
+Cohesion: 0.20
+Nodes (8): AppLogo, build, circle, size, package:flutter/material.dart, package:flutter_test/flutter_test.dart, package:jothida_matrimony/main.dart, main
+
 ### Community 228 - "Community 228"
 Cohesion: 0.33
 Nodes (6): chithirai, average, excellent, good, poor, sources
@@ -1110,7 +1119,7 @@ Cohesion: 0.33
 Nodes (6): pooradam, average, excellent, good, poor, sources
 
 ### Community 236 - "Community 236"
-Cohesion: 0.29
+Cohesion: 0.33
 Nodes (6): pooram, average, excellent, good, poor, sources
 
 ### Community 237 - "Community 237"
@@ -1173,33 +1182,49 @@ Nodes (10): activatePlan, build, isPremiumProvider, _planPrice, purchase, sub, u
 Cohesion: 0.18
 Nodes (10): return, digits, formatIndianPhoneDisplay, n, normalizeIndianPhone, phone, phoneCallUri, smsUri (+2 more)
 
+### Community 252 - "Community 252"
+Cohesion: 0.38
+Nodes (7): AstrologerProfileScreen, build, _ratingsAndReviews, astrologerByIdProvider, astrologerReviewsProvider, canRateAstrologerProvider, myAstrologerReviewProvider
+
 ### Community 253 - "Community 253"
-Cohesion: 0.12
-Nodes (19): build, _buildTab, createState, dispose, _emailController, _formKey, LoginMode, LoginScreen (+11 more)
+Cohesion: 0.08
+Nodes (29): _buildTab, createState, dispose, _emailController, _formKey, LoginMode, LoginScreen, _LoginScreenState (+21 more)
+
+### Community 254 - "Community 254"
+Cohesion: 0.40
+Nodes (6): AppLocalizations, _AppLocalizationsDelegate, AppLocalizationsEn, of, AppLocalizationsTa, LocalizationsDelegate
+
+### Community 255 - "Community 255"
+Cohesion: 0.47
+Nodes (6): announcementsProvider, notificationsProvider, AstrologerNotificationsTab, _AstrologerNotificationsTabState, build, _recentActivity
 
 ### Community 256 - "Community 256"
 Cohesion: 0.40
 Nodes (5): build, allCityNamesProvider, build, Step3Horoscope, _Step3State
 
+### Community 257 - "Community 257"
+Cohesion: 0.50
+Nodes (4): _RatingFormSheet, _RatingFormSheetState, _submit, astrologerReviewControllerProvider
+
 ## Knowledge Gaps
-- **2733 isolated node(s):** `allow`, `title`, `convention`, `categories`, `derivation` (+2728 more)
+- **2962 isolated node(s):** `allow`, `title`, `convention`, `categories`, `derivation` (+2957 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **10 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **11 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `dateTime` connect `Community 152` to `Community 0`, `Community 3`, `Community 136`, `Community 9`, `Community 137`, `Community 11`, `Community 16`, `Community 17`, `Community 23`, `Community 154`, `Community 155`, `Community 28`, `Community 26`, `Community 30`, `Community 34`, `Community 35`, `Community 38`, `Community 41`, `Community 43`, `Community 45`, `Community 173`, `Community 50`, `Community 60`, `Community 67`, `Community 219`, `Community 95`, `Community 98`, `Community 126`?**
-  _High betweenness centrality (0.050) - this node is a cross-community bridge._
+- **Why does `dateTime` connect `Community 152` to `Community 0`, `Community 3`, `Community 136`, `Community 9`, `Community 137`, `Community 11`, `Community 16`, `Community 17`, `Community 154`, `Community 155`, `Community 28`, `Community 26`, `Community 30`, `Community 34`, `Community 35`, `Community 38`, `Community 41`, `Community 43`, `Community 45`, `Community 173`, `Community 50`, `Community 60`, `Community 67`, `Community 219`, `Community 95`, `Community 98`, `Community 126`?**
+  _High betweenness centrality (0.047) - this node is a cross-community bridge._
 - **Why does `_HeaderCurveClipper` connect `Community 157` to `Community 8`?**
-  _High betweenness centrality (0.035) - this node is a cross-community bridge._
+  _High betweenness centrality (0.036) - this node is a cross-community bridge._
 - **Why does `AstrologyEngineException` connect `Community 93` to `Community 144`?**
   _High betweenness centrality (0.013) - this node is a cross-community bridge._
 - **What connects `allow`, `title`, `convention` to the rest of the system?**
-  _2733 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _2962 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.020202020202020204 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
   _Cohesion score 0.023529411764705882 - nodes in this community are weakly interconnected._
-- **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.11428571428571428 - nodes in this community are weakly interconnected._
+- **Should `Community 3` be split into smaller, more focused modules?**
+  _Cohesion score 0.058823529411764705 - nodes in this community are weakly interconnected._
