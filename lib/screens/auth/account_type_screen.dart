@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/l10n_ext.dart';
 
 /// First screen after the splash: choose whether you are registering as a
 /// matrimony **User** or as an **Astrologer**. Each choice leads to its own
@@ -45,6 +46,7 @@ class _AccountTypeScreenState extends State<AccountTypeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.splashGradient),
@@ -68,17 +70,17 @@ class _AccountTypeScreenState extends State<AccountTypeScreen>
                           const Icon(Icons.favorite,
                               color: AppColors.gold, size: 56),
                           const SizedBox(height: 12),
-                          Text('Jothida Matrimony',
+                          Text(l10n.appTitle,
                               style: AppTextStyles.appName),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 40),
-                  const Text(
-                    'Who are you creating\nan account for?',
+                  Text(
+                    l10n.whoCreatingAccountFor,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
@@ -88,7 +90,7 @@ class _AccountTypeScreenState extends State<AccountTypeScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Choose how you want to use the app',
+                    l10n.chooseHowToUseApp,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.white.withOpacity(0.7), fontSize: 14),
@@ -99,9 +101,8 @@ class _AccountTypeScreenState extends State<AccountTypeScreen>
                     child: _TypeCard(
                       icon: Icons.favorite_border,
                       iconBg: AppColors.primary,
-                      title: 'User',
-                      subtitle:
-                          'Find your perfect life partner with horoscope-matched profiles',
+                      title: l10n.matrimonyUser,
+                      subtitle: l10n.findLifePartner,
                       onTap: () => context.push('/login'),
                     ),
                   ),
@@ -111,9 +112,8 @@ class _AccountTypeScreenState extends State<AccountTypeScreen>
                     child: _TypeCard(
                       icon: Icons.auto_awesome,
                       iconBg: AppColors.goldDark,
-                      title: 'Astrologer',
-                      subtitle:
-                          'Offer consultations, horoscope matching and grow your practice',
+                      title: l10n.astrologerAccount,
+                      subtitle: l10n.offerConsultations,
                       onTap: () => context.push('/astrologer-login'),
                     ),
                   ),

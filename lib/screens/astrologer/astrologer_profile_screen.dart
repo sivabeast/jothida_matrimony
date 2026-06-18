@@ -4,6 +4,7 @@ import 'package:photo_view/photo_view.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/phone_utils.dart';
 import '../../models/astrologer_model.dart';
 import '../../models/astrologer_review_model.dart';
@@ -28,7 +29,7 @@ class AstrologerProfileScreen extends ConsumerWidget {
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
         ),
-        body: const Center(child: Text('Astrologer not found')),
+        body: Center(child: Text(context.l10n.astrologerNotFound)),
       );
     }
     return Scaffold(
@@ -40,7 +41,7 @@ class AstrologerProfileScreen extends ConsumerWidget {
             pinned: true,
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
-            flexibleSpace: FlexibleSpaceBar(background: _header(a)),
+            flexibleSpace: FlexibleSpaceBar(background: _header(context, a)),
           ),
           SliverToBoxAdapter(
             child: Padding(
@@ -48,18 +49,18 @@ class AstrologerProfileScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _statsRow(a),
+                  _statsRow(context, a),
                   if (a.about.trim().isNotEmpty)
-                    _section('📝 About',
+                    _section('📝 ${context.l10n.about}',
                         Text(a.about, style: const TextStyle(height: 1.4))),
                   if (a.languages.isNotEmpty)
-                    _section('🌐 Languages', _chips(a.languages)),
+                    _section('🌐 ${context.l10n.languages}', _chips(a.languages)),
                   if (a.serviceNames.isNotEmpty)
-                    _section('🔮 Services Offered', _servicesOffered(a)),
+                    _section('🔮 ${context.l10n.servicesOffered}', _servicesOffered(a)),
                   if (a.certificateDocs.isNotEmpty)
-                    _section('📜 Certificates', _certificates(context, a)),
-                  _section('📞 Contact Details', _contactDetails(context, a)),
-                  _section('⭐ Ratings & Reviews',
+                    _section('📜 ${context.l10n.certificates}', _certificates(context, a)),
+                  _section('📞 ${context.l10n.contactDetails}', _contactDetails(context, a)),
+                  _section('⭐ ${context.l10n.ratingsAndReviews}',
                       _ratingsAndReviews(context, ref, a)),
                   const SizedBox(height: 24),
                 ],
@@ -73,6 +74,7 @@ class AstrologerProfileScreen extends ConsumerWidget {
 
   // ── Ratings & reviews ──────────────────────────────────────────────────────
   Widget _ratingsAndReviews(BuildContext context, WidgetRef ref, Astrologer a) {
+    final l10n = context.l10n;
     final canRate = ref.watch(canRateAstrologerProvider);
     final myReview = ref.watch(myAstrologerReviewProvider(a.id)).valueOrNull;
     final reviewsAsync = ref.watch(astrologerReviewsProvider(a.id));
@@ -89,7 +91,7 @@ class AstrologerProfileScreen extends ConsumerWidget {
               icon: Icon(myReview == null ? Icons.star_outline : Icons.edit,
                   size: 18),
               label: Text(
-                  myReview == null ? 'Rate Astrologer' : 'Edit Your Rating'),
+                  myReview == null ? l10n.rateAstrologer : l10n.editYourRating),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -113,7 +115,7 @@ class AstrologerProfileScreen extends ConsumerWidget {
                     size: 18, color: AppColors.gold),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text('Complete your profile to rate astrologers.',
+                  child: Text(l10n.completeProfileToRate,
                       style: TextStyle(
                           color: Colors.grey[800], fontSize: 12.5)),
                 ),
@@ -134,21 +136,21 @@ class AstrologerProfileScreen extends ConsumerWidget {
           error: (_, __) => Row(
             children: [
               Expanded(
-                child: Text('Could not load reviews.',
+                child: Text(l10n.couldNotLoadReviews,
                     style: TextStyle(color: Colors.grey[600], fontSize: 13)),
               ),
               TextButton.icon(
                 onPressed: () =>
                     ref.invalidate(astrologerReviewsProvider(a.id)),
                 icon: const Icon(Icons.refresh, size: 16),
-                label: const Text('Retry'),
+                label: Text(l10n.retry),
                 style: TextButton.styleFrom(foregroundColor: AppColors.primary),
               ),
             ],
           ),
           data: (reviews) {
             if (reviews.isEmpty) {
-              return Text('No reviews yet. Be the first to rate.',
+              return Text(l10n.noReviewsYet,
                   style: TextStyle(color: Colors.grey[600], fontSize: 13));
             }
             return Column(
@@ -233,7 +235,7 @@ class AstrologerProfileScreen extends ConsumerWidget {
   }
 
   // ── Header ───────────────────────────────────────────────────────────────
-  Widget _header(Astrologer a) => Container(
+  Widget _header(BuildContext context, Astrologer a) => Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [AppColors.primary, AppColors.primaryLight],
@@ -280,7 +282,7 @@ class AstrologerProfileScreen extends ConsumerWidget {
                           fontWeight: FontWeight.bold)),
                   const SizedBox(width: 6),
                   Text(
-                      '(${a.reviewCount} ${a.reviewCount == 1 ? 'Review' : 'Reviews'})',
+                      '(${a.reviewCount} ${context.l10n.reviews})',
                       style: const TextStyle(
                           color: Colors.white70, fontSize: 13)),
                 ],
@@ -294,13 +296,13 @@ class AstrologerProfileScreen extends ConsumerWidget {
                     color: AppColors.success,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.verified, color: Colors.white, size: 14),
-                      SizedBox(width: 4),
-                      Text('Verified Astrologer',
-                          style: TextStyle(
+                      const Icon(Icons.verified, color: Colors.white, size: 14),
+                      const SizedBox(width: 4),
+                      Text(context.l10n.verifiedAstrologer,
+                          style: const TextStyle(
                               color: Colors.white,
                               fontSize: 11,
                               fontWeight: FontWeight.bold)),
@@ -327,24 +329,27 @@ class AstrologerProfileScreen extends ConsumerWidget {
       );
 
   // ── Rating · Experience stats ──────────────────────────────────────────────
-  Widget _statsRow(Astrologer a) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _stat(a.rating.toStringAsFixed(1), 'Rating', Icons.star,
-                AppColors.gold),
-            _stat('${a.reviewCount}', 'Reviews', Icons.reviews_outlined,
-                AppColors.primary),
-            _stat('${a.experienceYears} yrs', 'Experience',
-                Icons.work_history_outlined, AppColors.info),
-          ],
-        ),
-      );
+  Widget _statsRow(BuildContext context, Astrologer a) {
+    final l10n = context.l10n;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _stat(a.rating.toStringAsFixed(1), l10n.rating, Icons.star,
+              AppColors.gold),
+          _stat('${a.reviewCount}', l10n.reviews, Icons.reviews_outlined,
+              AppColors.primary),
+          _stat('${a.experienceYears} ${l10n.years}', l10n.experience,
+              Icons.work_history_outlined, AppColors.info),
+        ],
+      ),
+    );
+  }
 
   Widget _stat(String value, String label, IconData icon, Color color) =>
       Column(
@@ -423,6 +428,7 @@ class AstrologerProfileScreen extends ConsumerWidget {
   // ── Contact Details (direct contact — no booking) ──────────────────────────
   Widget _contactDetails(BuildContext context, Astrologer a) {
     final hasPhone = normalizeIndianPhone(a.phone).isNotEmpty;
+    final l10n = context.l10n;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -434,14 +440,14 @@ class AstrologerProfileScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _contactLine(Icons.person_outline, 'Name',
-              a.name.trim().isNotEmpty ? a.name : 'Not Available'),
+          _contactLine(Icons.person_outline, l10n.name,
+              a.name.trim().isNotEmpty ? a.name : l10n.notAvailable),
           const SizedBox(height: 12),
-          _contactLine(Icons.call_outlined, 'Phone',
-              hasPhone ? formatIndianPhoneDisplay(a.phone) : 'Not Available'),
+          _contactLine(Icons.call_outlined, l10n.phone,
+              hasPhone ? formatIndianPhoneDisplay(a.phone) : l10n.notAvailable),
           const SizedBox(height: 12),
-          _contactLine(Icons.chat_outlined, 'WhatsApp',
-              hasPhone ? formatIndianPhoneDisplay(a.phone) : 'Not Available'),
+          _contactLine(Icons.chat_outlined, l10n.whatsapp,
+              hasPhone ? formatIndianPhoneDisplay(a.phone) : l10n.notAvailable),
           if (hasPhone) ...[
             const SizedBox(height: 16),
             Row(
@@ -450,7 +456,7 @@ class AstrologerProfileScreen extends ConsumerWidget {
                   child: ElevatedButton.icon(
                     onPressed: () => _launch(phoneCallUri(a.phone)),
                     icon: const Icon(Icons.call, size: 18),
-                    label: const Text('Call'),
+                    label: Text(l10n.call),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
@@ -465,7 +471,7 @@ class AstrologerProfileScreen extends ConsumerWidget {
                   child: ElevatedButton.icon(
                     onPressed: () => _launch(whatsappUri(a.phone)),
                     icon: const Icon(Icons.chat, size: 18),
-                    label: const Text('WhatsApp'),
+                    label: Text(l10n.whatsapp),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF25D366),
                       foregroundColor: Colors.white,
@@ -641,7 +647,7 @@ class _RatingFormSheetState extends ConsumerState<_RatingFormSheet> {
   Future<void> _submit() async {
     if (_rating < 1) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select a star rating')));
+          SnackBar(content: Text(context.l10n.selectStarRating)));
       return;
     }
     setState(() => _submitting = true);
@@ -655,13 +661,13 @@ class _RatingFormSheetState extends ConsumerState<_RatingFormSheet> {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(widget.existing == null
-              ? 'Thank you! Your rating has been submitted.'
-              : 'Your rating has been updated.')));
+              ? context.l10n.ratingSubmitted
+              : context.l10n.ratingUpdated)));
     } catch (_) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Could not submit your rating. Please try again.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.couldNotSubmitRating)));
     }
   }
 
@@ -696,8 +702,8 @@ class _RatingFormSheetState extends ConsumerState<_RatingFormSheet> {
             const SizedBox(height: 16),
             Text(
               widget.existing == null
-                  ? 'Rate ${widget.astrologer.name}'
-                  : 'Edit your rating',
+                  ? context.l10n.rateAstrologer
+                  : context.l10n.editYourRating,
               style: const TextStyle(
                   fontSize: 18,
                   fontFamily: 'Poppins',
@@ -724,15 +730,15 @@ class _RatingFormSheetState extends ConsumerState<_RatingFormSheet> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text('Review (optional)',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            Text(context.l10n.reviewOptional,
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
             const SizedBox(height: 8),
             TextField(
               controller: _review,
               maxLines: 4,
               maxLength: 500,
               decoration: InputDecoration(
-                hintText: 'Share your experience…',
+                hintText: context.l10n.shareYourExperience,
                 filled: true,
                 fillColor: Colors.grey[50],
                 border: OutlineInputBorder(
@@ -757,7 +763,7 @@ class _RatingFormSheetState extends ConsumerState<_RatingFormSheet> {
                         width: 20,
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
-                    : const Text('Submit Review'),
+                    : Text(context.l10n.submitReview),
               ),
             ),
           ],

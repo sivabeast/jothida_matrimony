@@ -19,6 +19,9 @@ class AppTheme {
         ),
         scaffoldBackgroundColor: AppColors.scaffoldBg,
         fontFamily: AppTextStyles.fontFamily,
+        // Tamil glyphs fall back to the bundled Tamil font everywhere, so even
+        // inherited Text widgets render Tamil with no broken boxes.
+        fontFamilyFallback: const [AppTextStyles.tamilFont],
 
         // AppBar
         appBarTheme: const AppBarTheme(
@@ -28,6 +31,7 @@ class AppTheme {
           centerTitle: true,
           titleTextStyle: TextStyle(
             fontFamily: AppTextStyles.fontFamily,
+            fontFamilyFallback: [AppTextStyles.tamilFont],
             fontSize: 18,
             fontWeight: FontWeight.w600,
             color: AppColors.white,
@@ -175,6 +179,7 @@ class AppTheme {
         ),
         scaffoldBackgroundColor: AppColors.darkBackground,
         fontFamily: AppTextStyles.fontFamily,
+        fontFamilyFallback: const [AppTextStyles.tamilFont],
 
         appBarTheme: const AppBarTheme(
           backgroundColor: AppColors.darkSurface,
@@ -183,6 +188,7 @@ class AppTheme {
           centerTitle: true,
           titleTextStyle: TextStyle(
             fontFamily: AppTextStyles.fontFamily,
+            fontFamilyFallback: [AppTextStyles.tamilFont],
             fontSize: 18,
             fontWeight: FontWeight.w600,
             color: AppColors.white,

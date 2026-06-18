@@ -5,9 +5,17 @@ class AppTextStyles {
   static const String fontFamily = 'Poppins';
   static const String tamilFont = 'NotoSansTamil';
 
+  /// Applied to EVERY style below. Poppins has no Tamil glyphs, so without this
+  /// any Tamil text would render as empty boxes (tofu). Listing NotoSansTamil as
+  /// the fallback means Latin text stays in Poppins while Tamil characters are
+  /// drawn with the bundled Tamil Unicode font — so the same styles render
+  /// correctly in BOTH languages with no broken characters.
+  static const List<String> _fallback = [tamilFont];
+
   // Display
   static const TextStyle displayLarge = TextStyle(
     fontFamily: fontFamily,
+    fontFamilyFallback: _fallback,
     fontSize: 32,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
@@ -16,6 +24,7 @@ class AppTextStyles {
 
   static const TextStyle displayMedium = TextStyle(
     fontFamily: fontFamily,
+    fontFamilyFallback: _fallback,
     fontSize: 28,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
@@ -24,6 +33,7 @@ class AppTextStyles {
   // Headline
   static const TextStyle headlineLarge = TextStyle(
     fontFamily: fontFamily,
+    fontFamilyFallback: _fallback,
     fontSize: 24,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
@@ -31,6 +41,7 @@ class AppTextStyles {
 
   static const TextStyle headlineMedium = TextStyle(
     fontFamily: fontFamily,
+    fontFamilyFallback: _fallback,
     fontSize: 20,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
@@ -38,6 +49,7 @@ class AppTextStyles {
 
   static const TextStyle headlineSmall = TextStyle(
     fontFamily: fontFamily,
+    fontFamilyFallback: _fallback,
     fontSize: 18,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
@@ -46,6 +58,7 @@ class AppTextStyles {
   // Title
   static const TextStyle titleLarge = TextStyle(
     fontFamily: fontFamily,
+    fontFamilyFallback: _fallback,
     fontSize: 16,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
@@ -53,6 +66,7 @@ class AppTextStyles {
 
   static const TextStyle titleMedium = TextStyle(
     fontFamily: fontFamily,
+    fontFamilyFallback: _fallback,
     fontSize: 14,
     fontWeight: FontWeight.w500,
     color: AppColors.textPrimary,
@@ -61,6 +75,7 @@ class AppTextStyles {
   // Body
   static const TextStyle bodyLarge = TextStyle(
     fontFamily: fontFamily,
+    fontFamilyFallback: _fallback,
     fontSize: 16,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
@@ -68,6 +83,7 @@ class AppTextStyles {
 
   static const TextStyle bodyMedium = TextStyle(
     fontFamily: fontFamily,
+    fontFamilyFallback: _fallback,
     fontSize: 14,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
@@ -75,6 +91,7 @@ class AppTextStyles {
 
   static const TextStyle bodySmall = TextStyle(
     fontFamily: fontFamily,
+    fontFamilyFallback: _fallback,
     fontSize: 12,
     fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,
@@ -83,6 +100,7 @@ class AppTextStyles {
   // Label
   static const TextStyle labelLarge = TextStyle(
     fontFamily: fontFamily,
+    fontFamilyFallback: _fallback,
     fontSize: 14,
     fontWeight: FontWeight.w500,
     color: AppColors.textPrimary,
@@ -91,6 +109,7 @@ class AppTextStyles {
 
   static const TextStyle labelMedium = TextStyle(
     fontFamily: fontFamily,
+    fontFamilyFallback: _fallback,
     fontSize: 12,
     fontWeight: FontWeight.w500,
     color: AppColors.textSecondary,
@@ -99,6 +118,7 @@ class AppTextStyles {
 
   static const TextStyle labelSmall = TextStyle(
     fontFamily: fontFamily,
+    fontFamilyFallback: _fallback,
     fontSize: 10,
     fontWeight: FontWeight.w500,
     color: AppColors.textHint,
@@ -108,6 +128,7 @@ class AppTextStyles {
   // Special
   static const TextStyle appName = TextStyle(
     fontFamily: fontFamily,
+    fontFamilyFallback: _fallback,
     fontSize: 28,
     fontWeight: FontWeight.w700,
     color: AppColors.white,
@@ -116,6 +137,7 @@ class AppTextStyles {
 
   static const TextStyle goldTitle = TextStyle(
     fontFamily: fontFamily,
+    fontFamilyFallback: _fallback,
     fontSize: 20,
     fontWeight: FontWeight.w600,
     color: AppColors.gold,
@@ -123,6 +145,7 @@ class AppTextStyles {
 
   static const TextStyle planPrice = TextStyle(
     fontFamily: fontFamily,
+    fontFamilyFallback: _fallback,
     fontSize: 32,
     fontWeight: FontWeight.w700,
     color: AppColors.primary,
@@ -130,6 +153,7 @@ class AppTextStyles {
 
   static const TextStyle tamilBody = TextStyle(
     fontFamily: tamilFont,
+    fontFamilyFallback: [fontFamily],
     fontSize: 14,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
@@ -137,6 +161,7 @@ class AppTextStyles {
 
   static const TextStyle badge = TextStyle(
     fontFamily: fontFamily,
+    fontFamilyFallback: _fallback,
     fontSize: 10,
     fontWeight: FontWeight.w600,
     color: AppColors.white,

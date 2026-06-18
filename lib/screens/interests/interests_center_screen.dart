@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../models/interest_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/interest_provider.dart';
@@ -57,14 +58,15 @@ class _InterestsCenterScreenState extends ConsumerState<InterestsCenterScreen>
     final rejected = _dedupByCounterpart(
         _sorted([...sent, ...received].where((i) => i.isRejected)), myUid);
 
+    final l10n = context.l10n;
     return Column(
       children: [
         Container(
           color: Colors.white,
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
           alignment: Alignment.centerLeft,
-          child: const Text('Interests',
-              style: TextStyle(
+          child: Text(l10n.interests,
+              style: const TextStyle(
                   fontFamily: 'Poppins',
                   fontWeight: FontWeight.w700,
                   fontSize: 18)),
@@ -80,10 +82,10 @@ class _InterestsCenterScreenState extends ConsumerState<InterestsCenterScreen>
             labelStyle:
                 const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
             tabs: [
-              Tab(text: 'Received (${receivedPending.length})'),
-              Tab(text: 'Sent (${sentAll.length})'),
-              Tab(text: 'Accepted (${accepted.length})'),
-              Tab(text: 'Rejected (${rejected.length})'),
+              Tab(text: '${l10n.received} (${receivedPending.length})'),
+              Tab(text: '${l10n.sent} (${sentAll.length})'),
+              Tab(text: '${l10n.accepted} (${accepted.length})'),
+              Tab(text: '${l10n.rejected} (${rejected.length})'),
             ],
           ),
         ),
@@ -97,28 +99,28 @@ class _InterestsCenterScreenState extends ConsumerState<InterestsCenterScreen>
                   myUid: myUid,
                   loading: loading,
                   hasError: hasError,
-                  emptyText: 'No interests received yet'),
+                  emptyText: l10n.noReceivedInterests),
               _InterestList(
                   items: sentAll,
                   mode: _CardMode.sent,
                   myUid: myUid,
                   loading: loading,
                   hasError: hasError,
-                  emptyText: 'You haven\'t sent any interests yet'),
+                  emptyText: l10n.noSentInterests),
               _InterestList(
                   items: accepted,
                   mode: _CardMode.accepted,
                   myUid: myUid,
                   loading: loading,
                   hasError: hasError,
-                  emptyText: 'No accepted interests yet'),
+                  emptyText: l10n.noAcceptedInterests),
               _InterestList(
                   items: rejected,
                   mode: _CardMode.rejected,
                   myUid: myUid,
                   loading: loading,
                   hasError: hasError,
-                  emptyText: 'No rejected interests'),
+                  emptyText: l10n.noRejectedInterests),
             ],
           ),
         ),
@@ -173,10 +175,10 @@ class _InterestList extends StatelessWidget {
         return const Center(child: CircularProgressIndicator());
       }
       return _EmptyState(
-        text: hasError ? 'Couldn\'t load interests' : emptyText,
+        text: hasError ? context.l10n.couldntLoadInterests : emptyText,
         subtitle: hasError
-            ? 'Please check your connection and try again.'
-            : 'Send or receive an interest to get started.',
+            ? context.l10n.checkConnectionRetry
+            : context.l10n.interestStartHint,
       );
     }
     return ListView.separated(
@@ -210,7 +212,7 @@ class _InterestCard extends ConsumerWidget {
     // profile-document id can be stale or missing — which is what made "View
     // Profile" fail to load on accepted matches.
     final profile = ref.watch(profileByUserIdProvider(otherUserId)).valueOrNull;
-    final name = profile?.name ?? 'Member';
+    final name = profile?.name ?? context.l10n.member;
     final age = profile?.age ?? 0;
     final location = profile == null
         ? ''
@@ -266,8 +268,8 @@ class _InterestCard extends ConsumerWidget {
                   ],
                 ),
               ),
-              if (mode == _CardMode.sent) _statusChip(interest.status),
-              if (mode == _CardMode.rejected) _statusChip('rejected'),
+              if (mode == _CardMode.sent) _statusChip(context, interest.status),
+              if (mode == _CardMode.rejected) _statusChip(context, 'rejected'),
             ],
           ),
           const SizedBox(height: 12),
@@ -279,6 +281,7 @@ class _InterestCard extends ConsumerWidget {
 
   Widget _actions(
       BuildContext context, WidgetRef ref, String otherUserId, String name) {
+    final l10n = context.l10n;
     switch (mode) {
       case _CardMode.received:
         return Row(
@@ -289,11 +292,11 @@ class _InterestCard extends ConsumerWidget {
                   ref
                       .read(interestNotifierProvider.notifier)
                       .rejectInterest(interest.id);
-                  _snack(context, 'Interest declined');
+                  _snack(context, l10n.interestDeclined);
                 },
                 style:
                     OutlinedButton.styleFrom(foregroundColor: AppColors.error),
-                child: const Text('Reject'),
+                child: Text(l10n.reject),
               ),
             ),
             const SizedBox(width: 10),
@@ -303,12 +306,12 @@ class _InterestCard extends ConsumerWidget {
                   ref
                       .read(interestNotifierProvider.notifier)
                       .acceptInterest(interest.id);
-                  _snack(context, "It's a match! Interest accepted 🎉");
+                  _snack(context, l10n.interestAcceptedMatch);
                 },
                 style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.success,
                     foregroundColor: Colors.white),
-                child: const Text('Accept'),
+                child: Text(l10n.accept),
               ),
             ),
           ],
@@ -320,13 +323,13 @@ class _InterestCard extends ConsumerWidget {
               child: OutlinedButton.icon(
                 onPressed: () {
                   if (otherUserId.isEmpty) {
-                    _snack(context, 'Profile unavailable for this match.');
+                    _snack(context, l10n.profileUnavailableMatch);
                     return;
                   }
                   context.push('/profile-user/$otherUserId');
                 },
                 icon: const Icon(Icons.person_outline, size: 18),
-                label: const Text('View Profile'),
+                label: Text(l10n.viewProfile),
                 style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary)),
@@ -341,13 +344,13 @@ class _InterestCard extends ConsumerWidget {
                 // member's raw horoscope fields are never revealed.
                 onPressed: () {
                   if (otherUserId.isEmpty) {
-                    _snack(context, 'Horoscope match unavailable for this member.');
+                    _snack(context, l10n.horoscopeUnavailableMember);
                     return;
                   }
                   context.push('/horoscope-match/$otherUserId');
                 },
                 icon: const Icon(Icons.auto_awesome, size: 18),
-                label: const Text('Horoscope'),
+                label: Text(l10n.horoscope),
                 style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white),
@@ -360,18 +363,18 @@ class _InterestCard extends ConsumerWidget {
           alignment: Alignment.centerLeft,
           child: Text(
             interest.isAccepted
-                ? 'Accepted — open the Accepted tab to view contact.'
+                ? l10n.sentAcceptedHint
                 : interest.isRejected
-                    ? 'This interest was declined.'
-                    : 'Waiting for a response…',
+                    ? l10n.interestDeclinedStatus
+                    : l10n.waitingForResponse,
             style: TextStyle(fontSize: 12.5, color: Colors.grey[600]),
           ),
         );
       case _CardMode.rejected:
-        return const Align(
+        return Align(
           alignment: Alignment.centerLeft,
-          child: Text('This interest was rejected.',
-              style: TextStyle(fontSize: 12.5, color: Colors.grey)),
+          child: Text(l10n.interestDeclinedStatus,
+              style: const TextStyle(fontSize: 12.5, color: Colors.grey)),
         );
     }
   }
@@ -382,7 +385,7 @@ class _InterestCard extends ConsumerWidget {
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text(msg)));
 
-  Widget _statusChip(String status) {
+  Widget _statusChip(BuildContext context, String status) {
     final accepted = status == 'accepted';
     final rejected = status == 'rejected';
     final color = accepted
@@ -391,10 +394,10 @@ class _InterestCard extends ConsumerWidget {
             ? AppColors.error
             : AppColors.warning;
     final label = accepted
-        ? 'Accepted'
+        ? context.l10n.accepted
         : rejected
-            ? 'Rejected'
-            : 'Pending';
+            ? context.l10n.rejected
+            : context.l10n.pending;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(

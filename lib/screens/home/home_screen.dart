@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../widgets/common/app_logo.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/announcement_provider.dart';
@@ -70,9 +71,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Jothida Matrimony',
-                  style: TextStyle(
+                Text(
+                  context.l10n.appTitle,
+                  style: const TextStyle(
                     color: AppColors.gold,
                     fontSize: 17,
                     fontFamily: 'Poppins',
@@ -81,7 +82,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
                 Text(
-                  'FIND YOUR PERFECT MATCH',
+                  context.l10n.appTagline.toUpperCase(),
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.80),
                     fontSize: 9.5,
@@ -110,7 +111,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               MaterialPageRoute(
                 builder: (_) => Scaffold(
                   appBar: AppBar(
-                    title: const Text('Notifications'),
+                    title: Text(context.l10n.notifications),
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                   ),
@@ -118,7 +119,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
             ),
-            tooltip: 'Notifications',
+            tooltip: context.l10n.notifications,
           ),
           // Admin Dashboard — visible ONLY to Super Admin accounts. Normal
           // users and astrologers never see this icon.
@@ -162,9 +163,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _lastBackPress = now;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(
-          content: Text('Press back again to exit'),
-          duration: Duration(seconds: 2),
+        ..showSnackBar(SnackBar(
+          content: Text(context.l10n.pressBackToExit),
+          duration: const Duration(seconds: 2),
         ));
       return;
     }
@@ -180,16 +181,26 @@ class _BottomNav extends StatelessWidget {
 
   const _BottomNav({required this.selectedIndex, required this.onTap});
 
+  // Icons only — labels are localized per-build from [_labels] so the bar
+  // switches language instantly with the rest of the app.
   static const _items = [
-    _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Home'),
-    _NavItem(icon: Icons.favorite_border, activeIcon: Icons.favorite, label: 'Matches'),
-    _NavItem(icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome, label: 'Astrologer'),
-    _NavItem(icon: Icons.people_outline, activeIcon: Icons.people, label: 'Interests'),
-    _NavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profile'),
+    _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home),
+    _NavItem(icon: Icons.favorite_border, activeIcon: Icons.favorite),
+    _NavItem(icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome),
+    _NavItem(icon: Icons.people_outline, activeIcon: Icons.people),
+    _NavItem(icon: Icons.person_outline, activeIcon: Icons.person),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final labels = [
+      l10n.home,
+      l10n.matches,
+      l10n.astrologers,
+      l10n.interests,
+      l10n.profile,
+    ];
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -224,7 +235,7 @@ class _BottomNav extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        item.label,
+                        labels[i],
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: active ? FontWeight.w600 : FontWeight.normal,
@@ -247,6 +258,5 @@ class _BottomNav extends StatelessWidget {
 class _NavItem {
   final IconData icon;
   final IconData activeIcon;
-  final String label;
-  const _NavItem({required this.icon, required this.activeIcon, required this.label});
+  const _NavItem({required this.icon, required this.activeIcon});
 }

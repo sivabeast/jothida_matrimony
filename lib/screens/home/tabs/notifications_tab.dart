@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/l10n_ext.dart';
 import '../../../models/announcement_model.dart';
 import '../../../models/notification_model.dart';
 import '../../../providers/announcement_provider.dart';
@@ -49,8 +50,8 @@ class _NotificationsTabState extends ConsumerState<NotificationsTab> {
           children: [
             Icon(Icons.notifications_none, size: 72, color: Colors.grey[400]),
             const SizedBox(height: 16),
-            const Text('No notifications',
-                style: TextStyle(fontSize: 16, color: Colors.grey)),
+            Text(context.l10n.noNotifications,
+                style: const TextStyle(fontSize: 16, color: Colors.grey)),
           ],
         ),
       );

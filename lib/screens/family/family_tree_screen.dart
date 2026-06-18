@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../models/profile_model.dart';
 import '../../providers/profile_provider.dart';
 
@@ -40,10 +41,11 @@ class FamilyTreeScreen extends ConsumerWidget {
         ? ref.watch(profileByUserIdProvider(userId!))
         : ref.watch(myProfileProvider);
 
+    final l10n = context.l10n;
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Family Tree'),
+        title: Text(l10n.familyTree),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -52,18 +54,18 @@ class FamilyTreeScreen extends ConsumerWidget {
             child: CircularProgressIndicator(color: AppColors.primary)),
         error: (e, _) => _Empty(
           icon: Icons.error_outline,
-          title: 'Could not load family details',
-          subtitle: 'Please try again in a moment.',
+          title: l10n.couldNotLoadFamilyDetails,
+          subtitle: l10n.somethingWentWrong,
         ),
         data: (profile) {
           if (profile == null) {
             return _Empty(
               icon: Icons.person_off_outlined,
-              title: _isOther ? 'Profile unavailable' : 'No profile yet',
+              title: _isOther ? l10n.profileUnavailable : l10n.noProfileYet,
               subtitle: _isOther
-                  ? 'This member\'s details could not be loaded.'
-                  : 'Create your profile to add family details.',
-              actionLabel: _isOther ? null : 'Create Profile',
+                  ? l10n.memberDetailsUnavailable
+                  : l10n.addFamilyFromPersonalDetails,
+              actionLabel: _isOther ? null : l10n.createProfile,
               onAction: _isOther ? null : () => context.push('/profile/create'),
             );
           }
@@ -71,12 +73,11 @@ class FamilyTreeScreen extends ConsumerWidget {
           if (_isFamilyEmpty(family)) {
             return _Empty(
               icon: Icons.family_restroom_outlined,
-              title: 'Family details not added',
+              title: l10n.familyDetailsNotAdded,
               subtitle: _isOther
-                  ? '${profile.name} hasn\'t shared family details yet.'
-                  : 'Add your family details from Personal Details to see your '
-                      'family tree here.',
-              actionLabel: _isOther ? null : 'Add Family Details',
+                  ? l10n.memberNoFamilyDetails(profile.name)
+                  : l10n.addFamilyFromPersonalDetails,
+              actionLabel: _isOther ? null : l10n.addFamilyDetails,
               onAction:
                   _isOther ? null : () => context.push('/personal-details'),
             );
@@ -111,6 +112,7 @@ class FamilyTreeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     const lineColor = Color(0x66800020); // maroon @ 40%
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
@@ -132,7 +134,7 @@ class FamilyTreeView extends StatelessWidget {
               children: [
                 Expanded(
                   child: _ParentCard(
-                    role: 'Father',
+                    role: l10n.father,
                     icon: Icons.man_2_outlined,
                     name: family.fatherName,
                     occupation: family.fatherOccupation,
@@ -142,7 +144,7 @@ class FamilyTreeView extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _ParentCard(
-                    role: 'Mother',
+                    role: l10n.mother,
                     icon: Icons.woman_2_outlined,
                     name: family.motherName,
                     occupation: family.motherOccupation,
@@ -159,6 +161,8 @@ class FamilyTreeView extends StatelessWidget {
             _SiblingsCard(
               brothers: family.brothersCount,
               sisters: family.sistersCount,
+              brothersLabel: l10n.brothers,
+              sistersLabel: l10n.sisters,
             ),
           ],
 
@@ -171,8 +175,8 @@ class FamilyTreeView extends StatelessWidget {
                 Expanded(
                   child: _AttributeCard(
                     icon: Icons.home_outlined,
-                    label: 'Family Type',
-                    value: _withSuffix(family.familyType, 'Family'),
+                    label: l10n.familyType,
+                    value: _familyTypeLabel(context, family.familyType),
                     accent: AppColors.primary,
                   ),
                 ),
@@ -183,8 +187,8 @@ class FamilyTreeView extends StatelessWidget {
                 Expanded(
                   child: _AttributeCard(
                     icon: Icons.account_balance_wallet_outlined,
-                    label: 'Family Status',
-                    value: family.familyStatus,
+                    label: l10n.familyStatus,
+                    value: _familyStatusLabel(context, family.familyStatus),
                     accent: AppColors.gold,
                   ),
                 ),
@@ -195,10 +199,26 @@ class FamilyTreeView extends StatelessWidget {
     );
   }
 
-  /// "Joint" → "Joint Family"; leaves "Nuclear Family" unchanged.
-  static String _withSuffix(String value, String suffix) {
-    final v = value.trim();
-    return v.toLowerCase().endsWith(suffix.toLowerCase()) ? v : '$v $suffix';
+  /// Maps the stored family-type value ('Joint' / 'Nuclear' / 'Joint Family'…)
+  /// to a localized label. Unknown values fall through as-is.
+  static String _familyTypeLabel(BuildContext context, String value) {
+    final v = value.trim().toLowerCase();
+    if (v.contains('joint')) return context.l10n.jointFamily;
+    if (v.contains('nuclear')) return context.l10n.nuclearFamily;
+    return value.trim();
+  }
+
+  /// Maps the stored family-status value to a localized label. Unknown values
+  /// fall through as-is.
+  static String _familyStatusLabel(BuildContext context, String value) {
+    final l10n = context.l10n;
+    final v = value.trim().toLowerCase();
+    if (v.contains('upper middle')) return l10n.familyStatusUpperMiddle;
+    if (v.contains('lower middle')) return l10n.familyStatusLowerMiddle;
+    if (v.contains('middle')) return l10n.familyStatusMiddle;
+    if (v.contains('lower')) return l10n.familyStatusLower;
+    if (v.contains('rich')) return l10n.familyStatusRich;
+    return value.trim();
   }
 }
 
@@ -223,11 +243,12 @@ class _RootNode extends StatelessWidget {
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
-            children: const [
-              Icon(Icons.account_tree_outlined, color: Colors.white, size: 20),
-              SizedBox(width: 8),
-              Text('Family',
-                  style: TextStyle(
+            children: [
+              const Icon(Icons.account_tree_outlined,
+                  color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Text(context.l10n.family,
+                  style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.bold)),
@@ -289,7 +310,7 @@ class _ParentCard extends StatelessWidget {
                   color: accent, fontSize: 12, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text(
-            name.trim().isEmpty ? 'Not specified' : name.trim(),
+            name.trim().isEmpty ? context.l10n.notSpecified : name.trim(),
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -319,7 +340,14 @@ class _ParentCard extends StatelessWidget {
 class _SiblingsCard extends StatelessWidget {
   final int brothers;
   final int sisters;
-  const _SiblingsCard({required this.brothers, required this.sisters});
+  final String brothersLabel;
+  final String sistersLabel;
+  const _SiblingsCard({
+    required this.brothers,
+    required this.sisters,
+    required this.brothersLabel,
+    required this.sistersLabel,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -337,10 +365,10 @@ class _SiblingsCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _siblingStat(Icons.man_outlined, 'Brothers', brothers, AppColors.info),
+          _siblingStat(Icons.man_outlined, brothersLabel, brothers, AppColors.info),
           Container(width: 1, height: 38, color: AppColors.divider),
           _siblingStat(
-              Icons.woman_outlined, 'Sisters', sisters, AppColors.primaryLight),
+              Icons.woman_outlined, sistersLabel, sisters, AppColors.primaryLight),
         ],
       ),
     );

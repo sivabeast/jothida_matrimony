@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/config/dev_config.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/l10n_ext.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/demo_data_provider.dart';
@@ -38,7 +39,7 @@ class MyProfileTab extends ConsumerWidget {
                     _ProfilePhotoAvatar(profile: profile),
                     const SizedBox(height: 12),
                     Text(
-                      profile?.name ?? 'Complete your profile',
+                      profile?.name ?? context.l10n.completeProfile,
                       style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     if (profile != null) ...[
@@ -56,8 +57,8 @@ class MyProfileTab extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: AppColors.gold.withOpacity(0.5)),
                           ),
-                          child: const Text('🎉 Married',
-                              style: TextStyle(
+                          child: Text('🎉 ${context.l10n.married}',
+                              style: const TextStyle(
                                   color: AppColors.primary,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold)),
@@ -73,7 +74,7 @@ class MyProfileTab extends ConsumerWidget {
                       ElevatedButton.icon(
                         onPressed: () => context.push('/profile/create'),
                         icon: const Icon(Icons.add),
-                        label: const Text('Create Profile'),
+                        label: Text(context.l10n.createProfile),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
@@ -95,41 +96,42 @@ class MyProfileTab extends ConsumerWidget {
             error: (_, __) => const SizedBox.shrink(),
             data: (sub) => sub == null
                 ? _buildUpgradeCard(context)
-                : _buildSubCard(sub.plan, sub.daysRemaining),
+                : _buildSubCard(context, sub.plan, sub.daysRemaining),
           ),
           const SizedBox(height: 16),
           // Menu items
-          _buildMenuItem(context, Icons.person_outline, 'Personal Details', '/personal-details'),
-          _buildMenuItem(context, Icons.auto_awesome_outlined, 'Horoscope Details', '/horoscope'),
-          _buildMenuItem(context, Icons.family_restroom_outlined, 'Family Details', '/family-tree'),
-          _buildMenuItem(context, Icons.tune, 'Partner Preferences', '/partner-preferences'),
+          _buildMenuItem(context, Icons.person_outline, context.l10n.personalDetails, '/personal-details'),
+          _buildMenuItem(context, Icons.auto_awesome_outlined, context.l10n.horoscopeDetails, '/horoscope'),
+          _buildMenuItem(context, Icons.family_restroom_outlined, context.l10n.familyDetails, '/family-tree'),
+          _buildMenuItem(context, Icons.tune, context.l10n.partnerPreferences, '/partner-preferences'),
           // "Porutham Analysis" self-serve removed — astrologer consultation
           // (Match → Compatibility → Connect Astrologer) is the only analysis flow.
-          _buildMenuItem(context, Icons.workspace_premium_outlined, 'Subscription Plans', '/subscription'),
-          _buildMenuItem(context, Icons.settings_outlined, 'Settings', '/settings'),
-          _buildMenuItem(context, Icons.help_outline, 'Help & Support', '/help'),
-          _buildMenuItem(context, Icons.privacy_tip_outlined, 'Privacy Policy', '/privacy-policy'),
-          _buildMenuItem(context, Icons.description_outlined, 'Terms & Conditions', '/terms'),
+          _buildMenuItem(context, Icons.workspace_premium_outlined, context.l10n.subscriptionPlans, '/subscription'),
+          _buildMenuItem(context, Icons.settings_outlined, context.l10n.settings, '/settings'),
+          _buildMenuItem(context, Icons.help_outline, context.l10n.helpSupport, '/help'),
+          _buildMenuItem(context, Icons.privacy_tip_outlined, context.l10n.privacyPolicy, '/privacy-policy'),
+          _buildMenuItem(context, Icons.description_outlined, context.l10n.termsConditions, '/terms'),
           const SizedBox(height: 8),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Sign Out', style: TextStyle(color: Colors.red)),
+            title: Text(context.l10n.logout, style: const TextStyle(color: Colors.red)),
             onTap: () async {
               debugPrint('[MyProfileTab] Sign Out tapped — showing confirmation');
+              final l10n = context.l10n;
               final confirmed = await showDialog<bool>(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  title: const Text('Sign Out'),
-                  content: const Text('Are you sure you want to sign out?'),
+                  title: Text(l10n.logout),
+                  content: Text(l10n.signOutConfirm),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(false),
-                      child: const Text('Cancel'),
+                      child: Text(l10n.cancel),
                     ),
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(true),
                       style: TextButton.styleFrom(foregroundColor: Colors.red),
-                      child: const Text('Sign Out'),
+                      child: Text(l10n.logout),
                     ),
                   ],
                 ),
@@ -159,29 +161,35 @@ class MyProfileTab extends ConsumerWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: ListTile(
           leading: const Icon(Icons.workspace_premium, color: AppColors.gold),
-          title: const Text('Upgrade to Premium',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          subtitle: const Text('Get unlimited access & free astrologer consultations',
-              style: TextStyle(color: Colors.white70, fontSize: 12)),
+          title: Text(context.l10n.upgradeToPremium,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          subtitle: Text(context.l10n.premiumSubtitle,
+              style: const TextStyle(color: Colors.white70, fontSize: 12)),
           trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
           onTap: () => context.push('/subscription'),
         ),
       );
 
-  Widget _buildSubCard(String plan, int daysLeft) => Card(
-        color: AppColors.gold.withOpacity(0.1),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: AppColors.gold.withOpacity(0.3))),
-        child: ListTile(
-          leading: const Icon(Icons.workspace_premium, color: AppColors.gold),
-          title: Text(
-            '${plan[0].toUpperCase()}${plan.substring(1)} Plan',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          subtitle: Text('$daysLeft days remaining'),
-        ),
-      );
+  Widget _buildSubCard(BuildContext context, String plan, int daysLeft) {
+    final l10n = context.l10n;
+    final planName = switch (plan) {
+      'basic' => l10n.basicPlan,
+      'medium' => l10n.mediumPlan,
+      'premium' => l10n.premiumPlan,
+      _ => l10n.freePlan,
+    };
+    return Card(
+      color: AppColors.gold.withOpacity(0.1),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: AppColors.gold.withOpacity(0.3))),
+      child: ListTile(
+        leading: const Icon(Icons.workspace_premium, color: AppColors.gold),
+        title: Text(planName, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(l10n.daysRemaining(daysLeft)),
+      ),
+    );
+  }
 
   Widget _buildMenuItem(BuildContext context, IconData icon, String title, String route) =>
       ListTile(
@@ -247,9 +255,9 @@ class _ProfilePhotoAvatarState extends ConsumerState<_ProfilePhotoAvatar> {
             index: 0,
           );
       await _persist(url);
-      if (mounted) _snack('Profile photo updated');
+      if (mounted) _snack(context.l10n.photoUpdated);
     } catch (_) {
-      if (mounted) _snack('Could not update photo. Please try again.');
+      if (mounted) _snack(context.l10n.couldNotUpdatePhoto);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -260,16 +268,16 @@ class _ProfilePhotoAvatarState extends ConsumerState<_ProfilePhotoAvatar> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Remove Photo'),
-        content: const Text('Remove your profile photo?'),
+        title: Text(context.l10n.removePhoto),
+        content: Text(context.l10n.removePhotoConfirm),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: Text(context.l10n.cancel)),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Remove'),
+            child: Text(context.l10n.remove),
           ),
         ],
       ),
@@ -278,9 +286,9 @@ class _ProfilePhotoAvatarState extends ConsumerState<_ProfilePhotoAvatar> {
     setState(() => _busy = true);
     try {
       await _persist(null);
-      if (mounted) _snack('Photo removed');
+      if (mounted) _snack(context.l10n.photoRemoved);
     } catch (_) {
-      if (mounted) _snack('Could not remove photo. Please try again.');
+      if (mounted) _snack(context.l10n.couldNotRemovePhoto);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -338,7 +346,7 @@ class _ProfilePhotoAvatarState extends ConsumerState<_ProfilePhotoAvatar> {
               ListTile(
                 leading: const Icon(Icons.visibility_outlined,
                     color: AppColors.primary),
-                title: const Text('View Photo'),
+                title: Text(context.l10n.viewPhoto),
                 onTap: () {
                   Navigator.pop(ctx);
                   _viewPhoto(photoUrl);
@@ -347,7 +355,7 @@ class _ProfilePhotoAvatarState extends ConsumerState<_ProfilePhotoAvatar> {
             ListTile(
               leading: const Icon(Icons.photo_camera_outlined,
                   color: AppColors.primary),
-              title: Text(hasPhoto ? 'Change Photo' : 'Upload Photo'),
+              title: Text(hasPhoto ? context.l10n.changePhoto : context.l10n.uploadPhoto),
               onTap: () {
                 Navigator.pop(ctx);
                 _changePhoto();
@@ -357,8 +365,8 @@ class _ProfilePhotoAvatarState extends ConsumerState<_ProfilePhotoAvatar> {
               ListTile(
                 leading:
                     const Icon(Icons.delete_outline, color: AppColors.error),
-                title: const Text('Remove Photo',
-                    style: TextStyle(color: AppColors.error)),
+                title: Text(context.l10n.removePhoto,
+                    style: const TextStyle(color: AppColors.error)),
                 onTap: () {
                   Navigator.pop(ctx);
                   _removePhoto();

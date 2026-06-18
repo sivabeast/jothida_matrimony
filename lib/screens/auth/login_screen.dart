@@ -6,6 +6,7 @@ import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/auth_routing.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/validators.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/common/gradient_button.dart';
@@ -68,9 +69,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final auth = ref.read(authNotifierProvider);
     if (auth.hasError) {
       final err = auth.error;
-      final message = err is AuthException
-          ? err.message
-          : 'Sign in failed. Please check your credentials and try again.';
+      final message = err is AuthException ? err.message : context.l10n.signInFailed;
       debugPrint('[LoginScreen] signInWithEmail error: $err');
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(message)));
@@ -97,9 +96,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       // (covers cancellation, no-network, misconfigured SHA-1/OAuth client,
       // account-exists-with-different-credential, etc.).
       final err = auth.error;
-      final message = err is AuthException
-          ? err.message
-          : 'Google Sign-In failed. Please try again.';
+      final message =
+          err is AuthException ? err.message : context.l10n.googleSignInFailed;
       debugPrint('[LoginScreen] signInWithGoogle error: $err');
       // Silently ignore a user-cancelled picker.
       if (!(err is AuthException && err.cancelled)) {
@@ -127,6 +125,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final otpState = ref.watch(otpNotifierProvider);
     final authAsync = ref.watch(authNotifierProvider);
     final isLoading = otpState.isLoading || authAsync.isLoading;
+    final l10n = context.l10n;
 
     return Scaffold(
       body: Container(
@@ -147,7 +146,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const Icon(Icons.favorite,
                           color: AppColors.gold, size: 72),
                       const SizedBox(height: 8),
-                      Text('Jothida Matrimony',
+                      Text(l10n.appTitle,
                           style: AppTextStyles.appName),
                     ],
                   ),
@@ -168,9 +167,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Welcome Back', style: AppTextStyles.heading2),
+                        Text(l10n.welcomeBack, style: AppTextStyles.heading2),
                         const SizedBox(height: 4),
-                        Text('Sign in to continue', style: AppTextStyles.bodyMedium),
+                        Text(l10n.signInToContinue, style: AppTextStyles.bodyMedium),
                         const SizedBox(height: 20),
                         // Toggle
                         Container(
@@ -180,8 +179,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                           child: Row(
                             children: [
-                              _buildTab('Phone', LoginMode.phone),
-                              _buildTab('Email', LoginMode.email),
+                              _buildTab(l10n.phone, LoginMode.phone),
+                              _buildTab(l10n.email, LoginMode.email),
                             ],
                           ),
                         ),
@@ -189,7 +188,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         if (_mode == LoginMode.phone) ...[
                           AppTextField(
                             controller: _phoneController,
-                            label: 'Mobile Number',
+                            label: l10n.mobileNumber,
                             hint: '9876543210',
                             keyboardType: TextInputType.phone,
                             prefixText: '+91 ',
@@ -199,12 +198,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           GradientButton(
                             onPressed: isLoading ? null : _sendOtp,
                             isLoading: otpState.isLoading,
-                            text: 'Send OTP',
+                            text: l10n.sendOtp,
                           ),
                         ] else ...[
                           AppTextField(
                             controller: _emailController,
-                            label: 'Email',
+                            label: l10n.email,
                             hint: 'example@email.com',
                             keyboardType: TextInputType.emailAddress,
                             validator: Validators.email,
@@ -212,7 +211,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           const SizedBox(height: 12),
                           AppTextField(
                             controller: _passwordController,
-                            label: 'Password',
+                            label: l10n.password,
                             hint: '••••••••',
                             obscureText: _obscurePassword,
                             validator: Validators.password,
@@ -228,13 +227,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             alignment: Alignment.centerRight,
                             child: TextButton(
                               onPressed: () => context.push('/forgot-password'),
-                              child: const Text('Forgot Password?'),
+                              child: Text(l10n.forgotPassword),
                             ),
                           ),
                           GradientButton(
                             onPressed: isLoading ? null : _signInWithEmail,
                             isLoading: authAsync.isLoading,
-                            text: 'Sign In',
+                            text: l10n.signIn,
                           ),
                         ],
                         if (otpState.error != null) ...[
@@ -243,14 +242,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               style: const TextStyle(color: Colors.red, fontSize: 13)),
                         ],
                         const SizedBox(height: 20),
-                        const Row(
+                        Row(
                           children: [
-                            Expanded(child: Divider()),
+                            const Expanded(child: Divider()),
                             Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 12),
-                              child: Text('OR', style: TextStyle(color: Colors.grey)),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              child: Text(l10n.orLabel,
+                                  style: const TextStyle(color: Colors.grey)),
                             ),
-                            Expanded(child: Divider()),
+                            const Expanded(child: Divider()),
                           ],
                         ),
                         const SizedBox(height: 16),
@@ -264,7 +264,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             errorBuilder: (_, __, ___) =>
                                 const Icon(Icons.g_mobiledata, size: 24),
                           ),
-                          label: const Text('Continue with Google'),
+                          label: Text(l10n.continueWithGoogle),
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size.fromHeight(50),
                             shape: RoundedRectangleBorder(
@@ -275,11 +275,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text("Don't have an account? "),
+                            Text(l10n.dontHaveAccount),
                             GestureDetector(
                               onTap: () => context.push('/register'),
                               child: Text(
-                                'Register',
+                                l10n.register,
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   color: AppColors.primary,
                                   fontWeight: FontWeight.w600,
@@ -295,7 +295,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         TextButton.icon(
                           onPressed: () => context.push('/astrologer-login'),
                           icon: const Icon(Icons.auto_awesome, size: 18),
-                          label: const Text('Are you an Astrologer? Sign in here'),
+                          label: Text(l10n.astrologerSignInHere),
                           style: TextButton.styleFrom(
                               foregroundColor: AppColors.goldDark),
                         ),
