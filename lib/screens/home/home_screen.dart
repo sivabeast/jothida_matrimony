@@ -7,6 +7,7 @@ import '../../core/utils/l10n_ext.dart';
 import '../../widgets/common/app_logo.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/announcement_provider.dart';
+import '../../providers/navigation_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../interests/interests_center_screen.dart';
 import 'tabs/astrology_services_tab.dart';
@@ -23,8 +24,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _selectedIndex = 0;
-
   // Tab index → widget. Tab 3 is the Interest Management Center (replaces the
   // old chat/messages page).
   static const _tabs = <Widget>[
@@ -37,6 +36,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final selectedIndex = ref.watch(homeTabIndexProvider);
     final unread = ref.watch(unreadNotificationCountProvider) +
         ref.watch(unreadAnnouncementsCountProvider);
     // Admin icon visibility — only true for whitelisted Super Admin accounts.
@@ -54,7 +54,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // The Home tab (index 0) renders its own curved header inside
       // HomeDashboardTab, so the shared AppBar is hidden there. Every other tab
       // keeps this AppBar unchanged.
-      appBar: _selectedIndex == 0
+      appBar: selectedIndex == 0
           ? null
           : AppBar(
         backgroundColor: AppColors.primary,
@@ -137,11 +137,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
       // ── Body ─────────────────────────────────────────────────────────────
-      body: _tabs[_selectedIndex],
+      body: _tabs[selectedIndex],
       // ── Bottom Navigation ─────────────────────────────────────────────────
       bottomNavigationBar: _BottomNav(
-        selectedIndex: _selectedIndex,
-        onTap: (i) => setState(() => _selectedIndex = i),
+        selectedIndex: selectedIndex,
+        onTap: (i) => ref.read(homeTabIndexProvider.notifier).state = i,
       ),
       ),
     );
@@ -153,8 +153,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ///  • not on the Home tab → switch back to the Home tab (never exits)
   ///  • on the Home tab      → "press back again to exit" within 2 seconds
   void _handleBackPress() {
-    if (_selectedIndex != 0) {
-      setState(() => _selectedIndex = 0);
+    if (ref.read(homeTabIndexProvider) != 0) {
+      ref.read(homeTabIndexProvider.notifier).state = 0;
       return;
     }
     final now = DateTime.now();

@@ -601,35 +601,96 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
 final discoverProvider =
     NotifierProvider<DiscoverNotifier, DiscoverState>(() => DiscoverNotifier());
 
-/// Home "Recommended Matches": the latest 10 opposite-gender registrations
-/// (createdAt DESC, limit 10). Gender is the only filter; horoscope
-/// compatibility is shown as a badge, never used to exclude.
-final recommendedMatchesProvider =
-    FutureProvider.autoDispose<List<ProfileModel>>((ref) async {
+/// Home-page matches bucketed by porutham compatibility category. Every list is
+/// drawn from the SAME opposite-gender + age-filtered pool: [all] is the full
+/// pool; [veryGood] / [good] / [average] are category subsets of it.
+class HomeMatches {
+  final List<ProfileModel> veryGood; // excellent + very good
+  final List<ProfileModel> good;
+  final List<ProfileModel> average;
+  final List<ProfileModel> all;
+
+  const HomeMatches({
+    this.veryGood = const [],
+    this.good = const [],
+    this.average = const [],
+    this.all = const [],
+  });
+
+  bool get isEmpty => all.isEmpty;
+}
+
+/// Home "Recommended Matches", refactored into compatibility-categorized
+/// buckets. Pipeline (per the product spec):
+///
+///  1. **Opposite gender** — enforced by [matchGenderProvider] / the query, so a
+///     same-gender profile can NEVER appear.
+///  2. **Age rule** — a MALE user sees only YOUNGER females (age < my age); a
+///     FEMALE user sees only OLDER males (age > my age). Equal age is excluded.
+///  3. **Compatibility category** via [computePorutham] — NO percentage.
+///  4. **Bucket** into Very Good (excellent/very good) · Good · Average.
+///  5. **[all]** = every profile that passed gender + age (any category, plus
+///     profiles whose horoscope can't be scored yet).
+final homeMatchesProvider = FutureProvider.autoDispose<HomeMatches>((ref) async {
   final gender = ref.watch(matchGenderProvider);
   final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+  final me = ref.watch(myProfileProvider).valueOrNull;
 
+  final iAmFemale = (me?.gender ?? '').trim().toLowerCase().startsWith('f');
+  final myAge = me?.age ?? 0;
+
+  // Step 1 — opposite-gender pool (the query already filters by gender).
+  final List<ProfileModel> pool;
   if (kBypassAuth) {
-    return ref
-        .read(demoProfilesProvider.notifier)
-        .discover(gender: gender)
-        .where((p) => p.userId != myUid)
-        .take(10)
-        .toList();
+    pool = ref.read(demoProfilesProvider.notifier).discover(gender: gender);
+  } else {
+    final page = await ref
+        .read(profileRepositoryProvider)
+        .searchProfilesPage(gender: gender, limit: 60);
+    pool = page.profiles;
   }
 
-  // Fetch a small buffer beyond 10 so client-side self/married excludes can't
-  // leave us short.
-  final page = await ref
-      .read(profileRepositoryProvider)
-      .searchProfilesPage(gender: gender, limit: 14);
-  return page.profiles
-      .where((p) =>
-          p.userId != myUid &&
-          !p.isMarried &&
-          p.isActive &&
-          p.status != 'rejected' &&
-          p.status != 'blocked')
-      .take(10)
-      .toList();
+  // Step 2 — data-integrity excludes + the age rule. When my age is unknown
+  // (no profile yet) the age rule is skipped rather than hiding everyone.
+  bool passesAge(ProfileModel p) {
+    if (myAge <= 0 || p.age <= 0) return true;
+    return iAmFemale ? p.age > myAge : p.age < myAge;
+  }
+
+  final all = pool.where((p) {
+    if (p.userId == myUid) return false;
+    if (p.isMarried) return false;
+    if (!p.isActive) return false;
+    if (p.status == 'rejected' || p.status == 'blocked') return false;
+    return passesAge(p);
+  }).toList();
+
+  // Steps 3-4 — categorize. Needs my horoscope; unscored profiles remain in
+  // [all] only.
+  final veryGood = <ProfileModel>[];
+  final good = <ProfileModel>[];
+  final average = <ProfileModel>[];
+  if (me != null) {
+    for (final p in all) {
+      final result = computePorutham(me, p);
+      if (result == null) continue;
+      switch (result.category) {
+        case MatchCategory.excellent:
+        case MatchCategory.veryGood:
+          veryGood.add(p);
+          break;
+        case MatchCategory.good:
+          good.add(p);
+          break;
+        case MatchCategory.average:
+          average.add(p);
+          break;
+        case MatchCategory.notRecommended:
+          break;
+      }
+    }
+  }
+
+  return HomeMatches(
+      veryGood: veryGood, good: good, average: average, all: all);
 });

@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/account_provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/navigation_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/horoscope_match_badge.dart';
@@ -76,13 +77,12 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
 
   @override
   Widget build(BuildContext context) {
-    final recommended = ref.watch(recommendedMatchesProvider);
-    final profiles = recommended.valueOrNull ?? const <ProfileModel>[];
+    final matchesAsync = ref.watch(homeMatchesProvider);
     final myProfile = ref.watch(myProfileProvider).valueOrNull;
 
     return RefreshIndicator(
       color: AppColors.primary,
-      onRefresh: () async => ref.invalidate(recommendedMatchesProvider),
+      onRefresh: () async => ref.invalidate(homeMatchesProvider),
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -104,8 +104,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           ),
           const SizedBox(height: 16),
 
-          // ── Recommended Matches ──────────────────────────────────────────
-          _buildMatchesSection(context, profiles),
+          // ── Categorized matches (Very Good · Good · Average · All) ────────
+          _buildCategorizedMatches(context, matchesAsync),
           const SizedBox(height: 24),
         ],
       ),
@@ -310,8 +310,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             icon: Icons.people_outline,
             label: 'Matches',
             onTap: () {
-              // Matches quick-action: refresh the recommended list.
-              ref.invalidate(recommendedMatchesProvider);
+              // Matches quick-action: jump to the Matches tab.
+              ref.read(homeTabIndexProvider.notifier).state = 1;
             },
           ),
           _QuickAction(
@@ -453,62 +453,147 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     if (confirmed != true) return;
     final messenger = ScaffoldMessenger.of(context);
     await ref.read(accountControllerProvider.notifier).markMarried(profile);
-    // Refresh the recommended list so the pool reflects the change immediately.
-    ref.invalidate(recommendedMatchesProvider);
+    // Refresh the matches so the pool reflects the change immediately.
+    ref.invalidate(homeMatchesProvider);
     if (!mounted) return;
     messenger.showSnackBar(const SnackBar(
         content: Text('🎉 Congratulations! Your profile is now marked as Married.')));
   }
 
-  // ── Recommended Matches ───────────────────────────────────────────────────
+  // ── Categorized Matches ───────────────────────────────────────────────────
+  // Replaces the old single "Recommended Matches" list with four sections:
+  //   💚 Very Good · 🟢 Good · 🟡 Average  → horizontal scrolling previews
+  //   ❤️ All Matches                       → vertical grid of every match
+  // The badge on each card shows the per-profile porutham category; section
+  // headers use the fixed bucket emojis. No percentage is ever shown.
 
-  Widget _buildMatchesSection(BuildContext context, List<ProfileModel> profiles) {
+  Widget _buildCategorizedMatches(
+      BuildContext context, AsyncValue<HomeMatches> matchesAsync) {
+    return matchesAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 48),
+        child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      ),
+      error: (_, __) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: _buildEmptyMatches(),
+      ),
+      data: (m) {
+        if (m.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildEmptyMatches(),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (m.veryGood.isNotEmpty) ...[
+              _horizontalMatchSection(
+                  context, '💚', 'Very Good Match', m.veryGood),
+              const SizedBox(height: 22),
+            ],
+            if (m.good.isNotEmpty) ...[
+              _horizontalMatchSection(context, '🟢', 'Good Match', m.good),
+              const SizedBox(height: 22),
+            ],
+            if (m.average.isNotEmpty) ...[
+              _horizontalMatchSection(
+                  context, '🟡', 'Average Match', m.average),
+              const SizedBox(height: 22),
+            ],
+            _allMatchesSection(context, '❤️', 'All Matches', m.all),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Section header: "emoji  Title" on the left, optional "View All →" on right.
+  Widget _sectionHeader(BuildContext context, String emoji, String title,
+      {VoidCallback? onViewAll}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text('$emoji  $title',
+                style: const TextStyle(
+                    fontSize: 16.5,
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.bold)),
+          ),
+          if (onViewAll != null)
+            GestureDetector(
+              onTap: onViewAll,
+              child: const Row(
+                children: [
+                  Text('View All',
+                      style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13)),
+                  SizedBox(width: 2),
+                  Icon(Icons.arrow_forward_ios,
+                      size: 12, color: AppColors.primary),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Horizontal scrolling preview (up to 10 cards). "View All" opens the
+  /// dedicated Matches tab for the full browsing experience.
+  Widget _horizontalMatchSection(BuildContext context, String emoji,
+      String title, List<ProfileModel> profiles) {
+    final preview = profiles.take(10).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Recommended Matches',
-                  style: TextStyle(
-                      fontSize: 17,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.bold)),
-              GestureDetector(
-                onTap: () {},
-                child: Row(
-                  children: [
-                    Text('View All',
-                        style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13)),
-                    const SizedBox(width: 2),
-                    Icon(Icons.arrow_forward_ios, size: 12, color: AppColors.primary),
-                  ],
-                ),
-              ),
-            ],
+        _sectionHeader(context, emoji, title,
+            onViewAll: () =>
+                ref.read(homeTabIndexProvider.notifier).state = 1),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 234,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: preview.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, i) =>
+                SizedBox(width: 162, child: _MatchCard(profile: preview[i])),
           ),
         ),
+      ],
+    );
+  }
+
+  /// All Matches — a vertical 2-column grid of every profile that passed the
+  /// gender + age filters.
+  Widget _allMatchesSection(BuildContext context, String emoji, String title,
+      List<ProfileModel> profiles) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader(context, emoji, title),
         const SizedBox(height: 12),
-        if (profiles.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildEmptyMatches(),
-          )
-        else
-          SizedBox(
-            height: 240,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: profiles.length,
-              itemBuilder: (_, i) => _MatchCard(profile: profiles[i]),
-            ),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 0.66,
           ),
+          itemCount: profiles.length,
+          itemBuilder: (_, i) => _MatchCard(profile: profiles[i]),
+        ),
       ],
     );
   }
@@ -523,10 +608,10 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
       child: Column(
         children: [
           Icon(Icons.favorite_border, size: 48, color: Colors.grey[300]),
-          const SizedBox(height: 8),
-          const Text('No matches yet', style: TextStyle(fontWeight: FontWeight.w600)),
-          Text('Complete your profile to see matches',
-              style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+          const SizedBox(height: 10),
+          const Text('No matching profiles found.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
         ],
       ),
     );
@@ -790,47 +875,45 @@ class _MatchCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => context.push('/profile/${profile.id}'),
       child: Container(
-        width: 155,
-        margin: const EdgeInsets.only(right: 12),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8)],
         ),
+        // Fills whatever height the parent gives it (the fixed-height horizontal
+        // row OR the grid cell), so the same card works in both layouts.
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Photo with an informational "Match" badge when the nakshatra is
-            // compatible (never hides the card).
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: SizedBox(
-                height: 140,
-                width: double.infinity,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    profile.photos.isNotEmpty
-                        ? Image.network(
-                            profile.photos.first,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _placeholder(),
-                          )
-                        : _placeholder(),
-                    Positioned(
-                      top: 6,
-                      left: 6,
-                      child: HoroscopeMatchBadge(target: profile, compact: true),
-                    ),
-                  ],
-                ),
+            // Photo expands to fill the remaining height. The match badge shows
+            // the per-profile porutham CATEGORY (never a percentage) and never
+            // hides the card.
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  profile.photos.isNotEmpty
+                      ? Image.network(
+                          profile.photos.first,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _placeholder(),
+                        )
+                      : _placeholder(),
+                  Positioned(
+                    top: 6,
+                    left: 6,
+                    child: HoroscopeMatchBadge(target: profile, compact: true),
+                  ),
+                ],
               ),
             ),
-            // Info
+            // Info: name · age · education · location.
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     '${profile.name}, ${profile.age}',
@@ -848,23 +931,18 @@ class _MatchCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: Colors.grey[600], fontSize: 11),
                   ),
-                  Text(
-                    profile.occupation.isEmpty ? 'N/A' : profile.occupation,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Colors.grey[600], fontSize: 11),
-                  ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Row(
                     children: [
-                      Icon(Icons.location_on_outlined, size: 11, color: Colors.grey[500]),
+                      Icon(Icons.location_on_outlined,
+                          size: 12, color: Colors.grey[500]),
                       const SizedBox(width: 2),
                       Expanded(
                         child: Text(
-                          profile.city,
+                          profile.city.isEmpty ? 'N/A' : profile.city,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: Colors.grey[500], fontSize: 10),
+                          style: TextStyle(color: Colors.grey[500], fontSize: 10.5),
                         ),
                       ),
                     ],
