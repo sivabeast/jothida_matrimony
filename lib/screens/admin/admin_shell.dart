@@ -8,13 +8,14 @@ class AdminShell extends ConsumerWidget {
 
   const AdminShell({super.key, required this.child});
 
-  // Bottom-nav destinations. The "Reports" tab opens the analytics page
-  // (/admin/analytics); content-moderation reports live under Settings.
+  // Bottom-nav destinations. Revenue/analytics reports are reachable from the
+  // Dashboard's "View Reports" quick action; the bottom bar surfaces the five
+  // primary admin areas instead.
   static const _routes = [
     '/admin',
     '/admin/users',
     '/admin/astrologers',
-    '/admin/analytics',
+    '/admin/notifications',
     '/admin/settings',
   ];
 
@@ -73,7 +74,7 @@ class AdminShell extends ConsumerWidget {
             NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Dashboard'),
             NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Users'),
             NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: 'Astrologers'),
-            NavigationDestination(icon: Icon(Icons.report_outlined), selectedIcon: Icon(Icons.report), label: 'Reports'),
+            NavigationDestination(icon: Icon(Icons.notifications_outlined), selectedIcon: Icon(Icons.notifications), label: 'Notifications'),
             NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
           ],
         ),

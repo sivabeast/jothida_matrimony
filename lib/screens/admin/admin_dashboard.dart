@@ -2,265 +2,279 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_text_styles.dart';
-import '../../models/admin_activity.dart';
 import '../../models/dashboard_analytics.dart';
-import '../../providers/account_provider.dart';
 import '../../providers/admin_provider.dart';
-import '../../widgets/common/data_states.dart';
-import 'admin_export.dart';
+import 'admin_export.dart' show inr;
 
-/// A clean, lightweight admin home: a few summary cards, quick actions and a
-/// short recent-activity feed. All detailed analytics & charts live on the
-/// Reports tab — the Dashboard intentionally stays uncluttered.
+/// Mobile-first admin Dashboard.
+///
+/// Summary metrics grouped into sections — Users · Subscriptions · Astrologers ·
+/// Engagement · Revenue — followed by Quick Actions. Counts come from
+/// [adminStatsProvider] (extended breakdowns) and revenue / verification numbers
+/// from [dashboardAnalyticsProvider]. Both are read defensively so the page
+/// always renders whatever data is available.
 class AdminDashboard extends ConsumerWidget {
   const AdminDashboard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final statsAsync = ref.watch(adminStatsProvider);
     final analyticsAsync = ref.watch(dashboardAnalyticsProvider);
-    final pendingDeletions = ref.watch(pendingDeletionCountProvider);
+    final stats = statsAsync.valueOrNull;
+    final a = analyticsAsync.valueOrNull ?? const DashboardAnalytics();
+    final loading = stats == null && analyticsAsync.isLoading;
+
+    int n(String k) => (stats?[k] as num?)?.toInt() ?? 0;
 
     return RefreshIndicator(
       color: AppColors.primary,
       onRefresh: () async {
+        ref.invalidate(adminStatsProvider);
         ref.invalidate(dashboardAnalyticsProvider);
-        ref.invalidate(recentActivityProvider);
       },
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
         children: [
-          Text('Dashboard', style: AppTextStyles.heading2),
-          const SizedBox(height: 16),
-          if (pendingDeletions > 0) ...[
-            _DeletionBanner(count: pendingDeletions),
-            const SizedBox(height: 16),
-          ],
+          const Text('Dashboard',
+              style: TextStyle(
+                  fontSize: 24,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.bold)),
+          const SizedBox(height: 2),
+          Text('Welcome back, Admin!',
+              style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+          const SizedBox(height: 18),
 
-          // ── Summary cards ─────────────────────────────────────────────────
-          analyticsAsync.when(
-            loading: () => const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
-                child: LoadingState(message: 'Loading summary...')),
-            error: (e, _) {
-              debugPrint('[AdminDashboard] summary load failed: $e');
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: ErrorStateView(
-                  message: 'Connection Error — unable to load summary.',
-                  onRetry: () => ref.invalidate(dashboardAnalyticsProvider),
-                ),
-              );
-            },
-            data: (a) => _summaryGrid(a, pendingDeletions),
+          if (loading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 28),
+              child: Center(
+                  child: CircularProgressIndicator(color: AppColors.primary)),
+            ),
+
+          // ── Users ───────────────────────────────────────────────────────
+          _Section(title: 'Users', children: [
+            _StatTile('Total Users', '${n('totalUsers')}', Icons.groups,
+                AppColors.primary),
+            _StatTile('Male Users', '${n('maleUsers')}', Icons.male,
+                const Color(0xFF2F80ED)),
+            _StatTile('Female Users', '${n('femaleUsers')}', Icons.female,
+                const Color(0xFFEB5757)),
+            _StatTile('Active Users', '${n('activeUsers')}',
+                Icons.verified_user, AppColors.success),
+          ]),
+
+          // ── Subscriptions ───────────────────────────────────────────────
+          _Section(title: 'Subscriptions', columns: 3, children: [
+            _StatTile('Basic Plan', '${n('basicPlanUsers')}',
+                Icons.card_membership, AppColors.basicPlan),
+            _StatTile('Medium Plan', '${n('mediumPlanUsers')}',
+                Icons.workspace_premium_outlined, AppColors.warning),
+            _StatTile('Premium', '${n('premiumPlanUsers')}',
+                Icons.workspace_premium, AppColors.premiumPlan),
+          ]),
+
+          // ── Astrologers ─────────────────────────────────────────────────
+          _Section(title: 'Astrologers', columns: 3, children: [
+            _StatTile('Total', '${a.totalAstrologers}', Icons.auto_awesome,
+                const Color(0xFF7C5CFC)),
+            _StatTile('Verified', '${a.verifiedAstrologers}', Icons.verified,
+                AppColors.success),
+            _StatTile('Pending', '${a.pendingAstrologers}',
+                Icons.hourglass_top, AppColors.warning),
+          ]),
+
+          // ── Engagement ──────────────────────────────────────────────────
+          _Section(title: 'Engagement', children: [
+            _StatTile('Total Interests', '${n('totalInterests')}',
+                Icons.favorite, const Color(0xFF9B51E0)),
+            _StatTile('Total Matches', '${n('totalMatches')}',
+                Icons.favorite_border, AppColors.primary),
+          ]),
+
+          // ── Revenue ─────────────────────────────────────────────────────
+          const Padding(
+            padding: EdgeInsets.only(left: 4, bottom: 10, top: 2),
+            child: Text('Revenue',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.bold)),
           ),
+          Row(
+            children: [
+              Expanded(
+                  child: _RevenueCard("Today's", inr(a.revenueToday),
+                      Icons.today, AppColors.success)),
+              const SizedBox(width: 10),
+              Expanded(
+                  child: _RevenueCard('Monthly', inr(a.revenueMonth),
+                      Icons.calendar_month, const Color(0xFF2F80ED))),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _RevenueCard('Total Revenue', inr(a.revenueTotal),
+              Icons.account_balance_wallet, AppColors.premiumPlan,
+              wide: true),
           const SizedBox(height: 24),
 
-          // ── Quick actions ─────────────────────────────────────────────────
-          Text('Quick Actions', style: AppTextStyles.heading3),
-          const SizedBox(height: 12),
-          _quickActions(context),
-          const SizedBox(height: 24),
-
-          // ── Recent activity ───────────────────────────────────────────────
-          Text('Recent Activity', style: AppTextStyles.heading3),
-          const SizedBox(height: 12),
-          _RecentActivity(),
-          const SizedBox(height: 24),
+          // ── Quick actions ───────────────────────────────────────────────
+          const Padding(
+            padding: EdgeInsets.only(left: 4, bottom: 12),
+            child: Text('Quick Actions',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.bold)),
+          ),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 2.4,
+            children: [
+              _QuickAction('Add Astrologer', Icons.person_add_alt_1,
+                  const Color(0xFF7C5CFC), () => context.go('/admin/astrologers')),
+              _QuickAction('Send Notification', Icons.campaign, AppColors.gold,
+                  () => context.go('/admin/notifications')),
+              _QuickAction('Manage Users', Icons.manage_accounts,
+                  const Color(0xFF2F80ED), () => context.go('/admin/users')),
+              _QuickAction('View Reports', Icons.insights, AppColors.primary,
+                  () => context.go('/admin/analytics')),
+            ],
+          ),
         ],
       ),
     );
   }
-
-  Widget _summaryGrid(DashboardAnalytics a, int pendingDeletions) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 1.7,
-      children: [
-        _SummaryCard('Total Users', '${a.totalUsers}', Icons.people, Colors.blue),
-        _SummaryCard('Astrologers', '${a.totalAstrologers}', Icons.auto_awesome,
-            AppColors.gold),
-        _SummaryCard('Premium Users', '${a.premiumSubscribers}',
-            Icons.workspace_premium, AppColors.premiumPlan),
-        _SummaryCard("Today's Revenue", inr(a.revenueToday), Icons.today,
-            AppColors.success),
-        _SummaryCard('Monthly Revenue', inr(a.revenueMonth),
-            Icons.calendar_month, AppColors.primary),
-        _SummaryCard('Pending Verifications', '${a.pendingAstrologers}',
-            Icons.hourglass_top, AppColors.warning),
-        _SummaryCard('Deletion Requests', '$pendingDeletions',
-            Icons.delete_outline, AppColors.error),
-      ],
-    );
-  }
-
-  Widget _quickActions(BuildContext context) {
-    return Column(
-      children: [
-        _ActionTile('Manage Users', Icons.manage_accounts, Colors.blue,
-            () => context.go('/admin/users')),
-        _ActionTile('Manage Astrologers', Icons.auto_awesome, AppColors.gold,
-            () => context.go('/admin/astrologers')),
-        _ActionTile('Notifications', Icons.campaign, AppColors.gold,
-            () => context.go('/admin/notifications')),
-        _ActionTile('View Revenue Reports', Icons.insights, AppColors.primary,
-            () => context.go('/admin/analytics')),
-        _ActionTile('Support Requests', Icons.support_agent, Colors.teal,
-            () => context.go('/admin/support')),
-      ],
-    );
-  }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Recent activity feed (max 5)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _RecentActivity extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(recentActivityProvider);
-    return async.when(
-      loading: () => const Padding(
-          padding: EdgeInsets.symmetric(vertical: 20),
-          child: Center(child: CircularProgressIndicator(color: AppColors.primary))),
-      error: (e, _) {
-        debugPrint('[AdminDashboard] recent activity failed: $e');
-        return _card(Text('Activity unavailable right now.',
-            style: TextStyle(color: Colors.grey[600], fontSize: 13)));
-      },
-      data: (items) {
-        if (items.isEmpty) {
-          return _card(Text('No recent activity yet.',
-              style: TextStyle(color: Colors.grey[500], fontSize: 13)));
-        }
-        return _card(Column(
-          children: [
-            for (var i = 0; i < items.length; i++) ...[
-              if (i > 0) const Divider(height: 18),
-              _ActivityRow(item: items[i]),
-            ],
-          ],
-        ));
-      },
-    );
-  }
-
-  Widget _card(Widget child) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
-        ),
-        child: child,
-      );
-}
-
-class _ActivityRow extends StatelessWidget {
-  final AdminActivity item;
-  const _ActivityRow({required this.item});
-
-  (IconData, Color) get _style {
-    switch (item.type) {
-      case AdminActivityType.user:
-        return (Icons.person_add_outlined, Colors.blue);
-      case AdminActivityType.astrologer:
-        return (Icons.auto_awesome, AppColors.gold);
-      case AdminActivityType.subscription:
-        return (Icons.workspace_premium_outlined, AppColors.premiumPlan);
-      case AdminActivityType.deletion:
-        return (Icons.delete_outline, AppColors.error);
-    }
-  }
-
-  String get _ago {
-    final d = DateTime.now().difference(item.time);
-    if (d.inMinutes < 1) return 'just now';
-    if (d.inMinutes < 60) return '${d.inMinutes}m ago';
-    if (d.inHours < 24) return '${d.inHours}h ago';
-    return '${d.inDays}d ago';
-  }
+// ── Section: title + responsive grid of stat tiles ───────────────────────────
+class _Section extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+  final int columns;
+  const _Section(
+      {required this.title, required this.children, this.columns = 2});
 
   @override
   Widget build(BuildContext context) {
-    final (icon, color) = _style;
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CircleAvatar(
-          radius: 18,
-          backgroundColor: color.withOpacity(0.12),
-          child: Icon(icon, color: color, size: 18),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10, top: 2),
+          child: Text(title,
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.bold)),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(item.subtitle,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-              Text(item.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-            ],
-          ),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: columns,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: columns == 3 ? 0.90 : 1.45,
+          children: children,
         ),
-        Text(_ago, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+        const SizedBox(height: 18),
       ],
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Small widgets
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _SummaryCard extends StatelessWidget {
-  final String title;
+// ── Stat tile (icon chip · value · label) ────────────────────────────────────
+class _StatTile extends StatelessWidget {
+  final String label;
   final String value;
   final IconData icon;
   final Color color;
-  const _SummaryCard(this.title, this.value, this.icon, this.color);
+  const _StatTile(this.label, this.value, this.icon, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 8),
+          Text(value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  fontSize: 19, fontWeight: FontWeight.bold, height: 1.1)),
+          const SizedBox(height: 1),
+          Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Revenue card ─────────────────────────────────────────────────────────────
+class _RevenueCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final bool wide;
+  const _RevenueCard(this.label, this.value, this.icon, this.color,
+      {this.wide = false});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: color.withOpacity(0.10),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+        border: Border.all(color: color.withOpacity(0.25)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(12)),
             child: Icon(icon, color: color, size: 22),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Text(label,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[700])),
+                const SizedBox(height: 2),
                 Text(value,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-                Text(title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                        fontSize: wide ? 22 : 17,
+                        fontWeight: FontWeight.bold,
+                        color: color)),
               ],
             ),
           ),
@@ -270,59 +284,41 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-class _ActionTile extends StatelessWidget {
+// ── Quick action tile ────────────────────────────────────────────────────────
+class _QuickAction extends StatelessWidget {
   final String label;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
-  const _ActionTile(this.label, this.icon, this.color, this.onTap);
+  const _QuickAction(this.label, this.icon, this.color, this.onTap);
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.12),
-          child: Icon(icon, color: color),
-        ),
-        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-        onTap: onTap,
-      ),
-    );
-  }
-}
-
-class _DeletionBanner extends StatelessWidget {
-  final int count;
-  const _DeletionBanner({required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.go('/admin/deletion-requests'),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: AppColors.warning.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.warning.withOpacity(0.4)),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
         ),
         child: Row(
           children: [
-            const Text('🔔', style: TextStyle(fontSize: 18)),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: color, size: 20),
+            ),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                '$count pending account deletion request${count == 1 ? '' : 's'}',
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
+              child: Text(label,
+                  style: const TextStyle(
+                      fontSize: 12.5, fontWeight: FontWeight.w600)),
             ),
-            const Icon(Icons.arrow_forward_ios, size: 14),
           ],
         ),
       ),

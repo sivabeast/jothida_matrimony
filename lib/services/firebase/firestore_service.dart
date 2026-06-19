@@ -911,8 +911,41 @@ class FirestoreService {
         .count()
         .get();
 
+    // ── Dashboard breakdowns ────────────────────────────────────────────────
+    // Each guarded so a single denied/failed aggregate (e.g. an interests count
+    // before the admin read rule is deployed) degrades to 0 instead of blanking
+    // the whole dashboard.
+    final usersCol = _db.collection(AppConstants.usersCollection);
+    Future<int> safeCount(Query q) async {
+      try {
+        return (await q.count().get()).count ?? 0;
+      } catch (e) {
+        debugPrint('[AdminStats] count failed (→0): $e');
+        return 0;
+      }
+    }
+
+    final maleUsers = await safeCount(usersCol.where('gender', isEqualTo: 'Male'));
+    final femaleUsers =
+        await safeCount(usersCol.where('gender', isEqualTo: 'Female'));
+    final blockedUsers =
+        await safeCount(usersCol.where('isBlocked', isEqualTo: true));
+    final basicPlanUsers =
+        await safeCount(usersCol.where('membershipType', isEqualTo: 'basic'));
+    final mediumPlanUsers =
+        await safeCount(usersCol.where('membershipType', isEqualTo: 'medium'));
+    final premiumPlanUsers =
+        await safeCount(usersCol.where('membershipType', isEqualTo: 'premium'));
+    final totalInterests =
+        await safeCount(_db.collection(AppConstants.interestsCollection));
+    final totalMatches = await safeCount(_db
+        .collection(AppConstants.interestsCollection)
+        .where('status', isEqualTo: AppConstants.interestAccepted));
+
+    final totalUsers = users.count ?? 0;
+
     return {
-      'totalUsers': users.count,
+      'totalUsers': totalUsers,
       'totalProfiles': profiles.count,
       'pendingProfiles': pendingProfiles.count,
       'totalReports': reports.count,
@@ -920,6 +953,15 @@ class FirestoreService {
       'pendingDeletions': pendingDeletions.count,
       'totalAstrologers': astrologers.count,
       'totalConsultations': consultations.count,
+      // Breakdowns for the mobile dashboard.
+      'maleUsers': maleUsers,
+      'femaleUsers': femaleUsers,
+      'activeUsers': (totalUsers - blockedUsers).clamp(0, totalUsers),
+      'basicPlanUsers': basicPlanUsers,
+      'mediumPlanUsers': mediumPlanUsers,
+      'premiumPlanUsers': premiumPlanUsers,
+      'totalInterests': totalInterests,
+      'totalMatches': totalMatches,
     };
   }
 
