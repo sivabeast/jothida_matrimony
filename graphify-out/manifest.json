@@ -150,8 +150,8 @@
     "semantic_hash": ""
   },
   "lib/providers/admin_provider.dart": {
-    "mtime": 1781712413.5110676,
-    "ast_hash": "f26aafbd5e0eb5430e9e6e3930d2d548",
+    "mtime": 1781939531.3543777,
+    "ast_hash": "2f3109aff539495852faaf5439d68071",
     "semantic_hash": ""
   },
   "lib/providers/astrologer_provider.dart": {
@@ -215,8 +215,8 @@
     "semantic_hash": ""
   },
   "lib/repositories/admin_repository.dart": {
-    "mtime": 1781352260.7293162,
-    "ast_hash": "c947d61d460d231c415586fcfacf4347",
+    "mtime": 1781939519.622749,
+    "ast_hash": "8a4680b921761a5eb02ec20b06ac30db",
     "semantic_hash": ""
   },
   "lib/repositories/auth_repository.dart": {
@@ -240,8 +240,8 @@
     "semantic_hash": ""
   },
   "lib/router/app_router.dart": {
-    "mtime": 1781754540.1741953,
-    "ast_hash": "f308b89405aada485940eec985fa59bc",
+    "mtime": 1781940484.365468,
+    "ast_hash": "de3bcaa55f4f5e765889eadf5582d1d0",
     "semantic_hash": ""
   },
   "lib/screens/admin/admin_approvals_screen.dart": {
@@ -445,8 +445,8 @@
     "semantic_hash": ""
   },
   "lib/services/firebase/firestore_service.dart": {
-    "mtime": 1781851134.8128242,
-    "ast_hash": "15ccf36ba4c45bb5114944e381c6d5e1",
+    "mtime": 1781939509.7775626,
+    "ast_hash": "a2152d8372523b499cee5e3d47642ead",
     "semantic_hash": ""
   },
   "lib/services/firebase/storage_service.dart": {
@@ -520,7 +520,7 @@
     "semantic_hash": ""
   },
   "android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java": {
-    "mtime": 1781851587.0410721,
+    "mtime": 1781940665.2352395,
     "ast_hash": "957f3f4fa91953a90f2d9690762329f7",
     "semantic_hash": ""
   },
@@ -1187,6 +1187,11 @@
   "lib/providers/navigation_provider.dart": {
     "mtime": 1781782872.8939857,
     "ast_hash": "aef585752210ff234f57dec5fa28e073",
+    "semantic_hash": ""
+  },
+  "lib/screens/admin/admin_management_screen.dart": {
+    "mtime": 1781940158.4232893,
+    "ast_hash": "3f97327271b95be08e03b1c9d065acee",
     "semantic_hash": ""
   }
 }

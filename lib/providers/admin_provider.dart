@@ -27,7 +27,20 @@ final allAstrologersProvider =
 });
 
 final allUsersProvider = FutureProvider.autoDispose<List<UserModel>>(
-    (ref) => ref.read(adminRepositoryProvider).getAllUsers());
+    (ref) => ref.read(adminRepositoryProvider).getAllUsers(limit: 300));
+
+/// All matrimony profiles (newest first), keyed by [ProfileModel.userId] when
+/// joined. Powers the age / district / photo fields on the admin Users cards.
+final allProfilesProvider = FutureProvider.autoDispose<List<ProfileModel>>(
+    (ref) => ref.read(adminRepositoryProvider).getAllProfiles());
+
+/// `userId → ProfileModel` lookup for quickly enriching a user row with its
+/// matrimony profile (age, district, photo).
+final profilesByUserIdProvider =
+    FutureProvider.autoDispose<Map<String, ProfileModel>>((ref) async {
+  final list = await ref.watch(allProfilesProvider.future);
+  return {for (final p in list) p.userId: p};
+});
 
 /// Recent platform activity for the Dashboard feed (max 5).
 final recentActivityProvider = FutureProvider.autoDispose<List<AdminActivity>>(

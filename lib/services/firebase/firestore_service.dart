@@ -637,6 +637,19 @@ class FirestoreService {
     return snap.docs.map((d) => ProfileModel.fromFirestore(d)).toList();
   }
 
+  /// Every profile (newest first), for the admin Users management list — joined
+  /// with the `users` docs to surface age / district / photo on each user card.
+  /// Admins may read all profiles (see the `profiles` read rule), and a single
+  /// `orderBy` needs no composite index.
+  Future<List<ProfileModel>> getAllProfiles({int limit = 300}) async {
+    final snap = await _db
+        .collection(AppConstants.profilesCollection)
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .get();
+    return snap.docs.map((d) => ProfileModel.fromFirestore(d)).toList();
+  }
+
   Future<void> approveProfile(String profileId) => _db
       .collection(AppConstants.profilesCollection)
       .doc(profileId)

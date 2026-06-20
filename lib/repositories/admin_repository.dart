@@ -14,6 +14,9 @@ class AdminRepository {
 
   Future<List<ProfileModel>> getPendingProfiles() => _firestore.getPendingProfiles();
 
+  Future<List<ProfileModel>> getAllProfiles({int limit = 300}) =>
+      _firestore.getAllProfiles(limit: limit);
+
   Future<void> approveProfile(String profileId) => _firestore.approveProfile(profileId);
 
   Future<void> rejectProfile(String profileId, String reason) =>

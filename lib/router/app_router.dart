@@ -28,7 +28,7 @@ import '../screens/settings/language_screen.dart';
 import '../screens/subscription/subscription_screen.dart';
 import '../screens/admin/admin_shell.dart';
 import '../screens/admin/admin_dashboard.dart';
-import '../screens/admin/admin_users_screen.dart';
+import '../screens/admin/admin_management_screen.dart';
 import '../screens/admin/admin_reports_screen.dart';
 import '../screens/admin/admin_management_screens.dart';
 import '../screens/admin/admin_reports_page.dart';
@@ -327,9 +327,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __, child) => AdminShell(child: child),
         routes: [
           GoRoute(path: '/admin', builder: (_, __) => const AdminDashboard()),
-          GoRoute(path: '/admin/users', builder: (_, __) => const AdminUsersScreen()),
+          GoRoute(
+              path: '/admin/users',
+              builder: (_, __) =>
+                  const AdminManagementScreen(initialTab: 'users')),
           GoRoute(path: '/admin/reports', builder: (_, __) => const AdminReportsScreen()),
-          GoRoute(path: '/admin/astrologers', builder: (_, __) => const AstrologerManagementScreen()),
+          GoRoute(
+              path: '/admin/astrologers',
+              builder: (_, __) =>
+                  const AdminManagementScreen(initialTab: 'astrologers')),
           GoRoute(path: '/admin/ratings', builder: (_, __) => const RatingManagementScreen()),
           GoRoute(path: '/admin/banners', builder: (_, __) => const BannerManagementScreen()),
           GoRoute(path: '/admin/notifications', builder: (_, __) => const AnnouncementManagementScreen()),
