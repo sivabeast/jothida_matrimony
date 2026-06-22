@@ -47,6 +47,8 @@ import '../screens/horoscope/member_horoscope_screen.dart';
 import '../screens/horoscope/horoscope_match_screen.dart';
 import '../screens/profile/personal_details_screen.dart';
 import '../screens/profile/complete_profile_screen.dart';
+import '../screens/profile/profile_section_edit_screens.dart';
+import '../screens/profile/photos_edit_screen.dart';
 import '../screens/family/family_tree_screen.dart';
 import '../screens/preferences/partner_preferences_screen.dart';
 import '../screens/settings/settings_screen.dart';
@@ -335,6 +337,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // ── Profile section screens ──────────────────────────────────────────
       GoRoute(path: '/personal-details', builder: (_, __) => const PersonalDetailsScreen()),
       GoRoute(path: '/complete-profile', builder: (_, __) => const CompleteProfileScreen()),
+      // ── Section-wise profile editors (opened from the completion card) ────
+      GoRoute(path: '/edit/about', builder: (_, __) => const AboutMeEditScreen()),
+      GoRoute(
+          path: '/edit/education',
+          builder: (_, __) => const EducationEditScreen()),
+      GoRoute(
+          path: '/edit/location',
+          builder: (_, __) => const LocationEditScreen()),
+      GoRoute(
+          path: '/edit/religious',
+          builder: (_, __) => const ReligiousEditScreen()),
+      GoRoute(
+          path: '/edit/family', builder: (_, __) => const FamilyEditScreen()),
+      GoRoute(
+          path: '/edit/lifestyle',
+          builder: (_, __) => const LifestyleEditScreen()),
+      GoRoute(
+          path: '/edit/photos', builder: (_, __) => const PhotosEditScreen()),
       GoRoute(path: '/horoscope', builder: (_, __) => const HoroscopeDetailsScreen()),
       // Horoscope / Jathagam document manager (multiple images + PDFs CRUD).
       GoRoute(

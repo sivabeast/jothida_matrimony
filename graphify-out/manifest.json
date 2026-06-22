@@ -70,8 +70,8 @@
     "semantic_hash": ""
   },
   "lib/core/utils/profile_completion.dart": {
-    "mtime": 1781754170.681794,
-    "ast_hash": "005dc40c4a82ace15142f442b362eec9",
+    "mtime": 1782147061.0975342,
+    "ast_hash": "b290a57513c74690c66af3445371cb09",
     "semantic_hash": ""
   },
   "lib/core/utils/validators.dart": {
@@ -240,8 +240,8 @@
     "semantic_hash": ""
   },
   "lib/router/app_router.dart": {
-    "mtime": 1782146234.873228,
-    "ast_hash": "8d993b9603a008a1921a8023c181f977",
+    "mtime": 1782147355.6761594,
+    "ast_hash": "8f595e7ab916ee212f4732a825b58bf1",
     "semantic_hash": ""
   },
   "lib/screens/admin/admin_approvals_screen.dart": {
@@ -475,8 +475,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/home/profile_completion_card.dart": {
-    "mtime": 1781295025.790604,
-    "ast_hash": "0ce8010d6988239e4f1217de001e6ce6",
+    "mtime": 1782147300.528933,
+    "ast_hash": "2a282ca4f8a435c255ae845c4ac59920",
     "semantic_hash": ""
   },
   "push_to_github.ps1": {
@@ -520,7 +520,7 @@
     "semantic_hash": ""
   },
   "android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java": {
-    "mtime": 1782146377.7190654,
+    "mtime": 1782147513.5625603,
     "ast_hash": "957f3f4fa91953a90f2d9690762329f7",
     "semantic_hash": ""
   },
@@ -875,8 +875,8 @@
     "semantic_hash": ""
   },
   "lib/screens/profile/complete_profile_screen.dart": {
-    "mtime": 1781295055.3694253,
-    "ast_hash": "860ba825b4f6c4d7f7ffbe80a3d76240",
+    "mtime": 1782147330.8430164,
+    "ast_hash": "be51d5aefe610a8ad6e7121b991efdbb",
     "semantic_hash": ""
   },
   "lib/screens/profile/personal_details_screen.dart": {
@@ -1292,6 +1292,21 @@
   "lib/screens/profile/steps/step_religious.dart": {
     "mtime": 1782145971.3599863,
     "ast_hash": "76f55dc47a6c114004337b71142f743e",
+    "semantic_hash": ""
+  },
+  "lib/providers/profile_edit_provider.dart": {
+    "mtime": 1782147112.547114,
+    "ast_hash": "0607171632f11ad6f1e7218fb5cb257e",
+    "semantic_hash": ""
+  },
+  "lib/screens/profile/photos_edit_screen.dart": {
+    "mtime": 1782147261.2945423,
+    "ast_hash": "a59654aeb4b9523158685421ec54329b",
+    "semantic_hash": ""
+  },
+  "lib/screens/profile/profile_section_edit_screens.dart": {
+    "mtime": 1782147498.5395045,
+    "ast_hash": "db61f3c7de9ff4c2a1a4973bc21ac71a",
     "semantic_hash": ""
   }
 }
