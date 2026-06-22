@@ -152,6 +152,51 @@ class AppConstants {
     'Never Married', 'Divorced', 'Widowed', 'Awaiting Divorce',
   ];
 
+  // Marital Status options used by the onboarding wizard (per spec).
+  static const List<String> maritalStatusOptions = [
+    'Never Married', 'Divorced', 'Widow', 'Widower',
+  ];
+
+  /// Marital statuses that imply the user may have children → show the
+  /// children count / living-status fields.
+  static const List<String> maritalStatusesWithChildren = [
+    'Divorced', 'Widow', 'Widower', 'Widowed', 'Awaiting Divorce',
+  ];
+
+  // Physical status (Step 3)
+  static const List<String> physicalStatusList = [
+    'Normal', 'Physically Challenged',
+  ];
+
+  // Children living status (Step 4)
+  static const List<String> childrenLivingStatusList = [
+    'Living with me', 'Not living with me', 'No children',
+  ];
+
+  // Employment type (Step 7)
+  static const List<String> employmentTypeList = [
+    'Private', 'Government', 'Business', 'Self Employed',
+  ];
+
+  // Citizenship (Step 8)
+  static const List<String> citizenshipList = [
+    'Indian', 'NRI', 'Foreign National',
+  ];
+
+  // Lifestyle & habits
+  static const List<String> eatingHabitList = [
+    'Vegetarian', 'Non-Vegetarian', 'Eggetarian', 'Vegan', 'Jain',
+  ];
+  static const List<String> smokingHabitList = [
+    'No', 'Occasionally', 'Yes',
+  ];
+  static const List<String> drinkingHabitList = [
+    'No', 'Occasionally', 'Yes',
+  ];
+
+  // Languages known (reuses the mother-tongue catalogue).
+  static const List<String> languagesKnownList = motherTongueList;
+
   // Education List
   static const List<String> educationList = [
     'SSLC', 'HSC', 'Diploma', 'B.E / B.Tech', 'B.Sc', 'B.Com', 'B.A',

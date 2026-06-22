@@ -1,19 +1,31 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
 import 'steps/step_profile_for.dart';
-import 'steps/step_gender.dart';
-import 'steps/step2_personal_details.dart';
+import 'steps/step_basic_info.dart';
+import 'steps/step_physical.dart';
+import 'steps/step_marital.dart';
+import 'steps/step_religious.dart';
 import 'steps/step3_horoscope.dart';
-import 'steps/step4_family.dart';
+import 'steps/step_education.dart';
+import 'steps/step_location.dart';
 import 'steps/step6_photos.dart';
-import 'steps/step7_contact.dart';
+import 'steps/step_about_me.dart';
+import 'steps/step_partner_preference.dart';
 
+/// Multi-step onboarding wizard (12 steps incl. the success screen).
+///
+/// Each input step is a focused page so the form never feels overwhelming.
+/// Required fields are validated per step; everything else can be completed
+/// later from the Home profile-completion card. Progress is auto-saved as a
+/// draft so "Save & Exit" can resume on the next sign-in.
 class ProfileCreationScreen extends ConsumerStatefulWidget {
   /// When non-null, the wizard was opened to edit an existing profile via
   /// Profile → "Edit Profile" (route `/profile/:id/edit`).
@@ -21,34 +33,75 @@ class ProfileCreationScreen extends ConsumerStatefulWidget {
   const ProfileCreationScreen({super.key, this.editProfileId});
 
   @override
-  ConsumerState<ProfileCreationScreen> createState() => _ProfileCreationScreenState();
+  ConsumerState<ProfileCreationScreen> createState() =>
+      _ProfileCreationScreenState();
 }
 
 class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
+  static const String _draftKey = 'profile_draft_v1';
   final PageController _pageController = PageController();
   int _currentStep = 0;
-  static const int _totalSteps = 7;
+  bool _ready = false; // draft loaded → safe to build steps that prefill
 
   bool get _isEditMode => widget.editProfileId != null;
+
+  static const int _totalSteps = 11;
+
+  final List<String> _stepTitles = const [
+    'Profile For',
+    'Basic Info',
+    'Physical Details',
+    'Marital Info',
+    'Religious Info',
+    'Astrology',
+    'Education & Career',
+    'Location',
+    'Profile Photo',
+    'About Me',
+    'Partner Preference',
+  ];
 
   @override
   void initState() {
     super.initState();
-    if (_isEditMode) {
-      debugPrint(
-          '[ProfileCreation] opened in EDIT mode for profile ${widget.editProfileId}');
+    _restoreDraftThenReady();
+  }
+
+  Future<void> _restoreDraftThenReady() async {
+    if (!_isEditMode) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final raw = prefs.getString(_draftKey);
+        if (raw != null) {
+          final map = jsonDecode(raw) as Map<String, dynamic>;
+          if (map.isNotEmpty) {
+            ref.read(profileCreationProvider.notifier).updateData(map);
+          }
+        }
+      } catch (e) {
+        debugPrint('[ProfileCreation] draft restore failed: $e');
+      }
+    }
+    if (mounted) setState(() => _ready = true);
+  }
+
+  Future<void> _saveDraft() async {
+    if (_isEditMode) return;
+    try {
+      final data = ref.read(profileCreationProvider).data;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_draftKey, jsonEncode(data));
+    } catch (e) {
+      debugPrint('[ProfileCreation] draft save failed: $e');
     }
   }
 
-  final List<String> _stepTitles = [
-    'Profile For',
-    'Gender',
-    'Personal Details',
-    'Horoscope',
-    'Family',
-    'Photos',
-    'Contact Details',
-  ];
+  Future<void> _clearDraft() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_draftKey);
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
@@ -57,6 +110,7 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   }
 
   void _nextStep() {
+    _saveDraft();
     if (_currentStep < _totalSteps - 1) {
       setState(() => _currentStep++);
       _pageController.nextPage(
@@ -74,20 +128,49 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
     }
   }
 
-  /// Asks for confirmation, then signs out (Firebase + Google), clears the
-  /// local session and returns to the Login screen.
+  /// Save & Exit — persists the draft and signs out (the only way to leave the
+  /// mandatory onboarding gate); the draft is restored on the next sign-in.
+  Future<void> _saveAndExit() async {
+    await _saveDraft();
+    if (!mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Save & Exit'),
+        content: const Text(
+            'Your progress is saved. You can continue from where you left off '
+            'next time you sign in.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep editing')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+              child: const Text('Save & Exit')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(authNotifierProvider.notifier).signOut();
+    if (!mounted) return;
+    context.go('/login');
+  }
+
   Future<void> _confirmLogout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
+        content: const Text(
+            'Are you sure you want to logout? Unsaved progress will be kept as '
+            'a draft.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: AppColors.primary),
@@ -96,23 +179,17 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
         ],
       ),
     );
-    if (shouldLogout == true) await _logout();
-  }
-
-  Future<void> _logout() async {
-    // Discard any in-progress profile data so the next session starts clean.
-    ref.invalidate(profileCreationProvider);
-    // Signs out of Firebase Auth + Google Sign-In and clears auth state.
-    await ref.read(authNotifierProvider.notifier).signOut();
-    if (!mounted) return;
-    context.go('/login');
+    if (shouldLogout == true) {
+      await _saveDraft();
+      await ref.read(authNotifierProvider.notifier).signOut();
+      if (!mounted) return;
+      context.go('/login');
+    }
   }
 
   Future<void> _submitProfile() async {
     final userId = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
-    debugPrint('[ProfileCreation] _submitProfile: userId=$userId');
     if (userId == null) {
-      debugPrint('[ProfileCreation] _submitProfile: no authenticated user — aborting.');
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('You must be signed in to create a profile.')));
       return;
@@ -121,56 +198,18 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
         await ref.read(profileCreationProvider.notifier).submitProfile(userId);
     if (!mounted) return;
     if (profileId != null) {
-      debugPrint('[ProfileCreation] _submitProfile: success (profileId=$profileId). '
-          'Profile marked complete.');
-      // The currently signed-in user's profile is now marked complete in
-      // Firestore (profile_provider.submitProfile -> markProfileCompleted +
-      // currentUserProvider invalidated). Refresh the auth-derived user too.
+      await _clearDraft();
+      // Profile is now complete in Firestore; refresh the auth/profile state so
+      // the gate opens and the Success screen reads the fresh completion %.
       ref.invalidate(authNotifierProvider);
-      _showSuccessDialog();
+      ref.invalidate(myProfileProvider);
+      if (!mounted) return;
+      context.go('/profile/success');
     } else {
       final error = ref.read(profileCreationProvider).error;
-      debugPrint('[ProfileCreation] _submitProfile: failed: $error');
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error ?? 'Failed to create profile')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error ?? 'Failed to create profile')));
     }
-  }
-
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.check_circle, color: Colors.green, size: 72),
-            const SizedBox(height: 16),
-            Text('Profile Submitted!', style: AppTextStyles.heading2),
-            const SizedBox(height: 8),
-            Text(
-              'Your profile is under review. We will notify you once it is approved.',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMedium,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                context.go('/home');
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                minimumSize: const Size.fromHeight(48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Continue', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -184,73 +223,92 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
             : _stepTitles[_currentStep]),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        // During registration the top-left is a Logout control (not a back
-        // button). When editing an existing profile, keep step-back navigation.
         automaticallyImplyLeading: false,
-        leading: _isEditMode
-            ? (_currentStep > 0
+        // Back button once past the first step; otherwise Logout (registration)
+        // or Close (edit mode).
+        leading: _currentStep > 0
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back), onPressed: _prevStep)
+            : _isEditMode
                 ? IconButton(
-                    icon: const Icon(Icons.arrow_back), onPressed: _prevStep)
-                : IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: () => context.pop()))
-            : IconButton(
-                icon: const Icon(Icons.logout),
-                tooltip: 'Logout',
-                onPressed: _confirmLogout,
-              ),
-      ),
-      body: Column(
-        children: [
-          // Progress bar
-          Container(
-            color: AppColors.primary.withOpacity(0.1),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Step ${_currentStep + 1} of $_totalSteps',
-                        style: AppTextStyles.bodySmall),
-                    Text('${((_currentStep + 1) / _totalSteps * 100).round()}% Complete',
-                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                LinearProgressIndicator(
-                  value: (_currentStep + 1) / _totalSteps,
-                  backgroundColor: Colors.grey[200],
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-                  minHeight: 6,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ],
+                    onPressed: () => context.pop())
+                : IconButton(
+                    icon: const Icon(Icons.logout),
+                    tooltip: 'Logout',
+                    onPressed: _confirmLogout,
+                  ),
+        actions: [
+          if (!_isEditMode)
+            TextButton.icon(
+              onPressed: _saveAndExit,
+              icon: const Icon(Icons.save_outlined,
+                  color: Colors.white, size: 18),
+              label: const Text('Save & Exit',
+                  style: TextStyle(color: Colors.white, fontSize: 13)),
             ),
-          ),
-          // Steps
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                ProfileForStep(onNext: _nextStep),
-                GenderStep(onNext: _nextStep),
-                Step2PersonalDetails(onNext: _nextStep),
-                Step3Horoscope(onNext: _nextStep),
-                Step4Family(onNext: _nextStep),
-                Step6Photos(onNext: _nextStep),
-                Step7Contact(
-                  onNext: _nextStep,
-                  isLoading: creationState.isLoading,
-                  uploadProgress: creationState.uploadProgress,
-                  uploadStatus: creationState.uploadStatus,
-                ),
-              ],
-            ),
-          ),
         ],
       ),
+      body: !_ready
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary))
+          : Column(
+              children: [
+                // Progress bar
+                Container(
+                  color: AppColors.primary.withOpacity(0.1),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24, vertical: 12),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Step ${_currentStep + 1} of $_totalSteps',
+                              style: AppTextStyles.bodySmall),
+                          Text(
+                              '${((_currentStep + 1) / _totalSteps * 100).round()}% Complete',
+                              style: AppTextStyles.bodySmall
+                                  .copyWith(color: AppColors.primary)),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      LinearProgressIndicator(
+                        value: (_currentStep + 1) / _totalSteps,
+                        backgroundColor: Colors.grey[200],
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                            AppColors.primary),
+                        minHeight: 6,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ],
+                  ),
+                ),
+                // Steps
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      ProfileForStep(onNext: _nextStep),
+                      StepBasicInfo(onNext: _nextStep),
+                      StepPhysical(onNext: _nextStep),
+                      StepMarital(onNext: _nextStep),
+                      StepReligious(onNext: _nextStep),
+                      Step3Horoscope(onNext: _nextStep),
+                      StepEducation(onNext: _nextStep),
+                      StepLocation(onNext: _nextStep),
+                      Step6Photos(onNext: _nextStep),
+                      StepAboutMe(onNext: _nextStep),
+                      StepPartnerPreference(
+                        onNext: _nextStep,
+                        isLoading: creationState.isLoading,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }

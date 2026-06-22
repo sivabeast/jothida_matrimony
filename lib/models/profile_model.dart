@@ -52,6 +52,30 @@ class ProfileModel {
   final String motherTongue;
   final String? aboutMe;
 
+  // Physical
+  final String physicalStatus;
+
+  // Marital extras (only relevant when divorced / widow / widower)
+  final int childrenCount;
+  final String? childrenLivingStatus;
+
+  // Religious extras
+  final String gothram;
+  final String kuladeivam;
+
+  // Education & career extras
+  final String employmentType; // Private / Government / Business / Self Employed
+  final String? collegeName;
+  final String? companyName;
+  final String? workLocation;
+
+  // Location extras
+  final String? nativePlace;
+  final String? citizenship;
+
+  // Lifestyle & habits
+  final LifestyleDetails lifestyle;
+
   // Photos
   final String? profilePhotoUrl;
   final List<String> additionalPhotos;
@@ -112,6 +136,18 @@ class ProfileModel {
     this.longitude,
     required this.motherTongue,
     this.aboutMe,
+    this.physicalStatus = '',
+    this.childrenCount = 0,
+    this.childrenLivingStatus,
+    this.gothram = '',
+    this.kuladeivam = '',
+    this.employmentType = '',
+    this.collegeName,
+    this.companyName,
+    this.workLocation,
+    this.nativePlace,
+    this.citizenship,
+    this.lifestyle = const LifestyleDetails(),
     this.profilePhotoUrl,
     this.additionalPhotos = const [],
     required this.horoscope,
@@ -166,6 +202,18 @@ class ProfileModel {
       longitude: (d['longitude'] as num?)?.toDouble(),
       motherTongue: d['motherTongue'] ?? 'Tamil',
       aboutMe: d['aboutMe'],
+      physicalStatus: d['physicalStatus'] ?? '',
+      childrenCount: d['childrenCount'] ?? 0,
+      childrenLivingStatus: d['childrenLivingStatus'],
+      gothram: d['gothram'] ?? '',
+      kuladeivam: d['kuladeivam'] ?? '',
+      employmentType: d['employmentType'] ?? '',
+      collegeName: d['collegeName'],
+      companyName: d['companyName'],
+      workLocation: d['workLocation'],
+      nativePlace: d['nativePlace'],
+      citizenship: d['citizenship'],
+      lifestyle: LifestyleDetails.fromMap(d['lifestyle'] ?? {}),
       profilePhotoUrl: d['profilePhotoUrl'],
       additionalPhotos: List<String>.from(d['additionalPhotos'] ?? []),
       horoscope: HoroscopeDetails.fromMap(d['horoscope'] ?? {}),
@@ -224,6 +272,18 @@ class ProfileModel {
         'longitude': longitude,
         'motherTongue': motherTongue,
         'aboutMe': aboutMe,
+        'physicalStatus': physicalStatus,
+        'childrenCount': childrenCount,
+        'childrenLivingStatus': childrenLivingStatus,
+        'gothram': gothram,
+        'kuladeivam': kuladeivam,
+        'employmentType': employmentType,
+        'collegeName': collegeName,
+        'companyName': companyName,
+        'workLocation': workLocation,
+        'nativePlace': nativePlace,
+        'citizenship': citizenship,
+        'lifestyle': lifestyle.toMap(),
         'profilePhotoUrl': profilePhotoUrl,
         'additionalPhotos': additionalPhotos,
         'horoscope': horoscope.toMap(),
@@ -262,6 +322,7 @@ class ProfileModel {
     final famMap = d['familyDetails'] as Map<String, dynamic>? ?? {};
     final prefMap = d['partnerPreferences'] as Map<String, dynamic>? ?? {};
     final contactMap = d['contactDetails'] as Map<String, dynamic>? ?? {};
+    final lifeMap = d['lifestyle'] as Map<String, dynamic>? ?? {};
     final photos = toStringList(d['photos']);
     return ProfileModel(
       id: d['id'] ?? '',
@@ -297,6 +358,19 @@ class ProfileModel {
       longitude: (d['longitude'] as num?)?.toDouble(),
       motherTongue: d['motherTongue'] ?? 'Tamil',
       aboutMe: d['about'],
+      physicalStatus: d['physicalStatus'] ?? '',
+      childrenCount:
+          (d['childrenCount'] is num) ? (d['childrenCount'] as num).toInt() : 0,
+      childrenLivingStatus: d['childrenLivingStatus'],
+      gothram: d['gothram'] ?? '',
+      kuladeivam: d['kuladeivam'] ?? '',
+      employmentType: d['employmentType'] ?? '',
+      collegeName: d['collegeName'],
+      companyName: d['companyName'],
+      workLocation: d['workLocation'],
+      nativePlace: d['nativePlace'],
+      citizenship: d['citizenship'],
+      lifestyle: LifestyleDetails.fromMap(lifeMap),
       profilePhotoUrl: photos.isNotEmpty ? photos.first : null,
       additionalPhotos: photos.length > 1 ? photos.sublist(1) : [],
       horoscope: HoroscopeDetails.fromMap(horoMap),
@@ -337,6 +411,18 @@ class ProfileModel {
     double? longitude,
     String? motherTongue,
     String? aboutMe,
+    String? physicalStatus,
+    int? childrenCount,
+    String? childrenLivingStatus,
+    String? gothram,
+    String? kuladeivam,
+    String? employmentType,
+    String? collegeName,
+    String? companyName,
+    String? workLocation,
+    String? nativePlace,
+    String? citizenship,
+    LifestyleDetails? lifestyle,
     String? profilePhotoUrl,
     List<String>? additionalPhotos,
     HoroscopeDetails? horoscope,
@@ -385,6 +471,18 @@ class ProfileModel {
         longitude: longitude ?? this.longitude,
         motherTongue: motherTongue ?? this.motherTongue,
         aboutMe: aboutMe ?? this.aboutMe,
+        physicalStatus: physicalStatus ?? this.physicalStatus,
+        childrenCount: childrenCount ?? this.childrenCount,
+        childrenLivingStatus: childrenLivingStatus ?? this.childrenLivingStatus,
+        gothram: gothram ?? this.gothram,
+        kuladeivam: kuladeivam ?? this.kuladeivam,
+        employmentType: employmentType ?? this.employmentType,
+        collegeName: collegeName ?? this.collegeName,
+        companyName: companyName ?? this.companyName,
+        workLocation: workLocation ?? this.workLocation,
+        nativePlace: nativePlace ?? this.nativePlace,
+        citizenship: citizenship ?? this.citizenship,
+        lifestyle: lifestyle ?? this.lifestyle,
         profilePhotoUrl: profilePhotoUrl ?? this.profilePhotoUrl,
         additionalPhotos: additionalPhotos ?? this.additionalPhotos,
         horoscope: horoscope ?? this.horoscope,
@@ -435,6 +533,18 @@ class ProfileModel {
         longitude: longitude,
         motherTongue: motherTongue,
         aboutMe: aboutMe,
+        physicalStatus: physicalStatus,
+        childrenCount: childrenCount,
+        childrenLivingStatus: childrenLivingStatus,
+        gothram: gothram,
+        kuladeivam: kuladeivam,
+        employmentType: employmentType,
+        collegeName: collegeName,
+        companyName: companyName,
+        workLocation: workLocation,
+        nativePlace: nativePlace,
+        citizenship: citizenship,
+        lifestyle: lifestyle,
         profilePhotoUrl: url,
         additionalPhotos: additionalPhotos,
         horoscope: horoscope,
@@ -458,7 +568,9 @@ class HoroscopeDetails {
   final String rasi;
   final String nakshatra;
   final String lagnam;
-  final String dosham;
+  final String dosham; // Chevvai / Sevvai dosham
+  final String rahuKethuDosham;
+  final String kalasarpaDosham;
   final String dasaBalance;
   final String yogam;
   final String karanam;
@@ -499,6 +611,8 @@ class HoroscopeDetails {
     required this.nakshatra,
     required this.lagnam,
     this.dosham = '',
+    this.rahuKethuDosham = '',
+    this.kalasarpaDosham = '',
     required this.dasaBalance,
     required this.yogam,
     required this.karanam,
@@ -527,6 +641,8 @@ class HoroscopeDetails {
         nakshatra: map['nakshatra'] ?? '',
         lagnam: map['lagnam'] ?? '',
         dosham: map['dosham'] ?? '',
+        rahuKethuDosham: map['rahuKethuDosham'] ?? '',
+        kalasarpaDosham: map['kalasarpaDosham'] ?? '',
         dasaBalance: map['dasaBalance'] ?? '',
         yogam: map['yogam'] ?? '',
         karanam: map['karanam'] ?? '',
@@ -555,6 +671,8 @@ class HoroscopeDetails {
         'nakshatra': nakshatra,
         'lagnam': lagnam,
         'dosham': dosham,
+        'rahuKethuDosham': rahuKethuDosham,
+        'kalasarpaDosham': kalasarpaDosham,
         'dasaBalance': dasaBalance,
         'yogam': yogam,
         'karanam': karanam,
@@ -583,6 +701,8 @@ class HoroscopeDetails {
     String? nakshatra,
     String? lagnam,
     String? dosham,
+    String? rahuKethuDosham,
+    String? kalasarpaDosham,
     String? dasaBalance,
     String? yogam,
     String? karanam,
@@ -608,6 +728,8 @@ class HoroscopeDetails {
         nakshatra: nakshatra ?? this.nakshatra,
         lagnam: lagnam ?? this.lagnam,
         dosham: dosham ?? this.dosham,
+        rahuKethuDosham: rahuKethuDosham ?? this.rahuKethuDosham,
+        kalasarpaDosham: kalasarpaDosham ?? this.kalasarpaDosham,
         dasaBalance: dasaBalance ?? this.dasaBalance,
         yogam: yogam ?? this.yogam,
         karanam: karanam ?? this.karanam,
@@ -656,8 +778,11 @@ class FamilyDetails {
   final String motherOccupation;
   final int brothersCount;
   final int sistersCount;
+  final int marriedBrothers;
+  final int marriedSisters;
   final String familyType;
   final String familyStatus;
+  final String aboutFamily;
 
   const FamilyDetails({
     required this.fatherName,
@@ -666,8 +791,11 @@ class FamilyDetails {
     required this.motherOccupation,
     required this.brothersCount,
     required this.sistersCount,
+    this.marriedBrothers = 0,
+    this.marriedSisters = 0,
     required this.familyType,
     required this.familyStatus,
+    this.aboutFamily = '',
   });
 
   factory FamilyDetails.fromMap(Map<String, dynamic> map) => FamilyDetails(
@@ -677,8 +805,11 @@ class FamilyDetails {
         motherOccupation: map['motherOccupation'] ?? '',
         brothersCount: map['brothersCount'] ?? 0,
         sistersCount: map['sistersCount'] ?? 0,
+        marriedBrothers: map['marriedBrothers'] ?? 0,
+        marriedSisters: map['marriedSisters'] ?? 0,
         familyType: map['familyType'] ?? '',
         familyStatus: map['familyStatus'] ?? '',
+        aboutFamily: map['aboutFamily'] ?? '',
       );
 
   Map<String, dynamic> toMap() => {
@@ -688,9 +819,39 @@ class FamilyDetails {
         'motherOccupation': motherOccupation,
         'brothersCount': brothersCount,
         'sistersCount': sistersCount,
+        'marriedBrothers': marriedBrothers,
+        'marriedSisters': marriedSisters,
         'familyType': familyType,
         'familyStatus': familyStatus,
+        'aboutFamily': aboutFamily,
       };
+
+  FamilyDetails copyWith({
+    String? fatherName,
+    String? fatherOccupation,
+    String? motherName,
+    String? motherOccupation,
+    int? brothersCount,
+    int? sistersCount,
+    int? marriedBrothers,
+    int? marriedSisters,
+    String? familyType,
+    String? familyStatus,
+    String? aboutFamily,
+  }) =>
+      FamilyDetails(
+        fatherName: fatherName ?? this.fatherName,
+        fatherOccupation: fatherOccupation ?? this.fatherOccupation,
+        motherName: motherName ?? this.motherName,
+        motherOccupation: motherOccupation ?? this.motherOccupation,
+        brothersCount: brothersCount ?? this.brothersCount,
+        sistersCount: sistersCount ?? this.sistersCount,
+        marriedBrothers: marriedBrothers ?? this.marriedBrothers,
+        marriedSisters: marriedSisters ?? this.marriedSisters,
+        familyType: familyType ?? this.familyType,
+        familyStatus: familyStatus ?? this.familyStatus,
+        aboutFamily: aboutFamily ?? this.aboutFamily,
+      );
 }
 
 class PartnerPreferences {
@@ -714,6 +875,14 @@ class PartnerPreferences {
   final String? country;
   final String motherTongue; // language preference; 'Any' or a language
   final bool horoscopeMatchRequired;
+  // Extended & lifestyle preferences ('Any' = no preference).
+  final String physicalStatus;
+  final String employmentType;
+  final String? subCaste;
+  final String chevvaiDosham;
+  final String eatingHabit;
+  final String smokingHabit;
+  final String drinkingHabit;
 
   const PartnerPreferences({
     this.minAge = 18,
@@ -735,6 +904,13 @@ class PartnerPreferences {
     this.country,
     this.motherTongue = 'Any',
     this.horoscopeMatchRequired = true,
+    this.physicalStatus = 'Any',
+    this.employmentType = 'Any',
+    this.subCaste,
+    this.chevvaiDosham = 'Any',
+    this.eatingHabit = 'Any',
+    this.smokingHabit = 'Any',
+    this.drinkingHabit = 'Any',
   });
 
   factory PartnerPreferences.fromMap(Map<String, dynamic> map) => PartnerPreferences(
@@ -757,6 +933,13 @@ class PartnerPreferences {
         country: map['country'],
         motherTongue: map['motherTongue'] ?? 'Any',
         horoscopeMatchRequired: map['horoscopeMatchRequired'] ?? true,
+        physicalStatus: map['physicalStatus'] ?? 'Any',
+        employmentType: map['employmentType'] ?? 'Any',
+        subCaste: map['subCaste'],
+        chevvaiDosham: map['chevvaiDosham'] ?? 'Any',
+        eatingHabit: map['eatingHabit'] ?? 'Any',
+        smokingHabit: map['smokingHabit'] ?? 'Any',
+        drinkingHabit: map['drinkingHabit'] ?? 'Any',
       );
 
   Map<String, dynamic> toMap() => {
@@ -779,6 +962,13 @@ class PartnerPreferences {
         'country': country,
         'motherTongue': motherTongue,
         'horoscopeMatchRequired': horoscopeMatchRequired,
+        'physicalStatus': physicalStatus,
+        'employmentType': employmentType,
+        'subCaste': subCaste,
+        'chevvaiDosham': chevvaiDosham,
+        'eatingHabit': eatingHabit,
+        'smokingHabit': smokingHabit,
+        'drinkingHabit': drinkingHabit,
       };
 
   PartnerPreferences copyWith({
@@ -801,6 +991,13 @@ class PartnerPreferences {
     String? country,
     String? motherTongue,
     bool? horoscopeMatchRequired,
+    String? physicalStatus,
+    String? employmentType,
+    String? subCaste,
+    String? chevvaiDosham,
+    String? eatingHabit,
+    String? smokingHabit,
+    String? drinkingHabit,
   }) =>
       PartnerPreferences(
         minAge: minAge ?? this.minAge,
@@ -823,6 +1020,13 @@ class PartnerPreferences {
         motherTongue: motherTongue ?? this.motherTongue,
         horoscopeMatchRequired:
             horoscopeMatchRequired ?? this.horoscopeMatchRequired,
+        physicalStatus: physicalStatus ?? this.physicalStatus,
+        employmentType: employmentType ?? this.employmentType,
+        subCaste: subCaste ?? this.subCaste,
+        chevvaiDosham: chevvaiDosham ?? this.chevvaiDosham,
+        eatingHabit: eatingHabit ?? this.eatingHabit,
+        smokingHabit: smokingHabit ?? this.smokingHabit,
+        drinkingHabit: drinkingHabit ?? this.drinkingHabit,
       );
 }
 
@@ -852,4 +1056,59 @@ class ContactDetails {
         'mobileNumber': mobileNumber,
         'whatsappNumber': whatsappNumber,
       };
+}
+
+/// Lifestyle & habits — all optional. Habit fields use the constant option
+/// lists; hobbies / interests are free text; languagesKnown is a list.
+class LifestyleDetails {
+  final String eatingHabit;
+  final String smokingHabit;
+  final String drinkingHabit;
+  final String hobbies;
+  final String interests;
+  final List<String> languagesKnown;
+
+  const LifestyleDetails({
+    this.eatingHabit = '',
+    this.smokingHabit = '',
+    this.drinkingHabit = '',
+    this.hobbies = '',
+    this.interests = '',
+    this.languagesKnown = const [],
+  });
+
+  factory LifestyleDetails.fromMap(Map<String, dynamic> map) => LifestyleDetails(
+        eatingHabit: map['eatingHabit'] ?? '',
+        smokingHabit: map['smokingHabit'] ?? '',
+        drinkingHabit: map['drinkingHabit'] ?? '',
+        hobbies: map['hobbies'] ?? '',
+        interests: map['interests'] ?? '',
+        languagesKnown: toStringList(map['languagesKnown']),
+      );
+
+  Map<String, dynamic> toMap() => {
+        'eatingHabit': eatingHabit,
+        'smokingHabit': smokingHabit,
+        'drinkingHabit': drinkingHabit,
+        'hobbies': hobbies,
+        'interests': interests,
+        'languagesKnown': languagesKnown,
+      };
+
+  LifestyleDetails copyWith({
+    String? eatingHabit,
+    String? smokingHabit,
+    String? drinkingHabit,
+    String? hobbies,
+    String? interests,
+    List<String>? languagesKnown,
+  }) =>
+      LifestyleDetails(
+        eatingHabit: eatingHabit ?? this.eatingHabit,
+        smokingHabit: smokingHabit ?? this.smokingHabit,
+        drinkingHabit: drinkingHabit ?? this.drinkingHabit,
+        hobbies: hobbies ?? this.hobbies,
+        interests: interests ?? this.interests,
+        languagesKnown: languagesKnown ?? this.languagesKnown,
+      );
 }

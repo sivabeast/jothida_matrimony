@@ -25,6 +25,7 @@ import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/profile/profile_creation_screen.dart';
+import '../screens/profile/profile_success_screen.dart';
 import '../screens/profile/profile_view_screen.dart';
 import '../screens/match/match_details_screen.dart';
 import '../screens/astrologer/astrologer_profile_screen.dart';
@@ -250,6 +251,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/forgot-password', builder: (_, __) => const ForgotPasswordScreen()),
       GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
       GoRoute(path: '/profile/create', builder: (_, __) => const ProfileCreationScreen()),
+      // Step 12 — onboarding success screen (completion % + next actions).
+      GoRoute(
+          path: '/profile/success',
+          builder: (_, __) => const ProfileSuccessScreen()),
       GoRoute(
         path: '/profile/:id',
         builder: (_, state) => ProfileViewScreen(profileId: state.pathParameters['id']!),
