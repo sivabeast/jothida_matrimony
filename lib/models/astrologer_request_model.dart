@@ -14,7 +14,7 @@ extension AstrologerRequestTypeX on AstrologerRequestType {
       case AstrologerRequestType.inquiry:
         return 'Inquiry';
       case AstrologerRequestType.matching:
-        return 'Horoscope Matching';
+        return 'Match Analysis';
     }
   }
 }
@@ -37,14 +37,20 @@ extension AstrologerRequestStatusX on AstrologerRequestStatus {
 /// A request from a matrimony user to an astrologer.
 ///
 /// Firestore: `astrologer_requests/{id}`
-/// { astrologerId, userId, userName, userPhotoUrl, type, status, message,
-///   amount, profileAId, profileBId, createdAt, respondedAt }
+/// { astrologerId, astrologerName, userId, userName, userPhotoUrl, type, status,
+///   message, amount, profileAId, profileAName, profileBId, profileBName,
+///   analysisText, analysisImages, analysisPdfs, createdAt, respondedAt,
+///   completedAt }
 ///
-/// For [AstrologerRequestType.matching], `profileAId` / `profileBId` are the
-/// two matrimony profiles whose horoscopes should be compared.
+/// For [AstrologerRequestType.matching] (a "Book Match Analysis" booking),
+/// `profileAId` / `profileBId` are the GROOM / BRIDE matrimony profiles whose
+/// horoscopes should be compared, and `message` is the user's optional note.
+/// Once the astrologer completes the analysis, `analysisText` /
+/// `analysisImages` / `analysisPdfs` hold the report the user can read back.
 class AstrologerRequestModel {
   final String id;
   final String astrologerId;
+  final String astrologerName;
   final String userId;
   final String userName;
   final String userPhotoUrl;
@@ -53,14 +59,26 @@ class AstrologerRequestModel {
   final AstrologerRequestStatus status;
   final String message;
   final int amount;
-  final String? profileAId;
-  final String? profileBId;
+
+  // ── Match-analysis (type == matching): groom / bride profiles ──────────────
+  final String? profileAId; // Groom
+  final String? profileAName;
+  final String? profileBId; // Bride
+  final String? profileBName;
+
+  // ── Astrologer's submitted analysis (populated once completed) ─────────────
+  final String analysisText;
+  final List<String> analysisImages;
+  final List<String> analysisPdfs;
+
   final DateTime createdAt;
   final DateTime? respondedAt;
+  final DateTime? completedAt;
 
   const AstrologerRequestModel({
     required this.id,
     required this.astrologerId,
+    this.astrologerName = '',
     required this.userId,
     required this.userName,
     this.userPhotoUrl = '',
@@ -70,16 +88,41 @@ class AstrologerRequestModel {
     this.message = '',
     this.amount = 0,
     this.profileAId,
+    this.profileAName,
     this.profileBId,
+    this.profileBName,
+    this.analysisText = '',
+    this.analysisImages = const [],
+    this.analysisPdfs = const [],
     required this.createdAt,
     this.respondedAt,
+    this.completedAt,
   });
+
+  /// True for a "Book Match Analysis" booking (groom + bride porutham request).
+  bool get isMatchAnalysis => type == AstrologerRequestType.matching;
+
+  /// True once the astrologer has submitted a report.
+  bool get hasAnalysis =>
+      analysisText.trim().isNotEmpty ||
+      analysisImages.isNotEmpty ||
+      analysisPdfs.isNotEmpty;
+
+  static List<String> _toStringList(dynamic v) {
+    if (v is List) return v.map((e) => e.toString()).toList();
+    if (v is String && v.isNotEmpty) return [v];
+    return const [];
+  }
+
+  static DateTime? _toDate(dynamic v) =>
+      v is Timestamp ? v.toDate() : null;
 
   factory AstrologerRequestModel.fromFirestore(DocumentSnapshot doc) {
     final d = doc.data() as Map<String, dynamic>;
     return AstrologerRequestModel(
       id: doc.id,
       astrologerId: d['astrologerId'] ?? '',
+      astrologerName: d['astrologerName'] ?? '',
       userId: d['userId'] ?? '',
       userName: d['userName'] ?? 'User',
       userPhotoUrl: d['userPhotoUrl'] ?? '',
@@ -93,20 +136,23 @@ class AstrologerRequestModel {
         orElse: () => AstrologerRequestStatus.pending,
       ),
       message: d['message'] ?? '',
-      amount: d['amount'] ?? 0,
+      amount: (d['amount'] ?? 0) is num ? (d['amount'] as num).toInt() : 0,
       profileAId: d['profileAId'],
+      profileAName: d['profileAName'],
       profileBId: d['profileBId'],
-      createdAt: d['createdAt'] != null
-          ? (d['createdAt'] as Timestamp).toDate()
-          : DateTime.now(),
-      respondedAt: d['respondedAt'] != null
-          ? (d['respondedAt'] as Timestamp).toDate()
-          : null,
+      profileBName: d['profileBName'],
+      analysisText: d['analysisText'] ?? '',
+      analysisImages: _toStringList(d['analysisImages']),
+      analysisPdfs: _toStringList(d['analysisPdfs']),
+      createdAt: _toDate(d['createdAt']) ?? DateTime.now(),
+      respondedAt: _toDate(d['respondedAt']),
+      completedAt: _toDate(d['completedAt']),
     );
   }
 
   Map<String, dynamic> toFirestore() => {
         'astrologerId': astrologerId,
+        'astrologerName': astrologerName,
         'userId': userId,
         'userName': userName,
         'userPhotoUrl': userPhotoUrl,
@@ -116,16 +162,31 @@ class AstrologerRequestModel {
         'message': message,
         'amount': amount,
         'profileAId': profileAId,
+        'profileAName': profileAName,
         'profileBId': profileBId,
+        'profileBName': profileBName,
+        'analysisText': analysisText,
+        'analysisImages': analysisImages,
+        'analysisPdfs': analysisPdfs,
         'createdAt': Timestamp.fromDate(createdAt),
         'respondedAt':
             respondedAt != null ? Timestamp.fromDate(respondedAt!) : null,
+        'completedAt':
+            completedAt != null ? Timestamp.fromDate(completedAt!) : null,
       };
 
-  AstrologerRequestModel copyWith({AstrologerRequestStatus? status}) =>
+  AstrologerRequestModel copyWith({
+    AstrologerRequestStatus? status,
+    String? analysisText,
+    List<String>? analysisImages,
+    List<String>? analysisPdfs,
+    DateTime? respondedAt,
+    DateTime? completedAt,
+  }) =>
       AstrologerRequestModel(
         id: id,
         astrologerId: astrologerId,
+        astrologerName: astrologerName,
         userId: userId,
         userName: userName,
         userPhotoUrl: userPhotoUrl,
@@ -135,8 +196,20 @@ class AstrologerRequestModel {
         message: message,
         amount: amount,
         profileAId: profileAId,
+        profileAName: profileAName,
         profileBId: profileBId,
+        profileBName: profileBName,
+        analysisText: analysisText ?? this.analysisText,
+        analysisImages: analysisImages ?? this.analysisImages,
+        analysisPdfs: analysisPdfs ?? this.analysisPdfs,
         createdAt: createdAt,
-        respondedAt: respondedAt ?? (status != null ? DateTime.now() : null),
+        respondedAt: respondedAt ??
+            (status != null && status != AstrologerRequestStatus.pending
+                ? DateTime.now()
+                : this.respondedAt),
+        completedAt: completedAt ??
+            (status == AstrologerRequestStatus.completed
+                ? DateTime.now()
+                : this.completedAt),
       );
 }

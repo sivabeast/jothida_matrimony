@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/config/dev_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/astrologer_request_model.dart';
@@ -205,15 +206,43 @@ class _RequestCard extends ConsumerWidget {
               ] else if (request.status ==
                   AstrologerRequestStatus.accepted) ...[
                 const SizedBox(width: 4),
-                ElevatedButton(
-                  onPressed: () => _setStatus(
-                      context, ref, AstrologerRequestStatus.completed),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success,
-                    foregroundColor: Colors.white,
+                if (request.isMatchAnalysis)
+                  ElevatedButton.icon(
+                    onPressed: () =>
+                        context.push('/match-workspace', extra: request),
+                    icon: const Icon(Icons.auto_awesome, size: 16),
+                    label: const Text('Open Workspace'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  )
+                else
+                  ElevatedButton(
+                    onPressed: () => _setStatus(
+                        context, ref, AstrologerRequestStatus.completed),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                      foregroundColor: Colors.white,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    child: const Text('Mark Completed'),
+                  ),
+              ] else if (request.status ==
+                      AstrologerRequestStatus.completed &&
+                  request.isMatchAnalysis) ...[
+                const SizedBox(width: 4),
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      context.push('/match-workspace', extra: request),
+                  icon: const Icon(Icons.visibility_outlined, size: 16),
+                  label: const Text('View Analysis'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
                     visualDensity: VisualDensity.compact,
                   ),
-                  child: const Text('Mark Completed'),
                 ),
               ],
             ],

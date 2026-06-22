@@ -102,10 +102,11 @@ class MyProfileTab extends ConsumerWidget {
           // Menu items
           _buildMenuItem(context, Icons.person_outline, context.l10n.personalDetails, '/personal-details'),
           _buildMenuItem(context, Icons.auto_awesome_outlined, context.l10n.horoscopeDetails, '/horoscope'),
+          _buildMenuItem(context, Icons.folder_open_outlined, 'Horoscope Documents', '/horoscope-files'),
           _buildMenuItem(context, Icons.family_restroom_outlined, context.l10n.familyDetails, '/family-tree'),
           _buildMenuItem(context, Icons.tune, context.l10n.partnerPreferences, '/partner-preferences'),
-          // "Porutham Analysis" self-serve removed — astrologer consultation
-          // (Match → Compatibility → Connect Astrologer) is the only analysis flow.
+          // Match analysis the user booked with astrologers (porutham reports).
+          _buildMenuItem(context, Icons.insights_outlined, 'My Match Analysis', '/my-analysis'),
           _buildMenuItem(context, Icons.workspace_premium_outlined, context.l10n.subscriptionPlans, '/subscription'),
           _buildMenuItem(context, Icons.settings_outlined, context.l10n.settings, '/settings'),
           _buildMenuItem(context, Icons.help_outline, context.l10n.helpSupport, '/help'),

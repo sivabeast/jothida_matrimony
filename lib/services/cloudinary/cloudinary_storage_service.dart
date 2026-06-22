@@ -119,6 +119,23 @@ class CloudinaryStorageService implements StorageService {
   }
 
   @override
+  Future<String> uploadHoroscopeDoc({
+    required String userId,
+    required File file,
+    required bool isPdf,
+  }) {
+    return _uploadWithRetry(
+      file: file,
+      // PDFs go through Cloudinary's "raw" delivery type; images via "image".
+      resourceType: isPdf ? 'raw' : 'image',
+      folder: 'jothida_matrimony/profiles/$userId/horoscope',
+      // Unique per upload so multiple images / PDFs never overwrite each other.
+      publicId:
+          '${isPdf ? 'pdf' : 'img'}_${DateTime.now().millisecondsSinceEpoch}',
+    );
+  }
+
+  @override
   Future<String> uploadIdProof({
     required String userId,
     required File file,

@@ -38,6 +38,8 @@ Astrologer astrologerFromAccount(AstrologerAccount a) {
     phone: a.mobile,
     certificateDocs:
         a.certificates.where((c) => c.url.isNotEmpty && !c.isRejected).toList(),
+    // Subscription badge — only while the subscription is active.
+    subscriptionPlan: a.subscriptionActive ? a.subscriptionPlan : '',
   );
 }
 

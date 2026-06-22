@@ -7,9 +7,13 @@ import '../core/config/dev_config.dart';
 import '../providers/auth_provider.dart';
 import '../providers/astrologer_session_provider.dart';
 import '../providers/service_providers.dart';
+import '../models/astrologer_request_model.dart';
 import '../screens/astrologer/astrologer_dashboard_screen.dart';
 import '../screens/astrologer/astrologer_login_screen.dart';
 import '../screens/astrologer/astrologer_register_screen.dart';
+import '../screens/astrologer/book_match_analysis_screen.dart';
+import '../screens/astrologer/match_workspace_screen.dart';
+import '../screens/astrologer/my_match_analysis_screen.dart';
 import '../screens/auth/account_type_screen.dart';
 import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -36,6 +40,7 @@ import '../screens/admin/admin_reports_page.dart';
 import '../screens/admin/account_admin_screens.dart';
 import '../screens/admin/announcement_management_screen.dart';
 import '../screens/horoscope/horoscope_details_screen.dart';
+import '../screens/horoscope/horoscope_files_screen.dart';
 import '../screens/horoscope/member_horoscope_screen.dart';
 import '../screens/horoscope/horoscope_match_screen.dart';
 import '../screens/profile/personal_details_screen.dart';
@@ -286,6 +291,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) =>
             AstrologerProfileScreen(astrologerId: state.pathParameters['id']!),
       ),
+      // ── Match-analysis pipeline ──────────────────────────────────────────
+      // User: book a porutham analysis (groom/bride from accepted matches).
+      GoRoute(
+        path: '/book-analysis/:id',
+        builder: (_, state) =>
+            BookMatchAnalysisScreen(astrologerId: state.pathParameters['id']!),
+      ),
+      // User: "My Match Analysis" (Pending / Accepted / Completed + reports).
+      GoRoute(
+          path: '/my-analysis', builder: (_, __) => const MyMatchAnalysisScreen()),
+      // Astrologer: the analysis workspace for an accepted request. Reached from
+      // the dashboard with the request passed as `extra` (distinct prefix so it
+      // never collides with '/astrologer/:id').
+      GoRoute(
+        path: '/match-workspace',
+        builder: (_, state) {
+          final req = state.extra;
+          if (req is! AstrologerRequestModel) {
+            return const Scaffold(
+              body: Center(
+                  child: Text('Open a request from the dashboard to analyze.')),
+            );
+          }
+          return MatchWorkspaceScreen(request: req);
+        },
+      ),
       GoRoute(path: '/subscription', builder: (_, __) => const SubscriptionScreen()),
       GoRoute(path: '/privacy', builder: (_, __) => const PrivacySettingsScreen()),
       GoRoute(path: '/language', builder: (_, __) => const LanguageScreen()),
@@ -293,6 +324,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/personal-details', builder: (_, __) => const PersonalDetailsScreen()),
       GoRoute(path: '/complete-profile', builder: (_, __) => const CompleteProfileScreen()),
       GoRoute(path: '/horoscope', builder: (_, __) => const HoroscopeDetailsScreen()),
+      // Horoscope / Jathagam document manager (multiple images + PDFs CRUD).
+      GoRoute(
+          path: '/horoscope-files',
+          builder: (_, __) => const HoroscopeFilesScreen()),
       // Read-only horoscope of an accepted match (kept for other callers).
       GoRoute(
         path: '/horoscope-user/:uid',

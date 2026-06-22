@@ -226,14 +226,21 @@ class AstrologerService {
               s.docs.map(AstrologerRequestModel.fromFirestore).toList());
 
   /// Requests this matrimony user has sent (to track status).
+  ///
+  /// Single-field equality query with NO server-side `orderBy` (which would
+  /// force a composite index and break the stream until it exists) — sorted
+  /// newest-first client-side instead, mirroring [watchRequestsForAstrologer].
   Stream<List<AstrologerRequestModel>> watchRequestsByUser(String userId) =>
       _db
           .collection(AppConstants.astrologerRequestsCollection)
           .where('userId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
           .snapshots()
-          .map((s) =>
-              s.docs.map(AstrologerRequestModel.fromFirestore).toList());
+          .map((s) {
+        final list =
+            s.docs.map(AstrologerRequestModel.fromFirestore).toList();
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return list;
+      });
 
   Future<void> updateRequestStatus(
           String requestId, AstrologerRequestStatus status) =>
@@ -242,6 +249,57 @@ class AstrologerService {
           .doc(requestId)
           .update({
         'status': status.name,
+        'respondedAt': FieldValue.serverTimestamp(),
+      });
+
+  /// Uploads an analysis result file (image or PDF) for a match-analysis
+  /// request and returns its public URL. PDFs use Cloudinary's `raw` delivery
+  /// type; images use `image`. Each file gets a unique public_id so multiple
+  /// files never overwrite one another.
+  Future<String> uploadAnalysisFile({
+    required String requestId,
+    required File file,
+    required String fileType,
+  }) async {
+    final resourceType = fileType.toLowerCase() == 'pdf' ? 'raw' : 'image';
+    final uri = Uri.parse(
+        'https://api.cloudinary.com/v1_1/$_cloudName/$resourceType/upload');
+    final request = http.MultipartRequest('POST', uri)
+      ..fields['upload_preset'] = _uploadPreset
+      ..fields['folder'] = 'jothida_matrimony/analysis/$requestId'
+      ..fields['public_id'] =
+          'analysis_${DateTime.now().millisecondsSinceEpoch}'
+      ..files.add(await http.MultipartFile.fromPath('file', file.path));
+
+    final response = await http.Response.fromStream(await request.send());
+    if (response.statusCode == 200) {
+      final url =
+          (jsonDecode(response.body) as Map<String, dynamic>)['secure_url']
+              as String?;
+      if (url != null && url.isNotEmpty) return url;
+    }
+    throw Exception('Analysis file upload failed (HTTP ${response.statusCode})');
+  }
+
+  /// Submits the astrologer's completed analysis for [requestId]: stores the
+  /// report text + already-uploaded file URLs and flips the request to
+  /// `completed`. The astrologer-update rule on `astrologer_requests` permits
+  /// this write for the addressed astrologer.
+  Future<void> submitAnalysis({
+    required String requestId,
+    required String text,
+    required List<String> images,
+    required List<String> pdfs,
+  }) =>
+      _db
+          .collection(AppConstants.astrologerRequestsCollection)
+          .doc(requestId)
+          .update({
+        'analysisText': text,
+        'analysisImages': images,
+        'analysisPdfs': pdfs,
+        'status': AstrologerRequestStatus.completed.name,
+        'completedAt': FieldValue.serverTimestamp(),
         'respondedAt': FieldValue.serverTimestamp(),
       });
 

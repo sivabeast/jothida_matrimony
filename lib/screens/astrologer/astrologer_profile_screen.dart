@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -7,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/phone_utils.dart';
 import '../../models/astrologer_model.dart';
+import '../../models/astrologer_plan.dart';
 import '../../models/astrologer_review_model.dart';
 import '../../providers/astrologer_provider.dart';
 import '../../providers/astrologer_review_provider.dart';
@@ -50,6 +52,7 @@ class AstrologerProfileScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _statsRow(context, a),
+                  _bookAnalysisButton(context, a),
                   if (a.about.trim().isNotEmpty)
                     _section('📝 ${context.l10n.about}',
                         Text(a.about, style: const TextStyle(height: 1.4))),
@@ -309,6 +312,24 @@ class AstrologerProfileScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
+              if (AstrologerPlan.badgeFor(a.subscriptionPlan).isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.gold,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    AstrologerPlan.badgeFor(a.subscriptionPlan),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
               if (a.location.trim().isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Row(
@@ -324,6 +345,26 @@ class AstrologerProfileScreen extends ConsumerWidget {
                 ),
               ],
             ],
+          ),
+        ),
+      );
+
+  // ── Book Match Analysis (porutham booking entry point) ─────────────────────
+  Widget _bookAnalysisButton(BuildContext context, Astrologer a) => Padding(
+        padding: const EdgeInsets.only(top: 16),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => context.push('/book-analysis/${a.id}'),
+            icon: const Icon(Icons.auto_awesome),
+            label: const Text('Book Match Analysis'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(50),
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
           ),
         ),
       );

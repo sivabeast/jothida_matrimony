@@ -78,6 +78,15 @@ class ProfileRepository {
   }) =>
       _storage.uploadHoroscopePdf(userId: userId, file: file, onProgress: onProgress);
 
+  /// Uploads a horoscope document (image or PDF) with a unique id — supports
+  /// MULTIPLE horoscope images and PDFs per profile.
+  Future<String> uploadHoroscopeDoc({
+    required String userId,
+    required File file,
+    required bool isPdf,
+  }) =>
+      _storage.uploadHoroscopeDoc(userId: userId, file: file, isPdf: isPdf);
+
   /// Replaces a single profile photo (e.g. from an "Edit profile" screen)
   /// and updates the `photos` array on the profile document.
   Future<String> updateProfilePhoto({

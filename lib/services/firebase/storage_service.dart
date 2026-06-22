@@ -82,6 +82,24 @@ class FirebaseStorageService implements StorageService {
   }
 
   @override
+  Future<String> uploadHoroscopeDoc({
+    required String userId,
+    required File file,
+    required bool isPdf,
+  }) async {
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    final ext = isPdf ? 'pdf' : 'jpg';
+    final ref = _storage
+        .ref('profiles/$userId/horoscope/${isPdf ? 'pdf' : 'img'}_$ts.$ext');
+    await ref.putFile(
+      file,
+      SettableMetadata(
+          contentType: isPdf ? 'application/pdf' : 'image/jpeg'),
+    );
+    return await ref.getDownloadURL();
+  }
+
+  @override
   Future<String> uploadIdProof({
     required String userId,
     required File file,

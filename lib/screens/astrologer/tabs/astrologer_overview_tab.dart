@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/dev_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/astrologer_account_model.dart';
+import '../../../models/astrologer_plan.dart';
 import '../../../models/astrologer_request_model.dart';
 import '../../../providers/astrologer_session_provider.dart';
 import '../../../providers/notification_provider.dart';
@@ -268,11 +269,14 @@ class AstrologerOverviewTab extends ConsumerWidget {
       BuildContext context, WidgetRef ref, AstrologerAccount a) {
     final active = a.subscriptionActive;
     final hasPlan = a.subscriptionExpiry != null;
-    final planLabel = a.subscriptionPlan == 'yearly'
-        ? 'Yearly Plan'
-        : a.subscriptionPlan == 'monthly'
-            ? 'Monthly Plan'
-            : 'No active plan';
+    final tierLabel = AstrologerPlan.labelFor(a.subscriptionPlan);
+    final planLabel = tierLabel.isNotEmpty
+        ? tierLabel
+        : a.subscriptionPlan == 'yearly'
+            ? 'Yearly Plan'
+            : a.subscriptionPlan == 'monthly'
+                ? 'Monthly Plan'
+                : 'No active plan';
     final statusColor = active ? AppColors.success : AppColors.error;
     final statusText = active
         ? 'Active'
@@ -333,8 +337,8 @@ class AstrologerOverviewTab extends ConsumerWidget {
           ] else ...[
             const SizedBox(height: 8),
             Text(
-                'Subscribe to a monthly or yearly plan to appear in user '
-                'listings, search and recommendations.',
+                'Choose a subscription plan to appear in user listings, '
+                'search and recommendations.',
                 style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
           ],
           if (!active) ...[
@@ -385,29 +389,76 @@ class AstrologerOverviewTab extends ConsumerWidget {
     );
   }
 
-  /// TEST MODE — pick Monthly / Yearly and activate instantly (no payment).
+  /// Subscription plans — pick a tier (Starter / Basic / Pro / Elite) and
+  /// activate. In TEST MODE the plan activates instantly with no payment;
+  /// otherwise this is where the payment flow would run before activation.
   void _activate(BuildContext context, WidgetRef ref) {
+    final current = ref.read(myAstrologerAccountProvider)?.subscriptionPlan;
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (sheetCtx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
+      builder: (sheetCtx) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (_, controller) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Activate Plan (Test Mode)',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 5,
+                  decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(3)),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  const Text('Subscription Plans',
+                      style: TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  if (AstrologerPlan.launchOfferActive)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                          color: AppColors.gold.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20)),
+                      child: const Text('🚀 Launch Offer',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary)),
+                    ),
+                ],
+              ),
               const SizedBox(height: 4),
-              Text('Payment is bypassed — the plan activates immediately.',
-                  style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
-              const SizedBox(height: 16),
-              _planTile(sheetCtx, ref, 'monthly', 'Monthly Plan', '30 days'),
-              const SizedBox(height: 10),
-              _planTile(sheetCtx, ref, 'yearly', 'Yearly Plan', '365 days'),
+              Text(
+                kSubscriptionTestMode
+                    ? 'Test mode — the plan activates immediately, no payment.'
+                    : 'Billed monthly. Cancel anytime.',
+                style: TextStyle(fontSize: 12.5, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: ListView.separated(
+                  controller: controller,
+                  itemCount: AstrologerPlan.all.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (_, i) => _planCard(
+                      sheetCtx, ref, AstrologerPlan.all[i],
+                      current: current),
+                ),
+              ),
             ],
           ),
         ),
@@ -415,48 +466,90 @@ class AstrologerOverviewTab extends ConsumerWidget {
     );
   }
 
-  Widget _planTile(BuildContext sheetCtx, WidgetRef ref, String type,
-          String title, String validity) =>
-      InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () async {
-          Navigator.pop(sheetCtx);
-          final messenger = ScaffoldMessenger.of(sheetCtx);
-          await ref
-              .read(myAstrologerAccountProvider.notifier)
-              .activateSubscription(type);
-          messenger.showSnackBar(
-              SnackBar(content: Text('$title activated (test mode).')));
-        },
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.primary.withOpacity(0.4)),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.workspace_premium, color: AppColors.gold),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _planCard(BuildContext sheetCtx, WidgetRef ref, AstrologerPlan plan,
+      {String? current}) {
+    final isCurrent = current == plan.id;
+    final launch = AstrologerPlan.launchOfferActive;
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () async {
+        Navigator.pop(sheetCtx);
+        final messenger = ScaffoldMessenger.of(sheetCtx);
+        await ref
+            .read(myAstrologerAccountProvider.notifier)
+            .activateSubscription(plan.id, days: 30, amount: plan.currentPrice);
+        messenger.showSnackBar(SnackBar(
+            content: Text(
+                '${plan.name} plan activated${kSubscriptionTestMode ? ' (test mode)' : ''}.')));
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          color: isCurrent ? AppColors.primary.withOpacity(0.04) : Colors.white,
+          border: Border.all(
+              color: isCurrent
+                  ? AppColors.primary
+                  : AppColors.primary.withOpacity(0.25),
+              width: isCurrent ? 2 : 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(plan.emoji, style: const TextStyle(fontSize: 22)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text('${plan.name}${isCurrent ? '  · current' : ''}',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16)),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(title,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15)),
-                    Text('Valid for $validity',
-                        style:
-                            TextStyle(fontSize: 12, color: Colors.grey[600])),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('₹${plan.currentPrice}',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                color: AppColors.primary)),
+                        const Text('/mo',
+                            style:
+                                TextStyle(fontSize: 11, color: Colors.grey)),
+                      ],
+                    ),
+                    if (launch && plan.regularPrice != plan.launchPrice)
+                      Text('₹${plan.regularPrice}',
+                          style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey,
+                              decoration: TextDecoration.lineThrough)),
                   ],
                 ),
-              ),
-              const Icon(Icons.arrow_forward_ios,
-                  size: 14, color: AppColors.primary),
-            ],
-          ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ...plan.perks.map((perk) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle,
+                          size: 15, color: AppColors.success),
+                      const SizedBox(width: 8),
+                      Expanded(
+                          child: Text(perk,
+                              style: const TextStyle(fontSize: 12.5))),
+                    ],
+                  ),
+                )),
+          ],
         ),
-      );
+      ),
+    );
+  }
 
   Widget _subRow(String label, String value) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 5),

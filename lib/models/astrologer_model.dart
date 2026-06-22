@@ -96,6 +96,10 @@ class Astrologer {
   final String phone;
   /// Uploaded certificate documents, shown read-only on the public profile.
   final List<AstrologerCertificate> certificateDocs;
+  /// Active subscription tier id ('starter' | 'basic' | 'pro' | 'elite'), or ''
+  /// when there is no active subscription. Drives the profile/directory
+  /// subscription badge.
+  final String subscriptionPlan;
 
   const Astrologer({
     required this.id,
@@ -117,6 +121,7 @@ class Astrologer {
     this.verified = false,
     this.phone = '',
     this.certificateDocs = const [],
+    this.subscriptionPlan = '',
   });
 
   /// All distinct service / specialization names the astrologer offers, with no
@@ -157,6 +162,7 @@ class Astrologer {
         lastActive: DateTime.now(),
         about: m['about'] ?? '',
         verified: m['verified'] ?? false,
+        subscriptionPlan: m['subscriptionPlan'] ?? '',
       );
 
   Map<String, dynamic> toMap() => {
@@ -174,5 +180,6 @@ class Astrologer {
         'isRecommended': isRecommended,
         'about': about,
         'verified': verified,
+        'subscriptionPlan': subscriptionPlan,
       };
 }

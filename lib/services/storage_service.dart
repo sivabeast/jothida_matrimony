@@ -41,6 +41,16 @@ abstract class StorageService {
     required int index,
   });
 
+  /// Uploads a horoscope document (image or PDF) under the user's horoscope
+  /// folder with a UNIQUE id, so a profile can hold MULTIPLE horoscope images
+  /// AND multiple horoscope PDFs without files overwriting one another.
+  /// Returns the public URL.
+  Future<String> uploadHoroscopeDoc({
+    required String userId,
+    required File file,
+    required bool isPdf,
+  });
+
   /// Uploads an ID-proof document and returns its public URL.
   Future<String> uploadIdProof({
     required String userId,

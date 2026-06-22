@@ -115,19 +115,24 @@ class MyAstrologerAccountNotifier extends Notifier<AstrologerAccount?> {
     ));
   }
 
-  /// TEST MODE subscription activation — no payment. [type] is 'monthly'
-  /// (30 days) or 'yearly' (365 days). Writes the plan + expiry (and the
-  /// explicit status fields) so the astrologer becomes visible to users
-  /// immediately, then updates the local session.
-  Future<void> activateSubscription(String type) async {
+  /// TEST MODE subscription activation — no payment. [plan] is a tier id
+  /// ('starter' | 'basic' | 'pro' | 'elite'), or legacy 'monthly' / 'yearly'.
+  /// Tiered plans bill monthly ([days] = 30); legacy 'yearly' keeps a 365-day
+  /// term. Writes the plan + price + expiry (and the explicit status fields) so
+  /// the astrologer becomes visible to users immediately, then updates the
+  /// local session.
+  Future<void> activateSubscription(String plan,
+      {int days = 30, int amount = 0}) async {
     final current = state;
     if (current == null) return;
     final now = DateTime.now();
-    final end = now.add(Duration(days: type == 'yearly' ? 365 : 30));
+    final termDays = plan == 'yearly' ? 365 : days;
+    final end = now.add(Duration(days: termDays));
     if (!kBypassAuth) {
       await ref.read(astrologerServiceProvider).updateAccount(current.id, {
-        'subscriptionPlan': type,
-        'subscriptionType': type,
+        'subscriptionPlan': plan,
+        'subscriptionType': plan,
+        'subscriptionAmount': amount,
         'subscriptionExpiry': Timestamp.fromDate(end),
         'subscriptionActive': true,
         'subscriptionStatus': 'active',
@@ -135,7 +140,7 @@ class MyAstrologerAccountNotifier extends Notifier<AstrologerAccount?> {
         'expiresAt': Timestamp.fromDate(end),
       });
     }
-    state = current.copyWith(subscriptionPlan: type, subscriptionExpiry: end);
+    state = current.copyWith(subscriptionPlan: plan, subscriptionExpiry: end);
   }
 
   void signOut() => state = null;
@@ -219,6 +224,30 @@ class DemoAstrologerRequestsNotifier
   void setStatus(String id, AstrologerRequestStatus status) {
     state = [
       for (final r in state) r.id == id ? r.copyWith(status: status) : r,
+    ];
+  }
+
+  /// Demo-mode booking: prepend a newly-created request so it appears in the
+  /// astrologer inbox and the user's "My Match Analysis" immediately.
+  void add(AstrologerRequestModel request) => state = [request, ...state];
+
+  /// Demo-mode analysis submission: attach the report and mark completed.
+  void submitAnalysis(
+    String id, {
+    required String text,
+    required List<String> images,
+    required List<String> pdfs,
+  }) {
+    state = [
+      for (final r in state)
+        r.id == id
+            ? r.copyWith(
+                status: AstrologerRequestStatus.completed,
+                analysisText: text,
+                analysisImages: images,
+                analysisPdfs: pdfs,
+              )
+            : r,
     ];
   }
 }
