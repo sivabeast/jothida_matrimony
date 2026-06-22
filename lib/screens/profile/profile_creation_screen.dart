@@ -128,34 +128,35 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
     }
   }
 
-  /// Save & Exit — persists the draft and signs out (the only way to leave the
-  /// mandatory onboarding gate); the draft is restored on the next sign-in.
+  /// Save & Exit — persists every COMPLETED section as a partial profile and
+  /// drops the user on the Home dashboard. The session stays active (NO
+  /// logout); the profile-completion banner then lets them finish anytime.
   Future<void> _saveAndExit() async {
-    await _saveDraft();
+    final userId = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You must be signed in to save.')));
+      return;
+    }
+    // Persist whatever has been entered so far (missing fields default safely),
+    // which also opens the Home gate — without ever signing the user out.
+    final profileId =
+        await ref.read(profileCreationProvider.notifier).submitProfile(userId);
     if (!mounted) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Save & Exit'),
-        content: const Text(
-            'Your progress is saved. You can continue from where you left off '
-            'next time you sign in.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Keep editing')),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-              child: const Text('Save & Exit')),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    await ref.read(authNotifierProvider.notifier).signOut();
-    if (!mounted) return;
-    context.go('/login');
+    if (profileId != null) {
+      await _clearDraft();
+      ref.invalidate(authNotifierProvider);
+      ref.invalidate(myProfileProvider);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              'Progress saved. Complete your profile anytime from Home.')));
+      context.go('/home');
+    } else {
+      final error = ref.read(profileCreationProvider).error;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(error ?? 'Could not save. Please try again.')));
+    }
   }
 
   Future<void> _confirmLogout() async {
@@ -240,13 +241,24 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
                   ),
         actions: [
           if (!_isEditMode)
-            TextButton.icon(
-              onPressed: _saveAndExit,
-              icon: const Icon(Icons.save_outlined,
-                  color: Colors.white, size: 18),
-              label: const Text('Save & Exit',
-                  style: TextStyle(color: Colors.white, fontSize: 13)),
-            ),
+            creationState.isLoading
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 18),
+                    child: Center(
+                      child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white)),
+                    ),
+                  )
+                : TextButton.icon(
+                    onPressed: _saveAndExit,
+                    icon: const Icon(Icons.save_outlined,
+                        color: Colors.white, size: 18),
+                    label: const Text('Save & Exit',
+                        style: TextStyle(color: Colors.white, fontSize: 13)),
+                  ),
         ],
       ),
       body: !_ready

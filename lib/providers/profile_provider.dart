@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart' show FirebaseException;
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/dev_config.dart';
+import '../core/constants/app_constants.dart';
 import '../core/services/porutham_match.dart';
 import '../models/profile_model.dart';
 import '../services/cloudinary/cloudinary_exception.dart';
@@ -442,6 +443,66 @@ class MatchFilters {
   }
 }
 
+// ── Partner-preference matching ─────────────────────────────────────────────
+// Matches must SATISFY the signed-in user's partner preferences — never random.
+// Each constraint is applied only when it is actually set ('Any' / empty = no
+// constraint), so a user who hasn't filled preferences still sees the broad
+// (gender-filtered) pool while the reminder banner nudges them to set them.
+
+bool _ppSet(String? s) =>
+    s != null && s.trim().isNotEmpty && s.trim().toLowerCase() != 'any';
+bool _ppEq(String a, String? b) =>
+    !_ppSet(b) || a.trim().toLowerCase() == b!.trim().toLowerCase();
+
+/// Whether [candidate] satisfies [me]'s partner preferences.
+bool partnerPreferenceMatch(ProfileModel candidate, ProfileModel? me) {
+  if (me == null) return true;
+  final pp = me.partnerPreferences;
+  final c = candidate;
+
+  if (c.age > 0 && (c.age < pp.minAge || c.age > pp.maxAge)) return false;
+  if (!_ppEq(c.maritalStatus, pp.maritalStatus)) return false;
+  if (!_ppEq(c.religion, pp.religion)) return false;
+  if (!_ppEq(c.caste ?? '', pp.caste)) return false;
+  if (pp.education.isNotEmpty &&
+      !pp.education.any((e) => _ppEq(c.education, e))) {
+    return false;
+  }
+  if (pp.occupation.isNotEmpty &&
+      !pp.occupation.any((o) => _ppEq(c.occupation, o))) {
+    return false;
+  }
+  if (!_ppEq(c.state, pp.state)) return false;
+  if (!_ppEq(c.city, pp.city)) return false;
+  if (!_ppEq(c.horoscope.rasi, pp.rasi)) return false;
+  if (!_ppEq(c.horoscope.nakshatra, pp.nakshatra)) return false;
+
+  // Height: applied only when both preference bounds are recognised heights.
+  final list = AppConstants.heightList;
+  final minIdx = list.indexOf(pp.minHeight);
+  final maxIdx = list.indexOf(pp.maxHeight);
+  final cIdx = list.indexOf(c.height);
+  if (minIdx >= 0 && maxIdx >= 0 && cIdx >= 0 && minIdx <= maxIdx) {
+    if (cIdx < minIdx || cIdx > maxIdx) return false;
+  }
+  return true;
+}
+
+/// True once the user has set at least one meaningful partner preference.
+bool partnerPreferencesComplete(ProfileModel? me) {
+  if (me == null) return false;
+  final pp = me.partnerPreferences;
+  return pp.education.isNotEmpty ||
+      pp.occupation.isNotEmpty ||
+      _ppSet(pp.religion) ||
+      _ppSet(pp.caste) ||
+      _ppSet(pp.state) ||
+      _ppSet(pp.city) ||
+      _ppSet(pp.maritalStatus) ||
+      _ppSet(pp.rasi) ||
+      _ppSet(pp.nakshatra);
+}
+
 class DiscoverState {
   final List<ProfileModel> profiles;
   final bool isLoading; // initial page
@@ -511,7 +572,9 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
   /// Passes the data-integrity check AND any active optional filters (applied
   /// after the gender restriction baked into the query / demo source).
   bool _accept(ProfileModel p, String? myUid, ProfileModel? me) =>
-      _keep(p, myUid) && _filters.matches(p, me);
+      _keep(p, myUid) &&
+      partnerPreferenceMatch(p, me) &&
+      _filters.matches(p, me);
 
   /// Load the first page of opposite-gender matches.
   Future<void> load() async {
@@ -662,7 +725,7 @@ final homeMatchesProvider = FutureProvider.autoDispose<HomeMatches>((ref) async 
     if (p.isMarried) return false;
     if (!p.isActive) return false;
     if (p.status == 'rejected' || p.status == 'blocked') return false;
-    return passesAge(p);
+    return passesAge(p) && partnerPreferenceMatch(p, me);
   }).toList();
 
   // Steps 3-4 — categorize. Needs my horoscope; unscored profiles remain in

@@ -122,9 +122,23 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     final profiles = state.profiles;
     final total = profiles.length;
 
+    // Refresh matches automatically when the profile (incl. partner
+    // preferences) changes — e.g. after editing preferences.
+    ref.listen<AsyncValue<ProfileModel?>>(myProfileProvider, (prev, next) {
+      final p = prev?.valueOrNull;
+      final n = next.valueOrNull;
+      if (n != null && p != null && !identical(p, n)) {
+        ref.read(discoverProvider.notifier).load();
+      }
+    });
+
+    final me = ref.watch(myProfileProvider).valueOrNull;
+    final showPrefReminder = me != null && !partnerPreferencesComplete(me);
+
     return Column(
       children: [
         _topBar(total),
+        if (showPrefReminder) _partnerPrefBanner(context),
         Expanded(
           child: Builder(builder: (_) {
             if (state.isLoading) {
@@ -229,6 +243,37 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     );
   }
 
+  /// Shown when the user hasn't set partner preferences — matches stay broad
+  /// until they do, so nudge them to narrow it down for better matches.
+  Widget _partnerPrefBanner(BuildContext context) => Container(
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+        padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+        decoration: BoxDecoration(
+          color: AppColors.gold.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.gold.withOpacity(0.45)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.favorite_border, color: AppColors.primary, size: 20),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'Complete your Partner Preferences to receive better matches.',
+                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
+              ),
+            ),
+            TextButton(
+              onPressed: () => context.push('/partner-preferences'),
+              style: TextButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  visualDensity: VisualDensity.compact),
+              child: const Text('Set'),
+            ),
+          ],
+        ),
+      );
+
   Widget _edgeHint(Alignment alignment, IconData icon) => Align(
         alignment: alignment,
         child: IgnorePointer(
@@ -279,7 +324,11 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
       );
 }
 
-/// A single full-screen match — the "page" in the profile book.
+/// A single full-screen match rendered as a premium, traditional "marriage
+/// profile book page" — parchment paper, full-bleed photo with an identity
+/// overlay, only the decision-critical facts (Profession & Income emphasised),
+/// and a sticky "Express Interest" button. Tapping the page opens the full
+/// profile.
 class _MatchProfilePage extends ConsumerWidget {
   final ProfileModel profile;
   final bool interestSent;
@@ -293,389 +342,355 @@ class _MatchProfilePage extends ConsumerWidget {
     required this.onAccept,
   });
 
-  /// Open the full Profile Details screen for this match.
+  // ── Parchment / book palette ──
+  static const Color _parchment = Color(0xFFF6ECD6);
+  static const Color _parchmentDeep = Color(0xFFEADFC0);
+  static const Color _ink = Color(0xFF4A3B28);
+  static const Color _bookEdge = Color(0xFF8B6B3D);
+
   void _openProfile(BuildContext context) =>
       context.push('/profile/${profile.id}');
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final location = [profile.city, profile.state]
+  String get _placeLine {
+    final native = (profile.nativePlace ?? '').trim();
+    if (native.isNotEmpty) return native;
+    return [profile.city, profile.state]
         .where((s) => s.trim().isNotEmpty)
         .join(', ');
+  }
 
-    // Live relationship status (Firestore), with an instant local override so
-    // the button flips to "Interest Sent" the moment it's tapped.
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     var status = ref.watch(interestStatusForProfileProvider(profile.id));
     if (status == InterestUiStatus.none && interestSent) {
       status = InterestUiStatus.sent;
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            colors: [_parchment, _parchmentDeep],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: _bookEdge.withOpacity(0.35), width: 1.2),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 14),
+            BoxShadow(
+                color: Colors.black.withOpacity(0.22),
+                blurRadius: 20,
+                offset: const Offset(0, 10)),
+            BoxShadow(
+                color: _bookEdge.withOpacity(0.12),
+                blurRadius: 0,
+                spreadRadius: 1),
           ],
         ),
         child: Column(
           children: [
-            // Tapping anywhere on the photo/details area opens the full
-            // profile. The action bar below handles its own taps.
             Expanded(
-              flex: 9,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () => _openProfile(context),
                 child: Column(
                   children: [
-                    // ── Photo gallery + identity overlay + match badge ─────
-                    Expanded(
-                      flex: 5,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          _PhotoGallery(photos: profile.photos),
-                          // Scrim so the name is always legible.
-                          IgnorePointer(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.bottomCenter,
-                                  end: Alignment.center,
-                                  colors: [
-                                    Colors.black.withOpacity(0.65),
-                                    Colors.transparent,
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                          // Identity overlay.
-                          Positioned(
-                            left: 16,
-                            right: 16,
-                            bottom: 14,
-                            child: IgnorePointer(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('${profile.name} | ${profile.age}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 24,
-                                          fontFamily: 'Poppins',
-                                          fontWeight: FontWeight.bold)),
-                                  if (location.isNotEmpty) ...[
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.location_on,
-                                            size: 15, color: Colors.white70),
-                                        const SizedBox(width: 4),
-                                        Flexible(
-                                          child: Text(location,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                  color: Colors.white70,
-                                                  fontSize: 13.5)),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ),
-                          // 10-porutham compatibility CATEGORY badge (no
-                          // percentage). Informational only.
-                          Positioned(
-                            top: 14,
-                            right: 14,
-                            child: IgnorePointer(
-                              child: HoroscopeMatchBadge(target: profile),
-                            ),
-                          ),
-                          // "Tap to view" affordance.
-                          Positioned(
-                            top: 14,
-                            left: 14,
-                            child: IgnorePointer(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.35),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.visibility_outlined,
-                                        size: 14, color: Colors.white),
-                                    SizedBox(width: 5),
-                                    Text('Tap to view profile',
-                                        style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w500)),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // ── Scrollable details ─────────────────────────────────
-                    Expanded(
-                      flex: 4,
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _careerEducation(),
-                            const SizedBox(height: 12),
-                            _quickFacts(),
-                            if (profile.about.trim().isNotEmpty) ...[
-                              const SizedBox(height: 14),
-                              _sectionLabel('About Me'),
-                              const SizedBox(height: 4),
-                              Text(profile.about,
-                                  style: TextStyle(
-                                      fontSize: 13.5,
-                                      height: 1.4,
-                                      color: Colors.grey[800])),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
+                    Expanded(flex: 5, child: _photoHeader(context)),
+                    Expanded(flex: 5, child: _details()),
                   ],
                 ),
               ),
             ),
-            // ── Action bar ───────────────────────────────────────────────
-            _actionBar(context, ref, status),
+            _stickyInterest(context, ref, status),
           ],
         ),
       ),
     );
   }
 
+  // ── Full-bleed photo with identity overlay + match badge ──────────────────
+  Widget _photoHeader(BuildContext context) {
+    final place = _placeLine;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        _PhotoGallery(photos: profile.photos),
+        IgnorePointer(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.center,
+                colors: [Colors.black.withOpacity(0.7), Colors.transparent],
+              ),
+            ),
+          ),
+        ),
+        // Identity overlay (bottom-left): Name | Age  /  Location.
+        Positioned(
+          left: 16,
+          right: 16,
+          bottom: 14,
+          child: IgnorePointer(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${profile.name} | ${profile.age}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 25,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.bold)),
+                if (place.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on,
+                          size: 15, color: Colors.white70),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(place,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 14)),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          top: 14,
+          right: 14,
+          child: IgnorePointer(child: HoroscopeMatchBadge(target: profile)),
+        ),
+        Positioned(
+          top: 14,
+          left: 14,
+          child: IgnorePointer(
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.35),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.visibility_outlined, size: 14, color: Colors.white),
+                  SizedBox(width: 5),
+                  Text('Tap to view profile',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
-  /// Education shown clearly, with Occupation + Annual Salary highlighted side
-  /// by side — these are the most important matching factors.
-  Widget _careerEducation() {
+  // ── Decision-focused details (no bio / family / horoscope / contact) ──────
+  Widget _details() {
+    final caste = (profile.caste ?? '').trim();
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Profession & Annual Income — premium emphasis.
+          _highlightRow(),
+          const SizedBox(height: 14),
+          // Thin decorative rule, like a printed page divider.
+          Container(height: 1, color: _bookEdge.withOpacity(0.25)),
+          const SizedBox(height: 12),
+          if (profile.education.trim().isNotEmpty)
+            _factLine('🎓', 'Education', profile.education),
+          if (profile.height.trim().isNotEmpty)
+            _factLine('📏', 'Height', profile.height),
+          if (profile.religion.trim().isNotEmpty)
+            _factLine('🙏', 'Religion', profile.religion),
+          if (caste.isNotEmpty) _factLine('👥', 'Caste', caste),
+          if (_placeLine.isNotEmpty)
+            _factLine('📍', 'Native / City', _placeLine),
+        ],
+      ),
+    );
+  }
+
+  /// Profession + Annual Income as bold, premium badges with the highest visual
+  /// priority on the card.
+  Widget _highlightRow() {
     final hasOcc = profile.occupation.trim().isNotEmpty;
     final hasSalary = profile.annualIncome.trim().isNotEmpty;
-    final hasEdu = profile.education.trim().isNotEmpty;
-    if (!hasOcc && !hasSalary && !hasEdu) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    if (!hasOcc && !hasSalary) return const SizedBox.shrink();
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (hasEdu) ...[
-          Row(
-            children: [
-              const Icon(Icons.school_outlined,
-                  size: 17, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(profile.education,
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600)),
-              ),
-            ],
+        if (hasOcc)
+          Expanded(
+            child: _premiumBadge(
+                '💼', 'Profession', profile.occupation, _bookEdge),
           ),
-          if (hasOcc || hasSalary) const SizedBox(height: 10),
-        ],
-        if (hasOcc || hasSalary)
-          Row(
-            children: [
-              if (hasOcc)
-                Expanded(
-                  child: _highlightTile(Icons.work_outline, 'Occupation',
-                      profile.occupation, AppColors.primary),
-                ),
-              if (hasOcc && hasSalary) const SizedBox(width: 10),
-              if (hasSalary)
-                Expanded(
-                  child: _highlightTile(Icons.payments_outlined,
-                      'Annual Salary', profile.annualIncome, AppColors.success),
-                ),
-            ],
+        if (hasOcc && hasSalary) const SizedBox(width: 10),
+        if (hasSalary)
+          Expanded(
+            child: _premiumBadge('💰', 'Annual Income', profile.annualIncome,
+                const Color(0xFF7A5C16)),
           ),
       ],
     );
   }
 
-  Widget _highlightTile(IconData icon, String label, String value, Color color) =>
+  Widget _premiumBadge(
+          String emoji, String label, String value, Color accent) =>
       Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          gradient: LinearGradient(
+            colors: [Colors.white.withOpacity(0.65), accent.withOpacity(0.12)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.25)),
+          border: Border.all(color: accent.withOpacity(0.45), width: 1.2),
+          boxShadow: [
+            BoxShadow(color: accent.withOpacity(0.12), blurRadius: 6),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(icon, size: 15, color: color),
+                Text(emoji, style: const TextStyle(fontSize: 14)),
                 const SizedBox(width: 5),
-                Text(label,
+                Text(label.toUpperCase(),
                     style: TextStyle(
-                        fontSize: 11,
-                        color: color,
-                        fontWeight: FontWeight.w600)),
+                        fontSize: 10,
+                        letterSpacing: 0.4,
+                        color: accent,
+                        fontWeight: FontWeight.w800)),
               ],
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 6),
             Text(value,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.bold)),
+                    fontSize: 16,
+                    height: 1.15,
+                    color: _ink,
+                    fontWeight: FontWeight.bold)),
           ],
         ),
       );
 
-  Widget _quickFacts() {
-    final facts = <_Fact>[
-      if (profile.height.trim().isNotEmpty)
-        _Fact(Icons.height, profile.height),
-      if (profile.religion.trim().isNotEmpty)
-        _Fact(Icons.spa_outlined, profile.religion),
-      if ((profile.caste ?? '').trim().isNotEmpty)
-        _Fact(Icons.groups_outlined, profile.caste!),
-    ];
-    if (facts.isEmpty) return const SizedBox.shrink();
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final f in facts)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(10),
+  Widget _factLine(String emoji, String label, String value) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 15)),
+            const SizedBox(width: 10),
+            SizedBox(
+              width: 92,
+              child: Text(label,
+                  style: TextStyle(
+                      fontSize: 12.5,
+                      color: _ink.withOpacity(0.6),
+                      fontWeight: FontWeight.w600)),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(f.icon, size: 15, color: AppColors.primary),
-                const SizedBox(width: 6),
-                Text(f.value,
-                    style: const TextStyle(
-                        fontSize: 12.5, fontWeight: FontWeight.w500)),
-              ],
+            Expanded(
+              child: Text(value,
+                  style: const TextStyle(
+                      fontSize: 13.5,
+                      color: _ink,
+                      fontWeight: FontWeight.w600)),
             ),
-          ),
-      ],
+          ],
+        ),
+      );
+
+  // ── Sticky Express Interest button (always visible at the card bottom) ────
+  Widget _stickyInterest(
+      BuildContext context, WidgetRef ref, InterestUiStatus status) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+      decoration: BoxDecoration(
+        color: _parchmentDeep,
+        border: Border(top: BorderSide(color: _bookEdge.withOpacity(0.3))),
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        child: _interestButton(context, ref, status),
+      ),
     );
   }
 
-  Widget _sectionLabel(String text) => Text(text,
-      style: const TextStyle(
-          fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary));
-
-  Widget _actionBar(BuildContext context, WidgetRef ref, InterestUiStatus status) =>
-      Container(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey.shade200)),
-        ),
-        child: Row(
-          children: [
-            Expanded(child: _interestButton(context, ref, status)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => context.push('/match/${profile.id}'),
-                icon: const Icon(Icons.auto_awesome, size: 20),
-                label: const Text('Horoscope'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
-                  minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-
-  /// Status-aware left action. The relationship status is the source of truth,
-  /// so once an interest exists (sent / accepted / rejected) the plain "Send
-  /// Interest" button is never shown again.
   Widget _interestButton(
       BuildContext context, WidgetRef ref, InterestUiStatus status) {
     switch (status) {
       case InterestUiStatus.accepted:
         return _statusButton(
-          icon: Icons.check_circle,
-          label: 'Matched',
-          background: AppColors.success,
-        );
+            icon: Icons.check_circle,
+            label: '✓ Matched',
+            background: AppColors.success);
       case InterestUiStatus.sent:
         return _statusButton(
-          icon: Icons.hourglass_top,
-          label: 'Interest Sent',
-          background: Colors.grey.shade500,
-        );
+            icon: Icons.check,
+            label: '✓ Interest Sent',
+            background: Colors.grey.shade500);
       case InterestUiStatus.rejected:
         return _statusButton(
-          icon: Icons.cancel,
-          label: 'Rejected',
-          background: Colors.grey.shade600,
-        );
+            icon: Icons.cancel,
+            label: 'Not Interested',
+            background: Colors.grey.shade600);
       case InterestUiStatus.receivedPending:
-        // They're interested in us — accept it in place to become a match.
         final pending =
             ref.watch(pendingReceivedInterestFromProfileProvider(profile.id));
         return ElevatedButton.icon(
-          onPressed:
-              pending == null ? null : () => onAccept(pending.id),
+          onPressed: pending == null ? null : () => onAccept(pending.id),
           icon: const Icon(Icons.favorite, size: 20),
           label: const Text('Accept Interest'),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.success,
             foregroundColor: Colors.white,
-            minimumSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+            minimumSize: const Size.fromHeight(52),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
         );
       case InterestUiStatus.none:
         return ElevatedButton.icon(
           onPressed: onInterest,
-          icon: const Icon(Icons.favorite, size: 20),
-          label: const Text('Interest'),
+          icon: const Text('❤️', style: TextStyle(fontSize: 18)),
+          label: const Text('Express Interest',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
-            minimumSize: const Size.fromHeight(48),
+            minimumSize: const Size.fromHeight(52),
+            elevation: 3,
+            shadowColor: AppColors.primary.withOpacity(0.4),
             shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
         );
     }
   }
 
-  /// A disabled, status-coloured button (Matched / Interest Sent / Rejected).
   Widget _statusButton({
     required IconData icon,
     required String label,
@@ -684,21 +699,16 @@ class _MatchProfilePage extends ConsumerWidget {
       ElevatedButton.icon(
         onPressed: null,
         icon: Icon(icon, size: 20),
-        label: Text(label),
+        label: Text(label,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
         style: ElevatedButton.styleFrom(
           disabledBackgroundColor: background,
           disabledForegroundColor: Colors.white,
-          minimumSize: const Size.fromHeight(48),
+          minimumSize: const Size.fromHeight(52),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
       );
-}
-
-class _Fact {
-  final IconData icon;
-  final String value;
-  const _Fact(this.icon, this.value);
 }
 
 /// Swipeable photo gallery with a page-dots indicator. Horizontal swipes here

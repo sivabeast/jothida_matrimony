@@ -13,6 +13,7 @@ import '../../../providers/demo_data_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/service_providers.dart';
 import '../../../providers/subscription_provider.dart';
+import '../../../widgets/home/profile_completion_card.dart';
 
 class MyProfileTab extends ConsumerWidget {
   const MyProfileTab({super.key});
@@ -47,6 +48,8 @@ class MyProfileTab extends ConsumerWidget {
                         '${profile.age} yrs • ${profile.city}',
                         style: TextStyle(color: Colors.grey[600]),
                       ),
+                      const SizedBox(height: 8),
+                      const ProfileStatusBadge(showPercent: true),
                       if (profile.isMarried) ...[
                         const SizedBox(height: 8),
                         Container(

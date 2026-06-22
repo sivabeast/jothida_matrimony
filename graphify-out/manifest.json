@@ -195,8 +195,8 @@
     "semantic_hash": ""
   },
   "lib/providers/profile_provider.dart": {
-    "mtime": 1781782863.8714514,
-    "ast_hash": "ba0951348ecd8654cd0f65dcedd49d7b",
+    "mtime": 1782150602.889079,
+    "ast_hash": "d7309495ffb4e4c6777c797fe69d098b",
     "semantic_hash": ""
   },
   "lib/providers/requests_provider.dart": {
@@ -350,8 +350,8 @@
     "semantic_hash": ""
   },
   "lib/screens/home/tabs/discover_tab.dart": {
-    "mtime": 1781585691.0943902,
-    "ast_hash": "b488acbf462d35042a51d3abf6a95a50",
+    "mtime": 1782150649.908755,
+    "ast_hash": "d77e8fd29d7d07167ba5a6f92a298e64",
     "semantic_hash": ""
   },
   "lib/screens/home/tabs/interests_tab.dart": {
@@ -360,8 +360,8 @@
     "semantic_hash": ""
   },
   "lib/screens/home/tabs/my_profile_tab.dart": {
-    "mtime": 1782129277.2328038,
-    "ast_hash": "edd6fbd06c0c8b8f826bc2ac23d03269",
+    "mtime": 1782150303.7822096,
+    "ast_hash": "b3da1d7de7a89c7450ceea2ab89a7d6f",
     "semantic_hash": ""
   },
   "lib/screens/home/tabs/notifications_tab.dart": {
@@ -380,13 +380,13 @@
     "semantic_hash": ""
   },
   "lib/screens/profile/profile_creation_screen.dart": {
-    "mtime": 1782146199.721975,
-    "ast_hash": "b6f8f1870b5471bbc64f51cbbfcce129",
+    "mtime": 1782150213.1795335,
+    "ast_hash": "f503e6729b9a94822e5adddad0b9b3c4",
     "semantic_hash": ""
   },
   "lib/screens/profile/profile_view_screen.dart": {
-    "mtime": 1781754553.7906368,
-    "ast_hash": "8aed5757e5fd24d209785d1458a4f7f3",
+    "mtime": 1782150844.067969,
+    "ast_hash": "db60fc0cc35a6b476d01116bf70462a6",
     "semantic_hash": ""
   },
   "lib/screens/profile/steps/step2_personal_details.dart": {
@@ -475,8 +475,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/home/profile_completion_card.dart": {
-    "mtime": 1782147300.528933,
-    "ast_hash": "2a282ca4f8a435c255ae845c4ac59920",
+    "mtime": 1782150262.595134,
+    "ast_hash": "835ba73c335d7fd3dd17c97cf55b5803",
     "semantic_hash": ""
   },
   "push_to_github.ps1": {
@@ -520,7 +520,7 @@
     "semantic_hash": ""
   },
   "android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java": {
-    "mtime": 1782147513.5625603,
+    "mtime": 1782150886.4219162,
     "ast_hash": "957f3f4fa91953a90f2d9690762329f7",
     "semantic_hash": ""
   },

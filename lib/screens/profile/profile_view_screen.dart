@@ -413,6 +413,14 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                   _InfoItem(Icons.people_outline, 'Caste', profile.caste ?? ''),
                   _InfoItem(Icons.groups_2_outlined, 'Sub-caste', profile.subCaste ?? ''),
                   _InfoItem(Icons.wc, 'Marital Status', profile.maritalStatus),
+                  _InfoItem(Icons.badge_outlined, 'Employment Type',
+                      profile.employmentType),
+                  _InfoItem(Icons.location_city_outlined, 'Native Place',
+                      profile.nativePlace ?? ''),
+                  _InfoItem(Icons.account_balance_outlined, 'Gothram',
+                      profile.gothram),
+                  _InfoItem(Icons.auto_awesome_outlined, 'Kuladeivam',
+                      profile.kuladeivam),
                 ]),
                 const SizedBox(height: 20),
                 _buildInfoSection('Horoscope', [
@@ -420,8 +428,17 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                   _InfoItem(Icons.star_border, 'Nakshatra', profile.horoscopeDetails.nakshatra),
                   _InfoItem(Icons.wb_twilight, 'Lagnam', profile.horoscopeDetails.lagnam),
                   _InfoItem(Icons.place_outlined, 'Birth City', profile.horoscopeDetails.birthPlace),
+                  _InfoItem(Icons.access_time, 'Birth Time',
+                      profile.horoscopeDetails.birthTime),
+                  _InfoItem(Icons.brightness_5_outlined, 'Chevvai Dosham',
+                      profile.horoscopeDetails.dosham),
+                  _InfoItem(Icons.brightness_5_outlined, 'Rahu / Kethu Dosham',
+                      profile.horoscopeDetails.rahuKethuDosham),
+                  _InfoItem(Icons.brightness_5_outlined, 'Kalasarpa Dosham',
+                      profile.horoscopeDetails.kalasarpaDosham),
                 ]),
                 const SizedBox(height: 20),
+                ..._lifestyleSection(profile.lifestyle),
                 ..._partnerPreferenceSection(profile.partnerPreferences),
                 const SizedBox(height: 32),
                 // Status-aware action: accepted → View Contact (never "Send
@@ -435,6 +452,23 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
         ),
       ],
     );
+  }
+
+  /// Lifestyle section — rendered only when at least one habit/field is set.
+  List<Widget> _lifestyleSection(LifestyleDetails l) {
+    final items = <_InfoItem>[
+      _InfoItem(Icons.restaurant_outlined, 'Eating Habit', l.eatingHabit),
+      _InfoItem(Icons.smoke_free, 'Smoking', l.smokingHabit),
+      _InfoItem(Icons.no_drinks_outlined, 'Drinking', l.drinkingHabit),
+      _InfoItem(Icons.sports_esports_outlined, 'Hobbies', l.hobbies),
+      _InfoItem(Icons.interests_outlined, 'Interests', l.interests),
+      _InfoItem(Icons.translate, 'Languages Known', l.languagesKnown.join(', ')),
+    ];
+    if (items.every((i) => i.value.trim().isEmpty)) return const [];
+    return [
+      _buildInfoSection('Lifestyle', items),
+      const SizedBox(height: 20),
+    ];
   }
 
   /// Partner Preferences section — rendered only when at least one meaningful
