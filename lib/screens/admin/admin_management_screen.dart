@@ -1,8 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/constants/app_constants.dart';
+import 'package:http/http.dart' as http;
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_account_model.dart';
+import '../../models/astrologer_certificate.dart';
 import '../../models/profile_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/admin_provider.dart';
@@ -58,53 +62,6 @@ extension on _AstroCat {
       _ => ('Free', Colors.grey),
     };
 
-// ── Optional filter models ────────────────────────────────────────────────────
-class _UserFilters {
-  String? gender;
-  int? minAge;
-  int? maxAge;
-  String? religion;
-  String? caste;
-  String? district;
-
-  _UserFilters copy() => _UserFilters()
-    ..gender = gender
-    ..minAge = minAge
-    ..maxAge = maxAge
-    ..religion = religion
-    ..caste = caste
-    ..district = district;
-
-  int get count => [
-        gender,
-        minAge,
-        maxAge,
-        religion,
-        caste,
-        (district?.trim().isNotEmpty ?? false) ? district : null,
-      ].where((e) => e != null).length;
-}
-
-class _AstroFilters {
-  double? minRating;
-  int? minExp;
-  String? service;
-  String? district;
-
-  _AstroFilters copy() => _AstroFilters()
-    ..minRating = minRating
-    ..minExp = minExp
-    ..service = service
-    ..district = district;
-
-  int get count => [
-        minRating,
-        minExp,
-        service,
-        (district?.trim().isNotEmpty ?? false) ? district : null,
-      ].where((e) => e != null).length;
-}
-
 /// Unified Admin → Management page. One screen manages both **Users** and
 /// **Astrologers** via a primary segmented toggle, each with its own secondary
 /// plan/category tabs, a shared search bar, optional filters, pull-to-refresh
@@ -126,8 +83,6 @@ class _AdminManagementScreenState extends ConsumerState<AdminManagementScreen> {
   String _query = '';
   _UserPlan _userPlan = _UserPlan.all;
   _AstroCat _astroCat = _AstroCat.all;
-  _UserFilters _uf = _UserFilters();
-  _AstroFilters _af = _AstroFilters();
 
   static const _pageSize = 15;
   int _visible = _pageSize;
@@ -180,7 +135,7 @@ class _AdminManagementScreenState extends ConsumerState<AdminManagementScreen> {
         _primaryToggle(),
         const SizedBox(height: 8),
         _secondaryTabs(),
-        _filterRow(),
+        const SizedBox(height: 4),
         Expanded(
           child: RefreshIndicator(
             color: AppColors.primary,
@@ -343,70 +298,6 @@ class _AdminManagementScreenState extends ConsumerState<AdminManagementScreen> {
         ),
       );
 
-  // ── Filter row ───────────────────────────────────────────────────────────────
-  Widget _filterRow() {
-    final count =
-        _primary == _Primary.users ? _uf.count : _af.count;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
-      child: Row(
-        children: [
-          OutlinedButton.icon(
-            onPressed: _openFilters,
-            icon: const Icon(Icons.tune, size: 18),
-            label: Text(count == 0 ? 'Filters' : 'Filters ($count)'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              side: BorderSide(
-                  color: count == 0 ? Colors.grey[300]! : AppColors.primary),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            ),
-          ),
-          if (count > 0) ...[
-            const SizedBox(width: 8),
-            TextButton(
-              onPressed: () => setState(() {
-                if (_primary == _Primary.users) {
-                  _uf = _UserFilters();
-                } else {
-                  _af = _AstroFilters();
-                }
-                _resetPaging();
-              }),
-              child: const Text('Clear'),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  void _openFilters() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
-      builder: (_) => _primary == _Primary.users
-          ? _UserFiltersSheet(
-              initial: _uf.copy(),
-              onApply: (f) => setState(() {
-                _uf = f;
-                _resetPaging();
-              }),
-            )
-          : _AstroFiltersSheet(
-              initial: _af.copy(),
-              onApply: (f) => setState(() {
-                _af = f;
-                _resetPaging();
-              }),
-            ),
-    );
-  }
-
   // ── Users list ───────────────────────────────────────────────────────────────
   Widget _usersList() {
     final usersAsync = ref.watch(allUsersProvider);
@@ -450,6 +341,10 @@ class _AdminManagementScreenState extends ConsumerState<AdminManagementScreen> {
   }
 
   bool _userMatches(UserModel u, ProfileModel? p) {
+    // Astrologer accounts are managed under the Astrologers tab — keep them out
+    // of the Users list so the same person never appears in both.
+    if (u.role == 'astrologer') return false;
+
     // Plan tab.
     final plan = _userPlan.membership;
     if (plan != null && u.membershipType != plan) return false;
@@ -466,28 +361,6 @@ class _AdminManagementScreenState extends ConsumerState<AdminManagementScreen> {
       if (!name.contains(q) && !email.contains(q) && !phone.contains(q)) {
         return false;
       }
-    }
-
-    // Optional filters (profile-derived).
-    final f = _uf;
-    if (f.gender != null) {
-      final g = (p?.gender ?? u.gender ?? '');
-      if (g.toLowerCase() != f.gender!.toLowerCase()) return false;
-    }
-    final age = p?.age ?? 0;
-    if (f.minAge != null && (age == 0 || age < f.minAge!)) return false;
-    if (f.maxAge != null && (age == 0 || age > f.maxAge!)) return false;
-    if (f.religion != null &&
-        (p?.religion ?? '').toLowerCase() != f.religion!.toLowerCase()) {
-      return false;
-    }
-    if (f.caste != null &&
-        (p?.caste ?? '').toLowerCase() != f.caste!.toLowerCase()) {
-      return false;
-    }
-    if ((f.district?.trim().isNotEmpty ?? false)) {
-      final d = '${p?.district ?? ''} ${p?.city ?? ''}'.toLowerCase();
-      if (!d.contains(f.district!.trim().toLowerCase())) return false;
     }
     return true;
   }
@@ -556,22 +429,6 @@ class _AdminManagementScreenState extends ConsumerState<AdminManagementScreen> {
           !loc.contains(q)) {
         return false;
       }
-    }
-
-    // Optional filters.
-    final f = _af;
-    if (f.minRating != null && a.rating < f.minRating!) return false;
-    if (f.minExp != null && a.experienceYears < f.minExp!) return false;
-    if (f.service != null &&
-        !a.services.any((s) =>
-            s.name.toLowerCase().contains(f.service!.toLowerCase())) &&
-        !a.expertise
-            .any((e) => e.toLowerCase().contains(f.service!.toLowerCase()))) {
-      return false;
-    }
-    if ((f.district?.trim().isNotEmpty ?? false)) {
-      final d = '${a.district} ${a.city}'.toLowerCase();
-      if (!d.contains(f.district!.trim().toLowerCase())) return false;
     }
     return true;
   }
@@ -927,6 +784,9 @@ class _AstroCard extends ConsumerWidget {
           if (astrologer.status != VerificationStatus.approved)
             _item('verify', Icons.verified_outlined, 'Verify Astrologer',
                 color: AppColors.success),
+          if (astrologer.status != VerificationStatus.rejected)
+            _item('reject', Icons.cancel_outlined, 'Reject Astrologer',
+                color: AppColors.warning),
           _item('suspend', Icons.block_outlined, 'Suspend Astrologer'),
           _item('delete', Icons.delete_outline, 'Delete Astrologer',
               color: AppColors.error),
@@ -944,6 +804,15 @@ class _AstroCard extends ConsumerWidget {
         await _run(context, ref,
             () => ref.read(adminActionsProvider.notifier).approveAstrologer(uid),
             'Astrologer verified.');
+        break;
+      case 'reject':
+        final ok = await _confirm(context, 'Reject Astrologer',
+            'Reject ${astrologer.fullName}\'s verification? They will not appear to users.',
+            confirmLabel: 'Reject', confirmColor: AppColors.warning);
+        if (ok != true || !context.mounted) return;
+        await _run(context, ref,
+            () => ref.read(adminActionsProvider.notifier).rejectAstrologer(uid),
+            'Astrologer rejected.');
         break;
       case 'suspend':
         await _run(context, ref,
@@ -1033,7 +902,8 @@ const _months = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
-Future<bool?> _confirm(BuildContext context, String title, String body) =>
+Future<bool?> _confirm(BuildContext context, String title, String body,
+        {String confirmLabel = 'Delete', Color? confirmColor}) =>
     showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1045,298 +915,13 @@ Future<bool?> _confirm(BuildContext context, String title, String body) =>
               child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error, foregroundColor: Colors.white),
+                backgroundColor: confirmColor ?? AppColors.error,
+                foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+            child: Text(confirmLabel),
           ),
         ],
       ),
-    );
-
-// ─────────────────────────────────────────────────────────────────────────────
-// USER FILTERS SHEET
-// ─────────────────────────────────────────────────────────────────────────────
-class _UserFiltersSheet extends StatefulWidget {
-  final _UserFilters initial;
-  final ValueChanged<_UserFilters> onApply;
-  const _UserFiltersSheet({required this.initial, required this.onApply});
-
-  @override
-  State<_UserFiltersSheet> createState() => _UserFiltersSheetState();
-}
-
-class _UserFiltersSheetState extends State<_UserFiltersSheet> {
-  late _UserFilters f = widget.initial;
-  final _minAge = TextEditingController();
-  final _maxAge = TextEditingController();
-  final _district = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    if (f.minAge != null) _minAge.text = '${f.minAge}';
-    if (f.maxAge != null) _maxAge.text = '${f.maxAge}';
-    if (f.district != null) _district.text = f.district!;
-  }
-
-  @override
-  void dispose() {
-    _minAge.dispose();
-    _maxAge.dispose();
-    _district.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _FilterScaffold(
-      title: 'User Filters',
-      onClear: () => Navigator.pop(context, _clear()),
-      onApply: () {
-        f.minAge = int.tryParse(_minAge.text.trim());
-        f.maxAge = int.tryParse(_maxAge.text.trim());
-        f.district =
-            _district.text.trim().isEmpty ? null : _district.text.trim();
-        widget.onApply(f);
-        Navigator.pop(context);
-      },
-      children: [
-        _label('Gender'),
-        Wrap(spacing: 8, children: [
-          for (final g in ['Male', 'Female'])
-            ChoiceChip(
-              label: Text(g),
-              selected: f.gender == g,
-              onSelected: (_) =>
-                  setState(() => f.gender = f.gender == g ? null : g),
-            ),
-        ]),
-        const SizedBox(height: 14),
-        _label('Age range'),
-        Row(children: [
-          Expanded(child: _num(_minAge, 'Min')),
-          const SizedBox(width: 12),
-          Expanded(child: _num(_maxAge, 'Max')),
-        ]),
-        const SizedBox(height: 14),
-        _dropdown('Religion', AppConstants.religions, f.religion,
-            (v) => setState(() => f.religion = v)),
-        const SizedBox(height: 14),
-        _dropdown('Caste', AppConstants.castes, f.caste,
-            (v) => setState(() => f.caste = v)),
-        const SizedBox(height: 14),
-        _label('District'),
-        _text(_district, 'e.g. Chennai'),
-      ],
-    );
-  }
-
-  void _onClearControllers() {
-    _minAge.clear();
-    _maxAge.clear();
-    _district.clear();
-  }
-
-  _UserFilters _clear() {
-    _onClearControllers();
-    final empty = _UserFilters();
-    widget.onApply(empty);
-    return empty;
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ASTROLOGER FILTERS SHEET
-// ─────────────────────────────────────────────────────────────────────────────
-class _AstroFiltersSheet extends StatefulWidget {
-  final _AstroFilters initial;
-  final ValueChanged<_AstroFilters> onApply;
-  const _AstroFiltersSheet({required this.initial, required this.onApply});
-
-  @override
-  State<_AstroFiltersSheet> createState() => _AstroFiltersSheetState();
-}
-
-class _AstroFiltersSheetState extends State<_AstroFiltersSheet> {
-  late _AstroFilters f = widget.initial;
-  final _minExp = TextEditingController();
-  final _district = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    if (f.minExp != null) _minExp.text = '${f.minExp}';
-    if (f.district != null) _district.text = f.district!;
-  }
-
-  @override
-  void dispose() {
-    _minExp.dispose();
-    _district.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _FilterScaffold(
-      title: 'Astrologer Filters',
-      onClear: () {
-        _minExp.clear();
-        _district.clear();
-        final empty = _AstroFilters();
-        widget.onApply(empty);
-        Navigator.pop(context);
-      },
-      onApply: () {
-        f.minExp = int.tryParse(_minExp.text.trim());
-        f.district =
-            _district.text.trim().isEmpty ? null : _district.text.trim();
-        widget.onApply(f);
-        Navigator.pop(context);
-      },
-      children: [
-        _label('Minimum rating'),
-        Wrap(spacing: 8, children: [
-          for (final r in [3.0, 4.0, 4.5])
-            ChoiceChip(
-              label: Text('${r.toStringAsFixed(r == r.roundToDouble() ? 0 : 1)}★+'),
-              selected: f.minRating == r,
-              onSelected: (_) =>
-                  setState(() => f.minRating = f.minRating == r ? null : r),
-            ),
-        ]),
-        const SizedBox(height: 14),
-        _label('Minimum experience (years)'),
-        _num(_minExp, 'e.g. 5'),
-        const SizedBox(height: 14),
-        _dropdown('Service', AppConstants.astrologerSpecializations, f.service,
-            (v) => setState(() => f.service = v)),
-        const SizedBox(height: 14),
-        _label('District'),
-        _text(_district, 'e.g. Madurai'),
-      ],
-    );
-  }
-}
-
-// ── Filter sheet building blocks ──────────────────────────────────────────────
-class _FilterScaffold extends StatelessWidget {
-  final String title;
-  final List<Widget> children;
-  final VoidCallback onApply;
-  final VoidCallback onClear;
-  const _FilterScaffold(
-      {required this.title,
-      required this.children,
-      required this.onApply,
-      required this.onClear});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 18,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text('All filters are optional.',
-                style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-            const SizedBox(height: 16),
-            ...children,
-            const SizedBox(height: 22),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: onClear,
-                    style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48)),
-                    child: const Text('Clear All'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: onApply,
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size.fromHeight(48)),
-                    child: const Text('Apply Filters'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-Widget _label(String t) => Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(t,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
-    );
-
-Widget _num(TextEditingController c, String hint) => TextField(
-      controller: c,
-      keyboardType: TextInputType.number,
-      decoration: InputDecoration(
-        hintText: hint,
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        border:
-            OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-
-Widget _text(TextEditingController c, String hint) => TextField(
-      controller: c,
-      decoration: InputDecoration(
-        hintText: hint,
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        border:
-            OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-
-Widget _dropdown(String label, List<String> options, String? value,
-        ValueChanged<String?> onChanged) =>
-    Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _label(label),
-        DropdownButtonFormField<String>(
-          value: value,
-          isExpanded: true,
-          decoration: InputDecoration(
-            isDense: true,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            border:
-                OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          hint: const Text('Any'),
-          items: [
-            const DropdownMenuItem(value: null, child: Text('Any')),
-            for (final o in options) DropdownMenuItem(value: o, child: Text(o)),
-          ],
-          onChanged: onChanged,
-        ),
-      ],
     );
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1609,11 +1194,7 @@ class _AdminAstroProfileSheet extends ConsumerWidget {
               ),
           ]),
 
-          _section('Certificates', Icons.workspace_premium_outlined, [
-            _r('Uploaded', '${a.certificates.length} document(s)'),
-            if (a.certName.isNotEmpty) _r('Name', a.certName),
-            if (a.certOrg.isNotEmpty) _r('Issued by', a.certOrg),
-          ]),
+          _certificatesCard(a),
 
           _section('Contact Details', Icons.call_outlined, [
             _r('Name', a.fullName),
@@ -1648,6 +1229,32 @@ class _AdminAstroProfileSheet extends ConsumerWidget {
                       backgroundColor: AppColors.success,
                       foregroundColor: Colors.white,
                       minimumSize: const Size.fromHeight(48)),
+                ),
+              ),
+            ),
+          if (a.status != VerificationStatus.rejected)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final ok = await _confirm(context, 'Reject Astrologer',
+                        'Reject ${a.fullName}\'s verification?',
+                        confirmLabel: 'Reject', confirmColor: AppColors.warning);
+                    if (ok != true || !context.mounted) return;
+                    Navigator.pop(context);
+                    await ref
+                        .read(adminActionsProvider.notifier)
+                        .rejectAstrologer(a.id);
+                    await onChanged();
+                  },
+                  icon: const Icon(Icons.cancel_outlined, size: 18),
+                  label: const Text('Reject Astrologer'),
+                  style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.warning,
+                      side: const BorderSide(color: AppColors.warning),
+                      minimumSize: const Size.fromHeight(46)),
                 ),
               ),
             ),
@@ -1782,3 +1389,240 @@ Widget _r(String label, String value) => Padding(
         ],
       ),
     );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CERTIFICATES — admin review (View + Download, PDF & image)
+// ─────────────────────────────────────────────────────────────────────────────
+Widget _certificatesCard(AstrologerAccount a) => Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: const [
+            Icon(Icons.workspace_premium_outlined,
+                size: 18, color: AppColors.primary),
+            SizedBox(width: 8),
+            Text('Certificates',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          ]),
+          const SizedBox(height: 10),
+          if (a.certificates.isEmpty)
+            Text('No certificates uploaded.',
+                style: TextStyle(color: Colors.grey[600], fontSize: 13))
+          else
+            for (final c in a.certificates) _CertTile(cert: c),
+        ],
+      ),
+    );
+
+/// One reviewable certificate: name · upload date · verification status, with
+/// in-app **View** (image preview / PDF open) and **Download** (saves locally).
+class _CertTile extends StatefulWidget {
+  final AstrologerCertificate cert;
+  const _CertTile({required this.cert});
+
+  @override
+  State<_CertTile> createState() => _CertTileState();
+}
+
+class _CertTileState extends State<_CertTile> {
+  bool _busy = false;
+
+  void _snack(String m, {bool error = false}) =>
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(
+            content: Text(m),
+            backgroundColor: error ? AppColors.error : null));
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.cert;
+    final statusColor = c.isApproved
+        ? AppColors.success
+        : c.isRejected
+            ? AppColors.error
+            : AppColors.warning;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.scaffoldBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(c.isPdf ? Icons.picture_as_pdf : Icons.image_outlined,
+                  color: AppColors.primary, size: 26),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(c.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 13.5)),
+                    Text('Uploaded ${_fmtDate(c.uploadedAt)}',
+                        style:
+                            TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+                  ],
+                ),
+              ),
+              _miniChip(c.status.toUpperCase(), statusColor),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _busy ? null : _view,
+                  icon: const Icon(Icons.visibility_outlined, size: 16),
+                  label: const Text('View'),
+                  style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      padding: const EdgeInsets.symmetric(vertical: 8)),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _busy ? null : _download,
+                  icon: _busy
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.download_outlined, size: 16),
+                  label: const Text('Download'),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 8)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _view() async {
+    final c = widget.cert;
+    if (c.url.isEmpty) {
+      _snack('No file attached to this certificate.', error: true);
+      return;
+    }
+    if (!c.isPdf) {
+      // Images preview in-app.
+      showDialog(
+          context: context,
+          builder: (_) => _ImagePreviewDialog(url: c.url, name: c.name));
+      return;
+    }
+    // PDFs open in the device's viewer after a temp download.
+    await _fetchAndOpen(temp: true);
+  }
+
+  Future<void> _download() async {
+    if (widget.cert.url.isEmpty) {
+      _snack('No file attached to this certificate.', error: true);
+      return;
+    }
+    await _fetchAndOpen(temp: false);
+  }
+
+  Future<void> _fetchAndOpen({required bool temp}) async {
+    final c = widget.cert;
+    setState(() => _busy = true);
+    try {
+      final res = await http.get(Uri.parse(c.url));
+      if (res.statusCode != 200) throw 'HTTP ${res.statusCode}';
+      Directory dir;
+      if (temp) {
+        dir = await getTemporaryDirectory();
+      } else {
+        try {
+          dir = (await getDownloadsDirectory()) ??
+              await getApplicationDocumentsDirectory();
+        } catch (_) {
+          dir = await getApplicationDocumentsDirectory();
+        }
+      }
+      final ext = c.fileType.isNotEmpty ? c.fileType : (c.isPdf ? 'pdf' : 'jpg');
+      final base = c.name.replaceAll(RegExp(r'[^A-Za-z0-9_.-]'), '_');
+      final fname = base.toLowerCase().endsWith('.$ext') ? base : '$base.$ext';
+      final file = File('${dir.path}/$fname');
+      await file.writeAsBytes(res.bodyBytes);
+      if (!mounted) return;
+      setState(() => _busy = false);
+      if (!temp) _snack('Saved to ${file.path}');
+      await OpenFile.open(file.path);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _snack('Could not open the certificate. Please try again.', error: true);
+    }
+  }
+}
+
+class _ImagePreviewDialog extends StatelessWidget {
+  final String url;
+  final String name;
+  const _ImagePreviewDialog({required this.url, required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.black,
+      insetPadding: const EdgeInsets.all(12),
+      child: Stack(
+        children: [
+          Center(
+            child: InteractiveViewer(
+              child: Image.network(url,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Padding(
+                        padding: EdgeInsets.all(40),
+                        child: Icon(Icons.broken_image,
+                            color: Colors.white54, size: 64),
+                      )),
+            ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          Positioned(
+            bottom: 10,
+            left: 12,
+            right: 12,
+            child: Text(name,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+}

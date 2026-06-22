@@ -620,12 +620,24 @@ class FirestoreService {
 
   // ── Admin ─────────────────────────────────────────────────────────────────
   Future<List<UserModel>> getAllUsers({int limit = 50}) async {
-    final snap = await _db
-        .collection(AppConstants.usersCollection)
-        .orderBy('createdAt', descending: true)
-        .limit(limit)
-        .get();
-    return snap.docs.map((d) => UserModel.fromFirestore(d)).toList();
+    // IMPORTANT: do NOT `orderBy('createdAt')` here. A Firestore orderBy
+    // silently EXCLUDES any document that is missing the field (or has it as a
+    // non-orderable type) — which made the admin Users list come back empty for
+    // seeded / imported users that have no createdAt. Fetch unordered (returns
+    // every doc the admin can read), parse each doc defensively so one bad
+    // record can't blank the whole list, then sort newest-first client-side.
+    final snap =
+        await _db.collection(AppConstants.usersCollection).limit(limit).get();
+    final users = <UserModel>[];
+    for (final d in snap.docs) {
+      try {
+        users.add(UserModel.fromFirestore(d));
+      } catch (e) {
+        debugPrint('[getAllUsers] skipped malformed user ${d.id}: $e');
+      }
+    }
+    users.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return users;
   }
 
   Future<List<ProfileModel>> getPendingProfiles() async {
@@ -642,12 +654,22 @@ class FirestoreService {
   /// Admins may read all profiles (see the `profiles` read rule), and a single
   /// `orderBy` needs no composite index.
   Future<List<ProfileModel>> getAllProfiles({int limit = 300}) async {
+    // Unordered for the same reason as [getAllUsers] — an orderBy would drop
+    // profiles missing createdAt. Parse defensively and sort client-side.
     final snap = await _db
         .collection(AppConstants.profilesCollection)
-        .orderBy('createdAt', descending: true)
         .limit(limit)
         .get();
-    return snap.docs.map((d) => ProfileModel.fromFirestore(d)).toList();
+    final list = <ProfileModel>[];
+    for (final d in snap.docs) {
+      try {
+        list.add(ProfileModel.fromFirestore(d));
+      } catch (e) {
+        debugPrint('[getAllProfiles] skipped malformed profile ${d.id}: $e');
+      }
+    }
+    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return list;
   }
 
   Future<void> approveProfile(String profileId) => _db
