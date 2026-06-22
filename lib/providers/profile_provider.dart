@@ -454,41 +454,69 @@ bool _ppSet(String? s) =>
 bool _ppEq(String a, String? b) =>
     !_ppSet(b) || a.trim().toLowerCase() == b!.trim().toLowerCase();
 
-/// Whether [candidate] satisfies [me]'s partner preferences.
-bool partnerPreferenceMatch(ProfileModel candidate, ProfileModel? me) {
-  if (me == null) return true;
+/// How many of the user's ACTIVE partner-preference constraints a candidate
+/// satisfies. `total` is the number of active constraints; `satisfied` is how
+/// many the candidate meets. A constraint is "active" only when it is actually
+/// set ('Any'/empty are ignored) — so an unconfigured profile yields total == 0
+/// and therefore matches everyone.
+class PartnerPrefScore {
+  final int satisfied;
+  final int total;
+  const PartnerPrefScore(this.satisfied, this.total);
+
+  /// All active constraints satisfied (or none configured).
+  bool get isExact => total == 0 || satisfied == total;
+
+  /// Fraction satisfied (1.0 when nothing is configured).
+  double get ratio => total == 0 ? 1 : satisfied / total;
+}
+
+PartnerPrefScore partnerPreferenceScore(
+    ProfileModel candidate, ProfileModel? me) {
+  if (me == null) return const PartnerPrefScore(0, 0);
   final pp = me.partnerPreferences;
   final c = candidate;
-
-  if (c.age > 0 && (c.age < pp.minAge || c.age > pp.maxAge)) return false;
-  if (!_ppEq(c.maritalStatus, pp.maritalStatus)) return false;
-  if (!_ppEq(c.religion, pp.religion)) return false;
-  if (!_ppEq(c.caste ?? '', pp.caste)) return false;
-  if (pp.education.isNotEmpty &&
-      !pp.education.any((e) => _ppEq(c.education, e))) {
-    return false;
+  var total = 0, sat = 0;
+  void check(bool active, bool ok) {
+    if (active) {
+      total++;
+      if (ok) sat++;
+    }
   }
-  if (pp.occupation.isNotEmpty &&
-      !pp.occupation.any((o) => _ppEq(c.occupation, o))) {
-    return false;
-  }
-  if (!_ppEq(c.state, pp.state)) return false;
-  if (!_ppEq(c.city, pp.city)) return false;
-  if (!_ppEq(c.horoscope.rasi, pp.rasi)) return false;
-  if (!_ppEq(c.horoscope.nakshatra, pp.nakshatra)) return false;
 
-  // Height: applied only when both preference bounds are recognised heights.
+  check(c.age > 0, c.age >= pp.minAge && c.age <= pp.maxAge);
+  check(_ppSet(pp.maritalStatus), _ppEq(c.maritalStatus, pp.maritalStatus));
+  check(_ppSet(pp.religion), _ppEq(c.religion, pp.religion));
+  check(_ppSet(pp.caste), _ppEq(c.caste ?? '', pp.caste));
+  check(pp.education.isNotEmpty, pp.education.any((e) => _ppEq(c.education, e)));
+  check(pp.occupation.isNotEmpty,
+      pp.occupation.any((o) => _ppEq(c.occupation, o)));
+  check(_ppSet(pp.state), _ppEq(c.state, pp.state));
+  check(_ppSet(pp.city), _ppEq(c.city, pp.city));
+  check(_ppSet(pp.rasi), _ppEq(c.horoscope.rasi, pp.rasi));
+  check(_ppSet(pp.nakshatra), _ppEq(c.horoscope.nakshatra, pp.nakshatra));
+
+  // Height — only an active constraint when both bounds AND the candidate's
+  // height are recognised values.
   final list = AppConstants.heightList;
   final minIdx = list.indexOf(pp.minHeight);
   final maxIdx = list.indexOf(pp.maxHeight);
   final cIdx = list.indexOf(c.height);
-  if (minIdx >= 0 && maxIdx >= 0 && cIdx >= 0 && minIdx <= maxIdx) {
-    if (cIdx < minIdx || cIdx > maxIdx) return false;
-  }
-  return true;
+  check(minIdx >= 0 && maxIdx >= 0 && cIdx >= 0 && minIdx <= maxIdx,
+      cIdx >= minIdx && cIdx <= maxIdx);
+
+  return PartnerPrefScore(sat, total);
 }
 
-/// True once the user has set at least one meaningful partner preference.
+/// Strict match — the candidate satisfies ALL of the user's set preferences.
+bool partnerPreferenceMatch(ProfileModel candidate, ProfileModel? me) =>
+    partnerPreferenceScore(candidate, me).isExact;
+
+/// True once the user has set at least one MEANINGFUL partner preference.
+///
+/// Age & height are deliberately EXCLUDED here because they always carry
+/// defaults (18–40, 5'0"–5'10") — a profile with only those is treated as
+/// "no preferences configured", so it is never silently over-filtered.
 bool partnerPreferencesComplete(ProfileModel? me) {
   if (me == null) return false;
   final pp = me.partnerPreferences;
@@ -569,14 +597,73 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
     return true;
   }
 
-  /// Passes the data-integrity check AND any active optional filters (applied
-  /// after the gender restriction baked into the query / demo source).
+  /// ELIGIBILITY only — data-integrity + the user's explicit filter-sheet
+  /// choices. Partner-preference matching is applied separately (with a
+  /// fallback) in [_rank], so it can never silently empty the feed.
   bool _accept(ProfileModel p, String? myUid, ProfileModel? me) =>
-      _keep(p, myUid) &&
-      partnerPreferenceMatch(p, me) &&
-      _filters.matches(p, me);
+      _keep(p, myUid) && _filters.matches(p, me);
 
-  /// Load the first page of opposite-gender matches.
+  /// Ranks a fetched [pool] into the feed using the partner-preference
+  /// fallback ladder, and logs exactly what happened at each stage:
+  ///   Priority 1 — profiles matching ALL set preferences (exact).
+  ///   Priority 2 — near matches (satisfy at least one set preference), ranked.
+  ///   Priority 3 — all eligible profiles (so the page is NEVER empty when
+  ///               eligible profiles exist).
+  List<ProfileModel> _rank(
+      List<ProfileModel> pool, String? myUid, ProfileModel? me,
+      {required int fetched}) {
+    final eligible =
+        pool.where((p) => _keep(p, myUid) && _filters.matches(p, me)).toList();
+
+    final prefsSet = partnerPreferencesComplete(me);
+    List<ProfileModel> result;
+    String tier;
+
+    if (!prefsSet) {
+      result = eligible;
+      tier = 'all-eligible (no preferences configured)';
+    } else {
+      final exact =
+          eligible.where((p) => partnerPreferenceMatch(p, me)).toList();
+      if (exact.isNotEmpty) {
+        result = exact;
+        tier = 'exact preference matches';
+      } else {
+        // Near matches: satisfy at least one set preference, best first.
+        final scored = eligible
+            .map((p) => MapEntry(p, partnerPreferenceScore(p, me)))
+            .where((e) => e.value.satisfied > 0)
+            .toList()
+          ..sort((a, b) => b.value.ratio.compareTo(a.value.ratio));
+        if (scored.isNotEmpty) {
+          result = scored.map((e) => e.key).toList();
+          tier = 'near matches';
+        } else {
+          result = eligible;
+          tier = 'all-eligible (fallback — no preference matches)';
+        }
+      }
+    }
+
+    debugPrint('[Discover] gender=$_gender myGender=${me?.gender} · '
+        'fetched(after gender)=$fetched · eligible=${eligible.length} · '
+        'returned=${result.length} · tier="$tier" · '
+        'prefsConfigured=$prefsSet · explicitFilters=${_filters.isActive}');
+    if (fetched > 0 && eligible.isEmpty) {
+      debugPrint('[Discover] ⚠ all $fetched fetched profile(s) were excluded by '
+          'integrity/explicit filters (self / married / inactive / blocked / '
+          'filter-sheet). Check the data or reset filters.');
+    }
+    if (fetched == 0) {
+      debugPrint('[Discover] ⚠ the gender="$_gender" query returned 0 profiles. '
+          'Either no opposite-gender profiles exist, or your own gender is '
+          'missing (myGender=${me?.gender}).');
+    }
+    return result;
+  }
+
+  /// Load the first page of opposite-gender matches, then rank with the
+  /// partner-preference fallback ladder.
   Future<void> load() async {
     _gender = ref.read(matchGenderProvider);
     _lastDoc = null;
@@ -587,21 +674,22 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
 
     // ── Demo mode: in-memory store, no pagination ──
     if (kBypassAuth) {
-      final profiles = ref
-          .read(demoProfilesProvider.notifier)
-          .discover(gender: _gender)
-          .where((p) => _accept(p, myUid, me))
-          .toList();
-      state = DiscoverState(profiles: profiles, isLoading: false, hasMore: false);
+      final pool =
+          ref.read(demoProfilesProvider.notifier).discover(gender: _gender);
+      state = DiscoverState(
+        profiles: _rank(pool, myUid, me, fetched: pool.length),
+        isLoading: false,
+        hasMore: false,
+      );
       return;
     }
 
     try {
       final repo = ref.read(profileRepositoryProvider);
-      final accepted = <ProfileModel>[];
+      // Build a pool of gender-eligible profiles to rank over. Page until we
+      // have a reasonable pool (so tiering/fallback has profiles to work with).
+      final pool = <ProfileModel>[];
       var hasMore = true;
-      // Fetch the first page; if filters are active and it yields nothing,
-      // keep paging (bounded) so a sparse first page isn't shown as "empty".
       for (var i = 0; i < _kMaxAutoPages && hasMore; i++) {
         final ProfilePage page = await repo.searchProfilesPage(
           gender: _gender,
@@ -610,12 +698,11 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
         );
         _lastDoc = page.lastDoc;
         hasMore = page.hasMore;
-        accepted.addAll(page.profiles.where((p) => _accept(p, myUid, me)));
-        // Enough to show, or filters inactive → stop after the first page.
-        if (!_filters.isActive || accepted.isNotEmpty) break;
+        pool.addAll(page.profiles);
+        if (pool.length >= 60) break; // enough to rank over
       }
       state = DiscoverState(
-        profiles: accepted,
+        profiles: _rank(pool, myUid, me, fetched: pool.length),
         isLoading: false,
         hasMore: hasMore,
       );
@@ -720,13 +807,27 @@ final homeMatchesProvider = FutureProvider.autoDispose<HomeMatches>((ref) async 
     return iAmFemale ? p.age > myAge : p.age < myAge;
   }
 
-  final all = pool.where((p) {
+  final eligible = pool.where((p) {
     if (p.userId == myUid) return false;
     if (p.isMarried) return false;
     if (!p.isActive) return false;
     if (p.status == 'rejected' || p.status == 'blocked') return false;
-    return passesAge(p) && partnerPreferenceMatch(p, me);
+    return passesAge(p);
   }).toList();
+
+  // Partner-preference fallback: prefer exact matches when preferences are
+  // configured, but NEVER hide everyone — fall back to all eligible profiles.
+  final List<ProfileModel> all;
+  if (partnerPreferencesComplete(me)) {
+    final exact =
+        eligible.where((p) => partnerPreferenceMatch(p, me)).toList();
+    all = exact.isNotEmpty ? exact : eligible;
+  } else {
+    all = eligible;
+  }
+  debugPrint('[HomeMatches] gender=$gender · fetched=${pool.length} · '
+      'eligible=${eligible.length} · returned=${all.length} · '
+      'prefsConfigured=${partnerPreferencesComplete(me)}');
 
   // Steps 3-4 — categorize. Needs my horoscope; unscored profiles remain in
   // [all] only.

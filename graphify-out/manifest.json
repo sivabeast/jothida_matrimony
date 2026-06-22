@@ -195,8 +195,8 @@
     "semantic_hash": ""
   },
   "lib/providers/profile_provider.dart": {
-    "mtime": 1782150602.889079,
-    "ast_hash": "d7309495ffb4e4c6777c797fe69d098b",
+    "mtime": 1782152925.9743896,
+    "ast_hash": "b305282f6ca88875536c439c2ce00b75",
     "semantic_hash": ""
   },
   "lib/providers/requests_provider.dart": {
@@ -520,7 +520,7 @@
     "semantic_hash": ""
   },
   "android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java": {
-    "mtime": 1782150886.4219162,
+    "mtime": 1782153029.2150917,
     "ast_hash": "957f3f4fa91953a90f2d9690762329f7",
     "semantic_hash": ""
   },
