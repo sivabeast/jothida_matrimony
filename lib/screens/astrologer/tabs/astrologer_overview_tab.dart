@@ -6,6 +6,7 @@ import '../../../models/astrologer_account_model.dart';
 import '../../../models/astrologer_request_model.dart';
 import '../../../providers/astrologer_session_provider.dart';
 import '../../../providers/notification_provider.dart';
+import '../../../providers/service_providers.dart';
 import '../profile/astrologer_certificates_screen.dart';
 import '../profile/astrologer_profile_sections.dart';
 import 'astrologer_common.dart';
@@ -58,7 +59,7 @@ class AstrologerOverviewTab extends ConsumerWidget {
         const SizedBox(height: 18),
         // ── Profile status ──────────────────────────────────────────────
         const AstrologerSectionTitle('Profile Status'),
-        _profileStatusCard(account),
+        _profileStatusCard(context, ref, account),
         const SizedBox(height: 20),
         // ── Subscription ────────────────────────────────────────────────
         const AstrologerSectionTitle('Subscription'),
@@ -125,7 +126,8 @@ class AstrologerOverviewTab extends ConsumerWidget {
   }
 
   // ── Profile status ─────────────────────────────────────────────────────
-  Widget _profileStatusCard(AstrologerAccount a) {
+  Widget _profileStatusCard(
+      BuildContext context, WidgetRef ref, AstrologerAccount a) {
     Color c;
     IconData icon;
     switch (a.status) {
@@ -142,28 +144,78 @@ class AstrologerOverviewTab extends ConsumerWidget {
         icon = Icons.hourglass_top;
         break;
     }
+    final rejected = a.status == VerificationStatus.rejected;
     return AstrologerCard(
       padding: const EdgeInsets.all(16),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: c),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Verification', style: TextStyle(
-                    fontSize: 12, color: Colors.grey[600])),
-                const SizedBox(height: 2),
-                Text(a.status.label,
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, color: c, fontSize: 15)),
-              ],
-            ),
+          Row(
+            children: [
+              Icon(icon, color: c),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Verification',
+                        style:
+                            TextStyle(fontSize: 12, color: Colors.grey[600])),
+                    const SizedBox(height: 2),
+                    Text(rejected ? '⚠ Verification Rejected' : a.status.label,
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, color: c, fontSize: 15)),
+                  ],
+                ),
+              ),
+            ],
           ),
+          // Rejected → show the reason and let the astrologer reapply.
+          if (rejected) ...[
+            if (a.rejectionReason.trim().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(10)),
+                child: Text('Reason: ${a.rejectionReason.trim()}',
+                    style: TextStyle(fontSize: 12.5, color: Colors.grey[800])),
+              ),
+            ],
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _reapply(context, ref, a),
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Reapply for Verification'),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(46)),
+              ),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  Future<void> _reapply(
+      BuildContext context, WidgetRef ref, AstrologerAccount a) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(astrologerServiceProvider).reapplyForVerification(a.id);
+      messenger.showSnackBar(const SnackBar(
+          content: Text(
+              'Re-submitted for verification. Update your profile / certificates if needed.')));
+    } catch (_) {
+      messenger.showSnackBar(const SnackBar(
+          content: Text('Could not re-submit. Please try again.'),
+          backgroundColor: AppColors.error));
+    }
   }
 
   // ── Quick actions ──────────────────────────────────────────────────────

@@ -29,6 +29,27 @@ final allAstrologersProvider =
 final allUsersProvider = FutureProvider.autoDispose<List<UserModel>>(
     (ref) => ref.read(adminRepositoryProvider).getAllUsers(limit: 300));
 
+/// Live astrologer verification-status counts for the Dashboard cards. Derived
+/// from [allAstrologersProvider], so it updates in real time as admins approve
+/// or reject astrologers.
+final astrologerStatusCountsProvider =
+    Provider.autoDispose<({int pending, int verified, int rejected})>((ref) {
+  final list = ref.watch(allAstrologersProvider).valueOrNull ??
+      const <AstrologerAccount>[];
+  var pending = 0, verified = 0, rejected = 0;
+  for (final a in list) {
+    switch (a.status) {
+      case VerificationStatus.pending:
+        pending++;
+      case VerificationStatus.approved:
+        verified++;
+      case VerificationStatus.rejected:
+        rejected++;
+    }
+  }
+  return (pending: pending, verified: verified, rejected: rejected);
+});
+
 /// All matrimony profiles (newest first), keyed by [ProfileModel.userId] when
 /// joined. Powers the age / district / photo fields on the admin Users cards.
 final allProfilesProvider = FutureProvider.autoDispose<List<ProfileModel>>(

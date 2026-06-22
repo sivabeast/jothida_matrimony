@@ -124,20 +124,63 @@ class AstrologerService {
   }
 
   /// Approve a pending astrologer → they become visible to users and their
-  /// dashboard verification banner clears on next load.
-  Future<void> approveAstrologer(String uid) =>
-      setVerificationStatus(uid, VerificationStatus.approved);
+  /// dashboard verification banner clears on next load. Also notifies them.
+  Future<void> approveAstrologer(String uid) async {
+    await setVerificationStatus(uid, VerificationStatus.approved);
+    await _notify(uid, 'Verification Approved',
+        'Your astrologer profile has been verified successfully.',
+        'astrologer_verified');
+  }
 
-  /// Reject an astrologer's application (optionally with a reason).
-  Future<void> rejectAstrologer(String uid, {String reason = ''}) =>
-      setVerificationStatus(uid, VerificationStatus.rejected,
-          rejectionReason: reason);
+  /// Reject an astrologer's application (optionally with a reason) and notify
+  /// them so they can update their details and reapply.
+  Future<void> rejectAstrologer(String uid, {String reason = ''}) async {
+    await setVerificationStatus(uid, VerificationStatus.rejected,
+        rejectionReason: reason);
+    final body = reason.trim().isEmpty
+        ? 'Your astrologer verification request was rejected. Please update your details and submit again.'
+        : 'Your astrologer verification request was rejected: ${reason.trim()}';
+    await _notify(uid, 'Verification Rejected', body, 'astrologer_rejected');
+  }
 
   /// Suspend a previously-approved astrologer → moves them back to
   /// "under review" (pending) so they lose live visibility without being
   /// permanently rejected.
   Future<void> suspendAstrologer(String uid) =>
       setVerificationStatus(uid, VerificationStatus.pending);
+
+  /// Astrologer-initiated re-application after a rejection: status returns to
+  /// `pending`, the rejection reason is cleared, and the account re-enters the
+  /// admin verification queue.
+  Future<void> reapplyForVerification(String uid) async {
+    await _db
+        .collection(AppConstants.astrologersCollection)
+        .doc(uid)
+        .set({
+      'status': VerificationStatus.pending.name,
+      'rejectionReason': FieldValue.delete(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  /// Best-effort in-app notification to a user/astrologer. Admins may create
+  /// notifications (security rules), and the recipient reads their own. Never
+  /// throws — a notification hiccup must not fail the verification action.
+  Future<void> _notify(
+      String uid, String title, String body, String type) async {
+    try {
+      await _db.collection(AppConstants.notificationsCollection).add({
+        'userId': uid,
+        'title': title,
+        'body': body,
+        'type': type,
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('[AstrologerService] notify($uid) failed (non-fatal): $e');
+    }
+  }
 
   /// Replaces the embedded services list on the astrologer's account doc.
   Future<void> updateServices(

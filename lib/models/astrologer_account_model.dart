@@ -61,6 +61,8 @@ class AstrologerAccount {
   final bool profileCompleted;
   // Status & services
   final VerificationStatus status;
+  // Reason shown to the astrologer when [status] is rejected (set by admin).
+  final String rejectionReason;
   final List<AstrologerService> services;
   final double rating;
   final int reviewCount;
@@ -107,6 +109,7 @@ class AstrologerAccount {
     this.consultationMode = 'Online',
     this.profileCompleted = false,
     this.status = VerificationStatus.pending,
+    this.rejectionReason = '',
     this.services = const [],
     this.rating = 0,
     this.reviewCount = 0,
@@ -202,6 +205,7 @@ class AstrologerAccount {
         consultationMode: consultationMode ?? this.consultationMode,
         profileCompleted: profileCompleted ?? this.profileCompleted,
         status: status ?? this.status,
+        rejectionReason: rejectionReason,
         services: services ?? this.services,
         ratingBreakdown: ratingBreakdown ?? this.ratingBreakdown,
         profileViews: profileViews ?? this.profileViews,
@@ -256,6 +260,7 @@ class AstrologerAccount {
         (s) => s.name == (d['status'] ?? 'pending'),
         orElse: () => VerificationStatus.pending,
       ),
+      rejectionReason: d['rejectionReason'] ?? '',
       services: ((d['services'] as List?) ?? const [])
           .map((s) => AstrologerService.fromMap(Map<String, dynamic>.from(s)))
           .toList(),

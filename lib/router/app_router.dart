@@ -29,6 +29,7 @@ import '../screens/subscription/subscription_screen.dart';
 import '../screens/admin/admin_shell.dart';
 import '../screens/admin/admin_dashboard.dart';
 import '../screens/admin/admin_management_screen.dart';
+import '../screens/admin/astrologer_verification_screen.dart';
 import '../screens/admin/admin_reports_screen.dart';
 import '../screens/admin/admin_management_screens.dart';
 import '../screens/admin/admin_reports_page.dart';
@@ -322,6 +323,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/help', builder: (_, __) => const HelpSupportScreen()),
       GoRoute(path: '/privacy-policy', builder: (_, __) => const PrivacyPolicyScreen()),
       GoRoute(path: '/terms', builder: (_, __) => const TermsConditionsScreen()),
+      // Dedicated Astrologer Verification queue (standalone full-screen page,
+      // admin-gated by the /admin/ redirect; reached from the Dashboard and the
+      // Astrologers list).
+      GoRoute(
+        path: '/admin/verification',
+        builder: (_, __) => const AstrologerVerificationScreen(),
+      ),
       // Admin
       ShellRoute(
         builder: (_, __, child) => AdminShell(child: child),

@@ -22,6 +22,7 @@ class AdminDashboard extends ConsumerWidget {
     final analyticsAsync = ref.watch(dashboardAnalyticsProvider);
     final stats = statsAsync.valueOrNull;
     final a = analyticsAsync.valueOrNull ?? const DashboardAnalytics();
+    final vc = ref.watch(astrologerStatusCountsProvider);
     final loading = stats == null && analyticsAsync.isLoading;
 
     int n(String k) => (stats?[k] as num?)?.toInt() ?? 0;
@@ -84,6 +85,16 @@ class AdminDashboard extends ConsumerWidget {
                 Icons.hourglass_top, AppColors.warning),
           ]),
 
+          // ── Verification ────────────────────────────────────────────────
+          _Section(title: 'Verification', columns: 3, children: [
+            _StatTile('Pending', '${vc.pending}', Icons.hourglass_top,
+                AppColors.warning),
+            _StatTile('Verified', '${vc.verified}', Icons.verified,
+                AppColors.success),
+            _StatTile('Rejected', '${vc.rejected}', Icons.cancel,
+                AppColors.error),
+          ]),
+
           // ── Engagement ──────────────────────────────────────────────────
           _Section(title: 'Engagement', children: [
             _StatTile('Total Interests', '${n('totalInterests')}',
@@ -135,8 +146,8 @@ class AdminDashboard extends ConsumerWidget {
             mainAxisSpacing: 12,
             childAspectRatio: 2.4,
             children: [
-              _QuickAction('Add Astrologer', Icons.person_add_alt_1,
-                  const Color(0xFF7C5CFC), () => context.go('/admin/astrologers')),
+              _QuickAction('Astrologer Verification', Icons.verified_user,
+                  AppColors.success, () => context.push('/admin/verification')),
               _QuickAction('Send Notification', Icons.campaign, AppColors.gold,
                   () => context.go('/admin/notifications')),
               _QuickAction('Manage Users', Icons.manage_accounts,
