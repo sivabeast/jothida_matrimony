@@ -12,6 +12,7 @@ import '../screens/astrologer/astrologer_dashboard_screen.dart';
 import '../screens/astrologer/astrologer_login_screen.dart';
 import '../screens/astrologer/astrologer_register_screen.dart';
 import '../screens/astrologer/book_match_analysis_screen.dart';
+import '../screens/astrologer/match_requests_screen.dart';
 import '../screens/astrologer/match_workspace_screen.dart';
 import '../screens/astrologer/my_match_analysis_screen.dart';
 import '../screens/auth/account_type_screen.dart';
@@ -301,6 +302,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // User: "My Match Analysis" (Pending / Accepted / Completed + reports).
       GoRoute(
           path: '/my-analysis', builder: (_, __) => const MyMatchAnalysisScreen()),
+      // Astrologer: dedicated Match Analysis Requests module
+      // (Pending / Accepted / Completed).
+      GoRoute(
+        path: '/match-requests',
+        builder: (_, __) => const MatchRequestsScreen(),
+      ),
       // Astrologer: the analysis workspace for an accepted request. Reached from
       // the dashboard with the request passed as `extra` (distinct prefix so it
       // never collides with '/astrologer/:id').

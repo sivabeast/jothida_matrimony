@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/config/dev_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/astrologer_account_model.dart';
@@ -41,6 +42,10 @@ class AstrologerOverviewTab extends ConsumerWidget {
         // ── Customers ───────────────────────────────────────────────────
         const AstrologerSectionTitle('Customers'),
         _customersRow(requests, account),
+        const SizedBox(height: 18),
+        // ── Match Analysis Requests ─────────────────────────────────────
+        const AstrologerSectionTitle('Match Analysis Requests'),
+        _matchRequestsCard(context, requests),
         const SizedBox(height: 18),
         // ── Ratings ─────────────────────────────────────────────────────
         const AstrologerSectionTitle('Ratings'),
@@ -125,6 +130,103 @@ class AstrologerOverviewTab extends ConsumerWidget {
       ],
     );
   }
+
+  // ── Match Analysis Requests module ─────────────────────────────────────
+  Widget _matchRequestsCard(
+      BuildContext context, List<AstrologerRequestModel> requests) {
+    final matching = requests.where((r) => r.isMatchAnalysis).toList();
+    int countOf(AstrologerRequestStatus s) =>
+        matching.where((r) => r.status == s).length;
+    final pending = countOf(AstrologerRequestStatus.pending);
+    final accepted = countOf(AstrologerRequestStatus.accepted);
+    final completed = countOf(AstrologerRequestStatus.completed);
+
+    return AstrologerCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.favorite_outline, color: AppColors.primary),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Porutham bookings from users',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+              if (pending > 0)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                      color: AppColors.gold.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(20)),
+                  child: Text('$pending new',
+                      style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary)),
+                ),
+            ],
+          ),
+          if (matching.isEmpty) ...[
+            const SizedBox(height: 10),
+            Text('No match-analysis requests yet.',
+                style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
+          ] else ...[
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                    child: _countChip('Pending', pending, AppColors.warning)),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: _countChip('Accepted', accepted, AppColors.info)),
+                const SizedBox(width: 10),
+                Expanded(
+                    child:
+                        _countChip('Completed', completed, AppColors.success)),
+              ],
+            ),
+          ],
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => context.push('/match-requests'),
+              icon: const Icon(Icons.open_in_new, size: 18),
+              label: const Text('View Requests'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(46),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _countChip(String label, int count, Color color) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.10),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Text('$count',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 20, color: color)),
+            const SizedBox(height: 2),
+            Text(label,
+                style: TextStyle(fontSize: 11.5, color: Colors.grey[700])),
+          ],
+        ),
+      );
 
   // ── Profile status ─────────────────────────────────────────────────────
   Widget _profileStatusCard(

@@ -6,12 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/config/dev_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/file_actions.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../models/profile_model.dart';
+import '../../providers/astrologer_session_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../providers/service_providers.dart';
 
 /// The astrologer's Match Analysis Workspace — opened from an ACCEPTED match
 /// request. Shows the full GROOM and BRIDE details (incl. horoscope images &
@@ -34,6 +37,7 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
   final List<File> _newImages = [];
   final List<File> _newPdfs = [];
   bool _submitting = false;
+  bool _working = false; // accept / reject in flight
 
   @override
   void dispose() {
@@ -87,12 +91,60 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
     }
   }
 
+  Future<void> _setStatus(AstrologerRequestStatus status) async {
+    setState(() => _working = true);
+    try {
+      if (kBypassAuth) {
+        ref
+            .read(demoAstrologerRequestsProvider.notifier)
+            .setStatus(widget.request.id, status);
+      } else {
+        await ref
+            .read(astrologerServiceProvider)
+            .updateRequestStatus(widget.request.id, status);
+      }
+      if (!mounted) return;
+      _snack(status == AstrologerRequestStatus.accepted
+          ? 'Request accepted — you can submit the analysis now.'
+          : 'Request rejected.');
+    } catch (_) {
+      if (mounted) _snack('Could not update. Please try again.');
+    } finally {
+      if (mounted) setState(() => _working = false);
+    }
+  }
+
+  Future<void> _reject() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reject request?'),
+        content: const Text(
+            'The user will see this request as rejected. You can\'t undo this.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: TextButton.styleFrom(foregroundColor: AppColors.error),
+              child: const Text('Reject')),
+        ],
+      ),
+    );
+    if (ok == true) _setStatus(AstrologerRequestStatus.rejected);
+  }
+
   void _snack(String m) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {
-    final r = widget.request;
+    // Live request (reflects accept/reject/complete), falling back to the
+    // snapshot passed in when first opened.
+    final r =
+        ref.watch(astrologerRequestByIdProvider(widget.request.id)) ??
+            widget.request;
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
@@ -107,20 +159,119 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
           const SizedBox(height: 16),
           const _SectionTitle('🤵 Groom Details'),
           const SizedBox(height: 8),
-          _PartyCard(profileId: r.profileAId, fallbackName: r.profileAName),
+          _PartyCard(profileId: r.groomProfileId, fallbackName: r.groomName),
           const SizedBox(height: 16),
           const _SectionTitle('👰 Bride Details'),
           const SizedBox(height: 8),
-          _PartyCard(profileId: r.profileBId, fallbackName: r.profileBName),
+          _PartyCard(profileId: r.brideProfileId, fallbackName: r.brideName),
           const SizedBox(height: 22),
-          const _SectionTitle('🔮 Your Analysis'),
-          const SizedBox(height: 8),
-          _analysisEditor(r),
+          _actionSection(r),
           const SizedBox(height: 28),
         ],
       ),
     );
   }
+
+  /// Status-aware action area: Accept/Reject while pending, the analysis editor
+  /// once accepted (or completed), and a notice if rejected.
+  Widget _actionSection(AstrologerRequestModel r) {
+    switch (r.status) {
+      case AstrologerRequestStatus.pending:
+        return _pendingActions();
+      case AstrologerRequestStatus.rejected:
+        return _rejectedBanner();
+      case AstrologerRequestStatus.accepted:
+      case AstrologerRequestStatus.completed:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _SectionTitle('🔮 Your Analysis'),
+            const SizedBox(height: 8),
+            _analysisEditor(r),
+          ],
+        );
+    }
+  }
+
+  Widget _pendingActions() => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Respond to this request',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            const SizedBox(height: 6),
+            Text(
+              'Review the groom & bride details above, then accept to start the '
+              'analysis or reject the request.',
+              style: TextStyle(fontSize: 12.5, color: Colors.grey[700]),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _working ? null : _reject,
+                    icon: const Icon(Icons.close, size: 18),
+                    label: const Text('Reject'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      side: const BorderSide(color: AppColors.error),
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _working
+                        ? null
+                        : () => _setStatus(AstrologerRequestStatus.accepted),
+                    icon: _working
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.check, size: 18),
+                    label: const Text('Accept'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+
+  Widget _rejectedBanner() => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.error.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.error.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.cancel_outlined, color: AppColors.error),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text('You rejected this request.',
+                  style: TextStyle(color: Colors.grey[800], fontSize: 13)),
+            ),
+          ],
+        ),
+      );
 
   Widget _requesterCard(AstrologerRequestModel r) => Container(
         padding: const EdgeInsets.all(14),

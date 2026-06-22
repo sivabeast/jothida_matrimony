@@ -105,8 +105,8 @@
     "semantic_hash": ""
   },
   "lib/models/astrologer_request_model.dart": {
-    "mtime": 1782128086.4212012,
-    "ast_hash": "f1e3921e10fbd9f63ac38a85d0b66d64",
+    "mtime": 1782133601.0722868,
+    "ast_hash": "1cd8fcaea13fcf7b61ead8b89d141b66",
     "semantic_hash": ""
   },
   "lib/models/chat_model.dart": {
@@ -240,8 +240,8 @@
     "semantic_hash": ""
   },
   "lib/router/app_router.dart": {
-    "mtime": 1782129270.9119675,
-    "ast_hash": "e3a3d54f2c67d4c0f075350fc162ecc6",
+    "mtime": 1782133898.1918917,
+    "ast_hash": "72c12ce7358ca8c4b98a2bd7480f530e",
     "semantic_hash": ""
   },
   "lib/screens/admin/admin_approvals_screen.dart": {
@@ -520,7 +520,7 @@
     "semantic_hash": ""
   },
   "android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java": {
-    "mtime": 1782129793.5354023,
+    "mtime": 1782133931.9418876,
     "ast_hash": "957f3f4fa91953a90f2d9690762329f7",
     "semantic_hash": ""
   },
@@ -830,8 +830,8 @@
     "semantic_hash": ""
   },
   "lib/screens/astrologer/tabs/astrologer_overview_tab.dart": {
-    "mtime": 1782129566.1084044,
-    "ast_hash": "2492d0ee463f1a667dca51cd55af9ec6",
+    "mtime": 1782133881.9036252,
+    "ast_hash": "383369ea0cbd51a32c1ccb9ae2795286",
     "semantic_hash": ""
   },
   "lib/screens/astrologer/tabs/astrologer_profile_tab.dart": {
@@ -1220,8 +1220,8 @@
     "semantic_hash": ""
   },
   "lib/providers/match_analysis_provider.dart": {
-    "mtime": 1782128228.9144442,
-    "ast_hash": "430d736b362edb6125cb86fa04877185",
+    "mtime": 1782133617.399794,
+    "ast_hash": "57e78a8e44ee87f7a56f816acedc850b",
     "semantic_hash": ""
   },
   "lib/screens/astrologer/book_match_analysis_screen.dart": {
@@ -1230,8 +1230,8 @@
     "semantic_hash": ""
   },
   "lib/screens/astrologer/match_workspace_screen.dart": {
-    "mtime": 1782129164.5908308,
-    "ast_hash": "c1998b8e1954acd0cc8c80874c07a700",
+    "mtime": 1782133814.2710974,
+    "ast_hash": "6be77af61c4f4b829d43ee96bee6a10c",
     "semantic_hash": ""
   },
   "lib/screens/astrologer/my_match_analysis_screen.dart": {
@@ -1242,6 +1242,11 @@
   "lib/screens/horoscope/horoscope_files_screen.dart": {
     "mtime": 1782129345.7023828,
     "ast_hash": "2fd65e7938e5439a3c097fe7d181a270",
+    "semantic_hash": ""
+  },
+  "lib/screens/astrologer/match_requests_screen.dart": {
+    "mtime": 1782133660.9056795,
+    "ast_hash": "baec757c888b1c1b56922b3794218290",
     "semantic_hash": ""
   }
 }

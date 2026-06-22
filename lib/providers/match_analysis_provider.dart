@@ -63,6 +63,27 @@ final myMatchAnalysisRequestsProvider =
           .toList());
 });
 
+/// All match-analysis requests addressed to the signed-in astrologer
+/// (type == matching), powering the dashboard's dedicated module.
+final astrologerMatchRequestsProvider =
+    Provider.autoDispose<AsyncValue<List<AstrologerRequestModel>>>((ref) {
+  return ref
+      .watch(astrologerRequestsProvider)
+      .whenData((list) => list.where((r) => r.isMatchAnalysis).toList());
+});
+
+/// A single astrologer request by id, kept live from the astrologer's request
+/// stream — so the workspace reflects accept / reject / complete immediately,
+/// without re-opening the screen.
+final astrologerRequestByIdProvider =
+    Provider.autoDispose.family<AstrologerRequestModel?, String>((ref, id) {
+  final list = ref.watch(astrologerRequestsProvider).valueOrNull ?? const [];
+  for (final r in list) {
+    if (r.id == id) return r;
+  }
+  return null;
+});
+
 /// Booking + analysis-submission actions for the match-analysis pipeline.
 /// State is an [AsyncValue] so callers can show inline loading/error if needed;
 /// the methods also rethrow so a screen's try/catch can surface a SnackBar.

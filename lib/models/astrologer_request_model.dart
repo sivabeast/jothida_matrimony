@@ -102,6 +102,14 @@ class AstrologerRequestModel {
   /// True for a "Book Match Analysis" booking (groom + bride porutham request).
   bool get isMatchAnalysis => type == AstrologerRequestType.matching;
 
+  // Explicit groom / bride accessors (the booking stores profileA = groom,
+  // profileB = bride). Also persisted under `groomProfileId` / `brideProfileId`
+  // in Firestore for clarity.
+  String? get groomProfileId => profileAId;
+  String? get groomName => profileAName;
+  String? get brideProfileId => profileBId;
+  String? get brideName => profileBName;
+
   /// True once the astrologer has submitted a report.
   bool get hasAnalysis =>
       analysisText.trim().isNotEmpty ||
@@ -137,10 +145,12 @@ class AstrologerRequestModel {
       ),
       message: d['message'] ?? '',
       amount: (d['amount'] ?? 0) is num ? (d['amount'] as num).toInt() : 0,
-      profileAId: d['profileAId'],
-      profileAName: d['profileAName'],
-      profileBId: d['profileBId'],
-      profileBName: d['profileBName'],
+      // Read the explicit groom/bride field names, falling back to the
+      // profileA/profileB names used by earlier documents.
+      profileAId: d['profileAId'] ?? d['groomProfileId'],
+      profileAName: d['profileAName'] ?? d['groomProfileName'],
+      profileBId: d['profileBId'] ?? d['brideProfileId'],
+      profileBName: d['profileBName'] ?? d['brideProfileName'],
       analysisText: d['analysisText'] ?? '',
       analysisImages: _toStringList(d['analysisImages']),
       analysisPdfs: _toStringList(d['analysisPdfs']),
@@ -165,6 +175,12 @@ class AstrologerRequestModel {
         'profileAName': profileAName,
         'profileBId': profileBId,
         'profileBName': profileBName,
+        // Explicit groom/bride field names (kept in sync with profileA/profileB)
+        // so every match-analysis booking stores groomProfileId & brideProfileId.
+        'groomProfileId': profileAId,
+        'groomProfileName': profileAName,
+        'brideProfileId': profileBId,
+        'brideProfileName': profileBName,
         'analysisText': analysisText,
         'analysisImages': analysisImages,
         'analysisPdfs': analysisPdfs,
