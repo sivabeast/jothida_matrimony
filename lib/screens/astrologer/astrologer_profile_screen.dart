@@ -4,10 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:intl/intl.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/phone_utils.dart';
+import '../../core/utils/slot_generator.dart';
 import '../../models/astrologer_model.dart';
+import '../../providers/consultation_provider.dart';
 import '../../models/astrologer_plan.dart';
 import '../../models/astrologer_review_model.dart';
 import '../../providers/astrologer_provider.dart';
@@ -56,6 +60,8 @@ class AstrologerProfileScreen extends ConsumerWidget {
                 children: [
                   _statsRow(context, a),
                   _bookAnalysisButton(context, ref, a),
+                  _bookConsultationButton(context, a),
+                  _consultationInfoSection(context, ref, a),
                   if (a.about.trim().isNotEmpty)
                     _section('📝 ${context.l10n.about}',
                         Text(a.about, style: const TextStyle(height: 1.4))),
@@ -427,6 +433,29 @@ class AstrologerProfileScreen extends ConsumerWidget {
     );
   }
 
+  // ── Book Consultation (In-App / Direct Visit) ──────────────────────────────
+  Widget _bookConsultationButton(BuildContext context, Astrologer a) {
+    if (!a.isAvailable) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () => context.push('/book-consultation/${a.id}'),
+          icon: const Icon(Icons.event_available_outlined),
+          label: const Text('Book Consultation'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary),
+            minimumSize: const Size.fromHeight(50),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      ),
+    );
+  }
+
   // ── Rating · Experience stats ──────────────────────────────────────────────
   Widget _statsRow(BuildContext context, Astrologer a) {
     final l10n = context.l10n;
@@ -615,6 +644,87 @@ class AstrologerProfileScreen extends ConsumerWidget {
   }
 
   // ── Shared ─────────────────────────────────────────────────────────────────
+  // ── Consultation availability (modes, slot duration, days, next slot) ──────
+  Widget _consultationInfoSection(
+      BuildContext context, WidgetRef ref, Astrologer a) {
+    final acc = ref.watch(astrologerAccountByIdProvider(a.id)).valueOrNull;
+    if (acc == null || (!acc.offersInApp && !acc.offersDirectVisit)) {
+      return const SizedBox.shrink();
+    }
+    final booked =
+        ref.watch(astrologerBookedSlotsProvider(a.id)).valueOrNull ?? const {};
+    final next = nextAvailableSlot(acc, booked);
+    final nextLabel = next == null
+        ? 'No open slots in the next 30 days'
+        : '${DateFormat('d MMM').format(next.date)} · ${next.slot.label}';
+    return _section(
+      '🗓️ Consultation',
+      Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              if (acc.offersInApp) _modeChip('In-App Consultation'),
+              if (acc.offersInApp && acc.offersDirectVisit)
+                const SizedBox(width: 8),
+              if (acc.offersDirectVisit) _modeChip('Direct Visit'),
+            ]),
+            const SizedBox(height: 10),
+            _infoRow(Icons.timelapse, 'Slot Duration',
+                '${acc.slotDurationMinutes} minutes'),
+            _infoRow(Icons.calendar_today_outlined, 'Available Days',
+                acc.workingDaysLabel),
+            _infoRow(Icons.schedule, 'Next Available Slot', nextLabel),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _modeChip(String label) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle,
+                size: 14, color: AppColors.success),
+            const SizedBox(width: 5),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      );
+
+  Widget _infoRow(IconData icon, String label, String value) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: Colors.grey[500]),
+            const SizedBox(width: 8),
+            Text('$label: ',
+                style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+            Expanded(
+              child: Text(value,
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      );
+
   Widget _section(String title, Widget child) => Padding(
         padding: const EdgeInsets.only(top: 18),
         child: Column(

@@ -112,3 +112,11 @@ final astrologerByIdProvider =
   }
   return null;
 });
+
+/// The full astrologer ACCOUNT (with consultation availability config) by id —
+/// used by the consultation booking flow (slot generation, modes, fee).
+final astrologerAccountByIdProvider =
+    FutureProvider.autoDispose.family<AstrologerAccount?, String>((ref, id) {
+  if (id.isEmpty) return Future.value(null);
+  return ref.read(astrologerServiceProvider).getAccount(id);
+});

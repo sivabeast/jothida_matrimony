@@ -805,4 +805,85 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get waitingForResponse => 'Waiting for a response…';
+
+  @override
+  String get bookMatchAnalysis => 'Book Match Analysis';
+
+  @override
+  String get submitRequest => 'Submit Request';
+
+  @override
+  String get sending => 'Sending…';
+
+  @override
+  String get reassignQuestion => 'If the astrologer doesn\'t respond within 24 hours';
+
+  @override
+  String get reassignWaitOnly => 'Wait only for this astrologer';
+
+  @override
+  String get reassignWaitOnlyDesc => 'Keep waiting for this astrologer. You can take action manually later.';
+
+  @override
+  String get reassignChooseLater => 'Let me choose another astrologer later';
+
+  @override
+  String get reassignChooseLaterDesc => 'We\'ll notify you so you can pick a new astrologer yourself.';
+
+  @override
+  String get reassignAllowAdmin => 'Allow admin to assign another astrologer';
+
+  @override
+  String get reassignAllowAdminDesc => 'Our team will assign another available astrologer for you.';
+
+  @override
+  String get statusExpired => 'Expired';
+
+  @override
+  String get statusReassigned => 'Reassigned';
+
+  @override
+  String get statusPending => 'Pending';
+
+  @override
+  String get statusAccepted => 'Accepted';
+
+  @override
+  String get statusCompleted => 'Completed';
+
+  @override
+  String get statusRejected => 'Rejected';
+
+  @override
+  String get expiredChooseAnotherMsg => 'The selected astrologer did not respond within the required time. Please choose another astrologer.';
+
+  @override
+  String get expiredAdminWillAssignMsg => 'The selected astrologer did not respond in time. An admin will assign another astrologer to your booking.';
+
+  @override
+  String get expiredWaitOnlyMsg => 'This astrologer hasn\'t responded within 24 hours. You can keep waiting or choose another astrologer.';
+
+  @override
+  String get chooseAnotherAstrologer => 'Choose Another Astrologer';
+
+  @override
+  String get expiredBookings => 'Expired Bookings';
+
+  @override
+  String get assignBooking => 'Assign Booking';
+
+  @override
+  String get assign => 'Assign';
+
+  @override
+  String get availableForAssignment => 'Available for Assignment';
+
+  @override
+  String get onLeave => 'On Leave';
+
+  @override
+  String get available => 'Available';
+
+  @override
+  String get unavailable => 'Unavailable';
 }

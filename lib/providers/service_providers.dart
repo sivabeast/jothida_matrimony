@@ -5,6 +5,7 @@ import '../services/storage_service.dart';
 import '../services/cloudinary/cloudinary_storage_service.dart';
 import '../services/firebase/fcm_service.dart';
 import '../services/firebase/astrologer_service.dart';
+import '../services/firebase/consultation_service.dart';
 import '../services/firebase/chat_service.dart';
 import '../services/razorpay/razorpay_service.dart';
 import '../repositories/auth_repository.dart';
@@ -26,6 +27,8 @@ final fcmServiceProvider = Provider<FcmService>((ref) => FcmService());
 final razorpayServiceProvider = Provider<RazorpayService>((ref) => RazorpayService());
 final astrologerServiceProvider =
     Provider<AstrologerService>((ref) => AstrologerService());
+final consultationServiceProvider =
+    Provider<ConsultationService>((ref) => ConsultationService());
 final chatServiceProvider = Provider<ChatService>((ref) => ChatService());
 
 // ── Repositories ──────────────────────────────────────────────────────────────

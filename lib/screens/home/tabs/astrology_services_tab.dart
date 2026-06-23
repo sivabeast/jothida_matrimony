@@ -6,7 +6,6 @@ import '../../../models/astrologer_model.dart';
 import '../../../providers/astrologer_provider.dart';
 import '../../../providers/navigation_provider.dart';
 import '../../../providers/profile_provider.dart';
-import '../../../widgets/astrologer/availability_badge.dart';
 
 /// Astrologer Directory — the "Astrologer" tab.
 ///
@@ -330,7 +329,7 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
 
   Widget _horizontalRow(List<Astrologer> list) {
     return SizedBox(
-      height: 320,
+      height: 232,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -354,7 +353,7 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        mainAxisExtent: 320,
+        mainAxisExtent: 232,
       ),
       itemCount: list.length,
       itemBuilder: (_, i) => _AstrologerGridCard(
@@ -697,41 +696,99 @@ Widget _cardTopImage(String url, double height) {
 // astrologers. Pending / unverified astrologers get NO badge at all.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Green ✅ "Verified" pill. Renders nothing when the astrologer is not
-/// verified — there is no "Pending" badge.
-class _StatusBadge extends StatelessWidget {
-  final bool verified;
-  final bool compact;
-  const _StatusBadge({required this.verified, this.compact = false});
-
-  @override
-  Widget build(BuildContext context) {
-    if (!verified) return const SizedBox.shrink();
-    return Container(
-      padding: EdgeInsets.symmetric(
-          horizontal: compact ? 7 : 9, vertical: compact ? 3 : 4),
-      decoration: BoxDecoration(
-        color: AppColors.success,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 4)
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.verified, color: Colors.white, size: compact ? 11 : 13),
-          SizedBox(width: compact ? 3 : 4),
-          Text(compact ? 'Verified' : 'Verified Astrologer',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: compact ? 9 : 10,
-                  fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
+/// Small social-media style verified tick for the image corner. A green
+/// [Icons.verified] on a white ring — NOT a "Verified" pill/badge. Renders
+/// nothing when the astrologer is not verified.
+Widget _verifiedTick(bool verified, {double size = 18}) {
+  if (!verified) return const SizedBox.shrink();
+  return Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      shape: BoxShape.circle,
+      boxShadow: [
+        BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 3),
+      ],
+    ),
+    child: Icon(Icons.verified, color: AppColors.success, size: size),
+  );
 }
+
+/// 🟢 Available / 🔴 Unavailable status line shown directly under the name.
+Widget _availabilityLine(bool available, {double fontSize = 11.5}) {
+  final color = available ? AppColors.success : AppColors.error;
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(Icons.circle, size: fontSize - 2.5, color: color),
+      const SizedBox(width: 5),
+      Text(available ? 'Available' : 'Unavailable',
+          style: TextStyle(
+              fontSize: fontSize, fontWeight: FontWeight.w600, color: color)),
+    ],
+  );
+}
+
+/// One tight metadata line (icon + ellipsised text) used on the directory
+/// cards: location, experience, specialization.
+Widget _metaLine(IconData icon, String text, {Color? color, double top = 3}) {
+  final c = color ?? Colors.grey[700];
+  return Padding(
+    padding: EdgeInsets.only(top: top),
+    child: Row(
+      children: [
+        Icon(icon, size: 12.5, color: color ?? Colors.grey[500]),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(text.isEmpty ? '—' : text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11.5, color: c)),
+        ),
+      ],
+    ),
+  );
+}
+
+/// Shared, compact content column for a directory card: name, availability,
+/// rating, location, experience, specialization — tight professional spacing,
+/// sized to content (no blank space).
+Widget _cardContent(Astrologer a) => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(a.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13.5,
+                fontFamily: 'Poppins')),
+        const SizedBox(height: 3),
+        _availabilityLine(a.isAvailable),
+        const SizedBox(height: 3),
+        Row(
+          children: [
+            const Icon(Icons.star, color: AppColors.gold, size: 13),
+            const SizedBox(width: 3),
+            Text(a.rating.toStringAsFixed(1),
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600, fontSize: 11.5)),
+            const SizedBox(width: 3),
+            Text('(${a.reviewCount})',
+                style: TextStyle(color: Colors.grey[500], fontSize: 11)),
+          ],
+        ),
+        _metaLine(Icons.location_on_outlined, a.location),
+        _metaLine(
+            Icons.work_history_outlined,
+            a.experienceYears > 0
+                ? '${a.experienceYears} yrs experience'
+                : 'Experience N/A'),
+        _metaLine(Icons.auto_awesome,
+            a.specializations.isEmpty ? 'Astrologer' : a.specializations.first,
+            color: AppColors.primary),
+      ],
+    );
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Astrologer card (horizontal sections)
@@ -748,9 +805,7 @@ class _AstrologerCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 210,
-        // Fills the taller horizontal row (height set in _horizontalRow).
-        height: double.infinity,
+        width: 168,
         margin: const EdgeInsets.only(right: 12, top: 2, bottom: 6),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -764,75 +819,15 @@ class _AstrologerCard extends StatelessWidget {
           children: [
             Stack(
               children: [
-                // Larger image (~50% of card height), whole photo visible.
-                _cardTopImage(a.photoUrl, 158),
-                // Verified pill only — nothing when pending.
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: _StatusBadge(verified: a.verified, compact: true),
-                ),
-                // Availability badge (always shown — green or grey).
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: AvailabilityBadge(available: a.isAvailable, compact: true),
-                ),
+                // Compact image; small verified tick only — no badges.
+                _cardTopImage(a.photoUrl, 104),
+                Positioned(top: 8, right: 8, child: _verifiedTick(a.verified)),
               ],
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                  Text(a.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13.5,
-                          fontFamily: 'Poppins')),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, color: AppColors.gold, size: 14),
-                      const SizedBox(width: 3),
-                      Text(a.rating.toStringAsFixed(1),
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w600, fontSize: 12)),
-                      const SizedBox(width: 3),
-                      Text('(${a.reviewCount})',
-                          style:
-                              TextStyle(color: Colors.grey[500], fontSize: 11)),
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  _iconLine(Icons.location_on_outlined, a.location),
-                  const SizedBox(height: 3),
-                  _iconLine(Icons.work_history_outlined,
-                      '${a.experienceYears} yrs experience'),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.auto_awesome,
-                          size: 12, color: AppColors.gold),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          a.specializations.isEmpty
-                              ? 'Astrologer'
-                              : a.specializations.first,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontSize: 11, color: AppColors.primary),
-                        ),
-                      ),
-                    ],
-                  ),
-                  ],
-                ),
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                child: _cardContent(a),
               ),
             ),
           ],
@@ -840,19 +835,6 @@ class _AstrologerCard extends StatelessWidget {
       ),
     );
   }
-
-  Widget _iconLine(IconData icon, String text) => Row(
-        children: [
-          Icon(icon, size: 13, color: Colors.grey[500]),
-          const SizedBox(width: 3),
-          Expanded(
-            child: Text(text.isEmpty ? '—' : text,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: Colors.grey[600], fontSize: 11.5)),
-          ),
-        ],
-      );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -882,97 +864,15 @@ class _AstrologerGridCard extends StatelessWidget {
           children: [
             Stack(
               children: [
-                // Larger image (~47% of card height); whole photo visible
-                // (BoxFit.contain) so faces are never cropped or half-hidden.
-                _cardTopImage(a.photoUrl, 150),
-                // Verified pill only — nothing when pending.
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: _StatusBadge(verified: a.verified, compact: true),
-                ),
-                // Availability badge (always shown — green or grey).
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: AvailabilityBadge(available: a.isAvailable, compact: true),
-                ),
+                // Compact image; small verified tick only — no badges.
+                _cardTopImage(a.photoUrl, 104),
+                Positioned(top: 8, right: 8, child: _verifiedTick(a.verified)),
               ],
             ),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(a.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13.5,
-                            fontFamily: 'Poppins')),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.star, color: AppColors.gold, size: 14),
-                        const SizedBox(width: 3),
-                        Text(a.rating.toStringAsFixed(1),
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600, fontSize: 12)),
-                        const SizedBox(width: 3),
-                        Text('(${a.reviewCount})',
-                            style: TextStyle(
-                                color: Colors.grey[500], fontSize: 11)),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        Icon(Icons.location_on_outlined,
-                            size: 13, color: Colors.grey[500]),
-                        const SizedBox(width: 3),
-                        Expanded(
-                          child: Text(a.location.isEmpty ? '—' : a.location,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                  color: Colors.grey[600], fontSize: 11.5)),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    Row(
-                      children: [
-                        Icon(Icons.work_history_outlined,
-                            size: 12, color: Colors.grey[600]),
-                        const SizedBox(width: 3),
-                        Text('${a.experienceYears} yrs experience',
-                            style: TextStyle(
-                                color: Colors.grey[700], fontSize: 11)),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.auto_awesome,
-                            size: 12, color: AppColors.gold),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            a.specializations.isEmpty
-                                ? 'Astrologer'
-                                : a.specializations.first,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                fontSize: 11, color: AppColors.primary),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                child: _cardContent(a),
               ),
             ),
           ],
@@ -1058,7 +958,7 @@ class _AstrologerRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: Colors.grey[600], fontSize: 12)),
                   const SizedBox(height: 6),
-                  AvailabilityBadge(available: a.isAvailable, compact: true),
+                  _availabilityLine(a.isAvailable, fontSize: 12),
                   const SizedBox(height: 4),
                   Text(
                     a.specializations.isEmpty

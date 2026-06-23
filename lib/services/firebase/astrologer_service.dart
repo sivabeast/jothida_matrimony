@@ -245,14 +245,95 @@ class AstrologerService {
       });
 
   Future<void> updateRequestStatus(
-          String requestId, AstrologerRequestStatus status) =>
-      _db
-          .collection(AppConstants.astrologerRequestsCollection)
-          .doc(requestId)
-          .update({
-        'status': status.name,
-        'respondedAt': FieldValue.serverTimestamp(),
+    String requestId,
+    AstrologerRequestStatus status, {
+    String astrologerName = '',
+  }) {
+    final who =
+        astrologerName.trim().isEmpty ? 'the astrologer' : astrologerName.trim();
+    String? label;
+    switch (status) {
+      case AstrologerRequestStatus.accepted:
+        label = 'Accepted by $who';
+        break;
+      case AstrologerRequestStatus.rejected:
+        label = 'Declined by $who';
+        break;
+      case AstrologerRequestStatus.completed:
+        label = 'Report submitted';
+        break;
+      case AstrologerRequestStatus.pending:
+        label = null;
+        break;
+    }
+    return _db
+        .collection(AppConstants.astrologerRequestsCollection)
+        .doc(requestId)
+        .update({
+      'status': status.name,
+      'respondedAt': FieldValue.serverTimestamp(),
+      if (label != null)
+        'history':
+            FieldValue.arrayUnion([BookingHistoryEntry.now(label).toMap()]),
+    });
+  }
+
+  /// Client-side expiry sweep (there is NO Cloud Functions backend): if [r] is
+  /// still pending and past its [expiresAt], atomically flag it Expired, append
+  /// the audit trail and notify the user according to the booking's reassign
+  /// mode. The transaction guard means concurrent viewers never double-notify.
+  ///
+  /// Returns true if THIS call performed the expiry (so callers can avoid
+  /// duplicate side-effects). Safe to call on every list refresh.
+  Future<bool> expireRequestIfDue(AstrologerRequestModel r) async {
+    if (!r.isExpiredByTime || r.expired) return false;
+    final ref = _db
+        .collection(AppConstants.astrologerRequestsCollection)
+        .doc(r.id);
+    bool flipped = false;
+    try {
+      await _db.runTransaction((tx) async {
+        final snap = await tx.get(ref);
+        if (!snap.exists) return;
+        final d = snap.data() as Map<String, dynamic>;
+        if (d['status'] != 'pending' || d['expired'] == true) return;
+        tx.update(ref, {
+          'expired': true,
+          'expiredAt': FieldValue.serverTimestamp(),
+          'history': FieldValue.arrayUnion([
+            BookingHistoryEntry.now('No response').toMap(),
+            BookingHistoryEntry.now('Expired').toMap(),
+          ]),
+        });
+        flipped = true;
       });
+    } on FirebaseException catch (e) {
+      // A user without write permission (rules) still sees the booking as
+      // expired via the live time check — the flag write is best-effort.
+      debugPrint('[AstrologerService] expire(${r.id}) skipped: ${e.code}');
+      return false;
+    }
+    if (flipped) {
+      if (r.reassignMode == BookingReassignMode.chooseLater) {
+        await _notify(
+          r.userId,
+          'Astrologer did not respond',
+          'The selected astrologer did not respond within the required time. '
+              'Please choose another astrologer.',
+          'booking_expired',
+        );
+      } else if (r.reassignMode == BookingReassignMode.allowAdmin) {
+        await _notify(
+          r.userId,
+          'Astrologer did not respond',
+          'The selected astrologer did not respond in time. An admin will '
+              'assign another astrologer to your booking.',
+          'booking_expired',
+        );
+      }
+    }
+    return flipped;
+  }
 
   // ── Admin: full request queue + reassign / reminder ────────────────────────
   /// Realtime stream of EVERY astrologer request (admin Horoscope Requests
@@ -263,14 +344,25 @@ class AstrologerService {
       .snapshots()
       .map((s) => s.docs.map(AstrologerRequestModel.fromFirestore).toList());
 
-  /// Admin reassigns a request to a different astrologer: re-points the request,
-  /// resets it to `pending` (the new astrologer must accept), flags it as
-  /// reassigned, and notifies the new astrologer.
+  /// Reassigns a request to a DIFFERENT astrologer (admin from Expired Bookings,
+  /// or the user themselves in "choose another later" mode). Re-points the
+  /// request, gives the new astrologer a fresh response window, clears the
+  /// Expired flag, resets it to `pending` (the new astrologer must accept),
+  /// records the audit trail and notifies both the new astrologer and the user.
+  ///
+  /// SPEC RULE: a booking belongs to exactly one astrologer — this MOVES it, it
+  /// never duplicates it.
   Future<void> reassignRequest(
     String requestId, {
     required String astrologerId,
     required String astrologerName,
+    bool byAdmin = true,
+    String userId = '',
   }) async {
+    final assignedLabel = byAdmin
+        ? 'Assigned by Admin to $astrologerName'
+        : 'Reassigned by you to $astrologerName';
+    final expiresAt = DateTime.now().add(kBookingResponseWindow);
     await _db
         .collection(AppConstants.astrologerRequestsCollection)
         .doc(requestId)
@@ -281,10 +373,29 @@ class AstrologerService {
       'respondedAt': null,
       'reassigned': true,
       'reassignedAt': FieldValue.serverTimestamp(),
+      'expired': false,
+      'expiredAt': null,
+      'expiresAt': Timestamp.fromDate(expiresAt),
+      'history': FieldValue.arrayUnion([
+        BookingHistoryEntry.now(assignedLabel).toMap(),
+        BookingHistoryEntry.now('Waiting for response').toMap(),
+      ]),
     });
-    await _notify(astrologerId, 'New Request Assigned',
-        'A horoscope request has been assigned to you by the admin.',
+    await _notify(
+        astrologerId,
+        'New Request Assigned',
+        byAdmin
+            ? 'A horoscope request has been assigned to you by the admin.'
+            : 'A horoscope request has been assigned to you.',
         'request_reassigned');
+    if (userId.trim().isNotEmpty) {
+      await _notify(
+          userId,
+          'Booking reassigned',
+          'Your booking has been assigned to $astrologerName, who now has '
+              '24 hours to respond.',
+          'booking_reassigned');
+    }
   }
 
   /// Admin nudge to an astrologer who hasn't acted on a pending request.
@@ -345,6 +456,8 @@ class AstrologerService {
         'status': AstrologerRequestStatus.completed.name,
         'completedAt': FieldValue.serverTimestamp(),
         'respondedAt': FieldValue.serverTimestamp(),
+        'history': FieldValue.arrayUnion(
+            [BookingHistoryEntry.now('Report submitted').toMap()]),
       });
 
   // ── Ratings & reviews (astrologers/{id}/reviews subcollection) ─────────────

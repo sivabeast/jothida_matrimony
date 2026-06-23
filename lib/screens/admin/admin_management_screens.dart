@@ -1612,6 +1612,13 @@ class AdminSettingsScreen extends StatelessWidget {
         ),
         // ── Other management areas (preserved) ──────────────────────────────
         _ActionTile(
+          icon: Icons.event_busy_outlined,
+          title: 'Expired Bookings',
+          subtitle: 'Reassign bookings the astrologer missed',
+          color: AppColors.error,
+          onTap: () => context.go('/admin/expired-bookings'),
+        ),
+        _ActionTile(
           icon: Icons.view_carousel,
           title: 'Banner Management',
           subtitle: 'Home screen banners',

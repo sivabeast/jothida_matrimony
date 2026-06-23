@@ -97,6 +97,41 @@ class MyAstrologerAccountNotifier extends Notifier<AstrologerAccount?> {
     }
   }
 
+  /// "Available for Assignment" — whether the admin may assign this astrologer
+  /// an expired/reassigned booking. Optimistic local update, then persists.
+  Future<void> setAvailableForAssignment(bool value) async {
+    final current = state;
+    if (current == null) return;
+    state = current.copyWith(availableForAssignment: value);
+    if (!kBypassAuth) {
+      try {
+        await ref
+            .read(astrologerServiceProvider)
+            .updateAccount(current.id, {'availableForAssignment': value});
+      } catch (e) {
+        state = current;
+        rethrow;
+      }
+    }
+  }
+
+  /// "On Leave" — temporarily excludes the astrologer from admin assignment.
+  Future<void> setOnLeave(bool value) async {
+    final current = state;
+    if (current == null) return;
+    state = current.copyWith(onLeave: value);
+    if (!kBypassAuth) {
+      try {
+        await ref
+            .read(astrologerServiceProvider)
+            .updateAccount(current.id, {'onLeave': value});
+      } catch (e) {
+        state = current;
+        rethrow;
+      }
+    }
+  }
+
   /// Persists the astrologer's working days (subset of [kWeekdays]) and updates
   /// the local session immediately.
   Future<void> saveWorkingDays(List<String> days) async {
@@ -280,6 +315,59 @@ class DemoAstrologerRequestsNotifier
                 analysisText: text,
                 analysisImages: images,
                 analysisPdfs: pdfs,
+                history: [
+                  ...r.history,
+                  BookingHistoryEntry.now('Report submitted'),
+                ],
+              )
+            : r,
+    ];
+  }
+
+  /// Demo-mode reassignment (admin Expired Bookings / user "choose another"):
+  /// move the booking to a new astrologer with a fresh response window.
+  void reassign(
+    String id, {
+    required String astrologerId,
+    required String astrologerName,
+    bool byAdmin = true,
+  }) {
+    state = [
+      for (final r in state)
+        r.id == id
+            ? r.copyWith(
+                astrologerId: astrologerId,
+                astrologerName: astrologerName,
+                status: AstrologerRequestStatus.pending,
+                reassigned: true,
+                reassignedAt: DateTime.now(),
+                expired: false,
+                expiresAt: DateTime.now().add(kBookingResponseWindow),
+                history: [
+                  ...r.history,
+                  BookingHistoryEntry.now(byAdmin
+                      ? 'Assigned by Admin to $astrologerName'
+                      : 'Reassigned by you to $astrologerName'),
+                  BookingHistoryEntry.now('Waiting for response'),
+                ],
+              )
+            : r,
+    ];
+  }
+
+  /// Demo-mode expiry: flag a pending booking as expired.
+  void markExpired(String id) {
+    state = [
+      for (final r in state)
+        r.id == id
+            ? r.copyWith(
+                expired: true,
+                expiredAt: DateTime.now(),
+                history: [
+                  ...r.history,
+                  BookingHistoryEntry.now('No response'),
+                  BookingHistoryEntry.now('Expired'),
+                ],
               )
             : r,
     ];

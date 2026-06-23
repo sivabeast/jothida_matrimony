@@ -12,6 +12,10 @@ import '../screens/astrologer/astrologer_dashboard_screen.dart';
 import '../screens/astrologer/astrologer_login_screen.dart';
 import '../screens/astrologer/astrologer_register_screen.dart';
 import '../screens/astrologer/book_match_analysis_screen.dart';
+import '../screens/astrologer/consultation_booking_screen.dart';
+import '../screens/astrologer/my_consultations_screen.dart';
+import '../screens/astrologer/astrologer_consultations_screen.dart';
+import '../screens/astrologer/astrologer_earnings_screen.dart';
 import '../screens/astrologer/match_requests_screen.dart';
 import '../screens/astrologer/match_workspace_screen.dart';
 import '../screens/astrologer/my_match_analysis_screen.dart';
@@ -37,6 +41,7 @@ import '../screens/admin/admin_dashboard.dart';
 import '../screens/admin/admin_users_page.dart';
 import '../screens/admin/admin_astrologer_verification.dart';
 import '../screens/admin/admin_horoscope_requests_screen.dart';
+import '../screens/admin/admin_expired_bookings_screen.dart';
 import '../screens/admin/astrologer_verification_screen.dart';
 import '../screens/admin/admin_reports_screen.dart';
 import '../screens/admin/admin_management_screens.dart';
@@ -311,6 +316,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // User: "My Match Analysis" (Pending / Accepted / Completed + reports).
       GoRoute(
           path: '/my-analysis', builder: (_, __) => const MyMatchAnalysisScreen()),
+      // ── Consultation booking system (In-App + Direct Visit) ──────────────
+      GoRoute(
+        path: '/book-consultation/:id',
+        builder: (_, state) =>
+            ConsultationBookingScreen(astrologerId: state.pathParameters['id']!),
+      ),
+      // User: track consultations, pay after acceptance, read reports.
+      GoRoute(
+          path: '/my-consultations',
+          builder: (_, __) => const MyConsultationsScreen()),
+      // Astrologer: consultation requests inbox + lifecycle actions.
+      GoRoute(
+          path: '/consultation-requests',
+          builder: (_, __) => const AstrologerConsultationsScreen()),
+      // Astrologer: earnings dashboard + transaction history.
+      GoRoute(
+          path: '/astrologer-earnings',
+          builder: (_, __) => const AstrologerEarningsScreen()),
       // Astrologer: dedicated Match Analysis Requests module
       // (Pending / Accepted / Completed).
       GoRoute(
@@ -417,6 +440,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/admin/horoscope-requests',
               builder: (_, __) => const AdminHoroscopeRequestsScreen()),
+          // Expired Bookings → reassign bookings whose astrologer didn't respond.
+          GoRoute(
+              path: '/admin/expired-bookings',
+              builder: (_, __) => const AdminExpiredBookingsScreen()),
           GoRoute(path: '/admin/ratings', builder: (_, __) => const RatingManagementScreen()),
           GoRoute(path: '/admin/banners', builder: (_, __) => const BannerManagementScreen()),
           GoRoute(path: '/admin/notifications', builder: (_, __) => const AnnouncementManagementScreen()),

@@ -805,4 +805,85 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get waitingForResponse => 'பதிலுக்காகக் காத்திருக்கிறது…';
+
+  @override
+  String get bookMatchAnalysis => 'பொருத்தப் பகுப்பாய்வு பதிவு';
+
+  @override
+  String get submitRequest => 'கோரிக்கையை சமர்ப்பிக்கவும்';
+
+  @override
+  String get sending => 'அனுப்புகிறது…';
+
+  @override
+  String get reassignQuestion => '24 மணி நேரத்திற்குள் ஜோதிடர் பதிலளிக்கவில்லை என்றால்';
+
+  @override
+  String get reassignWaitOnly => 'இந்த ஜோதிடருக்காக மட்டும் காத்திருக்கவும்';
+
+  @override
+  String get reassignWaitOnlyDesc => 'இந்த ஜோதிடருக்காகக் காத்திருங்கள். பின்னர் நீங்களே நடவடிக்கை எடுக்கலாம்.';
+
+  @override
+  String get reassignChooseLater => 'பின்னர் வேறு ஜோதிடரைத் தேர்ந்தெடுக்கிறேன்';
+
+  @override
+  String get reassignChooseLaterDesc => 'புதிய ஜோதிடரை நீங்களே தேர்ந்தெடுக்க உங்களுக்கு அறிவிப்போம்.';
+
+  @override
+  String get reassignAllowAdmin => 'வேறு ஜோதிடரை நிர்வாகி நியமிக்க அனுமதிக்கவும்';
+
+  @override
+  String get reassignAllowAdminDesc => 'எங்கள் குழு உங்களுக்காக மற்றொரு ஜோதிடரை நியமிக்கும்.';
+
+  @override
+  String get statusExpired => 'காலாவதியானது';
+
+  @override
+  String get statusReassigned => 'மறுநியமனம் செய்யப்பட்டது';
+
+  @override
+  String get statusPending => 'நிலுவையில்';
+
+  @override
+  String get statusAccepted => 'ஏற்கப்பட்டது';
+
+  @override
+  String get statusCompleted => 'முடிந்தது';
+
+  @override
+  String get statusRejected => 'நிராகரிக்கப்பட்டது';
+
+  @override
+  String get expiredChooseAnotherMsg => 'தேர்ந்தெடுக்கப்பட்ட ஜோதிடர் தேவையான நேரத்திற்குள் பதிலளிக்கவில்லை. தயவுசெய்து வேறு ஜோதிடரைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get expiredAdminWillAssignMsg => 'தேர்ந்தெடுக்கப்பட்ட ஜோதிடர் சரியான நேரத்தில் பதிலளிக்கவில்லை. உங்கள் பதிவுக்கு நிர்வாகி வேறு ஜோதிடரை நியமிப்பார்.';
+
+  @override
+  String get expiredWaitOnlyMsg => 'இந்த ஜோதிடர் 24 மணி நேரத்திற்குள் பதிலளிக்கவில்லை. நீங்கள் காத்திருக்கலாம் அல்லது வேறு ஜோதிடரைத் தேர்ந்தெடுக்கலாம்.';
+
+  @override
+  String get chooseAnotherAstrologer => 'வேறு ஜோதிடரைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get expiredBookings => 'காலாவதியான பதிவுகள்';
+
+  @override
+  String get assignBooking => 'பதிவை நியமிக்கவும்';
+
+  @override
+  String get assign => 'நியமிக்கவும்';
+
+  @override
+  String get availableForAssignment => 'நியமனத்திற்கு கிடைக்கும்';
+
+  @override
+  String get onLeave => 'விடுப்பில்';
+
+  @override
+  String get available => 'கிடைக்கிறது';
+
+  @override
+  String get unavailable => 'கிடைக்கவில்லை';
 }

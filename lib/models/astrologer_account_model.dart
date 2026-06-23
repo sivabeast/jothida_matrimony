@@ -81,6 +81,31 @@ class AstrologerAccount {
   // Astrologer-controlled on/off switch. When false the astrologer is shown as
   // unavailable even on a working day, and new bookings are blocked.
   final bool manuallyAvailable;
+  // "Available for Assignment" — whether the admin may assign this astrologer a
+  // reassigned/expired booking. Independent of [manuallyAvailable]; defaults on.
+  final bool availableForAssignment;
+  // Temporarily on leave. Excluded from admin assignment even when otherwise
+  // eligible (the admin's "Not On Leave" filter).
+  final bool onLeave;
+
+  // ── Consultation availability (slot booking) ───────────────────────────────
+  // One continuous available window, as minutes-from-midnight (e.g. 8:00 AM =
+  // 480, 9:00 PM = 1260). No separate morning/evening sections.
+  final int availableStartMinutes;
+  final int availableEndMinutes;
+  // Optional lunch break — no slots are generated inside it. Null = no break.
+  final int? lunchStartMinutes;
+  final int? lunchEndMinutes;
+  // Slot length in minutes (15 / 30 / 45 / 60).
+  final int slotDurationMinutes;
+  // Specific dates the astrologer is unavailable (`yyyy-MM-dd`). Users cannot
+  // book on these. Replaces any "available date range" concept.
+  final List<String> unavailableDates;
+  // Cap on bookings per day (0 = no cap). A day at the cap shows "Fully Booked".
+  final int maxBookingsPerDay;
+  // Which consultation modes the astrologer offers.
+  final bool offersInApp;
+  final bool offersDirectVisit;
   // Set once the astrologer has completed the post-Google profile setup.
   final bool profileCompleted;
   // Status & services
@@ -133,6 +158,17 @@ class AstrologerAccount {
     this.consultationMode = 'Online',
     this.workingDays = kWeekdays,
     this.manuallyAvailable = true,
+    this.availableForAssignment = true,
+    this.onLeave = false,
+    this.availableStartMinutes = 8 * 60,
+    this.availableEndMinutes = 21 * 60,
+    this.lunchStartMinutes,
+    this.lunchEndMinutes,
+    this.slotDurationMinutes = 30,
+    this.unavailableDates = const [],
+    this.maxBookingsPerDay = 0,
+    this.offersInApp = true,
+    this.offersDirectVisit = true,
     this.profileCompleted = false,
     this.status = VerificationStatus.pending,
     this.rejectionReason = '',
@@ -156,6 +192,22 @@ class AstrologerAccount {
   /// working day AND the manual switch must be on. Drives the user-facing
   /// "Available Today" badge and the booking guard.
   bool get isAvailableNow => manuallyAvailable && isWorkingToday;
+
+  /// Eligible to receive an admin-reassigned (expired) booking: an ACTIVE,
+  /// approved account that is available for assignment and not on leave.
+  /// `isApproved` also enforces "not suspended" (suspension reverts the account
+  /// to `pending`).
+  bool get isEligibleForAssignment =>
+      isApproved && availableForAssignment && !onLeave;
+
+  /// Human label of the consultation modes the astrologer offers.
+  String get consultationModesLabel {
+    final modes = <String>[
+      if (offersInApp) 'In-App Consultation',
+      if (offersDirectVisit) 'Direct Visit',
+    ];
+    return modes.isEmpty ? 'Not set' : modes.join(' · ');
+  }
 
   /// Human-readable working-days summary, e.g. "All Days",
   /// "Monday, Tuesday, …" or "Not set".
@@ -210,6 +262,18 @@ class AstrologerAccount {
     String? consultationMode,
     List<String>? workingDays,
     bool? manuallyAvailable,
+    bool? availableForAssignment,
+    bool? onLeave,
+    int? availableStartMinutes,
+    int? availableEndMinutes,
+    int? lunchStartMinutes,
+    int? lunchEndMinutes,
+    bool clearLunch = false,
+    int? slotDurationMinutes,
+    List<String>? unavailableDates,
+    int? maxBookingsPerDay,
+    bool? offersInApp,
+    bool? offersDirectVisit,
     bool? profileCompleted,
     VerificationStatus? status,
     List<AstrologerService>? services,
@@ -250,6 +314,21 @@ class AstrologerAccount {
         consultationMode: consultationMode ?? this.consultationMode,
         workingDays: workingDays ?? this.workingDays,
         manuallyAvailable: manuallyAvailable ?? this.manuallyAvailable,
+        availableForAssignment:
+            availableForAssignment ?? this.availableForAssignment,
+        onLeave: onLeave ?? this.onLeave,
+        availableStartMinutes:
+            availableStartMinutes ?? this.availableStartMinutes,
+        availableEndMinutes: availableEndMinutes ?? this.availableEndMinutes,
+        lunchStartMinutes:
+            clearLunch ? null : (lunchStartMinutes ?? this.lunchStartMinutes),
+        lunchEndMinutes:
+            clearLunch ? null : (lunchEndMinutes ?? this.lunchEndMinutes),
+        slotDurationMinutes: slotDurationMinutes ?? this.slotDurationMinutes,
+        unavailableDates: unavailableDates ?? this.unavailableDates,
+        maxBookingsPerDay: maxBookingsPerDay ?? this.maxBookingsPerDay,
+        offersInApp: offersInApp ?? this.offersInApp,
+        offersDirectVisit: offersDirectVisit ?? this.offersDirectVisit,
         profileCompleted: profileCompleted ?? this.profileCompleted,
         status: status ?? this.status,
         rejectionReason: rejectionReason,
@@ -308,6 +387,17 @@ class AstrologerAccount {
           ? List<String>.from(d['workingDays'])
           : List<String>.from(kWeekdays),
       manuallyAvailable: d['manuallyAvailable'] ?? true,
+      availableForAssignment: d['availableForAssignment'] ?? true,
+      onLeave: d['onLeave'] ?? false,
+      availableStartMinutes: (d['availableStartMinutes'] as num?)?.toInt() ?? 8 * 60,
+      availableEndMinutes: (d['availableEndMinutes'] as num?)?.toInt() ?? 21 * 60,
+      lunchStartMinutes: (d['lunchStartMinutes'] as num?)?.toInt(),
+      lunchEndMinutes: (d['lunchEndMinutes'] as num?)?.toInt(),
+      slotDurationMinutes: (d['slotDurationMinutes'] as num?)?.toInt() ?? 30,
+      unavailableDates: List<String>.from(d['unavailableDates'] ?? const []),
+      maxBookingsPerDay: (d['maxBookingsPerDay'] as num?)?.toInt() ?? 0,
+      offersInApp: d['offersInApp'] ?? true,
+      offersDirectVisit: d['offersDirectVisit'] ?? true,
       profileCompleted: d['profileCompleted'] ?? false,
       status: VerificationStatus.values.firstWhere(
         (s) => s.name == (d['status'] ?? 'pending'),
@@ -375,6 +465,17 @@ class AstrologerAccount {
         'consultationMode': consultationMode,
         'workingDays': workingDays,
         'manuallyAvailable': manuallyAvailable,
+        'availableForAssignment': availableForAssignment,
+        'onLeave': onLeave,
+        'availableStartMinutes': availableStartMinutes,
+        'availableEndMinutes': availableEndMinutes,
+        'lunchStartMinutes': lunchStartMinutes,
+        'lunchEndMinutes': lunchEndMinutes,
+        'slotDurationMinutes': slotDurationMinutes,
+        'unavailableDates': unavailableDates,
+        'maxBookingsPerDay': maxBookingsPerDay,
+        'offersInApp': offersInApp,
+        'offersDirectVisit': offersDirectVisit,
         'profileCompleted': profileCompleted,
         'status': status.name,
         'services': services.map((s) => s.toMap()).toList(),

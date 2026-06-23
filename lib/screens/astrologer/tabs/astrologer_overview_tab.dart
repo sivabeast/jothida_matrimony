@@ -3,12 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/config/dev_config.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/l10n_ext.dart';
 import '../../../models/astrologer_account_model.dart';
 import '../../../models/astrologer_plan.dart';
 import '../../../models/astrologer_request_model.dart';
 import '../../../providers/astrologer_session_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../providers/service_providers.dart';
+import '../astrologer_consultations_screen.dart';
+import '../astrologer_earnings_screen.dart';
+import '../profile/astrologer_availability_screen.dart';
 import '../profile/astrologer_certificates_screen.dart';
 import '../profile/astrologer_profile_sections.dart';
 import 'astrologer_common.dart';
@@ -354,6 +358,12 @@ class AstrologerOverviewTab extends ConsumerWidget {
 
     return Column(
       children: [
+        tile(Icons.event_note_outlined, 'Consultation Requests',
+            () => open(const AstrologerConsultationsScreen())),
+        tile(Icons.account_balance_wallet_outlined, 'Earnings',
+            () => open(const AstrologerEarningsScreen())),
+        tile(Icons.event_available_outlined, 'Availability',
+            () => open(const AstrologerAvailabilityScreen())),
         tile(Icons.person_outline, 'Edit Profile',
             () => open(const AstrologerPersonalDetailsScreen())),
         tile(Icons.workspace_premium_outlined, 'Manage Certificates',
@@ -789,6 +799,51 @@ class AstrologerOverviewTab extends ConsumerWidget {
                 style: TextStyle(fontSize: 12, color: Colors.grey[600])),
           ],
           const Divider(height: 20),
+          // ── Assignment availability (admin reassignment eligibility) ────────
+          _assignmentToggle(
+            context,
+            ref,
+            icon: Icons.assignment_ind_outlined,
+            title: context.l10n.availableForAssignment,
+            subtitle: 'Admin may assign you bookings other astrologers missed.',
+            value: a.availableForAssignment,
+            onChanged: (v) async {
+              try {
+                await ref
+                    .read(myAstrologerAccountProvider.notifier)
+                    .setAvailableForAssignment(v);
+              } catch (_) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Could not update — please try again.'),
+                      backgroundColor: AppColors.error));
+                }
+              }
+            },
+          ),
+          const SizedBox(height: 6),
+          _assignmentToggle(
+            context,
+            ref,
+            icon: Icons.beach_access_outlined,
+            title: context.l10n.onLeave,
+            subtitle: 'Pause new assignments while you are away.',
+            value: a.onLeave,
+            onChanged: (v) async {
+              try {
+                await ref
+                    .read(myAstrologerAccountProvider.notifier)
+                    .setOnLeave(v);
+              } catch (_) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Could not update — please try again.'),
+                      backgroundColor: AppColors.error));
+                }
+              }
+            },
+          ),
+          const Divider(height: 20),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -810,7 +865,7 @@ class AstrologerOverviewTab extends ConsumerWidget {
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => const AstrologerWorkingDaysScreen())),
+                    builder: (_) => const AstrologerAvailabilityScreen())),
                 style: TextButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -822,6 +877,43 @@ class AstrologerOverviewTab extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  /// A compact labelled switch row used for the assignment-availability and
+  /// on-leave controls inside the availability card.
+  Widget _assignmentToggle(
+    BuildContext context,
+    WidgetRef ref, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(icon, size: 18, color: Colors.grey[600]),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 13.5, fontWeight: FontWeight.w600)),
+              Text(subtitle,
+                  style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+            ],
+          ),
+        ),
+        Switch(
+          value: value,
+          activeColor: AppColors.success,
+          onChanged: onChanged,
+        ),
+      ],
     );
   }
 

@@ -1,6 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../core/constants/app_constants.dart';
 
 const _kLocaleKey = 'app_locale';
 
@@ -26,6 +31,22 @@ class LocaleNotifier extends Notifier<Locale?> {
     state = locale;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kLocaleKey, locale.languageCode);
+    // Mirror the choice to the user document as `preferred_language` (ta | en)
+    // so the astrologer's report follows it and the preference survives a
+    // re-install / device change. Best-effort: a signed-out first-launch choice
+    // simply skips this, and a write hiccup must never block switching language.
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      try {
+        await FirebaseFirestore.instance
+            .collection(AppConstants.usersCollection)
+            .doc(uid)
+            .set({'preferred_language': locale.languageCode},
+                SetOptions(merge: true));
+      } catch (e) {
+        debugPrint('[locale] preferred_language sync skipped: $e');
+      }
+    }
   }
 }
 

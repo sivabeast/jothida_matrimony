@@ -5,10 +5,35 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/file_actions.dart';
+import '../../core/utils/l10n_ext.dart';
+import '../../models/astrologer_model.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../providers/astrologer_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/match_analysis_provider.dart';
+
+/// Bookings already swept this session, so the expiry sweep never re-fires the
+/// (idempotent, transaction-guarded) Firestore write more than once per id.
+final _sweptExpiry = <String>{};
+
+/// Best-effort client-side expiry sweep: for any of the user's pending bookings
+/// whose 24-hour window has lapsed, persist the Expired flag + notify. Scheduled
+/// post-frame so it never writes during a build.
+void _sweepExpiry(WidgetRef ref, List<AstrologerRequestModel> all) {
+  final due = all
+      .where((r) =>
+          r.isExpiredByTime && !r.expired && !_sweptExpiry.contains(r.id))
+      .toList();
+  if (due.isEmpty) return;
+  for (final r in due) {
+    _sweptExpiry.add(r.id);
+  }
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    for (final r in due) {
+      ref.read(matchAnalysisControllerProvider.notifier).expireIfDue(r);
+    }
+  });
+}
 
 /// "My Match Analysis" — the user's view of the porutham requests they booked
 /// with astrologers, in Pending / Accepted / Completed tabs. Completed requests
@@ -44,8 +69,11 @@ class MyMatchAnalysisScreen extends ConsumerWidget {
               child: CircularProgressIndicator(color: AppColors.primary)),
           error: (_, __) => _error(ref),
           data: (all) {
-            // Pending tab also surfaces rejected outcomes (status chip makes the
-            // result clear) so nothing the user booked silently disappears.
+            // Flag any of the user's bookings whose response window has lapsed.
+            _sweepExpiry(ref, all);
+            // Pending tab also surfaces rejected/expired outcomes (status chip
+            // makes the result clear) so nothing the user booked silently
+            // disappears.
             final pending = all
                 .where((r) =>
                     r.status == AstrologerRequestStatus.pending ||
@@ -118,16 +146,40 @@ class _AnalysisCard extends ConsumerWidget {
   final AstrologerRequestModel request;
   const _AnalysisCard({required this.request});
 
-  Color _statusColor(AstrologerRequestStatus s) {
-    switch (s) {
-      case AstrologerRequestStatus.pending:
-        return AppColors.warning;
-      case AstrologerRequestStatus.accepted:
-        return AppColors.info;
-      case AstrologerRequestStatus.completed:
-        return AppColors.success;
-      case AstrologerRequestStatus.rejected:
+  // Colour + label are driven by the booking's DISPLAY status (which folds in
+  // the Expired / Reassigned states) rather than the raw enum.
+  Color _statusColor(AstrologerRequestModel r) {
+    switch (r.displayStatusKey) {
+      case 'expired':
         return AppColors.error;
+      case 'reassigned':
+        return Colors.deepPurple;
+      case 'accepted':
+        return AppColors.info;
+      case 'completed':
+        return AppColors.success;
+      case 'rejected':
+        return AppColors.error;
+      default:
+        return AppColors.warning;
+    }
+  }
+
+  String _statusLabel(BuildContext context, AstrologerRequestModel r) {
+    final l = context.l10n;
+    switch (r.displayStatusKey) {
+      case 'expired':
+        return l.statusExpired;
+      case 'reassigned':
+        return l.statusReassigned;
+      case 'accepted':
+        return l.statusAccepted;
+      case 'completed':
+        return l.statusCompleted;
+      case 'rejected':
+        return l.statusRejected;
+      default:
+        return l.statusPending;
     }
   }
 
@@ -158,7 +210,7 @@ class _AnalysisCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final r = request;
-    final color = _statusColor(r.status);
+    final color = _statusColor(r);
     final canChat = r.status == AstrologerRequestStatus.accepted ||
         r.status == AstrologerRequestStatus.completed;
     final canViewReport =
@@ -196,7 +248,7 @@ class _AnalysisCard extends ConsumerWidget {
                   color: color.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(r.status.label,
+                child: Text(_statusLabel(context, r),
                     style: TextStyle(
                         fontSize: 11,
                         color: color,
@@ -230,6 +282,7 @@ class _AnalysisCard extends ConsumerWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontSize: 12.5, color: Colors.grey[700])),
           ],
+          if (r.isEffectivelyExpired) _expirySection(context, ref, r),
           if (canChat || canViewReport) ...[
             const SizedBox(height: 12),
             Row(
@@ -265,6 +318,80 @@ class _AnalysisCard extends ConsumerWidget {
           ],
         ],
       ),
+    );
+  }
+
+  /// Shown on an expired booking — the spec notification copy + (for non-admin
+  /// modes) a button to manually pick a new astrologer.
+  Widget _expirySection(
+      BuildContext context, WidgetRef ref, AstrologerRequestModel r) {
+    final l = context.l10n;
+    final String msg;
+    switch (r.reassignMode) {
+      case BookingReassignMode.chooseLater:
+        msg = l.expiredChooseAnotherMsg;
+        break;
+      case BookingReassignMode.allowAdmin:
+        msg = l.expiredAdminWillAssignMsg;
+        break;
+      case BookingReassignMode.waitOnly:
+        msg = l.expiredWaitOnlyMsg;
+        break;
+    }
+    final canChoose = r.reassignMode != BookingReassignMode.allowAdmin;
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.error.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.error.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.timer_off_outlined,
+                  size: 16, color: AppColors.error),
+              const SizedBox(width: 8),
+              Expanded(
+                  child: Text(msg, style: const TextStyle(fontSize: 12.5))),
+            ],
+          ),
+          if (canChoose) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _openChooseAnother(context, ref, r),
+                icon: const Icon(Icons.swap_horiz, size: 18),
+                label: Text(l.chooseAnotherAstrologer),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openChooseAnother(
+      BuildContext context, WidgetRef ref, AstrologerRequestModel r) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => _ChooseAstrologerSheet(request: r),
     );
   }
 
@@ -364,5 +491,149 @@ class _AnalysisCard extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// Bottom sheet for "Choose Another Astrologer" (Option 2 — the user re-points
+/// an expired booking themselves). Radio-button single selection of an
+/// available astrologer, then [Assign].
+class _ChooseAstrologerSheet extends ConsumerStatefulWidget {
+  final AstrologerRequestModel request;
+  const _ChooseAstrologerSheet({required this.request});
+
+  @override
+  ConsumerState<_ChooseAstrologerSheet> createState() =>
+      _ChooseAstrologerSheetState();
+}
+
+class _ChooseAstrologerSheetState
+    extends ConsumerState<_ChooseAstrologerSheet> {
+  String? _selectedId;
+  bool _busy = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final list = (ref.watch(astrologersProvider).valueOrNull ??
+            const <Astrologer>[])
+        .where((a) => a.isAvailable && a.id != widget.request.astrologerId)
+        .toList()
+      ..sort((a, b) => b.rating.compareTo(a.rating));
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(context.l10n.chooseAnotherAstrologer,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(
+            'Select ONE astrologer. Your booking moves to them with a fresh '
+            '24-hour response window.',
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 12),
+          if (list.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 28),
+              child: Center(
+                  child: Text('No other available astrologers right now.')),
+            )
+          else
+            Flexible(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 360),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: list.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (_, i) {
+                    final a = list[i];
+                    return RadioListTile<String>(
+                      value: a.id,
+                      groupValue: _selectedId,
+                      onChanged: (v) => setState(() => _selectedId = v),
+                      activeColor: AppColors.primary,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(a.name,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 14)),
+                      subtitle: Text(
+                        '⭐ ${a.rating.toStringAsFixed(1)} · '
+                        '${a.experienceYears} yrs'
+                        '${a.location.isNotEmpty ? ' · ${a.location}' : ''}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      secondary: CircleAvatar(
+                        backgroundColor: AppColors.primary.withOpacity(0.12),
+                        backgroundImage:
+                            a.photoUrl.isNotEmpty ? NetworkImage(a.photoUrl) : null,
+                        child: a.photoUrl.isEmpty
+                            ? const Icon(Icons.person, color: AppColors.primary)
+                            : null,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: (_selectedId == null || _busy)
+                  ? null
+                  : () => _assign(list),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey.shade300,
+                minimumSize: const Size.fromHeight(50),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+              child: _busy
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Text('Assign',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 15)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _assign(List<Astrologer> list) async {
+    final picked = list.firstWhere((a) => a.id == _selectedId);
+    setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    try {
+      await ref.read(matchAnalysisControllerProvider.notifier)
+          .chooseAnotherAstrologer(
+            widget.request,
+            astrologerId: picked.id,
+            astrologerName: picked.name,
+          );
+      if (!mounted) return;
+      navigator.pop();
+      messenger.showSnackBar(
+          SnackBar(content: Text('Booking sent to ${picked.name}.')));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      messenger.showSnackBar(const SnackBar(
+          content: Text('Could not reassign. Please try again.')));
+    }
   }
 }

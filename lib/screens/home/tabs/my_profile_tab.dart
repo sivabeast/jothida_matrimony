@@ -110,6 +110,8 @@ class MyProfileTab extends ConsumerWidget {
           _buildMenuItem(context, Icons.tune, context.l10n.partnerPreferences, '/partner-preferences'),
           // Match analysis the user booked with astrologers (porutham reports).
           _buildMenuItem(context, Icons.insights_outlined, 'My Match Analysis', '/my-analysis'),
+          // Consultation bookings (In-App + Direct Visit): status, pay, reports.
+          _buildMenuItem(context, Icons.event_note_outlined, 'My Consultations', '/my-consultations'),
           _buildMenuItem(context, Icons.workspace_premium_outlined, context.l10n.subscriptionPlans, '/subscription'),
           _buildMenuItem(context, Icons.settings_outlined, context.l10n.settings, '/settings'),
           _buildMenuItem(context, Icons.help_outline, context.l10n.helpSupport, '/help'),

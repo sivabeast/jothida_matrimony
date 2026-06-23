@@ -386,6 +386,29 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
                 ],
               ),
             ),
+          // Report language follows the user's preferred language so they can
+          // read it. The user's choice is captured on the booking.
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.translate, size: 16, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Please write this report in the user's language: "
+                    '${r.userLanguage == 'ta' ? 'Tamil (தமிழ்)' : 'English'}.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[800]),
+                  ),
+                ),
+              ],
+            ),
+          ),
           const Text('Detailed analysis',
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
           const SizedBox(height: 8),

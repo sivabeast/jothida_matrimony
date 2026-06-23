@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../models/astrologer_model.dart';
+import '../../models/astrologer_request_model.dart';
 import '../../models/profile_model.dart';
 import '../../providers/astrologer_provider.dart';
 import '../../providers/match_analysis_provider.dart';
@@ -29,6 +31,9 @@ class _BookMatchAnalysisScreenState
   String? _brideId;
   final _note = TextEditingController();
   bool _submitting = false;
+  // What happens if the astrologer doesn't respond within 24h. Defaults to the
+  // simplest option (wait only for this astrologer).
+  BookingReassignMode _mode = BookingReassignMode.waitOnly;
 
   @override
   void dispose() {
@@ -83,6 +88,7 @@ class _BookMatchAnalysisScreenState
             groom: groom,
             bride: bride,
             note: _note.text,
+            reassignMode: _mode,
           );
       if (!mounted) return;
       _snack('Match analysis request sent to ${astrologer.name}.');
@@ -105,7 +111,7 @@ class _BookMatchAnalysisScreenState
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Book Match Analysis'),
+        title: Text(context.l10n.bookMatchAnalysis),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -174,6 +180,8 @@ class _BookMatchAnalysisScreenState
                 OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
+        const SizedBox(height: 18),
+        _reassignOptions(),
         const SizedBox(height: 8),
         if (fee > 0)
           Container(
@@ -209,7 +217,7 @@ class _BookMatchAnalysisScreenState
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.send_outlined),
-            label: Text(_submitting ? 'Sending…' : 'Submit Request'),
+            label: Text(_submitting ? context.l10n.sending : context.l10n.submitRequest),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
@@ -300,6 +308,74 @@ class _BookMatchAnalysisScreenState
             const Text(' *', style: TextStyle(color: AppColors.error)),
         ],
       );
+
+  /// The three "what if the astrologer doesn't respond in 24 hours" options.
+  /// Exactly one can be chosen — the booking always belongs to a SINGLE
+  /// astrologer; these only decide who picks the next one after expiry.
+  Widget _reassignOptions() {
+    final l = context.l10n;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _label('⏳ ${l.reassignQuestion}'),
+        const SizedBox(height: 8),
+        _modeTile(BookingReassignMode.waitOnly, l.reassignWaitOnly,
+            l.reassignWaitOnlyDesc),
+        _modeTile(BookingReassignMode.chooseLater, l.reassignChooseLater,
+            l.reassignChooseLaterDesc),
+        _modeTile(BookingReassignMode.allowAdmin, l.reassignAllowAdmin,
+            l.reassignAllowAdminDesc),
+      ],
+    );
+  }
+
+  Widget _modeTile(BookingReassignMode mode, String title, String subtitle) {
+    final selected = _mode == mode;
+    return InkWell(
+      onTap: () => setState(() => _mode = mode),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected
+                ? AppColors.primary
+                : Colors.grey.withOpacity(0.3),
+            width: selected ? 1.6 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              selected
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_off,
+              color: selected ? AppColors.primary : Colors.grey,
+              size: 22,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 13.5)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style:
+                          TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _profileDropdown({
     required String? selectedId,

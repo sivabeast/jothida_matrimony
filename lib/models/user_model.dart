@@ -27,6 +27,10 @@ class UserModel {
   final Map<String, bool> privacySettings;
   final String? fcmToken;
   final bool deletionRequested; // true while an account-deletion request is pending
+  // Preferred app/report language: 'ta' (Tamil) | 'en' (English). Drives the
+  // localisation of the whole app and the language the astrologer writes the
+  // report in. Null until the user has chosen.
+  final String? preferredLanguage;
 
   const UserModel({
     required this.uid,
@@ -59,6 +63,7 @@ class UserModel {
     },
     this.fcmToken,
     this.deletionRequested = false,
+    this.preferredLanguage,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -102,6 +107,7 @@ class UserModel {
       }),
       fcmToken: data['fcmToken'],
       deletionRequested: data['deletionRequested'] ?? false,
+      preferredLanguage: data['preferred_language'],
     );
   }
 
@@ -131,6 +137,7 @@ class UserModel {
         'privacySettings': privacySettings,
         'fcmToken': fcmToken,
         'deletionRequested': deletionRequested,
+        'preferred_language': preferredLanguage,
       };
 
   UserModel copyWith({
@@ -157,6 +164,7 @@ class UserModel {
     Map<String, bool>? privacySettings,
     String? fcmToken,
     bool? deletionRequested,
+    String? preferredLanguage,
   }) =>
       UserModel(
         uid: uid ?? this.uid,
@@ -182,6 +190,7 @@ class UserModel {
         privacySettings: privacySettings ?? this.privacySettings,
         fcmToken: fcmToken ?? this.fcmToken,
         deletionRequested: deletionRequested ?? this.deletionRequested,
+        preferredLanguage: preferredLanguage ?? this.preferredLanguage,
       );
 
   bool get hasActiveSubscription {

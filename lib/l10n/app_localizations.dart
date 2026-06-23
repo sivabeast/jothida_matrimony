@@ -1678,6 +1678,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for a response…'**
   String get waitingForResponse;
+
+  /// No description provided for @bookMatchAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Book Match Analysis'**
+  String get bookMatchAnalysis;
+
+  /// No description provided for @submitRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Request'**
+  String get submitRequest;
+
+  /// No description provided for @sending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get sending;
+
+  /// No description provided for @reassignQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'If the astrologer doesn\'t respond within 24 hours'**
+  String get reassignQuestion;
+
+  /// No description provided for @reassignWaitOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait only for this astrologer'**
+  String get reassignWaitOnly;
+
+  /// No description provided for @reassignWaitOnlyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep waiting for this astrologer. You can take action manually later.'**
+  String get reassignWaitOnlyDesc;
+
+  /// No description provided for @reassignChooseLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Let me choose another astrologer later'**
+  String get reassignChooseLater;
+
+  /// No description provided for @reassignChooseLaterDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll notify you so you can pick a new astrologer yourself.'**
+  String get reassignChooseLaterDesc;
+
+  /// No description provided for @reassignAllowAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow admin to assign another astrologer'**
+  String get reassignAllowAdmin;
+
+  /// No description provided for @reassignAllowAdminDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Our team will assign another available astrologer for you.'**
+  String get reassignAllowAdminDesc;
+
+  /// No description provided for @statusExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get statusExpired;
+
+  /// No description provided for @statusReassigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Reassigned'**
+  String get statusReassigned;
+
+  /// No description provided for @statusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get statusPending;
+
+  /// No description provided for @statusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get statusAccepted;
+
+  /// No description provided for @statusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get statusCompleted;
+
+  /// No description provided for @statusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get statusRejected;
+
+  /// No description provided for @expiredChooseAnotherMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected astrologer did not respond within the required time. Please choose another astrologer.'**
+  String get expiredChooseAnotherMsg;
+
+  /// No description provided for @expiredAdminWillAssignMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected astrologer did not respond in time. An admin will assign another astrologer to your booking.'**
+  String get expiredAdminWillAssignMsg;
+
+  /// No description provided for @expiredWaitOnlyMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'This astrologer hasn\'t responded within 24 hours. You can keep waiting or choose another astrologer.'**
+  String get expiredWaitOnlyMsg;
+
+  /// No description provided for @chooseAnotherAstrologer.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Another Astrologer'**
+  String get chooseAnotherAstrologer;
+
+  /// No description provided for @expiredBookings.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired Bookings'**
+  String get expiredBookings;
+
+  /// No description provided for @assignBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign Booking'**
+  String get assignBooking;
+
+  /// No description provided for @assign.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign'**
+  String get assign;
+
+  /// No description provided for @availableForAssignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Available for Assignment'**
+  String get availableForAssignment;
+
+  /// No description provided for @onLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'On Leave'**
+  String get onLeave;
+
+  /// No description provided for @available.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get available;
+
+  /// No description provided for @unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get unavailable;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

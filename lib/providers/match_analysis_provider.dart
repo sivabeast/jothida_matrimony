@@ -7,6 +7,7 @@ import '../models/profile_model.dart';
 import 'astrologer_session_provider.dart';
 import 'auth_provider.dart';
 import 'interest_provider.dart';
+import 'locale_provider.dart';
 import 'profile_provider.dart';
 import 'service_providers.dart';
 
@@ -92,6 +93,10 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
   AsyncValue<void> build() => const AsyncData(null);
 
   /// Creates a pending "Book Match Analysis" request for [groom] × [bride].
+  ///
+  /// [reassignMode] decides what happens if the astrologer doesn't respond
+  /// before the 24-hour window lapses. The booking is captured with the user's
+  /// preferred language so the astrologer's report is written in it.
   Future<void> book({
     required String astrologerId,
     required String astrologerName,
@@ -99,6 +104,7 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     required ProfileModel groom,
     required ProfileModel bride,
     required String note,
+    BookingReassignMode reassignMode = BookingReassignMode.waitOnly,
   }) async {
     state = const AsyncLoading();
     try {
@@ -110,6 +116,8 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
       final location = me == null
           ? ''
           : [me.city, me.state].where((s) => s.trim().isNotEmpty).join(', ');
+      final lang = ref.read(localeProvider)?.languageCode ?? 'en';
+      final now = DateTime.now();
 
       final request = AstrologerRequestModel(
         id: 'new',
@@ -127,13 +135,62 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         profileAName: groom.fullName,
         profileBId: bride.id,
         profileBName: bride.fullName,
-        createdAt: DateTime.now(),
+        createdAt: now,
+        reassignMode: reassignMode,
+        expiresAt: now.add(kBookingResponseWindow),
+        userLanguage: lang,
+        history: [
+          BookingHistoryEntry(at: now, label: 'Booking created'),
+          BookingHistoryEntry(at: now, label: 'Sent to $astrologerName'),
+        ],
       );
 
       if (kBypassAuth) {
         ref.read(demoAstrologerRequestsProvider.notifier).add(request);
       } else {
         await ref.read(astrologerServiceProvider).createRequest(request);
+      }
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
+  /// Best-effort: flag this user's OWN booking Expired once the 24-hour window
+  /// lapses (security rules permit the owner this limited update; there is no
+  /// Cloud Functions backend to do it server-side). Safe to call repeatedly.
+  Future<void> expireIfDue(AstrologerRequestModel r) async {
+    if (kBypassAuth) {
+      if (r.isExpiredByTime && !r.expired) {
+        ref.read(demoAstrologerRequestsProvider.notifier).markExpired(r.id);
+      }
+      return;
+    }
+    await ref.read(astrologerServiceProvider).expireRequestIfDue(r);
+  }
+
+  /// Option 2 ("let me choose another astrologer later"): the user re-points an
+  /// expired booking to a new astrologer themselves. MOVES the booking to the
+  /// new astrologer with a fresh window — never duplicates it.
+  Future<void> chooseAnotherAstrologer(
+    AstrologerRequestModel r, {
+    required String astrologerId,
+    required String astrologerName,
+  }) async {
+    state = const AsyncLoading();
+    try {
+      if (kBypassAuth) {
+        ref.read(demoAstrologerRequestsProvider.notifier).reassign(r.id,
+            astrologerId: astrologerId,
+            astrologerName: astrologerName,
+            byAdmin: false);
+      } else {
+        await ref.read(astrologerServiceProvider).reassignRequest(r.id,
+            astrologerId: astrologerId,
+            astrologerName: astrologerName,
+            byAdmin: false,
+            userId: r.userId);
       }
       state = const AsyncData(null);
     } catch (e, st) {

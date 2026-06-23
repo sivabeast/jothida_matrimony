@@ -20,6 +20,9 @@ class AppConstants {
   //   astrologers/{astrologerId}/reviews/{userId}
   static const String astrologerReviewsSubcollection = 'reviews';
   static const String bookingsCollection = 'bookings';
+  // Astrology consultation bookings (In-App + Direct Visit). One booking per
+  // direct-visit slot is enforced by a deterministic doc id.
+  static const String consultationsCollection = 'consultations';
   static const String chatsCollection = 'chats';
   static const String messagesSubcollection = 'messages';
   static const String accountDeletionRequestsCollection = 'account_deletion_requests';

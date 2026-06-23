@@ -36,6 +36,33 @@ final allAstrologerRequestsProvider =
     StreamProvider.autoDispose<List<AstrologerRequestModel>>(
         (ref) => ref.read(astrologerServiceProvider).watchAllRequests());
 
+/// Astrologers eligible to receive an admin-reassigned booking: an ACTIVE,
+/// approved account that is Available for Assignment and Not On Leave. Powers
+/// the radio-button picker on the Expired Bookings screen.
+final eligibleAstrologersProvider =
+    Provider.autoDispose<List<AstrologerAccount>>((ref) {
+  final list = ref.watch(allAstrologersProvider).valueOrNull ??
+      const <AstrologerAccount>[];
+  return list.where((a) => a.isEligibleForAssignment).toList()
+    ..sort((a, b) => a.fullName.compareTo(b.fullName));
+});
+
+/// Expired bookings the admin may reassign: a match-analysis booking whose
+/// astrologer didn't respond in time AND the user chose
+/// [BookingReassignMode.allowAdmin]. Powers Admin → Expired Bookings.
+final expiredBookingsProvider =
+    Provider.autoDispose<List<AstrologerRequestModel>>((ref) {
+  final all = ref.watch(allAstrologerRequestsProvider).valueOrNull ??
+      const <AstrologerRequestModel>[];
+  return all
+      .where((r) =>
+          r.reassignMode == BookingReassignMode.allowAdmin &&
+          r.isEffectivelyExpired)
+      .toList()
+    ..sort((a, b) =>
+        (b.expiresAt ?? b.createdAt).compareTo(a.expiresAt ?? a.createdAt));
+});
+
 /// Live astrologer verification-status counts for the Dashboard cards. Derived
 /// from [allAstrologersProvider], so it updates in real time as admins approve
 /// or reject astrologers.
@@ -165,19 +192,29 @@ class AdminActionsNotifier extends Notifier<AsyncValue<void>> {
   }
 
   // ── Horoscope requests ─────────────────────────────────────────────────────
-  /// Reassign a horoscope/match-analysis request to another astrologer.
+  /// Reassign a horoscope/match-analysis request to another astrologer. Passing
+  /// [userId] also notifies the booking's owner of the reassignment.
   Future<void> reassignRequest(String requestId,
-      {required String astrologerId, required String astrologerName}) async {
+      {required String astrologerId,
+      required String astrologerName,
+      String userId = ''}) async {
     debugPrint('[AdminActions] reassignRequest($requestId → $astrologerId)');
     state = const AsyncLoading();
     state = await AsyncValue.guard(() => ref
         .read(astrologerServiceProvider)
         .reassignRequest(requestId,
-            astrologerId: astrologerId, astrologerName: astrologerName));
+            astrologerId: astrologerId,
+            astrologerName: astrologerName,
+            userId: userId));
     if (state.hasError) {
       debugPrint('[AdminActions] ❌ reassignRequest failed: ${state.error}');
     }
   }
+
+  /// Best-effort: persist the Expired flag for a booking whose window lapsed
+  /// (called from the admin Expired Bookings sweep).
+  Future<void> expireBooking(AstrologerRequestModel r) =>
+      ref.read(astrologerServiceProvider).expireRequestIfDue(r);
 
   /// Nudge an astrologer who has not acted on a pending request.
   Future<void> sendRequestReminder(String astrologerId) async {

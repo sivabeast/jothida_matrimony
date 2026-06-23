@@ -283,6 +283,42 @@ service cloud.firestore {
         allow delete: if isAdmin()
                       || (isAuthenticated() && request.auth.uid == userId);
       }
+
+      // ── Booked-slots availability index (subcollection) ─────────────────
+      // astrologers/{astrologerId}/booked_slots/{dateKey} holds only the taken
+      // slot keys for a date (no PII), so any signed-in user can READ it to
+      // grey out taken slots. A signed-in user may add/remove a slot key when
+      // booking/cancelling (the authoritative one-per-slot lock is the
+      // deterministic consultation doc id, so this index is best-effort UX).
+      match /booked_slots/{dateKey} {
+        allow read: if isAuthenticated();
+        allow create, update: if isAuthenticated();
+        allow delete: if isAdmin() || isOwner(astrologerId);
+      }
+    }
+
+    // ── Consultations (In-App + Direct Visit booking system) ─────────────
+    // USER → ASTROLOGER. The user creates the booking; both parties (and admins)
+    // can read it; the astrologer responds and submits the report; the user can
+    // pay / cancel. Payment is collected only AFTER acceptance.
+    match /consultations/{consultationId} {
+      allow read: if isAuthenticated()
+                  && (resource.data.userId == request.auth.uid
+                      || resource.data.astrologerId == request.auth.uid);
+      allow read: if isAdmin();
+      allow create: if isAuthenticated()
+                    && request.resource.data.userId == request.auth.uid;
+      // The addressed astrologer may respond / run the analysis / submit report.
+      allow update: if isAuthenticated()
+                    && resource.data.astrologerId == request.auth.uid;
+      // The booking owner may pay / cancel their own booking.
+      allow update: if isAuthenticated()
+                    && resource.data.userId == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin()
+                    || (isAuthenticated()
+                        && (resource.data.astrologerId == request.auth.uid
+                            || resource.data.userId == request.auth.uid));
     }
 
     // ── Astrologer requests (consultation / inquiry / matching) ──────────
@@ -299,6 +335,18 @@ service cloud.firestore {
       allow update: if isAuthenticated()
                     && resource.data.astrologerId == request.auth.uid;
       allow update: if isAdmin();
+      // The booking's owner (matrimony user) may run the client-side expiry
+      // sweep and — for "choose another later" bookings — reassign it to a new
+      // astrologer. Restricted to these workflow fields so they can never edit
+      // the analysis, amount, profiles, etc.
+      allow update: if isAuthenticated()
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly([
+                           'expired', 'expiredAt', 'history', 'status',
+                           'astrologerId', 'astrologerName', 'reassigned',
+                           'reassignedAt', 'respondedAt', 'expiresAt'
+                         ]);
       // Either party may delete their own request as part of account deletion;
       // admins may delete any.
       allow delete: if isAdmin()

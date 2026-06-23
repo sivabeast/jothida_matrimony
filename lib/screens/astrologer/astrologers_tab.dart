@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_model.dart';
 import '../../providers/astrologer_provider.dart';
-import '../../widgets/astrologer/availability_badge.dart';
 
 /// "Connect Astrologer" bottom-nav tab. Shows grouped astrologer sections:
 /// Top Rated, Recommended and Recently Active.
@@ -86,6 +85,9 @@ class AstrologersTab extends ConsumerWidget {
   }
 }
 
+/// Compact directory card: reduced image with a small verified tick, then a
+/// tight content block (name, availability, rating, location, experience,
+/// specialization). Sized to content — no large blank areas.
 class _AstrologerCard extends StatelessWidget {
   final Astrologer astrologer;
   const _AstrologerCard({required this.astrologer});
@@ -93,6 +95,7 @@ class _AstrologerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final a = astrologer;
+    final availColor = a.isAvailable ? AppColors.success : AppColors.error;
     return GestureDetector(
       onTap: () => context.push('/astrologer/${a.id}'),
       child: Container(
@@ -101,69 +104,100 @@ class _AstrologerCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)
+          ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
                   child: Image.network(
                     a.photoUrl,
-                    height: 110,
+                    height: 104,
                     width: double.infinity,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
-                      height: 110,
+                      height: 104,
                       color: AppColors.primary.withOpacity(0.1),
-                      child: const Icon(Icons.person, size: 50, color: AppColors.primary),
+                      child: const Icon(Icons.person,
+                          size: 44, color: AppColors.primary),
                     ),
                   ),
                 ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: AvailabilityBadge(available: a.isAvailable, compact: true),
-                ),
+                // Small social-media style verified tick — not a badge.
+                if (a.verified)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.18),
+                              blurRadius: 3)
+                        ],
+                      ),
+                      child: const Icon(Icons.verified,
+                          color: AppColors.success, size: 18),
+                    ),
+                  ),
               ],
             ),
             Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(a.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 13)),
-                  const SizedBox(height: 2),
-                  Row(children: [
-                    const Icon(Icons.star, size: 13, color: AppColors.gold),
-                    Text(' ${a.rating}', style: const TextStyle(fontSize: 12)),
-                    Text('  •  ${a.experienceYears}y',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                  ]),
-                  const SizedBox(height: 2),
-                  Text(a.specializations.isNotEmpty ? a.specializations.first : '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                  const SizedBox(height: 6),
+                          fontWeight: FontWeight.bold, fontSize: 13.5)),
+                  const SizedBox(height: 3),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('From ₹${a.startingPrice}',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
-                              fontSize: 13)),
-                      const Icon(Icons.arrow_forward_ios,
-                          size: 12, color: AppColors.primary),
+                      Icon(Icons.circle, size: 9, color: availColor),
+                      const SizedBox(width: 5),
+                      Text(a.isAvailable ? 'Available' : 'Unavailable',
+                          style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: availColor)),
                     ],
                   ),
+                  const SizedBox(height: 3),
+                  Row(children: [
+                    const Icon(Icons.star, size: 13, color: AppColors.gold),
+                    const SizedBox(width: 3),
+                    Text(a.rating.toStringAsFixed(1),
+                        style: const TextStyle(
+                            fontSize: 11.5, fontWeight: FontWeight.w600)),
+                    const SizedBox(width: 3),
+                    Text('(${a.reviewCount})',
+                        style:
+                            TextStyle(fontSize: 11, color: Colors.grey[500])),
+                  ]),
+                  _row(Icons.location_on_outlined, a.location),
+                  _row(
+                      Icons.work_history_outlined,
+                      a.experienceYears > 0
+                          ? '${a.experienceYears} yrs experience'
+                          : 'Experience N/A'),
+                  _row(
+                      Icons.auto_awesome,
+                      a.specializations.isEmpty
+                          ? 'Astrologer'
+                          : a.specializations.first,
+                      color: AppColors.primary),
                 ],
               ),
             ),
@@ -172,4 +206,21 @@ class _AstrologerCard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _row(IconData icon, String text, {Color? color}) => Padding(
+        padding: const EdgeInsets.only(top: 3),
+        child: Row(
+          children: [
+            Icon(icon, size: 12.5, color: color ?? Colors.grey[500]),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(text.isEmpty ? '—' : text,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 11.5, color: color ?? Colors.grey[700])),
+            ),
+          ],
+        ),
+      );
 }
