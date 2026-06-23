@@ -4,6 +4,7 @@ import '../models/user_model.dart';
 import '../models/profile_model.dart';
 import '../models/report_model.dart';
 import '../models/astrologer_account_model.dart';
+import '../models/astrologer_request_model.dart';
 import '../models/dashboard_analytics.dart';
 import '../models/admin_activity.dart';
 import 'service_providers.dart';
@@ -28,6 +29,12 @@ final allAstrologersProvider =
 
 final allUsersProvider = FutureProvider.autoDispose<List<UserModel>>(
     (ref) => ref.read(adminRepositoryProvider).getAllUsers(limit: 300));
+
+/// Live stream of every astrologer request (consultations + match-analysis /
+/// horoscope bookings). Powers the admin Horoscope Requests page.
+final allAstrologerRequestsProvider =
+    StreamProvider.autoDispose<List<AstrologerRequestModel>>(
+        (ref) => ref.read(astrologerServiceProvider).watchAllRequests());
 
 /// Live astrologer verification-status counts for the Dashboard cards. Derived
 /// from [allAstrologersProvider], so it updates in real time as admins approve
@@ -154,6 +161,32 @@ class AdminActionsNotifier extends Notifier<AsyncValue<void>> {
         ref.read(firestoreServiceProvider).deleteAstrologerAccountData(uid));
     if (state.hasError) {
       debugPrint('[AdminActions] ❌ deleteAstrologer failed: ${state.error}');
+    }
+  }
+
+  // ── Horoscope requests ─────────────────────────────────────────────────────
+  /// Reassign a horoscope/match-analysis request to another astrologer.
+  Future<void> reassignRequest(String requestId,
+      {required String astrologerId, required String astrologerName}) async {
+    debugPrint('[AdminActions] reassignRequest($requestId → $astrologerId)');
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => ref
+        .read(astrologerServiceProvider)
+        .reassignRequest(requestId,
+            astrologerId: astrologerId, astrologerName: astrologerName));
+    if (state.hasError) {
+      debugPrint('[AdminActions] ❌ reassignRequest failed: ${state.error}');
+    }
+  }
+
+  /// Nudge an astrologer who has not acted on a pending request.
+  Future<void> sendRequestReminder(String astrologerId) async {
+    debugPrint('[AdminActions] sendRequestReminder($astrologerId)');
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() =>
+        ref.read(astrologerServiceProvider).sendRequestReminder(astrologerId));
+    if (state.hasError) {
+      debugPrint('[AdminActions] ❌ sendRequestReminder failed: ${state.error}');
     }
   }
 }

@@ -1,40 +1,47 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:timeline_tile/timeline_tile.dart';
 import '../../core/theme/app_colors.dart';
+import '../../models/admin_activity.dart';
+import '../../models/astrologer_account_model.dart';
 import '../../models/dashboard_analytics.dart';
 import '../../providers/admin_provider.dart';
+import 'admin_astrologer_verification.dart' show PendingAstrologerCard;
 import 'admin_export.dart' show inr;
 
-/// Mobile-first admin Dashboard.
+/// Revenue-first admin Dashboard.
 ///
-/// Summary metrics grouped into sections — Users · Subscriptions · Astrologers ·
-/// Engagement · Revenue — followed by Quick Actions. Counts come from
-/// [adminStatsProvider] (extended breakdowns) and revenue / verification numbers
-/// from [dashboardAnalyticsProvider]. Both are read defensively so the page
-/// always renders whatever data is available.
+/// Leads with revenue (combined + user/astrologer split), charts (breakdown
+/// doughnut + trend line), then the actionable widgets: pending astrologer
+/// verification, top performers, subscription-expiry alerts and a recent
+/// activity timeline. All numbers come from [dashboardAnalyticsProvider];
+/// pending verifications stream from [allAstrologersProvider].
 class AdminDashboard extends ConsumerWidget {
   const AdminDashboard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final statsAsync = ref.watch(adminStatsProvider);
     final analyticsAsync = ref.watch(dashboardAnalyticsProvider);
-    final stats = statsAsync.valueOrNull;
     final a = analyticsAsync.valueOrNull ?? const DashboardAnalytics();
-    final vc = ref.watch(astrologerStatusCountsProvider);
-    final loading = stats == null && analyticsAsync.isLoading;
+    final loading = analyticsAsync.isLoading && analyticsAsync.valueOrNull == null;
 
-    int n(String k) => (stats?[k] as num?)?.toInt() ?? 0;
+    final pending = (ref.watch(allAstrologersProvider).valueOrNull ??
+            const <AstrologerAccount>[])
+        .where((x) => x.status == VerificationStatus.pending)
+        .toList()
+      ..sort((x, y) =>
+          (y.createdAt ?? DateTime(0)).compareTo(x.createdAt ?? DateTime(0)));
 
     return RefreshIndicator(
       color: AppColors.primary,
       onRefresh: () async {
-        ref.invalidate(adminStatsProvider);
         ref.invalidate(dashboardAnalyticsProvider);
+        ref.invalidate(recentActivityProvider);
       },
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
           const Text('Dashboard',
               style: TextStyle(
@@ -42,9 +49,9 @@ class AdminDashboard extends ConsumerWidget {
                   fontFamily: 'Poppins',
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 2),
-          Text('Welcome back, Admin!',
+          Text('Revenue & operations overview',
               style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
 
           if (loading)
             const Padding(
@@ -53,73 +60,15 @@ class AdminDashboard extends ConsumerWidget {
                   child: CircularProgressIndicator(color: AppColors.primary)),
             ),
 
-          // ── Users ───────────────────────────────────────────────────────
-          _Section(title: 'Users', children: [
-            _StatTile('Total Users', '${n('totalUsers')}', Icons.groups,
-                AppColors.primary),
-            _StatTile('Male Users', '${n('maleUsers')}', Icons.male,
-                const Color(0xFF2F80ED)),
-            _StatTile('Female Users', '${n('femaleUsers')}', Icons.female,
-                const Color(0xFFEB5757)),
-            _StatTile('Active Users', '${n('activeUsers')}',
-                Icons.verified_user, AppColors.success),
-          ]),
-
-          // ── Subscriptions ───────────────────────────────────────────────
-          _Section(title: 'Subscriptions', columns: 3, children: [
-            _StatTile('Basic Plan', '${n('basicPlanUsers')}',
-                Icons.card_membership, AppColors.basicPlan),
-            _StatTile('Medium Plan', '${n('mediumPlanUsers')}',
-                Icons.workspace_premium_outlined, AppColors.warning),
-            _StatTile('Premium', '${n('premiumPlanUsers')}',
-                Icons.workspace_premium, AppColors.premiumPlan),
-          ]),
-
-          // ── Astrologers ─────────────────────────────────────────────────
-          _Section(title: 'Astrologers', columns: 3, children: [
-            _StatTile('Total', '${a.totalAstrologers}', Icons.auto_awesome,
-                const Color(0xFF7C5CFC)),
-            _StatTile('Verified', '${a.verifiedAstrologers}', Icons.verified,
-                AppColors.success),
-            _StatTile('Pending', '${a.pendingAstrologers}',
-                Icons.hourglass_top, AppColors.warning),
-          ]),
-
-          // ── Verification ────────────────────────────────────────────────
-          _Section(title: 'Verification', columns: 3, children: [
-            _StatTile('Pending', '${vc.pending}', Icons.hourglass_top,
-                AppColors.warning),
-            _StatTile('Verified', '${vc.verified}', Icons.verified,
-                AppColors.success),
-            _StatTile('Rejected', '${vc.rejected}', Icons.cancel,
-                AppColors.error),
-          ]),
-
-          // ── Engagement ──────────────────────────────────────────────────
-          _Section(title: 'Engagement', children: [
-            _StatTile('Total Interests', '${n('totalInterests')}',
-                Icons.favorite, const Color(0xFF9B51E0)),
-            _StatTile('Total Matches', '${n('totalMatches')}',
-                Icons.favorite_border, AppColors.primary),
-          ]),
-
-          // ── Revenue ─────────────────────────────────────────────────────
-          const Padding(
-            padding: EdgeInsets.only(left: 4, bottom: 10, top: 2),
-            child: Text('Revenue',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.bold)),
-          ),
+          // 1 ── Revenue headline ─────────────────────────────────────────────
           Row(
             children: [
               Expanded(
-                  child: _RevenueCard("Today's", inr(a.revenueToday),
+                  child: _RevenueCard("Today's Revenue", inr(a.revenueToday),
                       Icons.today, AppColors.success)),
               const SizedBox(width: 10),
               Expanded(
-                  child: _RevenueCard('Monthly', inr(a.revenueMonth),
+                  child: _RevenueCard('Monthly Revenue', inr(a.revenueMonth),
                       Icons.calendar_month, const Color(0xFF2F80ED))),
             ],
           ),
@@ -127,123 +76,152 @@ class AdminDashboard extends ConsumerWidget {
           _RevenueCard('Total Revenue', inr(a.revenueTotal),
               Icons.account_balance_wallet, AppColors.premiumPlan,
               wide: true),
-          const SizedBox(height: 24),
+          const SizedBox(height: 22),
 
-          // ── Quick actions ───────────────────────────────────────────────
-          const Padding(
-            padding: EdgeInsets.only(left: 4, bottom: 12),
-            child: Text('Quick Actions',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.bold)),
+          // 2 ── Revenue split ────────────────────────────────────────────────
+          const _SectionTitle('Revenue Split'),
+          _RevenueSummaryCard(
+            title: 'User Revenue',
+            icon: Icons.groups,
+            color: const Color(0xFF2F80ED),
+            today: a.userRevenueToday,
+            month: a.userRevenueMonth,
+            total: a.userRevenueTotal,
           ),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 2.4,
+          const SizedBox(height: 10),
+          _RevenueSummaryCard(
+            title: 'Astrologer Revenue',
+            icon: Icons.auto_awesome,
+            color: const Color(0xFF7C5CFC),
+            today: a.astroRevenueToday,
+            month: a.astroRevenueMonth,
+            total: a.astroRevenueTotal,
+          ),
+          const SizedBox(height: 22),
+
+          // 3 ── Revenue breakdown doughnut ───────────────────────────────────
+          const _SectionTitle('Revenue Breakdown'),
+          _Card(child: _RevenueDoughnut(a: a)),
+          const SizedBox(height: 22),
+
+          // 4 ── Revenue trend line ───────────────────────────────────────────
+          const _SectionTitle('Revenue Trend'),
+          _Card(child: _RevenueTrendChart(a: a)),
+          const SizedBox(height: 22),
+
+          // 5 ── Pending astrologer verification ──────────────────────────────
+          Row(
             children: [
-              _QuickAction('Astrologer Verification', Icons.verified_user,
-                  AppColors.success, () => context.push('/admin/verification')),
-              _QuickAction('Send Notification', Icons.campaign, AppColors.gold,
-                  () => context.go('/admin/notifications')),
-              _QuickAction('Manage Users', Icons.manage_accounts,
-                  const Color(0xFF2F80ED), () => context.go('/admin/users')),
-              _QuickAction('View Reports', Icons.insights, AppColors.primary,
-                  () => context.go('/admin/analytics')),
+              const Expanded(child: _SectionTitle('Pending Verification')),
+              if (pending.isNotEmpty)
+                TextButton(
+                  onPressed: () => context.go('/admin/astrologers'),
+                  child: const Text('View All'),
+                ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-}
+          if (pending.isEmpty)
+            const _EmptyHint(
+                icon: Icons.verified_user_outlined,
+                text: 'No astrologers awaiting verification')
+          else
+            for (final astro in pending.take(3))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: PendingAstrologerCard(astrologer: astro, dense: true),
+              ),
+          const SizedBox(height: 12),
 
-// ── Section: title + responsive grid of stat tiles ───────────────────────────
-class _Section extends StatelessWidget {
-  final String title;
-  final List<Widget> children;
-  final int columns;
-  const _Section(
-      {required this.title, required this.children, this.columns = 2});
+          // 6 ── Top performing astrologers ───────────────────────────────────
+          const _SectionTitle('Top Performing Astrologers'),
+          _TopPerformers(rows: a.topPerformers),
+          const SizedBox(height: 22),
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 10, top: 2),
-          child: Text(title,
-              style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.bold)),
-        ),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: columns,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: columns == 3 ? 0.90 : 1.45,
-          children: children,
-        ),
-        const SizedBox(height: 18),
-      ],
-    );
-  }
-}
-
-// ── Stat tile (icon chip · value · label) ────────────────────────────────────
-class _StatTile extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-  const _StatTile(this.label, this.value, this.icon, this.color);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: color, size: 20),
+          // 7 ── Subscription expiry alerts ───────────────────────────────────
+          const _SectionTitle('Subscription Expiry Alerts'),
+          Row(
+            children: [
+              Expanded(
+                  child: _ExpiryTile('Users Today', a.usersExpiringToday,
+                      Icons.person_off_outlined, AppColors.warning)),
+              const SizedBox(width: 10),
+              Expanded(
+                  child: _ExpiryTile('Astrologers Today',
+                      a.astrologersExpiringToday, Icons.event_busy,
+                      const Color(0xFFEB5757))),
+              const SizedBox(width: 10),
+              Expanded(
+                  child: _ExpiryTile('Next 7 Days', a.expiringNext7Days,
+                      Icons.hourglass_bottom, const Color(0xFF2F80ED))),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                  fontSize: 19, fontWeight: FontWeight.bold, height: 1.1)),
-          const SizedBox(height: 1),
-          Text(label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+          const SizedBox(height: 22),
+
+          // 8 ── Recent activity timeline ─────────────────────────────────────
+          const _SectionTitle('Recent Activities'),
+          const _RecentActivities(),
         ],
       ),
     );
   }
 }
 
-// ── Revenue card ─────────────────────────────────────────────────────────────
+// ── Section title ────────────────────────────────────────────────────────────
+class _SectionTitle extends StatelessWidget {
+  final String text;
+  const _SectionTitle(this.text);
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(left: 4, bottom: 10),
+        child: Text(text,
+            style: const TextStyle(
+                fontSize: 16,
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.bold)),
+      );
+}
+
+class _Card extends StatelessWidget {
+  final Widget child;
+  const _Card({required this.child});
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)
+          ],
+        ),
+        child: child,
+      );
+}
+
+class _EmptyHint extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _EmptyHint({required this.icon, required this.text});
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 22),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: Colors.grey[400], size: 30),
+            const SizedBox(height: 6),
+            Text(text, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+          ],
+        ),
+      );
+}
+
+// ── Revenue card (icon · label · value) ──────────────────────────────────────
 class _RevenueCard extends StatelessWidget {
   final String label;
   final String value;
@@ -295,41 +273,524 @@ class _RevenueCard extends StatelessWidget {
   }
 }
 
-// ── Quick action tile ────────────────────────────────────────────────────────
-class _QuickAction extends StatelessWidget {
-  final String label;
+// ── Revenue summary card (today / month / total) ─────────────────────────────
+class _RevenueSummaryCard extends StatelessWidget {
+  final String title;
   final IconData icon;
   final Color color;
-  final VoidCallback onTap;
-  const _QuickAction(this.label, this.icon, this.color, this.onTap);
+  final int today;
+  final int month;
+  final int total;
+  const _RevenueSummaryCard({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.today,
+    required this.month,
+    required this.total,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12)),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(label,
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10)),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Text(title,
                   style: const TextStyle(
-                      fontSize: 12.5, fontWeight: FontWeight.w600)),
+                      fontSize: 14.5, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _cell('Today', today, color),
+              _divider(),
+              _cell('Monthly', month, color),
+              _divider(),
+              _cell('Total', total, color),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _cell(String label, int value, Color color) => Expanded(
+        child: Column(
+          children: [
+            Text(inr(value),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.bold, color: color)),
+            const SizedBox(height: 2),
+            Text(label,
+                style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+          ],
+        ),
+      );
+
+  Widget _divider() =>
+      Container(width: 1, height: 30, color: Colors.grey[200]);
+}
+
+// ── Revenue breakdown doughnut ───────────────────────────────────────────────
+class _RevenueDoughnut extends StatelessWidget {
+  final DashboardAnalytics a;
+  const _RevenueDoughnut({required this.a});
+
+  @override
+  Widget build(BuildContext context) {
+    final u = a.userRevenueTotal.toDouble();
+    final s = a.astroRevenueTotal.toDouble();
+    final total = u + s;
+    if (total <= 0) {
+      return const SizedBox(
+        height: 120,
+        child: Center(
+            child: Text('No revenue recorded yet',
+                style: TextStyle(color: Colors.grey))),
+      );
+    }
+    final uPct = (u / total * 100).round();
+    final sPct = (100 - uPct);
+    const userColor = Color(0xFF2F80ED);
+    const astroColor = Color(0xFF7C5CFC);
+
+    return Row(
+      children: [
+        SizedBox(
+          width: 140,
+          height: 140,
+          child: PieChart(
+            PieChartData(
+              sectionsSpace: 2,
+              centerSpaceRadius: 40,
+              sections: [
+                PieChartSectionData(
+                    value: u,
+                    color: userColor,
+                    title: '$uPct%',
+                    radius: 26,
+                    titleStyle: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white)),
+                PieChartSectionData(
+                    value: s,
+                    color: astroColor,
+                    title: '$sPct%',
+                    radius: 26,
+                    titleStyle: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white)),
+              ],
             ),
+          ),
+        ),
+        const SizedBox(width: 18),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _legend(userColor, 'User Revenue', inr(a.userRevenueTotal), uPct),
+              const SizedBox(height: 12),
+              _legend(astroColor, 'Astrologer Revenue',
+                  inr(a.astroRevenueTotal), sPct),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _legend(Color c, String label, String amount, int pct) => Row(
+        children: [
+          Container(
+              width: 12,
+              height: 12,
+              decoration:
+                  BoxDecoration(color: c, borderRadius: BorderRadius.circular(3))),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: const TextStyle(
+                        fontSize: 12.5, fontWeight: FontWeight.w600)),
+                Text('$amount · $pct%',
+                    style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+              ],
+            ),
+          ),
+        ],
+      );
+}
+
+// ── Revenue trend line (Daily / Monthly toggle) ──────────────────────────────
+class _RevenueTrendChart extends StatefulWidget {
+  final DashboardAnalytics a;
+  const _RevenueTrendChart({required this.a});
+  @override
+  State<_RevenueTrendChart> createState() => _RevenueTrendChartState();
+}
+
+class _RevenueTrendChartState extends State<_RevenueTrendChart> {
+  bool _monthly = false;
+
+  String _short(num v) {
+    if (v >= 100000) return '${(v / 100000).toStringAsFixed(1)}L';
+    if (v >= 1000) return '${(v / 1000).toStringAsFixed(0)}k';
+    return v.toStringAsFixed(0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final points =
+        _monthly ? widget.a.revenueMonthly : widget.a.revenueDaily;
+    final maxY = points.fold<double>(
+        0, (m, p) => p.amount.toDouble() > m ? p.amount.toDouble() : m);
+    final hasData = maxY > 0;
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            ChoiceChip(
+              label: const Text('Daily'),
+              selected: !_monthly,
+              showCheckmark: false,
+              onSelected: (_) => setState(() => _monthly = false),
+            ),
+            const SizedBox(width: 8),
+            ChoiceChip(
+              label: const Text('Monthly'),
+              selected: _monthly,
+              showCheckmark: false,
+              onSelected: (_) => setState(() => _monthly = true),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 190,
+          child: !hasData
+              ? const Center(
+                  child: Text('No revenue in this period',
+                      style: TextStyle(color: Colors.grey)))
+              : LineChart(
+                  LineChartData(
+                    minY: 0,
+                    maxY: maxY * 1.2,
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: false,
+                      getDrawingHorizontalLine: (_) =>
+                          FlLine(color: Colors.grey[200]!, strokeWidth: 1),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    titlesData: FlTitlesData(
+                      topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false)),
+                      rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false)),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 38,
+                          getTitlesWidget: (value, meta) {
+                            if (value == meta.max) return const SizedBox.shrink();
+                            return Text(_short(value),
+                                style: TextStyle(
+                                    fontSize: 10, color: Colors.grey[500]));
+                          },
+                        ),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 22,
+                          interval: 1,
+                          getTitlesWidget: (value, meta) {
+                            final i = value.toInt();
+                            if (i < 0 || i >= points.length) {
+                              return const SizedBox.shrink();
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(points[i].label,
+                                  style: TextStyle(
+                                      fontSize: 10, color: Colors.grey[600])),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: [
+                          for (var i = 0; i < points.length; i++)
+                            FlSpot(i.toDouble(), points[i].amount.toDouble()),
+                        ],
+                        isCurved: true,
+                        color: AppColors.primary,
+                        barWidth: 3,
+                        dotData: const FlDotData(show: true),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          color: AppColors.primary.withOpacity(0.12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Top performers leaderboard ───────────────────────────────────────────────
+class _TopPerformers extends StatelessWidget {
+  final List<TopAstrologerRow> rows;
+  const _TopPerformers({required this.rows});
+
+  @override
+  Widget build(BuildContext context) {
+    if (rows.isEmpty) {
+      return const _EmptyHint(
+          icon: Icons.emoji_events_outlined,
+          text: 'No completed reports yet');
+    }
+    return _Card(
+      child: Column(
+        children: [
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0) Divider(height: 18, color: Colors.grey[200]),
+            _row(i + 1, rows[i]),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _row(int rank, TopAstrologerRow r) {
+    final rankColor = switch (rank) {
+      1 => const Color(0xFFFFB300),
+      2 => const Color(0xFF90A4AE),
+      3 => const Color(0xFFA1674A),
+      _ => Colors.grey,
+    };
+    return Row(
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+              color: rankColor.withOpacity(0.15), shape: BoxShape.circle),
+          child: Text('$rank',
+              style: TextStyle(
+                  color: rankColor, fontWeight: FontWeight.bold, fontSize: 13)),
+        ),
+        const SizedBox(width: 10),
+        CircleAvatar(
+          radius: 18,
+          backgroundColor: AppColors.primary.withOpacity(0.12),
+          backgroundImage:
+              r.photoUrl.isNotEmpty ? NetworkImage(r.photoUrl) : null,
+          child: r.photoUrl.isEmpty
+              ? Text(r.name.isNotEmpty ? r.name[0].toUpperCase() : '?',
+                  style: const TextStyle(
+                      color: AppColors.primary, fontWeight: FontWeight.bold))
+              : null,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(r.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 13.5)),
+              const SizedBox(height: 2),
+              Text('${r.completedReports} reports · ${inr(r.revenueGenerated)}',
+                  style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Row(
+          children: [
+            const Icon(Icons.star_rounded, color: Color(0xFFFFB300), size: 16),
+            const SizedBox(width: 2),
+            Text(r.rating.toStringAsFixed(1),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// ── Expiry alert tile ────────────────────────────────────────────────────────
+class _ExpiryTile extends StatelessWidget {
+  final String label;
+  final int value;
+  final IconData icon;
+  final Color color;
+  const _ExpiryTile(this.label, this.value, this.icon, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(height: 8),
+          Text('$value',
+              style: const TextStyle(
+                  fontSize: 20, fontWeight: FontWeight.bold, height: 1.1)),
+          const SizedBox(height: 1),
+          Text(label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Recent activities timeline ───────────────────────────────────────────────
+class _RecentActivities extends ConsumerWidget {
+  const _RecentActivities();
+
+  ({IconData icon, Color color}) _style(AdminActivityType t) => switch (t) {
+        AdminActivityType.user => (
+            icon: Icons.person_add_alt_1,
+            color: const Color(0xFF2F80ED)
+          ),
+        AdminActivityType.astrologer => (
+            icon: Icons.auto_awesome,
+            color: const Color(0xFF7C5CFC)
+          ),
+        AdminActivityType.subscription => (
+            icon: Icons.payments,
+            color: AppColors.success
+          ),
+        AdminActivityType.deletion => (
+            icon: Icons.delete_outline,
+            color: AppColors.error
+          ),
+        AdminActivityType.verification => (
+            icon: Icons.verified,
+            color: const Color(0xFF00A389)
+          ),
+        AdminActivityType.horoscope => (
+            icon: Icons.menu_book,
+            color: AppColors.gold
+          ),
+      };
+
+  String _ago(DateTime t) {
+    final d = DateTime.now().difference(t);
+    if (d.inMinutes < 1) return 'just now';
+    if (d.inMinutes < 60) return '${d.inMinutes}m ago';
+    if (d.inHours < 24) return '${d.inHours}h ago';
+    if (d.inDays < 30) return '${d.inDays}d ago';
+    return '${(d.inDays / 30).floor()}mo ago';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(recentActivityProvider);
+    return async.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+            child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2))),
+      ),
+      error: (e, _) => const _EmptyHint(
+          icon: Icons.history, text: 'Could not load recent activity'),
+      data: (items) {
+        if (items.isEmpty) {
+          return const _EmptyHint(
+              icon: Icons.history, text: 'No recent activity');
+        }
+        return _Card(
+          child: Column(
+            children: [
+              for (var i = 0; i < items.length; i++)
+                _tile(items[i], isFirst: i == 0, isLast: i == items.length - 1),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _tile(AdminActivity a, {required bool isFirst, required bool isLast}) {
+    final s = _style(a.type);
+    return TimelineTile(
+      alignment: TimelineAlign.start,
+      isFirst: isFirst,
+      isLast: isLast,
+      indicatorStyle: IndicatorStyle(
+        width: 30,
+        color: s.color,
+        iconStyle: IconStyle(iconData: s.icon, color: Colors.white, fontSize: 16),
+      ),
+      beforeLineStyle: LineStyle(color: Colors.grey[200]!, thickness: 2),
+      afterLineStyle: LineStyle(color: Colors.grey[200]!, thickness: 2),
+      endChild: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 0, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(a.subtitle,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600, fontSize: 13)),
+            const SizedBox(height: 1),
+            Text('${a.title} · ${_ago(a.time)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
           ],
         ),
       ),

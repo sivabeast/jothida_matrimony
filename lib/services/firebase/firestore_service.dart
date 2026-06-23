@@ -835,7 +835,7 @@ class FirestoreService {
   /// Recent platform events (newest first, max [limit]) for the Dashboard
   /// activity feed: new users, new astrologers, new subscriptions and new
   /// account-deletion requests. Each source is guarded independently.
-  Future<List<AdminActivity>> getRecentActivity({int limit = 5}) async {
+  Future<List<AdminActivity>> getRecentActivity({int limit = 10}) async {
     final items = <AdminActivity>[];
     DateTime? ts(dynamic v) => v is Timestamp ? v.toDate() : null;
 
@@ -914,6 +914,48 @@ class FirestoreService {
       }
     } catch (e) {
       debugPrint('[Activity] deletion requests failed: $e');
+    }
+
+    // Astrologer verifications — only docs with a `verifiedAt` are returned by
+    // the single-field orderBy (no composite index needed).
+    try {
+      final s = await _db
+          .collection(AppConstants.astrologersCollection)
+          .orderBy('verifiedAt', descending: true)
+          .limit(limit)
+          .get();
+      for (final d in s.docs) {
+        final m = d.data();
+        items.add(AdminActivity(
+          type: AdminActivityType.verification,
+          title: (m['fullName'] ?? 'Astrologer').toString(),
+          subtitle: 'Astrologer verified',
+          time: ts(m['verifiedAt']) ?? DateTime.now(),
+        ));
+      }
+    } catch (e) {
+      debugPrint('[Activity] verifications failed: $e');
+    }
+
+    // Completed horoscope / match-analysis reports — only completed requests
+    // carry a `completedAt`, so the single-field orderBy returns just those.
+    try {
+      final s = await _db
+          .collection(AppConstants.astrologerRequestsCollection)
+          .orderBy('completedAt', descending: true)
+          .limit(limit)
+          .get();
+      for (final d in s.docs) {
+        final m = d.data();
+        items.add(AdminActivity(
+          type: AdminActivityType.horoscope,
+          title: (m['astrologerName'] ?? 'Astrologer').toString(),
+          subtitle: 'Horoscope report completed',
+          time: ts(m['completedAt']) ?? DateTime.now(),
+        ));
+      }
+    } catch (e) {
+      debugPrint('[Activity] horoscope reports failed: $e');
     }
 
     items.sort((a, b) => b.time.compareTo(a.time));
@@ -1014,9 +1056,16 @@ class FirestoreService {
     DateTime? ts(dynamic v) => v is Timestamp ? v.toDate() : null;
 
     // ── Revenue + subscriptions (from `subscriptions`) ──────────────────────
+    // User subscription revenue.
     int revToday = 0, revWeek = 0, revMonth = 0, revYear = 0, revTotal = 0;
     int monthlySubs = 0, yearlySubs = 0;
     int activePremium = 0, expiredPremium = 0, cancelledSubs = 0;
+    // Astrologer subscription revenue (from `astrologers.subscriptionAmount`).
+    int astroRevToday = 0, astroRevMonth = 0, astroRevTotal = 0;
+    // Subscription-expiry alerts.
+    final next7 = todayStart.add(const Duration(days: 7));
+    int usersExpiringToday = 0, astrosExpiringToday = 0, expiring7 = 0;
+    // Combined revenue-trend buckets (user subs + astrologer subs).
     final daily = List<int>.filled(7, 0);
     final weekly = List<int>.filled(6, 0);
     final monthly = List<int>.filled(6, 0);
@@ -1061,6 +1110,11 @@ class FirestoreService {
         } else {
           cancelledSubs++;
         }
+        if (end != null && !expired) {
+          final endDay = DateTime(end.year, end.month, end.day);
+          if (endDay == todayStart) usersExpiringToday++;
+          if (end.isBefore(next7)) expiring7++;
+        }
         if (start != null && end != null) {
           (end.difference(start).inDays >= 300 ? () => yearlySubs++ : () => monthlySubs++)();
         }
@@ -1069,6 +1123,116 @@ class FirestoreService {
       debugPrint('[Analytics] ❌ subscriptions failed: $e');
     }
 
+    // ── Consultations (from `astrologer_requests`) ──────────────────────────
+    int cToday = 0, cWeek = 0, cMonth = 0, cCompleted = 0, cCancelled = 0;
+    final consultByAstro = <String, int>{};
+    // Completed-report count + consultation revenue per astrologer (leaderboard).
+    final completedByAstro = <String, int>{};
+    final revenueByAstro = <String, int>{};
+    try {
+      final reqs = await _db
+          .collection(AppConstants.astrologerRequestsCollection)
+          .get();
+      for (final d in reqs.docs) {
+        final m = d.data();
+        final created = ts(m['createdAt']);
+        final status = m['status'] ?? '';
+        if (created != null) {
+          if (!created.isBefore(todayStart)) cToday++;
+          if (!created.isBefore(weekStart)) cWeek++;
+          if (!created.isBefore(monthStart)) cMonth++;
+        }
+        final aid = (m['astrologerId'] ?? '') as String;
+        if (status == 'completed') {
+          cCompleted++;
+          if (aid.isNotEmpty) {
+            completedByAstro[aid] = (completedByAstro[aid] ?? 0) + 1;
+            revenueByAstro[aid] =
+                (revenueByAstro[aid] ?? 0) + toInt(m['amount']);
+          }
+        }
+        if (status == 'rejected') cCancelled++;
+        if (aid.isNotEmpty) {
+          consultByAstro[aid] = (consultByAstro[aid] ?? 0) + 1;
+        }
+      }
+    } catch (e) {
+      debugPrint('[Analytics] ❌ consultations failed: $e');
+    }
+
+    // ── Astrologers (from `astrologers`) ────────────────────────────────────
+    int totalAstro = 0, pendingAstro = 0, verifiedAstro = 0;
+    var topRated = <AstrologerStatRow>[];
+    var mostConsulted = <AstrologerStatRow>[];
+    // id → display info for the Top-Performers leaderboard.
+    final astroInfo = <String, ({String name, String photoUrl, double rating})>{};
+    try {
+      final astro =
+          await _db.collection(AppConstants.astrologersCollection).get();
+      totalAstro = astro.docs.length;
+      final rows = <(String, AstrologerStatRow)>[];
+      for (final d in astro.docs) {
+        final m = d.data();
+        final status = m['status'] ?? 'pending';
+        if (status == 'approved') {
+          verifiedAstro++;
+        } else if (status == 'pending') {
+          pendingAstro++;
+        }
+
+        // Astrologer subscription revenue (free/no-plan docs have amount 0).
+        final subAmt = toInt(m['subscriptionAmount']);
+        if (subAmt > 0) {
+          astroRevTotal += subAmt;
+          final act = ts(m['activatedAt']);
+          if (act != null) {
+            if (!act.isBefore(todayStart)) astroRevToday += subAmt;
+            if (!act.isBefore(monthStart)) astroRevMonth += subAmt;
+            final actDay = DateTime(act.year, act.month, act.day);
+            final dayDiff = todayStart.difference(actDay).inDays;
+            if (dayDiff >= 0 && dayDiff < 7) daily[6 - dayDiff] += subAmt;
+            final weekDiff = dayDiff ~/ 7;
+            if (weekDiff >= 0 && weekDiff < 6) weekly[5 - weekDiff] += subAmt;
+            final monthDiff =
+                (now.year - act.year) * 12 + (now.month - act.month);
+            if (monthDiff >= 0 && monthDiff < 6) monthly[5 - monthDiff] += subAmt;
+            final yearDiff = now.year - act.year;
+            if (yearDiff >= 0 && yearDiff < 4) yearly[3 - yearDiff] += subAmt;
+          }
+        }
+        // Astrologer subscription expiry.
+        final aexp = ts(m['subscriptionExpiry']);
+        if (aexp != null && !aexp.isBefore(todayStart)) {
+          final expDay = DateTime(aexp.year, aexp.month, aexp.day);
+          if (expDay == todayStart) astrosExpiringToday++;
+          if (aexp.isBefore(next7)) expiring7++;
+        }
+
+        astroInfo[d.id] = (
+          name: (m['fullName'] ?? '—') as String,
+          photoUrl: (m['photoUrl'] ?? '') as String,
+          rating: (m['rating'] ?? 0).toDouble(),
+        );
+        final row = AstrologerStatRow(
+          name: (m['fullName'] ?? '—') as String,
+          rating: (m['rating'] ?? 0).toDouble(),
+          reviewCount: toInt(m['reviewCount']),
+          consultations: consultByAstro[d.id] ?? 0,
+        );
+        rows.add((d.id, row));
+      }
+      topRated = [...rows.map((e) => e.$2)]
+        ..sort((a, b) => b.rating.compareTo(a.rating));
+      topRated = topRated.take(5).toList();
+      mostConsulted = [...rows.map((e) => e.$2)]
+        ..sort((a, b) => b.consultations.compareTo(a.consultations));
+      mostConsulted =
+          mostConsulted.where((r) => r.consultations > 0).take(5).toList();
+    } catch (e) {
+      debugPrint('[Analytics] ❌ astrologers failed: $e');
+    }
+
+    // ── Revenue trend (combined user + astrologer, built after both passes) ──
     const wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const mo = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -1093,68 +1257,21 @@ class FirestoreService {
         RevenuePoint('${now.year - (3 - i)}', yearly[i]),
     ];
 
-    // ── Consultations (from `astrologer_requests`) ──────────────────────────
-    int cToday = 0, cWeek = 0, cMonth = 0, cCompleted = 0, cCancelled = 0;
-    final consultByAstro = <String, int>{};
-    try {
-      final reqs = await _db
-          .collection(AppConstants.astrologerRequestsCollection)
-          .get();
-      for (final d in reqs.docs) {
-        final m = d.data();
-        final created = ts(m['createdAt']);
-        final status = m['status'] ?? '';
-        if (created != null) {
-          if (!created.isBefore(todayStart)) cToday++;
-          if (!created.isBefore(weekStart)) cWeek++;
-          if (!created.isBefore(monthStart)) cMonth++;
-        }
-        if (status == 'completed') cCompleted++;
-        if (status == 'rejected') cCancelled++;
-        final aid = (m['astrologerId'] ?? '') as String;
-        if (aid.isNotEmpty) {
-          consultByAstro[aid] = (consultByAstro[aid] ?? 0) + 1;
-        }
-      }
-    } catch (e) {
-      debugPrint('[Analytics] ❌ consultations failed: $e');
-    }
-
-    // ── Astrologers (from `astrologers`) ────────────────────────────────────
-    int totalAstro = 0, pendingAstro = 0, verifiedAstro = 0;
-    var topRated = <AstrologerStatRow>[];
-    var mostConsulted = <AstrologerStatRow>[];
-    try {
-      final astro =
-          await _db.collection(AppConstants.astrologersCollection).get();
-      totalAstro = astro.docs.length;
-      final rows = <(String, AstrologerStatRow)>[];
-      for (final d in astro.docs) {
-        final m = d.data();
-        final status = m['status'] ?? 'pending';
-        if (status == 'approved') {
-          verifiedAstro++;
-        } else if (status == 'pending') {
-          pendingAstro++;
-        }
-        final row = AstrologerStatRow(
-          name: (m['fullName'] ?? '—') as String,
-          rating: (m['rating'] ?? 0).toDouble(),
-          reviewCount: toInt(m['reviewCount']),
-          consultations: consultByAstro[d.id] ?? 0,
-        );
-        rows.add((d.id, row));
-      }
-      topRated = [...rows.map((e) => e.$2)]
-        ..sort((a, b) => b.rating.compareTo(a.rating));
-      topRated = topRated.take(5).toList();
-      mostConsulted = [...rows.map((e) => e.$2)]
-        ..sort((a, b) => b.consultations.compareTo(a.consultations));
-      mostConsulted =
-          mostConsulted.where((r) => r.consultations > 0).take(5).toList();
-    } catch (e) {
-      debugPrint('[Analytics] ❌ astrologers failed: $e');
-    }
+    // ── Top performing astrologers (by completed reports, then revenue) ──────
+    final topPerformers = <TopAstrologerRow>[
+      for (final e in completedByAstro.entries)
+        TopAstrologerRow(
+          name: astroInfo[e.key]?.name ?? '—',
+          photoUrl: astroInfo[e.key]?.photoUrl ?? '',
+          completedReports: e.value,
+          revenueGenerated: revenueByAstro[e.key] ?? 0,
+          rating: astroInfo[e.key]?.rating ?? 0,
+        ),
+    ]..sort((a, b) {
+        final c = b.completedReports.compareTo(a.completedReports);
+        return c != 0 ? c : b.revenueGenerated.compareTo(a.revenueGenerated);
+      });
+    final topPerformersList = topPerformers.take(5).toList();
 
     // ── Counts (cheap aggregate queries) ────────────────────────────────────
     Future<int> countOf(Query q) async {
@@ -1209,15 +1326,22 @@ class FirestoreService {
       totalMessages: totalMessages,
       premiumSubscribers: activePremium,
       marriedUsers: marriedUsers,
-      revenueToday: revToday,
+      // Combined revenue = user subs + astrologer subs.
+      revenueToday: revToday + astroRevToday,
       revenueWeek: revWeek,
-      revenueMonth: revMonth,
+      revenueMonth: revMonth + astroRevMonth,
       revenueYear: revYear,
-      revenueTotal: revTotal,
+      revenueTotal: revTotal + astroRevTotal,
       revenueDaily: revenueDaily,
       revenueWeekly: revenueWeekly,
       revenueMonthly: revenueMonthly,
       revenueYearly: revenueYearly,
+      userRevenueToday: revToday,
+      userRevenueMonth: revMonth,
+      userRevenueTotal: revTotal,
+      astroRevenueToday: astroRevToday,
+      astroRevenueMonth: astroRevMonth,
+      astroRevenueTotal: astroRevTotal,
       monthlySubscribers: monthlySubs,
       yearlySubscribers: yearlySubs,
       activePremium: activePremium,
@@ -1232,6 +1356,10 @@ class FirestoreService {
       verifiedAstrologers: verifiedAstro,
       topRatedAstrologers: topRated,
       mostConsultedAstrologers: mostConsulted,
+      topPerformers: topPerformersList,
+      usersExpiringToday: usersExpiringToday,
+      astrologersExpiringToday: astrosExpiringToday,
+      expiringNext7Days: expiring7,
       consultationsToday: cToday,
       consultationsWeek: cWeek,
       consultationsMonth: cMonth,

@@ -20,6 +20,23 @@ class AstrologerStatRow {
   });
 }
 
+/// A row for the Dashboard "Top Performing Astrologers" leaderboard:
+/// completed horoscope reports + the consultation revenue they generated.
+class TopAstrologerRow {
+  final String name;
+  final String photoUrl;
+  final int completedReports; // completed astrologer_requests
+  final int revenueGenerated; // ∑ amount on this astrologer's completed requests
+  final double rating;
+  const TopAstrologerRow({
+    required this.name,
+    this.photoUrl = '',
+    this.completedReports = 0,
+    this.revenueGenerated = 0,
+    this.rating = 0,
+  });
+}
+
 /// Everything the Admin business dashboard needs, computed in one pass over
 /// Firestore. Every field defaults to zero / empty so a partial failure in one
 /// section never blanks the whole dashboard.
@@ -32,16 +49,26 @@ class DashboardAnalytics {
   final int premiumSubscribers;
   final int marriedUsers;
 
-  // ── Revenue ──────────────────────────────────────────────────────────────
+  // ── Revenue (combined = user subs + astrologer subs) ───────────────────────
   final int revenueToday;
   final int revenueWeek;
   final int revenueMonth;
   final int revenueYear;
   final int revenueTotal;
-  final List<RevenuePoint> revenueDaily; // last 7 days
+  final List<RevenuePoint> revenueDaily; // last 7 days (combined)
   final List<RevenuePoint> revenueWeekly; // last ~6 weeks
-  final List<RevenuePoint> revenueMonthly; // last 6 months
+  final List<RevenuePoint> revenueMonthly; // last 6 months (combined)
   final List<RevenuePoint> revenueYearly; // last 4 years
+
+  // ── Revenue split ──────────────────────────────────────────────────────────
+  // User subscription revenue (from the `subscriptions` collection).
+  final int userRevenueToday;
+  final int userRevenueMonth;
+  final int userRevenueTotal;
+  // Astrologer subscription revenue (from `astrologers.subscriptionAmount`).
+  final int astroRevenueToday;
+  final int astroRevenueMonth;
+  final int astroRevenueTotal;
 
   // ── Subscriptions ──────────────────────────────────────────────────────────
   final int monthlySubscribers;
@@ -62,6 +89,12 @@ class DashboardAnalytics {
   final int verifiedAstrologers;
   final List<AstrologerStatRow> topRatedAstrologers;
   final List<AstrologerStatRow> mostConsultedAstrologers;
+  final List<TopAstrologerRow> topPerformers; // leaderboard (reports + revenue)
+
+  // ── Subscription expiry alerts ─────────────────────────────────────────────
+  final int usersExpiringToday;
+  final int astrologersExpiringToday;
+  final int expiringNext7Days; // users + astrologers expiring within 7 days
 
   // ── Consultations ──────────────────────────────────────────────────────────
   final int consultationsToday;
@@ -90,6 +123,12 @@ class DashboardAnalytics {
     this.revenueWeekly = const [],
     this.revenueMonthly = const [],
     this.revenueYearly = const [],
+    this.userRevenueToday = 0,
+    this.userRevenueMonth = 0,
+    this.userRevenueTotal = 0,
+    this.astroRevenueToday = 0,
+    this.astroRevenueMonth = 0,
+    this.astroRevenueTotal = 0,
     this.monthlySubscribers = 0,
     this.yearlySubscribers = 0,
     this.activePremium = 0,
@@ -104,6 +143,10 @@ class DashboardAnalytics {
     this.verifiedAstrologers = 0,
     this.topRatedAstrologers = const [],
     this.mostConsultedAstrologers = const [],
+    this.topPerformers = const [],
+    this.usersExpiringToday = 0,
+    this.astrologersExpiringToday = 0,
+    this.expiringNext7Days = 0,
     this.consultationsToday = 0,
     this.consultationsWeek = 0,
     this.consultationsMonth = 0,

@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/config/dev_config.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_account_model.dart';
+import '../../models/astrologer_plan.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/common/data_states.dart';
@@ -1574,18 +1576,46 @@ class AdminSettingsScreen extends StatelessWidget {
           subtitle: 'Platform controls & configuration',
         ),
         const SizedBox(height: 16),
+        // ── Core settings groups ────────────────────────────────────────────
+        _ActionTile(
+          icon: Icons.workspace_premium,
+          title: 'Subscription Plans',
+          subtitle: 'User & astrologer plans, pricing',
+          color: AppColors.gold,
+          onTap: () => context.go('/admin/premium'),
+        ),
+        _ActionTile(
+          icon: Icons.app_settings_alt_outlined,
+          title: 'App Settings',
+          subtitle: 'Maintenance mode, feature flags, versions',
+          onTap: () => _soon(context, 'App Settings'),
+        ),
+        _ActionTile(
+          icon: Icons.notifications_outlined,
+          title: 'Notification Settings',
+          subtitle: 'Announcements & push notifications',
+          onTap: () => context.go('/admin/notifications'),
+        ),
+        _ActionTile(
+          icon: Icons.payments_outlined,
+          title: 'Revenue Settings',
+          subtitle: 'Plan prices & revenue configuration',
+          color: AppColors.success,
+          onTap: () => context.go('/admin/revenue-settings'),
+        ),
+        const Divider(height: 28),
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Text('More',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold, color: Colors.grey)),
+        ),
+        // ── Other management areas (preserved) ──────────────────────────────
         _ActionTile(
           icon: Icons.view_carousel,
           title: 'Banner Management',
           subtitle: 'Home screen banners',
           onTap: () => context.go('/admin/banners'),
-        ),
-        _ActionTile(
-          icon: Icons.workspace_premium,
-          title: 'Subscription Plans',
-          subtitle: 'Premium plans & subscriptions',
-          color: AppColors.gold,
-          onTap: () => context.go('/admin/premium'),
         ),
         _ActionTile(
           icon: Icons.support_agent,
@@ -1613,28 +1643,104 @@ class AdminSettingsScreen extends StatelessWidget {
           color: AppColors.error,
           onTap: () => context.go('/admin/deletion-requests'),
         ),
-        const Divider(height: 28),
-        _ActionTile(
-          icon: Icons.notifications_outlined,
-          title: 'Notification Settings',
-          subtitle: 'Push & email preferences',
-          onTap: () => _soon(context, 'Notification Settings'),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 💰 Revenue Settings — read-only summary of current plan pricing
+// ─────────────────────────────────────────────────────────────────────────────
+
+class RevenueSettingsScreen extends StatelessWidget {
+  const RevenueSettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    debugPrint('[Admin] RevenueSettings build — /admin/revenue-settings');
+    return _adminScaffold(
+      title: 'Revenue Settings',
+      icon: Icons.payments_outlined,
+      subtitle: 'Current subscription pricing (read-only)',
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4, top: 4, bottom: 8),
+          child: Text('User Plans',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
         ),
-        _ActionTile(
-          icon: Icons.tune,
-          title: 'Platform Settings',
-          subtitle: 'Maintenance mode, feature flags',
-          onTap: () => _soon(context, 'Platform Settings'),
+        const _PriceRow('Basic Plan', AppConstants.basicPrice,
+            '${AppConstants.basicDurationDays} days'),
+        const _PriceRow('Premium Plan', AppConstants.premiumPrice,
+            '${AppConstants.premiumDurationDays} days'),
+        const _PriceRow(
+            'Porutham Report', AppConstants.poruthamsPrice, 'one-time'),
+        const SizedBox(height: 12),
+        const Padding(
+          padding: EdgeInsets.only(left: 4, top: 4, bottom: 8),
+          child: Text('Astrologer Plans',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
         ),
-        _ActionTile(
-          icon: Icons.app_settings_alt_outlined,
-          title: 'App Configuration',
-          subtitle: 'Versions & static content',
-          onTap: () => _soon(context, 'App Configuration'),
+        for (final p in AstrologerPlan.all)
+          _PriceRow('${p.emoji} ${p.name}', p.currentPrice, 'per month'),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, size: 18, color: Colors.grey[600]),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                    'Free plans are not counted in revenue. Prices are defined in code (AppConstants / AstrologerPlan).',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[700])),
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
+}
+
+class _PriceRow extends StatelessWidget {
+  final String label;
+  final int price;
+  final String period;
+  const _PriceRow(this.label, this.price, this.period);
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(label,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 13.5)),
+            ),
+            Text('₹$price',
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: AppColors.success)),
+            const SizedBox(width: 6),
+            Text('/ $period',
+                style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+          ],
+        ),
+      );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

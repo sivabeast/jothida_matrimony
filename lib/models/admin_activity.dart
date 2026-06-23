@@ -1,5 +1,12 @@
 /// Kind of recent platform event shown on the admin Dashboard activity feed.
-enum AdminActivityType { user, astrologer, subscription, deletion }
+enum AdminActivityType {
+  user,
+  astrologer,
+  subscription,
+  deletion,
+  verification, // an astrologer was verified/approved
+  horoscope, // a horoscope / match-analysis report was completed
+}
 
 /// A single recent-activity entry for the admin Dashboard.
 class AdminActivity {

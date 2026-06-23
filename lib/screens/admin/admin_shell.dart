@@ -8,14 +8,14 @@ class AdminShell extends ConsumerWidget {
 
   const AdminShell({super.key, required this.child});
 
-  // Bottom-nav destinations. Revenue/analytics reports are reachable from the
-  // Dashboard's "View Reports" quick action; the bottom bar surfaces the five
-  // primary admin areas instead.
+  // Bottom-nav destinations. Notifications now live inside Settings; the bottom
+  // bar surfaces the five primary admin areas: Dashboard · Users · Astrologers
+  // (verification) · Horoscope Requests · Settings.
   static const _routes = [
     '/admin',
     '/admin/users',
     '/admin/astrologers',
-    '/admin/notifications',
+    '/admin/horoscope-requests',
     '/admin/settings',
   ];
 
@@ -73,8 +73,8 @@ class AdminShell extends ConsumerWidget {
           destinations: const [
             NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Dashboard'),
             NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Users'),
-            NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: 'Astrologers'),
-            NavigationDestination(icon: Icon(Icons.notifications_outlined), selectedIcon: Icon(Icons.notifications), label: 'Notifications'),
+            NavigationDestination(icon: Icon(Icons.verified_user_outlined), selectedIcon: Icon(Icons.verified_user), label: 'Astrologers'),
+            NavigationDestination(icon: Icon(Icons.auto_stories_outlined), selectedIcon: Icon(Icons.auto_stories), label: 'Horoscope'),
             NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
           ],
         ),

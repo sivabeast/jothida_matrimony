@@ -34,7 +34,9 @@ import '../screens/settings/language_screen.dart';
 import '../screens/subscription/subscription_screen.dart';
 import '../screens/admin/admin_shell.dart';
 import '../screens/admin/admin_dashboard.dart';
-import '../screens/admin/admin_management_screen.dart';
+import '../screens/admin/admin_users_page.dart';
+import '../screens/admin/admin_astrologer_verification.dart';
+import '../screens/admin/admin_horoscope_requests_screen.dart';
 import '../screens/admin/astrologer_verification_screen.dart';
 import '../screens/admin/admin_reports_screen.dart';
 import '../screens/admin/admin_management_screens.dart';
@@ -402,19 +404,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __, child) => AdminShell(child: child),
         routes: [
           GoRoute(path: '/admin', builder: (_, __) => const AdminDashboard()),
+          // Users page → 2 tabs (Users / Astrologers) with plan-wise counts.
           GoRoute(
               path: '/admin/users',
-              builder: (_, __) =>
-                  const AdminManagementScreen(initialTab: 'users')),
+              builder: (_, __) => const AdminUsersPage()),
           GoRoute(path: '/admin/reports', builder: (_, __) => const AdminReportsScreen()),
+          // Astrologers page → verification management ONLY.
           GoRoute(
               path: '/admin/astrologers',
-              builder: (_, __) =>
-                  const AdminManagementScreen(initialTab: 'astrologers')),
+              builder: (_, __) => const AdminAstrologerVerificationView()),
+          // Horoscope Requests → astrologer match-analysis request queue.
+          GoRoute(
+              path: '/admin/horoscope-requests',
+              builder: (_, __) => const AdminHoroscopeRequestsScreen()),
           GoRoute(path: '/admin/ratings', builder: (_, __) => const RatingManagementScreen()),
           GoRoute(path: '/admin/banners', builder: (_, __) => const BannerManagementScreen()),
           GoRoute(path: '/admin/notifications', builder: (_, __) => const AnnouncementManagementScreen()),
           GoRoute(path: '/admin/premium', builder: (_, __) => const PremiumManagementScreen()),
+          GoRoute(path: '/admin/revenue-settings', builder: (_, __) => const RevenueSettingsScreen()),
           GoRoute(path: '/admin/analytics', builder: (_, __) => const AdminReportsPage()),
           GoRoute(path: '/admin/settings', builder: (_, __) => const AdminSettingsScreen()),
           GoRoute(path: '/admin/married', builder: (_, __) => const MarriedUsersScreen()),

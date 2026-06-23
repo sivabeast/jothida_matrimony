@@ -75,6 +75,11 @@ class AstrologerRequestModel {
   final DateTime? respondedAt;
   final DateTime? completedAt;
 
+  // ── Admin reassignment ─────────────────────────────────────────────────────
+  // Set when an admin reassigns the request to a different astrologer.
+  final bool reassigned;
+  final DateTime? reassignedAt;
+
   const AstrologerRequestModel({
     required this.id,
     required this.astrologerId,
@@ -97,6 +102,8 @@ class AstrologerRequestModel {
     required this.createdAt,
     this.respondedAt,
     this.completedAt,
+    this.reassigned = false,
+    this.reassignedAt,
   });
 
   /// True for a "Book Match Analysis" booking (groom + bride porutham request).
@@ -157,6 +164,8 @@ class AstrologerRequestModel {
       createdAt: _toDate(d['createdAt']) ?? DateTime.now(),
       respondedAt: _toDate(d['respondedAt']),
       completedAt: _toDate(d['completedAt']),
+      reassigned: d['reassigned'] == true,
+      reassignedAt: _toDate(d['reassignedAt']),
     );
   }
 
@@ -189,20 +198,27 @@ class AstrologerRequestModel {
             respondedAt != null ? Timestamp.fromDate(respondedAt!) : null,
         'completedAt':
             completedAt != null ? Timestamp.fromDate(completedAt!) : null,
+        'reassigned': reassigned,
+        'reassignedAt':
+            reassignedAt != null ? Timestamp.fromDate(reassignedAt!) : null,
       };
 
   AstrologerRequestModel copyWith({
+    String? astrologerId,
+    String? astrologerName,
     AstrologerRequestStatus? status,
     String? analysisText,
     List<String>? analysisImages,
     List<String>? analysisPdfs,
     DateTime? respondedAt,
     DateTime? completedAt,
+    bool? reassigned,
+    DateTime? reassignedAt,
   }) =>
       AstrologerRequestModel(
         id: id,
-        astrologerId: astrologerId,
-        astrologerName: astrologerName,
+        astrologerId: astrologerId ?? this.astrologerId,
+        astrologerName: astrologerName ?? this.astrologerName,
         userId: userId,
         userName: userName,
         userPhotoUrl: userPhotoUrl,
@@ -227,5 +243,7 @@ class AstrologerRequestModel {
             (status == AstrologerRequestStatus.completed
                 ? DateTime.now()
                 : this.completedAt),
+        reassigned: reassigned ?? this.reassigned,
+        reassignedAt: reassignedAt ?? this.reassignedAt,
       );
 }

@@ -109,6 +109,8 @@ class AstrologerService {
     try {
       await updateAccount(uid, {
         'status': status.name,
+        if (status == VerificationStatus.approved)
+          'verifiedAt': FieldValue.serverTimestamp(),
         if (status == VerificationStatus.rejected && rejectionReason != null)
           'rejectionReason': rejectionReason,
       });
@@ -251,6 +253,48 @@ class AstrologerService {
         'status': status.name,
         'respondedAt': FieldValue.serverTimestamp(),
       });
+
+  // ── Admin: full request queue + reassign / reminder ────────────────────────
+  /// Realtime stream of EVERY astrologer request (admin Horoscope Requests
+  /// page). Single-collection read with no `orderBy` (avoids a composite
+  /// index); callers sort client-side.
+  Stream<List<AstrologerRequestModel>> watchAllRequests() => _db
+      .collection(AppConstants.astrologerRequestsCollection)
+      .snapshots()
+      .map((s) => s.docs.map(AstrologerRequestModel.fromFirestore).toList());
+
+  /// Admin reassigns a request to a different astrologer: re-points the request,
+  /// resets it to `pending` (the new astrologer must accept), flags it as
+  /// reassigned, and notifies the new astrologer.
+  Future<void> reassignRequest(
+    String requestId, {
+    required String astrologerId,
+    required String astrologerName,
+  }) async {
+    await _db
+        .collection(AppConstants.astrologerRequestsCollection)
+        .doc(requestId)
+        .update({
+      'astrologerId': astrologerId,
+      'astrologerName': astrologerName,
+      'status': AstrologerRequestStatus.pending.name,
+      'respondedAt': null,
+      'reassigned': true,
+      'reassignedAt': FieldValue.serverTimestamp(),
+    });
+    await _notify(astrologerId, 'New Request Assigned',
+        'A horoscope request has been assigned to you by the admin.',
+        'request_reassigned');
+  }
+
+  /// Admin nudge to an astrologer who hasn't acted on a pending request.
+  Future<void> sendRequestReminder(
+    String astrologerId, {
+    String message =
+        'You have a pending horoscope request. Please accept or decline.',
+  }) =>
+      _notify(astrologerId, 'Pending Request Reminder', message,
+          'request_reminder');
 
   /// Uploads an analysis result file (image or PDF) for a match-analysis
   /// request and returns its public URL. PDFs use Cloudinary's `raw` delivery

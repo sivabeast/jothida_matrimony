@@ -28,7 +28,7 @@ class AdminRepository {
 
   Future<void> deleteUser(String userId) => _firestore.deleteUser(userId);
 
-  Future<List<AdminActivity>> getRecentActivity({int limit = 5}) =>
+  Future<List<AdminActivity>> getRecentActivity({int limit = 10}) =>
       _firestore.getRecentActivity(limit: limit);
 
   Future<List<ReportModel>> getAllReports() => _firestore.getAllReports();
