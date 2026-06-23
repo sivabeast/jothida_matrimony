@@ -58,6 +58,12 @@ class _BookMatchAnalysisScreenState
 
   Future<void> _submit(Astrologer astrologer, List<ProfileModel> grooms,
       List<ProfileModel> brides) async {
+    // Booking protection — re-check at submit in case the astrologer flipped
+    // to Not Available while this screen was open.
+    if (!astrologer.isAvailable) {
+      _snack('${astrologer.name} is currently not accepting bookings.');
+      return;
+    }
     final groom = _findById(grooms, _groomId);
     final bride = _findById(brides, _brideId);
     if (groom == null || bride == null) {
@@ -105,7 +111,9 @@ class _BookMatchAnalysisScreenState
       ),
       body: astrologer == null
           ? const Center(child: Text('Astrologer not found'))
-          : candidatesAsync.when(
+          : !astrologer.isAvailable
+              ? _unavailable(astrologer)
+              : candidatesAsync.when(
               loading: () => const Center(
                   child: CircularProgressIndicator(color: AppColors.primary)),
               error: (e, _) => _error(),
@@ -328,6 +336,38 @@ class _BookMatchAnalysisScreenState
       onChanged: onChanged,
     );
   }
+
+  Widget _unavailable(Astrologer a) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.event_busy,
+                  size: 64, color: AppColors.primary.withOpacity(0.4)),
+              const SizedBox(height: 16),
+              const Text('Not accepting bookings',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(
+                '${a.name} is currently not available. Please check back later '
+                'or choose another astrologer.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
+                onPressed: () => context.pop(),
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Back'),
+                style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary)),
+              ),
+            ],
+          ),
+        ),
+      );
 
   Widget _noCandidates() => Center(
         child: Padding(

@@ -28,7 +28,9 @@ Astrologer astrologerFromAccount(AstrologerAccount a) {
     certifications: a.certName.isEmpty ? const [] : [a.certName],
     services: services,
     reviews: const [],
-    isAvailable: true,
+    // Availability = today is a working day AND the manual switch is on.
+    isAvailable: a.isAvailableNow,
+    workingDays: a.workingDays,
     isRecommended: false,
     lastActive: DateTime.now(),
     about: a.about,
@@ -41,6 +43,19 @@ Astrologer astrologerFromAccount(AstrologerAccount a) {
     // Subscription badge — only while the subscription is active.
     subscriptionPlan: a.subscriptionActive ? a.subscriptionPlan : '',
   );
+}
+
+/// Returns [list] reordered so available-today astrologers come first, keeping
+/// the incoming relative order within each group (stable). Used by the user
+/// directory/search so unavailable astrologers sink to the bottom but stay
+/// visible (with a "Not Available Today" badge).
+List<Astrologer> availableFirst(List<Astrologer> list) {
+  final available = <Astrologer>[];
+  final unavailable = <Astrologer>[];
+  for (final a in list) {
+    (a.isAvailable ? available : unavailable).add(a);
+  }
+  return [...available, ...unavailable];
 }
 
 /// Directory astrologers shown to USERS.

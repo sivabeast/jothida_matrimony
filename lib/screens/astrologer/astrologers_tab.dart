@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_model.dart';
 import '../../providers/astrologer_provider.dart';
+import '../../widgets/astrologer/availability_badge.dart';
 
 /// "Connect Astrologer" bottom-nav tab. Shows grouped astrologer sections:
 /// Top Rated, Recommended and Recently Active.
@@ -124,15 +125,7 @@ class _AstrologerCard extends StatelessWidget {
                 Positioned(
                   top: 8,
                   right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: a.isAvailable ? AppColors.success : Colors.grey,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(a.isAvailable ? 'Online' : 'Offline',
-                        style: const TextStyle(color: Colors.white, fontSize: 10)),
-                  ),
+                  child: AvailabilityBadge(available: a.isAvailable, compact: true),
                 ),
               ],
             ),

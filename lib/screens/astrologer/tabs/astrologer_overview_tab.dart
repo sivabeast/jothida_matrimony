@@ -34,6 +34,9 @@ class AstrologerOverviewTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
+        // ── Availability (working days + manual on/off) ─────────────────
+        _availabilityCard(context, ref, account),
+        const SizedBox(height: 18),
         if (!account.isApproved) _verificationBanner(account),
         // ── Revenue ─────────────────────────────────────────────────────
         const AstrologerSectionTitle('Revenue'),
@@ -728,6 +731,97 @@ class AstrologerOverviewTab extends ConsumerWidget {
             ),
           ),
       ],
+    );
+  }
+
+  // ── Availability card (dashboard header status + toggle) ────────────────
+  Widget _availabilityCard(
+      BuildContext context, WidgetRef ref, AstrologerAccount a) {
+    final availableNow = a.isAvailableNow;
+    final statusColor = availableNow ? AppColors.success : AppColors.error;
+
+    Future<void> toggle(bool value) async {
+      try {
+        await ref
+            .read(myAstrologerAccountProvider.notifier)
+            .setManualAvailability(value);
+      } catch (_) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Could not update availability — please try again.'),
+              backgroundColor: AppColors.error));
+        }
+      }
+    }
+
+    return AstrologerCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(availableNow ? Icons.circle : Icons.circle_outlined,
+                  size: 14, color: statusColor),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  availableNow ? '🟢 Available' : '🔴 Not Available',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: statusColor),
+                ),
+              ),
+              // Manual on/off — reflects immediately across the platform.
+              Switch(
+                value: a.manuallyAvailable,
+                activeColor: AppColors.success,
+                onChanged: toggle,
+              ),
+            ],
+          ),
+          // When the switch is ON but today is a day off, explain why users
+          // still see the astrologer as unavailable.
+          if (a.manuallyAvailable && !a.isWorkingToday) ...[
+            const SizedBox(height: 4),
+            Text('Today (${weekdayName()}) is not one of your working days.',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+          ],
+          const Divider(height: 20),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.event_available_outlined,
+                  size: 18, color: Colors.grey[600]),
+              const SizedBox(width: 8),
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    style: TextStyle(fontSize: 13, color: Colors.grey[800]),
+                    children: [
+                      const TextSpan(
+                          text: 'Working Days: ',
+                          style: TextStyle(fontWeight: FontWeight.w600)),
+                      TextSpan(text: a.workingDaysLabel),
+                    ],
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const AstrologerWorkingDaysScreen())),
+                style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    minimumSize: const Size(0, 0),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                child: const Text('Edit'),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

@@ -2,6 +2,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'astrologer_certificate.dart';
 import 'astrologer_model.dart';
 
+/// Canonical Monday→Sunday weekday names, ordered so that
+/// `kWeekdays[DateTime.weekday - 1]` (Dart's weekday is Mon=1…Sun=7) yields
+/// today's name. Single source of truth for the availability / working-days
+/// feature — the model, the selector widget and the badges all read this.
+const List<String> kWeekdays = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+
+/// The weekday name for [date] (defaults to now), e.g. "Wednesday".
+String weekdayName([DateTime? date]) =>
+    kWeekdays[(date ?? DateTime.now()).weekday - 1];
+
 /// Certificate verification status set by the admin.
 enum VerificationStatus { pending, approved, rejected }
 
@@ -54,9 +72,15 @@ class AstrologerAccount {
   final List<AstrologerCertificate> certificates;
   // Consultation
   final double consultationFee; // per session, in INR
-  final String availability; // e.g. "Monday – Saturday"
+  final String availability; // e.g. "Monday – Saturday" (legacy free-text)
   final String workingHours; // e.g. "10:00 AM – 6:00 PM"
   final String consultationMode; // Online | Offline | Both
+  // Days the astrologer accepts consultations on (subset of [kWeekdays]).
+  // Empty means "no working days"; legacy docs without the field default to all.
+  final List<String> workingDays;
+  // Astrologer-controlled on/off switch. When false the astrologer is shown as
+  // unavailable even on a working day, and new bookings are blocked.
+  final bool manuallyAvailable;
   // Set once the astrologer has completed the post-Google profile setup.
   final bool profileCompleted;
   // Status & services
@@ -107,6 +131,8 @@ class AstrologerAccount {
     this.availability = '',
     this.workingHours = '',
     this.consultationMode = 'Online',
+    this.workingDays = kWeekdays,
+    this.manuallyAvailable = true,
     this.profileCompleted = false,
     this.status = VerificationStatus.pending,
     this.rejectionReason = '',
@@ -122,6 +148,23 @@ class AstrologerAccount {
   });
 
   bool get isApproved => status == VerificationStatus.approved;
+
+  /// True when today's weekday is one of the astrologer's [workingDays].
+  bool get isWorkingToday => workingDays.contains(weekdayName());
+
+  /// Whether the astrologer is open for new bookings right now: today must be a
+  /// working day AND the manual switch must be on. Drives the user-facing
+  /// "Available Today" badge and the booking guard.
+  bool get isAvailableNow => manuallyAvailable && isWorkingToday;
+
+  /// Human-readable working-days summary, e.g. "All Days",
+  /// "Monday, Tuesday, …" or "Not set".
+  String get workingDaysLabel {
+    if (workingDays.isEmpty) return 'Not set';
+    if (kWeekdays.every(workingDays.contains)) return 'All Days';
+    // Preserve Monday→Sunday order regardless of stored order.
+    return kWeekdays.where(workingDays.contains).join(', ');
+  }
 
   /// True while the subscription has not expired.
   bool get subscriptionActive =>
@@ -165,6 +208,8 @@ class AstrologerAccount {
     String? availability,
     String? workingHours,
     String? consultationMode,
+    List<String>? workingDays,
+    bool? manuallyAvailable,
     bool? profileCompleted,
     VerificationStatus? status,
     List<AstrologerService>? services,
@@ -203,6 +248,8 @@ class AstrologerAccount {
         availability: availability ?? this.availability,
         workingHours: workingHours ?? this.workingHours,
         consultationMode: consultationMode ?? this.consultationMode,
+        workingDays: workingDays ?? this.workingDays,
+        manuallyAvailable: manuallyAvailable ?? this.manuallyAvailable,
         profileCompleted: profileCompleted ?? this.profileCompleted,
         status: status ?? this.status,
         rejectionReason: rejectionReason,
@@ -255,6 +302,12 @@ class AstrologerAccount {
       availability: d['availability'] ?? '',
       workingHours: d['workingHours'] ?? '',
       consultationMode: d['consultationMode'] ?? 'Online',
+      // Legacy docs (field absent) default to all days so they stay available;
+      // an explicit empty list is respected (astrologer unchecked every day).
+      workingDays: d['workingDays'] is List
+          ? List<String>.from(d['workingDays'])
+          : List<String>.from(kWeekdays),
+      manuallyAvailable: d['manuallyAvailable'] ?? true,
       profileCompleted: d['profileCompleted'] ?? false,
       status: VerificationStatus.values.firstWhere(
         (s) => s.name == (d['status'] ?? 'pending'),
@@ -320,6 +373,8 @@ class AstrologerAccount {
         'availability': availability,
         'workingHours': workingHours,
         'consultationMode': consultationMode,
+        'workingDays': workingDays,
+        'manuallyAvailable': manuallyAvailable,
         'profileCompleted': profileCompleted,
         'status': status.name,
         'services': services.map((s) => s.toMap()).toList(),

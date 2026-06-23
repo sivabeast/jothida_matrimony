@@ -90,8 +90,8 @@
     "semantic_hash": ""
   },
   "lib/models/astrologer_account_model.dart": {
-    "mtime": 1782111521.4841845,
-    "ast_hash": "e89c95a33b9a678a12a3399a95427816",
+    "mtime": 1782220815.2000196,
+    "ast_hash": "6c1982608aca99abd91685e48200ee1f",
     "semantic_hash": ""
   },
   "lib/models/astrologer_booking_model.dart": {
@@ -100,8 +100,8 @@
     "semantic_hash": ""
   },
   "lib/models/astrologer_model.dart": {
-    "mtime": 1782129602.6188066,
-    "ast_hash": "fd36ae292438c8fd847033f28ea475b1",
+    "mtime": 1782220846.1647408,
+    "ast_hash": "859c6c54c65a914f9962bb8d28f5200f",
     "semantic_hash": ""
   },
   "lib/models/astrologer_request_model.dart": {
@@ -155,13 +155,13 @@
     "semantic_hash": ""
   },
   "lib/providers/astrologer_provider.dart": {
-    "mtime": 1782129610.1131895,
-    "ast_hash": "2442c6b3dc5ab14fc0e3b994416ed5b5",
+    "mtime": 1782220862.9578133,
+    "ast_hash": "acbe14c2e9d79d7751e83babbf4f2615",
     "semantic_hash": ""
   },
   "lib/providers/astrologer_session_provider.dart": {
-    "mtime": 1782129468.4892886,
-    "ast_hash": "da1ec6850a3ef0a484c8e44d842d27b0",
+    "mtime": 1782220873.3876472,
+    "ast_hash": "ae943af44de0edf7deb3db14a97cac72",
     "semantic_hash": ""
   },
   "lib/providers/auth_provider.dart": {
@@ -270,8 +270,8 @@
     "semantic_hash": ""
   },
   "lib/screens/astrologer/astrologer_dashboard_screen.dart": {
-    "mtime": 1781694061.442562,
-    "ast_hash": "466a3369c1ef164447392d34476a4b8e",
+    "mtime": 1782221089.0847538,
+    "ast_hash": "61948023baaccd9aa388efd41bc58987",
     "semantic_hash": ""
   },
   "lib/screens/astrologer/astrologer_login_screen.dart": {
@@ -285,23 +285,23 @@
     "semantic_hash": ""
   },
   "lib/screens/astrologer/astrologer_profile_screen.dart": {
-    "mtime": 1782192010.6107268,
-    "ast_hash": "31a162e9d27fc420a9c191eb5f17da23",
+    "mtime": 1782221122.618711,
+    "ast_hash": "ad1e09d525a543db99cc29414c3a3389",
     "semantic_hash": ""
   },
   "lib/screens/astrologer/astrologer_register_screen.dart": {
-    "mtime": 1781451337.929215,
-    "ast_hash": "7a7dfcb52acbce49afdc5ba22c5e3198",
+    "mtime": 1782220944.5106404,
+    "ast_hash": "ee02ab9f17006358dcaeebede243c967",
     "semantic_hash": ""
   },
   "lib/screens/astrologer/astrologers_tab.dart": {
-    "mtime": 1781079926.7988448,
-    "ast_hash": "3771a06f876c157d4f69d5b523f2ce5a",
+    "mtime": 1782221298.6565628,
+    "ast_hash": "21c612610fb139f02b3edd47d36fc9ce",
     "semantic_hash": ""
   },
   "lib/screens/astrologer/connect_astrologer_sheet.dart": {
-    "mtime": 1781715932.7755928,
-    "ast_hash": "a3551885208e4bee95e07106c252ae1f",
+    "mtime": 1782221306.6468594,
+    "ast_hash": "a0823956bfe48764faad0925b6e5bdc7",
     "semantic_hash": ""
   },
   "lib/screens/auth/account_type_screen.dart": {
@@ -520,7 +520,7 @@
     "semantic_hash": ""
   },
   "android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java": {
-    "mtime": 1782210537.0804453,
+    "mtime": 1782221400.1731527,
     "ast_hash": "957f3f4fa91953a90f2d9690762329f7",
     "semantic_hash": ""
   },
@@ -560,8 +560,8 @@
     "semantic_hash": ""
   },
   "lib/screens/home/tabs/astrology_services_tab.dart": {
-    "mtime": 1782191120.4217272,
-    "ast_hash": "a4d96a761a9f7132b50fb4bb98aa035d",
+    "mtime": 1782221278.113346,
+    "ast_hash": "c6235a69c5a8ecf293fb07f5ee37356d",
     "semantic_hash": ""
   },
   "lib/screens/home/tabs/home_dashboard_tab.dart": {
@@ -800,8 +800,8 @@
     "semantic_hash": ""
   },
   "lib/screens/astrologer/profile/astrologer_profile_sections.dart": {
-    "mtime": 1781669599.06058,
-    "ast_hash": "6980f30ad4eac09c23fb625c3ad85439",
+    "mtime": 1782220988.064256,
+    "ast_hash": "d1b3b7c22866347a45b8d1f39cc40409",
     "semantic_hash": ""
   },
   "lib/screens/astrologer/profile/astrologer_services_screen.dart": {
@@ -830,13 +830,13 @@
     "semantic_hash": ""
   },
   "lib/screens/astrologer/tabs/astrologer_overview_tab.dart": {
-    "mtime": 1782133881.9036252,
-    "ast_hash": "383369ea0cbd51a32c1ccb9ae2795286",
+    "mtime": 1782221046.7435231,
+    "ast_hash": "635808b878ebee5b9b06c13821890695",
     "semantic_hash": ""
   },
   "lib/screens/astrologer/tabs/astrologer_profile_tab.dart": {
-    "mtime": 1781375559.6739316,
-    "ast_hash": "423c89e0ef58c1bebb569fec3464af3a",
+    "mtime": 1782221009.758782,
+    "ast_hash": "bd6196c88070525e6dd78a8c462e4b60",
     "semantic_hash": ""
   },
   "lib/screens/astrologer/tabs/astrologer_requests_tab.dart": {
@@ -1225,8 +1225,8 @@
     "semantic_hash": ""
   },
   "lib/screens/astrologer/book_match_analysis_screen.dart": {
-    "mtime": 1782129776.8141842,
-    "ast_hash": "50d3e339bc384d4fb6bd45f3360631ff",
+    "mtime": 1782221160.6475365,
+    "ast_hash": "b567a548eb342e4a465dc63c928d5046",
     "semantic_hash": ""
   },
   "lib/screens/astrologer/match_workspace_screen.dart": {
@@ -1357,6 +1357,16 @@
   "lib/screens/admin/admin_users_page.dart": {
     "mtime": 1782210479.8088207,
     "ast_hash": "fec2468bf0ef23d71f0fb18ad760b37d",
+    "semantic_hash": ""
+  },
+  "lib/widgets/astrologer/availability_badge.dart": {
+    "mtime": 1782220912.429922,
+    "ast_hash": "27d986162dbe2f9547cb236d96881f03",
+    "semantic_hash": ""
+  },
+  "lib/widgets/astrologer/working_days_selector.dart": {
+    "mtime": 1782220900.922786,
+    "ast_hash": "911f726fbe8ebdc204425365237227f6",
     "semantic_hash": ""
   }
 }

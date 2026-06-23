@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../models/astrologer_account_model.dart';
 import '../../providers/announcement_provider.dart';
 import '../../providers/astrologer_session_provider.dart';
 import '../../providers/notification_provider.dart';
@@ -66,20 +67,24 @@ class _AstrologerDashboardScreenState
             children: [
               const AppLogo(size: 36),
               const SizedBox(width: 10),
-              const Text(
-                'Jothida Matrimony',
-                style: TextStyle(
-                  color: AppColors.gold,
-                  fontSize: 17,
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.3,
+              const Flexible(
+                child: Text(
+                  'Jothida Matrimony',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.gold,
+                    fontSize: 17,
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.3,
+                  ),
                 ),
               ),
             ],
           ),
-          // RIGHT: notification icon only → opens the Notifications tab.
+          // RIGHT: quick availability toggle + notification icon.
           actions: [
+            _availabilityToggle(account),
             IconButton(
               tooltip: 'Notifications',
               onPressed: () => setState(() => _index = 2),
@@ -132,6 +137,60 @@ class _AstrologerDashboardScreenState
         ),
       ),
     );
+  }
+
+  /// Compact AppBar pill that mirrors and flips the manual availability switch.
+  /// Colour = the *effective* status (green only when also a working day); the
+  /// tap flips the manual switch and saves instantly.
+  Widget _availabilityToggle(AstrologerAccount account) {
+    final availableNow = account.isAvailableNow;
+    final color = availableNow ? AppColors.success : AppColors.error;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Material(
+        color: Colors.white.withOpacity(0.16),
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => _toggleAvailability(account),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 9,
+                  height: 9,
+                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  account.manuallyAvailable ? 'Available' : 'Unavailable',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _toggleAvailability(AstrologerAccount account) async {
+    try {
+      await ref
+          .read(myAstrologerAccountProvider.notifier)
+          .setManualAvailability(!account.manuallyAvailable);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Could not update availability — please try again.'),
+            backgroundColor: AppColors.error));
+      }
+    }
   }
 
   DateTime? _lastBackPress;

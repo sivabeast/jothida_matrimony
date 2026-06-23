@@ -209,7 +209,7 @@ class AstrologerSheetCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 4),
-          Text(available ? 'Online' : 'Offline',
+          Text(available ? 'Available' : 'Unavailable',
               style: TextStyle(
                   fontSize: 11,
                   color: available ? AppColors.success : Colors.grey)),

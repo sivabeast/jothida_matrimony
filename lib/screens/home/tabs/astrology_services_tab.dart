@@ -6,6 +6,7 @@ import '../../../models/astrologer_model.dart';
 import '../../../providers/astrologer_provider.dart';
 import '../../../providers/navigation_provider.dart';
 import '../../../providers/profile_provider.dart';
+import '../../../widgets/astrologer/availability_badge.dart';
 
 /// Astrologer Directory — the "Astrologer" tab.
 ///
@@ -89,7 +90,10 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
                 final matched = all
                     .where((a) => _matchesSearch(a) && _filters.matches(a))
                     .toList();
-                return searching ? _resultsList(matched) : _sections(all, myCity);
+                // Listing & search default: available astrologers first.
+                return searching
+                    ? _resultsList(availableFirst(matched))
+                    : _sections(all, myCity);
               },
             ),
           ),
@@ -236,8 +240,8 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
   // ── Horizontal sections (default view) ──────────────────────────────────────
 
   Widget _sections(List<Astrologer> all, String myCity) {
-    // ── Section 1: Nearby — user's city + adjacent cities ──
-    final nearby = _nearbyAstrologers(all, myCity);
+    // ── Section 1: Nearby — user's city + adjacent cities (available first) ──
+    final nearby = availableFirst(_nearbyAstrologers(all, myCity));
     // ── Section 2: Top Rated — rating DESC, then review count DESC ──
     final topRated = [...all]
       ..sort((a, b) {
@@ -261,9 +265,9 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
         // ── Section 2: Top Rated ───────────────────────────────────────────
         _sectionHeader('⭐ Top Rated Astrologers'),
         _horizontalRow(topRated),
-        // ── Section 3: All Astrologers (grid) ──────────────────────────────
+        // ── Section 3: All Astrologers (grid, available first) ─────────────
         _sectionHeader('🔮 All Astrologers'),
-        _allGrid(all),
+        _allGrid(availableFirst(all)),
       ],
     );
   }
@@ -768,6 +772,12 @@ class _AstrologerCard extends StatelessWidget {
                   left: 8,
                   child: _StatusBadge(verified: a.verified, compact: true),
                 ),
+                // Availability badge (always shown — green or grey).
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: AvailabilityBadge(available: a.isAvailable, compact: true),
+                ),
               ],
             ),
             Expanded(
@@ -880,6 +890,12 @@ class _AstrologerGridCard extends StatelessWidget {
                   top: 8,
                   left: 8,
                   child: _StatusBadge(verified: a.verified, compact: true),
+                ),
+                // Availability badge (always shown — green or grey).
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: AvailabilityBadge(available: a.isAvailable, compact: true),
                 ),
               ],
             ),
@@ -1041,6 +1057,8 @@ class _AstrologerRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                  const SizedBox(height: 6),
+                  AvailabilityBadge(available: a.isAvailable, compact: true),
                   const SizedBox(height: 4),
                   Text(
                     a.specializations.isEmpty

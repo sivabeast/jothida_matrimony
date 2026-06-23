@@ -83,7 +83,12 @@ class Astrologer {
   final List<String> certifications;
   final List<AstrologerService> services;
   final List<AstrologerReview> reviews;
+  /// Whether the astrologer is accepting bookings right now (today is a working
+  /// day AND their manual switch is on). Drives the "Available Today" badge and
+  /// the booking guard on the directory/profile.
   final bool isAvailable;
+  /// Days the astrologer accepts consultations (subset of [kWeekdays]).
+  final List<String> workingDays;
   final bool isRecommended;
   final DateTime lastActive;
   final String about;
@@ -115,6 +120,15 @@ class Astrologer {
     required this.services,
     required this.reviews,
     required this.isAvailable,
+    this.workingDays = const [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ],
     required this.isRecommended,
     required this.lastActive,
     required this.about,
@@ -158,6 +172,17 @@ class Astrologer {
             .toList(),
         reviews: const [],
         isAvailable: m['isAvailable'] ?? false,
+        workingDays: m['workingDays'] is List
+            ? List<String>.from(m['workingDays'])
+            : const [
+                'Monday',
+                'Tuesday',
+                'Wednesday',
+                'Thursday',
+                'Friday',
+                'Saturday',
+                'Sunday',
+              ],
         isRecommended: m['isRecommended'] ?? false,
         lastActive: DateTime.now(),
         about: m['about'] ?? '',
@@ -177,6 +202,7 @@ class Astrologer {
         'certifications': certifications,
         'services': services.map((s) => s.toMap()).toList(),
         'isAvailable': isAvailable,
+        'workingDays': workingDays,
         'isRecommended': isRecommended,
         'about': about,
         'verified': verified,

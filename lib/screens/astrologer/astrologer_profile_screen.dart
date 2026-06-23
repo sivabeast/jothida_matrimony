@@ -13,6 +13,7 @@ import '../../models/astrologer_review_model.dart';
 import '../../providers/astrologer_provider.dart';
 import '../../providers/astrologer_review_provider.dart';
 import '../../providers/subscription_provider.dart';
+import '../../widgets/astrologer/availability_badge.dart';
 import '../../widgets/common/premium_gate.dart';
 
 /// Full astrologer profile (read-only, contact-only).
@@ -292,6 +293,8 @@ class AstrologerProfileScreen extends ConsumerWidget {
                           color: Colors.white70, fontSize: 13)),
                 ],
               ),
+              const SizedBox(height: 8),
+              AvailabilityBadge(available: a.isAvailable),
               const SizedBox(height: 6),
               if (a.verified)
                 Container(
@@ -353,40 +356,76 @@ class AstrologerProfileScreen extends ConsumerWidget {
 
   // ── Book Match Analysis (porutham booking entry point) ─────────────────────
   Widget _bookAnalysisButton(
-          BuildContext context, WidgetRef ref, Astrologer a) =>
-      Padding(
+      BuildContext context, WidgetRef ref, Astrologer a) {
+    // Booking protection: an unavailable astrologer takes no new bookings.
+    if (!a.isAvailable) {
+      return Padding(
         padding: const EdgeInsets.only(top: 16),
-        child: SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              // Astrologer booking is a paid feature (Basic / Premium).
-              final features = ref.read(planFeaturesProvider);
-              if (!features.canBookAstrologer) {
-                showUpgradeDialog(
-                  context,
-                  title: 'Astrologer booking locked',
-                  message:
-                      'Booking an astrologer consultation is available on the '
-                      'Basic and Premium plans. Upgrade to book a detailed '
-                      'horoscope match analysis.',
-                );
-                return;
-              }
-              context.push('/book-analysis/${a.id}');
-            },
-            icon: const Icon(Icons.auto_awesome),
-            label: const Text('Book Match Analysis'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              minimumSize: const Size.fromHeight(50),
-              shape:
-                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          children: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: null,
+                icon: const Icon(Icons.event_busy),
+                label: const Text('Not Available for Booking'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  disabledBackgroundColor: Colors.grey.shade300,
+                  disabledForegroundColor: Colors.grey.shade600,
+                ),
+              ),
             ),
-          ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.info_outline, size: 15, color: Colors.grey[600]),
+                const SizedBox(width: 6),
+                Text('Currently not accepting bookings',
+                    style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
+              ],
+            ),
+          ],
         ),
       );
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: () {
+            // Astrologer booking is a paid feature (Basic / Premium).
+            final features = ref.read(planFeaturesProvider);
+            if (!features.canBookAstrologer) {
+              showUpgradeDialog(
+                context,
+                title: 'Astrologer booking locked',
+                message:
+                    'Booking an astrologer consultation is available on the '
+                    'Basic and Premium plans. Upgrade to book a detailed '
+                    'horoscope match analysis.',
+              );
+              return;
+            }
+            context.push('/book-analysis/${a.id}');
+          },
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('Book Match Analysis'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(50),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      ),
+    );
+  }
 
   // ── Rating · Experience stats ──────────────────────────────────────────────
   Widget _statsRow(BuildContext context, Astrologer a) {

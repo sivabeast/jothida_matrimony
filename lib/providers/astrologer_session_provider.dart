@@ -76,6 +76,40 @@ class MyAstrologerAccountNotifier extends Notifier<AstrologerAccount?> {
     state = updated;
   }
 
+  /// Flips the manual Available / Not Available switch and persists just that
+  /// field, updating the local session immediately so the dashboard, directory
+  /// and profile reflect the change instantly.
+  Future<void> setManualAvailability(bool available) async {
+    final current = state;
+    if (current == null) return;
+    // Optimistic local update first so the toggle feels instant.
+    state = current.copyWith(manuallyAvailable: available);
+    if (!kBypassAuth) {
+      try {
+        await ref
+            .read(astrologerServiceProvider)
+            .updateAccount(current.id, {'manuallyAvailable': available});
+      } catch (e) {
+        // Roll back on failure so the UI never lies about the saved state.
+        state = current;
+        rethrow;
+      }
+    }
+  }
+
+  /// Persists the astrologer's working days (subset of [kWeekdays]) and updates
+  /// the local session immediately.
+  Future<void> saveWorkingDays(List<String> days) async {
+    final current = state;
+    if (current == null) return;
+    if (!kBypassAuth) {
+      await ref
+          .read(astrologerServiceProvider)
+          .updateAccount(current.id, {'workingDays': days});
+    }
+    state = current.copyWith(workingDays: days);
+  }
+
   /// Uploads a certificate file (PDF/JPG/PNG) to storage, appends it to the
   /// account's certificate list (with verified=false for admin review) and
   /// persists. In demo mode the file is recorded without a remote upload.

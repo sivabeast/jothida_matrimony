@@ -9,6 +9,7 @@ import '../../../providers/account_provider.dart';
 import '../../../providers/astrologer_session_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/service_providers.dart';
+import '../../../widgets/astrologer/working_days_selector.dart';
 import '../../../widgets/common/use_my_location_button.dart';
 import 'astrologer_profile_common.dart';
 
@@ -492,6 +493,127 @@ class _AboutState extends ConsumerState<AstrologerAboutScreen> {
                 style: TextStyle(fontSize: 12, color: Colors.grey[600])),
           ],
           const SizedBox(height: 16),
+          ProfileSaveButton(saving: _saving, onPressed: _save),
+        ],
+      ),
+    );
+  }
+}
+
+// ════════════════════════ Working Days & Availability ══════════════════════
+class AstrologerWorkingDaysScreen extends ConsumerStatefulWidget {
+  const AstrologerWorkingDaysScreen({super.key});
+  @override
+  ConsumerState<AstrologerWorkingDaysScreen> createState() =>
+      _WorkingDaysState();
+}
+
+class _WorkingDaysState extends ConsumerState<AstrologerWorkingDaysScreen> {
+  late Set<String> _days;
+  late bool _available;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final a = ref.read(myAstrologerAccountProvider);
+    _days = {...?a?.workingDays};
+    _available = a?.manuallyAvailable ?? true;
+  }
+
+  Future<void> _save() async {
+    final a = ref.read(myAstrologerAccountProvider);
+    if (a == null) return;
+    setState(() => _saving = true);
+    final ok = await _persist(
+      context,
+      ref,
+      a.copyWith(
+        workingDays: _days.toList(),
+        manuallyAvailable: _available,
+      ),
+    );
+    if (!mounted) return;
+    if (ok) {
+      Navigator.pop(context);
+    } else {
+      setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Preview of the resulting status using the same rule as the rest of the
+    // app: available only when today is a working day AND the switch is on.
+    final worksToday = _days.contains(weekdayName());
+    final availableNow = _available && worksToday;
+
+    return Scaffold(
+      backgroundColor: AppColors.scaffoldBg,
+      appBar: astrologerSectionAppBar('Working Days'),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // ── Manual availability switch ──────────────────────────────────
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.withOpacity(0.25)),
+            ),
+            child: SwitchListTile(
+              value: _available,
+              activeColor: AppColors.success,
+              contentPadding: EdgeInsets.zero,
+              onChanged: (v) => setState(() => _available = v),
+              title: const Text('Accepting bookings',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
+              subtitle: Text(
+                _available
+                    ? 'You are marked Available'
+                    : 'You are marked Not Available',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: _available ? AppColors.success : AppColors.error),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // ── Live status preview ─────────────────────────────────────────
+          Row(
+            children: [
+              Icon(availableNow ? Icons.circle : Icons.circle_outlined,
+                  size: 12,
+                  color: availableNow ? AppColors.success : AppColors.error),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  availableNow
+                      ? 'Status today: Available'
+                      : _available
+                          ? 'Status today: Not Available (today is a day off)'
+                          : 'Status today: Not Available',
+                  style: TextStyle(fontSize: 12.5, color: Colors.grey[700]),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          const Text('Working Days',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          const SizedBox(height: 4),
+          Text(
+            'Users can only book you on your working days. Unchecking a day '
+            'shows you as "Not Available Today" to users on that day.',
+            style: TextStyle(fontSize: 12.5, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 10),
+          WorkingDaysSelector(
+            selected: _days,
+            onChanged: (days) => setState(() => _days = days),
+          ),
+          const SizedBox(height: 20),
           ProfileSaveButton(saving: _saving, onPressed: _save),
         ],
       ),

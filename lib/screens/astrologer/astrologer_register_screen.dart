@@ -17,6 +17,7 @@ import '../../models/astrologer_account_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/astrologer_session_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/astrologer/working_days_selector.dart';
 import '../../widgets/common/gradient_button.dart';
 import '../../widgets/common/app_text_field.dart';
 import '../../widgets/common/location_picker_section.dart';
@@ -65,6 +66,9 @@ class _AstrologerRegisterScreenState
 
   final Set<String> _specializations = {};
   final Set<String> _languages = {};
+  // Working days default to all 7 — astrologers can narrow this here or later
+  // from Settings → Working Days.
+  final Set<String> _workingDays = {...kWeekdays};
 
   File? _pickedPhoto;
   File? _pickedDocument;
@@ -154,6 +158,7 @@ class _AstrologerRegisterScreenState
         certFileName: verificationDocUrl,
         consultationFee:
             double.tryParse(_feeController.text.trim()) ?? 0,
+        workingDays: _workingDays.toList(),
         profileCompleted: true,
         status: VerificationStatus.pending,
         services: defaultAstrologerServices(),
@@ -388,6 +393,25 @@ class _AstrologerRegisterScreenState
                   AppConstants.astrologerSpecializations, _specializations),
               const SizedBox(height: 20),
               _chipGroup('Languages Known', _languageOptions, _languages),
+              const SizedBox(height: 20),
+              Text('Working Days',
+                  style: AppTextStyles.bodyMedium
+                      .copyWith(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
+              Text(
+                'Select the days you accept consultations. You can change this '
+                'anytime from your dashboard.',
+                style: AppTextStyles.bodySmall.copyWith(color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 8),
+              WorkingDaysSelector(
+                selected: _workingDays,
+                onChanged: (days) => setState(() {
+                  _workingDays
+                    ..clear()
+                    ..addAll(days);
+                }),
+              ),
               const SizedBox(height: 16),
               AppTextField(
                 controller: _feeController,
