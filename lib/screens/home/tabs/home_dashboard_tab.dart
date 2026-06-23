@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/services/match_score_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/account_provider.dart';
@@ -11,6 +12,7 @@ import '../../../providers/navigation_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/horoscope_match_badge.dart';
+import '../../../widgets/common/match_score_badge.dart';
 import 'notifications_tab.dart';
 // ProfileCompletionCard available for future use:
 // import '../../../widgets/home/profile_completion_card.dart';
@@ -485,23 +487,34 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             child: _buildEmptyMatches(),
           );
         }
+
+        // Derive the three spec sections from the same preference-aware pool:
+        //  • Recommended For You — preference-ranked order (as provided).
+        //  • New Profiles        — most recently joined first.
+        //  • Best Matches        — highest compatibility % first.
+        final me = ref.read(myProfileProvider).valueOrNull;
+        final recommended = m.all;
+        final newest = List<ProfileModel>.of(m.all)
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        final scores = <String, int>{
+          for (final p in m.all)
+            p.id: me == null
+                ? 0
+                : MatchScoreService.compute(viewer: me, candidate: p).percent,
+        };
+        final best = List<ProfileModel>.of(m.all)
+          ..sort((a, b) => (scores[b.id] ?? 0).compareTo(scores[a.id] ?? 0));
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (m.veryGood.isNotEmpty) ...[
-              _horizontalMatchSection(
-                  context, '💚', 'Very Good Match', m.veryGood),
-              const SizedBox(height: 22),
-            ],
-            if (m.good.isNotEmpty) ...[
-              _horizontalMatchSection(context, '🟢', 'Good Match', m.good),
-              const SizedBox(height: 22),
-            ],
-            if (m.average.isNotEmpty) ...[
-              _horizontalMatchSection(
-                  context, '🟡', 'Average Match', m.average),
-              const SizedBox(height: 22),
-            ],
+            _horizontalMatchSection(
+                context, '✨', 'Recommended For You', recommended),
+            const SizedBox(height: 22),
+            _horizontalMatchSection(context, '🆕', 'New Profiles', newest),
+            const SizedBox(height: 22),
+            _horizontalMatchSection(context, '🏆', 'Best Matches', best),
+            const SizedBox(height: 22),
             _allMatchesSection(context, '❤️', 'All Matches', m.all),
           ],
         );
@@ -866,12 +879,13 @@ class _QuickAction extends StatelessWidget {
 
 // ── Recommended Match Card ────────────────────────────────────────────────────
 
-class _MatchCard extends StatelessWidget {
+class _MatchCard extends ConsumerWidget {
   final ProfileModel profile;
   const _MatchCard({required this.profile});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final MatchScore? score = ref.watch(matchScorerProvider)?.call(profile);
     return GestureDetector(
       onTap: () => context.push('/profile/${profile.id}'),
       child: Container(
@@ -886,9 +900,8 @@ class _MatchCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Photo expands to fill the remaining height. The match badge shows
-            // the per-profile porutham CATEGORY (never a percentage) and never
-            // hides the card.
+            // Photo expands to fill the remaining height. Top-left shows the
+            // porutham CATEGORY badge; top-right shows the compatibility "%".
             Expanded(
               child: Stack(
                 fit: StackFit.expand,
@@ -905,6 +918,12 @@ class _MatchCard extends StatelessWidget {
                     left: 6,
                     child: HoroscopeMatchBadge(target: profile, compact: true),
                   ),
+                  if (score != null)
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: MatchScoreBadge(score: score, compact: true),
+                    ),
                 ],
               ),
             ),

@@ -6,10 +6,13 @@ import '../../core/theme/app_text_styles.dart';
 import '../../models/profile_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/interest_provider.dart';
+import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../providers/subscription_provider.dart';
 import '../../widgets/common/contact_reveal_card.dart';
 import '../../widgets/common/gradient_button.dart';
+import '../../widgets/common/premium_gate.dart';
 
 class ProfileViewScreen extends ConsumerStatefulWidget {
   /// Open by profile-document id — used from Discover / Matches, where the id
@@ -63,6 +66,21 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       }
       return;
     }
+    // Free-plan daily interest limit (2/day). Paid plans are unlimited.
+    final features = ref.read(planFeaturesProvider);
+    if (!features.hasUnlimitedInterests &&
+        ref.read(interestsSentTodayProvider) >= features.interestsPerDay) {
+      if (mounted) {
+        await showUpgradeDialog(
+          context,
+          title: 'Daily interest limit reached',
+          message:
+              'Free members can send ${features.interestsPerDay} interests per day. '
+              'Upgrade to Basic or Premium for unlimited interests.',
+        );
+      }
+      return;
+    }
     await ref.read(interestNotifierProvider.notifier).sendInterest(
           senderId: userId,
           receiverId: profile.userId,
@@ -80,6 +98,18 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
   }
 
   void _showContact(ProfileModel profile) {
+    // Contact & WhatsApp viewing is a paid feature (Basic / Premium).
+    final features = ref.read(planFeaturesProvider);
+    if (!features.canViewContact) {
+      showUpgradeDialog(
+        context,
+        title: 'Contact details locked',
+        message:
+            'Viewing contact and WhatsApp details is available on the Basic and '
+            'Premium plans. Upgrade to connect directly.',
+      );
+      return;
+    }
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -423,20 +453,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                       profile.kuladeivam),
                 ]),
                 const SizedBox(height: 20),
-                _buildInfoSection('Horoscope', [
-                  _InfoItem(Icons.stars, 'Rasi', profile.horoscopeDetails.rasi),
-                  _InfoItem(Icons.star_border, 'Nakshatra', profile.horoscopeDetails.nakshatra),
-                  _InfoItem(Icons.wb_twilight, 'Lagnam', profile.horoscopeDetails.lagnam),
-                  _InfoItem(Icons.place_outlined, 'Birth City', profile.horoscopeDetails.birthPlace),
-                  _InfoItem(Icons.access_time, 'Birth Time',
-                      profile.horoscopeDetails.birthTime),
-                  _InfoItem(Icons.brightness_5_outlined, 'Chevvai Dosham',
-                      profile.horoscopeDetails.dosham),
-                  _InfoItem(Icons.brightness_5_outlined, 'Rahu / Kethu Dosham',
-                      profile.horoscopeDetails.rahuKethuDosham),
-                  _InfoItem(Icons.brightness_5_outlined, 'Kalasarpa Dosham',
-                      profile.horoscopeDetails.kalasarpaDosham),
-                ]),
+                _horoscopeSection(profile),
                 const SizedBox(height: 20),
                 ..._lifestyleSection(profile.lifestyle),
                 ..._partnerPreferenceSection(profile.partnerPreferences),
@@ -495,6 +512,115 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
           p.horoscopeMatchRequired ? 'Required' : 'Not required'),
     ];
     return [_buildInfoSection('Partner Preferences', items)];
+  }
+
+  /// Horoscope section with privacy rules:
+  ///  • The OWNER sees the full generated horoscope (Rasi, Nakshatra, Lagnam,
+  ///    birth details, doshams).
+  ///  • OTHER users see only Rasi + Nakshatra + a "Horoscope Available"
+  ///    indicator, and can tap "Consult Astrologer" for detailed matching.
+  Widget _horoscopeSection(ProfileModel profile) {
+    final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+    final isOwner = myUid != null && myUid == profile.userId;
+    final h = profile.horoscopeDetails;
+
+    if (isOwner) {
+      return _buildInfoSection('Horoscope', [
+        _InfoItem(Icons.stars, 'Rasi', h.rasi),
+        _InfoItem(Icons.star_border, 'Nakshatra', h.nakshatra),
+        _InfoItem(Icons.wb_twilight, 'Lagnam', h.lagnam),
+        _InfoItem(Icons.place_outlined, 'Birth City', h.birthPlace),
+        _InfoItem(Icons.access_time, 'Birth Time', h.birthTime),
+        _InfoItem(Icons.brightness_5_outlined, 'Chevvai Dosham', h.dosham),
+        _InfoItem(Icons.brightness_5_outlined, 'Rahu / Kethu Dosham',
+            h.rahuKethuDosham),
+        _InfoItem(Icons.brightness_5_outlined, 'Kalasarpa Dosham',
+            h.kalasarpaDosham),
+      ]);
+    }
+
+    // Other users: limited view (Rasi + Nakshatra only) + availability note.
+    final hasHoroscope = h.rasi.trim().isNotEmpty ||
+        h.nakshatra.trim().isNotEmpty ||
+        h.horoscopeGenerated ||
+        h.allPdfUrls.isNotEmpty ||
+        h.horoscopeImages.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildInfoSection('Horoscope', [
+          _InfoItem(Icons.stars, 'Rasi', h.rasi),
+          _InfoItem(Icons.star_border, 'Nakshatra', h.nakshatra),
+        ]),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.primary.withOpacity(0.25)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                      hasHoroscope
+                          ? Icons.check_circle_outline
+                          : Icons.info_outline,
+                      size: 18,
+                      color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    hasHoroscope
+                        ? 'Horoscope Available'
+                        : 'Horoscope not provided',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 13.5),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'The full horoscope is private. For detailed horoscope matching, '
+                'consult a verified astrologer.',
+                style: TextStyle(color: Colors.grey[700], fontSize: 12.5),
+              ),
+              if (hasHoroscope) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _consultAstrologer(profile),
+                    icon: const Icon(Icons.auto_awesome, size: 18),
+                    label: const Text('Consult Astrologer'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      minimumSize: const Size.fromHeight(44),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Stash the selected match and jump to the Astrologers tab so the user can
+  /// book a consultation for this pairing.
+  void _consultAstrologer(ProfileModel profile) {
+    ref.read(consultMatchProvider.notifier).state = ConsultMatchContext(
+      partnerUserId: profile.userId,
+      partnerName: profile.name,
+    );
+    ref.read(homeTabIndexProvider.notifier).state = kAstrologerTabIndex;
+    context.go('/home');
   }
 
   Widget _buildInfoSection(String title, List<_InfoItem> items) {

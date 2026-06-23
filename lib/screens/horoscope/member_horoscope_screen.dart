@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
+import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 
 /// Read-only horoscope view for an **accepted** match.
@@ -36,54 +38,100 @@ class MemberHoroscopeScreen extends ConsumerWidget {
           if (profile == null) return const _Unavailable();
           final h = profile.horoscope;
 
-          // "Unavailable" = no horoscope-specific data on file. The birth date
-          // always exists on a profile, so it doesn't count towards this check.
-          final hasAny = [
-            h.rasi,
-            h.nakshatra,
-            h.lagnam,
-            h.dosham,
-            h.dasaBalance,
-            h.yogam,
-            h.karanam,
-            h.sunSign,
-            h.moonSign,
-            h.birthTime,
-            h.birthPlace,
-          ].any((v) => v.trim().isNotEmpty);
-          if (!hasAny) return const _Unavailable();
+          // Privacy rule: other members may only see whether a horoscope
+          // exists, plus the Rasi + Nakshatra. The full horoscope (Lagnam,
+          // doshams, dasa, birth details, chart) is private to the owner and the
+          // astrologer they consult.
+          final hasHoroscope = h.rasi.trim().isNotEmpty ||
+              h.nakshatra.trim().isNotEmpty ||
+              h.horoscopeGenerated ||
+              h.allPdfUrls.isNotEmpty ||
+              h.horoscopeImages.isNotEmpty;
+          if (!hasHoroscope) return const _Unavailable();
 
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
               _HeaderCard(profile: profile),
               const SizedBox(height: 16),
-              _Section(title: 'Birth Details', rows: [
-                _Row('Birth Date', _fmtDate(profile.dateOfBirth)),
-                _Row('Birth Time', h.birthTime),
-                _Row('Birth Place', h.birthPlace),
-              ]),
-              const SizedBox(height: 12),
               _Section(title: 'Horoscope', rows: [
                 _Row('Rasi (Moon Sign)', h.rasi),
                 _Row('Nakshatra (Star)', h.nakshatra),
-                _Row('Lagnam (Ascendant)', h.lagnam),
-                _Row('Dosham', h.dosham),
-                _Row('Dasa Balance', h.dasaBalance),
-                _Row('Yogam', h.yogam),
-                _Row('Karanam', h.karanam),
-                _Row('Sun Sign', h.sunSign),
-                _Row('Moon Sign', h.moonSign),
               ]),
+              const SizedBox(height: 16),
+              _ConsultCard(
+                  partnerUserId: profile.userId, partnerName: profile.name),
             ],
           );
         },
       ),
     );
   }
+}
 
-  static String _fmtDate(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}';
+/// "Full horoscope is private" note + a Consult Astrologer action that stashes
+/// the pairing and jumps to the Astrologers tab.
+class _ConsultCard extends ConsumerWidget {
+  final String partnerUserId;
+  final String partnerName;
+  const _ConsultCard(
+      {required this.partnerUserId, required this.partnerName});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withOpacity(0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.lock_outline, size: 18, color: AppColors.primary),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Full horoscope is private',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 14)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'For detailed horoscope (porutham) matching with $partnerName, '
+            'consult a verified astrologer.',
+            style: TextStyle(color: Colors.grey[700], fontSize: 12.5),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                ref.read(consultMatchProvider.notifier).state =
+                    ConsultMatchContext(
+                        partnerUserId: partnerUserId, partnerName: partnerName);
+                ref.read(homeTabIndexProvider.notifier).state =
+                    kAstrologerTabIndex;
+                context.go('/home');
+              },
+              icon: const Icon(Icons.auto_awesome, size: 18),
+              label: const Text('Consult Astrologer'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(46),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// A label/value pair (value falls back to "—" when empty).

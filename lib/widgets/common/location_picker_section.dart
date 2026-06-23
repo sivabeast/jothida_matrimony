@@ -64,6 +64,10 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
   bool _detecting = false;
   String? _locError;
 
+  /// Sentinel option appended to the City dropdown to let users add a city that
+  /// isn't in the master data.
+  static const _kAddCustomCity = '➕ Add a city not listed';
+
   @override
   void initState() {
     super.initState();
@@ -110,12 +114,17 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
       }
       final cities = await ref.read(citiesProvider(di.id).future);
       final ci = _match(cities, widget.initialCity ?? '', (c) => c.name);
-      if (ci != null && mounted) {
-        setState(() {
+      if (!mounted) return;
+      setState(() {
+        if (ci != null) {
           _cityId = ci.id;
           _cityName = ci.name;
-        });
-      }
+        } else if ((widget.initialCity ?? '').trim().isNotEmpty) {
+          // A saved custom city not present in the master data — keep showing it.
+          _cityName = widget.initialCity!.trim();
+          _cityId = null;
+        }
+      });
       _emit();
     } catch (_) {
       // Master data unavailable — leave fields empty for manual entry.
@@ -403,16 +412,91 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
       loading: () => _loadingField('City', required: widget.isRequired),
       error: (_, __) => _errorField(
           'City', () => ref.invalidate(citiesProvider(_districtId!))),
-      data: (cities) => SearchableField(
-        label: 'City',
-        isRequired: widget.isRequired,
-        prefixIcon: Icons.location_city,
-        items: cities.map((c) => c.name).toList(),
-        selectedItem: _cityName,
-        onChanged: (name) =>
-            _onCityPicked(_match(cities, name ?? '', (c) => c.name)),
+      data: (cities) {
+        final names = cities.map((c) => c.name).toList();
+        // Keep a manually-added / saved custom city visible in the list so the
+        // SearchableField can show it as the selected value.
+        if ((_cityName ?? '').trim().isNotEmpty && !names.contains(_cityName)) {
+          names.insert(0, _cityName!);
+        }
+        // "Add custom city" option for cities not in the master list.
+        final items = [...names, _kAddCustomCity];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SearchableField(
+              label: 'City',
+              isRequired: widget.isRequired,
+              prefixIcon: Icons.location_city,
+              items: items,
+              selectedItem: _cityName,
+              onChanged: (name) {
+                if (name == _kAddCustomCity) {
+                  _promptCustomCity();
+                  return;
+                }
+                final master = _match(cities, name ?? '', (c) => c.name);
+                if (master != null) {
+                  _onCityPicked(master);
+                } else if ((name ?? '').trim().isNotEmpty) {
+                  // A custom (non-master) city already in the list.
+                  setState(() {
+                    _cityName = name!.trim();
+                    _cityId = null;
+                  });
+                  _emit();
+                }
+              },
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 4),
+              child: Text(
+                'City not listed? Choose "$_kAddCustomCity".',
+                style: TextStyle(fontSize: 11.5, color: Colors.grey[600]),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Prompts the user to type a city name not present in the master data, then
+  /// selects it as a custom city (no cityId).
+  Future<void> _promptCustomCity() async {
+    final controller = TextEditingController(
+        text: (_cityName ?? '').trim() == '' ? '' : _cityName);
+    final entered = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add City'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(
+            hintText: 'Enter your city / town name',
+            prefixIcon: Icon(Icons.location_city),
+          ),
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Add'),
+          ),
+        ],
       ),
     );
+    if (entered != null && entered.isNotEmpty && mounted) {
+      setState(() {
+        _cityName = entered;
+        _cityId = null; // custom city → no master id
+      });
+      _emit();
+    }
   }
 
   /// A disabled field showing a spinner while its options load.

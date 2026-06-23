@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../models/subscription_model.dart';
+import '../core/config/plan_features.dart';
 import '../core/constants/app_constants.dart';
 import '../services/razorpay/razorpay_service.dart';
 import 'service_providers.dart';
@@ -13,17 +14,33 @@ final activeSubscriptionProvider =
   return ref.watch(subscriptionRepositoryProvider).getActiveSubscription(userId);
 });
 
-/// Single source of truth for "does the signed-in user have premium access".
-/// True when the user document reflects an active (non-expired) plan OR a live
-/// subscription record exists. Reflects a test-mode activation instantly.
-final isPremiumProvider = Provider.autoDispose<bool>((ref) {
-  final user = ref.watch(currentUserProvider).valueOrNull;
-  if (user != null && (user.membershipType != 'free' || user.hasActiveSubscription)) {
-    return true;
-  }
+/// The effective subscription tier (Free / Basic / Premium) for the signed-in
+/// user. A live, non-expired subscription record is authoritative; otherwise we
+/// fall back to the user document's membershipType while it's still active.
+/// Reflects a test-mode activation instantly.
+final currentPlanProvider = Provider.autoDispose<AppPlan>((ref) {
   final sub = ref.watch(activeSubscriptionProvider).valueOrNull;
-  return sub != null && sub.isActive && !sub.isExpired;
+  if (sub != null && sub.isActive && !sub.isExpired) {
+    return PlanFeatures.planFromString(sub.plan);
+  }
+  final user = ref.watch(currentUserProvider).valueOrNull;
+  if (user != null && user.membershipType != 'free') {
+    // Honour an active expiry, or a plan grant with no expiry (legacy/admin).
+    if (user.hasActiveSubscription || user.subscriptionExpiry == null) {
+      return PlanFeatures.planFromString(user.membershipType);
+    }
+  }
+  return AppPlan.free;
 });
+
+/// Per-feature entitlements for the signed-in user — gate UI features off this.
+final planFeaturesProvider = Provider.autoDispose<PlanFeatures>(
+    (ref) => PlanFeatures.forPlan(ref.watch(currentPlanProvider)));
+
+/// Single source of truth for "does the signed-in user have a paid plan"
+/// (Basic or Premium). Reflects a test-mode activation instantly.
+final isPremiumProvider = Provider.autoDispose<bool>(
+    (ref) => ref.watch(currentPlanProvider) != AppPlan.free);
 
 class SubscriptionNotifier extends Notifier<AsyncValue<SubscriptionModel?>> {
   @override
@@ -49,7 +66,8 @@ class SubscriptionNotifier extends Notifier<AsyncValue<SubscriptionModel?>> {
             razorpayPaymentId: res.paymentId ?? '',
             razorpayOrderId: res.orderId ?? '',
             startDate: DateTime.now(),
-            endDate: DateTime.now().add(const Duration(days: 30)),
+            endDate:
+                DateTime.now().add(Duration(days: _planDurationDays(plan))),
             isActive: true,
             createdAt: DateTime.now(),
           );
@@ -83,7 +101,8 @@ class SubscriptionNotifier extends Notifier<AsyncValue<SubscriptionModel?>> {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final now = DateTime.now();
-      final end = now.add(Duration(days: type == 'yearly' ? 365 : 30));
+      final end = now.add(
+          Duration(days: type == 'yearly' ? 365 : _planDurationDays(plan)));
       final sub = SubscriptionModel(
         id: '${userId}_${now.millisecondsSinceEpoch}',
         userId: userId,
@@ -125,6 +144,11 @@ class SubscriptionNotifier extends Notifier<AsyncValue<SubscriptionModel?>> {
         return 0;
     }
   }
+
+  /// Plan validity in days: Premium = 60, everything else (Basic) = 30.
+  int _planDurationDays(String plan) => plan == AppConstants.planPremium
+      ? AppConstants.premiumDurationDays
+      : AppConstants.basicDurationDays;
 }
 
 final subscriptionNotifierProvider =

@@ -14,6 +14,7 @@ import '../../models/profile_model.dart';
 import '../../providers/astrologer_session_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../widgets/common/rasi_chart.dart';
 import '../../providers/service_providers.dart';
 
 /// The astrologer's Match Analysis Workspace — opened from an ACCEPTED match
@@ -164,6 +165,11 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
           const _SectionTitle('👰 Bride Details'),
           const SizedBox(height: 8),
           _PartyCard(profileId: r.brideProfileId, fallbackName: r.brideName),
+          const SizedBox(height: 16),
+          const _SectionTitle('🔭 Compare Horoscopes'),
+          const SizedBox(height: 8),
+          _CompareSection(
+              groomId: r.groomProfileId, brideId: r.brideProfileId),
           const SizedBox(height: 22),
           _actionSection(r),
           const SizedBox(height: 28),
@@ -548,6 +554,112 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
   }
 }
 
+/// Side-by-side comparison of both parties' Rasi charts + key horoscope
+/// attributes, so the astrologer can compare at a glance.
+class _CompareSection extends ConsumerWidget {
+  final String? groomId;
+  final String? brideId;
+  const _CompareSection({required this.groomId, required this.brideId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final groom = (groomId == null || groomId!.isEmpty)
+        ? null
+        : ref.watch(profileByIdProvider(groomId!)).valueOrNull;
+    final bride = (brideId == null || brideId!.isEmpty)
+        ? null
+        : ref.watch(profileByIdProvider(brideId!)).valueOrNull;
+    if (groom == null && bride == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _chartCol('🤵 Groom', groom)),
+              const SizedBox(width: 12),
+              Expanded(child: _chartCol('👰 Bride', bride)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _compareRows(groom, bride),
+        ],
+      ),
+    );
+  }
+
+  Widget _chartCol(String label, ProfileModel? p) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style:
+                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          const SizedBox(height: 6),
+          if (p == null)
+            Container(
+                height: 80,
+                alignment: Alignment.center,
+                child: Text('Not available',
+                    style: TextStyle(color: Colors.grey[500], fontSize: 12)))
+          else
+            RasiChart(
+                rasi: p.horoscope.rasi,
+                lagnam: p.horoscope.lagnam,
+                title: p.fullName),
+        ],
+      );
+
+  Widget _compareRows(ProfileModel? g, ProfileModel? b) {
+    Widget row(String label, String? gv, String? bv) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 4,
+                child: Text(
+                    (gv ?? '').trim().isEmpty ? '—' : gv!.trim(),
+                    style: const TextStyle(
+                        fontSize: 12.5, fontWeight: FontWeight.w600)),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+              ),
+              Expanded(
+                flex: 4,
+                child: Text(
+                    (bv ?? '').trim().isEmpty ? '—' : bv!.trim(),
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                        fontSize: 12.5, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        );
+    final gh = g?.horoscope, bh = b?.horoscope;
+    return Column(
+      children: [
+        const Divider(),
+        row('Rasi', gh?.rasi, bh?.rasi),
+        row('Nakshatra', gh?.nakshatra, bh?.nakshatra),
+        row('Lagnam', gh?.lagnam, bh?.lagnam),
+        row('Dosham', gh?.dosham, bh?.dosham),
+      ],
+    );
+  }
+}
+
 class _SectionTitle extends StatelessWidget {
   final String text;
   const _SectionTitle(this.text);
@@ -643,6 +755,10 @@ class _PartyCard extends ConsumerWidget {
         _row('Occupation', p.occupation),
         const SizedBox(height: 12),
         _horoscopeFiles(context, h.horoscopeImages, pdfs),
+        if (h.rasi.trim().isNotEmpty || h.lagnam.trim().isNotEmpty) ...[
+          const SizedBox(height: 14),
+          RasiChart(rasi: h.rasi, lagnam: h.lagnam),
+        ],
       ],
     );
   }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/services/porutham_match.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
+import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 
 /// Horoscope Match Result page (Interests → Accepted → "Horoscope").
@@ -62,13 +64,13 @@ class HoroscopeMatchScreen extends ConsumerWidget {
   }
 }
 
-class _ResultView extends StatelessWidget {
+class _ResultView extends ConsumerWidget {
   final PoruthamMatchResult result;
   final ProfileModel other;
   const _ResultView({required this.result, required this.other});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -89,7 +91,31 @@ class _ResultView extends StatelessWidget {
         ],
         const SizedBox(height: 16),
         _RecommendationCard(result: result),
-        const SizedBox(height: 8),
+        const SizedBox(height: 14),
+        // Consult Astrologer — passes this match to the Astrologers/booking flow.
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              ref.read(consultMatchProvider.notifier).state =
+                  ConsultMatchContext(
+                      partnerUserId: other.userId, partnerName: other.name);
+              ref.read(homeTabIndexProvider.notifier).state =
+                  kAstrologerTabIndex;
+              context.go('/home');
+            },
+            icon: const Icon(Icons.auto_awesome),
+            label: const Text('Consult Astrologer'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(50),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 4),
           child: Text(

@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/config/dev_config.dart';
 import '../../core/services/horoscope_calculation_service.dart';
 import '../../core/services/master_astrology_data.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/file_actions.dart';
 import '../../models/profile_model.dart';
 import '../../providers/demo_data_provider.dart';
 import '../../providers/master_location_provider.dart';
@@ -522,8 +524,105 @@ class _HoroscopeDetailsScreenState
               ),
             ],
           ],
+
+          // ── Uploaded Horoscope (PDF / image) ──────────────────────────────
+          const SizedBox(height: 28),
+          _uploadedHoroscopeSection(),
         ],
       ),
+    );
+  }
+
+  /// Shows the user's UPLOADED horoscope documents (PDFs + images) alongside the
+  /// generated one above, with View / Download actions, plus an entry point to
+  /// add or manage uploads. Horoscope upload is optional.
+  Widget _uploadedHoroscopeSection() {
+    final h = ref.watch(myProfileProvider).valueOrNull?.horoscope;
+    final pdfs = h?.allPdfUrls ?? const <String>[];
+    final images = h?.horoscopeImages ?? const <String>[];
+    final hasUploads = pdfs.isNotEmpty || images.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.upload_file_outlined,
+                size: 18, color: AppColors.primary),
+            const SizedBox(width: 8),
+            const Text('Uploaded Horoscope',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.bold)),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: () => context.push('/horoscope-files'),
+              icon: Icon(hasUploads ? Icons.edit_outlined : Icons.add,
+                  size: 16),
+              label: Text(hasUploads ? 'Manage' : 'Upload'),
+              style: TextButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  visualDensity: VisualDensity.compact),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (!hasUploads)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: Text(
+              'No horoscope document uploaded yet. You can optionally upload a '
+              'JPG, PNG or PDF of your horoscope (jathagam).',
+              style: TextStyle(color: Colors.grey[600], fontSize: 12.5),
+            ),
+          )
+        else ...[
+          // PDF documents — tap to view, download via the tile action.
+          for (var i = 0; i < pdfs.length; i++)
+            RemotePdfTile(
+                url: pdfs[i],
+                label: 'Horoscope Document ${i + 1}',
+                index: i),
+          // Image documents — thumbnails open a zoomable gallery (with download).
+          if (images.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            SizedBox(
+              height: 92,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: images.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (_, i) => GestureDetector(
+                  onTap: () => showImageGallery(context, images, initialIndex: i),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.network(
+                      images[i],
+                      width: 92,
+                      height: 92,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 92,
+                        height: 92,
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.broken_image_outlined,
+                            color: Colors.grey),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ],
     );
   }
 

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/astrologer_model.dart';
 import '../../../providers/astrologer_provider.dart';
+import '../../../providers/navigation_provider.dart';
 import '../../../providers/profile_provider.dart';
 
 /// Astrologer Directory — the "Astrologer" tab.
@@ -68,6 +69,7 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
       child: Column(
         children: [
           _searchBar(),
+          _consultBanner(),
           Expanded(
             child: astrosAsync.when(
               loading: () => const Center(
@@ -90,6 +92,42 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
                 return searching ? _resultsList(matched) : _sections(all, myCity);
               },
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Shows the match the user came here to consult about (set by a "Consult
+  /// Astrologer" button). Tapping an astrologer then books for this pairing.
+  Widget _consultBanner() {
+    final consult = ref.watch(consultMatchProvider);
+    if (consult == null) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.auto_awesome, color: AppColors.primary, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Consultation for your match with ${consult.partnerName}. '
+              'Pick an astrologer below to book.',
+              style:
+                  const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 18),
+            tooltip: 'Clear',
+            onPressed: () =>
+                ref.read(consultMatchProvider.notifier).state = null,
           ),
         ],
       ),

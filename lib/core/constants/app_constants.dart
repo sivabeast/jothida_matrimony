@@ -47,19 +47,30 @@ class AppConstants {
   static const String horoscopeDocsPath = 'horoscope_docs';
   static const String idProofsPath = 'id_proofs';
 
-  // Subscription Plans
+  // Subscription Plans — three tiers: Free, Basic, Premium.
+  // `planMedium` is retained ONLY for backward-compatibility with legacy
+  // accounts/analytics; it is no longer offered in the subscription UI and is
+  // treated as Basic-level access by the entitlements layer (PlanFeatures).
+  static const String planFree = 'free';
   static const String planBasic = 'basic';
-  static const String planMedium = 'medium';
+  static const String planMedium = 'medium'; // legacy → mapped to Basic
   static const String planPremium = 'premium';
 
   // Plan Prices (INR)
-  static const int basicPrice = 99;
-  static const int mediumPrice = 299;
+  static const int basicPrice = 299;
+  static const int mediumPrice = 299; // legacy
   static const int premiumPrice = 599;
   static const int poruthamsPrice = 199;
   static const int freePortuthamsPerMedium = 2;
 
-  // Basic Plan Limits
+  // Plan Durations (days)
+  static const int basicDurationDays = 30;
+  static const int premiumDurationDays = 60;
+
+  // Free Plan Limits
+  static const int freeInterestsPerDay = 2;
+
+  // Basic Plan Limits (legacy)
   static const int basicDailyProfileViews = 10;
   static const int basicMonthlyInterests = 5;
 

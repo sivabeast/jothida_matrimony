@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/dev_config.dart';
 import '../core/constants/app_constants.dart';
+import '../core/services/match_score_service.dart';
 import '../core/services/porutham_match.dart';
 import '../models/profile_model.dart';
 import '../services/cloudinary/cloudinary_exception.dart';
@@ -340,6 +341,19 @@ final matchGenderProvider = Provider.autoDispose<String>((ref) {
   final myGender = ref.watch(myProfileProvider).valueOrNull?.gender ??
       ref.watch(currentUserProvider).valueOrNull?.gender;
   return myGender == 'Female' ? 'Male' : 'Female';
+});
+
+/// Returns a function that computes the displayed compatibility ("85% Match")
+/// for any candidate against the signed-in user's profile — or `null` while the
+/// user's own profile is still loading. Used by the discover cards, home feed
+/// sections and match details to show a percentage. Synchronous & cheap, so it
+/// can be called directly inside `build`.
+final matchScorerProvider =
+    Provider.autoDispose<MatchScore Function(ProfileModel)?>((ref) {
+  final me = ref.watch(myProfileProvider).valueOrNull;
+  if (me == null) return null;
+  return (candidate) =>
+      MatchScoreService.compute(viewer: me, candidate: candidate);
 });
 
 // ── Discover / Matches feed ────────────────────────────────────────────────

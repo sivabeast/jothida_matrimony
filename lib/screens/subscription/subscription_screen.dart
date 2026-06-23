@@ -61,38 +61,58 @@ class SubscriptionScreen extends ConsumerWidget {
             Text('Unlock more features with a plan', style: AppTextStyles.bodyMedium),
             const SizedBox(height: 24),
             _PlanCard(
-              plan: AppConstants.planBasic,
-              price: AppConstants.basicPrice,
+              plan: AppConstants.planFree,
+              price: 0,
+              durationDays: 0,
+              isFree: true,
               features: const [
-                'View 20 profiles/day',
-                'Send 5 interests/day',
-                'Basic search filters',
+                'Create profile & upload photos',
+                'Upload horoscope (optional)',
+                'Browse profiles, Home & Matches feed',
+                'Age, Location, Education, Caste & Religion filters',
+                'Astrologers list view',
+                '2 interests per day',
+              ],
+              restrictions: const [
+                'Contact details hidden',
+                'WhatsApp hidden',
+                'Astrologer booking disabled',
+                'Horoscope match filter disabled',
+                'Who viewed my profile disabled',
               ],
             ),
             const SizedBox(height: 16),
             _PlanCard(
-              plan: AppConstants.planMedium,
-              price: AppConstants.mediumPrice,
+              plan: AppConstants.planBasic,
+              price: AppConstants.basicPrice, // ₹299
+              durationDays: AppConstants.basicDurationDays, // 30 days
               isPopular: true,
               features: const [
-                'View 50 profiles/day',
-                'Send unlimited interests',
-                'Advanced search filters',
-                '1 Free Astrologer Consultation/month',
+                'Unlimited interests',
+                'View contact details',
+                'View WhatsApp number',
+                'Horoscope match filter',
+                'Astrologer consultation booking',
+                'Who viewed my profile',
+                'Better profile visibility',
               ],
             ),
             const SizedBox(height: 16),
             _PlanCard(
               plan: AppConstants.planPremium,
-              price: AppConstants.premiumPrice,
+              price: AppConstants.premiumPrice, // ₹599
+              durationDays: AppConstants.premiumDurationDays, // 60 days
               isPremium: true,
               features: const [
-                'Unlimited profile views',
-                'Send unlimited interests',
-                'All search filters',
-                '3 Free Astrologer Consultations/month',
-                'Priority support',
-                'Profile highlighted',
+                'Everything in Basic, plus:',
+                'Featured profile badge',
+                'Top search placement',
+                'Priority match recommendations',
+                'Advanced match suggestions',
+                'Profile analytics',
+                'Higher visibility in Home & Matches',
+                'Advanced filters: height, occupation, income, marital status & horoscope',
+                'Priority customer support',
               ],
             ),
           ],
@@ -144,22 +164,34 @@ class _TestModeBadge extends StatelessWidget {
 class _PlanCard extends ConsumerWidget {
   final String plan;
   final int price;
+
+  /// Validity in days (0 for the Free plan).
+  final int durationDays;
   final List<String> features;
+
+  /// Features explicitly NOT available on this plan (shown with a ✕). Used by
+  /// the Free card to surface its restrictions.
+  final List<String> restrictions;
   final bool isPopular;
   final bool isPremium;
+  final bool isFree;
 
   const _PlanCard({
     required this.plan,
     required this.price,
     required this.features,
+    this.durationDays = 30,
+    this.restrictions = const [],
     this.isPopular = false,
     this.isPremium = false,
+    this.isFree = false,
   });
 
   static int _rank(String p) => switch (p) {
         AppConstants.planPremium => 3,
-        AppConstants.planMedium => 2,
-        _ => 1,
+        AppConstants.planMedium => 2, // legacy
+        AppConstants.planBasic => 2,
+        _ => 1, // free
       };
 
   static String _fmtDate(DateTime d) {
@@ -181,9 +213,12 @@ class _PlanCard extends ConsumerWidget {
     // Current-Plan badge and Upgrade/Switch button labels.
     final activeSub = ref.watch(activeSubscriptionProvider).valueOrNull;
     final hasActive = activeSub != null && !activeSub.isExpired;
-    final isCurrent = hasActive && activeSub.plan == plan;
-    final switchLabel =
-        hasActive && _rank(plan) > _rank(activeSub.plan) ? 'Upgrade Plan' : 'Switch Plan';
+    // The Free plan is "current" precisely when there is no active paid plan.
+    final isCurrent =
+        isFree ? !hasActive : (hasActive && activeSub.plan == plan);
+    final switchLabel = hasActive && _rank(plan) > _rank(activeSub.plan)
+        ? 'Upgrade Plan'
+        : 'Switch Plan';
 
     return Stack(
       children: [
@@ -205,37 +240,69 @@ class _PlanCard extends ConsumerWidget {
                       style: TextStyle(
                           fontSize: 22, fontWeight: FontWeight.bold, color: color),
                     ),
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: '₹$price',
+                    isFree
+                        ? Text('Free',
                             style: TextStyle(
-                                fontSize: 26, fontWeight: FontWeight.bold, color: color),
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: color))
+                        : Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: '₹$price',
+                                  style: TextStyle(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.bold,
+                                      color: color),
+                                ),
+                                TextSpan(
+                                  text: ' /$durationDays days',
+                                  style: const TextStyle(
+                                      fontSize: 13, color: Colors.grey),
+                                ),
+                              ],
+                            ),
                           ),
-                          const TextSpan(
-                            text: '/mo',
-                            style: TextStyle(fontSize: 14, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
                 ...features.map((f) => Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Icon(Icons.check_circle, size: 18, color: color),
                           const SizedBox(width: 8),
-                          Text(f),
+                          Expanded(child: Text(f)),
                         ],
                       ),
                     )),
+                if (restrictions.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  ...restrictions.map((r) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.cancel,
+                                size: 18, color: Colors.grey[400]),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(r,
+                                  style: TextStyle(
+                                      color: Colors.grey[600],
+                                      decoration: TextDecoration.lineThrough)),
+                            ),
+                          ],
+                        ),
+                      )),
+                ],
                 const SizedBox(height: 20),
                 if (isCurrent)
-                  _currentPlanStatus(activeSub)
+                  _currentPlanStatus(isFree ? null : activeSub)
+                else if (isFree)
+                  const SizedBox.shrink()
                 else
                   GradientButton(
                     onPressed: user == null
@@ -319,8 +386,9 @@ class _PlanCard extends ConsumerWidget {
 
   /// Active-plan status block (replaces the action button on the current plan):
   /// ✅ Active · expiry date · days remaining, with a disabled "Current Plan".
-  Widget _currentPlanStatus(SubscriptionModel sub) {
-    final days = sub.daysRemaining < 0 ? 0 : sub.daysRemaining;
+  Widget _currentPlanStatus(SubscriptionModel? sub) {
+    final days =
+        sub == null ? 0 : (sub.daysRemaining < 0 ? 0 : sub.daysRemaining);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -347,9 +415,13 @@ class _PlanCard extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              _statusRow('Expires', _fmtDate(sub.endDate)),
-              const SizedBox(height: 3),
-              _statusRow('Remaining', '$days days'),
+              if (sub != null) ...[
+                _statusRow('Expires', _fmtDate(sub.endDate)),
+                const SizedBox(height: 3),
+                _statusRow('Remaining', '$days days'),
+              ] else
+                Text('You are on the Free plan',
+                    style: TextStyle(color: Colors.grey[700], fontSize: 13)),
             ],
           ),
         ),

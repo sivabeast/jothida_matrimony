@@ -15,6 +15,26 @@ final receivedInterestsProvider = StreamProvider.autoDispose<List<InterestModel>
   return ref.watch(interestRepositoryProvider).watchReceivedInterests(userId);
 });
 
+/// Set of PROFILE ids the signed-in user has already sent an interest to (any
+/// status). Used to hide already-actioned profiles from the Matches feed when
+/// "Hide Interested Profiles" is on.
+final sentInterestProfileIdsProvider = Provider.autoDispose<Set<String>>((ref) {
+  final sent =
+      ref.watch(sentInterestsProvider).valueOrNull ?? const <InterestModel>[];
+  return sent.map((i) => i.receiverProfileId).toSet();
+});
+
+/// How many interests the signed-in user has sent TODAY. Drives the Free-plan
+/// daily-interest limit (2/day).
+final interestsSentTodayProvider = Provider.autoDispose<int>((ref) {
+  final sent =
+      ref.watch(sentInterestsProvider).valueOrNull ?? const <InterestModel>[];
+  final now = DateTime.now();
+  bool isToday(DateTime d) =>
+      d.year == now.year && d.month == now.month && d.day == now.day;
+  return sent.where((i) => isToday(i.sentAt)).length;
+});
+
 class InterestNotifier extends Notifier<AsyncValue<void>> {
   @override
   AsyncValue<void> build() => const AsyncData(null);
