@@ -535,21 +535,29 @@ class _MatchProfilePage extends ConsumerWidget {
     final hasOcc = profile.occupation.trim().isNotEmpty;
     final hasSalary = profile.annualIncome.trim().isNotEmpty;
     if (!hasOcc && !hasSalary) return const SizedBox.shrink();
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (hasOcc)
-          Expanded(
-            child: _premiumBadge(
-                '💼', 'Profession', profile.occupation, _bookEdge),
-          ),
-        if (hasOcc && hasSalary) const SizedBox(width: 10),
-        if (hasSalary)
-          Expanded(
-            child: _premiumBadge('💰', 'Annual Income', profile.annualIncome,
-                const Color(0xFF7A5C16)),
-          ),
-      ],
+    // IntrinsicHeight gives the Row a bounded height so CrossAxisAlignment.stretch
+    // can make both badges equal height. WITHOUT it this Row lives inside the
+    // vertically-scrolling details area (_details' SingleChildScrollView), which
+    // imposes an unbounded height; `stretch` then forces the badges to an
+    // INFINITE height, throwing "BoxConstraints forces an infinite height" during
+    // layout and rendering the whole match card blank.
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (hasOcc)
+            Expanded(
+              child: _premiumBadge(
+                  '💼', 'Profession', profile.occupation, _bookEdge),
+            ),
+          if (hasOcc && hasSalary) const SizedBox(width: 10),
+          if (hasSalary)
+            Expanded(
+              child: _premiumBadge('💰', 'Annual Income', profile.annualIncome,
+                  const Color(0xFF7A5C16)),
+            ),
+        ],
+      ),
     );
   }
 
