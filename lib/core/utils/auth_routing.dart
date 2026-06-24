@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,7 +26,20 @@ Future<void> routeAuthenticatedUser(
   if (user.isAstrologer) {
     debugPrint('[$tag] routeAuthenticatedUser: astrologer account → '
         'hydrating astrologer session...');
-    await ref.read(myAstrologerAccountProvider.notifier).loadFromFirestore(user.uid);
+    // Time-bound the Firestore hydration so a slow/offline read can't leave the
+    // caller awaiting forever (the login button keeps its spinner until this
+    // returns). On timeout/error we log and still navigate — the dashboard gate
+    // will redirect to /astrologer-login if the session truly couldn't load,
+    // which is recoverable, rather than freezing on an eternal spinner.
+    try {
+      await ref
+          .read(myAstrologerAccountProvider.notifier)
+          .loadFromFirestore(user.uid)
+          .timeout(const Duration(seconds: 20));
+    } catch (e) {
+      debugPrint('[$tag] routeAuthenticatedUser: astrologer hydration '
+          'failed (continuing): $e');
+    }
     if (context.mounted) {
       debugPrint('[$tag] routeAuthenticatedUser: → /astrologer-dashboard');
       context.go('/astrologer-dashboard');

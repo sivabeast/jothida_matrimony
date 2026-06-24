@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -98,8 +99,23 @@ class AuthRepository {
         'createOrUpdateUserOnLogin(${user.uid}, loginProvider=$loginProvider)');
     final UserModel model;
     try {
-      model = await _firestore.createOrUpdateUserOnLogin(user,
-          phone: phone, loginProvider: loginProvider);
+      // Bound the login write: `createOrUpdateUserOnLogin` runs a Firestore
+      // transaction + read, both of which require a server round-trip and can
+      // hang on a poor/offline connection. A timeout turns an indefinite hang
+      // into a real error that resets the UI loading state (instead of an
+      // eternal spinner) and shows a retry-able message.
+      model = await _firestore
+          .createOrUpdateUserOnLogin(user,
+              phone: phone, loginProvider: loginProvider)
+          .timeout(const Duration(seconds: 25));
+    } on TimeoutException catch (e, st) {
+      debugPrint('[AuthRepository] _onAuthenticated: Firestore write TIMED OUT '
+          '(25s): $e\n$st');
+      throw const AuthException(
+        'Signed in, but the database did not respond in time. Please check '
+        'your internet connection and try again.',
+        code: 'firestore-timeout',
+      );
     } on FirebaseException catch (e, st) {
       debugPrint('[AuthRepository] _onAuthenticated: Firestore write FAILED: '
           '${e.plugin}/${e.code} — ${e.message}\n$st');
@@ -130,18 +146,30 @@ class AuthRepository {
           'setting up your account: $e');
     }
     debugPrint('[AuthRepository] _onAuthenticated: Firestore doc ready.');
+    // FCM token registration is best-effort and must NEVER block or delay the
+    // sign-in. `getToken()` can hang (not throw) on emulators, restricted
+    // networks, or devices without Play Services — which previously froze the
+    // login spinner here. Fire it off detached and return immediately so the
+    // user reaches their screen the moment their account doc is ready.
+    unawaited(_registerFcmToken(user.uid));
+    return model;
+  }
+
+  /// Best-effort push-token registration, intentionally detached from the
+  /// sign-in critical path: any slowness or failure here never affects login.
+  Future<void> _registerFcmToken(String uid) async {
     try {
       final token = await _fcm.getToken();
       if (token != null) {
-        await _firestore.updateFcmToken(user.uid, token);
-        debugPrint('[AuthRepository] _onAuthenticated: FCM token updated.');
+        await _firestore.updateFcmToken(uid, token);
+        debugPrint('[AuthRepository] FCM token registered for $uid.');
+      } else {
+        debugPrint('[AuthRepository] FCM token unavailable (skipped).');
       }
     } catch (e, st) {
-      // FCM is best-effort — never let a push-notification hiccup block sign-in.
-      debugPrint('[AuthRepository] _onAuthenticated: FCM token update '
-          'failed (non-fatal): $e\n$st');
+      debugPrint('[AuthRepository] FCM token registration failed '
+          '(non-fatal): $e\n$st');
     }
-    return model;
   }
 
   /// Used by the email/OTP flows to ensure a user document exists.

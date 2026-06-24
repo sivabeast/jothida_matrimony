@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -29,7 +30,14 @@ class FcmService {
 
   Future<String?> getToken() async {
     try {
-      return await _messaging.getToken();
+      // getToken() can hang indefinitely (NOT throw) on emulators without Play
+      // Services, on devices where FCM registration stalls, or on restricted
+      // networks. Bound it so a push-token fetch can never freeze a caller —
+      // most importantly the sign-in flow that registers the token on login.
+      return await _messaging.getToken().timeout(const Duration(seconds: 10));
+    } on TimeoutException {
+      debugPrint('FcmService.getToken timed out (non-fatal).');
+      return null;
     } catch (e) {
       debugPrint('FcmService.getToken error: $e');
       return null;

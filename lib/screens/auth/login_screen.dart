@@ -27,6 +27,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
+  // Covers the *entire* Google flow — credential exchange AND the post-auth
+  // routing (which itself does async Firestore work for astrologer accounts) —
+  // so the button stays busy until the user actually leaves this screen, and a
+  // `finally` always clears it. Without this, the window between sign-in
+  // completing and navigation finishing had no loading indicator.
+  bool _busy = false;
+
   @override
   void dispose() {
     _phoneController.dispose();
@@ -56,29 +63,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _signInWithGoogle() async {
+    if (_busy) return; // guard against double-taps
     debugPrint('[LoginScreen] "Continue with Google" tapped.');
-    await ref.read(authNotifierProvider.notifier).signInWithGoogle();
-    if (!mounted) return;
-    final auth = ref.read(authNotifierProvider);
+    setState(() => _busy = true);
+    try {
+      await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+      if (!mounted) return;
+      final auth = ref.read(authNotifierProvider);
 
-    if (auth.hasError) {
-      final err = auth.error;
-      final message =
-          err is AuthException ? err.message : context.l10n.googleSignInFailed;
-      debugPrint('[LoginScreen] signInWithGoogle error: $err');
-      if (!(err is AuthException && err.cancelled)) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(message)));
+      if (auth.hasError) {
+        final err = auth.error;
+        final message =
+            err is AuthException ? err.message : context.l10n.googleSignInFailed;
+        debugPrint('[LoginScreen] signInWithGoogle error: $err');
+        if (!(err is AuthException && err.cancelled)) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(message)));
+        }
+        return;
       }
-      return;
-    }
 
-    final user = auth.valueOrNull;
-    if (user != null) {
-      debugPrint('[LoginScreen] Sign-in successful (uid=${user.uid}). Routing...');
-      await routeAuthenticatedUser(context, ref, user, tag: 'LoginScreen');
-    } else {
-      debugPrint('[LoginScreen] Google picker dismissed — staying on login.');
+      final user = auth.valueOrNull;
+      if (user != null) {
+        debugPrint(
+            '[LoginScreen] Sign-in successful (uid=${user.uid}). Routing...');
+        await routeAuthenticatedUser(context, ref, user, tag: 'LoginScreen');
+      } else {
+        debugPrint('[LoginScreen] Google picker dismissed — staying on login.');
+      }
+    } finally {
+      // Always clear the spinner — on success (if still mounted), on error, on
+      // cancellation, or on an unexpected throw. Never leaves the UI stuck.
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -86,7 +102,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final otpState = ref.watch(otpNotifierProvider);
     final authAsync = ref.watch(authNotifierProvider);
-    final isLoading = otpState.isLoading || authAsync.isLoading;
+    // `googleBusy` drives the Google button's spinner; `isLoading` disables
+    // every action while any auth operation is in flight.
+    final googleBusy = _busy || authAsync.isLoading;
+    final isLoading = otpState.isLoading || googleBusy;
     final l10n = context.l10n;
 
     return Scaffold(
@@ -171,13 +190,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         // ── Continue with Google ─────────────────────────────
                         OutlinedButton.icon(
                           onPressed: isLoading ? null : _signInWithGoogle,
-                          icon: Image.network(
-                            'https://www.google.com/favicon.ico',
-                            width: 20,
-                            height: 20,
-                            errorBuilder: (_, __, ___) =>
-                                const Icon(Icons.g_mobiledata, size: 24),
-                          ),
+                          icon: googleBusy
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : Image.network(
+                                  'https://www.google.com/favicon.ico',
+                                  width: 20,
+                                  height: 20,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                      Icons.g_mobiledata,
+                                      size: 24),
+                                ),
                           label: Text(l10n.continueWithGoogle),
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size.fromHeight(50),

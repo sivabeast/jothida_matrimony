@@ -27,6 +27,11 @@ class _AstrologerLoginScreenState
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
 
+  // Covers the whole Google flow including `_afterAuth` (which loads the
+  // astrologer account from Firestore before navigating), so the button shows
+  // a spinner the entire time and a `finally` always clears it.
+  bool _busy = false;
+
   @override
   void dispose() {
     _phoneController.dispose();
@@ -35,18 +40,33 @@ class _AstrologerLoginScreenState
 
   /// After a Google sign-in: hydrate the astrologer session. No profile yet →
   /// onboarding form. (Phone OTP routes from the OTP screen via isAstrologer.)
+  ///
+  /// The Firestore lookup is time-bounded and wrapped so a slow/offline read
+  /// surfaces a retry-able message instead of silently leaving the user on the
+  /// login screen with no feedback.
   Future<void> _afterAuth(String uid) async {
-    final exists = await ref
-        .read(myAstrologerAccountProvider.notifier)
-        .loadFromFirestore(uid);
-    if (!mounted) return;
-    if (exists) {
-      context.go('/astrologer-dashboard');
-    } else {
+    try {
+      final exists = await ref
+          .read(myAstrologerAccountProvider.notifier)
+          .loadFromFirestore(uid)
+          .timeout(const Duration(seconds: 20));
+      if (!mounted) return;
+      if (exists) {
+        debugPrint('[AstrologerLogin] account found → /astrologer-dashboard');
+        context.go('/astrologer-dashboard');
+      } else {
+        debugPrint('[AstrologerLogin] no account → /astrologer-register');
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text(
+                'Just a few more details — please complete your astrologer profile.')));
+        context.go('/astrologer-register');
+      }
+    } catch (e) {
+      debugPrint('[AstrologerLogin] _afterAuth failed: $e');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text(
-              'Just a few more details — please complete your astrologer profile.')));
-      context.go('/astrologer-register');
+              'Could not load your astrologer profile. Please check your connection and try again.')));
     }
   }
 
@@ -72,25 +92,31 @@ class _AstrologerLoginScreenState
   }
 
   Future<void> _signInWithGoogle() async {
+    if (_busy) return; // guard against double-taps
     debugPrint('[AstrologerLogin] "Continue with Google" tapped.');
-    await ref.read(authNotifierProvider.notifier).signInWithGoogle();
-    if (!mounted) return;
-    final auth = ref.read(authNotifierProvider);
-    if (auth.hasError) {
-      final err = auth.error;
-      debugPrint('[AstrologerLogin] signInWithGoogle error: $err');
-      if (!(err is AuthException && err.cancelled)) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(err is AuthException
-                ? err.message
-                : 'Google Sign-In failed. Please try again.')));
+    setState(() => _busy = true);
+    try {
+      await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+      if (!mounted) return;
+      final auth = ref.read(authNotifierProvider);
+      if (auth.hasError) {
+        final err = auth.error;
+        debugPrint('[AstrologerLogin] signInWithGoogle error: $err');
+        if (!(err is AuthException && err.cancelled)) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(err is AuthException
+                  ? err.message
+                  : 'Google Sign-In failed. Please try again.')));
+        }
+        return;
       }
-      return;
-    }
-    final user = auth.valueOrNull;
-    if (user != null) {
-      debugPrint('[AstrologerLogin] Sign-in successful (uid=${user.uid}).');
-      await _afterAuth(user.uid);
+      final user = auth.valueOrNull;
+      if (user != null) {
+        debugPrint('[AstrologerLogin] Sign-in successful (uid=${user.uid}).');
+        await _afterAuth(user.uid);
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -98,7 +124,8 @@ class _AstrologerLoginScreenState
   Widget build(BuildContext context) {
     final otpState = ref.watch(otpNotifierProvider);
     final authAsync = ref.watch(authNotifierProvider);
-    final isLoading = otpState.isLoading || authAsync.isLoading;
+    final googleBusy = _busy || authAsync.isLoading;
+    final isLoading = otpState.isLoading || googleBusy;
 
     return Scaffold(
       body: Container(
@@ -188,13 +215,21 @@ class _AstrologerLoginScreenState
                         // ── Continue with Google ─────────────────────────────
                         OutlinedButton.icon(
                           onPressed: isLoading ? null : _signInWithGoogle,
-                          icon: Image.network(
-                            'https://www.google.com/favicon.ico',
-                            width: 20,
-                            height: 20,
-                            errorBuilder: (_, __, ___) =>
-                                const Icon(Icons.g_mobiledata, size: 24),
-                          ),
+                          icon: googleBusy
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : Image.network(
+                                  'https://www.google.com/favicon.ico',
+                                  width: 20,
+                                  height: 20,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                      Icons.g_mobiledata,
+                                      size: 24),
+                                ),
                           label: const Text('Continue with Google'),
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size.fromHeight(50),

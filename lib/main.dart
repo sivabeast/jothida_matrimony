@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -14,13 +15,26 @@ import 'services/firebase/fcm_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-    await FcmService().initialize();
+    // Firebase core must be ready before any auth/Firestore call. Bound it so a
+    // misconfigured or unreachable backend can't hang the launch indefinitely.
+    await Firebase.initializeApp(
+            options: DefaultFirebaseOptions.currentPlatform)
+        .timeout(const Duration(seconds: 20));
   } catch (e, st) {
-    // Don't block the UI if Firebase isn't fully configured yet
+    // Don't block the UI if Firebase isn't fully configured/reachable yet
     // (e.g. while reviewing the frontend before a real Firebase project exists).
-    debugPrint('Firebase init skipped: $e\n$st');
+    debugPrint('Firebase init failed (continuing): $e\n$st');
   }
+  // FCM setup must NOT block first paint: requestPermission() shows a system
+  // dialog and token registration can be slow. Initialise it in the background
+  // so a slow/denied notification permission never delays app start or login.
+  unawaited(
+    FcmService()
+        .initialize()
+        .timeout(const Duration(seconds: 15))
+        .catchError((Object e) =>
+            debugPrint('FCM initialize skipped (non-fatal): $e')),
+  );
   runApp(const ProviderScope(child: JothidaMatrimonyApp()));
 }
 
