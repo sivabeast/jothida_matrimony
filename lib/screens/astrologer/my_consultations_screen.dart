@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/file_actions.dart';
 import '../../core/utils/slot_generator.dart';
 import '../../models/consultation_model.dart';
+import '../../providers/chat_provider.dart';
 import '../../providers/consultation_provider.dart';
 
 /// "My Consultations" — the user's view of their consultation bookings. They
@@ -102,6 +104,9 @@ class ConsultationBookingCard extends ConsumerWidget {
     final canPay = b.isInApp && b.status == ConsultationStatus.waitingForPayment;
     final canViewReport = b.hasReport;
     final canCancel = b.status == ConsultationStatus.pending;
+    // Chat is gated on payment + approval (in-app: paid; direct-visit: the
+    // in-person visit is confirmed on accept). No payment / pending = no chat.
+    final canChat = _chatEnabled(b);
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -185,9 +190,64 @@ class ConsultationBookingCard extends ConsumerWidget {
               ],
             ),
           ],
+          if (canChat) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _chat(context, ref, b),
+                icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                label: const Text('Chat with Astrologer'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(44),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  /// Chat is unlocked only once the booking is confirmed: an in-app booking
+  /// must be paid; a direct-visit booking is confirmed on acceptance (paid in
+  /// person). Pending / rejected / cancelled / refunded never allow chat.
+  bool _chatEnabled(ConsultationBooking b) {
+    switch (b.status) {
+      case ConsultationStatus.paid:
+      case ConsultationStatus.analysisInProgress:
+      case ConsultationStatus.reportSubmitted:
+      case ConsultationStatus.completed:
+        return true;
+      case ConsultationStatus.accepted:
+        return b.isDirectVisit;
+      default:
+        return false;
+    }
+  }
+
+  Future<void> _chat(
+      BuildContext context, WidgetRef ref, ConsultationBooking b) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final id = await ref.read(chatControllerProvider).openChatWith(
+            otherUid: b.astrologerId,
+            otherName: b.astrologerName.isEmpty
+                ? 'Astrologer'
+                : b.astrologerName,
+            otherPhoto: '',
+          );
+      if (!context.mounted) return;
+      context.push('/chat/$id', extra: {
+        'name': b.astrologerName.isEmpty ? 'Astrologer' : b.astrologerName,
+        'photo': '',
+      });
+    } catch (_) {
+      messenger.showSnackBar(
+          const SnackBar(content: Text('Could not open chat. Try again.')));
+    }
   }
 
   Widget _payButton(BuildContext context, WidgetRef ref, ConsultationBooking b) =>

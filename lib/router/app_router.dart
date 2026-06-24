@@ -257,6 +257,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return OtpScreen(
             verificationId: extra['verificationId'] as String,
             phone: extra['phone'] as String,
+            isAstrologer: extra['isAstrologer'] == true,
           );
         },
       ),

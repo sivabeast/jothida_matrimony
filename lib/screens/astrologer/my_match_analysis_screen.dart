@@ -213,8 +213,11 @@ class MatchAnalysisBookingCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final r = request;
     final color = _statusColor(r);
-    final canChat = r.status == AstrologerRequestStatus.accepted ||
-        r.status == AstrologerRequestStatus.completed;
+    // Chat is gated on payment + approval: only an accepted-AND-paid (or
+    // completed) booking unlocks chat. No payment / pending = no chat.
+    final canChat = r.paid &&
+        (r.status == AstrologerRequestStatus.accepted ||
+            r.status == AstrologerRequestStatus.completed);
     final canViewReport =
         r.status == AstrologerRequestStatus.completed && r.hasAnalysis;
     final canPay = r.awaitingPayment;

@@ -11,9 +11,9 @@ import '../../providers/astrologer_session_provider.dart';
 import '../../widgets/common/gradient_button.dart';
 import '../../widgets/common/app_text_field.dart';
 
-/// Login for the **Astrologer** portal (separate from the matrimony-user
-/// login). Email/password + Google; on success the astrologer account is
-/// loaded from Firestore and the dashboard opens.
+/// Login for the **Astrologer** portal. Same passwordless methods as the user
+/// login — Mobile Number + OTP, or Continue with Google. On success the
+/// astrologer account is hydrated; a brand-new account is sent to onboarding.
 class AstrologerLoginScreen extends ConsumerStatefulWidget {
   const AstrologerLoginScreen({super.key});
 
@@ -25,19 +25,16 @@ class AstrologerLoginScreen extends ConsumerStatefulWidget {
 class _AstrologerLoginScreenState
     extends ConsumerState<AstrologerLoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
+  final _phoneController = TextEditingController();
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
-  /// After Firebase auth: hydrate the astrologer session. If this account has
-  /// no astrologer profile yet, send them to the astrologer signup form.
+  /// After a Google sign-in: hydrate the astrologer session. No profile yet →
+  /// onboarding form. (Phone OTP routes from the OTP screen via isAstrologer.)
   Future<void> _afterAuth(String uid) async {
     final exists = await ref
         .read(myAstrologerAccountProvider.notifier)
@@ -53,28 +50,24 @@ class _AstrologerLoginScreenState
     }
   }
 
-  Future<void> _signIn() async {
-    debugPrint('[AstrologerLogin] "Sign In" tapped for '
-        '${_emailController.text.trim()}');
+  Future<void> _sendOtp() async {
+    debugPrint('[AstrologerLogin] "Send OTP" tapped for '
+        '+91${_phoneController.text.trim()}');
     if (!_formKey.currentState!.validate()) return;
-    await ref.read(authNotifierProvider.notifier).signInWithEmail(
-          _emailController.text.trim(),
-          _passwordController.text,
-        );
-    final auth = ref.read(authNotifierProvider);
+    await ref
+        .read(otpNotifierProvider.notifier)
+        .sendOtp(_phoneController.text.trim());
     if (!mounted) return;
-    if (auth.hasError) {
-      final err = auth.error;
-      final message = err is AuthException
-          ? err.message
-          : 'Sign in failed. Please check your credentials and try again.';
-      debugPrint('[AstrologerLogin] signInWithEmail error: $err');
+    final otpState = ref.read(otpNotifierProvider);
+    if (otpState.codeSent && otpState.verificationId != null) {
+      context.push('/otp', extra: {
+        'verificationId': otpState.verificationId!,
+        'phone': _phoneController.text.trim(),
+        'isAstrologer': true,
+      });
+    } else if (otpState.error != null) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
-    } else if (auth.valueOrNull != null) {
-      debugPrint('[AstrologerLogin] Email sign-in successful '
-          '(uid=${auth.valueOrNull!.uid}). Loading astrologer profile...');
-      await _afterAuth(auth.valueOrNull!.uid);
+          .showSnackBar(SnackBar(content: Text(otpState.error!)));
     }
   }
 
@@ -103,8 +96,9 @@ class _AstrologerLoginScreenState
 
   @override
   Widget build(BuildContext context) {
+    final otpState = ref.watch(otpNotifierProvider);
     final authAsync = ref.watch(authNotifierProvider);
-    final isLoading = authAsync.isLoading;
+    final isLoading = otpState.isLoading || authAsync.isLoading;
 
     return Scaffold(
       body: Container(
@@ -142,8 +136,7 @@ class _AstrologerLoginScreenState
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 20),
+                          color: Colors.black.withOpacity(0.1), blurRadius: 20),
                     ],
                   ),
                   child: Form(
@@ -151,47 +144,34 @@ class _AstrologerLoginScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Welcome back, Guruji',
+                        Text('Welcome, Guruji',
                             style: AppTextStyles.heading2),
                         const SizedBox(height: 4),
                         Text('Sign in to manage your consultations',
                             style: AppTextStyles.bodyMedium),
                         const SizedBox(height: 22),
+                        // ── Mobile number + OTP ──────────────────────────────
                         AppTextField(
-                          controller: _emailController,
-                          label: 'Email',
-                          hint: 'astrologer@email.com',
-                          keyboardType: TextInputType.emailAddress,
-                          validator: Validators.email,
+                          controller: _phoneController,
+                          label: 'Mobile Number',
+                          hint: '9876543210',
+                          keyboardType: TextInputType.phone,
+                          prefixText: '+91 ',
+                          validator: Validators.phone,
                         ),
-                        const SizedBox(height: 12),
-                        AppTextField(
-                          controller: _passwordController,
-                          label: 'Password',
-                          hint: '••••••••',
-                          obscureText: _obscurePassword,
-                          validator: Validators.password,
-                          suffixIcon: IconButton(
-                            icon: Icon(_obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility),
-                            onPressed: () => setState(
-                                () => _obscurePassword = !_obscurePassword),
-                          ),
-                        ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () => context.push('/forgot-password'),
-                            child: const Text('Forgot Password?'),
-                          ),
-                        ),
+                        const SizedBox(height: 16),
                         GradientButton(
-                          onPressed: isLoading ? null : _signIn,
-                          isLoading: isLoading,
-                          text: 'Sign In',
+                          onPressed: isLoading ? null : _sendOtp,
+                          isLoading: otpState.isLoading,
+                          text: 'Send OTP',
                           gradient: AppColors.goldGradient,
                         ),
+                        if (otpState.error != null) ...[
+                          const SizedBox(height: 8),
+                          Text(otpState.error!,
+                              style: const TextStyle(
+                                  color: Colors.red, fontSize: 13)),
+                        ],
                         const SizedBox(height: 20),
                         const Row(
                           children: [
@@ -205,6 +185,7 @@ class _AstrologerLoginScreenState
                           ],
                         ),
                         const SizedBox(height: 16),
+                        // ── Continue with Google ─────────────────────────────
                         OutlinedButton.icon(
                           onPressed: isLoading ? null : _signInWithGoogle,
                           icon: Image.network(
@@ -221,29 +202,13 @@ class _AstrologerLoginScreenState
                                 borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text('New astrologer? '),
-                            GestureDetector(
-                              onTap: isLoading ? null : _signInWithGoogle,
-                              child: Text(
-                                'Sign up with Google',
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: AppColors.goldDark,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 12),
                         const Divider(),
                         TextButton.icon(
                           onPressed: () => context.go('/account-type'),
                           icon: const Icon(Icons.swap_horiz, size: 18),
-                          label: const Text('Looking for a partner? User login'),
+                          label:
+                              const Text('Looking for a partner? User login'),
                           style: TextButton.styleFrom(
                               foregroundColor: AppColors.primary),
                         ),

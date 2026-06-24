@@ -5,18 +5,26 @@ import 'package:pin_code_fields/pin_code_fields.dart';
 import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/utils/auth_routing.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/astrologer_session_provider.dart';
 import '../../widgets/common/gradient_button.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
   final String verificationId;
   final String phone;
 
+  /// When true the OTP came from the Astrologer portal, so a verified-but-new
+  /// account is sent to the astrologer onboarding form (not matrimony profile
+  /// creation), and an existing astrologer lands on their dashboard.
+  final bool isAstrologer;
+
   const OtpScreen({
     super.key,
     required this.verificationId,
     required this.phone,
+    this.isAstrologer = false,
   });
 
   @override
@@ -66,8 +74,30 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     } else if (auth.valueOrNull != null) {
       final user = auth.valueOrNull!;
       debugPrint('[OtpScreen] OTP verified (uid=${user.uid}, '
-          'isProfileComplete=${user.isProfileComplete}). Routing...');
-      await routeAuthenticatedUser(context, ref, user, tag: 'OtpScreen');
+          'isProfileComplete=${user.isProfileComplete}, '
+          'isAstrologer=${widget.isAstrologer}). Routing...');
+      if (widget.isAstrologer) {
+        await _afterAstrologerAuth(user.uid);
+      } else {
+        await routeAuthenticatedUser(context, ref, user, tag: 'OtpScreen');
+      }
+    }
+  }
+
+  /// Astrologer-portal routing: existing account → dashboard; new account →
+  /// onboarding form.
+  Future<void> _afterAstrologerAuth(String uid) async {
+    final exists = await ref
+        .read(myAstrologerAccountProvider.notifier)
+        .loadFromFirestore(uid);
+    if (!mounted) return;
+    if (exists) {
+      context.go('/astrologer-dashboard');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              'Just a few more details — please complete your astrologer profile.')));
+      context.go('/astrologer-register');
     }
   }
 
