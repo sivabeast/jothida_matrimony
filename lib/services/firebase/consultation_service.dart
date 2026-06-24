@@ -135,9 +135,28 @@ class ConsultationService {
       'paidAt': FieldValue.serverTimestamp(),
       'status': ConsultationStatus.paid.key,
     });
+    await _bumpBookingCount(b.astrologerId);
     await _notify(b.astrologerId, 'Payment received',
         '${b.userName} paid ₹${b.amount}. You can start the analysis.',
         'consultation_paid');
+    // Confirm to the user that payment succeeded and the booking is confirmed.
+    await _notify(b.userId, 'Payment Successful',
+        'Your payment of ₹${b.amount} was successful. Your consultation is confirmed.',
+        'payment_success');
+  }
+
+  /// Best-effort +1 to an astrologer's confirmed-booking counter (drives the
+  /// "Most Booked Astrologers" section). Never throws.
+  Future<void> _bumpBookingCount(String astrologerId) async {
+    if (astrologerId.trim().isEmpty) return;
+    try {
+      await _db
+          .collection(AppConstants.astrologersCollection)
+          .doc(astrologerId)
+          .update({'bookingCount': FieldValue.increment(1)});
+    } catch (_) {
+      // Non-fatal — a counter hiccup must not fail the payment.
+    }
   }
 
   /// Astrologer begins the deep analysis. Status → `analysisInProgress`.

@@ -106,6 +106,20 @@ class Astrologer {
   /// subscription badge.
   final String subscriptionPlan;
 
+  /// Total confirmed (paid) bookings — drives the "Most Booked Astrologers"
+  /// directory section. Incremented when a match-analysis or consultation
+  /// booking is paid.
+  final int bookingCount;
+
+  /// When the astrologer account was approved/created — drives the "New
+  /// Astrologers" directory section (most recent first).
+  final DateTime? createdAt;
+
+  /// Flat consultation / match-analysis fees from the account (₹). Shown on the
+  /// directory card and the public profile.
+  final int consultationFee;
+  final int matchAnalysisFee;
+
   const Astrologer({
     required this.id,
     required this.name,
@@ -136,6 +150,10 @@ class Astrologer {
     this.phone = '',
     this.certificateDocs = const [],
     this.subscriptionPlan = '',
+    this.bookingCount = 0,
+    this.createdAt,
+    this.consultationFee = 0,
+    this.matchAnalysisFee = 0,
   });
 
   /// All distinct service / specialization names the astrologer offers, with no
@@ -188,6 +206,15 @@ class Astrologer {
         about: m['about'] ?? '',
         verified: m['verified'] ?? false,
         subscriptionPlan: m['subscriptionPlan'] ?? '',
+        bookingCount: (m['bookingCount'] ?? 0) is num
+            ? (m['bookingCount'] as num).toInt()
+            : 0,
+        consultationFee: (m['consultationFee'] ?? 0) is num
+            ? (m['consultationFee'] as num).toInt()
+            : 0,
+        matchAnalysisFee: (m['matchAnalysisFee'] ?? 0) is num
+            ? (m['matchAnalysisFee'] as num).toInt()
+            : 0,
       );
 
   Map<String, dynamic> toMap() => {

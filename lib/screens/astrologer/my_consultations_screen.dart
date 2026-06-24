@@ -46,7 +46,7 @@ class MyConsultationsScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 itemCount: list.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (_, i) => _ConsultationCard(booking: list[i]),
+                itemBuilder: (_, i) => ConsultationBookingCard(booking: list[i]),
               ),
       ),
     );
@@ -89,9 +89,11 @@ Color consultationStatusColor(ConsultationStatus s) {
   }
 }
 
-class _ConsultationCard extends ConsumerWidget {
+/// A single consultation booking card. Public so the unified Bookings page
+/// (bottom-nav tab) can reuse it alongside "My Consultations".
+class ConsultationBookingCard extends ConsumerWidget {
   final ConsultationBooking booking;
-  const _ConsultationCard({required this.booking});
+  const ConsultationBookingCard({super.key, required this.booking});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -144,6 +146,8 @@ class _ConsultationCard extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: 12.5, color: Colors.grey[700])),
             ),
+          const SizedBox(height: 8),
+          _metaFooter(b),
           if (canPay) ...[
             const SizedBox(height: 10),
             _payBanner(),
@@ -267,6 +271,48 @@ class _ConsultationCard extends ConsumerWidget {
           ],
         ),
       );
+
+  /// Booking ID · service type · payment status footer (spec display fields).
+  Widget _metaFooter(ConsultationBooking b) {
+    final pay = b.transactionStatusLabel;
+    final payColor = pay == 'Paid' || pay == 'Completed'
+        ? AppColors.success
+        : pay == 'Cancelled' || pay == 'Refunded'
+            ? AppColors.error
+            : AppColors.warning;
+    final shortId = b.id.length <= 8 ? b.id : b.id.substring(0, 8);
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _metaPill(Icons.tag, '#$shortId'),
+        _metaPill(Icons.category_outlined, b.mode.label),
+        _metaPill(Icons.payments_outlined, pay, color: payColor),
+      ],
+    );
+  }
+
+  Widget _metaPill(IconData icon, String text, {Color? color}) {
+    final c = color ?? Colors.grey[600]!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: c.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: c),
+          const SizedBox(width: 4),
+          Text(text,
+              style: TextStyle(
+                  fontSize: 10.5, color: c, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
 
   void _showReport(BuildContext context, ConsultationBooking b) {
     showModalBottomSheet(

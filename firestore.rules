@@ -258,7 +258,8 @@ service cloud.firestore {
       // viewCount pattern.
       allow update: if isAuthenticated()
                     && request.resource.data.diff(resource.data).affectedKeys()
-                        .hasOnly(['rating', 'reviewCount', 'ratingBreakdown', 'updatedAt']);
+                        .hasOnly(['rating', 'reviewCount', 'ratingBreakdown',
+                                  'bookingCount', 'updatedAt']);
       // Self-service account deletion: an astrologer may delete their OWN
       // account document immediately. Admins may delete any.
       allow delete: if isOwner(astrologerId) || isAdmin();
@@ -336,16 +337,18 @@ service cloud.firestore {
                     && resource.data.astrologerId == request.auth.uid;
       allow update: if isAdmin();
       // The booking's owner (matrimony user) may run the client-side expiry
-      // sweep and — for "choose another later" bookings — reassign it to a new
-      // astrologer. Restricted to these workflow fields so they can never edit
-      // the analysis, amount, profiles, etc.
+      // sweep, pay the analysis fee (dev-mode payment flags), and — for "choose
+      // another later" bookings — reassign it to a new astrologer. Restricted to
+      // these workflow fields so they can never edit the analysis, amount,
+      // profiles, etc.
       allow update: if isAuthenticated()
                     && resource.data.userId == request.auth.uid
                     && request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly([
                            'expired', 'expiredAt', 'history', 'status',
                            'astrologerId', 'astrologerName', 'reassigned',
-                           'reassignedAt', 'respondedAt', 'expiresAt'
+                           'reassignedAt', 'respondedAt', 'expiresAt',
+                           'paid', 'paidAt', 'paymentId'
                          ]);
       // Either party may delete their own request as part of account deletion;
       // admins may delete any.

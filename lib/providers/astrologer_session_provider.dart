@@ -355,6 +355,24 @@ class DemoAstrologerRequestsNotifier
     ];
   }
 
+  /// Demo-mode payment: flag an accepted booking as paid with a demo txn id.
+  void markPaid(String id, {required String paymentId}) {
+    state = [
+      for (final r in state)
+        r.id == id
+            ? r.copyWith(
+                paid: true,
+                paidAt: DateTime.now(),
+                paymentId: paymentId,
+                history: [
+                  ...r.history,
+                  BookingHistoryEntry.now('Payment received ($paymentId)'),
+                ],
+              )
+            : r,
+    ];
+  }
+
   /// Demo-mode expiry: flag a pending booking as expired.
   void markExpired(String id) {
     state = [

@@ -16,6 +16,7 @@ import '../screens/astrologer/consultation_booking_screen.dart';
 import '../screens/astrologer/my_consultations_screen.dart';
 import '../screens/astrologer/astrologer_consultations_screen.dart';
 import '../screens/astrologer/astrologer_earnings_screen.dart';
+import '../screens/astrologer/profile/astrologer_bank_details_screen.dart';
 import '../screens/astrologer/match_requests_screen.dart';
 import '../screens/astrologer/match_workspace_screen.dart';
 import '../screens/astrologer/my_match_analysis_screen.dart';
@@ -53,7 +54,10 @@ import '../screens/horoscope/horoscope_files_screen.dart';
 import '../screens/horoscope/member_horoscope_screen.dart';
 import '../screens/horoscope/horoscope_match_screen.dart';
 import '../screens/profile/personal_details_screen.dart';
+import '../screens/profile/my_profile_screen.dart';
+import '../screens/profile/payments_screen.dart';
 import '../screens/profile/complete_profile_screen.dart';
+import '../screens/notifications/notifications_screen.dart';
 import '../screens/profile/profile_section_edit_screens.dart';
 import '../screens/profile/photos_edit_screen.dart';
 import '../screens/family/family_tree_screen.dart';
@@ -334,6 +338,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/astrologer-earnings',
           builder: (_, __) => const AstrologerEarningsScreen()),
+      // Astrologer: payout bank account / UPI + flat fees.
+      GoRoute(
+          path: '/astrologer-bank-details',
+          builder: (_, __) => const AstrologerBankDetailsScreen()),
       // Astrologer: dedicated Match Analysis Requests module
       // (Pending / Accepted / Completed).
       GoRoute(
@@ -361,6 +369,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/language', builder: (_, __) => const LanguageScreen()),
       // ── Profile section screens ──────────────────────────────────────────
       GoRoute(path: '/personal-details', builder: (_, __) => const PersonalDetailsScreen()),
+      // My Profile hub + Wallet/Payments + Notifications (header Drawer items).
+      GoRoute(path: '/my-profile', builder: (_, __) => const MyProfileScreen()),
+      GoRoute(path: '/payments', builder: (_, __) => const PaymentsScreen()),
+      GoRoute(
+          path: '/notifications',
+          builder: (_, __) => const NotificationsScreen()),
       GoRoute(path: '/complete-profile', builder: (_, __) => const CompleteProfileScreen()),
       // ── Section-wise profile editors (opened from the completion card) ────
       GoRoute(path: '/edit/about', builder: (_, __) => const AboutMeEditScreen()),

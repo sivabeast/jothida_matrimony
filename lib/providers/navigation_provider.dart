@@ -1,16 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Selected tab index for the main Home shell:
-/// 0 Home · 1 Matches · 2 Astrologer · 3 Interests · 4 Profile.
+/// 0 Home · 1 Matches · 2 Interests · 3 Astrology · 4 Bookings.
 ///
 /// Exposed as a provider (rather than local `setState`) so other screens can
 /// switch tabs programmatically — e.g. the Home dashboard's "View All" buttons
 /// jump to the Matches tab.
 final homeTabIndexProvider = StateProvider<int>((ref) => 0);
 
-/// Index of the Astrologer tab in the Home shell. Centralised so "Consult
+/// Index of the Astrology tab in the Home shell. Centralised so "Consult
 /// Astrologer" actions across the app jump to the right tab.
-const int kAstrologerTabIndex = 2;
+const int kAstrologerTabIndex = 3;
 
 /// A pair the user wants an astrologer to analyse, stashed when they tap
 /// "Consult Astrologer" (from a horoscope-match result or a member's profile)

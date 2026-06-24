@@ -120,7 +120,7 @@ class MyMatchAnalysisScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (_, i) => _AnalysisCard(request: items[i]),
+      itemBuilder: (_, i) => MatchAnalysisBookingCard(request: items[i]),
     );
   }
 
@@ -142,9 +142,11 @@ class MyMatchAnalysisScreen extends ConsumerWidget {
       );
 }
 
-class _AnalysisCard extends ConsumerWidget {
+/// A single match-analysis booking card. Public so the unified Bookings page
+/// (bottom-nav tab) can reuse it alongside "My Match Analysis".
+class MatchAnalysisBookingCard extends ConsumerWidget {
   final AstrologerRequestModel request;
-  const _AnalysisCard({required this.request});
+  const MatchAnalysisBookingCard({super.key, required this.request});
 
   // Colour + label are driven by the booking's DISPLAY status (which folds in
   // the Expired / Reassigned states) rather than the raw enum.
@@ -215,6 +217,7 @@ class _AnalysisCard extends ConsumerWidget {
         r.status == AstrologerRequestStatus.completed;
     final canViewReport =
         r.status == AstrologerRequestStatus.completed && r.hasAnalysis;
+    final canPay = r.awaitingPayment;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -275,6 +278,8 @@ class _AnalysisCard extends ConsumerWidget {
           const SizedBox(height: 4),
           Text(DateFormat('d MMM yyyy, h:mm a').format(r.createdAt),
               style: TextStyle(fontSize: 11.5, color: Colors.grey[500])),
+          const SizedBox(height: 6),
+          _metaFooter(r),
           if (r.message.trim().isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(r.message,
@@ -283,6 +288,24 @@ class _AnalysisCard extends ConsumerWidget {
                 style: TextStyle(fontSize: 12.5, color: Colors.grey[700])),
           ],
           if (r.isEffectivelyExpired) _expirySection(context, ref, r),
+          if (canPay) ...[
+            const SizedBox(height: 10),
+            _payBanner(),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _pay(context, ref, r),
+                icon: const Icon(Icons.payment, size: 18),
+                label: Text('Pay ₹${r.amount}'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(44),
+                ),
+              ),
+            ),
+          ],
           if (canChat || canViewReport) ...[
             const SizedBox(height: 12),
             Row(
@@ -319,6 +342,83 @@ class _AnalysisCard extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Booking ID · service type · payment status footer (spec display fields).
+  Widget _metaFooter(AstrologerRequestModel r) {
+    final shortId = r.id.length <= 8 ? r.id : r.id.substring(0, 8);
+    final payKey = r.paymentStatusKey;
+    final payColor = payKey == 'paid'
+        ? AppColors.success
+        : payKey == 'pending'
+            ? AppColors.warning
+            : Colors.grey;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _metaPill(Icons.tag, '#$shortId'),
+        _metaPill(Icons.auto_awesome_outlined, 'Match Analysis'),
+        if (r.amount > 0)
+          _metaPill(Icons.payments_outlined, r.paymentStatusLabel,
+              color: payColor),
+      ],
+    );
+  }
+
+  Widget _metaPill(IconData icon, String text, {Color? color}) {
+    final c = color ?? Colors.grey[600]!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: c.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: c),
+          const SizedBox(width: 4),
+          Text(text,
+              style: TextStyle(
+                  fontSize: 10.5, color: c, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  Widget _payBanner() => Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: AppColors.info.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.check_circle_outline, size: 16, color: AppColors.info),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Accepted! Complete the payment to confirm your analysis.',
+                style: TextStyle(fontSize: 12.5),
+              ),
+            ),
+          ],
+        ),
+      );
+
+  Future<void> _pay(
+      BuildContext context, WidgetRef ref, AstrologerRequestModel r) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(matchAnalysisControllerProvider.notifier).pay(r);
+      messenger.showSnackBar(const SnackBar(
+          content: Text('Payment successful — your booking is confirmed.')));
+    } catch (_) {
+      messenger.showSnackBar(const SnackBar(
+          content: Text('Payment could not be completed. Please try again.')));
+    }
   }
 
   /// Shown on an expired booking — the spec notification copy + (for non-admin

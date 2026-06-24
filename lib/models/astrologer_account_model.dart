@@ -120,12 +120,31 @@ class AstrologerAccount {
   // Marketplace stats (populated by the platform; default 0 until tracked).
   final int profileViews;
   final int contactUnlocks;
+  // Total confirmed (paid) bookings — drives the "Most Booked Astrologers"
+  // directory section. Incremented when a booking is paid.
+  final int bookingCount;
   // Subscription — the visibility gate for the marketplace.
   final String subscriptionPlan; // '' | 'monthly' | 'yearly'
   final DateTime? subscriptionExpiry;
   // When the astrologer account was first created (registration date). Read
   // from the Firestore `createdAt` server timestamp; may be null for older docs.
   final DateTime? createdAt;
+
+  // ── Bank / payout details (weekly settlement) ──────────────────────────────
+  // Captured at registration / editable later. Used for the weekly payout once
+  // a real payout pipeline is wired; for now they are display + record only.
+  final String accountHolderName;
+  final String bankName;
+  final String accountNumber;
+  final String ifscCode;
+  final String upiId;
+  final int matchAnalysisFee; // flat match-analysis fee (₹)
+
+  /// True once the astrologer has provided enough payout detail to be settled
+  /// (either full bank details or a UPI id).
+  bool get hasBankDetails =>
+      upiId.trim().isNotEmpty ||
+      (accountNumber.trim().isNotEmpty && ifscCode.trim().isNotEmpty);
 
   const AstrologerAccount({
     required this.id,
@@ -178,9 +197,16 @@ class AstrologerAccount {
     this.ratingBreakdown = const {},
     this.profileViews = 0,
     this.contactUnlocks = 0,
+    this.bookingCount = 0,
     this.subscriptionPlan = '',
     this.subscriptionExpiry,
     this.createdAt,
+    this.accountHolderName = '',
+    this.bankName = '',
+    this.accountNumber = '',
+    this.ifscCode = '',
+    this.upiId = '',
+    this.matchAnalysisFee = 0,
   });
 
   bool get isApproved => status == VerificationStatus.approved;
@@ -280,8 +306,15 @@ class AstrologerAccount {
     Map<int, int>? ratingBreakdown,
     int? profileViews,
     int? contactUnlocks,
+    int? bookingCount,
     String? subscriptionPlan,
     DateTime? subscriptionExpiry,
+    String? accountHolderName,
+    String? bankName,
+    String? accountNumber,
+    String? ifscCode,
+    String? upiId,
+    int? matchAnalysisFee,
   }) =>
       AstrologerAccount(
         id: id,
@@ -336,11 +369,18 @@ class AstrologerAccount {
         ratingBreakdown: ratingBreakdown ?? this.ratingBreakdown,
         profileViews: profileViews ?? this.profileViews,
         contactUnlocks: contactUnlocks ?? this.contactUnlocks,
+        bookingCount: bookingCount ?? this.bookingCount,
         subscriptionPlan: subscriptionPlan ?? this.subscriptionPlan,
         subscriptionExpiry: subscriptionExpiry ?? this.subscriptionExpiry,
         rating: rating,
         reviewCount: reviewCount,
         createdAt: createdAt,
+        accountHolderName: accountHolderName ?? this.accountHolderName,
+        bankName: bankName ?? this.bankName,
+        accountNumber: accountNumber ?? this.accountNumber,
+        ifscCode: ifscCode ?? this.ifscCode,
+        upiId: upiId ?? this.upiId,
+        matchAnalysisFee: matchAnalysisFee ?? this.matchAnalysisFee,
       );
 
   factory AstrologerAccount.fromFirestore(DocumentSnapshot doc) {
@@ -412,6 +452,7 @@ class AstrologerAccount {
       ratingBreakdown: _parseBreakdown(d['ratingBreakdown']),
       profileViews: d['profileViews'] ?? 0,
       contactUnlocks: d['contactUnlocks'] ?? 0,
+      bookingCount: d['bookingCount'] ?? 0,
       subscriptionPlan: d['subscriptionPlan'] ?? '',
       subscriptionExpiry: d['subscriptionExpiry'] is Timestamp
           ? (d['subscriptionExpiry'] as Timestamp).toDate()
@@ -419,6 +460,14 @@ class AstrologerAccount {
       createdAt: d['createdAt'] is Timestamp
           ? (d['createdAt'] as Timestamp).toDate()
           : null,
+      accountHolderName: d['accountHolderName'] ?? '',
+      bankName: d['bankName'] ?? '',
+      accountNumber: d['accountNumber'] ?? '',
+      ifscCode: d['ifscCode'] ?? '',
+      upiId: d['upiId'] ?? '',
+      matchAnalysisFee: (d['matchAnalysisFee'] ?? 0) is num
+          ? (d['matchAnalysisFee'] as num).toInt()
+          : 0,
     );
   }
 
@@ -485,6 +534,13 @@ class AstrologerAccount {
             ratingBreakdown.map((k, v) => MapEntry(k.toString(), v)),
         'profileViews': profileViews,
         'contactUnlocks': contactUnlocks,
+        'bookingCount': bookingCount,
+        'accountHolderName': accountHolderName,
+        'bankName': bankName,
+        'accountNumber': accountNumber,
+        'ifscCode': ifscCode,
+        'upiId': upiId,
+        'matchAnalysisFee': matchAnalysisFee,
         'subscriptionPlan': subscriptionPlan,
         'subscriptionExpiry': subscriptionExpiry != null
             ? Timestamp.fromDate(subscriptionExpiry!)

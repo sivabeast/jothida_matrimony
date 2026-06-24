@@ -3,19 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../core/services/match_score_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/profile_completion.dart';
+import '../../../models/notification_model.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/account_provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/interest_provider.dart';
 import '../../../providers/navigation_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/horoscope_match_badge.dart';
 import '../../../widgets/common/match_score_badge.dart';
+import '../../../widgets/home/profile_completion_card.dart';
 import 'notifications_tab.dart';
-// ProfileCompletionCard available for future use:
-// import '../../../widgets/home/profile_completion_card.dart';
 
 /// Home dashboard tab — hero banner carousel, quick actions, recommended
 /// matches horizontal scroll, premium upgrade banner.
@@ -92,6 +95,12 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           _buildHeaderBanner(context),
           const SizedBox(height: 16),
 
+          // ── Profile Completion % (self-hides at 100%) ─────────────────────
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: ProfileCompletionCard(),
+          ),
+
           // ── Married status prompt / badge ─────────────────────────────────
           _buildMarriedSection(context, myProfile),
 
@@ -99,11 +108,19 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           _buildQuickActions(context),
           const SizedBox(height: 16),
 
+          // ── Profile Statistics ───────────────────────────────────────────
+          _buildStatistics(context),
+          const SizedBox(height: 16),
+
           // ── Premium Upgrade Banner (moved up to the former Verify slot) ───
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: _buildPremiumBanner(context),
           ),
+          const SizedBox(height: 16),
+
+          // ── Recent Activities ────────────────────────────────────────────
+          _buildRecentActivities(context),
           const SizedBox(height: 16),
 
           // ── Categorized matches (Very Good · Good · Average · All) ────────
@@ -186,8 +203,18 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
 
     return Row(
       children: [
+        // Hamburger → opens the shared navigation Drawer (Profile lives there).
+        Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white, size: 26),
+            tooltip: 'Menu',
+            visualDensity: VisualDensity.compact,
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+          ),
+        ),
+        const SizedBox(width: 2),
         CircleAvatar(
-          radius: 22,
+          radius: 20,
           backgroundColor: Colors.white24,
           backgroundImage: photo.isNotEmpty ? NetworkImage(photo) : null,
           child: photo.isEmpty
@@ -195,10 +222,10 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
                   style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 18))
+                      fontSize: 16))
               : null,
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -338,6 +365,178 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         ],
       ),
     );
+  }
+
+  // ── Profile Statistics ─────────────────────────────────────────────────────
+
+  Widget _buildStatistics(BuildContext context) {
+    final sent = ref.watch(sentInterestsProvider).valueOrNull ?? const [];
+    final received =
+        ref.watch(receivedInterestsProvider).valueOrNull ?? const [];
+    final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid ?? '';
+    // Mutual matches = distinct counterparts with an accepted interest.
+    final matched = <String>{};
+    for (final i in sent) {
+      if (i.isAccepted) matched.add(i.receiverId);
+    }
+    for (final i in received) {
+      if (i.isAccepted) matched.add(i.senderId);
+    }
+    matched.remove(myUid);
+    final completion =
+        computeProfileCompletion(ref.watch(myProfileProvider).valueOrNull);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)],
+      ),
+      child: Row(
+        children: [
+          _stat('Sent', '${sent.length}', Icons.send_outlined),
+          _statDivider(),
+          _stat('Received', '${received.length}', Icons.inbox_outlined),
+          _statDivider(),
+          _stat('Matches', '${matched.length}', Icons.favorite_outline),
+          _statDivider(),
+          _stat('Profile', '${completion.percent}%', Icons.pie_chart_outline),
+        ],
+      ),
+    );
+  }
+
+  Widget _statDivider() =>
+      Container(width: 1, height: 34, color: Colors.grey[200]);
+
+  Widget _stat(String label, String value, IconData icon) => Expanded(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: AppColors.primary, size: 20),
+            const SizedBox(height: 6),
+            Text(value,
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    fontFamily: 'Poppins')),
+            const SizedBox(height: 2),
+            Text(label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+          ],
+        ),
+      );
+
+  // ── Recent Activities ───────────────────────────────────────────────────────
+
+  Widget _buildRecentActivities(BuildContext context) {
+    final notifs = [...(ref.watch(notificationsProvider).valueOrNull ?? const [])]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final recent = notifs.take(4).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader(context, '🔔', 'Recent Activities',
+            onViewAll:
+                recent.isEmpty ? null : () => _openNotifications(context)),
+        const SizedBox(height: 10),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: recent.isEmpty
+              ? Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.history, color: Colors.grey[400], size: 22),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text('No recent activity yet.',
+                            style: TextStyle(
+                                color: Colors.grey[600], fontSize: 13)),
+                      ),
+                    ],
+                  ),
+                )
+              : Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black.withOpacity(0.06), blurRadius: 10)
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      for (var i = 0; i < recent.length; i++) ...[
+                        if (i > 0) const Divider(height: 1, indent: 56),
+                        _activityTile(recent[i]),
+                      ],
+                    ],
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _activityTile(NotificationModel n) {
+    final (icon, color) = _activityIcon(n.type);
+    return ListTile(
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+      leading: CircleAvatar(
+        radius: 18,
+        backgroundColor: color.withOpacity(0.12),
+        child: Icon(icon, color: color, size: 18),
+      ),
+      title: Text(n.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
+      subtitle: Text(n.body,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+      trailing: Text(_timeAgo(n.createdAt),
+          style: TextStyle(fontSize: 10.5, color: Colors.grey[500])),
+    );
+  }
+
+  (IconData, Color) _activityIcon(String type) {
+    if (type.contains('interest')) {
+      return (Icons.favorite, AppColors.primary);
+    }
+    if (type.contains('payment')) {
+      return (Icons.payments, AppColors.success);
+    }
+    if (type.contains('booking') ||
+        type.contains('request') ||
+        type.contains('consultation')) {
+      return (Icons.event_note, const Color(0xFF2F80ED));
+    }
+    if (type.contains('settlement')) {
+      return (Icons.account_balance_wallet, AppColors.gold);
+    }
+    return (Icons.notifications, Colors.grey);
+  }
+
+  String _timeAgo(DateTime t) {
+    final d = DateTime.now().difference(t);
+    if (d.inMinutes < 1) return 'now';
+    if (d.inMinutes < 60) return '${d.inMinutes}m';
+    if (d.inHours < 24) return '${d.inHours}h';
+    if (d.inDays < 7) return '${d.inDays}d';
+    return DateFormat('d MMM').format(t);
   }
 
   // ── Married Status ───────────────────────────────────────────────────────

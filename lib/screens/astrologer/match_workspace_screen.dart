@@ -100,9 +100,13 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
             .read(demoAstrologerRequestsProvider.notifier)
             .setStatus(widget.request.id, status);
       } else {
-        await ref
-            .read(astrologerServiceProvider)
-            .updateRequestStatus(widget.request.id, status);
+        await ref.read(astrologerServiceProvider).updateRequestStatus(
+              widget.request.id,
+              status,
+              astrologerName: widget.request.astrologerName,
+              userId: widget.request.userId,
+              amount: widget.request.amount,
+            );
       }
       if (!mounted) return;
       _snack(status == AstrologerRequestStatus.accepted

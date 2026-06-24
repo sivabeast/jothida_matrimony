@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../models/consultation_model.dart';
+import '../../providers/astrologer_session_provider.dart';
 import '../../providers/consultation_provider.dart';
 
 /// Astrologer earnings dashboard + transaction history.
@@ -70,6 +72,8 @@ class AstrologerEarningsScreen extends ConsumerWidget {
               ],
             ),
           ),
+          const SizedBox(height: 16),
+          _settlementCard(context, ref, earnings),
           const SizedBox(height: 20),
           const Text('Transaction History',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -92,6 +96,112 @@ class AstrologerEarningsScreen extends ConsumerWidget {
       ),
     );
   }
+
+  /// Weekly-settlement summary: last + next settlement dates and the amount due
+  /// at the next payout, plus the payout-account status / edit link.
+  Widget _settlementCard(BuildContext context, WidgetRef ref, dynamic earnings) {
+    final now = DateTime.now();
+    final next = _nextWeekly(now);
+    final last = next.subtract(const Duration(days: 7));
+    final int amount = earnings.completed as int; // delivered, payable balance
+    final account = ref.watch(myAstrologerAccountProvider);
+    final hasBank = account?.hasBankDetails ?? false;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.account_balance_outlined,
+                  size: 18, color: AppColors.primary),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Settlement Details',
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.gold.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text('Weekly',
+                    style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _settlementRow(
+              'Last Settlement', DateFormat('d MMM yyyy').format(last)),
+          _settlementRow(
+              'Next Settlement', DateFormat('d MMM yyyy').format(next)),
+          _settlementRow('Amount To Be Paid', '₹$amount', highlight: true),
+          const Divider(height: 22),
+          Row(
+            children: [
+              Icon(hasBank ? Icons.check_circle : Icons.info_outline,
+                  size: 16,
+                  color: hasBank ? AppColors.success : AppColors.warning),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  hasBank
+                      ? 'Payout account on file.'
+                      : 'Add your bank / UPI details to receive payouts.',
+                  style: TextStyle(fontSize: 12.5, color: Colors.grey[800]),
+                ),
+              ),
+              TextButton(
+                onPressed: () => context.push('/astrologer-bank-details'),
+                style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+                child: Text(hasBank ? 'Edit' : 'Add'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Next weekly settlement date — the upcoming Monday (never today).
+  DateTime _nextWeekly(DateTime from) {
+    final today = DateTime(from.year, from.month, from.day);
+    var add = (DateTime.monday - today.weekday + 7) % 7;
+    if (add == 0) add = 7;
+    return today.add(Duration(days: add));
+  }
+
+  Widget _settlementRow(String label, String value, {bool highlight = false}) =>
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label,
+                style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+            Text(value,
+                style: TextStyle(
+                    fontSize: highlight ? 15 : 13,
+                    fontWeight:
+                        highlight ? FontWeight.bold : FontWeight.w600,
+                    color: highlight ? AppColors.primary : Colors.black87)),
+          ],
+        ),
+      );
 }
 
 class _EarningTile extends StatelessWidget {

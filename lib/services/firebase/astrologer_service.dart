@@ -206,10 +206,26 @@ class AstrologerService {
       .map((s) => s.docs.map(AstrologerAccount.fromFirestore).toList());
 
   // ── Requests (consultations / inquiries / horoscope matching) ──────────
-  Future<void> createRequest(AstrologerRequestModel request) => _db
-      .collection(AppConstants.astrologerRequestsCollection)
-      .add(request.toFirestore())
-      .then((_) {});
+  Future<void> createRequest(AstrologerRequestModel request) async {
+    await _db
+        .collection(AppConstants.astrologerRequestsCollection)
+        .add(request.toFirestore());
+    // Notify the astrologer of the new request and confirm submission to the
+    // user (spec: "Booking Submitted").
+    await _notify(
+        request.astrologerId,
+        'New ${request.type.label} Request',
+        '${request.userName} has requested a ${request.type.label}.',
+        'booking_submitted');
+    if (request.userId.trim().isNotEmpty) {
+      await _notify(
+          request.userId,
+          'Booking Submitted',
+          'Your ${request.type.label} request has been sent to '
+              '${request.astrologerName.isEmpty ? 'the astrologer' : request.astrologerName}.',
+          'booking_submitted');
+    }
+  }
 
   /// Realtime stream of every request addressed to this astrologer.
   ///
@@ -248,7 +264,9 @@ class AstrologerService {
     String requestId,
     AstrologerRequestStatus status, {
     String astrologerName = '',
-  }) {
+    String userId = '',
+    int amount = 0,
+  }) async {
     final who =
         astrologerName.trim().isEmpty ? 'the astrologer' : astrologerName.trim();
     String? label;
@@ -266,7 +284,7 @@ class AstrologerService {
         label = null;
         break;
     }
-    return _db
+    await _db
         .collection(AppConstants.astrologerRequestsCollection)
         .doc(requestId)
         .update({
@@ -276,6 +294,30 @@ class AstrologerService {
         'history':
             FieldValue.arrayUnion([BookingHistoryEntry.now(label).toMap()]),
     });
+    // Notify the user of the outcome (spec: Booking Accepted / Payment Pending /
+    // rejected). Best-effort.
+    if (userId.trim().isEmpty) return;
+    switch (status) {
+      case AstrologerRequestStatus.accepted:
+        await _notify(
+            userId,
+            'Booking Accepted',
+            amount > 0
+                ? '$who accepted your request. Please pay ₹$amount to confirm.'
+                : '$who accepted your request.',
+            'booking_accepted');
+        break;
+      case AstrologerRequestStatus.rejected:
+        await _notify(userId, 'Booking Declined',
+            '$who is unable to take your request right now.', 'booking_rejected');
+        break;
+      case AstrologerRequestStatus.completed:
+        await _notify(userId, 'Report Ready',
+            'Your analysis report from $who is ready to view.', 'porutham_ready');
+        break;
+      case AstrologerRequestStatus.pending:
+        break;
+    }
   }
 
   /// Client-side expiry sweep (there is NO Cloud Functions backend): if [r] is
@@ -459,6 +501,51 @@ class AstrologerService {
         'history': FieldValue.arrayUnion(
             [BookingHistoryEntry.now('Report submitted').toMap()]),
       });
+
+  /// Marks a match-analysis booking paid (dev-mode: no real gateway). Records
+  /// the demo transaction id + audit trail and notifies the user that payment
+  /// succeeded and the booking is confirmed. Mirrors the consultation
+  /// pay-after-accept flow. The booking OWNER performs this write (the rules
+  /// allow the owner to update `paid`/`paidAt`/`paymentId`/`history`).
+  Future<void> markAnalysisPaid(
+    String requestId, {
+    required String paymentId,
+    String userId = '',
+    String astrologerId = '',
+  }) async {
+    await _db
+        .collection(AppConstants.astrologerRequestsCollection)
+        .doc(requestId)
+        .update({
+      'paid': true,
+      'paidAt': FieldValue.serverTimestamp(),
+      'paymentId': paymentId,
+      'history': FieldValue.arrayUnion([
+        BookingHistoryEntry.now('Payment received ($paymentId)').toMap(),
+      ]),
+    });
+    await _bumpBookingCount(astrologerId);
+    if (userId.trim().isNotEmpty) {
+      await _notify(userId, 'Payment Successful',
+          'Your payment was successful. Your booking is confirmed.',
+          'payment_success');
+    }
+  }
+
+  /// Best-effort +1 to an astrologer's confirmed-booking counter (drives the
+  /// "Most Booked Astrologers" directory section). Never throws — a counter
+  /// hiccup must not fail the payment.
+  Future<void> _bumpBookingCount(String astrologerId) async {
+    if (astrologerId.trim().isEmpty) return;
+    try {
+      await _db
+          .collection(AppConstants.astrologersCollection)
+          .doc(astrologerId)
+          .update({'bookingCount': FieldValue.increment(1)});
+    } catch (e) {
+      debugPrint('[AstrologerService] bumpBookingCount failed (non-fatal): $e');
+    }
+  }
 
   // ── Ratings & reviews (astrologers/{id}/reviews subcollection) ─────────────
   // Reviews live in a subcollection of the astrologer document:

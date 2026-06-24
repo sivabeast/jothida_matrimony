@@ -170,6 +170,33 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     await ref.read(astrologerServiceProvider).expireRequestIfDue(r);
   }
 
+  /// Pays the analysis fee for an accepted booking. Development mode only — the
+  /// payment is simulated (no real gateway) and a demo transaction id is
+  /// generated, exactly like the consultation flow. On success the booking is
+  /// flagged paid (→ "Booking Confirmed") and the user is notified.
+  Future<void> pay(AstrologerRequestModel r) async {
+    state = const AsyncLoading();
+    try {
+      final paymentId = kSubscriptionTestMode
+          ? 'demo_${DateTime.now().millisecondsSinceEpoch}'
+          : 'razorpay_${DateTime.now().millisecondsSinceEpoch}';
+      if (kBypassAuth) {
+        ref
+            .read(demoAstrologerRequestsProvider.notifier)
+            .markPaid(r.id, paymentId: paymentId);
+      } else {
+        await ref.read(astrologerServiceProvider).markAnalysisPaid(r.id,
+            paymentId: paymentId,
+            userId: r.userId,
+            astrologerId: r.astrologerId);
+      }
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
   /// Option 2 ("let me choose another astrologer later"): the user re-points an
   /// expired booking to a new astrologer themselves. MOVES the booking to the
   /// new astrologer with a fresh window — never duplicates it.

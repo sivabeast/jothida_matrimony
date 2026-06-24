@@ -26,6 +26,19 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
   String _query = '';
   AstroFilters _filters = const AstroFilters();
 
+  // Marketplace service categories (horizontal chips). 'All' shows everyone.
+  static const List<String> kCategories = [
+    'All',
+    'Marriage Matching',
+    'Marriage Consultation',
+    'Career Guidance',
+    'Family Consultation',
+    'Monthly Prediction',
+    'Dosham Analysis',
+    'Horoscope Reading',
+  ];
+  String _category = 'All';
+
   @override
   void dispose() {
     _searchCtrl.dispose();
@@ -39,11 +52,25 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
         a.location.toLowerCase().contains(q);
   }
 
+  /// Whether [a] offers the selected service category. Matches the chosen
+  /// category against the astrologer's service names + specializations
+  /// (case-insensitive, either-direction contains) so loosely-named services
+  /// still surface under the right category.
+  bool _matchesCategory(Astrologer a) {
+    if (_category == 'All') return true;
+    final cat = _category.toLowerCase();
+    return [...a.serviceNames, ...a.specializations].any((s) {
+      final t = s.trim().toLowerCase();
+      return t.isNotEmpty && (t.contains(cat) || cat.contains(t));
+    });
+  }
+
   void _clearAll() {
     setState(() {
       _query = '';
       _searchCtrl.clear();
       _filters = const AstroFilters();
+      _category = 'All';
     });
   }
 
@@ -69,6 +96,7 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
       child: Column(
         children: [
           _searchBar(),
+          _categoryBar(),
           _consultBanner(),
           Expanded(
             child: astrosAsync.when(
@@ -84,13 +112,20 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
                     'Astrologers will appear here once they sign up.',
                   );
                 }
-                final searching =
-                    _query.trim().isNotEmpty || _filters.isActive;
+                // A specific category, a search query or an active filter all
+                // switch to the flat results list; otherwise show the curated
+                // marketplace sections.
+                final browsing = _query.trim().isNotEmpty ||
+                    _filters.isActive ||
+                    _category != 'All';
                 final matched = all
-                    .where((a) => _matchesSearch(a) && _filters.matches(a))
+                    .where((a) =>
+                        _matchesSearch(a) &&
+                        _matchesCategory(a) &&
+                        _filters.matches(a))
                     .toList();
                 // Listing & search default: available astrologers first.
-                return searching
+                return browsing
                     ? _resultsList(availableFirst(matched))
                     : _sections(all, myCity);
               },
@@ -236,6 +271,41 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
     );
   }
 
+  // ── Category chips (horizontal scroll) ──────────────────────────────────────
+
+  Widget _categoryBar() {
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+        itemCount: kCategories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final cat = kCategories[i];
+          final sel = cat == _category;
+          return Center(
+            child: ChoiceChip(
+              label: Text(cat),
+              selected: sel,
+              showCheckmark: false,
+              labelStyle: TextStyle(
+                color: sel ? Colors.white : AppColors.primary,
+                fontWeight: FontWeight.w600,
+                fontSize: 12.5,
+              ),
+              selectedColor: AppColors.primary,
+              backgroundColor: Colors.white,
+              side: BorderSide(
+                  color: sel ? AppColors.primary : Colors.grey.shade300),
+              onSelected: (_) => setState(() => _category = cat),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   // ── Horizontal sections (default view) ──────────────────────────────────────
 
   Widget _sections(List<Astrologer> all, String myCity) {
@@ -247,14 +317,27 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
         final byRating = b.rating.compareTo(a.rating);
         return byRating != 0 ? byRating : b.reviewCount.compareTo(a.reviewCount);
       });
+    // ── Section 3: Most Booked — bookingCount DESC, reviewCount tie-break ──
+    final mostBooked = [...all]
+      ..sort((a, b) {
+        final byBookings = b.bookingCount.compareTo(a.bookingCount);
+        return byBookings != 0
+            ? byBookings
+            : b.reviewCount.compareTo(a.reviewCount);
+      });
+    // ── Section 4: New Astrologers — most recently joined first ──
+    final epoch = DateTime.fromMillisecondsSinceEpoch(0);
+    final newest = [...all]
+      ..sort((a, b) =>
+          (b.createdAt ?? epoch).compareTo(a.createdAt ?? epoch));
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
       children: [
-        // ── Section 1: Nearby ──────────────────────────────────────────────
+        // ── Section 1: Near You ────────────────────────────────────────────
         _sectionHeader(myCity.isEmpty
-            ? '📍 Nearby Astrologers'
-            : '📍 Nearby Astrologers · $myCity'),
+            ? '📍 Near You'
+            : '📍 Near You · $myCity'),
         if (nearby.isEmpty)
           _inlineHint(myCity.isEmpty
               ? 'Set your location in your profile to see astrologers near you.'
@@ -264,7 +347,13 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
         // ── Section 2: Top Rated ───────────────────────────────────────────
         _sectionHeader('⭐ Top Rated Astrologers'),
         _horizontalRow(topRated),
-        // ── Section 3: All Astrologers (grid, available first) ─────────────
+        // ── Section 3: Most Booked ─────────────────────────────────────────
+        _sectionHeader('🔥 Most Booked Astrologers'),
+        _horizontalRow(mostBooked),
+        // ── Section 4: New Astrologers ─────────────────────────────────────
+        _sectionHeader('🆕 New Astrologers'),
+        _horizontalRow(newest),
+        // ── Section 5: All Astrologers (grid, available first) ─────────────
         _sectionHeader('🔮 All Astrologers'),
         _allGrid(availableFirst(all)),
       ],
@@ -329,7 +418,7 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
 
   Widget _horizontalRow(List<Astrologer> list) {
     return SizedBox(
-      height: 232,
+      height: 262,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -353,7 +442,7 @@ class _AstrologyServicesTabState extends ConsumerState<AstrologyServicesTab> {
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        mainAxisExtent: 232,
+        mainAxisExtent: 262,
       ),
       itemCount: list.length,
       itemBuilder: (_, i) => _AstrologerGridCard(
@@ -785,8 +874,17 @@ Widget _cardContent(Astrologer a) => Column(
                 ? '${a.experienceYears} yrs experience'
                 : 'Experience N/A'),
         _metaLine(Icons.auto_awesome,
-            a.specializations.isEmpty ? 'Astrologer' : a.specializations.first,
+            a.serviceNames.isEmpty ? 'Astrologer' : a.serviceNames.first,
             color: AppColors.primary),
+        _metaLine(
+          Icons.payments_outlined,
+          a.consultationFee > 0
+              ? '₹${a.consultationFee} consultation'
+              : a.startingPrice > 0
+                  ? 'From ₹${a.startingPrice}'
+                  : 'Fee on request',
+          color: AppColors.success,
+        ),
       ],
     );
 

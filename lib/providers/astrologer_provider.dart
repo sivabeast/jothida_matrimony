@@ -34,6 +34,11 @@ Astrologer astrologerFromAccount(AstrologerAccount a) {
     isRecommended: false,
     lastActive: DateTime.now(),
     about: a.about,
+    // "New Astrologers" + "Most Booked" sections + the card fees.
+    createdAt: a.createdAt,
+    bookingCount: a.bookingCount,
+    consultationFee: a.consultationFee.round(),
+    matchAnalysisFee: a.matchAnalysisFee,
     // Verified badge shows only once an admin approves the account.
     verified: a.isApproved,
     // Direct-contact details + read-only certificate documents for the profile.

@@ -183,6 +183,19 @@ class AstrologerRequestModel {
   /// Append-only audit trail of the booking's lifecycle.
   final List<BookingHistoryEntry> history;
 
+  // ── Payment (dev-mode) ──────────────────────────────────────────────────────
+  /// Whether the user has paid the analysis fee. Kept as a FLAG (not an enum
+  /// value) so the 4-value [AstrologerRequestStatus] and its many switches stay
+  /// intact, mirroring how `expired` / `reassigned` are modelled. The spec
+  /// payment step (Accepted → Payment Pending → Paid → Completed) is driven by
+  /// this flag together with [status].
+  final bool paid;
+  final DateTime? paidAt;
+
+  /// Demo transaction id generated at payment time (real gateway is a future
+  /// extension point — see [kSubscriptionTestMode]).
+  final String paymentId;
+
   const AstrologerRequestModel({
     required this.id,
     required this.astrologerId,
@@ -213,6 +226,9 @@ class AstrologerRequestModel {
     this.reassignedAt,
     this.userLanguage = 'en',
     this.history = const [],
+    this.paid = false,
+    this.paidAt,
+    this.paymentId = '',
   });
 
   /// True for a "Book Match Analysis" booking (groom + bride porutham request).
@@ -256,6 +272,35 @@ class AstrologerRequestModel {
       return 'reassigned';
     }
     return status.name;
+  }
+
+  /// True once the astrologer has accepted but the user hasn't paid the fee yet
+  /// (the spec's "Payment Pending" gate). Bookings with no fee skip payment.
+  bool get awaitingPayment =>
+      status == AstrologerRequestStatus.accepted && amount > 0 && !paid;
+
+  /// Payment status key driving the Bookings page / cards: 'paid' | 'pending'
+  /// (payment due) | 'none' (no payment due yet — still pending/expired/free).
+  String get paymentStatusKey {
+    if (paid) return 'paid';
+    if (amount > 0 &&
+        (status == AstrologerRequestStatus.accepted ||
+            status == AstrologerRequestStatus.completed)) {
+      return 'pending';
+    }
+    return 'none';
+  }
+
+  /// Human label for [paymentStatusKey].
+  String get paymentStatusLabel {
+    switch (paymentStatusKey) {
+      case 'paid':
+        return 'Paid';
+      case 'pending':
+        return 'Payment Pending';
+      default:
+        return 'Not Due';
+    }
   }
 
   /// Whole hours/minutes left before expiry (negative once expired).
@@ -318,6 +363,9 @@ class AstrologerRequestModel {
       reassignedAt: _toDate(d['reassignedAt']),
       userLanguage: (d['userLanguage'] ?? 'en').toString(),
       history: _toHistory(d['history']),
+      paid: d['paid'] == true,
+      paidAt: _toDate(d['paidAt']),
+      paymentId: (d['paymentId'] ?? '').toString(),
     );
   }
 
@@ -359,6 +407,9 @@ class AstrologerRequestModel {
             reassignedAt != null ? Timestamp.fromDate(reassignedAt!) : null,
         'userLanguage': userLanguage,
         'history': history.map((h) => h.toMap()).toList(),
+        'paid': paid,
+        'paidAt': paidAt != null ? Timestamp.fromDate(paidAt!) : null,
+        'paymentId': paymentId,
       };
 
   AstrologerRequestModel copyWith({
@@ -378,6 +429,9 @@ class AstrologerRequestModel {
     DateTime? reassignedAt,
     String? userLanguage,
     List<BookingHistoryEntry>? history,
+    bool? paid,
+    DateTime? paidAt,
+    String? paymentId,
   }) =>
       AstrologerRequestModel(
         id: id,
@@ -415,5 +469,8 @@ class AstrologerRequestModel {
         reassignedAt: reassignedAt ?? this.reassignedAt,
         userLanguage: userLanguage ?? this.userLanguage,
         history: history ?? this.history,
+        paid: paid ?? this.paid,
+        paidAt: paidAt ?? (paid == true ? DateTime.now() : this.paidAt),
+        paymentId: paymentId ?? this.paymentId,
       );
 }

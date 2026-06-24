@@ -9,11 +9,12 @@ import '../../providers/auth_provider.dart';
 import '../../providers/announcement_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../widgets/common/app_drawer.dart';
 import '../interests/interests_center_screen.dart';
 import 'tabs/astrology_services_tab.dart';
+import 'tabs/bookings_tab.dart';
 import 'tabs/discover_tab.dart';
 import 'tabs/home_dashboard_tab.dart';
-import 'tabs/my_profile_tab.dart';
 import 'tabs/notifications_tab.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -24,14 +25,15 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  // Tab index → widget. Tab 3 is the Interest Management Center (replaces the
-  // old chat/messages page).
+  // Tab index → widget. Order matches the spec bottom navigation:
+  // Home · Matches · Interests · Astrology · Bookings. Profile moved to the
+  // header Drawer (it is no longer a bottom-nav tab).
   static const _tabs = <Widget>[
     HomeDashboardTab(),       // 0 – Home
     DiscoverTab(),            // 1 – Matches
-    AstrologyServicesTab(),   // 2 – Astrologer
-    InterestsCenterScreen(),  // 3 – Interests
-    MyProfileTab(),           // 4 – Profile
+    InterestsCenterScreen(),  // 2 – Interests
+    AstrologyServicesTab(),   // 3 – Astrology
+    BookingsTab(),            // 4 – Bookings
   ];
 
   @override
@@ -50,17 +52,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _handleBackPress();
       },
       child: Scaffold(
+      // ── Navigation Drawer (header menu icon) ──────────────────────────────
+      drawer: const AppDrawer(),
       // ── AppBar ────────────────────────────────────────────────────────────
       // The Home tab (index 0) renders its own curved header inside
-      // HomeDashboardTab, so the shared AppBar is hidden there. Every other tab
-      // keeps this AppBar unchanged.
+      // HomeDashboardTab (which has its own menu icon), so the shared AppBar is
+      // hidden there. Every other tab keeps this AppBar with a hamburger menu.
       appBar: selectedIndex == 0
           ? null
           : AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        titleSpacing: 12,
-        automaticallyImplyLeading: false,   // no hamburger menu
+        titleSpacing: 4,
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu),
+            tooltip: 'Menu',
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+          ),
+        ),
         title: Row(
           children: [
             // App logo (official brand medallion).
@@ -186,9 +196,10 @@ class _BottomNav extends StatelessWidget {
   static const _items = [
     _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home),
     _NavItem(icon: Icons.favorite_border, activeIcon: Icons.favorite),
-    _NavItem(icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome),
     _NavItem(icon: Icons.people_outline, activeIcon: Icons.people),
-    _NavItem(icon: Icons.person_outline, activeIcon: Icons.person),
+    _NavItem(icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome),
+    _NavItem(
+        icon: Icons.event_note_outlined, activeIcon: Icons.event_note),
   ];
 
   @override
@@ -197,9 +208,9 @@ class _BottomNav extends StatelessWidget {
     final labels = [
       l10n.home,
       l10n.matches,
-      l10n.astrologers,
       l10n.interests,
-      l10n.profile,
+      l10n.astrologers,
+      'Bookings',
     ];
     return Container(
       decoration: BoxDecoration(

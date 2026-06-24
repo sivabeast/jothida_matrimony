@@ -32,13 +32,23 @@ class DiscoverTab extends ConsumerStatefulWidget {
   ConsumerState<DiscoverTab> createState() => _DiscoverTabState();
 }
 
-class _DiscoverTabState extends ConsumerState<DiscoverTab> {
+class _DiscoverTabState extends ConsumerState<DiscoverTab>
+    with SingleTickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
+
+  // Browse-mode tabs over the SAME gender-filtered feed:
+  //   0 Discover · 1 Nearby Matches · 2 Recommended · 3 Verified Profiles.
+  late final TabController _tabController =
+      TabController(length: 4, vsync: this);
+  int _tabIndex = 0;
 
   // Profiles the user has expressed interest in during this session (so the
   // heart can flip to "Interested ✓" immediately).
   final Set<String> _interestSent = {};
+
+  // Profiles skipped this session — dropped from the feed so they don't reappear.
+  final Set<String> _skipped = {};
 
   // Currently applied optional filters (gender restriction is always separate).
   MatchFilters _filters = const MatchFilters();
@@ -51,13 +61,66 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   @override
   void initState() {
     super.initState();
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) return;
+      if (_tabIndex == _tabController.index) return;
+      setState(() {
+        _tabIndex = _tabController.index;
+        _currentIndex = 0;
+      });
+      // Restart the swiper / grid at the top of the newly-selected tab.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _pageController.hasClients) {
+          _pageController.jumpToPage(0);
+        }
+      });
+    });
     Future.microtask(_load);
   }
 
   @override
   void dispose() {
+    _tabController.dispose();
     _pageController.dispose();
     super.dispose();
+  }
+
+  /// Filters / sorts the gender-matched feed for the active browse tab.
+  ///   • Discover (0)   — feed order as provided (preference-ranked).
+  ///   • Nearby (1)     — same city, then same state as the viewer.
+  ///   • Recommended(2) — highest compatibility % first.
+  ///   • Verified (3)   — only verified member profiles.
+  List<ProfileModel> _applyTab(List<ProfileModel> profiles) {
+    final me = ref.read(myProfileProvider).valueOrNull;
+    switch (_tabIndex) {
+      case 1:
+        if (me == null) return profiles;
+        final city = me.city.trim().toLowerCase();
+        final state = me.state.trim().toLowerCase();
+        final near = profiles.where((p) {
+          final pc = p.city.trim().toLowerCase();
+          final ps = p.state.trim().toLowerCase();
+          return (city.isNotEmpty && pc == city) ||
+              (state.isNotEmpty && ps == state);
+        }).toList();
+        // Same-city first, then same-state.
+        near.sort((a, b) {
+          int rank(ProfileModel p) =>
+              p.city.trim().toLowerCase() == city ? 0 : 1;
+          return rank(a).compareTo(rank(b));
+        });
+        return near;
+      case 2:
+        final scorer = ref.read(matchScorerProvider);
+        if (scorer == null) return profiles;
+        final ranked = [...profiles]..sort((a, b) =>
+            scorer(b).percent.compareTo(scorer(a).percent));
+        return ranked;
+      case 3:
+        return profiles.where((p) => p.isVerified).toList();
+      default:
+        return profiles;
+    }
   }
 
   /// Load (or reload) the matches feed. The ONLY filter is gender (opposite
@@ -159,6 +222,13 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     }
   }
 
+  /// Skip the current profile: remember it so it leaves the feed. The profile
+  /// that follows slides into the same index, so the user simply sees the next
+  /// card (the last-card edge is clamped in [build]).
+  void _skip(ProfileModel profile) {
+    setState(() => _skipped.add(profile.id));
+  }
+
   /// Open the optional-filters bottom sheet, then apply the result.
   Future<void> _openFilters() async {
     final result = await showModalBottomSheet<MatchFilters>(
@@ -195,7 +265,22 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
             profiles.where((p) => !sentIds.contains(p.id)).toList();
       }
     }
+    // Drop profiles skipped this session, then narrow to the active browse tab.
+    if (_skipped.isNotEmpty) {
+      profiles = profiles.where((p) => !_skipped.contains(p.id)).toList();
+    }
+    profiles = _applyTab(profiles);
     final total = profiles.length;
+
+    // Keep the swiper in range after a Skip removed the last visible card.
+    if (_currentIndex >= total && total > 0) {
+      _currentIndex = total - 1;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _pageController.hasClients) {
+          _pageController.jumpToPage(_currentIndex);
+        }
+      });
+    }
 
     // Refresh matches automatically when the profile (incl. partner
     // preferences) changes — e.g. after editing preferences.
@@ -213,6 +298,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     return Column(
       children: [
         _topBar(total),
+        _tabBar(),
         if (showPrefReminder) _partnerPrefBanner(context),
         Expanded(
           child: Builder(builder: (_) {
@@ -244,6 +330,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
                     onInterest: () => _sendInterest(profiles[i]),
                     onAccept: (interestId) =>
                         _acceptInterest(profiles[i], interestId),
+                    onSkip: () => _skip(profiles[i]),
                   ),
                 ),
                 // Subtle left/right swipe affordances.
@@ -332,6 +419,28 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
       ),
     );
   }
+
+  /// Browse-mode tabs (Discover / Nearby / Recommended / Verified). Scrollable
+  /// so all four labels fit comfortably on small screens.
+  Widget _tabBar() => Container(
+        color: Colors.white,
+        child: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: AppColors.primary,
+          labelStyle:
+              const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          tabs: const [
+            Tab(text: 'Discover'),
+            Tab(text: 'Nearby Matches'),
+            Tab(text: 'Recommended'),
+            Tab(text: 'Verified Profiles'),
+          ],
+        ),
+      );
 
   /// Shown when the user hasn't set partner preferences — matches stay broad
   /// until they do, so nudge them to narrow it down for better matches.
@@ -570,12 +679,14 @@ class _MatchProfilePage extends ConsumerWidget {
   final bool interestSent;
   final VoidCallback onInterest;
   final ValueChanged<String> onAccept;
+  final VoidCallback onSkip;
 
   const _MatchProfilePage({
     required this.profile,
     required this.interestSent,
     required this.onInterest,
     required this.onAccept,
+    required this.onSkip,
   });
 
   // ── Parchment / book palette ──
@@ -887,9 +998,29 @@ class _MatchProfilePage extends ConsumerWidget {
         color: _parchmentDeep,
         border: Border(top: BorderSide(color: _bookEdge.withOpacity(0.3))),
       ),
-      child: SizedBox(
-        width: double.infinity,
-        child: _interestButton(context, ref, status),
+      child: Row(
+        children: [
+          // Skip — leaves this profile and slides to the next one.
+          Expanded(
+            flex: 2,
+            child: OutlinedButton.icon(
+              onPressed: onSkip,
+              icon: const Icon(Icons.skip_next_outlined, size: 20),
+              label: const Text('Skip',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _ink,
+                side: BorderSide(color: _bookEdge.withOpacity(0.55)),
+                minimumSize: const Size.fromHeight(52),
+                shape:
+                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          // Interested (status-aware) — the primary action.
+          Expanded(flex: 3, child: _interestButton(context, ref, status)),
+        ],
       ),
     );
   }
