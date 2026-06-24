@@ -60,8 +60,8 @@ void main() {
     final ex = tester.takeException();
     expect(ex, isNull, reason: 'DiscoverTab threw while rendering: $ex');
 
-    // Count badge proves we are in the PageView branch.
-    expect(find.textContaining('of 1'), findsOneWidget);
+    // Count badge proves the list rendered with one match.
+    expect(find.textContaining('1 Match'), findsOneWidget);
 
     // The card content must be visible.
     expect(find.textContaining('Priya'), findsWidgets,

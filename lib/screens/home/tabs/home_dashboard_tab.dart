@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import '../../../core/services/match_score_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/profile_completion.dart';
-import '../../../models/notification_model.dart';
+import '../../../models/astrologer_model.dart';
+import '../../../models/interest_model.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/account_provider.dart';
+import '../../../providers/astrologer_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/interest_provider.dart';
 import '../../../providers/navigation_provider.dart';
@@ -17,11 +18,12 @@ import '../../../providers/notification_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/horoscope_match_badge.dart';
 import '../../../widgets/common/match_score_badge.dart';
-import '../../../widgets/home/profile_completion_card.dart';
 import 'notifications_tab.dart';
 
-/// Home dashboard tab — hero banner carousel, quick actions, recommended
-/// matches horizontal scroll, premium upgrade banner.
+/// Home dashboard tab. Clean, modern flow:
+///   Header → Profile Completion · Find Your Life Partner · Upgrade To Premium
+///   (compact notification-style cards) → Recommended Profiles → Recent
+///   Interests → Astrologers. No compatibility percentages are shown anywhere.
 class HomeDashboardTab extends ConsumerStatefulWidget {
   const HomeDashboardTab({super.key});
 
@@ -57,8 +59,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   void initState() {
     super.initState();
     _startAutoScroll();
-    // Recommended matches load lazily via recommendedMatchesProvider (watched
-    // in build) — no manual fetch needed here.
   }
 
   @override
@@ -93,38 +93,22 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         children: [
           // ── Curved luxury header + overlapping hero banner ────────────────
           _buildHeaderBanner(context),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          // ── Profile Completion % (self-hides at 100%) ─────────────────────
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: ProfileCompletionCard(),
-          ),
+          // ── Compact notification-style action cards ───────────────────────
+          ..._buildActionCards(context, myProfile),
+          const SizedBox(height: 8),
 
-          // ── Married status prompt / badge ─────────────────────────────────
-          _buildMarriedSection(context, myProfile),
+          // ── Recommended Profiles ──────────────────────────────────────────
+          _buildRecommended(context, matchesAsync),
+          const SizedBox(height: 22),
 
-          // ── Quick Actions ────────────────────────────────────────────────
-          _buildQuickActions(context),
-          const SizedBox(height: 16),
+          // ── Recent Interests ──────────────────────────────────────────────
+          _buildRecentInterests(context),
+          const SizedBox(height: 22),
 
-          // ── Profile Statistics ───────────────────────────────────────────
-          _buildStatistics(context),
-          const SizedBox(height: 16),
-
-          // ── Premium Upgrade Banner (moved up to the former Verify slot) ───
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildPremiumBanner(context),
-          ),
-          const SizedBox(height: 16),
-
-          // ── Recent Activities ────────────────────────────────────────────
-          _buildRecentActivities(context),
-          const SizedBox(height: 16),
-
-          // ── Categorized matches (Very Good · Good · Average · All) ────────
-          _buildCategorizedMatches(context, matchesAsync),
+          // ── Astrologers ───────────────────────────────────────────────────
+          _buildAstrologers(context),
           const SizedBox(height: 24),
         ],
       ),
@@ -143,8 +127,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     const headerRowHeight = 56.0;
     final bannerWidth = media.size.width - 24;
     final bannerHeight = bannerWidth * 0.60;
-    // Banner starts just below the header row; the maroon header continues
-    // behind its top ~45% so the banner appears embedded into the header.
     final bannerTop = topPad + headerRowHeight + 10;
     final headerBgHeight = bannerTop + bannerHeight * 0.45;
     final totalHeight = bannerTop + bannerHeight + 28; // + dots block
@@ -156,16 +138,14 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            // Curved maroon header background.
             ClipPath(
               clipper: _HeaderCurveClipper(),
               child: Container(
                 height: headerBgHeight,
-                decoration: const BoxDecoration(
-                    gradient: AppColors.primaryGradient),
+                decoration:
+                    const BoxDecoration(gradient: AppColors.primaryGradient),
               ),
             ),
-            // Header content: profile + name (left), notification (right).
             Positioned(
               top: topPad + 4,
               left: 16,
@@ -173,7 +153,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
               height: headerRowHeight,
               child: _buildHeaderRow(context),
             ),
-            // Hero banner, overlapping the curved header.
             Positioned(
               top: bannerTop,
               left: 0,
@@ -203,7 +182,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
 
     return Row(
       children: [
-        // Hamburger → opens the shared navigation Drawer (Profile lives there).
         Builder(
           builder: (ctx) => IconButton(
             icon: const Icon(Icons.menu, color: Colors.white, size: 26),
@@ -232,6 +210,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Welcome back,',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                       color: Colors.white.withOpacity(0.8), fontSize: 12.5)),
               Text(firstName,
@@ -280,11 +260,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   // ── Banner Carousel ────────────────────────────────────────────────────────
 
   Widget _buildBannerCarousel(BuildContext context) {
-    // Wider + more compact than the source 3:2 art for a modern, premium feel:
-    //  • 12px side margins (was 16) → banner uses more width, never full-bleed.
-    //  • 0.60 height factor (was 0.667) → noticeably shorter, less vertical bulk.
-    // BoxFit.cover keeps the rounded card filled and scales every image; the
-    // small top/bottom trim stays clear of the headline and CTA in the artwork.
     final bannerWidth = MediaQuery.of(context).size.width - 24;
     final bannerHeight = bannerWidth * 0.60;
 
@@ -300,7 +275,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           ),
         ),
         const SizedBox(height: 10),
-        // Indicator dots
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(_banners.length, (i) {
@@ -321,318 +295,135 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     );
   }
 
-  // ── Quick Actions ──────────────────────────────────────────────────────────
+  // ── Compact notification-style action cards ────────────────────────────────
 
-  Widget _buildQuickActions(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _QuickAction(
-            icon: Icons.people_outline,
-            label: 'Matches',
-            onTap: () {
-              // Matches quick-action: jump to the Matches tab.
-              ref.read(homeTabIndexProvider.notifier).state = 1;
-            },
-          ),
-          _QuickAction(
-            icon: Icons.auto_awesome_outlined,
-            label: 'Horoscope\nMatch',
-            onTap: () => context.push('/horoscope'),
-          ),
-          _QuickAction(
-            icon: Icons.manage_accounts_outlined,
-            label: 'Partner\nPreferences',
-            onTap: () {
-              debugPrint('[HomeDashboard] Quick action: Partner Preferences '
-                  '→ /partner-preferences');
-              context.push('/partner-preferences');
-            },
-          ),
-          _QuickAction(
-            icon: Icons.workspace_premium_outlined,
-            label: 'Premium\nPlans',
-            onTap: () => context.push('/subscription'),
-          ),
-        ],
-      ),
-    );
+  List<Widget> _buildActionCards(BuildContext context, ProfileModel? profile) {
+    final completion = computeProfileCompletion(profile);
+    final cards = <Widget>[];
+
+    // 💖 Profile Completion — hidden once the profile reaches 100%.
+    if (completion.percent < 100) {
+      cards.add(_notifCard(
+        emoji: '💖',
+        title: 'Profile Completion',
+        subtitle: '${completion.percent}% complete · Complete your profile',
+        accent: AppColors.primary,
+        onTap: () => context.push('/complete-profile'),
+      ));
+    }
+
+    // 🔍 Find Your Life Partner — jumps to the Matches tab.
+    cards.add(_notifCard(
+      emoji: '🔍',
+      title: 'Find Your Life Partner',
+      subtitle: 'Browse matching profiles',
+      accent: const Color(0xFF2F80ED),
+      onTap: () => ref.read(homeTabIndexProvider.notifier).state = 1,
+    ));
+
+    // 👑 Upgrade To Premium — opens the subscription plans.
+    cards.add(_notifCard(
+      emoji: '👑',
+      title: 'Upgrade To Premium',
+      subtitle: 'Unlock premium features',
+      accent: AppColors.gold,
+      onTap: () => context.push('/subscription'),
+    ));
+
+    // 🎉 Married status — preserves the "mark as married" action in a compact
+    // card consistent with the rest of the flow.
+    if (profile != null) {
+      cards.add(profile.isMarried
+          ? _notifCard(
+              emoji: '🎉',
+              title: 'Married',
+              subtitle: 'Your profile has left the matchmaking pool',
+              accent: AppColors.success,
+              onTap: () {},
+            )
+          : _notifCard(
+              emoji: '💍',
+              title: 'Found Your Life Partner?',
+              subtitle: 'Mark your profile as married',
+              accent: AppColors.success,
+              onTap: () => _confirmMarried(context, profile),
+            ));
+    }
+
+    return cards;
   }
 
-  // ── Profile Statistics ─────────────────────────────────────────────────────
-
-  Widget _buildStatistics(BuildContext context) {
-    final sent = ref.watch(sentInterestsProvider).valueOrNull ?? const [];
-    final received =
-        ref.watch(receivedInterestsProvider).valueOrNull ?? const [];
-    final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid ?? '';
-    // Mutual matches = distinct counterparts with an accepted interest.
-    final matched = <String>{};
-    for (final i in sent) {
-      if (i.isAccepted) matched.add(i.receiverId);
-    }
-    for (final i in received) {
-      if (i.isAccepted) matched.add(i.senderId);
-    }
-    matched.remove(myUid);
-    final completion =
-        computeProfileCompletion(ref.watch(myProfileProvider).valueOrNull);
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
-      decoration: BoxDecoration(
+  /// A compact, full-width notification-style card: small icon on the left,
+  /// title + subtitle, and a chevron on the right. ~62px tall.
+  Widget _notifCard({
+    required String emoji,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    required Color accent,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)],
-      ),
-      child: Row(
-        children: [
-          _stat('Sent', '${sent.length}', Icons.send_outlined),
-          _statDivider(),
-          _stat('Received', '${received.length}', Icons.inbox_outlined),
-          _statDivider(),
-          _stat('Matches', '${matched.length}', Icons.favorite_outline),
-          _statDivider(),
-          _stat('Profile', '${completion.percent}%', Icons.pie_chart_outline),
-        ],
-      ),
-    );
-  }
-
-  Widget _statDivider() =>
-      Container(width: 1, height: 34, color: Colors.grey[200]);
-
-  Widget _stat(String label, String value, IconData icon) => Expanded(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: AppColors.primary, size: 20),
-            const SizedBox(height: 6),
-            Text(value,
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    fontFamily: 'Poppins')),
-            const SizedBox(height: 2),
-            Text(label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-          ],
-        ),
-      );
-
-  // ── Recent Activities ───────────────────────────────────────────────────────
-
-  Widget _buildRecentActivities(BuildContext context) {
-    final notifs = [...(ref.watch(notificationsProvider).valueOrNull ?? const [])]
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    final recent = notifs.take(4).toList();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionHeader(context, '🔔', 'Recent Activities',
-            onViewAll:
-                recent.isEmpty ? null : () => _openNotifications(context)),
-        const SizedBox(height: 10),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: recent.isEmpty
-              ? Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(18),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 60),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey.shade200),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.history, color: Colors.grey[400], size: 22),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text('No recent activity yet.',
-                            style: TextStyle(
-                                color: Colors.grey[600], fontSize: 13)),
-                      ),
-                    ],
-                  ),
-                )
-              : Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black.withOpacity(0.06), blurRadius: 10)
-                    ],
-                  ),
+                      color: accent.withOpacity(0.12), shape: BoxShape.circle),
+                  alignment: Alignment.center,
+                  child: Text(emoji, style: const TextStyle(fontSize: 18)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      for (var i = 0; i < recent.length; i++) ...[
-                        if (i > 0) const Divider(height: 1, indent: 56),
-                        _activityTile(recent[i]),
-                      ],
+                      Text(title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13.5,
+                              fontFamily: 'Poppins')),
+                      const SizedBox(height: 2),
+                      Text(subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              TextStyle(color: Colors.grey[600], fontSize: 11.5)),
                     ],
                   ),
                 ),
-        ),
-      ],
-    );
-  }
-
-  Widget _activityTile(NotificationModel n) {
-    final (icon, color) = _activityIcon(n.type);
-    return ListTile(
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-      leading: CircleAvatar(
-        radius: 18,
-        backgroundColor: color.withOpacity(0.12),
-        child: Icon(icon, color: color, size: 18),
-      ),
-      title: Text(n.title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
-      subtitle: Text(n.body,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-      trailing: Text(_timeAgo(n.createdAt),
-          style: TextStyle(fontSize: 10.5, color: Colors.grey[500])),
-    );
-  }
-
-  (IconData, Color) _activityIcon(String type) {
-    if (type.contains('interest')) {
-      return (Icons.favorite, AppColors.primary);
-    }
-    if (type.contains('payment')) {
-      return (Icons.payments, AppColors.success);
-    }
-    if (type.contains('booking') ||
-        type.contains('request') ||
-        type.contains('consultation')) {
-      return (Icons.event_note, const Color(0xFF2F80ED));
-    }
-    if (type.contains('settlement')) {
-      return (Icons.account_balance_wallet, AppColors.gold);
-    }
-    return (Icons.notifications, Colors.grey);
-  }
-
-  String _timeAgo(DateTime t) {
-    final d = DateTime.now().difference(t);
-    if (d.inMinutes < 1) return 'now';
-    if (d.inMinutes < 60) return '${d.inMinutes}m';
-    if (d.inHours < 24) return '${d.inHours}h';
-    if (d.inDays < 7) return '${d.inDays}d';
-    return DateFormat('d MMM').format(t);
-  }
-
-  // ── Married Status ───────────────────────────────────────────────────────
-
-  Widget _buildMarriedSection(BuildContext context, ProfileModel? profile) {
-    if (profile == null) return const SizedBox.shrink();
-
-    // Already married → celebratory badge, no prompt.
-    if (profile.isMarried) {
-      return Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: const [
-            Icon(Icons.celebration, color: AppColors.gold, size: 28),
-            SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('🎉 Married',
-                      style: TextStyle(
-                          color: AppColors.gold,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          fontFamily: 'Poppins')),
-                  SizedBox(height: 2),
-                  Text(
-                      "Best wishes! Your profile has left the active matchmaking pool.",
-                      style: TextStyle(color: Colors.white70, fontSize: 12)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Not married → "Found Your Life Partner?" prompt.
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF0F0),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primary.withOpacity(0.15)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                shape: BoxShape.circle),
-            child: const Icon(Icons.favorite, color: AppColors.primary, size: 24),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Found Your Life Partner?',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                SizedBox(height: 2),
-                Text('Mark your profile as married',
-                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+                const SizedBox(width: 8),
+                Icon(Icons.chevron_right, color: Colors.grey[400], size: 22),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: () => _confirmMarried(context, profile),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              shape:
-                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              elevation: 0,
-            ),
-            child: const Text('Mark as\nMarried',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    fontSize: 11, fontWeight: FontWeight.w600, height: 1.1)),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Future<void> _confirmMarried(BuildContext context, ProfileModel profile) async {
+  Future<void> _confirmMarried(
+      BuildContext context, ProfileModel profile) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -644,7 +435,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
               child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Mark as Married'),
           ),
@@ -654,74 +446,129 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     if (confirmed != true) return;
     final messenger = ScaffoldMessenger.of(context);
     await ref.read(accountControllerProvider.notifier).markMarried(profile);
-    // Refresh the matches so the pool reflects the change immediately.
     ref.invalidate(homeMatchesProvider);
     if (!mounted) return;
     messenger.showSnackBar(const SnackBar(
-        content: Text('🎉 Congratulations! Your profile is now marked as Married.')));
+        content:
+            Text('🎉 Congratulations! Your profile is now marked as Married.')));
   }
 
-  // ── Categorized Matches ───────────────────────────────────────────────────
-  // Replaces the old single "Recommended Matches" list with four sections:
-  //   💚 Very Good · 🟢 Good · 🟡 Average  → horizontal scrolling previews
-  //   ❤️ All Matches                       → vertical grid of every match
-  // The badge on each card shows the per-profile porutham category; section
-  // headers use the fixed bucket emojis. No percentage is ever shown.
+  // ── Recommended Profiles ───────────────────────────────────────────────────
 
-  Widget _buildCategorizedMatches(
+  Widget _buildRecommended(
       BuildContext context, AsyncValue<HomeMatches> matchesAsync) {
     return matchesAsync.when(
       loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 48),
-        child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        padding: EdgeInsets.symmetric(vertical: 32),
+        child:
+            Center(child: CircularProgressIndicator(color: AppColors.primary)),
       ),
       error: (_, __) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: _buildEmptyMatches(),
+        child: _emptyBox('No matching profiles found.'),
       ),
       data: (m) {
         if (m.isEmpty) {
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildEmptyMatches(),
+            child: _emptyBox('No matching profiles found.'),
           );
         }
-
-        // Derive the three spec sections from the same preference-aware pool:
-        //  • Recommended For You — preference-ranked order (as provided).
-        //  • New Profiles        — most recently joined first.
-        //  • Best Matches        — highest compatibility % first.
-        final me = ref.read(myProfileProvider).valueOrNull;
-        final recommended = m.all;
-        final newest = List<ProfileModel>.of(m.all)
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        final scores = <String, int>{
-          for (final p in m.all)
-            p.id: me == null
-                ? 0
-                : MatchScoreService.compute(viewer: me, candidate: p).percent,
-        };
-        final best = List<ProfileModel>.of(m.all)
-          ..sort((a, b) => (scores[b.id] ?? 0).compareTo(scores[a.id] ?? 0));
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _horizontalMatchSection(
-                context, '✨', 'Recommended For You', recommended),
-            const SizedBox(height: 22),
-            _horizontalMatchSection(context, '🆕', 'New Profiles', newest),
-            const SizedBox(height: 22),
-            _horizontalMatchSection(context, '🏆', 'Best Matches', best),
-            const SizedBox(height: 22),
-            _allMatchesSection(context, '❤️', 'All Matches', m.all),
-          ],
-        );
+        return _horizontalMatchSection(
+            context, '✨', 'Recommended Profiles', m.all);
       },
     );
   }
 
-  /// Section header: "emoji  Title" on the left, optional "View All →" on right.
+  Widget _horizontalMatchSection(BuildContext context, String emoji,
+      String title, List<ProfileModel> profiles) {
+    final preview = profiles.take(10).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader(context, emoji, title,
+            onViewAll: () => ref.read(homeTabIndexProvider.notifier).state = 1),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 234,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: preview.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, i) =>
+                SizedBox(width: 162, child: _MatchCard(profile: preview[i])),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Recent Interests ───────────────────────────────────────────────────────
+
+  Widget _buildRecentInterests(BuildContext context) {
+    final received =
+        [...(ref.watch(receivedInterestsProvider).valueOrNull ?? const [])]
+          ..sort((a, b) => b.sentAt.compareTo(a.sentAt));
+    final recent = received.take(10).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader(context, '💌', 'Recent Interests',
+            onViewAll: recent.isEmpty
+                ? null
+                : () => ref.read(homeTabIndexProvider.notifier).state = 2),
+        const SizedBox(height: 12),
+        if (recent.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _emptyBox('No interests received yet.'),
+          )
+        else
+          SizedBox(
+            height: 196,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: recent.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (_, i) =>
+                  _RecentInterestCard(interest: recent[i]),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // ── Astrologers ────────────────────────────────────────────────────────────
+
+  Widget _buildAstrologers(BuildContext context) {
+    final astrologers = ref.watch(topRatedAstrologersProvider);
+    if (astrologers.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader(context, '🔮', 'Astrologers',
+            onViewAll: () => ref.read(homeTabIndexProvider.notifier).state = 3),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 188,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: astrologers.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, i) =>
+                _HomeAstrologerCard(astrologer: astrologers[i]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Shared bits ────────────────────────────────────────────────────────────
+
   Widget _sectionHeader(BuildContext context, String emoji, String title,
       {VoidCallback? onViewAll}) {
     return Padding(
@@ -731,6 +578,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         children: [
           Expanded(
             child: Text('$emoji  $title',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                     fontSize: 16.5,
                     fontFamily: 'Poppins',
@@ -757,123 +606,23 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     );
   }
 
-  /// Horizontal scrolling preview (up to 10 cards). "View All" opens the
-  /// dedicated Matches tab for the full browsing experience.
-  Widget _horizontalMatchSection(BuildContext context, String emoji,
-      String title, List<ProfileModel> profiles) {
-    final preview = profiles.take(10).toList();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionHeader(context, emoji, title,
-            onViewAll: () =>
-                ref.read(homeTabIndexProvider.notifier).state = 1),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 234,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: preview.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (_, i) =>
-                SizedBox(width: 162, child: _MatchCard(profile: preview[i])),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// All Matches — a vertical 2-column grid of every profile that passed the
-  /// gender + age filters.
-  Widget _allMatchesSection(BuildContext context, String emoji, String title,
-      List<ProfileModel> profiles) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionHeader(context, emoji, title),
-        const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.66,
-          ),
-          itemCount: profiles.length,
-          itemBuilder: (_, i) => _MatchCard(profile: profiles[i]),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEmptyMatches() {
+  Widget _emptyBox(String message) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
+      width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
-          Icon(Icons.favorite_border, size: 48, color: Colors.grey[300]),
-          const SizedBox(height: 10),
-          const Text('No matching profiles found.',
+          Icon(Icons.favorite_border, size: 40, color: Colors.grey[300]),
+          const SizedBox(height: 8),
+          Text(message,
               textAlign: TextAlign.center,
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              style:
+                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
         ],
-      ),
-    );
-  }
-
-  // ── Premium Banner ─────────────────────────────────────────────────────────
-
-  Widget _buildPremiumBanner(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push('/subscription'),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.workspace_premium, color: AppColors.gold, size: 36),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Go Premium',
-                      style: TextStyle(
-                          color: AppColors.gold,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          fontFamily: 'Poppins')),
-                  Text('Get more visibility and unlimited matches',
-                      style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12)),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: () => context.push('/subscription'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.gold,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                elevation: 0,
-              ),
-              child: const Text('Upgrade Now',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -905,8 +654,6 @@ class _BannerSlide extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Container(
-        // Soft shadow → premium elevation. The banner artwork itself is
-        // unchanged (rounded corners + image/text/CTA baked in).
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
@@ -922,7 +669,6 @@ class _BannerSlide extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Try asset image first; fall back to branded gradient container.
               Image.asset(
                 data.assetPath,
                 fit: BoxFit.cover,
@@ -946,7 +692,6 @@ class _BannerSlide extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Decorative zodiac circle (right side)
           Positioned(
             right: -20,
             top: -20,
@@ -955,23 +700,11 @@ class _BannerSlide extends StatelessWidget {
               height: 180,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 1),
+                border:
+                    Border.all(color: AppColors.gold.withOpacity(0.3), width: 1),
               ),
             ),
           ),
-          Positioned(
-            right: 10,
-            top: 10,
-            child: Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.gold.withOpacity(0.5), width: 1),
-              ),
-            ),
-          ),
-          // Content
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 120, 20),
             child: Column(
@@ -999,7 +732,8 @@ class _BannerSlide extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
@@ -1016,7 +750,6 @@ class _BannerSlide extends StatelessWidget {
               ],
             ),
           ),
-          // Gold couple silhouette placeholder (right side)
           Positioned(
             right: 12,
             top: 0,
@@ -1027,47 +760,6 @@ class _BannerSlide extends StatelessWidget {
                 size: 80,
                 color: AppColors.gold.withOpacity(0.4),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Quick Action Button ───────────────────────────────────────────────────────
-
-class _QuickAction extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  const _QuickAction({required this.icon, required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: AppColors.primary, size: 26),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              height: 1.3,
             ),
           ),
         ],
@@ -1092,15 +784,15 @@ class _MatchCard extends ConsumerWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8)],
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8)
+          ],
         ),
-        // Fills whatever height the parent gives it (the fixed-height horizontal
-        // row OR the grid cell), so the same card works in both layouts.
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Photo expands to fill the remaining height. Top-left shows the
-            // porutham CATEGORY badge; top-right shows the compatibility "%".
+            // porutham CATEGORY badge; top-right shows the match-quality badge.
             Expanded(
               child: Stack(
                 fit: StackFit.expand,
@@ -1126,7 +818,6 @@ class _MatchCard extends ConsumerWidget {
                 ],
               ),
             ),
-            // Info: name · age · education · location.
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
               child: Column(
@@ -1160,7 +851,8 @@ class _MatchCard extends ConsumerWidget {
                           profile.city.isEmpty ? 'N/A' : profile.city,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: Colors.grey[500], fontSize: 10.5),
+                          style:
+                              TextStyle(color: Colors.grey[500], fontSize: 10.5),
                         ),
                       ),
                     ],
@@ -1180,8 +872,190 @@ class _MatchCard extends ConsumerWidget {
       );
 }
 
-// Search filters were replaced by the dedicated Partner Preferences screen
-// (route `/partner-preferences`).
+// ── Recent Interest Card ──────────────────────────────────────────────────────
+
+/// A compact card for a received interest. Resolves the sender's profile and
+/// shows their photo, name·age and a tap target to view the full profile.
+class _RecentInterestCard extends ConsumerWidget {
+  final InterestModel interest;
+  const _RecentInterestCard({required this.interest});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final senderAsync = ref.watch(profileByIdProvider(interest.senderProfileId));
+    final p = senderAsync.valueOrNull;
+    final photo = (p?.photos.isNotEmpty ?? false) ? p!.photos.first : null;
+    final name = p == null
+        ? 'New interest'
+        : '${p.name}${p.age > 0 ? ', ${p.age}' : ''}';
+
+    return GestureDetector(
+      onTap: p == null ? null : () => context.push('/profile/${p.id}'),
+      child: Container(
+        width: 140,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  photo != null
+                      ? Image.network(photo,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _placeholder())
+                      : _placeholder(),
+                  Positioned(
+                    top: 6,
+                    left: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: interest.isAccepted
+                            ? AppColors.success
+                            : AppColors.primary,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        interest.isAccepted ? 'Matched' : 'Interested',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12.5,
+                    fontFamily: 'Poppins'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _placeholder() => Container(
+        color: Colors.grey[200],
+        child: const Icon(Icons.person, size: 40, color: Colors.grey),
+      );
+}
+
+// ── Home Astrologer Card ──────────────────────────────────────────────────────
+
+class _HomeAstrologerCard extends StatelessWidget {
+  final Astrologer astrologer;
+  const _HomeAstrologerCard({required this.astrologer});
+
+  @override
+  Widget build(BuildContext context) {
+    final a = astrologer;
+    return GestureDetector(
+      onTap: () => context.push('/astrologer/${a.id}'),
+      child: Container(
+        width: 150,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: Image.network(
+                    a.photoUrl,
+                    height: 104,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 104,
+                      color: AppColors.primary.withOpacity(0.1),
+                      child: const Icon(Icons.person,
+                          size: 44, color: AppColors.primary),
+                    ),
+                  ),
+                ),
+                if (a.verified)
+                  const Positioned(
+                    top: 8,
+                    right: 8,
+                    child: CircleAvatar(
+                      radius: 10,
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.verified,
+                          color: AppColors.success, size: 16),
+                    ),
+                  ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(a.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      const Icon(Icons.star, size: 13, color: AppColors.gold),
+                      const SizedBox(width: 3),
+                      Text(a.rating.toStringAsFixed(1),
+                          style: const TextStyle(
+                              fontSize: 11.5, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    a.specializations.isEmpty
+                        ? 'Astrologer'
+                        : a.specializations.first,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style:
+                        const TextStyle(fontSize: 11, color: AppColors.primary),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 // ── Curved header clipper ─────────────────────────────────────────────────────
 

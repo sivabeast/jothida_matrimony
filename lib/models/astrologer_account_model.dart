@@ -20,6 +20,28 @@ const List<String> kWeekdays = [
 String weekdayName([DateTime? date]) =>
     kWeekdays[(date ?? DateTime.now()).weekday - 1];
 
+/// Safe numeric parsing for Firestore values that may be null, a real number,
+/// or a numeric string. Prevents the
+/// "type 'Null' is not a subtype of type 'num' in type cast" crash that broke
+/// the astrologer directory when a document was missing a numeric field (or had
+/// it stored as text). Never throws — falls back to [fallback].
+int _numToInt(dynamic v, [int fallback = 0]) {
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  if (v is String) {
+    return int.tryParse(v.trim()) ??
+        double.tryParse(v.trim())?.toInt() ??
+        fallback;
+  }
+  return fallback;
+}
+
+double _numToDouble(dynamic v, [double fallback = 0]) {
+  if (v is num) return v.toDouble();
+  if (v is String) return double.tryParse(v.trim()) ?? fallback;
+  return fallback;
+}
+
 /// Certificate verification status set by the admin.
 enum VerificationStatus { pending, approved, rejected }
 
@@ -397,12 +419,10 @@ class AstrologerAccount {
       state: d['state'] ?? '',
       district: d['district'] ?? '',
       country: d['country'] ?? 'India',
-      latitude: (d['latitude'] as num?)?.toDouble(),
-      longitude: (d['longitude'] as num?)?.toDouble(),
+      latitude: d['latitude'] == null ? null : _numToDouble(d['latitude']),
+      longitude: d['longitude'] == null ? null : _numToDouble(d['longitude']),
       photoUrl: d['photoUrl'] ?? '',
-      experienceYears: (d['experienceYears'] ?? 0) is int
-          ? d['experienceYears'] ?? 0
-          : int.tryParse('${d['experienceYears']}') ?? 0,
+      experienceYears: _numToInt(d['experienceYears']),
       expertise: List<String>.from(d['expertise'] ?? const []),
       languages: List<String>.from(d['languages'] ?? const []),
       about: d['about'] ?? '',
@@ -417,7 +437,7 @@ class AstrologerAccount {
           .map((c) =>
               AstrologerCertificate.fromMap(Map<String, dynamic>.from(c)))
           .toList(),
-      consultationFee: (d['consultationFee'] ?? 0).toDouble(),
+      consultationFee: _numToDouble(d['consultationFee']),
       availability: d['availability'] ?? '',
       workingHours: d['workingHours'] ?? '',
       consultationMode: d['consultationMode'] ?? 'Online',
@@ -429,13 +449,15 @@ class AstrologerAccount {
       manuallyAvailable: d['manuallyAvailable'] ?? true,
       availableForAssignment: d['availableForAssignment'] ?? true,
       onLeave: d['onLeave'] ?? false,
-      availableStartMinutes: (d['availableStartMinutes'] as num?)?.toInt() ?? 8 * 60,
-      availableEndMinutes: (d['availableEndMinutes'] as num?)?.toInt() ?? 21 * 60,
-      lunchStartMinutes: (d['lunchStartMinutes'] as num?)?.toInt(),
-      lunchEndMinutes: (d['lunchEndMinutes'] as num?)?.toInt(),
-      slotDurationMinutes: (d['slotDurationMinutes'] as num?)?.toInt() ?? 30,
+      availableStartMinutes: _numToInt(d['availableStartMinutes'], 8 * 60),
+      availableEndMinutes: _numToInt(d['availableEndMinutes'], 21 * 60),
+      lunchStartMinutes:
+          d['lunchStartMinutes'] == null ? null : _numToInt(d['lunchStartMinutes']),
+      lunchEndMinutes:
+          d['lunchEndMinutes'] == null ? null : _numToInt(d['lunchEndMinutes']),
+      slotDurationMinutes: _numToInt(d['slotDurationMinutes'], 30),
       unavailableDates: List<String>.from(d['unavailableDates'] ?? const []),
-      maxBookingsPerDay: (d['maxBookingsPerDay'] as num?)?.toInt() ?? 0,
+      maxBookingsPerDay: _numToInt(d['maxBookingsPerDay']),
       offersInApp: d['offersInApp'] ?? true,
       offersDirectVisit: d['offersDirectVisit'] ?? true,
       profileCompleted: d['profileCompleted'] ?? false,
@@ -447,12 +469,12 @@ class AstrologerAccount {
       services: ((d['services'] as List?) ?? const [])
           .map((s) => AstrologerService.fromMap(Map<String, dynamic>.from(s)))
           .toList(),
-      rating: (d['rating'] ?? 0).toDouble(),
-      reviewCount: d['reviewCount'] ?? 0,
+      rating: _numToDouble(d['rating']),
+      reviewCount: _numToInt(d['reviewCount']),
       ratingBreakdown: _parseBreakdown(d['ratingBreakdown']),
-      profileViews: d['profileViews'] ?? 0,
-      contactUnlocks: d['contactUnlocks'] ?? 0,
-      bookingCount: d['bookingCount'] ?? 0,
+      profileViews: _numToInt(d['profileViews']),
+      contactUnlocks: _numToInt(d['contactUnlocks']),
+      bookingCount: _numToInt(d['bookingCount']),
       subscriptionPlan: d['subscriptionPlan'] ?? '',
       subscriptionExpiry: d['subscriptionExpiry'] is Timestamp
           ? (d['subscriptionExpiry'] as Timestamp).toDate()
@@ -465,9 +487,7 @@ class AstrologerAccount {
       accountNumber: d['accountNumber'] ?? '',
       ifscCode: d['ifscCode'] ?? '',
       upiId: d['upiId'] ?? '',
-      matchAnalysisFee: (d['matchAnalysisFee'] ?? 0) is num
-          ? (d['matchAnalysisFee'] as num).toInt()
-          : 0,
+      matchAnalysisFee: _numToInt(d['matchAnalysisFee']),
     );
   }
 

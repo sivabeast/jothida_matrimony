@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/services/match_score_service.dart';
 
-/// A compact "85% Match" pill, coloured by the score tier.
+/// A compact match-quality pill ("Excellent Match" / "Good Match" /
+/// "Average Match"), coloured by the score tier. NO percentage is shown.
 ///
 /// Pass a [MatchScore] (from [MatchScoreService.compute]). Renders nothing when
 /// [score] is null (e.g. the signed-in user's own profile hasn't loaded yet),
@@ -14,8 +15,7 @@ class MatchScoreBadge extends StatelessWidget {
 
   static const _excellent = Color(0xFF1B8A4B); // green
   static const _good = Color(0xFF2E7D32);
-  static const _fair = Color(0xFFB8860B); // dark gold
-  static const _low = Color(0xFF7A6A55);
+  static const _average = Color(0xFFB8860B); // dark gold
 
   Color get _color {
     switch (score?.tier) {
@@ -23,10 +23,8 @@ class MatchScoreBadge extends StatelessWidget {
         return _excellent;
       case 'good':
         return _good;
-      case 'fair':
-        return _fair;
       default:
-        return _low;
+        return _average;
     }
   }
 
@@ -55,10 +53,10 @@ class MatchScoreBadge extends StatelessWidget {
               size: compact ? 11 : 13, color: Colors.white),
           SizedBox(width: compact ? 3 : 5),
           Text(
-            compact ? '${s.percent}%' : s.label,
+            compact ? s.shortQuality : s.quality,
             style: TextStyle(
               color: Colors.white,
-              fontSize: compact ? 11 : 12.5,
+              fontSize: compact ? 10 : 12.5,
               fontWeight: FontWeight.w700,
               fontFamily: 'Poppins',
             ),

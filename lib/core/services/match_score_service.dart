@@ -13,24 +13,40 @@ class MatchScore {
 
   const MatchScore(this.percent, this.breakdown);
 
-  /// "85% Match" — ready for a chip/badge.
-  String get label => '$percent% Match';
+  /// Match QUALITY label — NO percentage is ever shown to users.
+  /// "Excellent Match" ≥ 80, "Good Match" ≥ 60, "Average Match" otherwise.
+  String get quality {
+    if (percent >= 80) return 'Excellent Match';
+    if (percent >= 60) return 'Good Match';
+    return 'Average Match';
+  }
 
-  /// Coarse bucket used to colour the badge.
-  /// excellent ≥ 85, good ≥ 70, fair ≥ 55, low otherwise.
+  /// Single-word quality for dense badges ("Excellent" / "Good" / "Average").
+  String get shortQuality {
+    if (percent >= 80) return 'Excellent';
+    if (percent >= 60) return 'Good';
+    return 'Average';
+  }
+
+  /// Back-compat alias for callers that used to print a "% Match" chip — now
+  /// always the quality label, never a percentage.
+  String get label => quality;
+
+  /// Coarse bucket used to colour the badge — aligned with [quality].
+  /// excellent ≥ 80, good ≥ 60, average otherwise.
   String get tier {
-    if (percent >= 85) return 'excellent';
-    if (percent >= 70) return 'good';
-    if (percent >= 55) return 'fair';
-    return 'low';
+    if (percent >= 80) return 'excellent';
+    if (percent >= 60) return 'good';
+    return 'average';
   }
 }
 
-/// Computes a profile-compatibility percentage between two members.
+/// Computes a profile-compatibility score between two members.
 ///
-/// This is the matrimony "85% Match" score shown on cards and in the home
-/// feed — distinct from the astrological *porutham* (10-kūṭa) matching in
-/// [porutham_match.dart], which only compares Rasi/Nakshatra.
+/// The raw percentage is used only internally (ranking); the UI shows the
+/// coarse [MatchScore.quality] label ("Excellent / Good / Average Match") and
+/// never a percentage — distinct from the astrological *porutham* (10-kūṭa)
+/// matching in [porutham_match.dart], which only compares Rasi/Nakshatra.
 ///
 /// The score blends raw attribute similarity (age, education, location,
 /// occupation, religion, caste — 75 pts) with how well the candidate satisfies

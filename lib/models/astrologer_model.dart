@@ -4,6 +4,27 @@ import 'astrologer_certificate.dart';
 // documents (type [AstrologerCertificate]) without importing the account model.
 export 'astrologer_certificate.dart';
 
+/// Safe numeric parsing for map/Firestore values that may be null, a real
+/// number, or a numeric string. Prevents the
+/// "type 'Null' is not a subtype of type 'num' in type cast" crash when a field
+/// is missing or stored as text. Never throws — falls back to [fallback].
+int _numToInt(dynamic v, [int fallback = 0]) {
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  if (v is String) {
+    return int.tryParse(v.trim()) ??
+        double.tryParse(v.trim())?.toInt() ??
+        fallback;
+  }
+  return fallback;
+}
+
+double _numToDouble(dynamic v, [double fallback = 0]) {
+  if (v is num) return v.toDouble();
+  if (v is String) return double.tryParse(v.trim()) ?? fallback;
+  return fallback;
+}
+
 /// A service an astrologer offers, with its price (INR).
 ///
 /// [durationMinutes] and [available] are optional and default safely, so older
@@ -26,9 +47,9 @@ class AstrologerService {
 
   factory AstrologerService.fromMap(Map<String, dynamic> m) => AstrologerService(
         name: m['name'] ?? '',
-        price: m['price'] ?? 0,
+        price: _numToInt(m['price']),
         description: m['description'] ?? '',
-        durationMinutes: m['durationMinutes'] ?? 30,
+        durationMinutes: _numToInt(m['durationMinutes'], 30),
         available: m['available'] ?? true,
       );
 
@@ -179,9 +200,9 @@ class Astrologer {
         name: m['name'] ?? '',
         photoUrl: m['photoUrl'] ?? '',
         location: m['location'] ?? '',
-        rating: (m['rating'] ?? 0).toDouble(),
-        reviewCount: m['reviewCount'] ?? 0,
-        experienceYears: m['experienceYears'] ?? 0,
+        rating: _numToDouble(m['rating']),
+        reviewCount: _numToInt(m['reviewCount']),
+        experienceYears: _numToInt(m['experienceYears']),
         languages: List<String>.from(m['languages'] ?? []),
         specializations: List<String>.from(m['specializations'] ?? []),
         certifications: List<String>.from(m['certifications'] ?? []),
@@ -206,15 +227,9 @@ class Astrologer {
         about: m['about'] ?? '',
         verified: m['verified'] ?? false,
         subscriptionPlan: m['subscriptionPlan'] ?? '',
-        bookingCount: (m['bookingCount'] ?? 0) is num
-            ? (m['bookingCount'] as num).toInt()
-            : 0,
-        consultationFee: (m['consultationFee'] ?? 0) is num
-            ? (m['consultationFee'] as num).toInt()
-            : 0,
-        matchAnalysisFee: (m['matchAnalysisFee'] ?? 0) is num
-            ? (m['matchAnalysisFee'] as num).toInt()
-            : 0,
+        bookingCount: _numToInt(m['bookingCount']),
+        consultationFee: _numToInt(m['consultationFee']),
+        matchAnalysisFee: _numToInt(m['matchAnalysisFee']),
       );
 
   Map<String, dynamic> toMap() => {

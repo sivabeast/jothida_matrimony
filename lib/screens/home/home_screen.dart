@@ -71,42 +71,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onPressed: () => Scaffold.of(ctx).openDrawer(),
           ),
         ),
+        // Header: [Logo] [Jothida Matrimony]. The "Find Your Perfect Match"
+        // tagline subtitle was removed; the title is Flexible + ellipsis so it
+        // never overflows or pushes the action icons on small screens.
         title: Row(
           children: [
             // App logo (official brand medallion).
-            const AppLogo(size: 40),
+            const AppLogo(size: 36),
             const SizedBox(width: 10),
-            // Brand name + subtitle
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  context.l10n.appTitle,
-                  style: const TextStyle(
-                    color: AppColors.gold,
-                    fontSize: 17,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.3,
-                  ),
+            Flexible(
+              child: Text(
+                context.l10n.appTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.gold,
+                  fontSize: 18,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
                 ),
-                Text(
-                  context.l10n.appTagline.toUpperCase(),
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.80),
-                    fontSize: 9.5,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),
         actions: [
-          // Notification icon (only icon in the AppBar)
+          // Notification icon
           IconButton(
             icon: unread > 0
                 ? Badge(
@@ -130,6 +120,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             tooltip: context.l10n.notifications,
+          ),
+          // Wallet / Payments
+          IconButton(
+            icon: const Icon(Icons.account_balance_wallet_outlined, size: 24),
+            tooltip: 'Wallet',
+            onPressed: () => context.push('/payments'),
           ),
           // Admin Dashboard — visible ONLY to Super Admin accounts. Normal
           // users and astrologers never see this icon.
