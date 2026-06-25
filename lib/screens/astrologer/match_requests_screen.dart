@@ -140,11 +140,11 @@ class _RequestCard extends StatelessWidget {
     final cta = r.status == AstrologerRequestStatus.pending
         ? 'Review & Respond'
         : r.status == AstrologerRequestStatus.accepted
-            ? 'Open Workspace'
+            ? 'Open Status'
             : 'View Analysis';
     return InkWell(
       borderRadius: BorderRadius.circular(16),
-      onTap: () => context.push('/match-workspace', extra: r),
+      onTap: () => context.push('/match-workspace/${r.id}', extra: r),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(

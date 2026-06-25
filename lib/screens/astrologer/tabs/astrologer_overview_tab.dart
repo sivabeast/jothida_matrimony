@@ -7,22 +7,26 @@ import '../../../core/utils/l10n_ext.dart';
 import '../../../models/astrologer_account_model.dart';
 import '../../../models/astrologer_plan.dart';
 import '../../../models/astrologer_request_model.dart';
+import '../../../models/consultation_model.dart';
+import '../../../providers/astrologer_dashboard_provider.dart';
 import '../../../providers/astrologer_session_provider.dart';
+import '../../../providers/consultation_provider.dart';
+import '../../../providers/match_analysis_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../providers/service_providers.dart';
-import '../astrologer_consultations_screen.dart';
-import '../astrologer_earnings_screen.dart';
 import '../profile/astrologer_availability_screen.dart';
-import '../profile/astrologer_certificates_screen.dart';
-import '../profile/astrologer_profile_sections.dart';
 import 'astrologer_common.dart';
 
-/// Dashboard overview for the marketplace astrologer: revenue, customer and
-/// rating stats, profile/subscription status, quick actions and recent
-/// activity. No appointments, user lists or user management — astrologers are
-/// service providers, not user managers.
+/// Dashboard overview for the marketplace astrologer.
+///
+/// The dashboard is request-first: real-time NEW REQUEST notifications sit at
+/// the very top, followed by the live Match-Analysis request LIST (with inline
+/// Accept / Status / View actions) and the consultation queue. Revenue,
+/// customer/rating stats and the subscription card come below. Approval status
+/// lives in the top header (not as a card here); there is no Quick Actions
+/// section. Revenue counts COMPLETED requests only.
 class AstrologerOverviewTab extends ConsumerWidget {
-  /// Lets quick actions switch the dashboard's bottom-nav tab (Reviews,
+  /// Lets a section switch the dashboard's bottom-nav tab (Reviews,
   /// Notifications) that live as siblings of this tab.
   final void Function(int index)? onSelectTab;
   const AstrologerOverviewTab({super.key, this.onSelectTab});
@@ -38,23 +42,40 @@ class AstrologerOverviewTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
-        // ── Availability (working days + manual on/off) ─────────────────
+        if (!account.isApproved) _verificationBanner(context, ref, account),
+        // ── New requests (real-time notifications) ──────────────────────────
+        _newRequestsSection(context, ref),
+        const SizedBox(height: 18),
+        // ── Match Analysis Requests (the dashboard's primary focus) ─────────
+        _matchRequestsSection(context, requests),
+        const SizedBox(height: 18),
+        // ── Consultation requests ───────────────────────────────────────────
+        _consultationSection(context, ref),
+        const SizedBox(height: 18),
+        // ── Availability (working days + manual on/off) ─────────────────────
         _availabilityCard(context, ref, account),
         const SizedBox(height: 18),
-        if (!account.isApproved) _verificationBanner(account),
-        // ── Revenue ─────────────────────────────────────────────────────
-        const AstrologerSectionTitle('Revenue'),
+        // ── Revenue (completed requests only) ───────────────────────────────
+        Row(
+          children: [
+            const Expanded(child: AstrologerSectionTitle('Revenue')),
+            TextButton.icon(
+              onPressed: () => context.push('/astrologer-earnings'),
+              icon: const Icon(Icons.account_balance_wallet_outlined, size: 16),
+              label: const Text('Earnings'),
+              style: TextButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  visualDensity: VisualDensity.compact),
+            ),
+          ],
+        ),
         _revenueRow(requests),
         const SizedBox(height: 18),
-        // ── Customers ───────────────────────────────────────────────────
+        // ── Customers ───────────────────────────────────────────────────────
         const AstrologerSectionTitle('Customers'),
         _customersRow(requests, account),
         const SizedBox(height: 18),
-        // ── Match Analysis Requests ─────────────────────────────────────
-        const AstrologerSectionTitle('Match Analysis Requests'),
-        _matchRequestsCard(context, requests),
-        const SizedBox(height: 18),
-        // ── Ratings ─────────────────────────────────────────────────────
+        // ── Ratings ─────────────────────────────────────────────────────────
         const AstrologerSectionTitle('Ratings'),
         Row(
           children: [
@@ -69,33 +90,225 @@ class AstrologerOverviewTab extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 18),
-        // ── Profile status ──────────────────────────────────────────────
-        const AstrologerSectionTitle('Profile Status'),
-        _profileStatusCard(context, ref, account),
         const SizedBox(height: 20),
-        // ── Subscription ────────────────────────────────────────────────
+        // ── Subscription ────────────────────────────────────────────────────
         const AstrologerSectionTitle('Subscription'),
         _subscriptionCard(context, ref, account),
         const SizedBox(height: 20),
-        // ── Quick actions ───────────────────────────────────────────────
-        const AstrologerSectionTitle('Quick Actions'),
-        _quickActions(context, ref),
-        const SizedBox(height: 20),
-        // ── Recent activity ─────────────────────────────────────────────
+        // ── Recent activity ─────────────────────────────────────────────────
         const AstrologerSectionTitle('Recent Activity'),
         _recentActivity(ref),
       ],
     );
   }
 
-  // ── Revenue (Today / Monthly / Total) ──────────────────────────────────
+  // ── New requests (real-time top notifications) ─────────────────────────────
+  /// Live feed of the latest incoming work (match-analysis requests +
+  /// consultations), newest first, so a new booking surfaces at the TOP of the
+  /// dashboard the instant the user creates it — no manual refresh.
+  Widget _newRequestsSection(BuildContext context, WidgetRef ref) {
+    final items = ref.watch(astrologerInboxProvider);
+    final pending = ref.watch(astrologerPendingInboxCountProvider);
+    final recent = items.take(4).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const AstrologerSectionTitle('New Requests'),
+            const Spacer(),
+            if (pending > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20)),
+                child: Text('$pending new',
+                    style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.error)),
+              ),
+          ],
+        ),
+        if (recent.isEmpty)
+          AstrologerCard(
+            child: Row(
+              children: [
+                Icon(Icons.notifications_none, size: 18, color: Colors.grey[400]),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                      'New booking & consultation requests appear here in real time.',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12.5)),
+                ),
+              ],
+            ),
+          )
+        else
+          for (final item in recent)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _InboxTile(item: item),
+            ),
+      ],
+    );
+  }
+
+  // ── Match Analysis Requests (request list = primary focus) ─────────────────
+  Widget _matchRequestsSection(
+      BuildContext context, List<AstrologerRequestModel> requests) {
+    final matching = requests.where((r) => r.isMatchAnalysis).toList();
+    int countOf(AstrologerRequestStatus s) =>
+        matching.where((r) => r.status == s).length;
+    final pending = countOf(AstrologerRequestStatus.pending);
+    final accepted = countOf(AstrologerRequestStatus.accepted);
+    final completed = countOf(AstrologerRequestStatus.completed);
+
+    // Order the list so actionable requests come first: pending, then accepted,
+    // then completed / rejected — each group newest-first.
+    int rank(AstrologerRequestStatus s) {
+      switch (s) {
+        case AstrologerRequestStatus.pending:
+          return 0;
+        case AstrologerRequestStatus.accepted:
+          return 1;
+        case AstrologerRequestStatus.completed:
+          return 2;
+        case AstrologerRequestStatus.rejected:
+          return 3;
+      }
+    }
+
+    final sorted = [...matching]..sort((a, b) {
+        final r = rank(a.status).compareTo(rank(b.status));
+        return r != 0 ? r : b.createdAt.compareTo(a.createdAt);
+      });
+    final shown = sorted.take(5).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const AstrologerSectionTitle('Match Analysis Requests'),
+            const Spacer(),
+            if (matching.isNotEmpty)
+              TextButton(
+                onPressed: () => context.push('/match-requests'),
+                style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    visualDensity: VisualDensity.compact),
+                child: Text('View All (${matching.length})'),
+              ),
+          ],
+        ),
+        if (matching.isEmpty)
+          AstrologerCard(
+            child: Row(
+              children: [
+                Icon(Icons.favorite_outline, size: 18, color: Colors.grey[400]),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text('No porutham / match-analysis requests yet.',
+                      style:
+                          TextStyle(color: Colors.grey[600], fontSize: 12.5)),
+                ),
+              ],
+            ),
+          )
+        else ...[
+          for (final r in shown)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _DashboardRequestTile(request: r),
+            ),
+          const SizedBox(height: 6),
+          // Summary counters sit BELOW the request list (secondary).
+          Row(
+            children: [
+              Expanded(child: _countChip('Pending', pending, AppColors.warning)),
+              const SizedBox(width: 10),
+              Expanded(child: _countChip('Accepted', accepted, AppColors.info)),
+              const SizedBox(width: 10),
+              Expanded(
+                  child: _countChip('Completed', completed, AppColors.success)),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  // ── Consultation requests ──────────────────────────────────────────────────
+  Widget _consultationSection(BuildContext context, WidgetRef ref) {
+    final all = ref.watch(astrologerConsultationsProvider).valueOrNull ??
+        const <ConsultationBooking>[];
+    final pending =
+        all.where((c) => c.status == ConsultationStatus.pending).length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const AstrologerSectionTitle('Consultation Requests'),
+        AstrologerCard(
+          onTap: () => context.push('/consultation-requests'),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: AppColors.primary.withOpacity(0.1),
+                child: const Icon(Icons.event_note_outlined,
+                    size: 19, color: AppColors.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('In-App & Direct-Visit consultations',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 13.5)),
+                    const SizedBox(height: 2),
+                    Text(
+                        all.isEmpty
+                            ? 'No consultation requests yet.'
+                            : '${all.length} total · $pending pending',
+                        style:
+                            TextStyle(fontSize: 12, color: Colors.grey[600])),
+                  ],
+                ),
+              ),
+              if (pending > 0)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                      color: AppColors.warning.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20)),
+                  child: Text('$pending',
+                      style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.warning)),
+                ),
+              const SizedBox(width: 6),
+              const Icon(Icons.arrow_forward_ios, size: 14),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Revenue (Today / Monthly / Total — COMPLETED requests only) ────────────
   Widget _revenueRow(List<AstrologerRequestModel> requests) {
     final now = DateTime.now();
     var today = 0, month = 0, total = 0;
     for (final r in requests) {
+      // Revenue is recognised ONLY when a report has been submitted and the
+      // request is Completed — never for pending / accepted / unpaid requests.
       if (r.status != AstrologerRequestStatus.completed) continue;
-      final d = r.respondedAt ?? r.createdAt;
+      final d = r.completedAt ?? r.respondedAt ?? r.createdAt;
       total += r.amount;
       if (d.year == now.year && d.month == now.month) {
         month += r.amount;
@@ -105,8 +318,8 @@ class AstrologerOverviewTab extends ConsumerWidget {
     return Row(
       children: [
         Expanded(
-            child: _StatCard("Today's", '₹$today', Icons.today,
-                AppColors.success)),
+            child: _StatCard(
+                "Today's", '₹$today', Icons.today, AppColors.success)),
         const SizedBox(width: 10),
         Expanded(
             child: _StatCard('Monthly', '₹$month', Icons.calendar_month,
@@ -119,7 +332,7 @@ class AstrologerOverviewTab extends ConsumerWidget {
     );
   }
 
-  // ── Customers ──────────────────────────────────────────────────────────
+  // ── Customers ──────────────────────────────────────────────────────────────
   Widget _customersRow(
       List<AstrologerRequestModel> requests, AstrologerAccount a) {
     final customers = requests.map((r) => r.userId).toSet().length;
@@ -135,85 +348,6 @@ class AstrologerOverviewTab extends ConsumerWidget {
               Icons.lock_open_outlined, AppColors.info),
         ),
       ],
-    );
-  }
-
-  // ── Match Analysis Requests module ─────────────────────────────────────
-  Widget _matchRequestsCard(
-      BuildContext context, List<AstrologerRequestModel> requests) {
-    final matching = requests.where((r) => r.isMatchAnalysis).toList();
-    int countOf(AstrologerRequestStatus s) =>
-        matching.where((r) => r.status == s).length;
-    final pending = countOf(AstrologerRequestStatus.pending);
-    final accepted = countOf(AstrologerRequestStatus.accepted);
-    final completed = countOf(AstrologerRequestStatus.completed);
-
-    return AstrologerCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.favorite_outline, color: AppColors.primary),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text('Porutham bookings from users',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
-              ),
-              if (pending > 0)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
-                      color: AppColors.gold.withOpacity(0.18),
-                      borderRadius: BorderRadius.circular(20)),
-                  child: Text('$pending new',
-                      style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary)),
-                ),
-            ],
-          ),
-          if (matching.isEmpty) ...[
-            const SizedBox(height: 10),
-            Text('No match-analysis requests yet.',
-                style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
-          ] else ...[
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                    child: _countChip('Pending', pending, AppColors.warning)),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: _countChip('Accepted', accepted, AppColors.info)),
-                const SizedBox(width: 10),
-                Expanded(
-                    child:
-                        _countChip('Completed', completed, AppColors.success)),
-              ],
-            ),
-          ],
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => context.push('/match-requests'),
-              icon: const Icon(Icons.open_in_new, size: 18),
-              label: const Text('View Requests'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(46),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -235,163 +369,13 @@ class AstrologerOverviewTab extends ConsumerWidget {
         ),
       );
 
-  // ── Profile status ─────────────────────────────────────────────────────
-  Widget _profileStatusCard(
-      BuildContext context, WidgetRef ref, AstrologerAccount a) {
-    Color c;
-    IconData icon;
-    switch (a.status) {
-      case VerificationStatus.approved:
-        c = AppColors.success;
-        icon = Icons.verified;
-        break;
-      case VerificationStatus.rejected:
-        c = AppColors.error;
-        icon = Icons.cancel;
-        break;
-      case VerificationStatus.pending:
-        c = AppColors.warning;
-        icon = Icons.hourglass_top;
-        break;
-    }
-    final rejected = a.status == VerificationStatus.rejected;
-    return AstrologerCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: c),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Verification',
-                        style:
-                            TextStyle(fontSize: 12, color: Colors.grey[600])),
-                    const SizedBox(height: 2),
-                    Text(rejected ? '⚠ Verification Rejected' : a.status.label,
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, color: c, fontSize: 15)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          // Rejected → show the reason and let the astrologer reapply.
-          if (rejected) ...[
-            if (a.rejectionReason.trim().isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(10)),
-                child: Text('Reason: ${a.rejectionReason.trim()}',
-                    style: TextStyle(fontSize: 12.5, color: Colors.grey[800])),
-              ),
-            ],
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => _reapply(context, ref, a),
-                icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Reapply for Verification'),
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(46)),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Future<void> _reapply(
-      BuildContext context, WidgetRef ref, AstrologerAccount a) async {
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      await ref.read(astrologerServiceProvider).reapplyForVerification(a.id);
-      messenger.showSnackBar(const SnackBar(
-          content: Text(
-              'Re-submitted for verification. Update your profile / certificates if needed.')));
-    } catch (_) {
-      messenger.showSnackBar(const SnackBar(
-          content: Text('Could not re-submit. Please try again.'),
-          backgroundColor: AppColors.error));
-    }
-  }
-
-  // ── Quick actions ──────────────────────────────────────────────────────
-  Widget _quickActions(BuildContext context, WidgetRef ref) {
-    Widget tile(IconData icon, String label, VoidCallback onTap) => Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: AstrologerCard(
-            onTap: onTap,
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
-                  child: Icon(icon, size: 19, color: AppColors.primary),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(label,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 14)),
-                ),
-                const Icon(Icons.arrow_forward_ios, size: 14),
-              ],
-            ),
-          ),
-        );
-
-    void open(Widget screen) => Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => screen));
-
-    return Column(
-      children: [
-        tile(Icons.event_note_outlined, 'Consultation Requests',
-            () => open(const AstrologerConsultationsScreen())),
-        tile(Icons.account_balance_wallet_outlined, 'Earnings',
-            () => open(const AstrologerEarningsScreen())),
-        tile(Icons.event_available_outlined, 'Availability',
-            () => open(const AstrologerAvailabilityScreen())),
-        tile(Icons.person_outline, 'Edit Profile',
-            () => open(const AstrologerPersonalDetailsScreen())),
-        tile(Icons.workspace_premium_outlined, 'Manage Certificates',
-            () => open(const AstrologerCertificatesScreen())),
-        tile(Icons.star_outline, 'View Reviews', () => onSelectTab?.call(1)),
-        tile(Icons.card_membership_outlined, 'Subscription Plans',
-            () => kSubscriptionTestMode
-                ? _activate(context, ref)
-                : _renew(context)),
-        tile(Icons.notifications_none, 'Notifications',
-            () => onSelectTab?.call(2)),
-      ],
-    );
-  }
-
-  // ── Subscription card ─────────────────────────────────────────────────
+  // ── Subscription card (Monthly / Yearly only) ──────────────────────────────
   Widget _subscriptionCard(
       BuildContext context, WidgetRef ref, AstrologerAccount a) {
     final active = a.subscriptionActive;
     final hasPlan = a.subscriptionExpiry != null;
     final tierLabel = AstrologerPlan.labelFor(a.subscriptionPlan);
-    final planLabel = tierLabel.isNotEmpty
-        ? tierLabel
-        : a.subscriptionPlan == 'yearly'
-            ? 'Yearly Plan'
-            : a.subscriptionPlan == 'monthly'
-                ? 'Monthly Plan'
-                : 'No active plan';
+    final planLabel = tierLabel.isNotEmpty ? tierLabel : 'No active plan';
     final statusColor = active ? AppColors.success : AppColors.error;
     final statusText = active
         ? 'Active'
@@ -407,8 +391,7 @@ class AstrologerOverviewTab extends ConsumerWidget {
           if (kSubscriptionTestMode) ...[
             Container(
               width: double.infinity,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
                 color: AppColors.warning.withOpacity(0.12),
@@ -452,7 +435,7 @@ class AstrologerOverviewTab extends ConsumerWidget {
           ] else ...[
             const SizedBox(height: 8),
             Text(
-                'Choose a subscription plan to appear in user listings, '
+                'Choose a Monthly or Yearly plan to appear in user listings, '
                 'search and recommendations.',
                 style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
           ],
@@ -483,13 +466,13 @@ class AstrologerOverviewTab extends ConsumerWidget {
           const SizedBox(height: 14),
           ElevatedButton.icon(
             onPressed: () => kSubscriptionTestMode
-                ? _activate(context, ref)
+                ? _choosePlan(context, ref)
                 : _renew(context),
-            icon: Icon(kSubscriptionTestMode
+            icon: const Icon(kSubscriptionTestMode
                 ? Icons.workspace_premium
                 : Icons.autorenew),
             label: Text(kSubscriptionTestMode
-                ? 'Activate Plan'
+                ? (hasPlan ? 'Change Plan' : 'Activate Plan')
                 : 'Renew Subscription'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
@@ -504,10 +487,10 @@ class AstrologerOverviewTab extends ConsumerWidget {
     );
   }
 
-  /// Subscription plans — pick a tier (Starter / Basic / Pro / Elite) and
-  /// activate. In TEST MODE the plan activates instantly with no payment;
-  /// otherwise this is where the payment flow would run before activation.
-  void _activate(BuildContext context, WidgetRef ref) {
+  /// Subscription plan picker — Monthly or Yearly. In TEST MODE the plan
+  /// activates instantly with no payment; otherwise this is where the payment
+  /// flow would run before activation.
+  void _choosePlan(BuildContext context, WidgetRef ref) {
     final current = ref.read(myAstrologerAccountProvider)?.subscriptionPlan;
     showModalBottomSheet(
       context: context,
@@ -515,67 +498,57 @@ class AstrologerOverviewTab extends ConsumerWidget {
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (sheetCtx) => DraggableScrollableSheet(
-        initialChildSize: 0.85,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (_, controller) => Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(3)),
-                ),
+      builder: (sheetCtx) => SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+            20, 12, 20, 20 + MediaQuery.of(sheetCtx).viewInsets.bottom),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 5,
+                decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(3)),
               ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  const Text('Subscription Plans',
-                      style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
-                  const Spacer(),
-                  if (AstrologerPlan.launchOfferActive)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                          color: AppColors.gold.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(20)),
-                      child: const Text('🚀 Launch Offer',
-                          style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primary)),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                kSubscriptionTestMode
-                    ? 'Test mode — the plan activates immediately, no payment.'
-                    : 'Billed monthly. Cancel anytime.',
-                style: TextStyle(fontSize: 12.5, color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 14),
-              Expanded(
-                child: ListView.separated(
-                  controller: controller,
-                  itemCount: AstrologerPlan.all.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (_, i) => _planCard(
-                      sheetCtx, ref, AstrologerPlan.all[i],
-                      current: current),
-                ),
-              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                const Text('Choose a Plan',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                if (AstrologerPlan.launchOfferActive)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                        color: AppColors.gold.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20)),
+                    child: const Text('🚀 Launch Offer',
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary)),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              kSubscriptionTestMode
+                  ? 'Test mode — the plan activates immediately, no payment.'
+                  : 'Pick Monthly or Yearly billing.',
+              style: TextStyle(fontSize: 12.5, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 14),
+            for (final plan in AstrologerPlan.all) ...[
+              _planCard(sheetCtx, ref, plan, current: current),
+              const SizedBox(height: 12),
             ],
-          ),
+          ],
         ),
       ),
     );
@@ -584,15 +557,16 @@ class AstrologerOverviewTab extends ConsumerWidget {
   Widget _planCard(BuildContext sheetCtx, WidgetRef ref, AstrologerPlan plan,
       {String? current}) {
     final isCurrent = current == plan.id;
-    final launch = AstrologerPlan.launchOfferActive;
+    const launch = AstrologerPlan.launchOfferActive;
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: () async {
         Navigator.pop(sheetCtx);
         final messenger = ScaffoldMessenger.of(sheetCtx);
-        await ref
-            .read(myAstrologerAccountProvider.notifier)
-            .activateSubscription(plan.id, days: 30, amount: plan.currentPrice);
+        await ref.read(myAstrologerAccountProvider.notifier).activateSubscription(
+            plan.id,
+            days: plan.durationDays,
+            amount: plan.currentPrice);
         messenger.showSnackBar(SnackBar(
             content: Text(
                 '${plan.name} plan activated${kSubscriptionTestMode ? ' (test mode)' : ''}.')));
@@ -631,9 +605,9 @@ class AstrologerOverviewTab extends ConsumerWidget {
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                                 color: AppColors.primary)),
-                        const Text('/mo',
-                            style:
-                                TextStyle(fontSize: 11, color: Colors.grey)),
+                        Text('/${plan.unit}',
+                            style: const TextStyle(
+                                fontSize: 11, color: Colors.grey)),
                       ],
                     ),
                     if (launch && plan.regularPrice != plan.launchPrice)
@@ -683,7 +657,7 @@ class AstrologerOverviewTab extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Renew Subscription'),
         content: const Text(
-            'To renew your monthly or yearly plan, please contact the platform '
+            'To renew your Monthly or Yearly plan, please contact the platform '
             'admin. Your profile stays visible to users while your subscription '
             'is active.'),
         actions: [
@@ -694,7 +668,7 @@ class AstrologerOverviewTab extends ConsumerWidget {
     );
   }
 
-  // ── Recent activity (from the astrologer's notifications) ──────────────
+  // ── Recent activity (from the astrologer's notifications) ──────────────────
   Widget _recentActivity(WidgetRef ref) {
     final items = ref.watch(notificationsProvider).valueOrNull ?? const [];
     if (items.isEmpty) {
@@ -744,7 +718,7 @@ class AstrologerOverviewTab extends ConsumerWidget {
     );
   }
 
-  // ── Availability card (dashboard header status + toggle) ────────────────
+  // ── Availability card (dashboard header status + toggle) ────────────────────
   Widget _availabilityCard(
       BuildContext context, WidgetRef ref, AstrologerAccount a) {
     final availableNow = a.isAvailableNow;
@@ -783,7 +757,6 @@ class AstrologerOverviewTab extends ConsumerWidget {
                       color: statusColor),
                 ),
               ),
-              // Manual on/off — reflects immediately across the platform.
               Switch(
                 value: a.manuallyAvailable,
                 activeColor: AppColors.success,
@@ -791,15 +764,12 @@ class AstrologerOverviewTab extends ConsumerWidget {
               ),
             ],
           ),
-          // When the switch is ON but today is a day off, explain why users
-          // still see the astrologer as unavailable.
           if (a.manuallyAvailable && !a.isWorkingToday) ...[
             const SizedBox(height: 4),
             Text('Today (${weekdayName()}) is not one of your working days.',
                 style: TextStyle(fontSize: 12, color: Colors.grey[600])),
           ],
           const Divider(height: 20),
-          // ── Assignment availability (admin reassignment eligibility) ────────
           _assignmentToggle(
             context,
             ref,
@@ -917,7 +887,11 @@ class AstrologerOverviewTab extends ConsumerWidget {
     );
   }
 
-  Widget _verificationBanner(AstrologerAccount a) {
+  /// Pending / rejected verification alert (with a reapply action when
+  /// rejected). Shown only while the account is not approved — the persistent
+  /// approval indicator lives in the dashboard top header.
+  Widget _verificationBanner(
+      BuildContext context, WidgetRef ref, AstrologerAccount a) {
     final rejected = a.status == VerificationStatus.rejected;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -927,23 +901,340 @@ class AstrologerOverviewTab extends ConsumerWidget {
             (rejected ? AppColors.error : AppColors.warning).withOpacity(0.12),
         borderRadius: BorderRadius.circular(12),
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(rejected ? Icons.cancel : Icons.hourglass_top,
+                  color: rejected ? AppColors.error : AppColors.warning),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  rejected
+                      ? 'Your certificate was rejected. Please re-submit valid documents.'
+                      : 'Your profile is under review. You will be visible to users '
+                          'once an admin approves your certificate.',
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          if (rejected) ...[
+            if (a.rejectionReason.trim().isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text('Reason: ${a.rejectionReason.trim()}',
+                  style: TextStyle(fontSize: 12.5, color: Colors.grey[800])),
+            ],
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _reapply(context, ref, a),
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Reapply for Verification'),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(44)),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _reapply(
+      BuildContext context, WidgetRef ref, AstrologerAccount a) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(astrologerServiceProvider).reapplyForVerification(a.id);
+      messenger.showSnackBar(const SnackBar(
+          content: Text(
+              'Re-submitted for verification. Update your profile / certificates if needed.')));
+    } catch (_) {
+      messenger.showSnackBar(const SnackBar(
+          content: Text('Could not re-submit. Please try again.'),
+          backgroundColor: AppColors.error));
+    }
+  }
+}
+
+// ── Tiles ────────────────────────────────────────────────────────────────────
+
+/// One row in the dashboard's "New Requests" feed (a match-analysis request or
+/// a consultation), with an Open button that jumps to the right place.
+class _InboxTile extends StatelessWidget {
+  final AstrologerInboxItem item;
+  const _InboxTile({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = item.isPending
+        ? AppColors.warning
+        : item.statusLabel == 'Completed'
+            ? AppColors.success
+            : AppColors.info;
+    return AstrologerCard(
+      onTap: () => _open(context),
       child: Row(
         children: [
-          Icon(rejected ? Icons.cancel : Icons.hourglass_top,
-              color: rejected ? AppColors.error : AppColors.warning),
-          const SizedBox(width: 10),
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: AppColors.primary.withOpacity(0.1),
+            backgroundImage: item.userPhotoUrl.isNotEmpty
+                ? NetworkImage(item.userPhotoUrl)
+                : null,
+            child: item.userPhotoUrl.isEmpty
+                ? Text(item.userName.isNotEmpty ? item.userName[0] : '?',
+                    style: const TextStyle(
+                        color: AppColors.primary, fontWeight: FontWeight.bold))
+                : null,
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              rejected
-                  ? 'Your certificate was rejected. Please re-submit valid documents.'
-                  : 'Your profile is under review. You will be visible to users '
-                      'once an admin approves your certificate.',
-              style: const TextStyle(fontSize: 13),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.userName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 14)),
+                const SizedBox(height: 2),
+                Text('${item.typeLabel} · ${astrologerDateTime(item.createdAt)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+                const SizedBox(height: 4),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                      color: color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(20)),
+                  child: Text(item.statusLabel,
+                      style: TextStyle(
+                          fontSize: 10.5,
+                          color: color,
+                          fontWeight: FontWeight.w600)),
+                ),
+              ],
             ),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton(
+            onPressed: () => _open(context),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary),
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            child: const Text('Open'),
           ),
         ],
       ),
     );
+  }
+
+  void _open(BuildContext context) {
+    if (item.kind == AstrologerInboxKind.matchRequest && item.request != null) {
+      context.push('/match-workspace/${item.request!.id}', extra: item.request);
+    } else {
+      context.push('/consultation-requests');
+    }
+  }
+}
+
+/// One row in the dashboard's Match-Analysis request LIST, with the status-aware
+/// inline action: Accept (pending) · Status (accepted) · View (completed). The
+/// whole tile also opens the Status page.
+class _DashboardRequestTile extends ConsumerStatefulWidget {
+  final AstrologerRequestModel request;
+  const _DashboardRequestTile({required this.request});
+
+  @override
+  ConsumerState<_DashboardRequestTile> createState() =>
+      _DashboardRequestTileState();
+}
+
+class _DashboardRequestTileState extends ConsumerState<_DashboardRequestTile> {
+  bool _busy = false;
+
+  Future<void> _accept() async {
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(matchAnalysisControllerProvider.notifier)
+          .setStatus(widget.request, AstrologerRequestStatus.accepted);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Request accepted — chat is now open with the user.')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Could not accept. Please try again.'),
+            backgroundColor: AppColors.error));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _open() => context.push('/match-workspace/${widget.request.id}',
+      extra: widget.request);
+
+  Color _statusColor(AstrologerRequestStatus s) {
+    switch (s) {
+      case AstrologerRequestStatus.pending:
+        return AppColors.warning;
+      case AstrologerRequestStatus.accepted:
+        return AppColors.info;
+      case AstrologerRequestStatus.completed:
+        return AppColors.success;
+      case AstrologerRequestStatus.rejected:
+        return AppColors.error;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final r = widget.request;
+    final color = _statusColor(r.status);
+    return AstrologerCard(
+      onTap: _open,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundImage: r.userPhotoUrl.isNotEmpty
+                    ? NetworkImage(r.userPhotoUrl)
+                    : null,
+                child: r.userPhotoUrl.isEmpty
+                    ? Text(r.userName.isNotEmpty ? r.userName[0] : '?',
+                        style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold))
+                    : null,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(r.userName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14)),
+                    const SizedBox(height: 2),
+                    Text(
+                        '${r.groomName ?? 'Groom'} × ${r.brideName ?? 'Bride'}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            TextStyle(fontSize: 12, color: Colors.grey[700])),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20)),
+                child: Text(r.status.label,
+                    style: TextStyle(
+                        fontSize: 10.5,
+                        color: color,
+                        fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Text(astrologerDateTime(r.createdAt),
+                  style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+              if (r.amount > 0) ...[
+                const SizedBox(width: 8),
+                Text('₹${r.amount}',
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary)),
+              ],
+              const Spacer(),
+              _action(r),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _action(AstrologerRequestModel r) {
+    switch (r.status) {
+      case AstrologerRequestStatus.pending:
+        return ElevatedButton(
+          onPressed: _busy ? null : _accept,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+          child: _busy
+              ? const SizedBox(
+                  height: 14,
+                  width: 14,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white))
+              : const Text('Accept'),
+        );
+      case AstrologerRequestStatus.accepted:
+        // The spec's "Status" button — visible only after acceptance — opens
+        // the Status page where the astrologer updates progress & submits the
+        // report.
+        return ElevatedButton.icon(
+          onPressed: _open,
+          icon: const Icon(Icons.timeline, size: 16),
+          label: const Text('Status'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.info,
+            foregroundColor: Colors.white,
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+          ),
+        );
+      case AstrologerRequestStatus.completed:
+        return OutlinedButton.icon(
+          onPressed: _open,
+          icon: const Icon(Icons.visibility_outlined, size: 16),
+          label: const Text('View'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary),
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+          ),
+        );
+      case AstrologerRequestStatus.rejected:
+        return TextButton(
+          onPressed: _open,
+          style: TextButton.styleFrom(
+              foregroundColor: Colors.grey[600],
+              visualDensity: VisualDensity.compact),
+          child: const Text('View'),
+        );
+    }
   }
 }
 

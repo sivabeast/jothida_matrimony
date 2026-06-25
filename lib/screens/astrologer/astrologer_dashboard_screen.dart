@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_account_model.dart';
 import '../../providers/announcement_provider.dart';
 import '../../providers/astrologer_session_provider.dart';
+import '../../providers/chat_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/common/app_logo.dart';
 import 'tabs/astrologer_notifications_tab.dart';
@@ -48,6 +50,7 @@ class _AstrologerDashboardScreenState
 
     final notifUnread = ref.watch(unreadNotificationCountProvider) +
         ref.watch(unreadAnnouncementsCountProvider);
+    final chatUnread = ref.watch(myUnreadChatCountProvider);
 
     return PopScope(
       canPop: false,
@@ -82,9 +85,25 @@ class _AstrologerDashboardScreenState
               ),
             ],
           ),
-          // RIGHT: quick availability toggle + notification icon.
+          // RIGHT: approval status pill + chat icon + notification icon.
+          // (Availability now lives on the dashboard's availability card.)
           actions: [
-            _availabilityToggle(account),
+            _approvalPill(account),
+            const SizedBox(width: 2),
+            // Chat — realtime unread red badge; opens the conversations list.
+            IconButton(
+              tooltip: 'Chats',
+              onPressed: () => context.push('/chats'),
+              icon: chatUnread > 0
+                  ? Badge(
+                      backgroundColor: AppColors.error,
+                      label: Text('$chatUnread',
+                          style: const TextStyle(
+                              fontSize: 10, color: Colors.white)),
+                      child: const Icon(Icons.chat_bubble_outline, size: 24),
+                    )
+                  : const Icon(Icons.chat_bubble_outline, size: 24),
+            ),
             IconButton(
               tooltip: 'Notifications',
               onPressed: () => setState(() => _index = 2),
@@ -94,9 +113,9 @@ class _AstrologerDashboardScreenState
                       label: Text('$notifUnread',
                           style: const TextStyle(
                               fontSize: 10, color: AppColors.primary)),
-                      child: const Icon(Icons.notifications_none, size: 26),
+                      child: const Icon(Icons.notifications_none, size: 24),
                     )
-                  : const Icon(Icons.notifications_none, size: 26),
+                  : const Icon(Icons.notifications_none, size: 24),
             ),
             const SizedBox(width: 4),
           ],
@@ -139,58 +158,52 @@ class _AstrologerDashboardScreenState
     );
   }
 
-  /// Compact AppBar pill that mirrors and flips the manual availability switch.
-  /// Colour = the *effective* status (green only when also a working day); the
-  /// tap flips the manual switch and saves instantly.
-  Widget _availabilityToggle(AstrologerAccount account) {
-    final availableNow = account.isAvailableNow;
-    final color = availableNow ? AppColors.success : AppColors.error;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Material(
-        color: Colors.white.withOpacity(0.16),
+  /// Compact AppBar pill showing the astrologer's verification / approval
+  /// status. This is the SINGLE place approval status is surfaced — there is no
+  /// separate approval card on the dashboard.
+  Widget _approvalPill(AstrologerAccount account) {
+    final Color color;
+    final IconData icon;
+    final String label;
+    switch (account.status) {
+      case VerificationStatus.approved:
+        color = AppColors.success;
+        icon = Icons.verified;
+        label = 'Verified';
+        break;
+      case VerificationStatus.rejected:
+        color = AppColors.error;
+        icon = Icons.cancel;
+        label = 'Rejected';
+        break;
+      case VerificationStatus.pending:
+        color = AppColors.warning;
+        icon = Icons.hourglass_top;
+        label = 'Pending';
+        break;
+    }
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.92),
         borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () => _toggleAvailability(account),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 9,
-                  height: 9,
-                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  account.manuallyAvailable ? 'Available' : 'Unavailable',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.white),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700),
           ),
-        ),
+        ],
       ),
     );
-  }
-
-  Future<void> _toggleAvailability(AstrologerAccount account) async {
-    try {
-      await ref
-          .read(myAstrologerAccountProvider.notifier)
-          .setManualAvailability(!account.manuallyAvailable);
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Could not update availability — please try again.'),
-            backgroundColor: AppColors.error));
-      }
-    }
   }
 
   DateTime? _lastBackPress;

@@ -119,6 +119,24 @@ final myChatThreadsProvider =
   return ref.read(chatServiceProvider).watchThreads(uid);
 });
 
+/// Total unread messages for the signed-in person across all their threads —
+/// drives the red badge on the dashboard Chat icon. Empty (message-less)
+/// threads are ignored so a pre-created booking thread never shows a phantom
+/// badge. Realtime: recomputed whenever [myChatThreadsProvider] emits, so the
+/// badge appears the instant a new message arrives and clears as soon as the
+/// thread is opened and marked read.
+final myUnreadChatCountProvider = Provider.autoDispose<int>((ref) {
+  final uid = ref.watch(myUidProvider);
+  if (uid == null) return 0;
+  final threads = ref.watch(myChatThreadsProvider).valueOrNull ?? const [];
+  var total = 0;
+  for (final t in threads) {
+    if (t.lastMessage.trim().isEmpty) continue;
+    total += t.unreadFor(uid);
+  }
+  return total;
+});
+
 final chatThreadProvider =
     StreamProvider.autoDispose.family<ChatThread?, String>((ref, threadId) {
   if (kBypassAuth) {

@@ -184,12 +184,12 @@ class MyAstrologerAccountNotifier extends Notifier<AstrologerAccount?> {
     ));
   }
 
-  /// TEST MODE subscription activation — no payment. [plan] is a tier id
-  /// ('starter' | 'basic' | 'pro' | 'elite'), or legacy 'monthly' / 'yearly'.
-  /// Tiered plans bill monthly ([days] = 30); legacy 'yearly' keeps a 365-day
-  /// term. Writes the plan + price + expiry (and the explicit status fields) so
-  /// the astrologer becomes visible to users immediately, then updates the
-  /// local session.
+  /// TEST MODE subscription activation — no payment. [plan] is the billing
+  /// period id: 'monthly' or 'yearly'. [days] is the term length (30 / 365);
+  /// 'yearly' is forced to a 365-day term even if a shorter [days] is passed, as
+  /// a safety net. Writes the plan + price + expiry (and the explicit status
+  /// fields) so the astrologer becomes visible to users immediately, then
+  /// updates the local session.
   Future<void> activateSubscription(String plan,
       {int days = 30, int amount = 0}) async {
     final current = state;

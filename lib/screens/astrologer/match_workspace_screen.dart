@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/config/dev_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/file_actions.dart';
 import '../../models/astrologer_request_model.dart';
@@ -17,15 +16,32 @@ import '../../providers/chat_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../widgets/common/rasi_chart.dart';
-import '../../providers/service_providers.dart';
 
-/// The astrologer's Match Analysis Workspace — opened from an ACCEPTED match
-/// request. Shows the full GROOM and BRIDE details (incl. horoscope images &
-/// PDFs) and lets the astrologer submit a report (text + images + PDFs), which
-/// marks the request Completed.
+/// The astrologer's Match Analysis "Status" page / workspace — opened from a
+/// request (pending, accepted or completed). Shows the full requester, GROOM
+/// and BRIDE details (incl. horoscope images & PDFs), the current status, and
+/// the status-aware actions: Accept/Reject while pending, then the report
+/// editor (which marks the request Completed) once accepted.
+///
+/// NAVIGATION: reached via `/match-workspace/:id`. The request is resolved LIVE
+/// from [astrologerRequestByIdProvider] by id, so the screen always opens with
+/// the correct, up-to-date data even if the in-memory [initialRequest] (passed
+/// as `extra` for an instant first paint) is unavailable — e.g. after a process
+/// restart or deep link. This is what makes "click Status → open the correct
+/// page" reliable.
 class MatchWorkspaceScreen extends ConsumerStatefulWidget {
-  final AstrologerRequestModel request;
-  const MatchWorkspaceScreen({super.key, required this.request});
+  /// The `astrologer_requests/{id}` document id to open.
+  final String requestId;
+
+  /// Optional snapshot passed via `extra` for an instant first paint; the live
+  /// provider is authoritative and overrides this as soon as it emits.
+  final AstrologerRequestModel? initialRequest;
+
+  const MatchWorkspaceScreen({
+    super.key,
+    required this.requestId,
+    this.initialRequest,
+  });
 
   @override
   ConsumerState<MatchWorkspaceScreen> createState() =>
@@ -33,14 +49,35 @@ class MatchWorkspaceScreen extends ConsumerStatefulWidget {
 }
 
 class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
-  late final TextEditingController _report =
-      TextEditingController(text: widget.request.analysisText);
-  late final List<String> _existingImages = [...widget.request.analysisImages];
-  late final List<String> _existingPdfs = [...widget.request.analysisPdfs];
+  final TextEditingController _report = TextEditingController();
+  final List<String> _existingImages = [];
+  final List<String> _existingPdfs = [];
   final List<File> _newImages = [];
   final List<File> _newPdfs = [];
+  bool _seeded = false; // editor pre-filled from the request exactly once
   bool _submitting = false;
   bool _working = false; // accept / reject in flight
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialRequest;
+    if (initial != null) _seedFrom(initial);
+  }
+
+  /// Pre-fills the report editor + attachment lists from [r] exactly once, so a
+  /// completed report opens with its existing content ready to edit.
+  void _seedFrom(AstrologerRequestModel r) {
+    if (_seeded) return;
+    _seeded = true;
+    _report.text = r.analysisText;
+    _existingImages
+      ..clear()
+      ..addAll(r.analysisImages);
+    _existingPdfs
+      ..clear()
+      ..addAll(r.analysisPdfs);
+  }
 
   @override
   void dispose() {
@@ -77,7 +114,7 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
     setState(() => _submitting = true);
     try {
       await ref.read(matchAnalysisControllerProvider.notifier).submitAnalysis(
-            requestId: widget.request.id,
+            requestId: widget.requestId,
             text: _report.text,
             newImages: _newImages,
             newPdfs: _newPdfs,
@@ -94,32 +131,16 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
     }
   }
 
-  Future<void> _setStatus(AstrologerRequestStatus status) async {
+  /// Accept / reject via the shared controller (DB write + the automatic
+  /// booking-accepted chat message). The live provider then refreshes this
+  /// screen and the dashboard instantly.
+  Future<void> _setStatus(
+      AstrologerRequestModel r, AstrologerRequestStatus status) async {
     setState(() => _working = true);
     try {
-      if (kBypassAuth) {
-        ref
-            .read(demoAstrologerRequestsProvider.notifier)
-            .setStatus(widget.request.id, status);
-      } else {
-        await ref.read(astrologerServiceProvider).updateRequestStatus(
-              widget.request.id,
-              status,
-              astrologerName: widget.request.astrologerName,
-              userId: widget.request.userId,
-              amount: widget.request.amount,
-            );
-      }
-      // On ACCEPT the booking is now "In Progress" and chat opens for both
-      // sides — auto-send the booking-accepted system message to the user
-      // (best-effort; never blocks the accept).
-      if (status == AstrologerRequestStatus.accepted) {
-        await ref.read(chatControllerProvider).sendBookingAcceptedMessage(
-              userUid: widget.request.userId,
-              userName: widget.request.userName,
-              userPhoto: widget.request.userPhotoUrl,
-            );
-      }
+      await ref
+          .read(matchAnalysisControllerProvider.notifier)
+          .setStatus(r, status);
       if (!mounted) return;
       _snack(status == AstrologerRequestStatus.accepted
           ? 'Request accepted — chat is now open with the user.'
@@ -131,7 +152,7 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
     }
   }
 
-  Future<void> _reject() async {
+  Future<void> _reject(AstrologerRequestModel r) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -149,7 +170,7 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
         ],
       ),
     );
-    if (ok == true) _setStatus(AstrologerRequestStatus.rejected);
+    if (ok == true) _setStatus(r, AstrologerRequestStatus.rejected);
   }
 
   void _snack(String m) =>
@@ -158,10 +179,42 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
   @override
   Widget build(BuildContext context) {
     // Live request (reflects accept/reject/complete), falling back to the
-    // snapshot passed in when first opened.
-    final r =
-        ref.watch(astrologerRequestByIdProvider(widget.request.id)) ??
-            widget.request;
+    // snapshot passed in via `extra` when first opened. Resolving by id keeps
+    // the Status page correct even if `extra` was never supplied.
+    final r = ref.watch(astrologerRequestByIdProvider(widget.requestId)) ??
+        widget.initialRequest;
+
+    // The request stream hasn't surfaced this id yet (first load), or it no
+    // longer exists. Show a safe state instead of crashing.
+    if (r == null) {
+      return Scaffold(
+        backgroundColor: AppColors.scaffoldBg,
+        appBar: AppBar(
+          title: const Text('Match Analysis'),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+        ),
+        body: ref.watch(astrologerRequestsProvider).when(
+              loading: () => const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary)),
+              error: (_, __) => const Center(
+                  child: Padding(
+                padding: EdgeInsets.all(28),
+                child: Text('Could not load this request. Please try again.',
+                    textAlign: TextAlign.center),
+              )),
+              data: (_) => const Center(
+                  child: Padding(
+                padding: EdgeInsets.all(28),
+                child: Text('This request is no longer available.',
+                    textAlign: TextAlign.center),
+              )),
+            ),
+      );
+    }
+    // Pre-fill the editor from the resolved request the first time it arrives
+    // (covers the open-by-id path where no `extra` snapshot was supplied).
+    _seedFrom(r);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
@@ -199,7 +252,7 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
   Widget _actionSection(AstrologerRequestModel r) {
     switch (r.status) {
       case AstrologerRequestStatus.pending:
-        return _pendingActions();
+        return _pendingActions(r);
       case AstrologerRequestStatus.rejected:
         return _rejectedBanner();
       case AstrologerRequestStatus.accepted:
@@ -249,7 +302,7 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
     }
   }
 
-  Widget _pendingActions() => Container(
+  Widget _pendingActions(AstrologerRequestModel r) => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -272,7 +325,7 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: _working ? null : _reject,
+                    onPressed: _working ? null : () => _reject(r),
                     icon: const Icon(Icons.close, size: 18),
                     label: const Text('Reject'),
                     style: OutlinedButton.styleFrom(
@@ -287,7 +340,7 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
                   child: ElevatedButton.icon(
                     onPressed: _working
                         ? null
-                        : () => _setStatus(AstrologerRequestStatus.accepted),
+                        : () => _setStatus(r, AstrologerRequestStatus.accepted),
                     icon: _working
                         ? const SizedBox(
                             height: 16,

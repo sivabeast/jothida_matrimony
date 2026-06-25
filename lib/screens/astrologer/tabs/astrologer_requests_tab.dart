@@ -209,7 +209,7 @@ class _RequestCard extends ConsumerWidget {
                 if (request.isMatchAnalysis)
                   ElevatedButton.icon(
                     onPressed: () =>
-                        context.push('/match-workspace', extra: request),
+                        context.push('/match-workspace/${request.id}', extra: request),
                     icon: const Icon(Icons.auto_awesome, size: 16),
                     label: const Text('Open Workspace'),
                     style: ElevatedButton.styleFrom(
@@ -235,7 +235,7 @@ class _RequestCard extends ConsumerWidget {
                 const SizedBox(width: 4),
                 OutlinedButton.icon(
                   onPressed: () =>
-                      context.push('/match-workspace', extra: request),
+                      context.push('/match-workspace/${request.id}', extra: request),
                   icon: const Icon(Icons.visibility_outlined, size: 16),
                   label: const Text('View Analysis'),
                   style: OutlinedButton.styleFrom(

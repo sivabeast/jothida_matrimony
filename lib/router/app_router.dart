@@ -351,21 +351,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/match-requests',
         builder: (_, __) => const MatchRequestsScreen(),
       ),
-      // Astrologer: the analysis workspace for an accepted request. Reached from
-      // the dashboard with the request passed as `extra` (distinct prefix so it
-      // never collides with '/astrologer/:id').
+      // Astrologer: the analysis "Status" page / workspace for a request. The
+      // request id is in the path so the page ALWAYS resolves the live request
+      // (the optional `extra` snapshot only speeds up the first paint). This is
+      // what makes "click Status → open the correct page" reliable even after a
+      // restart / deep link. Distinct prefix so it never collides with
+      // '/astrologer/:id'.
       GoRoute(
-        path: '/match-workspace',
-        builder: (_, state) {
-          final req = state.extra;
-          if (req is! AstrologerRequestModel) {
-            return const Scaffold(
-              body: Center(
-                  child: Text('Open a request from the dashboard to analyze.')),
-            );
-          }
-          return MatchWorkspaceScreen(request: req);
-        },
+        path: '/match-workspace/:id',
+        builder: (_, state) => MatchWorkspaceScreen(
+          requestId: state.pathParameters['id']!,
+          initialRequest: state.extra is AstrologerRequestModel
+              ? state.extra as AstrologerRequestModel
+              : null,
+        ),
       ),
       GoRoute(path: '/subscription', builder: (_, __) => const SubscriptionScreen()),
       GoRoute(path: '/privacy', builder: (_, __) => const PrivacySettingsScreen()),

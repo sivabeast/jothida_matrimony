@@ -241,6 +241,48 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     }
   }
 
+  /// Accept / reject a pending match-analysis request (the spec's
+  /// Pending → Accepted transition). Centralised here so BOTH the dashboard's
+  /// inline Accept button and the workspace use the exact same path: write the
+  /// new status to the database, then (on accept) drop the automatic
+  /// booking-accepted message into the user's chat thread. Rethrows so the
+  /// caller can surface a SnackBar; the chat message is best-effort and never
+  /// blocks the accept.
+  Future<void> setStatus(
+    AstrologerRequestModel request,
+    AstrologerRequestStatus status,
+  ) async {
+    state = const AsyncLoading();
+    try {
+      if (kBypassAuth) {
+        ref
+            .read(demoAstrologerRequestsProvider.notifier)
+            .setStatus(request.id, status);
+      } else {
+        await ref.read(astrologerServiceProvider).updateRequestStatus(
+              request.id,
+              status,
+              astrologerName: request.astrologerName,
+              userId: request.userId,
+              amount: request.amount,
+            );
+      }
+      // On ACCEPT the booking is "In Progress" and chat opens for both sides —
+      // auto-send the booking-accepted system message to the user.
+      if (status == AstrologerRequestStatus.accepted) {
+        await ref.read(chatControllerProvider).sendBookingAcceptedMessage(
+              userUid: request.userId,
+              userName: request.userName,
+              userPhoto: request.userPhotoUrl,
+            );
+      }
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
   /// Uploads any newly-picked files, then stores the report and marks the
   /// request completed. [existingImages]/[existingPdfs] are kept (already
   /// uploaded URLs) so re-submitting an edit doesn't re-upload everything.

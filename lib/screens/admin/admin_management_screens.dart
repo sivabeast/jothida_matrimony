@@ -1688,7 +1688,7 @@ class RevenueSettingsScreen extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
         ),
         for (final p in AstrologerPlan.all)
-          _PriceRow('${p.emoji} ${p.name}', p.currentPrice, 'per month'),
+          _PriceRow('${p.emoji} ${p.name}', p.currentPrice, p.periodLabel),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(12),

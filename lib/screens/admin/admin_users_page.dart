@@ -435,15 +435,13 @@ class _UserCard extends ConsumerWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Astrologers tab (verified only)
 // ─────────────────────────────────────────────────────────────────────────────
-enum _AstroPlan { all, free, basic, premium }
+enum _AstroPlan { all, free, monthly, yearly }
 
-/// Free = no active subscription · Basic = Starter/Basic tiers ·
-/// Premium = Pro/Elite tiers.
+/// Free = no active subscription · Monthly / Yearly = the active plan period.
+/// Any legacy/unknown active plan is bucketed as Monthly.
 String astroPlanOf(AstrologerAccount a) {
   if (!a.subscriptionActive) return 'free';
-  final p = a.subscriptionPlan.toLowerCase();
-  if (p == 'pro' || p == 'elite') return 'premium';
-  return 'basic';
+  return a.subscriptionPlan.toLowerCase() == 'yearly' ? 'yearly' : 'monthly';
 }
 
 class _AstrologersTab extends ConsumerStatefulWidget {
@@ -477,8 +475,8 @@ class _AstrologersTabState extends ConsumerState<_AstrologersTab>
     return switch (_filter) {
       _AstroPlan.all => true,
       _AstroPlan.free => astroPlanOf(a) == 'free',
-      _AstroPlan.basic => astroPlanOf(a) == 'basic',
-      _AstroPlan.premium => astroPlanOf(a) == 'premium',
+      _AstroPlan.monthly => astroPlanOf(a) == 'monthly',
+      _AstroPlan.yearly => astroPlanOf(a) == 'yearly',
     };
   }
 
@@ -500,9 +498,10 @@ class _AstrologersTabState extends ConsumerState<_AstrologersTab>
             all.where((a) => a.status == VerificationStatus.approved).toList();
         final total = verified.length;
         final free = verified.where((a) => astroPlanOf(a) == 'free').length;
-        final basic = verified.where((a) => astroPlanOf(a) == 'basic').length;
-        final premium =
-            verified.where((a) => astroPlanOf(a) == 'premium').length;
+        final monthly =
+            verified.where((a) => astroPlanOf(a) == 'monthly').length;
+        final yearly =
+            verified.where((a) => astroPlanOf(a) == 'yearly').length;
         final shown = verified.where(_matches).toList()
           ..sort((a, b) => a.fullName.compareTo(b.fullName));
 
@@ -531,16 +530,17 @@ class _AstrologersTabState extends ConsumerState<_AstrologersTab>
                       selected: _filter == _AstroPlan.free,
                       onTap: () => setState(() => _filter = _AstroPlan.free)),
                   _CountChip(
-                      label: 'Basic',
-                      count: basic,
-                      selected: _filter == _AstroPlan.basic,
-                      onTap: () => setState(() => _filter = _AstroPlan.basic)),
-                  _CountChip(
-                      label: 'Premium',
-                      count: premium,
-                      selected: _filter == _AstroPlan.premium,
+                      label: 'Monthly',
+                      count: monthly,
+                      selected: _filter == _AstroPlan.monthly,
                       onTap: () =>
-                          setState(() => _filter = _AstroPlan.premium)),
+                          setState(() => _filter = _AstroPlan.monthly)),
+                  _CountChip(
+                      label: 'Yearly',
+                      count: yearly,
+                      selected: _filter == _AstroPlan.yearly,
+                      onTap: () =>
+                          setState(() => _filter = _AstroPlan.yearly)),
                 ],
               ),
             ),
@@ -584,9 +584,9 @@ class _AstrologerCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final plan = astroPlanOf(astrologer);
-    final planColor = plan == 'premium'
+    final planColor = plan == 'yearly'
         ? AppColors.premiumPlan
-        : plan == 'basic'
+        : plan == 'monthly'
             ? AppColors.basicPlan
             : Colors.grey;
     return Container(
