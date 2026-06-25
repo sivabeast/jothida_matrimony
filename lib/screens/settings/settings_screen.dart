@@ -23,27 +23,36 @@ class SettingsScreen extends ConsumerWidget {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
+      // Application settings only — Logout lives in the side menu, never here.
+      // No Change Password / Mobile / Email, 2FA, online-status or block tools:
+      // the app uses Google / OTP sign-in, so those are unnecessary.
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _GroupLabel(l10n.preferences),
+          // ── General ──────────────────────────────────────────────────────
+          _GroupLabel('General'),
           _SettingsTile(
             icon: Icons.language,
             title: l10n.language,
             route: '/language',
           ),
+          const SizedBox(height: 16),
+          // ── Privacy ──────────────────────────────────────────────────────
+          _GroupLabel('Privacy'),
           _SettingsTile(
-            icon: Icons.lock_outline,
-            title: l10n.privacySettings,
+            icon: Icons.visibility_off_outlined,
+            title: 'Hide Profile from Search',
             route: '/privacy',
           ),
-          _SettingsTile(
-            icon: Icons.tune,
-            title: l10n.partnerPreferences,
-            route: '/partner-preferences',
+          const SizedBox(height: 16),
+          // ── Account ──────────────────────────────────────────────────────
+          _GroupLabel(l10n.account),
+          _DeleteAccountTile(
+            onTap: () => _deleteAccount(context, ref),
           ),
           const SizedBox(height: 16),
-          _GroupLabel(l10n.supportAndLegal),
+          // ── About ────────────────────────────────────────────────────────
+          _GroupLabel('About'),
           _SettingsTile(
             icon: Icons.help_outline,
             title: l10n.helpSupport,
@@ -58,11 +67,6 @@ class SettingsScreen extends ConsumerWidget {
             icon: Icons.description_outlined,
             title: l10n.termsConditions,
             route: '/terms',
-          ),
-          const SizedBox(height: 16),
-          _GroupLabel(l10n.account),
-          _DeleteAccountTile(
-            onTap: () => _deleteAccount(context, ref),
           ),
           const SizedBox(height: 24),
           Center(

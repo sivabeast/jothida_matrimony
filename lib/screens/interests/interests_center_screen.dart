@@ -16,7 +16,19 @@ import '../../providers/profile_provider.dart';
 ///  • Accepted  — mutually accepted (View Profile / Horoscope)
 ///  • Rejected  — declined history
 class InterestsCenterScreen extends ConsumerStatefulWidget {
-  const InterestsCenterScreen({super.key});
+  /// Initial tab to open: 0 Received · 1 Sent · 2 Accepted · 3 Rejected.
+  final int initialTab;
+
+  /// When true the screen provides its own Scaffold + AppBar (pushed as a route,
+  /// e.g. from the side menu's "Interests Sent / Received"). When false it is
+  /// rendered inline as the Home shell's Interests tab.
+  final bool standalone;
+
+  const InterestsCenterScreen({
+    super.key,
+    this.initialTab = 0,
+    this.standalone = false,
+  });
 
   @override
   ConsumerState<InterestsCenterScreen> createState() =>
@@ -25,7 +37,8 @@ class InterestsCenterScreen extends ConsumerStatefulWidget {
 
 class _InterestsCenterScreenState extends ConsumerState<InterestsCenterScreen>
     with SingleTickerProviderStateMixin {
-  late final TabController _tab = TabController(length: 4, vsync: this);
+  late final TabController _tab = TabController(
+      length: 4, vsync: this, initialIndex: widget.initialTab.clamp(0, 3));
 
   @override
   void dispose() {
@@ -59,18 +72,21 @@ class _InterestsCenterScreenState extends ConsumerState<InterestsCenterScreen>
         _sorted([...sent, ...received].where((i) => i.isRejected)), myUid);
 
     final l10n = context.l10n;
-    return Column(
+    final content = Column(
       children: [
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-          alignment: Alignment.centerLeft,
-          child: Text(l10n.interests,
-              style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 18)),
-        ),
+        // Inline (Home-tab) heading. When shown as a standalone route the AppBar
+        // title already names the page, so this in-body title is dropped.
+        if (!widget.standalone)
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            alignment: Alignment.centerLeft,
+            child: Text(l10n.interests,
+                style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18)),
+          ),
         Container(
           color: Colors.white,
           child: TabBar(
@@ -126,6 +142,19 @@ class _InterestsCenterScreenState extends ConsumerState<InterestsCenterScreen>
         ),
       ],
     );
+
+    if (widget.standalone) {
+      return Scaffold(
+        backgroundColor: AppColors.scaffoldBg,
+        appBar: AppBar(
+          title: Text(l10n.interests),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+        ),
+        body: content,
+      );
+    }
+    return content;
   }
 
   List<InterestModel> _sorted(Iterable<InterestModel> it) {

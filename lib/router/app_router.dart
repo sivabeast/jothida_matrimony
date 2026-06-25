@@ -54,13 +54,14 @@ import '../screens/horoscope/horoscope_files_screen.dart';
 import '../screens/horoscope/member_horoscope_screen.dart';
 import '../screens/horoscope/horoscope_match_screen.dart';
 import '../screens/profile/personal_details_screen.dart';
-import '../screens/profile/my_profile_screen.dart';
 import '../screens/profile/payments_screen.dart';
 import '../screens/profile/complete_profile_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
 import '../screens/profile/profile_section_edit_screens.dart';
 import '../screens/profile/photos_edit_screen.dart';
 import '../screens/family/family_tree_screen.dart';
+import '../screens/family/family_details_screen.dart';
+import '../screens/interests/interests_center_screen.dart';
 import '../screens/preferences/partner_preferences_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/support/help_support_screen.dart';
@@ -369,9 +370,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/privacy', builder: (_, __) => const PrivacySettingsScreen()),
       GoRoute(path: '/language', builder: (_, __) => const LanguageScreen()),
       // ── Profile section screens ──────────────────────────────────────────
+      // Profile Details (PROFILE group) — photo, name & all personal info.
       GoRoute(path: '/personal-details', builder: (_, __) => const PersonalDetailsScreen()),
-      // My Profile hub + Wallet/Payments + Notifications (header Drawer items).
-      GoRoute(path: '/my-profile', builder: (_, __) => const MyProfileScreen()),
+      // Family Details (PROFILE group) — father/mother/siblings/type/status.
+      GoRoute(path: '/family-details', builder: (_, __) => const FamilyDetailsScreen()),
+      // Interests as a standalone page (side menu's Interests Sent / Received).
+      // ?tab=sent|received|accepted|rejected selects the opening tab.
+      GoRoute(
+        path: '/interests',
+        builder: (_, state) {
+          final tab = state.uri.queryParameters['tab'];
+          final idx = switch (tab) {
+            'sent' => 1,
+            'accepted' => 2,
+            'rejected' => 3,
+            _ => 0, // received
+          };
+          return InterestsCenterScreen(initialTab: idx, standalone: true);
+        },
+      ),
       GoRoute(path: '/payments', builder: (_, __) => const PaymentsScreen()),
       GoRoute(
           path: '/notifications',

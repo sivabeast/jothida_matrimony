@@ -11,8 +11,12 @@ import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/location_picker_section.dart';
 import '../../widgets/common/religion_caste_fields.dart';
+import '../../widgets/profile/editable_profile_photo.dart';
 
-/// Personal Details — the primary profile-management screen.
+/// Profile Details — the primary profile-management page (reached from the side
+/// menu's PROFILE group). It holds the profile photo, name and all personal
+/// information; Family Details, Horoscope Details and Partner Preferences each
+/// have their own dedicated page.
 ///
 /// Each section has its own ✏️ edit action that opens a lightweight bottom
 /// sheet, pre-filled with the existing values. Saving performs a **partial**
@@ -29,7 +33,7 @@ class PersonalDetailsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Personal Details'),
+        title: const Text('Profile Details'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -51,11 +55,11 @@ class PersonalDetailsScreen extends ConsumerWidget {
               onAction: () => context.push('/profile/create'),
             );
           }
-          final f = profile.family;
-          final p = profile.partnerPreferences;
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              _ProfileHeader(profile: profile),
+              const SizedBox(height: 16),
               _SectionCard(
                 title: 'Basic Information',
                 onEdit: () => _openSheet(context, _BasicInfoSheet(profile: profile)),
@@ -97,18 +101,22 @@ class PersonalDetailsScreen extends ConsumerWidget {
                   _kv('Country', profile.country),
                 ],
               ),
-              _SectionCard(
-                title: 'Family Details',
-                onEdit: () => _openSheet(context, _FamilySheet(profile: profile)),
-                fields: [
-                  _kv('Father', _join(f.fatherName, f.fatherOccupation)),
-                  _kv('Mother', _join(f.motherName, f.motherOccupation)),
-                  _kv('Brothers', f.brothersCount.toString()),
-                  _kv('Sisters', f.sistersCount.toString()),
-                  _kv('Family Type', f.familyType),
-                  _kv('Family Status', f.familyStatus),
-                ],
-              ),
+              if (profile.contact.mobileNumber.trim().isNotEmpty ||
+                  profile.contact.contactPersonName.trim().isNotEmpty)
+                _SectionCard(
+                  title: 'Contact Information',
+                  editIcon: Icons.lock_outline,
+                  onEdit: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text(
+                            'Your contact number is linked to your sign-in and '
+                            'cannot be changed here.')),
+                  ),
+                  fields: [
+                    _kv('Contact Person', profile.contact.contactPersonName),
+                    _kv('Mobile Number', profile.contact.mobileNumber),
+                  ],
+                ),
               _SectionCard(
                 title: 'About Me',
                 onEdit: () => _openSheet(context, _AboutSheet(profile: profile)),
@@ -116,17 +124,6 @@ class PersonalDetailsScreen extends ConsumerWidget {
                   _kv('', (profile.aboutMe ?? '').trim().isEmpty
                       ? 'Tap edit to add a short introduction.'
                       : profile.aboutMe!),
-                ],
-              ),
-              // Partner Preferences has its own dedicated editor screen.
-              _SectionCard(
-                title: 'Partner Preferences',
-                editIcon: Icons.open_in_new,
-                onEdit: () => context.push('/partner-preferences'),
-                fields: [
-                  _kv('Age Range', '${p.minAge} - ${p.maxAge} yrs'),
-                  _kv('Religion', p.religion),
-                  _kv('Horoscope Match', p.horoscopeMatchRequired ? 'Required' : 'Optional'),
                 ],
               ),
             ],
@@ -177,14 +174,6 @@ int _ageFromDob(DateTime dob) {
     age--;
   }
   return age < 0 ? 0 : age;
-}
-
-String _join(String a, String b) {
-  final l = a.trim(), r = b.trim();
-  if (l.isEmpty && r.isEmpty) return '';
-  if (r.isEmpty) return l;
-  if (l.isEmpty) return r;
-  return '$l ($r)';
 }
 
 /// Ensures [current] is always selectable in a dropdown even if it isn't part
@@ -308,6 +297,53 @@ Widget _sheetChrome({
       ),
     ),
   );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Profile header (photo + name) — the page's identity card
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ProfileHeader extends StatelessWidget {
+  final ProfileModel profile;
+  const _ProfileHeader({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitle = [
+      if (profile.age > 0) '${profile.age} yrs',
+      if (profile.city.trim().isNotEmpty) profile.city.trim(),
+    ].join(' • ');
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)
+        ],
+      ),
+      child: Column(
+        children: [
+          // Tap the avatar to view / change / remove the profile photo.
+          EditableProfilePhoto(profile: profile),
+          const SizedBox(height: 12),
+          Text(
+            profile.fullName.trim().isEmpty ? '—' : profile.fullName.trim(),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                fontSize: 20,
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.bold),
+          ),
+          if (subtitle.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(subtitle, style: TextStyle(color: Colors.grey[600])),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -754,100 +790,6 @@ class _LocationSheetState extends ConsumerState<_LocationSheet> {
             _lng = loc.longitude;
           }),
         ),
-      ],
-    );
-  }
-}
-
-class _FamilySheet extends ConsumerStatefulWidget {
-  final ProfileModel profile;
-  const _FamilySheet({required this.profile});
-  @override
-  ConsumerState<_FamilySheet> createState() => _FamilySheetState();
-}
-
-class _FamilySheetState extends ConsumerState<_FamilySheet> {
-  late final FamilyDetails _f = widget.profile.family;
-  late final TextEditingController _fatherName =
-      TextEditingController(text: _f.fatherName);
-  late final TextEditingController _fatherOcc =
-      TextEditingController(text: _f.fatherOccupation);
-  late final TextEditingController _motherName =
-      TextEditingController(text: _f.motherName);
-  late final TextEditingController _motherOcc =
-      TextEditingController(text: _f.motherOccupation);
-  late final TextEditingController _brothers =
-      TextEditingController(text: _f.brothersCount.toString());
-  late final TextEditingController _sisters =
-      TextEditingController(text: _f.sistersCount.toString());
-  late String _familyType = _f.familyType;
-  late String _familyStatus = _f.familyStatus;
-  bool _saving = false;
-
-  @override
-  void dispose() {
-    _fatherName.dispose();
-    _fatherOcc.dispose();
-    _motherName.dispose();
-    _motherOcc.dispose();
-    _brothers.dispose();
-    _sisters.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-    setState(() => _saving = true);
-    final family = FamilyDetails(
-      fatherName: _fatherName.text.trim(),
-      fatherOccupation: _fatherOcc.text.trim(),
-      motherName: _motherName.text.trim(),
-      motherOccupation: _motherOcc.text.trim(),
-      brothersCount: int.tryParse(_brothers.text.trim()) ?? 0,
-      sistersCount: int.tryParse(_sisters.text.trim()) ?? 0,
-      familyType: _familyType,
-      familyStatus: _familyStatus,
-    );
-    final data = {'family': family.toMap()};
-    final updated = widget.profile.copyWith(family: family);
-    try {
-      await _saveSection(ref, widget.profile, data, updated);
-      navigator.pop();
-      messenger.showSnackBar(const SnackBar(content: Text('Family details updated')));
-    } catch (e) {
-      debugPrint('[PersonalDetails] family save error: $e');
-      if (mounted) setState(() => _saving = false);
-      messenger.showSnackBar(
-          const SnackBar(content: Text('Could not save. Please try again.')));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _sheetChrome(
-      context: context,
-      title: 'Edit Family Details',
-      saving: _saving,
-      onSave: _save,
-      children: [
-        _tf(_fatherName, "Father's Name"),
-        _tf(_fatherOcc, "Father's Occupation"),
-        _tf(_motherName, "Mother's Name"),
-        _tf(_motherOcc, "Mother's Occupation"),
-        Row(
-          children: [
-            Expanded(child: _tf(_brothers, 'Brothers', keyboard: TextInputType.number)),
-            const SizedBox(width: 12),
-            Expanded(child: _tf(_sisters, 'Sisters', keyboard: TextInputType.number)),
-          ],
-        ),
-        _drop('Family Type', _familyType,
-            _optsWith(AppConstants.familyTypeList, _familyType),
-            (v) => setState(() => _familyType = v!)),
-        _drop('Family Status', _familyStatus,
-            _optsWith(AppConstants.familyStatusList, _familyStatus),
-            (v) => setState(() => _familyStatus = v!)),
       ],
     );
   }

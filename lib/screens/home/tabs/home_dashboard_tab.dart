@@ -16,7 +16,6 @@ import '../../../providers/interest_provider.dart';
 import '../../../providers/navigation_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../providers/profile_provider.dart';
-import '../../../widgets/common/horoscope_match_badge.dart';
 import '../../../widgets/common/match_score_badge.dart';
 import 'notifications_tab.dart';
 
@@ -791,8 +790,8 @@ class _MatchCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Photo expands to fill the remaining height. Top-left shows the
-            // porutham CATEGORY badge; top-right shows the match-quality badge.
+            // Photo expands to fill the remaining height. A single match-quality
+            // badge (top-left), derived from the final calculated match %.
             Expanded(
               child: Stack(
                 fit: StackFit.expand,
@@ -804,15 +803,10 @@ class _MatchCard extends ConsumerWidget {
                           errorBuilder: (_, __, ___) => _placeholder(),
                         )
                       : _placeholder(),
-                  Positioned(
-                    top: 6,
-                    left: 6,
-                    child: HoroscopeMatchBadge(target: profile, compact: true),
-                  ),
                   if (score != null)
                     Positioned(
                       top: 6,
-                      right: 6,
+                      left: 6,
                       child: MatchScoreBadge(score: score, compact: true),
                     ),
                 ],

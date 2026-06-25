@@ -11,7 +11,6 @@ import '../../../providers/master_location_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/subscription_provider.dart';
 import '../../../providers/ui_preferences_provider.dart';
-import '../../../widgets/common/horoscope_match_badge.dart';
 import '../../../widgets/common/match_score_badge.dart';
 import '../../../widgets/common/premium_gate.dart';
 import '../../../widgets/common/searchable_field.dart';
@@ -487,11 +486,10 @@ class _MatchProfilePageState extends ConsumerState<_MatchProfilePage> {
               ),
             ),
           ),
-          // Match-quality badge (top-left) and horoscope badge (top-right).
+          // A single match-quality badge (top-left), derived from the final
+          // calculated match %. Never two badges on one card.
           if (score != null)
             Positioned(top: 14, left: 14, child: MatchScoreBadge(score: score)),
-          Positioned(
-              top: 14, right: 14, child: HoroscopeMatchBadge(target: profile)),
           // Photo dots indicator.
           if (photos.length > 1)
             Positioned(

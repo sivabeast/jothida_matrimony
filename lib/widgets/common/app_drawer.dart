@@ -5,14 +5,16 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import 'app_logo.dart';
 
 /// The main navigation Drawer opened from the header menu icon.
 ///
-/// Spec items: My Profile · Edit Profile · Horoscope Profiles · Premium Plans ·
-/// Wallet / Payments · Notifications · Support · Privacy Policy · Rate App ·
-/// Logout. Profile lives here (it is no longer a bottom-navigation tab).
+/// A single, categorised menu — grouped under PROFILE · MATCHES · ASTROLOGY ·
+/// MEMBERSHIP · SETTINGS, with Logout at the very bottom (it lives ONLY here).
+/// There is intentionally no "My Profile" / "Edit Profile" item — profile
+/// management is reached through the PROFILE group's dedicated pages.
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
 
@@ -35,30 +37,53 @@ class AppDrawer extends ConsumerWidget {
           _header(context, name, photo),
           Expanded(
             child: ListView(
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
-                _item(context, Icons.person_outline, 'My Profile',
-                    () => context.push('/my-profile')),
-                _item(context, Icons.edit_outlined, 'Edit Profile', () {
-                  final id = profile?.id;
-                  context.push(
-                      id != null ? '/profile/$id/edit' : '/personal-details');
-                }),
-                _item(context, Icons.auto_awesome_outlined,
-                    'Horoscope Profiles', () => context.push('/horoscope')),
+                // ── 👤 PROFILE ───────────────────────────────────────────────
+                _section('👤  PROFILE'),
+                _item(context, Icons.person_outline, 'Profile Details',
+                    () => context.push('/personal-details')),
+                _item(context, Icons.family_restroom_outlined, 'Family Details',
+                    () => context.push('/family-details')),
+                _item(context, Icons.auto_awesome_outlined, 'Horoscope Details',
+                    () => context.push('/horoscope')),
+                _item(context, Icons.tune, 'Partner Preferences',
+                    () => context.push('/partner-preferences')),
+
+                // ── 💖 MATCHES ───────────────────────────────────────────────
+                _section('💖  MATCHES'),
+                _item(context, Icons.favorite_border, 'My Matches',
+                    () => _openTab(context, ref, 1)),
+                _item(context, Icons.send_outlined, 'Interests Sent',
+                    () => context.push('/interests?tab=sent')),
+                _item(context, Icons.mark_email_unread_outlined,
+                    'Interests Received',
+                    () => context.push('/interests?tab=received')),
+                _item(context, Icons.chat_bubble_outline, 'Messages',
+                    () => context.push('/chats')),
+                _item(context, Icons.insights_outlined, 'Match Analysis',
+                    () => context.push('/my-analysis')),
+
+                // ── 🧿 ASTROLOGY ─────────────────────────────────────────────
+                _section('🧿  ASTROLOGY'),
+                _item(context, Icons.menu_book_outlined, 'Horoscope Profiles',
+                    () => context.push('/horoscope')),
+                _item(context, Icons.event_note_outlined, 'My Consultations',
+                    () => context.push('/my-consultations')),
+                _item(context, Icons.auto_awesome, 'Astrologers',
+                    () => _openTab(context, ref, kAstrologerTabIndex)),
+
+                // ── 💳 MEMBERSHIP ────────────────────────────────────────────
+                _section('💳  MEMBERSHIP'),
                 _item(context, Icons.workspace_premium_outlined,
-                    'Premium Plans', () => context.push('/subscription')),
+                    'Subscription Plans', () => context.push('/subscription')),
                 _item(context, Icons.account_balance_wallet_outlined,
                     'Wallet / Payments', () => context.push('/payments')),
-                _item(context, Icons.notifications_none, 'Notifications',
-                    () => _openNotifications(context)),
+
+                const SizedBox(height: 8),
                 const Divider(height: 1),
-                _item(context, Icons.help_outline, 'Support',
-                    () => context.push('/help')),
-                _item(context, Icons.privacy_tip_outlined, 'Privacy Policy',
-                    () => context.push('/privacy-policy')),
-                _item(context, Icons.star_outline, 'Rate App',
-                    () => _rateApp(context)),
+                _item(context, Icons.settings_outlined, 'Settings',
+                    () => context.push('/settings')),
               ],
             ),
           ),
@@ -126,11 +151,27 @@ class AppDrawer extends ConsumerWidget {
         ),
       );
 
+  /// Category heading shown above each group of menu items.
+  Widget _section(String label) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.6,
+            color: AppColors.primary,
+          ),
+        ),
+      );
+
   Widget _item(BuildContext context, IconData icon, String label,
           VoidCallback onTap,
           {Color? color}) =>
       ListTile(
-        leading: Icon(icon, color: color ?? AppColors.primary),
+        dense: true,
+        visualDensity: const VisualDensity(vertical: -1),
+        leading: Icon(icon, size: 22, color: color ?? AppColors.primary),
         title: Text(label,
             style: TextStyle(
                 color: color, fontWeight: FontWeight.w500, fontSize: 14.5)),
@@ -140,32 +181,11 @@ class AppDrawer extends ConsumerWidget {
         },
       );
 
-  void _openNotifications(BuildContext context) {
-    context.push('/notifications');
-  }
-
-  void _rateApp(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Rate Jothida Matrimony'),
-        content: const Text(
-            'Enjoying the app? Your rating helps other families find their '
-            'perfect match. App-store rating opens here once published.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Maybe later')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Rate'),
-          ),
-        ],
-      ),
-    );
+  /// Switches the Home shell to [index] (Matches = 1, Astrology = 3) and ensures
+  /// we are on the Home route so the selected tab is visible.
+  void _openTab(BuildContext context, WidgetRef ref, int index) {
+    ref.read(homeTabIndexProvider.notifier).state = index;
+    context.go('/home');
   }
 
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
