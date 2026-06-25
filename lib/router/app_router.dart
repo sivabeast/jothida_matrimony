@@ -51,6 +51,7 @@ import '../screens/admin/account_admin_screens.dart';
 import '../screens/admin/announcement_management_screen.dart';
 import '../screens/horoscope/horoscope_details_screen.dart';
 import '../screens/horoscope/horoscope_files_screen.dart';
+import '../screens/horoscope/horoscope_matching_screen.dart';
 import '../screens/horoscope/member_horoscope_screen.dart';
 import '../screens/horoscope/horoscope_match_screen.dart';
 import '../screens/profile/personal_details_screen.dart';
@@ -413,6 +414,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/edit/photos', builder: (_, __) => const PhotosEditScreen()),
       GoRoute(path: '/horoscope', builder: (_, __) => const HoroscopeDetailsScreen()),
+      // Horoscope Matching — accepted matches only, with horoscope compare /
+      // compatibility / astrologer-analysis actions (ASTROLOGY menu group).
+      GoRoute(
+          path: '/horoscope-matching',
+          builder: (_, __) => const HoroscopeMatchingScreen()),
       // Horoscope / Jathagam document manager (multiple images + PDFs CRUD).
       GoRoute(
           path: '/horoscope-files',

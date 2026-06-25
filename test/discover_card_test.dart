@@ -60,15 +60,19 @@ void main() {
     final ex = tester.takeException();
     expect(ex, isNull, reason: 'DiscoverTab threw while rendering: $ex');
 
-    // Count badge proves the list rendered with one match.
-    expect(find.textContaining('1 Match'), findsOneWidget);
-
-    // The card content must be visible.
+    // The minimal Matches feed has NO title/count/filter header row — it begins
+    // straight at the first summary card. The card content must be visible.
     expect(find.textContaining('Priya'), findsWidgets,
-        reason: 'Name overlay missing from the card');
+        reason: 'Name missing from the summary card');
     expect(find.textContaining('M.Sc'), findsWidgets,
-        reason: 'Education detail missing from the card');
+        reason: 'Education detail missing from the summary card');
     expect(find.textContaining('Software Engineer'), findsWidgets,
-        reason: 'Profession badge missing from the card');
+        reason: 'Profession detail missing from the summary card');
+
+    // The two summary actions must be present.
+    expect(find.text('Express Interest'), findsOneWidget,
+        reason: 'Express Interest action missing from the summary card');
+    expect(find.text('View Profile'), findsOneWidget,
+        reason: 'View Profile action missing from the summary card');
   });
 }

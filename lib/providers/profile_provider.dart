@@ -441,15 +441,16 @@ class MatchFilters {
       final c = result.category;
       switch (matchQuality) {
         case 'Excellent Match':
-          if (c != MatchCategory.excellent && c != MatchCategory.veryGood) {
-            return false;
-          }
+          if (c != MatchCategory.excellent) return false;
           break;
         case 'Good Match':
           if (c != MatchCategory.good) return false;
           break;
         case 'Average Match':
           if (c != MatchCategory.average) return false;
+          break;
+        case 'Poor Match':
+          if (c != MatchCategory.poor) return false;
           break;
       }
     }
@@ -854,7 +855,6 @@ final homeMatchesProvider = FutureProvider.autoDispose<HomeMatches>((ref) async 
       if (result == null) continue;
       switch (result.category) {
         case MatchCategory.excellent:
-        case MatchCategory.veryGood:
           veryGood.add(p);
           break;
         case MatchCategory.good:
@@ -863,7 +863,7 @@ final homeMatchesProvider = FutureProvider.autoDispose<HomeMatches>((ref) async 
         case MatchCategory.average:
           average.add(p);
           break;
-        case MatchCategory.notRecommended:
+        case MatchCategory.poor:
           break;
       }
     }

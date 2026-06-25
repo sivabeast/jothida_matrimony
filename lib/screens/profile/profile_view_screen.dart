@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/profile_model.dart';
@@ -392,71 +393,66 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(profile.name, style: AppTextStyles.heading1),
-                        Text(
-                          '${profile.age} yrs • ${profile.city}',
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                      ],
-                    ),
-                    if (profile.horoscopeDetails.isAstrologerVerified)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.green[50],
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.green[200]!),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.verified, color: Colors.green, size: 14),
-                            SizedBox(width: 4),
-                            Text('Verified', style: TextStyle(color: Colors.green, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                  ],
+                Text(profile.name, style: AppTextStyles.heading1),
+                Text(
+                  '${profile.age} yrs • ${[
+                    profile.city,
+                    profile.state
+                  ].where((s) => s.trim().isNotEmpty).join(', ')}',
+                  style: TextStyle(color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 16),
-                if (profile.about.isNotEmpty) ...[
-                  Text('About', style: AppTextStyles.heading3),
-                  const SizedBox(height: 8),
-                  Text(profile.about, style: AppTextStyles.bodyMedium),
-                  const SizedBox(height: 20),
-                ],
-                _buildInfoSection('Personal Details', [
+                // ── Basic Details ──
+                _buildInfoSection('Basic Details', [
                   _InfoItem(Icons.cake_outlined, 'Age', '${profile.age} years'),
                   _InfoItem(Icons.height, 'Height', profile.height),
+                  _InfoItem(
+                      Icons.monitor_weight_outlined, 'Weight', profile.weight),
+                  _InfoItem(Icons.wc, 'Marital Status', profile.maritalStatus),
+                  _InfoItem(
+                      Icons.school_outlined, 'Education', profile.education),
+                  _InfoItem(Icons.work_outline, 'Profession', profile.occupation),
+                  _InfoItem(
+                      Icons.payments_outlined, 'Income', profile.annualIncome),
                   _InfoItem(Icons.place_outlined, 'Location',
                       [profile.city, profile.state].where((s) => s.trim().isNotEmpty).join(', ')),
-                  _InfoItem(Icons.school_outlined, 'Education', profile.education),
-                  _InfoItem(Icons.work_outline, 'Occupation', profile.occupation),
-                  _InfoItem(Icons.payments_outlined, 'Annual Salary', profile.annualIncome),
+                  _InfoItem(Icons.translate, 'Mother Tongue',
+                      profile.motherTongue),
+                  _InfoItem(Icons.accessibility_new, 'Physical Status',
+                      profile.physicalStatus),
                   _InfoItem(Icons.church_outlined, 'Religion', profile.religion),
                   _InfoItem(Icons.people_outline, 'Caste', profile.caste ?? ''),
-                  _InfoItem(Icons.groups_2_outlined, 'Sub-caste', profile.subCaste ?? ''),
-                  _InfoItem(Icons.wc, 'Marital Status', profile.maritalStatus),
-                  _InfoItem(Icons.badge_outlined, 'Employment Type',
-                      profile.employmentType),
-                  _InfoItem(Icons.location_city_outlined, 'Native Place',
-                      profile.nativePlace ?? ''),
+                  _InfoItem(Icons.groups_2_outlined, 'Sub-caste',
+                      profile.subCaste ?? ''),
                   _InfoItem(Icons.account_balance_outlined, 'Gothram',
                       profile.gothram),
                   _InfoItem(Icons.auto_awesome_outlined, 'Kuladeivam',
                       profile.kuladeivam),
+                  _InfoItem(Icons.badge_outlined, 'Employment Type',
+                      profile.employmentType),
+                  _InfoItem(
+                      Icons.business_outlined, 'Company', profile.companyName ?? ''),
+                  _InfoItem(Icons.account_balance, 'College',
+                      profile.collegeName ?? ''),
+                  _InfoItem(Icons.location_city_outlined, 'Native Place',
+                      profile.nativePlace ?? ''),
                 ]),
+                if (profile.about.trim().isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Text('About Me', style: AppTextStyles.heading3),
+                  const SizedBox(height: 8),
+                  Text(profile.about, style: AppTextStyles.bodyMedium),
+                ],
                 const SizedBox(height: 20),
+                // ── Family Details ──
+                ..._familySection(profile.family),
+                // ── Horoscope Details ──
                 _horoscopeSection(profile),
                 const SizedBox(height: 20),
+                // ── Lifestyle Details ──
                 ..._lifestyleSection(profile.lifestyle),
-                ..._partnerPreferenceSection(profile.partnerPreferences),
+                // ── Partner Preference Comparison ──
+                ..._partnerPreferenceComparison(profile),
                 const SizedBox(height: 32),
                 // Status-aware action: accepted → View Contact (never "Send
                 // Interest" again); pending → "Interest Sent"; otherwise the
@@ -483,35 +479,254 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     ];
     if (items.every((i) => i.value.trim().isEmpty)) return const [];
     return [
-      _buildInfoSection('Lifestyle', items),
+      _buildInfoSection('Lifestyle Details', items),
       const SizedBox(height: 20),
     ];
   }
 
-  /// Partner Preferences section — rendered only when at least one meaningful
-  /// preference is set (so an all-default block isn't shown).
-  List<Widget> _partnerPreferenceSection(PartnerPreferences p) {
+  /// Family Details section — rendered only when at least one field is set.
+  List<Widget> _familySection(FamilyDetails f) {
     final items = <_InfoItem>[
-      _InfoItem(Icons.cake_outlined, 'Age', '${p.minAge} - ${p.maxAge} yrs'),
-      _InfoItem(Icons.height, 'Height', '${p.minHeight} - ${p.maxHeight}'),
-      if (p.education.isNotEmpty)
-        _InfoItem(Icons.school_outlined, 'Education', p.education.join(', ')),
-      if (p.occupation.isNotEmpty)
-        _InfoItem(Icons.work_outline, 'Occupation', p.occupation.join(', ')),
-      if (p.income != 'Any' && p.income.trim().isNotEmpty)
-        _InfoItem(Icons.payments_outlined, 'Income', p.income),
-      if (p.religion != 'Any' && p.religion.trim().isNotEmpty)
-        _InfoItem(Icons.church_outlined, 'Religion', p.religion),
-      if ((p.caste ?? '').trim().isNotEmpty)
-        _InfoItem(Icons.people_outline, 'Caste', p.caste!),
-      if (p.maritalStatus != 'Any' && p.maritalStatus.trim().isNotEmpty)
-        _InfoItem(Icons.wc, 'Marital Status', p.maritalStatus),
-      if (p.motherTongue != 'Any' && p.motherTongue.trim().isNotEmpty)
-        _InfoItem(Icons.translate, 'Mother Tongue', p.motherTongue),
-      _InfoItem(Icons.auto_awesome, 'Horoscope Match',
-          p.horoscopeMatchRequired ? 'Required' : 'Not required'),
+      _InfoItem(Icons.man_outlined, 'Father', f.fatherName),
+      _InfoItem(
+          Icons.work_history_outlined, "Father's Occupation", f.fatherOccupation),
+      _InfoItem(Icons.woman_outlined, 'Mother', f.motherName),
+      _InfoItem(
+          Icons.work_history_outlined, "Mother's Occupation", f.motherOccupation),
+      _InfoItem(Icons.group_outlined, 'Brothers',
+          f.brothersCount > 0 ? '${f.brothersCount}' : ''),
+      _InfoItem(Icons.group_outlined, 'Sisters',
+          f.sistersCount > 0 ? '${f.sistersCount}' : ''),
+      _InfoItem(Icons.family_restroom, 'Family Type', f.familyType),
+      _InfoItem(Icons.diamond_outlined, 'Family Status', f.familyStatus),
     ];
-    return [_buildInfoSection('Partner Preferences', items)];
+    if (items.every((i) => i.value.trim().isEmpty) &&
+        f.aboutFamily.trim().isEmpty) {
+      return const [];
+    }
+    return [
+      _buildInfoSection('Family Details', items),
+      if (f.aboutFamily.trim().isNotEmpty) ...[
+        const SizedBox(height: 12),
+        Text('About Family', style: AppTextStyles.heading3),
+        const SizedBox(height: 8),
+        Text(f.aboutFamily, style: AppTextStyles.bodyMedium),
+      ],
+      const SizedBox(height: 20),
+    ];
+  }
+
+  /// Partner-preference COMPARISON — instead of just listing the viewer's
+  /// preferences, compares each against THIS profile and shows whether it
+  /// matches, ending with an overall "X of Y Preferences Matched" summary.
+  List<Widget> _partnerPreferenceComparison(ProfileModel profile) {
+    final me = ref.watch(myProfileProvider).valueOrNull;
+    if (me == null) return const [];
+    // Don't compare the viewer's own profile against itself.
+    if (me.userId == profile.userId) return const [];
+
+    final rows = _comparisonRows(me.partnerPreferences, profile);
+    if (rows.isEmpty) return const [];
+    final matched = rows.where((r) => r.matched).length;
+
+    return [
+      Text('Partner Preference Match', style: AppTextStyles.heading3),
+      const SizedBox(height: 12),
+      Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Column(
+          children: [
+            // Header row.
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.06),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
+              ),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Row(
+                  children: [
+                    Expanded(flex: 5, child: _HeaderText('Preference')),
+                    Expanded(flex: 6, child: _HeaderText('My Pref.')),
+                    Expanded(flex: 6, child: _HeaderText('This Profile')),
+                    Expanded(flex: 5, child: _HeaderText('Status')),
+                  ],
+                ),
+              ),
+            ),
+            for (var i = 0; i < rows.length; i++) ...[
+              Divider(height: 1, color: Colors.grey[200]),
+              _comparisonRowTile(rows[i]),
+            ],
+          ],
+        ),
+      ),
+      const SizedBox(height: 12),
+      // Overall summary.
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: AppColors.primaryGradient,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.favorite, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text('Overall Preference Match',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14)),
+            ),
+            Text('$matched of ${rows.length} Matched',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15)),
+          ],
+        ),
+      ),
+      const SizedBox(height: 8),
+    ];
+  }
+
+  Widget _comparisonRowTile(_PrefCmp r) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              flex: 5,
+              child: Text(r.label,
+                  style: const TextStyle(
+                      fontSize: 12.5, fontWeight: FontWeight.w600)),
+            ),
+            Expanded(
+              flex: 6,
+              child: Text(r.myPref,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[700])),
+            ),
+            Expanded(
+              flex: 6,
+              child: Text(r.theirs,
+                  style: const TextStyle(fontSize: 12)),
+            ),
+            Expanded(
+              flex: 5,
+              child: Row(
+                children: [
+                  Icon(r.matched ? Icons.check_circle : Icons.cancel,
+                      size: 14,
+                      color: r.matched ? AppColors.success : AppColors.error),
+                  const SizedBox(width: 3),
+                  Flexible(
+                    child: Text(r.matched ? 'Match' : "Doesn't",
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color:
+                                r.matched ? AppColors.success : AppColors.error)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+
+  /// Builds one comparison row per ACTIVE preference dimension. Age & Height are
+  /// always compared (they always carry a range); the rest are included only
+  /// when the viewer has actually set them.
+  List<_PrefCmp> _comparisonRows(PartnerPreferences p, ProfileModel c) {
+    bool set(String? s) {
+      final n = (s ?? '').trim().toLowerCase();
+      return n.isNotEmpty && n != 'any';
+    }
+
+    bool eq(String a, String? b) {
+      final na = a.trim().toLowerCase(), nb = (b ?? '').trim().toLowerCase();
+      if (na.isEmpty || nb.isEmpty) return false;
+      return na == nb || na.contains(nb) || nb.contains(na);
+    }
+
+    String dash(String s) => s.trim().isEmpty ? '—' : s;
+
+    final rows = <_PrefCmp>[];
+
+    // Age (always).
+    rows.add(_PrefCmp(
+      'Age',
+      '${p.minAge} - ${p.maxAge} yrs',
+      c.age > 0 ? '${c.age} yrs' : '—',
+      c.age >= p.minAge && c.age <= p.maxAge,
+    ));
+
+    // Height (always; matched only when all three values are recognised).
+    final hl = AppConstants.heightList;
+    final minI = hl.indexOf(p.minHeight);
+    final maxI = hl.indexOf(p.maxHeight);
+    final cI = hl.indexOf(c.height);
+    final hMatched =
+        (minI >= 0 && maxI >= 0 && cI >= 0) ? (cI >= minI && cI <= maxI) : true;
+    rows.add(_PrefCmp(
+      'Height',
+      '${p.minHeight} - ${p.maxHeight}',
+      dash(c.height),
+      hMatched,
+    ));
+
+    // Education.
+    if (p.education.isNotEmpty) {
+      rows.add(_PrefCmp(
+        'Education',
+        p.education.join(', '),
+        dash(c.education),
+        p.education.any((e) => eq(c.education, e)),
+      ));
+    }
+
+    // Profession (occupation).
+    if (p.occupation.isNotEmpty) {
+      rows.add(_PrefCmp(
+        'Profession',
+        p.occupation.join(', '),
+        dash(c.occupation),
+        p.occupation.any((o) => eq(c.occupation, o)),
+      ));
+    }
+
+    // Location (city / state).
+    if (set(p.city) || set(p.state)) {
+      final pref =
+          [p.city, p.state].where((s) => set(s)).map((s) => s!).join(', ');
+      final theirs =
+          [c.city, c.state].where((s) => s.trim().isNotEmpty).join(', ');
+      final ok = (set(p.city) ? eq(c.city, p.city) : true) &&
+          (set(p.state) ? eq(c.state, p.state) : true);
+      rows.add(_PrefCmp('Location', pref, dash(theirs), ok));
+    }
+
+    // Religion.
+    if (set(p.religion)) {
+      rows.add(_PrefCmp(
+          'Religion', p.religion, dash(c.religion), eq(c.religion, p.religion)));
+    }
+
+    // Caste.
+    if (set(p.caste)) {
+      rows.add(_PrefCmp(
+          'Caste', p.caste!, dash(c.caste ?? ''), eq(c.caste ?? '', p.caste)));
+    }
+
+    return rows;
   }
 
   /// Horoscope section with privacy rules:
@@ -525,7 +740,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     final h = profile.horoscopeDetails;
 
     if (isOwner) {
-      return _buildInfoSection('Horoscope', [
+      return _buildInfoSection('Horoscope Details', [
         _InfoItem(Icons.stars, 'Rasi', h.rasi),
         _InfoItem(Icons.star_border, 'Nakshatra', h.nakshatra),
         _InfoItem(Icons.wb_twilight, 'Lagnam', h.lagnam),
@@ -660,4 +875,30 @@ class _InfoItem {
   final String value;
 
   const _InfoItem(this.icon, this.label, this.value);
+}
+
+/// Bold column header used by the partner-preference comparison table.
+class _HeaderText extends StatelessWidget {
+  final String text;
+  const _HeaderText(this.text);
+
+  @override
+  Widget build(BuildContext context) => Text(
+        text,
+        style: const TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+            color: AppColors.primary),
+      );
+}
+
+/// One comparison row: the viewer's preference vs. this profile's value and
+/// whether the profile satisfies it.
+class _PrefCmp {
+  final String label;
+  final String myPref;
+  final String theirs;
+  final bool matched;
+
+  const _PrefCmp(this.label, this.myPref, this.theirs, this.matched);
 }

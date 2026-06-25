@@ -15,24 +15,22 @@ class MatchScore {
 
   /// The single match QUALITY label, derived ONLY from the final calculated
   /// [percent] — NO percentage is ever shown to users. A card shows exactly one
-  /// of these, never two badges at once:
-  ///   90–100 → Excellent · 80–89 → Very Good · 70–79 → Good ·
-  ///   60–69 → Average · below 60 → Low.
+  /// of these, never two badges at once. Only FOUR standardized categories are
+  /// used app-wide:
+  ///   ≥80 → Excellent · 65–79 → Good · 50–64 → Average · below 50 → Poor.
   String get quality {
-    if (percent >= 90) return 'Excellent Match';
-    if (percent >= 80) return 'Very Good Match';
-    if (percent >= 70) return 'Good Match';
-    if (percent >= 60) return 'Average Match';
-    return 'Low Match';
+    if (percent >= 80) return 'Excellent Match';
+    if (percent >= 65) return 'Good Match';
+    if (percent >= 50) return 'Average Match';
+    return 'Poor Match';
   }
 
   /// Single-word quality for dense badges, aligned 1:1 with [quality].
   String get shortQuality {
-    if (percent >= 90) return 'Excellent';
-    if (percent >= 80) return 'Very Good';
-    if (percent >= 70) return 'Good';
-    if (percent >= 60) return 'Average';
-    return 'Low';
+    if (percent >= 80) return 'Excellent';
+    if (percent >= 65) return 'Good';
+    if (percent >= 50) return 'Average';
+    return 'Poor';
   }
 
   /// Back-compat alias for callers that used to print a "% Match" chip — now
@@ -41,11 +39,10 @@ class MatchScore {
 
   /// Coarse bucket used to colour the badge — aligned 1:1 with [quality].
   String get tier {
-    if (percent >= 90) return 'excellent';
-    if (percent >= 80) return 'veryGood';
-    if (percent >= 70) return 'good';
-    if (percent >= 60) return 'average';
-    return 'low';
+    if (percent >= 80) return 'excellent';
+    if (percent >= 65) return 'good';
+    if (percent >= 50) return 'average';
+    return 'poor';
   }
 }
 

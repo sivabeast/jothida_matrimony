@@ -135,7 +135,18 @@ class _AstrologerLoginScreenState
             padding: const EdgeInsets.all(24),
             child: Column(
               children: [
-                const SizedBox(height: 32),
+                // Back to the Role Selection page (Matrimony User / Astrologer).
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    onPressed: () => context.go('/account-type'),
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    tooltip: 'Back',
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+                const SizedBox(height: 16),
                 Container(
                   width: 84,
                   height: 84,

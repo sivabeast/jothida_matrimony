@@ -66,8 +66,8 @@ class AppDrawer extends ConsumerWidget {
 
                 // ── 🧿 ASTROLOGY ─────────────────────────────────────────────
                 _section('🧿  ASTROLOGY'),
-                _item(context, Icons.menu_book_outlined, 'Horoscope Profiles',
-                    () => context.push('/horoscope')),
+                _item(context, Icons.favorite_outline, 'Horoscope Matching',
+                    () => context.push('/horoscope-matching')),
                 _item(context, Icons.event_note_outlined, 'My Consultations',
                     () => context.push('/my-consultations')),
                 _item(context, Icons.auto_awesome, 'Astrologers',
@@ -209,6 +209,8 @@ class AppDrawer extends ConsumerWidget {
     );
     if (confirmed != true) return;
     await ref.read(authNotifierProvider.notifier).signOut();
-    if (context.mounted) context.go('/account-type');
+    // Matrimony User → return to the User login page only (never the
+    // role-selection page).
+    if (context.mounted) context.go('/login');
   }
 }

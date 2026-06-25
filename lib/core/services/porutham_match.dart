@@ -19,37 +19,35 @@ class PoruthamResult {
 }
 
 /// Final compatibility category, derived ONLY from how many of the 10
-/// poruthams matched — there is no percentage / score anywhere.
-enum MatchCategory { excellent, veryGood, good, average, notRecommended }
+/// poruthams matched — there is no percentage / score anywhere. Only FOUR
+/// standardized categories are used app-wide.
+enum MatchCategory { excellent, good, average, poor }
 
 extension MatchCategoryInfo on MatchCategory {
   /// Human label shown to the user.
   String get label => switch (this) {
         MatchCategory.excellent => 'Excellent Match',
-        MatchCategory.veryGood => 'Very Good Match',
         MatchCategory.good => 'Good Match',
         MatchCategory.average => 'Average Match',
-        MatchCategory.notRecommended => 'Not Recommended',
+        MatchCategory.poor => 'Poor Match',
       };
 
   /// Status emoji used on the profile-card badge.
   String get emoji => switch (this) {
         MatchCategory.excellent => '🟢',
-        MatchCategory.veryGood => '🟢',
         MatchCategory.good => '🟡',
         MatchCategory.average => '🟠',
-        MatchCategory.notRecommended => '🔴',
+        MatchCategory.poor => '🔴',
       };
 }
 
-/// Map matched-porutham count (0-10) → category, per the traditional bands:
-/// 10 → Excellent · 8-9 → Very Good · 6-7 → Good · 4-5 → Average · 0-3 → Not Recommended.
+/// Map matched-porutham count (0-10) → one of the four standardized categories:
+/// 8-10 → Excellent · 6-7 → Good · 4-5 → Average · 0-3 → Poor.
 MatchCategory categoryFromMatched(int matched) {
-  if (matched >= 10) return MatchCategory.excellent;
-  if (matched >= 8) return MatchCategory.veryGood;
+  if (matched >= 8) return MatchCategory.excellent;
   if (matched >= 6) return MatchCategory.good;
   if (matched >= 4) return MatchCategory.average;
-  return MatchCategory.notRecommended;
+  return MatchCategory.poor;
 }
 
 /// Overall Thirumana Porutham (10-porutham) compatibility between two members.
@@ -107,12 +105,11 @@ PoruthamMatchResult? computePorutham(ProfileModel me, ProfileModel other) {
   final category = categoryFromMatched(matched);
   final recommendation = switch (category) {
     MatchCategory.excellent => 'Excellent marriage compatibility.',
-    MatchCategory.veryGood => 'Very good marriage compatibility.',
     MatchCategory.good => 'Good marriage compatibility.',
     MatchCategory.average =>
       'Average compatibility — astrologer consultation suggested.',
-    MatchCategory.notRecommended =>
-      'Not recommended — astrologer guidance strongly advised.',
+    MatchCategory.poor =>
+      'Poor compatibility — astrologer guidance strongly advised.',
   };
 
   return PoruthamMatchResult(

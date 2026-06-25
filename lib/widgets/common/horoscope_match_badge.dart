@@ -9,10 +9,9 @@ import '../../providers/profile_provider.dart';
 /// Colour for each compatibility category (matches the spec's emoji dots).
 Color categoryColor(MatchCategory c) => switch (c) {
       MatchCategory.excellent => AppColors.success,
-      MatchCategory.veryGood => AppColors.success,
       MatchCategory.good => const Color(0xFFEAB308), // 🟡 amber
       MatchCategory.average => const Color(0xFFF97316), // 🟠 orange
-      MatchCategory.notRecommended => AppColors.error, // 🔴 red
+      MatchCategory.poor => AppColors.error, // 🔴 red
     };
 
 /// Profile-card badge showing the traditional 10-porutham compatibility

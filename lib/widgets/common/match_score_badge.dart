@@ -14,23 +14,20 @@ class MatchScoreBadge extends StatelessWidget {
   const MatchScoreBadge({super.key, required this.score, this.compact = false});
 
   static const _excellent = Color(0xFF1B8A4B); // green
-  static const _veryGood = Color(0xFF2E7D32); // deep green
   static const _good = Color(0xFF7CB342); // light green
   static const _average = Color(0xFFB8860B); // dark gold
-  static const _low = Color(0xFF8A8A8A); // grey
+  static const _poor = Color(0xFF8A8A8A); // grey
 
   Color get _color {
     switch (score?.tier) {
       case 'excellent':
         return _excellent;
-      case 'veryGood':
-        return _veryGood;
       case 'good':
         return _good;
       case 'average':
         return _average;
       default:
-        return _low;
+        return _poor;
     }
   }
 
