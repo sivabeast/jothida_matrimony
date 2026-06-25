@@ -195,8 +195,8 @@
     "semantic_hash": ""
   },
   "lib/providers/profile_provider.dart": {
-    "mtime": 1782371795.6757383,
-    "ast_hash": "12c8fb64fab1f6a6bd2cb8f263e9acaf",
+    "mtime": 1782377914.4924452,
+    "ast_hash": "ec7e2b134b7dae8721b49abad0e5998a",
     "semantic_hash": ""
   },
   "lib/providers/requests_provider.dart": {
@@ -295,8 +295,8 @@
     "semantic_hash": ""
   },
   "lib/screens/astrologer/astrologers_tab.dart": {
-    "mtime": 1782236540.5846786,
-    "ast_hash": "47a85b5b57546d8091ff8bb11e13f5ec",
+    "mtime": 1782377828.7466865,
+    "ast_hash": "23c0b5a7e6620ef2b0083a89a9f7416d",
     "semantic_hash": ""
   },
   "lib/screens/astrologer/connect_astrologer_sheet.dart": {
@@ -350,8 +350,8 @@
     "semantic_hash": ""
   },
   "lib/screens/home/tabs/discover_tab.dart": {
-    "mtime": 1782371914.1163352,
-    "ast_hash": "95efcffde17ead3c96985a0a5e5ce250",
+    "mtime": 1782378091.7679331,
+    "ast_hash": "1403910437efefc4b97c255f9452e154",
     "semantic_hash": ""
   },
   "lib/screens/home/tabs/interests_tab.dart": {
@@ -380,8 +380,8 @@
     "semantic_hash": ""
   },
   "lib/screens/profile/profile_view_screen.dart": {
-    "mtime": 1782372663.6066875,
-    "ast_hash": "abd422164a4657b25f3bdcc7d55e71c5",
+    "mtime": 1782378195.1780322,
+    "ast_hash": "3310ca4a29bc151689311013e5f042de",
     "semantic_hash": ""
   },
   "lib/screens/profile/steps/step2_personal_details.dart": {
@@ -515,7 +515,7 @@
     "semantic_hash": ""
   },
   "android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java": {
-    "mtime": 1782372773.7819927,
+    "mtime": 1782378316.7282283,
     "ast_hash": "957f3f4fa91953a90f2d9690762329f7",
     "semantic_hash": ""
   },
@@ -560,8 +560,8 @@
     "semantic_hash": ""
   },
   "lib/screens/home/tabs/home_dashboard_tab.dart": {
-    "mtime": 1782365457.977803,
-    "ast_hash": "6b87fec9de40f88126de5cf745c8834e",
+    "mtime": 1782377795.8062887,
+    "ast_hash": "8421ee566494c9d31c2a988cd701c928",
     "semantic_hash": ""
   },
   "lib/services/cloudinary/cloudinary_exception.dart": {
@@ -1452,6 +1452,11 @@
   "lib/screens/horoscope/horoscope_matching_screen.dart": {
     "mtime": 1782372266.4283884,
     "ast_hash": "122866fadb1b5283f0e4dd7eca9f767d",
+    "semantic_hash": ""
+  },
+  "lib/widgets/common/network_photo.dart": {
+    "mtime": 1782377747.3821905,
+    "ast_hash": "756eba97f96979457fe0a21dcc4e00ac",
     "semantic_hash": ""
   }
 }

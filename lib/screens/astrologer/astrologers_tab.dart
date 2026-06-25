@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_model.dart';
 import '../../providers/astrologer_provider.dart';
+import '../../widgets/common/network_photo.dart';
 
 /// "Connect Astrologer" bottom-nav tab. Shows grouped astrologer sections:
 /// Top Rated, Recommended and Recently Active.
@@ -116,17 +117,15 @@ class _AstrologerCard extends StatelessWidget {
                 ClipRRect(
                   borderRadius:
                       const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: Image.network(
-                    a.photoUrl,
+                  child: NetworkPhoto(
+                    url: a.photoUrl,
                     height: 104,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 104,
-                      color: AppColors.primary.withOpacity(0.1),
-                      child: const Icon(Icons.person,
-                          size: 44, color: AppColors.primary),
-                    ),
+                    alignment: Alignment.topCenter,
+                    fallbackIcon: Icons.person,
+                    fallbackIconSize: 44,
+                    fallbackBg: AppColors.primary.withOpacity(0.10),
                   ),
                 ),
                 // Small social-media style verified tick — not a badge.

@@ -546,6 +546,54 @@ bool partnerPreferencesComplete(ProfileModel? me) {
       _ppSet(pp.nakshatra);
 }
 
+// ── MANDATORY vs OPTIONAL matching ──────────────────────────────────────────
+//
+// Product rule for the Matches feed:
+//   MANDATORY (a failing profile is NEVER shown):
+//     1. Community / Caste — when the user has selected a caste preference, only
+//        candidates of that caste/community appear.
+//     2. Age — the candidate's age MUST fall inside the user's preferred age
+//        range [minAge, maxAge].
+//   OPTIONAL (used for RANKING only, never removes a profile):
+//     religion, education, occupation, height, income, location, marital
+//     status, mother tongue, rasi/nakshatra, … — see [partnerPreferenceScore].
+
+/// Whether [candidate] passes BOTH mandatory gates (caste + age) for [me].
+/// Returns true when [me] is null (we can't evaluate preferences yet) so the
+/// feed isn't silently emptied before the user's own profile has loaded.
+bool mandatoryPreferenceMatch(ProfileModel candidate, ProfileModel? me) {
+  if (me == null) return true;
+  final pp = me.partnerPreferences;
+
+  // Age range — mandatory. Only skipped when the candidate's age is unknown (0),
+  // so a data gap can't hide an otherwise-eligible profile.
+  if (candidate.age > 0 &&
+      (candidate.age < pp.minAge || candidate.age > pp.maxAge)) {
+    return false;
+  }
+
+  // Community / Caste — mandatory ONLY when the user actually set a caste
+  // preference ('Any'/empty means "no caste constraint").
+  if (_ppSet(pp.caste) && !_casteMatches(candidate, pp)) return false;
+
+  return true;
+}
+
+/// Whether [candidate]'s caste/community satisfies the user's SET caste
+/// preference. Prefers an id match when both sides carry a caste id; otherwise
+/// compares names case-insensitively with a tolerant contains check (so
+/// "Vanniyar" still matches "Vanniyar Kula Kshatriyar").
+bool _casteMatches(ProfileModel candidate, PartnerPreferences pp) {
+  final prefId = (pp.casteId ?? '').trim();
+  final candId = (candidate.casteId ?? '').trim();
+  if (prefId.isNotEmpty && candId.isNotEmpty) return prefId == candId;
+
+  final a = (candidate.caste ?? '').trim().toLowerCase();
+  final b = (pp.caste ?? '').trim().toLowerCase();
+  if (a.isEmpty || b.isEmpty) return false;
+  return a == b || a.contains(b) || b.contains(a);
+}
+
 class DiscoverState {
   final List<ProfileModel> profiles;
   final bool isLoading; // initial page
@@ -612,62 +660,49 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
     return true;
   }
 
-  /// ELIGIBILITY only — data-integrity + the user's explicit filter-sheet
-  /// choices. Partner-preference matching is applied separately (with a
-  /// fallback) in [_rank], so it can never silently empty the feed.
+  /// ELIGIBILITY — data-integrity + the user's explicit filter-sheet choices +
+  /// the MANDATORY caste/age gate ([mandatoryPreferenceMatch]). OPTIONAL
+  /// preferences never appear here; they only influence ORDER (see [_rank]), so
+  /// a profile is never removed for failing an optional preference.
   bool _accept(ProfileModel p, String? myUid, ProfileModel? me) =>
-      _keep(p, myUid) && _filters.matches(p, me);
+      _keep(p, myUid) &&
+      _filters.matches(p, me) &&
+      mandatoryPreferenceMatch(p, me);
 
-  /// Ranks a fetched [pool] into the feed using the partner-preference
-  /// fallback ladder, and logs exactly what happened at each stage:
-  ///   Priority 1 — profiles matching ALL set preferences (exact).
-  ///   Priority 2 — near matches (satisfy at least one set preference), ranked.
-  ///   Priority 3 — all eligible profiles (so the page is NEVER empty when
-  ///               eligible profiles exist).
+  /// Builds the feed from a fetched [pool]:
+  ///   • MANDATORY gate (caste + age) + data-integrity decide who is ELIGIBLE.
+  ///   • OPTIONAL preferences only RANK the eligible set (best first); they can
+  ///     never remove a profile. A profile outside the caste/age rule is the
+  ///     only thing that is dropped — exactly as the product rule requires.
   List<ProfileModel> _rank(
       List<ProfileModel> pool, String? myUid, ProfileModel? me,
       {required int fetched}) {
-    final eligible =
-        pool.where((p) => _keep(p, myUid) && _filters.matches(p, me)).toList();
+    final eligible = pool
+        .where((p) =>
+            _keep(p, myUid) &&
+            _filters.matches(p, me) &&
+            mandatoryPreferenceMatch(p, me))
+        .toList();
 
-    final prefsSet = partnerPreferencesComplete(me);
-    List<ProfileModel> result;
-    String tier;
-
-    if (!prefsSet) {
-      result = eligible;
-      tier = 'all-eligible (no preferences configured)';
-    } else {
-      final exact =
-          eligible.where((p) => partnerPreferenceMatch(p, me)).toList();
-      if (exact.isNotEmpty) {
-        result = exact;
-        tier = 'exact preference matches';
-      } else {
-        // Near matches: satisfy at least one set preference, best first.
-        final scored = eligible
-            .map((p) => MapEntry(p, partnerPreferenceScore(p, me)))
-            .where((e) => e.value.satisfied > 0)
-            .toList()
-          ..sort((a, b) => b.value.ratio.compareTo(a.value.ratio));
-        if (scored.isNotEmpty) {
-          result = scored.map((e) => e.key).toList();
-          tier = 'near matches';
-        } else {
-          result = eligible;
-          tier = 'all-eligible (fallback — no preference matches)';
-        }
-      }
-    }
+    // Rank by the fraction of the user's OPTIONAL preferences each candidate
+    // satisfies (best first). Caste/age are already guaranteed for everyone in
+    // [eligible], so the ordering is effectively driven by the optional fields.
+    final scored = eligible
+        .map((p) => MapEntry(p, partnerPreferenceScore(p, me).ratio))
+        .toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final result = scored.map((e) => e.key).toList();
 
     debugPrint('[Discover] gender=$_gender myGender=${me?.gender} · '
         'fetched(after gender)=$fetched · eligible=${eligible.length} · '
-        'returned=${result.length} · tier="$tier" · '
-        'prefsConfigured=$prefsSet · explicitFilters=${_filters.isActive}');
+        'returned=${result.length} · mandatory(caste+age) applied · '
+        'casteSet=${_ppSet(me?.partnerPreferences.caste)} · '
+        'age=${me?.partnerPreferences.minAge}-${me?.partnerPreferences.maxAge} · '
+        'explicitFilters=${_filters.isActive}');
     if (fetched > 0 && eligible.isEmpty) {
       debugPrint('[Discover] ⚠ all $fetched fetched profile(s) were excluded by '
-          'integrity/explicit filters (self / married / inactive / blocked / '
-          'filter-sheet). Check the data or reset filters.');
+          'integrity / mandatory caste+age / explicit filters. Widen the caste '
+          'or age-range preference, or check the data.');
     }
     if (fetched == 0) {
       debugPrint('[Discover] ⚠ the gender="$_gender" query returned 0 profiles. '

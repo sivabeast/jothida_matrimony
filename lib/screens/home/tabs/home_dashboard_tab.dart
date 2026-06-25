@@ -17,6 +17,7 @@ import '../../../providers/navigation_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/match_score_badge.dart';
+import '../../../widgets/common/network_photo.dart';
 import 'notifications_tab.dart';
 
 /// Home dashboard tab. Clean, modern flow:
@@ -552,7 +553,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             onViewAll: () => ref.read(homeTabIndexProvider.notifier).state = 3),
         const SizedBox(height: 12),
         SizedBox(
-          height: 188,
+          height: 202,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -961,6 +962,11 @@ class _HomeAstrologerCard extends StatelessWidget {
   final Astrologer astrologer;
   const _HomeAstrologerCard({required this.astrologer});
 
+  // A single fixed image height keeps every card's photo identical in size, so
+  // the row of cards aligns perfectly regardless of the source image's own
+  // dimensions (no stretching, no random cropping, no blank gaps).
+  static const double _imageHeight = 116;
+
   @override
   Widget build(BuildContext context) {
     final a = astrologer;
@@ -979,69 +985,81 @@ class _HomeAstrologerCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Photo (uniform aspect ratio, cover-fit, rounded top) ──
             Stack(
               children: [
                 ClipRRect(
                   borderRadius:
                       const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: Image.network(
-                    a.photoUrl,
-                    height: 104,
+                  child: NetworkPhoto(
+                    url: a.photoUrl,
+                    height: _imageHeight,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 104,
-                      color: AppColors.primary.withOpacity(0.1),
-                      child: const Icon(Icons.person,
-                          size: 44, color: AppColors.primary),
-                    ),
+                    alignment: Alignment.topCenter,
+                    fallbackIcon: Icons.person,
+                    fallbackIconSize: 46,
+                    fallbackBg: AppColors.primary.withOpacity(0.10),
                   ),
                 ),
+                // Verified tick — a clean white disc with a soft shadow so it
+                // reads clearly over any photo and never bleeds into the image.
                 if (a.verified)
-                  const Positioned(
+                  Positioned(
                     top: 8,
                     right: 8,
-                    child: CircleAvatar(
-                      radius: 10,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.verified,
-                          color: AppColors.success, size: 16),
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.18),
+                              blurRadius: 3),
+                        ],
+                      ),
+                      child: const Icon(Icons.verified,
+                          color: AppColors.success, size: 17),
                     ),
                   ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(a.name,
+            // ── Details (Expanded → absorbs leftover height, never overflows) ──
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Text(a.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 13)),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.star, size: 13, color: AppColors.gold),
+                        const SizedBox(width: 3),
+                        Text(a.rating.toStringAsFixed(1),
+                            style: const TextStyle(
+                                fontSize: 11.5, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      a.specializations.isEmpty
+                          ? 'Astrologer'
+                          : a.specializations.first,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 13)),
-                  const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, size: 13, color: AppColors.gold),
-                      const SizedBox(width: 3),
-                      Text(a.rating.toStringAsFixed(1),
-                          style: const TextStyle(
-                              fontSize: 11.5, fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    a.specializations.isEmpty
-                        ? 'Astrologer'
-                        : a.specializations.first,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style:
-                        const TextStyle(fontSize: 11, color: AppColors.primary),
-                  ),
-                ],
+                          fontSize: 11, color: AppColors.primary),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

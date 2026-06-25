@@ -13,6 +13,7 @@ import '../../providers/service_providers.dart';
 import '../../providers/subscription_provider.dart';
 import '../../widgets/common/contact_reveal_card.dart';
 import '../../widgets/common/gradient_button.dart';
+import '../../widgets/common/network_photo.dart';
 import '../../widgets/common/premium_gate.dart';
 
 class ProfileViewScreen extends ConsumerStatefulWidget {
@@ -354,7 +355,12 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
               fit: StackFit.expand,
               children: [
                 profile.photos.isNotEmpty
-                    ? Image.network(profile.photos[_photoIndex], fit: BoxFit.cover)
+                    ? NetworkPhoto(
+                        url: profile.photos[_photoIndex],
+                        fit: BoxFit.cover,
+                        fallbackIconSize: 100,
+                        showLoadingSpinner: true,
+                      )
                     : Container(
                         color: AppColors.primary.withOpacity(0.3),
                         child: const Icon(Icons.person, size: 100, color: Colors.white)),
