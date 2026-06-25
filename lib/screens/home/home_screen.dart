@@ -121,12 +121,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             tooltip: context.l10n.notifications,
           ),
-          // Wallet / Payments
-          IconButton(
-            icon: const Icon(Icons.account_balance_wallet_outlined, size: 24),
-            tooltip: 'Wallet',
-            onPressed: () => context.push('/payments'),
-          ),
           // Admin Dashboard — visible ONLY to Super Admin accounts. Normal
           // users and astrologers never see this icon.
           if (isSuperAdmin)

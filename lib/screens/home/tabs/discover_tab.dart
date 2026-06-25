@@ -16,13 +16,16 @@ import '../../../widgets/common/match_score_badge.dart';
 import '../../../widgets/common/premium_gate.dart';
 import '../../../widgets/common/searchable_field.dart';
 
-/// The Matches experience — a Bharat-Matrimony-style profile list.
+/// The Matches experience — a full-screen, swipeable profile carousel.
 ///
-/// A single vertical, scrolling list of large profile cards: a dominant profile
-/// photo on top with the key details (name · age · location · education ·
-/// occupation) below and a single "Express Interest" action. There are no
-/// browse-mode tabs, no Skip action and no compatibility percentages — only a
-/// clean match-quality badge.
+/// One profile fills the entire area at a time. A horizontal swipe (left/right)
+/// moves between matched profiles, while a vertical scroll reveals every detail
+/// of the current profile — photos, basic & personal info, education, career,
+/// horoscope, family, lifestyle and partner preferences — ending in a single
+/// "Express Interest" action. There are no browse-mode tabs, no Skip action and
+/// no compatibility percentages — only a clean match-quality badge.
+///
+/// Horizontal scroll = switch profiles · Vertical scroll = view current profile.
 ///
 /// Opposite-gender matching is resolved automatically from the signed-in user's
 /// gender (Male → Female, Female → Male) — there is no manual toggle.
@@ -34,7 +37,8 @@ class DiscoverTab extends ConsumerStatefulWidget {
 }
 
 class _DiscoverTabState extends ConsumerState<DiscoverTab> {
-  final ScrollController _scrollController = ScrollController();
+  // Drives the horizontal profile carousel (one full-screen profile per page).
+  final PageController _pageController = PageController();
 
   // Profiles the user has expressed interest in during this session (so the
   // button can flip to "Interest Sent ✓" immediately).
@@ -51,7 +55,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -121,8 +125,9 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     if (result == null || !mounted) return;
     setState(() => _filters = result);
     await ref.read(discoverProvider.notifier).applyFilters(result);
-    if (mounted && _scrollController.hasClients) {
-      _scrollController.jumpTo(0);
+    // Reset the carousel to the first match of the freshly filtered feed.
+    if (mounted && _pageController.hasClients) {
+      _pageController.jumpToPage(0);
     }
   }
 
@@ -172,27 +177,27 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
               }
               if (profiles.isEmpty) return _emptyState(state.error != null);
 
-              return RefreshIndicator(
-                color: AppColors.primary,
-                onRefresh: _load,
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.fromLTRB(12, 6, 12, 20),
-                  itemCount: total,
-                  itemBuilder: (_, i) {
-                    // Prefetch the next page as the user nears the end.
-                    if (i >= total - 3) {
-                      Future.microtask(
-                          () => ref.read(discoverProvider.notifier).loadMore());
-                    }
-                    return _MatchProfileCard(
-                      profile: profiles[i],
-                      interestSent: _interestSent.contains(profiles[i].id),
-                      onInterest: () => _sendInterest(profiles[i]),
-                      onAccept: (interestId) =>
-                          _acceptInterest(profiles[i], interestId),
-                    );
-                  },
+              // Full-screen, horizontally-swipeable carousel: one profile per
+              // page. Horizontal swipe = switch profiles; the per-profile page
+              // scrolls vertically on its own, so the two gestures never clash.
+              return PageView.builder(
+                controller: _pageController,
+                scrollDirection: Axis.horizontal,
+                itemCount: total,
+                onPageChanged: (i) {
+                  // Prefetch the next batch as the user nears the end.
+                  if (i >= total - 3) {
+                    ref.read(discoverProvider.notifier).loadMore();
+                  }
+                },
+                itemBuilder: (_, i) => _MatchProfilePage(
+                  key: ValueKey(profiles[i].id),
+                  profile: profiles[i],
+                  interestSent: _interestSent.contains(profiles[i].id),
+                  onInterest: () => _sendInterest(profiles[i]),
+                  onAccept: (interestId) =>
+                      _acceptInterest(profiles[i], interestId),
+                  onRefresh: _load,
                 ),
               );
             }),
@@ -326,22 +331,41 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
       );
 }
 
-/// A Bharat-Matrimony-style profile card: a large profile photo on top
-/// (~68% of the card) with the key details below — name · age · location ·
-/// education · occupation — and a single "Express Interest" action. The card
-/// shows a clean match-quality badge (NO percentage) and NO Skip button.
-class _MatchProfileCard extends ConsumerWidget {
+/// A full-screen, single-profile page used inside the Matches carousel.
+///
+/// The whole page scrolls vertically to reveal every section of the profile —
+/// a dominant photo header (with match-quality + horoscope badges), basic and
+/// personal details, education & career, location, horoscope, family, lifestyle
+/// and partner preferences — while a pinned bottom bar keeps the single
+/// "Express Interest" action always in reach. There is NO match percentage and
+/// NO Skip button. Horizontal swipes between pages are handled by the parent
+/// PageView; this page only ever scrolls vertically, so the gestures never
+/// conflict.
+class _MatchProfilePage extends ConsumerStatefulWidget {
   final ProfileModel profile;
   final bool interestSent;
   final VoidCallback onInterest;
   final ValueChanged<String> onAccept;
+  final Future<void> Function() onRefresh;
 
-  const _MatchProfileCard({
+  const _MatchProfilePage({
+    super.key,
     required this.profile,
     required this.interestSent,
     required this.onInterest,
     required this.onAccept,
+    required this.onRefresh,
   });
+
+  @override
+  ConsumerState<_MatchProfilePage> createState() => _MatchProfilePageState();
+}
+
+class _MatchProfilePageState extends ConsumerState<_MatchProfilePage> {
+  // Index of the photo currently shown in the header gallery.
+  int _photoIndex = 0;
+
+  ProfileModel get profile => widget.profile;
 
   String get _placeLine {
     final native = (profile.nativePlace ?? '').trim();
@@ -351,111 +375,191 @@ class _MatchProfileCard extends ConsumerWidget {
         .join(', ');
   }
 
-  void _openProfile(BuildContext context) =>
-      context.push('/profile/${profile.id}');
+  void _openProfile() => context.push('/profile/${profile.id}');
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     var status = ref.watch(interestStatusForProfileProvider(profile.id));
-    if (status == InterestUiStatus.none && interestSent) {
+    if (status == InterestUiStatus.none && widget.interestSent) {
       status = InterestUiStatus.sent;
     }
     final MatchScore? score = ref.watch(matchScorerProvider)?.call(profile);
 
-    // Dominant image: ~65–70% of the card. Sized from the available card width
-    // so the layout is responsive on every screen.
-    final cardWidth = MediaQuery.of(context).size.width - 24;
-    final imageHeight = cardWidth * 0.95;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.10),
-              blurRadius: 14,
-              offset: const Offset(0, 6)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Large profile photo with quality + horoscope badges ──────────
-          GestureDetector(
-            onTap: () => _openProfile(context),
-            child: SizedBox(
-              height: imageHeight,
-              width: double.infinity,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  _PhotoGallery(photos: profile.photos),
-                  if (score != null)
-                    Positioned(
-                      top: 12,
-                      left: 12,
-                      child: MatchScoreBadge(score: score),
-                    ),
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: HoroscopeMatchBadge(target: profile),
-                  ),
-                ],
-              ),
+    return Column(
+      children: [
+        // ── Vertically-scrolling profile body (the whole page) ─────────────
+        Expanded(
+          child: RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: widget.onRefresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              children: [
+                _photoHeader(context, score),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: _identityBlock(),
+                ),
+                ..._detailSections(),
+                // Breathing room so the last section clears the pinned bar.
+                const SizedBox(height: 16),
+              ],
             ),
           ),
-          // ── Details below the image ──────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-            child: GestureDetector(
-              onTap: () => _openProfile(context),
-              behavior: HitTestBehavior.opaque,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Name · Age
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          '${profile.name}, ${profile.age}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.w700,
-                              fontSize: 19),
-                        ),
-                      ),
-                      if (profile.isVerified) ...[
-                        const SizedBox(width: 6),
-                        const Icon(Icons.verified,
-                            size: 18, color: AppColors.primary),
-                      ],
+        ),
+        // ── Pinned Express Interest action (status-aware, no Skip) ─────────
+        _bottomActionBar(context, status),
+      ],
+    );
+  }
+
+  // ── Photo header ─────────────────────────────────────────────────────────
+  /// Edge-to-edge photo header (~52% of the screen). Tapping the left/right
+  /// half steps between photos — deliberately tap-based (not a nested
+  /// horizontal PageView) so it never fights the parent profile-swipe gesture.
+  Widget _photoHeader(BuildContext context, MatchScore? score) {
+    final photos = profile.photos;
+    final height = MediaQuery.of(context).size.height * 0.52;
+    final index = photos.isEmpty ? 0 : _photoIndex.clamp(0, photos.length - 1);
+
+    return SizedBox(
+      height: height,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (photos.isEmpty)
+            _photoPlaceholder()
+          else
+            Image.network(
+              photos[index],
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+              errorBuilder: (_, __, ___) => _photoPlaceholder(),
+              loadingBuilder: (ctx, child, progress) => progress == null
+                  ? child
+                  : Container(
+                      color: Colors.grey[200],
+                      child:
+                          const Center(child: CircularProgressIndicator())),
+            ),
+          // Left / right tap zones to step through photos.
+          if (photos.length > 1)
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: () => setState(() {
+                      _photoIndex = (index - 1 + photos.length) % photos.length;
+                    }),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: () => setState(() {
+                      _photoIndex = (index + 1) % photos.length;
+                    }),
+                  ),
+                ),
+              ],
+            ),
+          // Subtle bottom gradient so the name/badges stay legible.
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 120,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.35),
+                      Colors.transparent,
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  if (_placeLine.isNotEmpty)
-                    _infoLine(Icons.location_on_outlined, _placeLine),
-                  if (profile.education.trim().isNotEmpty)
-                    _infoLine(Icons.school_outlined, profile.education),
-                  if (profile.occupation.trim().isNotEmpty)
-                    _infoLine(Icons.work_outline, profile.occupation),
-                ],
+                ),
               ),
             ),
           ),
-          // ── Express Interest (status-aware). No Skip action. ─────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-            child: _interestButton(context, ref, status),
-          ),
+          // Match-quality badge (top-left) and horoscope badge (top-right).
+          if (score != null)
+            Positioned(top: 14, left: 14, child: MatchScoreBadge(score: score)),
+          Positioned(
+              top: 14, right: 14, child: HoroscopeMatchBadge(target: profile)),
+          // Photo dots indicator.
+          if (photos.length > 1)
+            Positioned(
+              bottom: 14,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  photos.length,
+                  (i) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: i == index ? 22 : 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: i == index
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
+    );
+  }
+
+  Widget _photoPlaceholder() => Container(
+        color: const Color(0xFFEFE7D6),
+        child: Center(
+            child: Icon(Icons.person, size: 96, color: Colors.brown.shade200)),
+      );
+
+  // ── Identity block (name · age · key lines) ──────────────────────────────
+  Widget _identityBlock() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Flexible(
+              child: Text(
+                '${profile.name}, ${profile.age}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 22),
+              ),
+            ),
+            if (profile.isVerified) ...[
+              const SizedBox(width: 6),
+              const Icon(Icons.verified, size: 20, color: AppColors.primary),
+            ],
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (_placeLine.isNotEmpty)
+          _infoLine(Icons.location_on_outlined, _placeLine),
+        if (profile.education.trim().isNotEmpty)
+          _infoLine(Icons.school_outlined, profile.education),
+        if (profile.occupation.trim().isNotEmpty)
+          _infoLine(Icons.work_outline, profile.occupation),
+      ],
     );
   }
 
@@ -467,16 +571,243 @@ class _MatchProfileCard extends ConsumerWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(text,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 13.5, color: Colors.grey[800])),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[800])),
             ),
           ],
         ),
       );
 
-  Widget _interestButton(
-      BuildContext context, WidgetRef ref, InterestUiStatus status) {
+  // ── Detail sections ──────────────────────────────────────────────────────
+  /// Every detail section, in matrimony reading order. Empty sections render
+  /// nothing, so a sparse profile never shows blank cards or overflow.
+  List<Widget> _detailSections() {
+    final h = profile.horoscope;
+    final f = profile.family;
+    final l = profile.lifestyle;
+    final p = profile.partnerPreferences;
+
+    return [
+      // About / Additional information.
+      if (profile.about.trim().isNotEmpty) _aboutSection(profile.about),
+      // Basic & personal details.
+      _section('Basic Details', [
+        _Item(Icons.cake_outlined, 'Age', '${profile.age} years'),
+        _Item(Icons.height, 'Height', profile.height),
+        _Item(Icons.monitor_weight_outlined, 'Weight', profile.weight),
+        _Item(Icons.wc, 'Marital Status', profile.maritalStatus),
+        _Item(Icons.translate, 'Mother Tongue', profile.motherTongue),
+        _Item(Icons.accessibility_new, 'Physical Status',
+            profile.physicalStatus),
+      ]),
+      _section('Personal Information', [
+        _Item(Icons.church_outlined, 'Religion', profile.religion),
+        _Item(Icons.people_outline, 'Caste', profile.caste ?? ''),
+        _Item(Icons.groups_2_outlined, 'Sub-caste', profile.subCaste ?? ''),
+        _Item(Icons.account_balance_outlined, 'Gothram', profile.gothram),
+        _Item(Icons.auto_awesome_outlined, 'Kuladeivam', profile.kuladeivam),
+        _Item(Icons.location_city_outlined, 'Native Place',
+            profile.nativePlace ?? ''),
+        _Item(Icons.public, 'Citizenship', profile.citizenship ?? ''),
+      ]),
+      // Education.
+      _section('Education', [
+        _Item(Icons.school_outlined, 'Education', profile.education),
+        _Item(Icons.account_balance, 'College', profile.collegeName ?? ''),
+      ]),
+      // Occupation.
+      _section('Occupation', [
+        _Item(Icons.work_outline, 'Occupation', profile.occupation),
+        _Item(Icons.badge_outlined, 'Employment Type', profile.employmentType),
+        _Item(Icons.business_outlined, 'Company', profile.companyName ?? ''),
+        _Item(Icons.place_outlined, 'Work Location', profile.workLocation ?? ''),
+        _Item(Icons.payments_outlined, 'Annual Income', profile.annualIncome),
+      ]),
+      // Location.
+      _section('Location', [
+        _Item(Icons.location_city, 'City', profile.city),
+        _Item(Icons.map_outlined, 'District', profile.district),
+        _Item(Icons.terrain_outlined, 'State', profile.state),
+        _Item(Icons.flag_outlined, 'Country', profile.country),
+      ]),
+      // Horoscope — only Rasi & Nakshatra are public (full chart stays private,
+      // matching the detailed Profile screen's privacy rules).
+      _section('Horoscope Details', [
+        _Item(Icons.stars, 'Rasi', h.rasi),
+        _Item(Icons.star_border, 'Nakshatra', h.nakshatra),
+      ]),
+      // Family.
+      _section('Family Details', [
+        _Item(Icons.man_outlined, 'Father', f.fatherName),
+        _Item(Icons.work_history_outlined, "Father's Occupation",
+            f.fatherOccupation),
+        _Item(Icons.woman_outlined, 'Mother', f.motherName),
+        _Item(Icons.work_history_outlined, "Mother's Occupation",
+            f.motherOccupation),
+        _Item(Icons.group_outlined, 'Brothers',
+            f.brothersCount > 0 ? '${f.brothersCount}' : ''),
+        _Item(Icons.group_outlined, 'Sisters',
+            f.sistersCount > 0 ? '${f.sistersCount}' : ''),
+        _Item(Icons.family_restroom, 'Family Type', f.familyType),
+        _Item(Icons.diamond_outlined, 'Family Status', f.familyStatus),
+      ]),
+      if (f.aboutFamily.trim().isNotEmpty)
+        _aboutSection(f.aboutFamily, title: 'About Family'),
+      // Lifestyle (additional information).
+      _section('Lifestyle', [
+        _Item(Icons.restaurant_outlined, 'Eating Habit', l.eatingHabit),
+        _Item(Icons.smoke_free, 'Smoking', l.smokingHabit),
+        _Item(Icons.no_drinks_outlined, 'Drinking', l.drinkingHabit),
+        _Item(Icons.sports_esports_outlined, 'Hobbies', l.hobbies),
+        _Item(Icons.interests_outlined, 'Interests', l.interests),
+        _Item(Icons.translate, 'Languages Known', l.languagesKnown.join(', ')),
+      ]),
+      // Partner preferences.
+      _section('Partner Preferences', [
+        _Item(Icons.cake_outlined, 'Age', '${p.minAge} - ${p.maxAge} yrs'),
+        _Item(Icons.height, 'Height', '${p.minHeight} - ${p.maxHeight}'),
+        if (p.education.isNotEmpty)
+          _Item(Icons.school_outlined, 'Education', p.education.join(', ')),
+        if (p.occupation.isNotEmpty)
+          _Item(Icons.work_outline, 'Occupation', p.occupation.join(', ')),
+        if (p.income != 'Any')
+          _Item(Icons.payments_outlined, 'Income', p.income),
+        if (p.religion != 'Any')
+          _Item(Icons.church_outlined, 'Religion', p.religion),
+        if ((p.caste ?? '').trim().isNotEmpty)
+          _Item(Icons.people_outline, 'Caste', p.caste!),
+        if (p.maritalStatus != 'Any')
+          _Item(Icons.wc, 'Marital Status', p.maritalStatus),
+        if (p.motherTongue != 'Any')
+          _Item(Icons.translate, 'Mother Tongue', p.motherTongue),
+        _Item(Icons.auto_awesome, 'Horoscope Match',
+            p.horoscopeMatchRequired ? 'Required' : 'Not required'),
+      ]),
+      // Quick path to the detailed profile (report, contact reveal once
+      // matched, family tree, consult astrologer all live there).
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+        child: OutlinedButton.icon(
+          onPressed: _openProfile,
+          icon: const Icon(Icons.open_in_full, size: 18),
+          label: const Text('View Full Profile'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary),
+            minimumSize: const Size.fromHeight(46),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      ),
+    ];
+  }
+
+  /// A titled "card" of label → value rows. Rows with empty values are hidden,
+  /// and the whole section disappears when every row is empty.
+  Widget _section(String title, List<_Item> items) {
+    final visible = items.where((i) => i.value.trim().isNotEmpty).toList();
+    if (visible.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionTitle(title),
+          const SizedBox(height: 10),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: Column(
+              children: [
+                for (var i = 0; i < visible.length; i++) ...[
+                  if (i > 0) Divider(height: 1, color: Colors.grey[200]),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(visible[i].icon,
+                            size: 20, color: AppColors.primary),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(visible[i].label,
+                              style: const TextStyle(
+                                  fontSize: 12.5, color: Colors.grey)),
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Text(
+                            visible[i].value,
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(
+                                fontSize: 13.5, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _aboutSection(String text, {String title = 'About'}) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionTitle(title),
+            const SizedBox(height: 8),
+            Text(text,
+                style: TextStyle(
+                    fontSize: 14, height: 1.45, color: Colors.grey[800])),
+          ],
+        ),
+      );
+
+  Widget _sectionTitle(String text) => Text(
+        text,
+        style: const TextStyle(
+            fontSize: 15,
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w700,
+            color: AppColors.primary),
+      );
+
+  // ── Pinned bottom action bar ─────────────────────────────────────────────
+  Widget _bottomActionBar(BuildContext context, InterestUiStatus status) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: _interestButton(context, status),
+        ),
+      ),
+    );
+  }
+
+  Widget _interestButton(BuildContext context, InterestUiStatus status) {
     switch (status) {
       case InterestUiStatus.accepted:
         return _statusButton(
@@ -497,7 +828,7 @@ class _MatchProfileCard extends ConsumerWidget {
         final pending =
             ref.watch(pendingReceivedInterestFromProfileProvider(profile.id));
         return ElevatedButton.icon(
-          onPressed: pending == null ? null : () => onAccept(pending.id),
+          onPressed: pending == null ? null : () => widget.onAccept(pending.id),
           icon: const Icon(Icons.favorite, size: 20),
           label: const Text('Accept Interest'),
           style: ElevatedButton.styleFrom(
@@ -510,7 +841,7 @@ class _MatchProfileCard extends ConsumerWidget {
         );
       case InterestUiStatus.none:
         return ElevatedButton.icon(
-          onPressed: onInterest,
+          onPressed: widget.onInterest,
           icon: const Text('❤️', style: TextStyle(fontSize: 18)),
           label: const Text('Express Interest',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -547,84 +878,12 @@ class _MatchProfileCard extends ConsumerWidget {
       );
 }
 
-/// Swipeable photo gallery with a page-dots indicator (used as the large card
-/// image). Horizontal swipes change the photo; the surrounding list scrolls
-/// vertically, so the two gestures never conflict.
-class _PhotoGallery extends StatefulWidget {
-  final List<String> photos;
-  const _PhotoGallery({required this.photos});
-
-  @override
-  State<_PhotoGallery> createState() => _PhotoGalleryState();
-}
-
-class _PhotoGalleryState extends State<_PhotoGallery> {
-  final PageController _controller = PageController();
-  int _index = 0;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final photos = widget.photos;
-    if (photos.isEmpty) return _placeholder();
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        PageView.builder(
-          controller: _controller,
-          itemCount: photos.length,
-          onPageChanged: (i) => setState(() => _index = i),
-          itemBuilder: (_, i) => Image.network(
-            photos[i],
-            fit: BoxFit.cover,
-            alignment: Alignment.topCenter,
-            errorBuilder: (_, __, ___) => _placeholder(),
-            loadingBuilder: (ctx, child, progress) => progress == null
-                ? child
-                : Container(
-                    color: Colors.grey[200],
-                    child: const Center(child: CircularProgressIndicator())),
-          ),
-        ),
-        if (photos.length > 1)
-          Positioned(
-            bottom: 12,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                photos.length,
-                (i) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: i == _index ? 22 : 7,
-                  height: 7,
-                  decoration: BoxDecoration(
-                    color: i == _index
-                        ? Colors.white
-                        : Colors.white.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _placeholder() => Container(
-        color: const Color(0xFFEFE7D6),
-        child: Center(
-            child: Icon(Icons.person, size: 96, color: Colors.brown.shade200)),
-      );
+/// One label → value row inside a profile detail section.
+class _Item {
+  final IconData icon;
+  final String label;
+  final String value;
+  const _Item(this.icon, this.label, this.value);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
