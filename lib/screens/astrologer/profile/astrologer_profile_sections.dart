@@ -626,6 +626,9 @@ class AstrologerAccountSettingsScreen extends ConsumerWidget {
   const AstrologerAccountSettingsScreen({super.key});
 
   Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    // Capture the router BEFORE the async gap: signing out tears down the
+    // dashboard, so `context` may be unmounted before we navigate.
+    final router = GoRouter.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -643,14 +646,18 @@ class AstrologerAccountSettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+    // Only signs out on explicit confirmation; Cancel / dismiss leaves the
+    // session intact.
     if (confirmed != true) return;
+    // Clear BOTH the astrologer session and (in real mode) the Firebase auth
+    // session so nothing leaks into the next login.
     ref.read(myAstrologerAccountProvider.notifier).signOut();
     if (!kBypassAuth) {
       await ref.read(authNotifierProvider.notifier).signOut();
     }
     // Astrologer → return to the Astrologer login page only (never the
     // role-selection page).
-    if (context.mounted) context.go('/astrologer-login');
+    router.go('/astrologer-login');
   }
 
   /// Permanently deletes the astrologer account immediately (no admin approval)

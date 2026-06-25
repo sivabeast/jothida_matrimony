@@ -159,7 +159,9 @@ class MatchAnalysisBookingCard extends ConsumerWidget {
       case 'accepted':
         return AppColors.info;
       case 'completed':
-        return AppColors.success;
+        // Completed-but-unpaid (a fee is still owed) reads as a
+        // payment-required warning; paid / free completed reads as success.
+        return (r.amount > 0 && !r.paid) ? AppColors.warning : AppColors.success;
       case 'rejected':
         return AppColors.error;
       default:
@@ -177,6 +179,10 @@ class MatchAnalysisBookingCard extends ConsumerWidget {
       case 'accepted':
         return l.statusAccepted;
       case 'completed':
+        // Spec lifecycle: a completed report with an unpaid fee surfaces as
+        // "Completed - Payment Required"; once paid it reads "Paid".
+        if (r.amount > 0 && !r.paid) return 'Completed - Payment Required';
+        if (r.paid) return 'Paid';
         return l.statusCompleted;
       case 'rejected':
         return l.statusRejected;
@@ -218,9 +224,19 @@ class MatchAnalysisBookingCard extends ConsumerWidget {
     final canChat = r.paid &&
         (r.status == AstrologerRequestStatus.accepted ||
             r.status == AstrologerRequestStatus.completed);
-    final canViewReport =
+    // The astrologer has submitted the report (text / images / PDFs).
+    final reportReady =
         r.status == AstrologerRequestStatus.completed && r.hasAnalysis;
-    final canPay = r.awaitingPayment;
+    // A fee is still owed. Free analyses (amount == 0) are never payment-locked.
+    final paymentDue = r.amount > 0 && !r.paid;
+    // PAYMENT LOCK (spec): a completed report is viewable ONLY once paid (or
+    // free). Until then NOTHING that exposes the report/images/PDFs is shown.
+    final canViewReport = reportReady && !paymentDue;
+    // Completed but unpaid → show the locked "Report Ready / Pay Now" card.
+    final reportLocked = reportReady && paymentDue;
+    // Accepted-stage "pay to confirm" is preserved (existing behaviour); paying
+    // at EITHER point marks the booking paid and unlocks the report + chat.
+    final canPayAccepted = r.awaitingPayment;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -291,7 +307,7 @@ class MatchAnalysisBookingCard extends ConsumerWidget {
                 style: TextStyle(fontSize: 12.5, color: Colors.grey[700])),
           ],
           if (r.isEffectivelyExpired) _expirySection(context, ref, r),
-          if (canPay) ...[
+          if (canPayAccepted) ...[
             const SizedBox(height: 10),
             _payBanner(),
             const SizedBox(height: 10),
@@ -309,6 +325,10 @@ class MatchAnalysisBookingCard extends ConsumerWidget {
               ),
             ),
           ],
+          // PAYMENT LOCK — completed report, fee still owed: show ONLY the
+          // "Report Ready" message + a dummy Pay Now button. No report content,
+          // images, PDFs, notes, chat or download are exposed here.
+          if (reportLocked) _reportLockCard(context, ref, r),
           if (canChat || canViewReport) ...[
             const SizedBox(height: 12),
             Row(
@@ -417,11 +437,72 @@ class MatchAnalysisBookingCard extends ConsumerWidget {
     try {
       await ref.read(matchAnalysisControllerProvider.notifier).pay(r);
       messenger.showSnackBar(const SnackBar(
-          content: Text('Payment successful — your booking is confirmed.')));
+          content: Text('Payment successful — your report is unlocked.')));
     } catch (_) {
       messenger.showSnackBar(const SnackBar(
           content: Text('Payment could not be completed. Please try again.')));
     }
+  }
+
+  /// PAYMENT-LOCK card shown when the astrologer has completed the report but
+  /// the user hasn't paid. It exposes NONE of the report (no text, images, PDFs,
+  /// notes or download) — only the spec's "Report Ready" message and a single
+  /// dummy "Pay Now" button. The dummy [_pay] simulates a successful payment;
+  /// once it succeeds the live stream rebuilds this card with the report
+  /// unlocked, so this is trivial to swap for a real gateway later.
+  Widget _reportLockCard(
+      BuildContext context, WidgetRef ref, AstrologerRequestModel r) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.gold.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.gold.withOpacity(0.45)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.lock_outline, size: 18, color: AppColors.primary),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Report Ready',
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Your horoscope matching report has been completed.',
+            style: TextStyle(fontSize: 13, height: 1.4),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Please complete payment to unlock and view the report.',
+            style: TextStyle(fontSize: 13, height: 1.4, color: Colors.grey[700]),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _pay(context, ref, r),
+              icon: const Icon(Icons.lock_open, size: 18),
+              label: Text(r.amount > 0 ? 'Pay Now · ₹${r.amount}' : 'Pay Now'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(46),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Shown on an expired booking — the spec notification copy + (for non-admin

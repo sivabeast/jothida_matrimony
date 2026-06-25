@@ -356,7 +356,7 @@ class HoroscopeMatchDetailScreen extends ConsumerWidget {
             const SizedBox(height: 16),
           ] else
             _noCompatibility(me),
-          _analysisSection(analysis),
+          _analysisSection(context, analysis),
           const SizedBox(height: 16),
           _bookConsultationButton(context, ref),
           const SizedBox(height: 24),
@@ -539,7 +539,8 @@ class HoroscopeMatchDetailScreen extends ConsumerWidget {
       );
 
   // ── Astrologer Analysis (if available) ──
-  Widget _analysisSection(AstrologerRequestModel? analysis) {
+  Widget _analysisSection(
+      BuildContext context, AstrologerRequestModel? analysis) {
     if (analysis == null) {
       return _card(
         title: 'Astrologer Analysis',
@@ -552,6 +553,53 @@ class HoroscopeMatchDetailScreen extends ConsumerWidget {
                 'No astrologer analysis yet. Request one below for an expert '
                 'porutham report.',
                 style: TextStyle(fontSize: 12.5),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    // PAYMENT LOCK: the astrologer's report stays hidden until the fee is paid
+    // (free analyses, amount == 0, are shown immediately). The report content is
+    // never rendered here while locked — only a prompt to pay in My Match
+    // Analysis, where the single payment flow lives.
+    final locked = analysis.amount > 0 && !analysis.paid;
+    if (locked) {
+      return _card(
+        title: 'Astrologer Analysis',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.lock_outline,
+                    size: 16, color: AppColors.primary),
+                const SizedBox(width: 6),
+                const Expanded(
+                  child: Text('Report ready',
+                      style: TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Your horoscope matching report has been completed. Complete '
+              'payment to unlock and view it.',
+              style: TextStyle(fontSize: 12.5, color: Colors.grey[700]),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => context.push('/my-analysis'),
+                icon: const Icon(Icons.lock_open, size: 16),
+                label: const Text('Complete Payment'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  visualDensity: VisualDensity.compact,
+                ),
               ),
             ),
           ],

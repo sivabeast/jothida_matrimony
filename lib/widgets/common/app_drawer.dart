@@ -88,8 +88,22 @@ class AppDrawer extends ConsumerWidget {
             ),
           ),
           const Divider(height: 1),
-          _item(context, Icons.logout, 'Logout', () => _logout(context, ref),
-              color: AppColors.error),
+          // Logout is deliberately NOT routed through [_item] (which pops the
+          // drawer first): popping would deactivate this context before the
+          // confirmation dialog and post-logout navigation run. Instead the
+          // dialog opens over the still-mounted drawer and we navigate via a
+          // router captured before the async gap.
+          ListTile(
+            dense: true,
+            visualDensity: const VisualDensity(vertical: -1),
+            leading: const Icon(Icons.logout, size: 22, color: AppColors.error),
+            title: const Text('Logout',
+                style: TextStyle(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14.5)),
+            onTap: () => _logout(context, ref),
+          ),
           const SizedBox(height: 8),
         ],
       ),
@@ -190,6 +204,10 @@ class AppDrawer extends ConsumerWidget {
 
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
     final l10n = context.l10n;
+    // Capture the router BEFORE the async gap: signing out tears down the home
+    // shell (and this drawer), so `context` may be unmounted by the time we
+    // navigate. The captured GoRouter survives that.
+    final router = GoRouter.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -207,10 +225,12 @@ class AppDrawer extends ConsumerWidget {
         ],
       ),
     );
+    // Only logs out when the user explicitly confirms; Cancel / dismiss is a
+    // no-op and leaves the session intact.
     if (confirmed != true) return;
     await ref.read(authNotifierProvider.notifier).signOut();
     // Matrimony User → return to the User login page only (never the
     // role-selection page).
-    if (context.mounted) context.go('/login');
+    router.go('/login');
   }
 }
