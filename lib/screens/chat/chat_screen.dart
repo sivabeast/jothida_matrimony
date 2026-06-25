@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/chat_model.dart';
+import '../../providers/astrologer_provider.dart';
 import '../../providers/chat_provider.dart';
 
 /// One conversation: realtime message stream + composer.
@@ -39,10 +40,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> _send() async {
     final text = _controller.text.trim();
     if (text.isEmpty || _sending) return;
+    final sent = await _sendText(text);
+    if (sent) _controller.clear();
+  }
+
+  /// Sends [text] as a normal chat message. Used both by the composer's Send
+  /// button and the user's quick-reply buttons (which send instantly, with no
+  /// confirmation dialog). Returns true on success.
+  Future<bool> _sendText(String text) async {
+    final msg = text.trim();
+    if (msg.isEmpty || _sending) return false;
     setState(() => _sending = true);
     try {
-      await ref.read(chatControllerProvider).sendMessage(widget.threadId, text);
-      _controller.clear();
+      await ref.read(chatControllerProvider).sendMessage(widget.threadId, msg);
+      return true;
     } catch (e) {
       debugPrint('[ChatScreen] send failed: $e');
       if (mounted) {
@@ -50,10 +61,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           const SnackBar(content: Text('Message couldn\'t be sent. Please try again.')),
         );
       }
+      return false;
     } finally {
       if (mounted) setState(() => _sending = false);
     }
   }
+
+  Widget _quickReplyChip(String text) => OutlinedButton(
+        onPressed: _sending ? null : () => _sendText(text),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          backgroundColor: AppColors.primary.withOpacity(0.04),
+          side: BorderSide(color: AppColors.primary.withOpacity(0.5)),
+          shape: const StadiumBorder(),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          textStyle:
+              const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
+          visualDensity: VisualDensity.compact,
+        ),
+        child: Text(text),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -66,6 +93,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         thread?.otherName(myUid) ?? widget.extra?['name'] as String? ?? 'Chat';
     final photo =
         thread?.otherPhoto(myUid) ?? widget.extra?['photo'] as String? ?? '';
+
+    // The user's two quick-reply buttons appear ONLY when the other participant
+    // is an astrologer. That single condition also guarantees the ASTROLOGER
+    // never sees them (their counterpart is a user, not an astrologer) and that
+    // ordinary user↔user matrimony chats don't show them either. The `extra`
+    // flag (set when opening from the booking card) shows them instantly; the
+    // provider lookup also covers entry from the Chats list.
+    final otherUid = thread?.otherId(myUid) ?? '';
+    final showUserQuickReplies = widget.extra?['isAstrologer'] == true ||
+        (otherUid.isNotEmpty &&
+            ref.watch(astrologerByIdProvider(otherUid)) != null);
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
@@ -126,6 +164,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               },
             ),
           ),
+          // ── User quick-reply buttons (astrologer chats only) ──
+          // Tapping one sends it INSTANTLY as a normal message (no dialog); the
+          // user can still type custom messages below.
+          if (showUserQuickReplies)
+            Container(
+              width: double.infinity,
+              color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _quickReplyChip(kQuickAskReportEta),
+                    const SizedBox(width: 8),
+                    _quickReplyChip(kQuickAskBookingStatus),
+                  ],
+                ),
+              ),
+            ),
           SafeArea(
             child: Container(
               padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),

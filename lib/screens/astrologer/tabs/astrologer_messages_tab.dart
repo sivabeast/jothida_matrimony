@@ -22,7 +22,12 @@ class AstrologerMessagesTab extends ConsumerWidget {
       error: (_, __) => AstrologerErrorState(
         onRetry: () => ref.invalidate(myChatThreadsProvider),
       ),
-      data: (threads) {
+      data: (allThreads) {
+        // Hide message-less threads (e.g. a booking thread pre-created before
+        // the astrologer accepts) so a still-Pending booking never shows a chat
+        // here — it appears only once the acceptance message is sent.
+        final threads =
+            allThreads.where((t) => t.lastMessage.trim().isNotEmpty).toList();
         if (threads.isEmpty) {
           return const AstrologerEmptyState(
             icon: Icons.chat_bubble_outline,

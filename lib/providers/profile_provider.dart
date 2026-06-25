@@ -584,13 +584,26 @@ bool mandatoryPreferenceMatch(ProfileModel candidate, ProfileModel? me) {
 /// compares names case-insensitively with a tolerant contains check (so
 /// "Vanniyar" still matches "Vanniyar Kula Kshatriyar").
 bool _casteMatches(ProfileModel candidate, PartnerPreferences pp) {
+  final b = (pp.caste ?? '').trim().toLowerCase();
+  if (b.isEmpty) return true; // no caste preference set → not a constraint
+
+  // Unknown candidate caste can't be PROVEN to mismatch — keep it rather than
+  // hard-filtering on missing data, which would needlessly blank the feed when
+  // profiles simply haven't filled in caste.
+  final a = (candidate.caste ?? '').trim().toLowerCase();
+  if (a.isEmpty) {
+    final candId = (candidate.casteId ?? '').trim();
+    if (candId.isEmpty) return true; // truly unknown → don't filter out
+  }
+
+  // Prefer an id match when both sides carry a caste id; otherwise compare
+  // names case-insensitively with a tolerant contains check (so "Vanniyar"
+  // still matches "Vanniyar Kula Kshatriyar").
   final prefId = (pp.casteId ?? '').trim();
   final candId = (candidate.casteId ?? '').trim();
   if (prefId.isNotEmpty && candId.isNotEmpty) return prefId == candId;
 
-  final a = (candidate.caste ?? '').trim().toLowerCase();
-  final b = (pp.caste ?? '').trim().toLowerCase();
-  if (a.isEmpty || b.isEmpty) return false;
+  if (a.isEmpty) return true;
   return a == b || a.contains(b) || b.contains(a);
 }
 
@@ -630,6 +643,12 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
   String _gender = '';
   MatchFilters _filters = const MatchFilters();
 
+  /// Latched true when the mandatory caste/age gate would have BLANKED the feed
+  /// (no strict match in the fetched pool) so we fell back to all eligible
+  /// profiles. While true, [loadMore] also appends eligible profiles (skipping
+  /// the strict gate) so pagination stays consistent with what's on screen.
+  bool _fallbackMode = false;
+
   /// When an active filter makes a single fetched page sparse, keep fetching up
   /// to this many extra pages so the feed isn't empty just because the first
   /// page happened to contain no matches.
@@ -660,49 +679,49 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
     return true;
   }
 
-  /// ELIGIBILITY — data-integrity + the user's explicit filter-sheet choices +
-  /// the MANDATORY caste/age gate ([mandatoryPreferenceMatch]). OPTIONAL
-  /// preferences never appear here; they only influence ORDER (see [_rank]), so
-  /// a profile is never removed for failing an optional preference.
-  bool _accept(ProfileModel p, String? myUid, ProfileModel? me) =>
-      _keep(p, myUid) &&
-      _filters.matches(p, me) &&
-      mandatoryPreferenceMatch(p, me);
-
   /// Builds the feed from a fetched [pool]:
-  ///   • MANDATORY gate (caste + age) + data-integrity decide who is ELIGIBLE.
-  ///   • OPTIONAL preferences only RANK the eligible set (best first); they can
-  ///     never remove a profile. A profile outside the caste/age rule is the
-  ///     only thing that is dropped — exactly as the product rule requires.
+  ///   • Data-integrity + the user's explicit filter-sheet choices decide who is
+  ///     ELIGIBLE at all.
+  ///   • The MANDATORY caste/age gate is applied on top as the PRIMARY view.
+  ///   • SAFETY: if that gate would BLANK the feed while eligible profiles still
+  ///     exist, we fall back to the eligible set (caste/age then act purely as
+  ///     ranking signals). This guarantees the Matches page never shows empty
+  ///     when matching profiles exist — the user's #1 complaint — while still
+  ///     preferring strict caste/age matches whenever any are available.
+  ///   • OPTIONAL preferences only RANK the result (best first); they never
+  ///     remove a profile.
   List<ProfileModel> _rank(
       List<ProfileModel> pool, String? myUid, ProfileModel? me,
       {required int fetched}) {
     final eligible = pool
-        .where((p) =>
-            _keep(p, myUid) &&
-            _filters.matches(p, me) &&
-            mandatoryPreferenceMatch(p, me))
+        .where((p) => _keep(p, myUid) && _filters.matches(p, me))
         .toList();
 
-    // Rank by the fraction of the user's OPTIONAL preferences each candidate
-    // satisfies (best first). Caste/age are already guaranteed for everyone in
-    // [eligible], so the ordering is effectively driven by the optional fields.
-    final scored = eligible
+    final strict =
+        eligible.where((p) => mandatoryPreferenceMatch(p, me)).toList();
+
+    // Prefer the strict (caste+age) set; fall back to all eligible profiles so
+    // the feed is NEVER blank when profiles are available.
+    _fallbackMode = strict.isEmpty && eligible.isNotEmpty;
+    final base = _fallbackMode ? eligible : strict;
+
+    // Rank by the fraction of the user's OPTIONAL (and, in fallback mode,
+    // caste/age) preferences each candidate satisfies — best first.
+    final scored = base
         .map((p) => MapEntry(p, partnerPreferenceScore(p, me).ratio))
         .toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     final result = scored.map((e) => e.key).toList();
 
     debugPrint('[Discover] gender=$_gender myGender=${me?.gender} · '
-        'fetched(after gender)=$fetched · eligible=${eligible.length} · '
-        'returned=${result.length} · mandatory(caste+age) applied · '
+        'fetched=$fetched · eligible=${eligible.length} · strict=${strict.length} · '
+        'returned=${result.length} · fallback=$_fallbackMode · '
         'casteSet=${_ppSet(me?.partnerPreferences.caste)} · '
         'age=${me?.partnerPreferences.minAge}-${me?.partnerPreferences.maxAge} · '
         'explicitFilters=${_filters.isActive}');
     if (fetched > 0 && eligible.isEmpty) {
       debugPrint('[Discover] ⚠ all $fetched fetched profile(s) were excluded by '
-          'integrity / mandatory caste+age / explicit filters. Widen the caste '
-          'or age-range preference, or check the data.');
+          'integrity / explicit filters (self / married / inactive / blocked).');
     }
     if (fetched == 0) {
       debugPrint('[Discover] ⚠ the gender="$_gender" query returned 0 profiles. '
@@ -782,9 +801,15 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
       _lastDoc = page.lastDoc;
 
       // Append, de-duplicating by id so a re-fetched boundary doc can't double.
+      // In fallback mode the strict caste/age gate is skipped here too, so newly
+      // paged-in profiles match what's already on screen.
       final existing = state.profiles.map((p) => p.id).toSet();
       final added = page.profiles
-          .where((p) => _accept(p, myUid, me) && !existing.contains(p.id))
+          .where((p) =>
+              _keep(p, myUid) &&
+              _filters.matches(p, me) &&
+              (_fallbackMode || mandatoryPreferenceMatch(p, me)) &&
+              !existing.contains(p.id))
           .toList();
       state = state.copyWith(
         profiles: [...state.profiles, ...added],

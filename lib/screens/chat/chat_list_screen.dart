@@ -36,7 +36,15 @@ class ChatListScreen extends ConsumerWidget {
             onRetry: () => ref.invalidate(myChatThreadsProvider),
           );
         },
-        data: (threads) {
+        data: (allThreads) {
+          // Hide threads with no messages yet — e.g. a match-analysis booking's
+          // thread that was pre-created so the astrologer can post the
+          // acceptance message into it. Such a thread stays hidden until that
+          // first message arrives (so a still-Pending booking never surfaces a
+          // chat here).
+          final threads = allThreads
+              .where((t) => t.lastMessage.trim().isNotEmpty)
+              .toList();
           if (threads.isEmpty) {
             return const _ChatsPlaceholder(
               icon: Icons.chat_bubble_outline,

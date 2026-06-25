@@ -6,6 +6,20 @@ import 'demo_data_provider.dart';
 import 'profile_provider.dart';
 import 'service_providers.dart';
 
+/// Automatic system message sent FROM the astrologer the moment they accept a
+/// match-analysis booking (status → "In Progress"). The astrologer never types
+/// it — see [ChatController.sendBookingAcceptedMessage].
+const String kBookingAcceptedMessage =
+    '✅ உங்கள் Booking ஏற்றுக்கொள்ளப்பட்டது. '
+    'உங்கள் Match Analysis தற்போது தொடங்கப்பட்டுள்ளது.';
+
+/// The TWO quick-message options shown to the USER inside an astrologer chat.
+/// Tapping one sends it instantly as a normal message (no dialog). The
+/// astrologer never sees these.
+const String kQuickAskReportEta =
+    '📄 என் Match Analysis Report எப்போது கிடைக்கும்?';
+const String kQuickAskBookingStatus = '📅 என் Booking Status என்ன?';
+
 /// Uid of the signed-in person (demo id when auth is bypassed).
 final myUidProvider = Provider<String?>((ref) {
   if (kBypassAuth) return kDemoUserId;
@@ -173,6 +187,31 @@ class ChatController {
     }
     await _ref.read(chatServiceProvider).sendMessage(
         threadId: threadId, senderId: myUid, text: text.trim());
+  }
+
+  /// Automatically sends the booking-accepted system message FROM the signed-in
+  /// astrologer into the thread with [userUid] (creating the thread if needed),
+  /// the instant a match-analysis request is accepted.
+  ///
+  /// Best-effort: a chat hiccup (e.g. rules not yet deployed) must NEVER block
+  /// the accept action, so failures are swallowed. With the relaxed `chats`
+  /// create rule the astrologer can create the thread here; the user can also
+  /// open it later from their booking card either way.
+  Future<void> sendBookingAcceptedMessage({
+    required String userUid,
+    required String userName,
+    required String userPhoto,
+  }) async {
+    try {
+      final threadId = await openChatWith(
+        otherUid: userUid,
+        otherName: userName.trim().isEmpty ? 'User' : userName.trim(),
+        otherPhoto: userPhoto,
+      );
+      await sendMessage(threadId, kBookingAcceptedMessage);
+    } catch (_) {
+      // Intentionally ignored — accept must succeed regardless.
+    }
   }
 
   Future<void> markRead(String threadId) async {

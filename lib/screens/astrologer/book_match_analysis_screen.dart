@@ -84,6 +84,7 @@ class _BookMatchAnalysisScreenState
       await ref.read(matchAnalysisControllerProvider.notifier).book(
             astrologerId: astrologer.id,
             astrologerName: astrologer.name,
+            astrologerPhoto: astrologer.photoUrl,
             amount: _matchFee(astrologer),
             groom: groom,
             bride: bride,

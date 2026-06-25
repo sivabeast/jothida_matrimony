@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
@@ -12,6 +13,7 @@ import '../../core/utils/file_actions.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../models/profile_model.dart';
 import '../../providers/astrologer_session_provider.dart';
+import '../../providers/chat_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../widgets/common/rasi_chart.dart';
@@ -108,9 +110,19 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
               amount: widget.request.amount,
             );
       }
+      // On ACCEPT the booking is now "In Progress" and chat opens for both
+      // sides — auto-send the booking-accepted system message to the user
+      // (best-effort; never blocks the accept).
+      if (status == AstrologerRequestStatus.accepted) {
+        await ref.read(chatControllerProvider).sendBookingAcceptedMessage(
+              userUid: widget.request.userId,
+              userName: widget.request.userName,
+              userPhoto: widget.request.userPhotoUrl,
+            );
+      }
       if (!mounted) return;
       _snack(status == AstrologerRequestStatus.accepted
-          ? 'Request accepted — you can submit the analysis now.'
+          ? 'Request accepted — chat is now open with the user.'
           : 'Request rejected.');
     } catch (_) {
       if (mounted) _snack('Could not update. Please try again.');
@@ -195,11 +207,45 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Chat opens for both sides once the request is accepted
+            // ("In Progress"). The astrologer types normally — only the
+            // acceptance message is automatic.
+            _chatWithUserButton(r),
+            const SizedBox(height: 18),
             const _SectionTitle('🔮 Your Analysis'),
             const SizedBox(height: 8),
             _analysisEditor(r),
           ],
         );
+    }
+  }
+
+  Widget _chatWithUserButton(AstrologerRequestModel r) => SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () => _openChat(r),
+          icon: const Icon(Icons.chat_bubble_outline, size: 18),
+          label: const Text('Chat with User'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary),
+            minimumSize: const Size.fromHeight(46),
+          ),
+        ),
+      );
+
+  Future<void> _openChat(AstrologerRequestModel r) async {
+    final name = r.userName.trim().isEmpty ? 'User' : r.userName.trim();
+    try {
+      final id = await ref.read(chatControllerProvider).openChatWith(
+            otherUid: r.userId,
+            otherName: name,
+            otherPhoto: r.userPhotoUrl,
+          );
+      if (!mounted) return;
+      context.push('/chat/$id', extra: {'name': name, 'photo': r.userPhotoUrl});
+    } catch (_) {
+      if (mounted) _snack('Could not open chat. Please try again.');
     }
   }
 

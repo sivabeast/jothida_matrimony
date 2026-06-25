@@ -6,6 +6,7 @@ import '../models/astrologer_request_model.dart';
 import '../models/profile_model.dart';
 import 'astrologer_session_provider.dart';
 import 'auth_provider.dart';
+import 'chat_provider.dart';
 import 'interest_provider.dart';
 import 'locale_provider.dart';
 import 'profile_provider.dart';
@@ -104,6 +105,7 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     required ProfileModel groom,
     required ProfileModel bride,
     required String note,
+    String astrologerPhoto = '',
     BookingReassignMode reassignMode = BookingReassignMode.waitOnly,
   }) async {
     state = const AsyncLoading();
@@ -150,6 +152,19 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
       } else {
         await ref.read(astrologerServiceProvider).createRequest(request);
       }
+      // Pre-create the chat thread NOW (user-initiated → always allowed by the
+      // chat rules) so the astrologer can drop the automatic "booking accepted"
+      // message straight into the existing thread on accept — without needing
+      // thread-CREATE permission. The thread stays empty (and hidden from the
+      // Chats list) until that first message arrives on accept. Best-effort:
+      // never let a chat hiccup fail the booking.
+      try {
+        await ref.read(chatControllerProvider).openChatWith(
+              otherUid: astrologerId,
+              otherName: astrologerName,
+              otherPhoto: astrologerPhoto,
+            );
+      } catch (_) {}
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);

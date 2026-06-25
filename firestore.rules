@@ -372,8 +372,11 @@ service cloud.firestore {
 
     // ── Chats ─────────────────────────────────────────────────────────────
     // Only the two participants may read or write a thread / its messages.
-    // BUSINESS RULE: astrologers must not initiate contact with users, so an
-    // astrologer cannot create a chat thread.
+    // BUSINESS RULE: astrologers must not COLD-initiate contact, so an
+    // astrologer cannot CREATE a thread. The match-analysis flow still gets its
+    // automatic "booking accepted" message because the thread is pre-created by
+    // the USER at booking time — the astrologer only SENDS into that existing
+    // thread on accept (allowed below for any participant), never creating one.
     match /chats/{threadId} {
       allow read, update: if isAuthenticated()
                           && request.auth.uid in resource.data.participantIds;

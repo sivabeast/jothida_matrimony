@@ -177,7 +177,9 @@ class MatchAnalysisBookingCard extends ConsumerWidget {
       case 'reassigned':
         return l.statusReassigned;
       case 'accepted':
-        return l.statusAccepted;
+        // Booking flow: once the astrologer accepts, the booking is shown to
+        // the user as "In Progress" (work has begun and chat is open).
+        return 'In Progress';
       case 'completed':
         // Spec lifecycle: a completed report with an unpaid fee surfaces as
         // "Completed - Payment Required"; once paid it reads "Paid".
@@ -207,6 +209,9 @@ class MatchAnalysisBookingCard extends ConsumerWidget {
         'name':
             request.astrologerName.isEmpty ? 'Astrologer' : request.astrologerName,
         'photo': photo,
+        // The other party is the astrologer → the user sees the two quick-reply
+        // buttons in this chat.
+        'isAstrologer': true,
       });
     } catch (_) {
       if (!context.mounted) return;
@@ -219,11 +224,11 @@ class MatchAnalysisBookingCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final r = request;
     final color = _statusColor(r);
-    // Chat is gated on payment + approval: only an accepted-AND-paid (or
-    // completed) booking unlocks chat. No payment / pending = no chat.
-    final canChat = r.paid &&
-        (r.status == AstrologerRequestStatus.accepted ||
-            r.status == AstrologerRequestStatus.completed);
+    // Chat opens the moment the astrologer accepts ("In Progress") and stays
+    // open through completion — DECOUPLED from payment. Pending = no chat; only
+    // the final REPORT is payment-locked (below).
+    final canChat = r.status == AstrologerRequestStatus.accepted ||
+        r.status == AstrologerRequestStatus.completed;
     // The astrologer has submitted the report (text / images / PDFs).
     final reportReady =
         r.status == AstrologerRequestStatus.completed && r.hasAnalysis;
@@ -234,9 +239,6 @@ class MatchAnalysisBookingCard extends ConsumerWidget {
     final canViewReport = reportReady && !paymentDue;
     // Completed but unpaid → show the locked "Report Ready / Pay Now" card.
     final reportLocked = reportReady && paymentDue;
-    // Accepted-stage "pay to confirm" is preserved (existing behaviour); paying
-    // at EITHER point marks the booking paid and unlocks the report + chat.
-    final canPayAccepted = r.awaitingPayment;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -307,27 +309,10 @@ class MatchAnalysisBookingCard extends ConsumerWidget {
                 style: TextStyle(fontSize: 12.5, color: Colors.grey[700])),
           ],
           if (r.isEffectivelyExpired) _expirySection(context, ref, r),
-          if (canPayAccepted) ...[
-            const SizedBox(height: 10),
-            _payBanner(),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => _pay(context, ref, r),
-                icon: const Icon(Icons.payment, size: 18),
-                label: Text('Pay ₹${r.amount}'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(44),
-                ),
-              ),
-            ),
-          ],
           // PAYMENT LOCK — completed report, fee still owed: show ONLY the
           // "Report Ready" message + a dummy Pay Now button. No report content,
-          // images, PDFs, notes, chat or download are exposed here.
+          // images, PDFs, notes or download are exposed here. (Chat is still
+          // available — it is not payment-gated.)
           if (reportLocked) _reportLockCard(context, ref, r),
           if (canChat || canViewReport) ...[
             const SizedBox(height: 12),
@@ -410,26 +395,6 @@ class MatchAnalysisBookingCard extends ConsumerWidget {
       ),
     );
   }
-
-  Widget _payBanner() => Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: AppColors.info.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.check_circle_outline, size: 16, color: AppColors.info),
-            SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Accepted! Complete the payment to confirm your analysis.',
-                style: TextStyle(fontSize: 12.5),
-              ),
-            ),
-          ],
-        ),
-      );
 
   Future<void> _pay(
       BuildContext context, WidgetRef ref, AstrologerRequestModel r) async {
