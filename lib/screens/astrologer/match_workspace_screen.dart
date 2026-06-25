@@ -290,6 +290,8 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
   Future<void> _openChat(AstrologerRequestModel r) async {
     final name = r.userName.trim().isEmpty ? 'User' : r.userName.trim();
     try {
+      debugPrint('[MatchWorkspace] astrologer open chat → request=${r.id} '
+          'userId=${r.userId} astrologerId=${r.astrologerId}');
       final id = await ref.read(chatControllerProvider).openChatWith(
             otherUid: r.userId,
             otherName: name,
@@ -297,7 +299,9 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
           );
       if (!mounted) return;
       context.push('/chat/$id', extra: {'name': name, 'photo': r.userPhotoUrl});
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('[MatchWorkspace] astrologer open chat FAILED '
+          '(request=${r.id}, userId=${r.userId}): $e\n$st');
       if (mounted) _snack('Could not open chat. Please try again.');
     }
   }

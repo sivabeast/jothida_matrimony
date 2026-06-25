@@ -232,6 +232,8 @@ class ConsultationBookingCard extends ConsumerWidget {
       BuildContext context, WidgetRef ref, ConsultationBooking b) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
+      debugPrint('[MyConsultations] open chat → booking=${b.id} '
+          'astrologerId=${b.astrologerId} userId=${b.userId}');
       final id = await ref.read(chatControllerProvider).openChatWith(
             otherUid: b.astrologerId,
             otherName: b.astrologerName.isEmpty
@@ -243,8 +245,12 @@ class ConsultationBookingCard extends ConsumerWidget {
       context.push('/chat/$id', extra: {
         'name': b.astrologerName.isEmpty ? 'Astrologer' : b.astrologerName,
         'photo': '',
+        // The other party is the astrologer → show the user's quick replies.
+        'isAstrologer': true,
       });
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('[MyConsultations] open chat FAILED (booking=${b.id}, '
+          'astrologerId=${b.astrologerId}): $e\n$st');
       messenger.showSnackBar(
           const SnackBar(content: Text('Could not open chat. Try again.')));
     }
