@@ -1,14 +1,32 @@
 import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/navigation/root_navigator.dart';
 
+/// Background isolate handler. Must be a top-level / static function annotated
+/// with `@pragma('vm:entry-point')`. The system tray notification is shown
+/// automatically by the OS from the message's `notification` block, so there is
+/// nothing to render here — we only log.
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint('FCM background message: ${message.messageId}');
 }
 
+/// Firebase Cloud Messaging integration (spec §8/§12).
+///
+/// Client responsibilities (delivery is triggered server-side by Cloud
+/// Functions — see `functions/index.js`):
+///   • request notification permission,
+///   • register the device token (done at login via [saveTokenToFirestore] /
+///     `AuthRepository`),
+///   • show a foreground in-app banner when a push arrives while the app is
+///     open (the OS shows the tray notification when it's backgrounded), and
+///   • deep-link to the right booking when the user taps a notification —
+///     foreground, background, or cold start — using the `route` in the
+///     message data payload.
 class FcmService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -23,9 +41,70 @@ class FcmService {
     );
     debugPrint('FCM permission: ${settings.authorizationStatus}');
 
-    FirebaseMessaging.onMessage.listen((message) {
-      debugPrint('FCM foreground: ${message.notification?.title}');
-    });
+    // Foreground messages → show an in-app banner; the OS does NOT show a tray
+    // notification while the app is open.
+    FirebaseMessaging.onMessage.listen(_showForegroundBanner);
+
+    // Tap on a tray notification while the app is backgrounded.
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleTap);
+
+    // App opened from a terminated state by tapping a notification.
+    final initial = await _messaging.getInitialMessage();
+    if (initial != null) {
+      // Defer until the first frame so the router/navigator exists.
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _handleTap(initial));
+    }
+  }
+
+  /// Shows a foreground SnackBar with a "View" action that opens the booking.
+  void _showForegroundBanner(RemoteMessage message) {
+    final n = message.notification;
+    final title = n?.title ?? message.data['title']?.toString() ?? '';
+    final body = n?.body ?? message.data['body']?.toString() ?? '';
+    debugPrint('FCM foreground: $title');
+    final messenger = rootScaffoldMessengerKey.currentState;
+    if (messenger == null) return;
+    final route = message.data['route']?.toString();
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        duration: const Duration(seconds: 5),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (title.isNotEmpty)
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            if (body.isNotEmpty) Text(body),
+          ],
+        ),
+        action: (route != null && route.isNotEmpty)
+            ? SnackBarAction(
+                label: 'View', onPressed: () => _navigate(route))
+            : null,
+      ));
+  }
+
+  /// Opens the booking referenced by a tapped notification.
+  void _handleTap(RemoteMessage message) {
+    final route = message.data['route']?.toString();
+    if (route != null && route.isNotEmpty) _navigate(route);
+  }
+
+  /// Navigates to [route] using the root navigator (works regardless of which
+  /// screen is currently shown).
+  void _navigate(String route) {
+    final ctx = rootNavigatorKey.currentContext;
+    if (ctx == null) {
+      // Router not ready yet (cold start) — retry on the next frame.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final c = rootNavigatorKey.currentContext;
+        if (c != null) c.push(route);
+      });
+      return;
+    }
+    ctx.push(route);
   }
 
   Future<String?> getToken() async {
@@ -63,8 +142,8 @@ class FcmService {
   Future<void> subscribeToTopic(String topic) => _messaging.subscribeToTopic(topic);
   Future<void> unsubscribeFromTopic(String topic) => _messaging.unsubscribeFromTopic(topic);
 
-  /// Helper to build notification payload stored in Firestore;
-  /// actual push is triggered by Cloud Functions (serverside).
+  /// Helper to build a notification payload stored in Firestore; the actual
+  /// device push is triggered by the `notifications`-onCreate Cloud Function.
   static Map<String, dynamic> buildPayload({
     required String userId,
     required String title,

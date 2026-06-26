@@ -7,11 +7,8 @@ import '../../../core/utils/l10n_ext.dart';
 import '../../../models/astrologer_account_model.dart';
 import '../../../models/astrologer_plan.dart';
 import '../../../models/astrologer_request_model.dart';
-import '../../../models/consultation_model.dart';
 import '../../../providers/astrologer_dashboard_provider.dart';
 import '../../../providers/astrologer_session_provider.dart';
-import '../../../providers/consultation_provider.dart';
-import '../../../providers/match_analysis_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../providers/service_providers.dart';
 import '../profile/astrologer_availability_screen.dart';
@@ -19,17 +16,17 @@ import 'astrologer_common.dart';
 
 /// Dashboard overview for the marketplace astrologer.
 ///
-/// The dashboard is request-first: real-time NEW REQUEST notifications sit at
-/// the very top, followed by the live Match-Analysis request LIST (with inline
-/// Accept / Status / View actions) and the consultation queue. Revenue,
-/// customer/rating stats and the subscription card come below. Approval status
-/// lives in the top header (not as a card here); there is no Quick Actions
-/// section. Revenue counts COMPLETED requests only.
+/// The dashboard no longer lists request cards (spec §1) — those live on the
+/// dedicated Requests page. Instead a single compact UNREAD banner sits at the
+/// top; tapping it opens the Requests page and clears the badge. Below it sit
+/// availability, revenue, customer/rating stats and the subscription card.
+/// Approval status lives in the top header. Revenue counts COMPLETED requests
+/// only.
 class AstrologerOverviewTab extends ConsumerWidget {
-  /// Lets a section switch the dashboard's bottom-nav tab (Reviews,
-  /// Notifications) that live as siblings of this tab.
-  final void Function(int index)? onSelectTab;
-  const AstrologerOverviewTab({super.key, this.onSelectTab});
+  /// Opens the dashboard's Requests bottom-nav tab (optionally on a sub-tab:
+  /// 0 = Match Analysis, 1 = Direct Visit) and clears the unread banner.
+  final void Function([int subTab])? onOpenRequests;
+  const AstrologerOverviewTab({super.key, this.onOpenRequests});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,14 +40,8 @@ class AstrologerOverviewTab extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
         if (!account.isApproved) _verificationBanner(context, ref, account),
-        // ── New requests (real-time notifications) ──────────────────────────
-        _newRequestsSection(context, ref),
-        const SizedBox(height: 18),
-        // ── Match Analysis Requests (the dashboard's primary focus) ─────────
-        _matchRequestsSection(context, requests),
-        const SizedBox(height: 18),
-        // ── Consultation requests ───────────────────────────────────────────
-        _consultationSection(context, ref),
+        // ── Compact unread "new requests" banner (spec §1) ──────────────────
+        _newRequestsBanner(context, ref),
         const SizedBox(height: 18),
         // ── Availability (working days + manual on/off) ─────────────────────
         _availabilityCard(context, ref, account),
@@ -102,201 +93,92 @@ class AstrologerOverviewTab extends ConsumerWidget {
     );
   }
 
-  // ── New requests (real-time top notifications) ─────────────────────────────
-  /// Live feed of the latest incoming work (match-analysis requests +
-  /// consultations), newest first, so a new booking surfaces at the TOP of the
-  /// dashboard the instant the user creates it — no manual refresh.
-  Widget _newRequestsSection(BuildContext context, WidgetRef ref) {
-    final items = ref.watch(astrologerInboxProvider);
-    final pending = ref.watch(astrologerPendingInboxCountProvider);
-    final recent = items.take(4).toList();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+  // ── Compact unread "new requests" banner (spec §1) ─────────────────────────
+  /// A single unread-style banner replacing the old request lists. Shows a red
+  /// dot + a count-aware message ("New Match Analysis Request Received",
+  /// "3 New Match Analysis Requests", "New Direct Visit Booking"). Tapping opens
+  /// the Requests page on the matching tab and clears the badge.
+  Widget _newRequestsBanner(BuildContext context, WidgetRef ref) {
+    final matchNew = ref.watch(newMatchAnalysisCountProvider);
+    final visitNew = ref.watch(newDirectVisitCountProvider);
+    final total = matchNew + visitNew;
+
+    if (total == 0) {
+      return AstrologerCard(
+        onTap: () => onOpenRequests?.call(0),
+        child: Row(
           children: [
-            const AstrologerSectionTitle('New Requests'),
-            const Spacer(),
-            if (pending > 0)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(20)),
-                child: Text('$pending new',
-                    style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.error)),
-              ),
+            Icon(Icons.inbox_outlined, size: 18, color: Colors.grey[400]),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text('No new requests right now. Tap to view all requests.',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12.5)),
+            ),
+            const Icon(Icons.chevron_right, size: 18, color: Colors.grey),
           ],
         ),
-        if (recent.isEmpty)
-          AstrologerCard(
-            child: Row(
-              children: [
-                Icon(Icons.notifications_none, size: 18, color: Colors.grey[400]),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                      'New booking & consultation requests appear here in real time.',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12.5)),
-                ),
-              ],
-            ),
-          )
-        else
-          for (final item in recent)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _InboxTile(item: item),
-            ),
-      ],
-    );
-  }
-
-  // ── Match Analysis Requests (request list = primary focus) ─────────────────
-  Widget _matchRequestsSection(
-      BuildContext context, List<AstrologerRequestModel> requests) {
-    final matching = requests.where((r) => r.isMatchAnalysis).toList();
-    int countOf(AstrologerRequestStatus s) =>
-        matching.where((r) => r.status == s).length;
-    final pending = countOf(AstrologerRequestStatus.pending);
-    final accepted = countOf(AstrologerRequestStatus.accepted);
-    final completed = countOf(AstrologerRequestStatus.completed);
-
-    // Order the list so actionable requests come first: pending, then accepted,
-    // then completed / rejected — each group newest-first.
-    int rank(AstrologerRequestStatus s) {
-      switch (s) {
-        case AstrologerRequestStatus.pending:
-          return 0;
-        case AstrologerRequestStatus.accepted:
-          return 1;
-        case AstrologerRequestStatus.completed:
-          return 2;
-        case AstrologerRequestStatus.rejected:
-          return 3;
-      }
+      );
     }
 
-    final sorted = [...matching]..sort((a, b) {
-        final r = rank(a.status).compareTo(rank(b.status));
-        return r != 0 ? r : b.createdAt.compareTo(a.createdAt);
-      });
-    final shown = sorted.take(5).toList();
+    final String message;
+    final int subTab;
+    if (matchNew > 0 && visitNew > 0) {
+      message = '$total New Requests';
+      subTab = 0;
+    } else if (matchNew > 0) {
+      message = matchNew == 1
+          ? 'New Match Analysis Request Received'
+          : '$matchNew New Match Analysis Requests';
+      subTab = 0;
+    } else {
+      message = visitNew == 1
+          ? 'New Direct Visit Booking'
+          : '$visitNew New Direct Visit Bookings';
+      subTab = 1;
+    }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () => onOpenRequests?.call(subTab),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.error.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.error.withOpacity(0.25)),
+        ),
+        child: Row(
           children: [
-            const AstrologerSectionTitle('Match Analysis Requests'),
-            const Spacer(),
-            if (matching.isNotEmpty)
-              TextButton(
-                onPressed: () => context.push('/match-requests'),
-                style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    visualDensity: VisualDensity.compact),
-                child: Text('View All (${matching.length})'),
-              ),
+            Container(
+              width: 10,
+              height: 10,
+              decoration: const BoxDecoration(
+                  color: AppColors.error, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(message,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: AppColors.error)),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+              decoration: BoxDecoration(
+                  color: AppColors.error,
+                  borderRadius: BorderRadius.circular(20)),
+              child: Text('$total',
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white)),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right, size: 20, color: AppColors.error),
           ],
         ),
-        if (matching.isEmpty)
-          AstrologerCard(
-            child: Row(
-              children: [
-                Icon(Icons.favorite_outline, size: 18, color: Colors.grey[400]),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text('No porutham / match-analysis requests yet.',
-                      style:
-                          TextStyle(color: Colors.grey[600], fontSize: 12.5)),
-                ),
-              ],
-            ),
-          )
-        else ...[
-          for (final r in shown)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _DashboardRequestTile(request: r),
-            ),
-          const SizedBox(height: 6),
-          // Summary counters sit BELOW the request list (secondary).
-          Row(
-            children: [
-              Expanded(child: _countChip('Pending', pending, AppColors.warning)),
-              const SizedBox(width: 10),
-              Expanded(child: _countChip('Accepted', accepted, AppColors.info)),
-              const SizedBox(width: 10),
-              Expanded(
-                  child: _countChip('Completed', completed, AppColors.success)),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-
-  // ── Consultation requests ──────────────────────────────────────────────────
-  Widget _consultationSection(BuildContext context, WidgetRef ref) {
-    final all = ref.watch(astrologerConsultationsProvider).valueOrNull ??
-        const <ConsultationBooking>[];
-    final pending =
-        all.where((c) => c.status == ConsultationStatus.pending).length;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const AstrologerSectionTitle('Consultation Requests'),
-        AstrologerCard(
-          onTap: () => context.push('/consultation-requests'),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
-                child: const Icon(Icons.event_note_outlined,
-                    size: 19, color: AppColors.primary),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('In-App & Direct-Visit consultations',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 13.5)),
-                    const SizedBox(height: 2),
-                    Text(
-                        all.isEmpty
-                            ? 'No consultation requests yet.'
-                            : '${all.length} total · $pending pending',
-                        style:
-                            TextStyle(fontSize: 12, color: Colors.grey[600])),
-                  ],
-                ),
-              ),
-              if (pending > 0)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
-                      color: AppColors.warning.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(20)),
-                  child: Text('$pending',
-                      style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.warning)),
-                ),
-              const SizedBox(width: 6),
-              const Icon(Icons.arrow_forward_ios, size: 14),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -350,24 +232,6 @@ class AstrologerOverviewTab extends ConsumerWidget {
       ],
     );
   }
-
-  Widget _countChip(String label, int count, Color color) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.10),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Text('$count',
-                style: TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 20, color: color)),
-            const SizedBox(height: 2),
-            Text(label,
-                style: TextStyle(fontSize: 11.5, color: Colors.grey[700])),
-          ],
-        ),
-      );
 
   // ── Subscription card (Monthly / Yearly only) ──────────────────────────────
   Widget _subscriptionCard(
@@ -961,282 +825,6 @@ class AstrologerOverviewTab extends ConsumerWidget {
   }
 }
 
-// ── Tiles ────────────────────────────────────────────────────────────────────
-
-/// One row in the dashboard's "New Requests" feed (a match-analysis request or
-/// a consultation), with an Open button that jumps to the right place.
-class _InboxTile extends StatelessWidget {
-  final AstrologerInboxItem item;
-  const _InboxTile({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = item.isPending
-        ? AppColors.warning
-        : item.statusLabel == 'Completed'
-            ? AppColors.success
-            : AppColors.info;
-    return AstrologerCard(
-      onTap: () => _open(context),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.primary.withOpacity(0.1),
-            backgroundImage: item.userPhotoUrl.isNotEmpty
-                ? NetworkImage(item.userPhotoUrl)
-                : null,
-            child: item.userPhotoUrl.isEmpty
-                ? Text(item.userName.isNotEmpty ? item.userName[0] : '?',
-                    style: const TextStyle(
-                        color: AppColors.primary, fontWeight: FontWeight.bold))
-                : null,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(item.userName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 14)),
-                const SizedBox(height: 2),
-                Text('${item.typeLabel} · ${astrologerDateTime(item.createdAt)}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
-                const SizedBox(height: 4),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                      color: color.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(20)),
-                  child: Text(item.statusLabel,
-                      style: TextStyle(
-                          fontSize: 10.5,
-                          color: color,
-                          fontWeight: FontWeight.w600)),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          OutlinedButton(
-            onPressed: () => _open(context),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              side: const BorderSide(color: AppColors.primary),
-              visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-            ),
-            child: const Text('Open'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _open(BuildContext context) {
-    if (item.kind == AstrologerInboxKind.matchRequest && item.request != null) {
-      context.push('/match-workspace/${item.request!.id}', extra: item.request);
-    } else {
-      context.push('/consultation-requests');
-    }
-  }
-}
-
-/// One row in the dashboard's Match-Analysis request LIST, with the status-aware
-/// inline action: Accept (pending) · Status (accepted) · View (completed). The
-/// whole tile also opens the Status page.
-class _DashboardRequestTile extends ConsumerStatefulWidget {
-  final AstrologerRequestModel request;
-  const _DashboardRequestTile({required this.request});
-
-  @override
-  ConsumerState<_DashboardRequestTile> createState() =>
-      _DashboardRequestTileState();
-}
-
-class _DashboardRequestTileState extends ConsumerState<_DashboardRequestTile> {
-  bool _busy = false;
-
-  Future<void> _accept() async {
-    setState(() => _busy = true);
-    try {
-      await ref
-          .read(matchAnalysisControllerProvider.notifier)
-          .setStatus(widget.request, AstrologerRequestStatus.accepted);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Request accepted — chat is now open with the user.')));
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Could not accept. Please try again.'),
-            backgroundColor: AppColors.error));
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  void _open() => context.push('/match-workspace/${widget.request.id}',
-      extra: widget.request);
-
-  Color _statusColor(AstrologerRequestStatus s) {
-    switch (s) {
-      case AstrologerRequestStatus.pending:
-        return AppColors.warning;
-      case AstrologerRequestStatus.accepted:
-        return AppColors.info;
-      case AstrologerRequestStatus.completed:
-        return AppColors.success;
-      case AstrologerRequestStatus.rejected:
-        return AppColors.error;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final r = widget.request;
-    final color = _statusColor(r.status);
-    return AstrologerCard(
-      onTap: _open,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
-                backgroundImage: r.userPhotoUrl.isNotEmpty
-                    ? NetworkImage(r.userPhotoUrl)
-                    : null,
-                child: r.userPhotoUrl.isEmpty
-                    ? Text(r.userName.isNotEmpty ? r.userName[0] : '?',
-                        style: const TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold))
-                    : null,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(r.userName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 14)),
-                    const SizedBox(height: 2),
-                    Text(
-                        '${r.groomName ?? 'Groom'} × ${r.brideName ?? 'Bride'}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style:
-                            TextStyle(fontSize: 12, color: Colors.grey[700])),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(20)),
-                child: Text(r.status.label,
-                    style: TextStyle(
-                        fontSize: 10.5,
-                        color: color,
-                        fontWeight: FontWeight.w600)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Text(astrologerDateTime(r.createdAt),
-                  style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-              if (r.amount > 0) ...[
-                const SizedBox(width: 8),
-                Text('₹${r.amount}',
-                    style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary)),
-              ],
-              const Spacer(),
-              _action(r),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _action(AstrologerRequestModel r) {
-    switch (r.status) {
-      case AstrologerRequestStatus.pending:
-        return ElevatedButton(
-          onPressed: _busy ? null : _accept,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            visualDensity: VisualDensity.compact,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-          ),
-          child: _busy
-              ? const SizedBox(
-                  height: 14,
-                  width: 14,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white))
-              : const Text('Accept'),
-        );
-      case AstrologerRequestStatus.accepted:
-        // The spec's "Status" button — visible only after acceptance — opens
-        // the Status page where the astrologer updates progress & submits the
-        // report.
-        return ElevatedButton.icon(
-          onPressed: _open,
-          icon: const Icon(Icons.timeline, size: 16),
-          label: const Text('Status'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.info,
-            foregroundColor: Colors.white,
-            visualDensity: VisualDensity.compact,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-          ),
-        );
-      case AstrologerRequestStatus.completed:
-        return OutlinedButton.icon(
-          onPressed: _open,
-          icon: const Icon(Icons.visibility_outlined, size: 16),
-          label: const Text('View'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.primary),
-            visualDensity: VisualDensity.compact,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-          ),
-        );
-      case AstrologerRequestStatus.rejected:
-        return TextButton(
-          onPressed: _open,
-          style: TextButton.styleFrom(
-              foregroundColor: Colors.grey[600],
-              visualDensity: VisualDensity.compact),
-          child: const Text('View'),
-        );
-    }
-  }
-}
 
 class _StatCard extends StatelessWidget {
   final String label;

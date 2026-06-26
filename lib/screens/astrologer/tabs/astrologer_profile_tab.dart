@@ -9,6 +9,7 @@ import '../../../providers/service_providers.dart';
 import '../profile/astrologer_certificates_screen.dart';
 import '../profile/astrologer_profile_sections.dart';
 import 'astrologer_common.dart';
+import 'astrologer_reviews_tab.dart';
 
 /// The astrologer's profile — a professional account-management home: identity
 /// header (photo, name, rating, location) + sections that each open their own
@@ -83,6 +84,17 @@ class _AstrologerProfileTabState extends ConsumerState<AstrologerProfileTab> {
         _menuItem(Icons.event_available_outlined, 'Working Days',
             'Set your working days & availability',
             () => _open(const AstrologerWorkingDaysScreen())),
+        _menuItem(Icons.star_outline, 'Reviews & Ratings',
+            'Your reputation and star breakdown',
+            () => _open(Scaffold(
+                  backgroundColor: AppColors.scaffoldBg,
+                  appBar: AppBar(
+                    title: const Text('Reviews & Ratings'),
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  body: const AstrologerReviewsTab(),
+                ))),
         _menuItem(Icons.workspace_premium_outlined, 'Certificates',
             'Upload & manage verification documents',
             () => _open(const AstrologerCertificatesScreen())),

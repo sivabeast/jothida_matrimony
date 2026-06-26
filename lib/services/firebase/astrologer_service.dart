@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../core/constants/app_constants.dart';
+import '../../core/utils/working_hours.dart';
 import '../../models/astrologer_account_model.dart';
 import '../../models/astrologer_model.dart' as model;
 import '../../models/astrologer_request_model.dart';
@@ -169,13 +170,15 @@ class AstrologerService {
   /// notifications (security rules), and the recipient reads their own. Never
   /// throws — a notification hiccup must not fail the verification action.
   Future<void> _notify(
-      String uid, String title, String body, String type) async {
+      String uid, String title, String body, String type,
+      {Map<String, dynamic>? data}) async {
     try {
       await _db.collection(AppConstants.notificationsCollection).add({
         'userId': uid,
         'title': title,
         'body': body,
         'type': type,
+        if (data != null) 'data': data,
         'isRead': false,
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -207,23 +210,60 @@ class AstrologerService {
 
   // ── Requests (consultations / inquiries / horoscope matching) ──────────
   Future<void> createRequest(AstrologerRequestModel request) async {
-    await _db
+    final doc = await _db
         .collection(AppConstants.astrologerRequestsCollection)
         .add(request.toFirestore());
-    // Notify the astrologer of the new request and confirm submission to the
-    // user (spec: "Booking Submitted").
+    // Notify the astrologer of the new (already-paid) request. The notification
+    // data carries the booking id + a deep-link route so the FCM tap handler
+    // and the in-app inbox can open the exact booking (spec §8).
     await _notify(
-        request.astrologerId,
-        'New ${request.type.label} Request',
-        '${request.userName} has requested a ${request.type.label}.',
-        'booking_submitted');
+      request.astrologerId,
+      'New ${request.type.label} Request',
+      request.isMatchAnalysis
+          ? '${request.userName} paid for a match analysis. Accept within 12 '
+              'working hours.'
+          : '${request.userName} has requested a ${request.type.label}.',
+      'new_match_analysis',
+      data: {
+        'requestId': doc.id,
+        'route': '/match-workspace/${doc.id}',
+        'tab': 'matchAnalysis',
+      },
+    );
+    // Confirm to the user that payment succeeded and the booking is on its way
+    // (spec §4: pay online → booking created → reaches astrologer).
     if (request.userId.trim().isNotEmpty) {
       await _notify(
-          request.userId,
-          'Booking Submitted',
-          'Your ${request.type.label} request has been sent to '
-              '${request.astrologerName.isEmpty ? 'the astrologer' : request.astrologerName}.',
-          'booking_submitted');
+        request.userId,
+        request.paid ? 'Payment Successful' : 'Booking Submitted',
+        request.paid
+            ? 'Your payment was received and your match-analysis booking has '
+                'been sent to ${request.astrologerName.isEmpty ? 'the astrologer' : request.astrologerName}.'
+            : 'Your ${request.type.label} request has been sent to '
+                '${request.astrologerName.isEmpty ? 'the astrologer' : request.astrologerName}.',
+        'booking_submitted',
+        data: {'requestId': doc.id, 'route': '/my-analysis'},
+      );
+    }
+  }
+
+  /// Astrologer begins working on an accepted booking (spec §11:
+  /// Accepted → Analysis In Progress). Sets the `inProgress` flag + audit trail
+  /// and notifies the user. The addressed-astrologer update rule permits this.
+  Future<void> startAnalysis(String requestId, {String userId = ''}) async {
+    await _db
+        .collection(AppConstants.astrologerRequestsCollection)
+        .doc(requestId)
+        .update({
+      'inProgress': true,
+      'startedAt': FieldValue.serverTimestamp(),
+      'history': FieldValue.arrayUnion(
+          [BookingHistoryEntry.now('Analysis in progress').toMap()]),
+    });
+    if (userId.trim().isNotEmpty) {
+      await _notify(userId, 'Analysis In Progress',
+          'The astrologer has started your match analysis.', 'analysis_started',
+          data: {'requestId': requestId, 'route': '/my-analysis'});
     }
   }
 
@@ -404,7 +444,8 @@ class AstrologerService {
     final assignedLabel = byAdmin
         ? 'Assigned by Admin to $astrologerName'
         : 'Reassigned by you to $astrologerName';
-    final expiresAt = DateTime.now().add(kBookingResponseWindow);
+    // Fresh 12 WORKING-hour window for the newly-assigned astrologer (spec §6).
+    final expiresAt = matchAnalysisDeadline(DateTime.now());
     await _db
         .collection(AppConstants.astrologerRequestsCollection)
         .doc(requestId)

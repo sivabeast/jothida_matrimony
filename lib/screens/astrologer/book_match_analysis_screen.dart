@@ -79,27 +79,141 @@ class _BookMatchAnalysisScreenState
       _snack('Groom and bride must be two different profiles.');
       return;
     }
+    final fee = _matchFee(astrologer);
+    // SPEC §5: show the booking rules + require agreement BEFORE payment.
+    final agreed = await _showBookingRules(astrologer, fee);
+    if (agreed != true || !mounted) return;
     setState(() => _submitting = true);
     try {
-      await ref.read(matchAnalysisControllerProvider.notifier).book(
+      // SPEC §3/§4: pay online FIRST, then the booking is created (already paid)
+      // and only then reaches the astrologer.
+      await ref.read(matchAnalysisControllerProvider.notifier).bookAndPay(
             astrologerId: astrologer.id,
             astrologerName: astrologer.name,
             astrologerPhoto: astrologer.photoUrl,
-            amount: _matchFee(astrologer),
+            amount: fee,
             groom: groom,
             bride: bride,
             note: _note.text,
             reassignMode: _mode,
           );
       if (!mounted) return;
-      _snack('Match analysis request sent to ${astrologer.name}.');
+      _snack(fee > 0
+          ? 'Payment successful — booking sent to ${astrologer.name}.'
+          : 'Match analysis request sent to ${astrologer.name}.');
       context.go('/my-analysis');
     } catch (_) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      _snack('Could not send the request. Please try again.');
+      _snack('Could not complete the booking. Please try again.');
     }
   }
+
+  /// SPEC §5 — the confirmation screen shown before payment. Lists the booking
+  /// rules (analysis starts only after payment, upload a clear horoscope,
+  /// response time, cancellation/refund policy) and requires the user to agree
+  /// before the (mandatory online) payment can proceed. Returns true once the
+  /// user agrees and taps Pay.
+  Future<bool?> _showBookingRules(Astrologer astrologer, int fee) {
+    return showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (sheetCtx) {
+        bool agreed = false;
+        return StatefulBuilder(
+          builder: (ctx, setSheet) => SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+                20, 12, 20, 20 + MediaQuery.of(ctx).viewInsets.bottom),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(3)),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Text('Before you pay',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text('Please read and agree to the match-analysis rules.',
+                    style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
+                const SizedBox(height: 16),
+                _rule(Icons.payments_outlined,
+                    'Online payment is mandatory. Your analysis starts only after '
+                    'a successful payment.'),
+                _rule(Icons.image_outlined,
+                    'Upload a clear horoscope / jathagam for both profiles so the '
+                    'astrologer can analyse accurately.'),
+                _rule(Icons.schedule_outlined,
+                    'The astrologer accepts within 12 working hours. Working hours '
+                    'exclude 12:00 AM – 7:00 AM.'),
+                _rule(Icons.replay_outlined,
+                    'If the astrologer does not respond in time, the booking '
+                    'expires and you can choose another astrologer or get a refund '
+                    'as per the cancellation policy.'),
+                _rule(Icons.account_balance_outlined,
+                    'Payment is held by the platform and settled to the astrologer '
+                    'after your report is delivered.'),
+                const SizedBox(height: 8),
+                CheckboxListTile(
+                  value: agreed,
+                  onChanged: (v) => setSheet(() => agreed = v ?? false),
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  activeColor: AppColors.primary,
+                  title: const Text(
+                      'I have read and agree to the above rules.',
+                      style: TextStyle(fontSize: 13)),
+                ),
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed:
+                        agreed ? () => Navigator.pop(ctx, true) : null,
+                    icon: const Icon(Icons.lock_outline, size: 18),
+                    label: Text(fee > 0 ? 'Pay ₹$fee & Book' : 'Confirm & Book'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.grey[300],
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _rule(IconData icon, String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 18, color: AppColors.primary),
+            const SizedBox(width: 10),
+            Expanded(
+                child: Text(text,
+                    style: TextStyle(fontSize: 13, color: Colors.grey[800]))),
+          ],
+        ),
+      );
 
   void _snack(String m) => ScaffoldMessenger.of(context)
       .showSnackBar(SnackBar(content: Text(m)));
@@ -217,8 +331,10 @@ class _BookMatchAnalysisScreenState
                     width: 18,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.send_outlined),
-            label: Text(_submitting ? context.l10n.sending : context.l10n.submitRequest),
+                : const Icon(Icons.lock_outline),
+            label: Text(_submitting
+                ? context.l10n.sending
+                : (fee > 0 ? 'Continue to Payment' : context.l10n.submitRequest)),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,

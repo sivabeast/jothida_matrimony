@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/config/dev_config.dart';
+import '../core/navigation/root_navigator.dart';
 import '../providers/auth_provider.dart';
 import '../providers/astrologer_session_provider.dart';
 import '../providers/service_providers.dart';
@@ -18,6 +19,7 @@ import '../screens/astrologer/astrologer_consultations_screen.dart';
 import '../screens/astrologer/astrologer_earnings_screen.dart';
 import '../screens/astrologer/profile/astrologer_bank_details_screen.dart';
 import '../screens/astrologer/match_requests_screen.dart';
+import '../screens/astrologer/astrologer_requests_page.dart';
 import '../screens/astrologer/match_workspace_screen.dart';
 import '../screens/astrologer/my_match_analysis_screen.dart';
 import '../screens/auth/account_type_screen.dart';
@@ -117,6 +119,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   ref.onDispose(refreshStream.dispose);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     refreshListenable: refreshStream,
     redirect: (context, state) {
@@ -352,6 +355,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/match-requests',
         builder: (_, __) => const MatchRequestsScreen(),
+      ),
+      // Astrologer: unified Requests page (Match Analysis + Direct Visit tabs).
+      // ?tab=visit opens the Direct Visit tab; default is Match Analysis. Used by
+      // the dashboard banner and FCM notification taps.
+      GoRoute(
+        path: '/astrologer-requests',
+        builder: (_, state) => AstrologerRequestsPage(
+          initialTab: state.uri.queryParameters['tab'] == 'visit' ? 1 : 0,
+        ),
       ),
       // Astrologer: the analysis "Status" page / workspace for a request. The
       // request id is in the path so the page ALWAYS resolves the live request

@@ -433,7 +433,7 @@ class AstrologerProfileScreen extends ConsumerWidget {
     );
   }
 
-  // ── Book Consultation (In-App / Direct Visit) ──────────────────────────────
+  // ── Book Direct Visit (in-person, pay at the visit) ────────────────────────
   Widget _bookConsultationButton(BuildContext context, Astrologer a) {
     if (!a.isAvailable) return const SizedBox.shrink();
     return Padding(
@@ -442,8 +442,8 @@ class AstrologerProfileScreen extends ConsumerWidget {
         width: double.infinity,
         child: OutlinedButton.icon(
           onPressed: () => context.push('/book-consultation/${a.id}'),
-          icon: const Icon(Icons.event_available_outlined),
-          label: const Text('Book Consultation'),
+          icon: const Icon(Icons.place_outlined),
+          label: const Text('Book Direct Visit'),
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.primary,
             side: const BorderSide(color: AppColors.primary),
@@ -671,10 +671,12 @@ class AstrologerProfileScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // SPEC §3: only two services exist — Online Match Analysis (booked
+            // via the dedicated button) and Direct Visit. In-App consultation is
+            // no longer offered, so it is not shown here.
             Row(children: [
-              if (acc.offersInApp) _modeChip('In-App Consultation'),
-              if (acc.offersInApp && acc.offersDirectVisit)
-                const SizedBox(width: 8),
+              _modeChip('Match Analysis'),
+              const SizedBox(width: 8),
               if (acc.offersDirectVisit) _modeChip('Direct Visit'),
             ]),
             const SizedBox(height: 10),

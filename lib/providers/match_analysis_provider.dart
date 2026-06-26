@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/dev_config.dart';
+import '../core/utils/working_hours.dart';
 import '../models/astrologer_request_model.dart';
 import '../models/profile_model.dart';
 import 'astrologer_session_provider.dart';
@@ -93,12 +94,20 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
   @override
   AsyncValue<void> build() => const AsyncData(null);
 
-  /// Creates a pending "Book Match Analysis" request for [groom] × [bride].
+  /// Pays online FIRST, then creates the match-analysis booking (spec §3/§4:
+  /// online payment is mandatory and the booking reaches the astrologer only
+  /// after successful payment). The booking is created already `paid` and
+  /// `pending` — the astrologer never sees an unpaid request.
   ///
-  /// [reassignMode] decides what happens if the astrologer doesn't respond
-  /// before the 24-hour window lapses. The booking is captured with the user's
+  /// Payment is simulated in test mode (no real gateway); otherwise this is
+  /// where the Razorpay checkout would run before the booking is written. The
+  /// money is collected to the platform/admin account, never the astrologer —
+  /// the admin settles astrologers weekly (spec §4).
+  ///
+  /// [reassignMode] decides what happens if the astrologer doesn't accept within
+  /// the 12 WORKING-hour window. The booking is captured with the user's
   /// preferred language so the astrologer's report is written in it.
-  Future<void> book({
+  Future<void> bookAndPay({
     required String astrologerId,
     required String astrologerName,
     required int amount,
@@ -120,6 +129,11 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
           : [me.city, me.state].where((s) => s.trim().isNotEmpty).join(', ');
       final lang = ref.read(localeProvider)?.languageCode ?? 'en';
       final now = DateTime.now();
+      // Simulated payment (collected to the admin account). A real gateway
+      // would run here and only on success would the booking be created.
+      final paymentId = kSubscriptionTestMode
+          ? 'demo_${now.millisecondsSinceEpoch}'
+          : 'razorpay_${now.millisecondsSinceEpoch}';
 
       final request = AstrologerRequestModel(
         id: 'new',
@@ -139,10 +153,17 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         profileBName: bride.fullName,
         createdAt: now,
         reassignMode: reassignMode,
-        expiresAt: now.add(kBookingResponseWindow),
+        // 12 WORKING hours (excludes 00:00–07:00) to accept (spec §6).
+        expiresAt: matchAnalysisDeadline(now),
         userLanguage: lang,
+        // Paid upfront — the booking is created already confirmed.
+        paid: amount > 0,
+        paidAt: amount > 0 ? now : null,
+        paymentId: amount > 0 ? paymentId : '',
         history: [
           BookingHistoryEntry(at: now, label: 'Booking created'),
+          if (amount > 0)
+            BookingHistoryEntry(at: now, label: 'Payment received ($paymentId)'),
           BookingHistoryEntry(at: now, label: 'Sent to $astrologerName'),
         ],
       );
@@ -277,6 +298,29 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
               groomName: request.groomName,
               brideName: request.brideName,
             );
+      }
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
+  /// Astrologer begins working on an accepted booking (spec §11:
+  /// Accepted → Analysis In Progress). Sets the `inProgress` flag so the booking
+  /// moves to the "In Progress" bucket on the Requests page and the user is
+  /// notified. Rethrows so callers can surface a SnackBar.
+  Future<void> startAnalysis(AstrologerRequestModel request) async {
+    state = const AsyncLoading();
+    try {
+      if (kBypassAuth) {
+        ref
+            .read(demoAstrologerRequestsProvider.notifier)
+            .markInProgress(request.id);
+      } else {
+        await ref
+            .read(astrologerServiceProvider)
+            .startAnalysis(request.id, userId: request.userId);
       }
       state = const AsyncData(null);
     } catch (e, st) {

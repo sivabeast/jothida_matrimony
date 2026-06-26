@@ -10,9 +10,11 @@ import '../../providers/astrologer_provider.dart';
 import '../../providers/consultation_provider.dart';
 import '../../services/firebase/consultation_service.dart';
 
-/// Consultation booking flow: pick a mode (In-App / Direct Visit), then — for a
-/// Direct Visit — a date and an available slot, then send the request. Payment
-/// is collected later, only after the astrologer accepts.
+/// Direct Astrologer Visit booking flow (spec §3, Service 2): the user picks a
+/// date and an available slot, then sends the appointment request. There is NO
+/// online payment — the user pays the astrologer directly (cash / UPI / card) at
+/// the in-person visit. (The In-App consultation service has been removed; the
+/// only two services are Online Match Analysis and Direct Visit.)
 class ConsultationBookingScreen extends ConsumerStatefulWidget {
   final String astrologerId;
   const ConsultationBookingScreen({super.key, required this.astrologerId});
@@ -24,7 +26,8 @@ class ConsultationBookingScreen extends ConsumerStatefulWidget {
 
 class _ConsultationBookingScreenState
     extends ConsumerState<ConsultationBookingScreen> {
-  ConsultationMode? _mode;
+  // Direct Visit is the only consultation mode now.
+  static const ConsultationMode _mode = ConsultationMode.directVisit;
   DateTime? _date;
   int? _slot;
   final _note = TextEditingController();
@@ -45,39 +48,25 @@ class _ConsultationBookingScreenState
   }
 
   Future<void> _submit(AstrologerAccount a) async {
-    if (_mode == ConsultationMode.directVisit &&
-        (_date == null || _slot == null)) {
+    if (_date == null || _slot == null) {
       _snack('Please select a date and time slot.');
       return;
     }
     setState(() => _submitting = true);
     try {
-      if (_mode == ConsultationMode.inApp) {
-        // In-App pays upfront ("Book & Pay") — payment is collected into the
-        // admin account and held until settlement.
-        await ref.read(consultationControllerProvider.notifier).bookAndPay(
-              astrologerId: a.id,
-              astrologerName: a.fullName,
-              amount: _fee(a),
-              note: _note.text,
-            );
-        if (!mounted) return;
-        _snack('Payment successful. Waiting for ${a.fullName} to accept.');
-        context.go('/my-consultations');
-        return;
-      }
-      // Direct Visit is unpaid here — paid in person at the visit.
+      // Direct Visit is unpaid in the app — the user pays in person at the visit.
       await ref.read(consultationControllerProvider.notifier).book(
             astrologerId: a.id,
             astrologerName: a.fullName,
-            mode: _mode!,
+            mode: _mode,
             amount: _fee(a),
             note: _note.text,
             visitDate: _date,
             slotStartMinutes: _slot,
           );
       if (!mounted) return;
-      _snack('Request sent to ${a.fullName}. You can pay once they confirm.');
+      _snack('Appointment request sent to ${a.fullName}. Pay in person at the '
+          'visit.');
       context.go('/my-consultations');
     } on ConsultationSlotTakenException {
       if (!mounted) return;
@@ -102,7 +91,7 @@ class _ConsultationBookingScreenState
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Book Consultation'),
+        title: const Text('Book Direct Visit'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -112,10 +101,45 @@ class _ConsultationBookingScreenState
         error: (_, __) => const Center(child: Text('Could not load astrologer')),
         data: (a) => a == null
             ? const Center(child: Text('Astrologer not found'))
-            : _body(a),
+            // SPEC §10: if the astrologer is unavailable, block new bookings.
+            : (!a.isAvailableNow || !a.offersDirectVisit)
+                ? _unavailable(a)
+                : _body(a),
       ),
     );
   }
+
+  Widget _unavailable(AstrologerAccount a) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.event_busy,
+                  size: 64, color: AppColors.primary.withOpacity(0.4)),
+              const SizedBox(height: 16),
+              const Text('Currently Unavailable',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(
+                '${a.fullName} is not accepting direct-visit bookings right now. '
+                'Please check back later or choose another astrologer.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
+                onPressed: () => context.pop(),
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Back'),
+                style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary)),
+              ),
+            ],
+          ),
+        ),
+      );
 
   Widget _body(AstrologerAccount a) {
     final fee = _fee(a);
@@ -124,34 +148,14 @@ class _ConsultationBookingScreenState
       children: [
         _astrologerHeader(a, fee),
         const SizedBox(height: 18),
-        _label('Consultation Mode'),
+        _label('Select Date'),
         const SizedBox(height: 8),
-        _modeOption(
-          a,
-          ConsultationMode.inApp,
-          Icons.phone_android,
-          'Book, pay & receive a deep match-analysis report in the app.',
-          enabled: a.offersInApp,
-        ),
-        const SizedBox(height: 10),
-        _modeOption(
-          a,
-          ConsultationMode.directVisit,
-          Icons.place_outlined,
-          'Meet the astrologer in person at a date & time you choose.',
-          enabled: a.offersDirectVisit,
-        ),
-        if (_mode == ConsultationMode.directVisit) ...[
-          const SizedBox(height: 20),
-          _label('Select Date'),
+        _dateStrip(a),
+        if (_date != null) ...[
+          const SizedBox(height: 18),
+          _label('Select Time Slot'),
           const SizedBox(height: 8),
-          _dateStrip(a),
-          if (_date != null) ...[
-            const SizedBox(height: 18),
-            _label('Select Time Slot'),
-            const SizedBox(height: 8),
-            _slotGrid(a),
-          ],
+          _slotGrid(a),
         ],
         const SizedBox(height: 18),
         _label('Note (optional)'),
@@ -173,21 +177,15 @@ class _ConsultationBookingScreenState
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: (_mode == null || _submitting) ? null : () => _submit(a),
+            onPressed: _submitting ? null : () => _submit(a),
             icon: _submitting
                 ? const SizedBox(
                     height: 18,
                     width: 18,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
-                : Icon(_mode == ConsultationMode.inApp
-                    ? Icons.lock_outline
-                    : Icons.send_outlined),
-            label: Text(_submitting
-                ? 'Processing…'
-                : _mode == ConsultationMode.inApp
-                    ? (fee > 0 ? 'Book & Pay ₹$fee' : 'Book Now')
-                    : 'Send Booking Request'),
+                : const Icon(Icons.send_outlined),
+            label: Text(_submitting ? 'Processing…' : 'Send Booking Request'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
@@ -249,72 +247,6 @@ class _ConsultationBookingScreenState
           ],
         ),
       );
-
-  Widget _modeOption(
-    AstrologerAccount a,
-    ConsultationMode mode,
-    IconData icon,
-    String desc, {
-    required bool enabled,
-  }) {
-    final selected = _mode == mode;
-    return Opacity(
-      opacity: enabled ? 1 : 0.5,
-      child: InkWell(
-        onTap: enabled
-            ? () => setState(() {
-                  _mode = mode;
-                  if (mode == ConsultationMode.inApp) {
-                    _date = null;
-                    _slot = null;
-                  }
-                })
-            : null,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: selected ? AppColors.primary : Colors.grey.withOpacity(0.3),
-              width: selected ? 1.6 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(icon,
-                  color: selected ? AppColors.primary : Colors.grey[600]),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(mode.label,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 14.5)),
-                    const SizedBox(height: 2),
-                    Text(
-                        enabled
-                            ? desc
-                            : 'Not offered by this astrologer.',
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.grey[600])),
-                  ],
-                ),
-              ),
-              Icon(
-                selected
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_off,
-                color: selected ? AppColors.primary : Colors.grey,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _dateStrip(AstrologerAccount a) {
     final booked =
@@ -394,15 +326,13 @@ class _ConsultationBookingScreenState
         ),
         child: Row(
           children: [
-            const Icon(Icons.lock_clock_outlined,
+            const Icon(Icons.money_off_outlined,
                 size: 18, color: AppColors.gold),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                _mode == ConsultationMode.directVisit
-                    ? 'You only pay after the astrologer confirms your visit.'
-                    : 'Pay now to confirm. If the astrologer can\'t take your '
-                        'booking, you\'ll be fully refunded.',
+                'No online payment. You pay the astrologer directly (cash / UPI / '
+                'card) at the in-person visit.',
                 style: TextStyle(fontSize: 12.5, color: Colors.grey[800]),
               ),
             ),

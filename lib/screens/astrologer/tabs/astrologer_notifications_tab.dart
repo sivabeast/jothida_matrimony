@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/announcement_model.dart';
 import '../../../models/notification_model.dart';
@@ -141,12 +142,17 @@ class _NotificationCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final v = _visualFor();
+    final route = notification.data?['route']?.toString();
     return AstrologerCard(
-      onTap: notification.isRead
-          ? null
-          : () => ref
+      onTap: () {
+        if (!notification.isRead) {
+          ref
               .read(notificationNotifierProvider.notifier)
-              .markRead(notification.id),
+              .markRead(notification.id);
+        }
+        // Tapping opens the corresponding booking/request (spec §8).
+        if (route != null && route.isNotEmpty) context.push(route);
+      },
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

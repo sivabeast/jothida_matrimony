@@ -355,6 +355,23 @@ class DemoAstrologerRequestsNotifier
     ];
   }
 
+  /// Demo-mode: flag an accepted booking as In Progress (astrologer started).
+  void markInProgress(String id) {
+    state = [
+      for (final r in state)
+        r.id == id
+            ? r.copyWith(
+                inProgress: true,
+                startedAt: DateTime.now(),
+                history: [
+                  ...r.history,
+                  BookingHistoryEntry.now('Analysis in progress'),
+                ],
+              )
+            : r,
+    ];
+  }
+
   /// Demo-mode payment: flag an accepted booking as paid with a demo txn id.
   void markPaid(String id, {required String paymentId}) {
     state = [

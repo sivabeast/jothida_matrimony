@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/utils/working_hours.dart';
+
 /// Kind of request a matrimony user sends to an astrologer.
 enum AstrologerRequestType { consultation, inquiry, matching }
 
@@ -196,6 +198,14 @@ class AstrologerRequestModel {
   /// extension point — see [kSubscriptionTestMode]).
   final String paymentId;
 
+  // ── Analysis progress (spec §11: Accepted → Analysis In Progress) ──────────
+  /// Set once the astrologer begins working on an accepted booking ("Start
+  /// Analysis"). Distinguishes the "Accepted" and "In Progress" buckets on the
+  /// astrologer Requests page without adding a new [AstrologerRequestStatus]
+  /// value (which would break the app's many 4-value switches).
+  final bool inProgress;
+  final DateTime? startedAt;
+
   const AstrologerRequestModel({
     required this.id,
     required this.astrologerId,
@@ -229,10 +239,33 @@ class AstrologerRequestModel {
     this.paid = false,
     this.paidAt,
     this.paymentId = '',
+    this.inProgress = false,
+    this.startedAt,
   });
 
   /// True for a "Book Match Analysis" booking (groom + bride porutham request).
   bool get isMatchAnalysis => type == AstrologerRequestType.matching;
+
+  /// Display bucket for the astrologer Requests page (spec §2 / §11):
+  /// 'pending' | 'expired' | 'accepted' | 'inProgress' | 'completed' |
+  /// 'rejected'. An accepted booking the astrologer has started working on is
+  /// "In Progress"; otherwise it is "Accepted".
+  String get displayBucket {
+    if (status == AstrologerRequestStatus.pending) {
+      return isEffectivelyExpired ? 'expired' : 'pending';
+    }
+    if (status == AstrologerRequestStatus.accepted) {
+      return inProgress ? 'inProgress' : 'accepted';
+    }
+    return status.name; // completed | rejected
+  }
+
+  /// WORKING time left before the acceptance deadline lapses (spec §6/§7).
+  /// Pauses overnight (00:00–07:00). Null when there is no deadline; zero or
+  /// negative once expired.
+  Duration? get workingTimeRemaining => expiresAt == null
+      ? null
+      : workingTimeBetween(DateTime.now(), expiresAt!);
 
   // Explicit groom / bride accessors (the booking stores profileA = groom,
   // profileB = bride). Also persisted under `groomProfileId` / `brideProfileId`
@@ -366,6 +399,8 @@ class AstrologerRequestModel {
       paid: d['paid'] == true,
       paidAt: _toDate(d['paidAt']),
       paymentId: (d['paymentId'] ?? '').toString(),
+      inProgress: d['inProgress'] == true,
+      startedAt: _toDate(d['startedAt']),
     );
   }
 
@@ -410,6 +445,8 @@ class AstrologerRequestModel {
         'paid': paid,
         'paidAt': paidAt != null ? Timestamp.fromDate(paidAt!) : null,
         'paymentId': paymentId,
+        'inProgress': inProgress,
+        'startedAt': startedAt != null ? Timestamp.fromDate(startedAt!) : null,
       };
 
   AstrologerRequestModel copyWith({
@@ -432,6 +469,8 @@ class AstrologerRequestModel {
     bool? paid,
     DateTime? paidAt,
     String? paymentId,
+    bool? inProgress,
+    DateTime? startedAt,
   }) =>
       AstrologerRequestModel(
         id: id,
@@ -472,5 +511,8 @@ class AstrologerRequestModel {
         paid: paid ?? this.paid,
         paidAt: paidAt ?? (paid == true ? DateTime.now() : this.paidAt),
         paymentId: paymentId ?? this.paymentId,
+        inProgress: inProgress ?? this.inProgress,
+        startedAt: startedAt ??
+            (inProgress == true ? DateTime.now() : this.startedAt),
       );
 }

@@ -5,21 +5,22 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_account_model.dart';
 import '../../providers/announcement_provider.dart';
+import '../../providers/astrologer_dashboard_provider.dart';
 import '../../providers/astrologer_session_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/common/app_logo.dart';
+import 'astrologer_requests_page.dart';
 import 'tabs/astrologer_notifications_tab.dart';
 import 'tabs/astrologer_overview_tab.dart';
 import 'tabs/astrologer_profile_tab.dart';
-import 'tabs/astrologer_reviews_tab.dart';
 
 /// The astrologer portal — a focused marketplace experience with a 4-item
-/// bottom navigation (Dashboard · Reviews · Notifications · Profile).
+/// bottom navigation (Dashboard · Requests · Notifications · Profile).
 ///
-/// Astrologers manage their profile, reputation, certificates and subscription.
-/// They never browse users, view user contacts, or manage appointments/leads —
-/// users contact astrologers, not the other way around.
+/// Astrologers manage their bookings, profile, reputation, certificates and
+/// subscription. They never browse users or view user contacts — users contact
+/// astrologers, not the other way around.
 class AstrologerDashboardScreen extends ConsumerStatefulWidget {
   const AstrologerDashboardScreen({super.key});
 
@@ -31,13 +32,26 @@ class AstrologerDashboardScreen extends ConsumerStatefulWidget {
 class _AstrologerDashboardScreenState
     extends ConsumerState<AstrologerDashboardScreen> {
   int _index = 0;
+  // Which sub-tab the embedded Requests page opens on (0 = Match Analysis,
+  // 1 = Direct Visit). Bumped via [_openRequests] so the dashboard banner can
+  // jump to the right tab; the ValueKey forces the TabController to re-init.
+  int _requestsTab = 0;
 
-  late final List<Widget> _tabs = <Widget>[
-    AstrologerOverviewTab(onSelectTab: (i) => setState(() => _index = i)),
-    const AstrologerReviewsTab(),
-    const AstrologerNotificationsTab(),
-    const AstrologerProfileTab(),
-  ];
+  /// Opens the Requests bottom-nav tab (optionally on [subTab]) and clears the
+  /// "new requests" unread banner/badge (spec §1).
+  void _openRequests([int subTab = 0]) {
+    setState(() {
+      _index = 1;
+      _requestsTab = subTab;
+    });
+    ref.read(requestsLastSeenProvider.notifier).markSeen();
+  }
+
+  void _onNavSelected(int i) {
+    setState(() => _index = i);
+    // Tapping the Requests tab also marks new requests as seen.
+    if (i == 1) ref.read(requestsLastSeenProvider.notifier).markSeen();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +65,17 @@ class _AstrologerDashboardScreenState
     final notifUnread = ref.watch(unreadNotificationCountProvider) +
         ref.watch(unreadAnnouncementsCountProvider);
     final chatUnread = ref.watch(myUnreadChatCountProvider);
+    final requestsUnread = ref.watch(unreadRequestsCountProvider);
+
+    final tabs = <Widget>[
+      AstrologerOverviewTab(onOpenRequests: _openRequests),
+      AstrologerRequestsPage(
+          embedded: true,
+          initialTab: _requestsTab,
+          key: ValueKey('requests_$_requestsTab')),
+      const AstrologerNotificationsTab(),
+      const AstrologerProfileTab(),
+    ];
 
     return PopScope(
       canPop: false,
@@ -120,10 +145,10 @@ class _AstrologerDashboardScreenState
             const SizedBox(width: 4),
           ],
         ),
-        body: IndexedStack(index: _index, children: _tabs),
+        body: IndexedStack(index: _index, children: tabs),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _index,
-          onDestinationSelected: (i) => setState(() => _index = i),
+          onDestinationSelected: _onNavSelected,
           backgroundColor: Colors.white,
           indicatorColor: AppColors.primary.withOpacity(0.12),
           destinations: [
@@ -132,10 +157,14 @@ class _AstrologerDashboardScreenState
               selectedIcon: Icon(Icons.dashboard, color: AppColors.primary),
               label: 'Dashboard',
             ),
-            const NavigationDestination(
-              icon: Icon(Icons.star_outline),
-              selectedIcon: Icon(Icons.star, color: AppColors.primary),
-              label: 'Reviews',
+            NavigationDestination(
+              icon: Badge(
+                isLabelVisible: requestsUnread > 0,
+                label: Text('$requestsUnread'),
+                child: const Icon(Icons.inbox_outlined),
+              ),
+              selectedIcon: const Icon(Icons.inbox, color: AppColors.primary),
+              label: 'Requests',
             ),
             NavigationDestination(
               icon: Badge(

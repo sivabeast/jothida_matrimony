@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../models/announcement_model.dart';
@@ -110,6 +111,10 @@ class _Item {
           if (!n.isRead) {
             ref.read(notificationNotifierProvider.notifier).markRead(n.id);
           }
+          // Deep-link to the booking/screen carried in the notification data
+          // (spec §8: tapping a notification opens the corresponding booking).
+          final route = n.data?['route']?.toString();
+          if (route != null && route.isNotEmpty) context.push(route);
         },
       );
 
