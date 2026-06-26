@@ -8,6 +8,7 @@ import '../../models/admin_activity.dart';
 import '../../models/astrologer_account_model.dart';
 import '../../models/dashboard_analytics.dart';
 import '../../providers/admin_provider.dart';
+import '../../providers/settlement_provider.dart';
 import 'admin_astrologer_verification.dart' show PendingAstrologerCard;
 import 'admin_export.dart' show inr;
 
@@ -34,6 +35,8 @@ class AdminDashboard extends ConsumerWidget {
       ..sort((x, y) =>
           (y.createdAt ?? DateTime(0)).compareTo(x.createdAt ?? DateTime(0)));
 
+    final s = ref.watch(platformSettlementTotalsProvider);
+
     return RefreshIndicator(
       color: AppColors.primary,
       onRefresh: () async {
@@ -49,7 +52,7 @@ class AdminDashboard extends ConsumerWidget {
                   fontFamily: 'Poppins',
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 2),
-          Text('Revenue & operations overview',
+          Text('Settlements & operations overview',
               style: TextStyle(color: Colors.grey[600], fontSize: 13)),
           const SizedBox(height: 16),
 
@@ -60,7 +63,57 @@ class AdminDashboard extends ConsumerWidget {
                   child: CircularProgressIndicator(color: AppColors.primary)),
             ),
 
-          // 1 ── Revenue headline ─────────────────────────────────────────────
+          // 1 ── Settlement headline ──────────────────────────────────────────
+          Row(
+            children: [
+              Expanded(
+                  child: _RevenueCard("Today's Bookings", '${s.todaysBookings}',
+                      Icons.event_available, const Color(0xFF2F80ED))),
+              const SizedBox(width: 10),
+              Expanded(
+                  child: _RevenueCard('Payments Received',
+                      inr(s.todaysPaymentsReceived), Icons.south_east,
+                      AppColors.success)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                  child: _RevenueCard('Pending Settlements',
+                      inr(s.pendingSettlements), Icons.hourglass_bottom,
+                      AppColors.warning)),
+              const SizedBox(width: 10),
+              Expanded(
+                  child: _RevenueCard('Total Settled', inr(s.totalSettled),
+                      Icons.verified, AppColors.premiumPlan)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _SettlementEntryCard(refunds: s.refundsDue),
+          const SizedBox(height: 22),
+
+          // 2 ── Settlement summary (weekly / monthly) ───────────────────────
+          const _SectionTitle('Settlement Summary'),
+          _SettlementSummaryCard(
+            title: 'This Week',
+            icon: Icons.view_week,
+            color: const Color(0xFF2F80ED),
+            earned: s.weekEarned,
+            settled: s.weekSettled,
+          ),
+          const SizedBox(height: 10),
+          _SettlementSummaryCard(
+            title: 'This Month',
+            icon: Icons.calendar_month,
+            color: const Color(0xFF7C5CFC),
+            earned: s.monthEarned,
+            settled: s.monthSettled,
+          ),
+          const SizedBox(height: 22),
+
+          // 3 ── Platform revenue (subscriptions only — no commission) ────────
+          const _SectionTitle('Platform Revenue (Subscriptions)'),
           Row(
             children: [
               Expanded(
@@ -78,8 +131,8 @@ class AdminDashboard extends ConsumerWidget {
               wide: true),
           const SizedBox(height: 22),
 
-          // 2 ── Revenue split ────────────────────────────────────────────────
-          const _SectionTitle('Revenue Split'),
+          // 4 ── Subscription revenue split ──────────────────────────────────
+          const _SectionTitle('Subscription Revenue Split'),
           _RevenueSummaryCard(
             title: 'User Revenue',
             icon: Icons.groups,
@@ -99,17 +152,17 @@ class AdminDashboard extends ConsumerWidget {
           ),
           const SizedBox(height: 22),
 
-          // 3 ── Revenue breakdown doughnut ───────────────────────────────────
-          const _SectionTitle('Revenue Breakdown'),
+          // 5 ── Revenue breakdown doughnut ───────────────────────────────────
+          const _SectionTitle('Subscription Revenue Breakdown'),
           _Card(child: _RevenueDoughnut(a: a)),
           const SizedBox(height: 22),
 
-          // 4 ── Revenue trend line ───────────────────────────────────────────
-          const _SectionTitle('Revenue Trend'),
+          // 6 ── Revenue trend line ───────────────────────────────────────────
+          const _SectionTitle('Subscription Revenue Trend'),
           _Card(child: _RevenueTrendChart(a: a)),
           const SizedBox(height: 22),
 
-          // 5 ── Pending astrologer verification ──────────────────────────────
+          // 7 ── Pending astrologer verification ──────────────────────────────
           Row(
             children: [
               const Expanded(child: _SectionTitle('Pending Verification')),
@@ -319,6 +372,126 @@ class _RevenueSummaryCard extends StatelessWidget {
               _cell('Monthly', month, color),
               _divider(),
               _cell('Total', total, color),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _cell(String label, int value, Color color) => Expanded(
+        child: Column(
+          children: [
+            Text(inr(value),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.bold, color: color)),
+            const SizedBox(height: 2),
+            Text(label,
+                style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+          ],
+        ),
+      );
+
+  Widget _divider() =>
+      Container(width: 1, height: 30, color: Colors.grey[200]);
+}
+
+// ── Settlement entry card (tap → Settlements & Payouts) ──────────────────────
+class _SettlementEntryCard extends StatelessWidget {
+  final int refunds;
+  const _SettlementEntryCard({required this.refunds});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => context.go('/admin/settlements'),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+              colors: [AppColors.primary, Color(0xFF7C5CFC)]),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.account_balance_wallet,
+                color: Colors.white, size: 26),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Settlements & Payouts',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 2),
+                  Text(
+                      refunds > 0
+                          ? '${inr(refunds)} in refunds pending'
+                          : 'Pay out astrologers · 100%, no commission',
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12.5)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.white),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Settlement summary card (earned / settled for a period) ──────────────────
+class _SettlementSummaryCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Color color;
+  final int earned;
+  final int settled;
+  const _SettlementSummaryCard({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.earned,
+    required this.settled,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pending = (earned - settled).clamp(0, 1 << 31);
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10)),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 14.5, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _cell('Earned', earned, color),
+              _divider(),
+              _cell('Settled', settled, AppColors.success),
+              _divider(),
+              _cell('Pending', pending, AppColors.warning),
             ],
           ),
         ],

@@ -84,10 +84,21 @@ class ConsultationBooking {
   final List<String> reportImages;
   final List<String> reportPdfs;
 
-  // ── Payment (collected only after acceptance) ──────────────────────────────
+  // ── Payment ────────────────────────────────────────────────────────────────
+  // In-App: collected UPFRONT at booking ("Book & Pay") and held by the admin.
+  // Direct-Visit: still collected at the in-person visit (on completion).
   final bool paid;
   final String paymentId;
   final DateTime? paidAt;
+
+  // ── Settlement / payout (admin → astrologer, 100%, no commission) ──────────
+  // `settled` is set once the admin has paid the booking's amount out to the
+  // astrologer; `settlementId` links to the `settlements/{id}` history batch.
+  final bool settled;
+  final DateTime? settledAt;
+  final String settlementId;
+  // Set when the admin refunds a paid booking the astrologer rejected.
+  final DateTime? refundedAt;
 
   final DateTime createdAt;
   final DateTime? respondedAt;
@@ -112,6 +123,10 @@ class ConsultationBooking {
     this.paid = false,
     this.paymentId = '',
     this.paidAt,
+    this.settled = false,
+    this.settledAt,
+    this.settlementId = '',
+    this.refundedAt,
     required this.createdAt,
     this.respondedAt,
     this.completedAt,
@@ -139,6 +154,24 @@ class ConsultationBooking {
   /// Finished → Completed Earnings.
   bool get isCompletedEarning => status == ConsultationStatus.completed;
 
+  /// The booking is waiting for the astrologer to Accept / Reject. In-App
+  /// bookings are paid upfront so they wait at `paid`; Direct-Visit bookings are
+  /// unpaid and wait at `pending`.
+  bool get isAwaitingAcceptance =>
+      isInApp ? status == ConsultationStatus.paid : status == ConsultationStatus.pending;
+
+  /// Delivered + paid + not yet settled → counts toward the astrologer's
+  /// Pending Payout (the admin still owes them this amount, 100%).
+  bool get isSettleable =>
+      paid &&
+      status == ConsultationStatus.completed &&
+      !settled &&
+      refundedAt == null;
+
+  /// A paid booking the astrologer rejected → the admin must refund the user.
+  bool get needsRefund =>
+      paid && status == ConsultationStatus.rejected && refundedAt == null;
+
   /// `yyyy-MM-dd` of [visitDate] (empty for In-App).
   String get dateKey => visitDate == null ? '' : _dateKey(visitDate!);
 
@@ -159,9 +192,12 @@ class ConsultationBooking {
       case ConsultationStatus.waitingForPayment:
         return 'Waiting for Payment';
       case ConsultationStatus.paid:
-        return 'Paid';
+        // In-App is paid upfront, so `paid` means "paid, awaiting the
+        // astrologer's acceptance". Direct-Visit reaches `paid` only at
+        // completion (cash at the visit), where plain "Paid" is correct.
+        return isInApp ? 'Paid · Awaiting Acceptance' : 'Paid';
       case ConsultationStatus.analysisInProgress:
-        return 'Analysis In Progress';
+        return 'In Progress';
       case ConsultationStatus.reportSubmitted:
         return 'Report Submitted';
       case ConsultationStatus.completed:
@@ -236,6 +272,10 @@ class ConsultationBooking {
       paid: d['paid'] == true,
       paymentId: d['paymentId'] ?? '',
       paidAt: _toDate(d['paidAt']),
+      settled: d['settled'] == true,
+      settledAt: _toDate(d['settledAt']),
+      settlementId: d['settlementId'] ?? '',
+      refundedAt: _toDate(d['refundedAt']),
       createdAt: _toDate(d['createdAt']) ?? DateTime.now(),
       respondedAt: _toDate(d['respondedAt']),
       completedAt: _toDate(d['completedAt']),
@@ -263,6 +303,10 @@ class ConsultationBooking {
         'paid': paid,
         'paymentId': paymentId,
         'paidAt': paidAt != null ? Timestamp.fromDate(paidAt!) : null,
+        'settled': settled,
+        'settledAt': settledAt != null ? Timestamp.fromDate(settledAt!) : null,
+        'settlementId': settlementId,
+        'refundedAt': refundedAt != null ? Timestamp.fromDate(refundedAt!) : null,
         'createdAt': Timestamp.fromDate(createdAt),
         'respondedAt':
             respondedAt != null ? Timestamp.fromDate(respondedAt!) : null,
@@ -278,6 +322,10 @@ class ConsultationBooking {
     bool? paid,
     String? paymentId,
     DateTime? paidAt,
+    bool? settled,
+    DateTime? settledAt,
+    String? settlementId,
+    DateTime? refundedAt,
     DateTime? respondedAt,
     DateTime? completedAt,
   }) =>
@@ -300,6 +348,10 @@ class ConsultationBooking {
         paid: paid ?? this.paid,
         paymentId: paymentId ?? this.paymentId,
         paidAt: paidAt ?? this.paidAt,
+        settled: settled ?? this.settled,
+        settledAt: settledAt ?? this.settledAt,
+        settlementId: settlementId ?? this.settlementId,
+        refundedAt: refundedAt ?? this.refundedAt,
         createdAt: createdAt,
         respondedAt: respondedAt ?? this.respondedAt,
         completedAt: completedAt ?? this.completedAt,

@@ -47,13 +47,14 @@ class AstrologerConsultationsScreen extends ConsumerWidget {
             ),
           ),
           data: (all) {
-            final pending = all
-                .where((c) => c.status == ConsultationStatus.pending)
-                .toList();
+            // Requests = awaiting the astrologer's Accept/Reject. In-App bookings
+            // are paid upfront so they wait at `paid`; Direct-Visit waits at
+            // `pending`.
+            final requests = all.where((c) => c.isAwaitingAcceptance).toList();
             final progress = all
                 .where((c) =>
                     c.isActive &&
-                    c.status != ConsultationStatus.pending &&
+                    !c.isAwaitingAcceptance &&
                     c.status != ConsultationStatus.completed)
                 .toList();
             final done = all
@@ -63,7 +64,7 @@ class AstrologerConsultationsScreen extends ConsumerWidget {
                 .toList();
             return TabBarView(
               children: [
-                _list(pending, 'No new requests'),
+                _list(requests, 'No new requests'),
                 _list(progress, 'Nothing in progress'),
                 _list(done, 'No completed consultations'),
               ],
@@ -140,7 +141,9 @@ class _AstroConsultationCard extends ConsumerWidget {
                 Icons.event_outlined,
                 '${DateFormat('d MMM yyyy').format(b.visitDate!)}'
                 '${b.slotStartMinutes != null ? ' · ${formatMinutes(b.slotStartMinutes!)}' : ''}'),
-          if (b.amount > 0) _line(Icons.payments_outlined, '₹${b.amount}'),
+          if (b.amount > 0)
+            _line(Icons.payments_outlined,
+                b.paid ? '₹${b.amount} · Paid' : '₹${b.amount}'),
           if (b.note.trim().isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 6),
@@ -157,8 +160,14 @@ class _AstroConsultationCard extends ConsumerWidget {
       BuildContext context, WidgetRef ref, ConsultationBooking b) {
     final ctrl = ref.read(consultationControllerProvider.notifier);
     switch (b.status) {
+      // Awaiting acceptance: Direct-Visit at `pending`, In-App (paid upfront) at
+      // `paid`. Both show Accept / Reject.
       case ConsultationStatus.pending:
+      case ConsultationStatus.paid:
         return [
+          if (b.paid)
+            _hint('Payment of ₹${b.amount} received — held safely. Accept to '
+                'start, or reject to refund the user.'),
           const SizedBox(height: 12),
           Row(children: [
             Expanded(
@@ -192,30 +201,8 @@ class _AstroConsultationCard extends ConsumerWidget {
         // Direct-visit confirmed → can complete after the visit.
         return [_singleAction(context, 'Mark Completed',
             () => ctrl.complete(b), 'Consultation completed')];
-      case ConsultationStatus.paid:
-        return [
-          const SizedBox(height: 10),
-          Row(children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => _run(context, () => ctrl.startAnalysis(b),
-                    'Analysis started'),
-                child: const Text('Start Analysis'),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () => _reportDialog(context, ref, b),
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white),
-                child: const Text('Submit Report'),
-              ),
-            ),
-          ]),
-        ];
       case ConsultationStatus.analysisInProgress:
+        // In-App accepted (already paid) → run the analysis and submit a report.
         return [_singleAction(context, 'Submit Report',
             () async => _reportDialog(context, ref, b), null,
             primary: true)];

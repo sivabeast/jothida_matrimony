@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../models/consultation_model.dart';
 import '../../providers/astrologer_session_provider.dart';
 import '../../providers/consultation_provider.dart';
+import '../../providers/settlement_provider.dart';
 
 /// Astrologer earnings dashboard + transaction history.
 ///
@@ -73,7 +74,7 @@ class AstrologerEarningsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          _settlementCard(context, ref, earnings),
+          _settlementCard(context, ref),
           const SizedBox(height: 20),
           const Text('Transaction History',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -97,15 +98,15 @@ class AstrologerEarningsScreen extends ConsumerWidget {
     );
   }
 
-  /// Weekly-settlement summary: last + next settlement dates and the amount due
-  /// at the next payout, plus the payout-account status / edit link.
-  Widget _settlementCard(BuildContext context, WidgetRef ref, dynamic earnings) {
-    final now = DateTime.now();
-    final next = _nextWeekly(now);
-    final last = next.subtract(const Duration(days: 7));
-    final int amount = earnings.completed as int; // delivered, payable balance
+  /// Weekly-settlement summary backed by real payout data: pending payout, total
+  /// already paid and the last settlement date, plus the payout-account status.
+  Widget _settlementCard(BuildContext context, WidgetRef ref) {
     final account = ref.watch(myAstrologerAccountProvider);
     final hasBank = account?.hasBankDetails ?? false;
+    final settlement = account == null
+        ? const AstrologerSettlement(astrologerId: '', name: '')
+        : ref.watch(astrologerSettlementByIdProvider(account.id));
+    final last = settlement.lastSettlement;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -145,11 +146,14 @@ class AstrologerEarningsScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
+          _settlementRow('This Week', '₹${settlement.thisWeek}'),
+          _settlementRow('This Month', '₹${settlement.thisMonth}'),
+          _settlementRow('Total Paid', '₹${settlement.paidAmount}'),
           _settlementRow(
-              'Last Settlement', DateFormat('d MMM yyyy').format(last)),
-          _settlementRow(
-              'Next Settlement', DateFormat('d MMM yyyy').format(next)),
-          _settlementRow('Amount To Be Paid', '₹$amount', highlight: true),
+              'Last Settlement',
+              last == null ? '—' : DateFormat('d MMM yyyy').format(last)),
+          _settlementRow('Pending Payout', '₹${settlement.pendingPayout}',
+              highlight: true),
           const Divider(height: 22),
           Row(
             children: [
@@ -175,14 +179,6 @@ class AstrologerEarningsScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  /// Next weekly settlement date — the upcoming Monday (never today).
-  DateTime _nextWeekly(DateTime from) {
-    final today = DateTime(from.year, from.month, from.day);
-    var add = (DateTime.monday - today.weekday + 7) % 7;
-    if (add == 0) add = 7;
-    return today.add(Duration(days: add));
   }
 
   Widget _settlementRow(String label, String value, {bool highlight = false}) =>

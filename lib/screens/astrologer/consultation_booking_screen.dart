@@ -52,6 +52,21 @@ class _ConsultationBookingScreenState
     }
     setState(() => _submitting = true);
     try {
+      if (_mode == ConsultationMode.inApp) {
+        // In-App pays upfront ("Book & Pay") — payment is collected into the
+        // admin account and held until settlement.
+        await ref.read(consultationControllerProvider.notifier).bookAndPay(
+              astrologerId: a.id,
+              astrologerName: a.fullName,
+              amount: _fee(a),
+              note: _note.text,
+            );
+        if (!mounted) return;
+        _snack('Payment successful. Waiting for ${a.fullName} to accept.');
+        context.go('/my-consultations');
+        return;
+      }
+      // Direct Visit is unpaid here — paid in person at the visit.
       await ref.read(consultationControllerProvider.notifier).book(
             astrologerId: a.id,
             astrologerName: a.fullName,
@@ -62,7 +77,7 @@ class _ConsultationBookingScreenState
             slotStartMinutes: _slot,
           );
       if (!mounted) return;
-      _snack('Request sent to ${a.fullName}. You can pay once they accept.');
+      _snack('Request sent to ${a.fullName}. You can pay once they confirm.');
       context.go('/my-consultations');
     } on ConsultationSlotTakenException {
       if (!mounted) return;
@@ -165,8 +180,14 @@ class _ConsultationBookingScreenState
                     width: 18,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.send_outlined),
-            label: Text(_submitting ? 'Sending…' : 'Send Booking Request'),
+                : Icon(_mode == ConsultationMode.inApp
+                    ? Icons.lock_outline
+                    : Icons.send_outlined),
+            label: Text(_submitting
+                ? 'Processing…'
+                : _mode == ConsultationMode.inApp
+                    ? (fee > 0 ? 'Book & Pay ₹$fee' : 'Book Now')
+                    : 'Send Booking Request'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
@@ -380,7 +401,8 @@ class _ConsultationBookingScreenState
               child: Text(
                 _mode == ConsultationMode.directVisit
                     ? 'You only pay after the astrologer confirms your visit.'
-                    : 'You only pay after the astrologer accepts your request.',
+                    : 'Pay now to confirm. If the astrologer can\'t take your '
+                        'booking, you\'ll be fully refunded.',
                 style: TextStyle(fontSize: 12.5, color: Colors.grey[800]),
               ),
             ),

@@ -23,6 +23,9 @@ class AppConstants {
   // Astrology consultation bookings (In-App + Direct Visit). One booking per
   // direct-visit slot is enforced by a deterministic doc id.
   static const String consultationsCollection = 'consultations';
+  // Astrologer payout settlement history. One doc per "Mark as Paid" batch the
+  // admin runs (the consultation docs it covers are flagged settled).
+  static const String settlementsCollection = 'settlements';
   static const String chatsCollection = 'chats';
   static const String messagesSubcollection = 'messages';
   static const String accountDeletionRequestsCollection = 'account_deletion_requests';

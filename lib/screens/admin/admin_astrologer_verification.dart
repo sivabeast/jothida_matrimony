@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_account_model.dart';
 import '../../providers/admin_provider.dart';
+import '../../providers/settlement_provider.dart';
 import '../../widgets/common/data_states.dart';
+import 'admin_export.dart' show inr;
 
-/// Admin → Astrologers (bottom-nav). **Verification management only.**
-///
-/// Shows the queue of astrologers awaiting verification. Approving moves them
-/// out of this list (and into the Users → Astrologers tab); rejecting saves a
-/// rejected status. Verified / rejected accounts are NOT browsed here — that
-/// lives on the Users page.
+/// Admin → Astrologers (bottom-nav). Two sections via tabs:
+///  • **Pending Verification** — the queue awaiting approve / reject.
+///  • **Approved** — every live astrologer with search, active/online status,
+///    booking count, pending payout and quick actions (View Profile, Suspend).
 class AdminAstrologerVerificationView extends ConsumerWidget {
   const AdminAstrologerVerificationView({super.key});
 
@@ -19,7 +20,7 @@ class AdminAstrologerVerificationView extends ConsumerWidget {
     final astrosAsync = ref.watch(allAstrologersProvider);
 
     return astrosAsync.when(
-      loading: () => const LoadingState(message: 'Loading verification queue…'),
+      loading: () => const LoadingState(message: 'Loading astrologers…'),
       error: (e, _) {
         debugPrint('[AdminVerification] load failed: $e');
         return ErrorStateView(
@@ -33,79 +34,306 @@ class AdminAstrologerVerificationView extends ConsumerWidget {
             .toList()
           ..sort((a, b) => (b.createdAt ?? DateTime(0))
               .compareTo(a.createdAt ?? DateTime(0)));
+        final approved = all.where((a) => a.isApproved).toList()
+          ..sort((a, b) => a.fullName.compareTo(b.fullName));
 
-        return Column(
-          children: [
-            _Header(count: pending.length),
-            Expanded(
-              child: pending.isEmpty
-                  ? const EmptyState(
-                      icon: Icons.verified_user_outlined,
-                      message: 'No astrologers awaiting verification',
-                    )
-                  : Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 760),
-                        child: ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-                          itemCount: pending.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 10),
-                          itemBuilder: (_, i) =>
-                              PendingAstrologerCard(astrologer: pending[i]),
-                        ),
-                      ),
-                    ),
-            ),
-          ],
+        return DefaultTabController(
+          length: 2,
+          child: Column(
+            children: [
+              Material(
+                color: Colors.white,
+                child: TabBar(
+                  labelColor: AppColors.primary,
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: AppColors.primary,
+                  labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                  tabs: [
+                    Tab(text: 'Pending (${pending.length})'),
+                    Tab(text: 'Approved (${approved.length})'),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    _PendingList(pending: pending),
+                    _ApprovedList(approved: approved),
+                  ],
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
   }
 }
 
-class _Header extends StatelessWidget {
-  final int count;
-  const _Header({required this.count});
+/// Pending-verification queue (approve / reject via [PendingAstrologerCard]).
+class _PendingList extends StatelessWidget {
+  final List<AstrologerAccount> pending;
+  const _PendingList({required this.pending});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 6),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-            colors: [AppColors.primary, Color(0xFF7C5CFC)]),
-        borderRadius: BorderRadius.circular(18),
+    if (pending.isEmpty) {
+      return const EmptyState(
+        icon: Icons.verified_user_outlined,
+        message: 'No astrologers awaiting verification',
+      );
+    }
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 760),
+        child: ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+          itemCount: pending.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (_, i) => PendingAstrologerCard(astrologer: pending[i]),
+        ),
       ),
-      child: Row(
-        children: [
-          const Icon(Icons.verified_user, color: Colors.white, size: 30),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Verification Requests',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.bold)),
-                const SizedBox(height: 2),
-                Text(
-                    count == 0
-                        ? 'No pending requests'
-                        : '$count astrologer${count == 1 ? '' : 's'} awaiting review',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12.5)),
-              ],
+    );
+  }
+}
+
+/// Searchable list of approved astrologers with live status + payout snapshot.
+class _ApprovedList extends ConsumerStatefulWidget {
+  final List<AstrologerAccount> approved;
+  const _ApprovedList({required this.approved});
+
+  @override
+  ConsumerState<_ApprovedList> createState() => _ApprovedListState();
+}
+
+class _ApprovedListState extends ConsumerState<_ApprovedList> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final q = _query.trim().toLowerCase();
+    final list = q.isEmpty
+        ? widget.approved
+        : widget.approved
+            .where((a) =>
+                a.fullName.toLowerCase().contains(q) ||
+                a.mobile.contains(q) ||
+                a.email.toLowerCase().contains(q))
+            .toList();
+    // astrologerId → pending payout (₹).
+    final payouts = {
+      for (final s in ref.watch(astrologerSettlementsProvider))
+        s.astrologerId: s,
+    };
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: TextField(
+            onChanged: (v) => setState(() => _query = v),
+            decoration: InputDecoration(
+              hintText: 'Search by name, mobile or email',
+              prefixIcon: const Icon(Icons.search),
+              isDense: true,
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none),
             ),
+          ),
+        ),
+        Expanded(
+          child: list.isEmpty
+              ? const EmptyState(
+                  icon: Icons.person_search_outlined,
+                  message: 'No approved astrologers')
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+                  itemCount: list.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (_, i) => _ApprovedCard(
+                    astrologer: list[i],
+                    pendingPayout:
+                        payouts[list[i].id]?.pendingPayout ?? 0,
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ApprovedCard extends ConsumerWidget {
+  final AstrologerAccount astrologer;
+  final int pendingPayout;
+  const _ApprovedCard(
+      {required this.astrologer, required this.pendingPayout});
+
+  Future<void> _suspend(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Suspend Astrologer'),
+        content: Text('Suspend ${astrologer.fullName}? They lose live '
+            'visibility and return to the verification queue.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Suspend'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await ref.read(adminActionsProvider.notifier).suspendAstrologer(astrologer.id);
+    final st = ref.read(adminActionsProvider);
+    messenger.showSnackBar(SnackBar(
+      content: Text(st.hasError
+          ? 'Could not suspend. Please try again.'
+          : '${astrologer.fullName} suspended.'),
+      backgroundColor: st.hasError ? AppColors.error : null,
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final a = astrologer;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: AppColors.primary.withOpacity(0.12),
+                backgroundImage:
+                    a.photoUrl.isNotEmpty ? NetworkImage(a.photoUrl) : null,
+                child: a.photoUrl.isEmpty
+                    ? Text(
+                        a.fullName.isNotEmpty
+                            ? a.fullName[0].toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold))
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(a.fullName.isEmpty ? 'Astrologer' : a.fullName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 15)),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        _dot(a.manuallyAvailable ? 'Active' : 'Inactive',
+                            a.manuallyAvailable
+                                ? AppColors.success
+                                : Colors.grey),
+                        const SizedBox(width: 6),
+                        _dot(a.isAvailableNow ? 'Online' : 'Offline',
+                            a.isAvailableNow
+                                ? AppColors.success
+                                : Colors.grey),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 18),
+          Row(
+            children: [
+              _stat('Bookings', '${a.bookingCount}'),
+              _stat('Pending Payout', inr(pendingPayout)),
+              _stat('Rating', a.rating.toStringAsFixed(1)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _suspend(context, ref),
+                  icon: const Icon(Icons.block, size: 16),
+                  label: const Text('Suspend'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: const BorderSide(color: AppColors.error),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => context.push('/admin/astrologer/${a.id}'),
+                  icon: const Icon(Icons.person_outline, size: 16),
+                  label: const Text('View Profile'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+
+  Widget _dot(String label, Color color) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(fontSize: 11.5, color: Colors.grey[700])),
+        ],
+      );
+
+  Widget _stat(String label, String value) => Expanded(
+        child: Column(
+          children: [
+            Text(value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const SizedBox(height: 1),
+            Text(label,
+                style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+          ],
+        ),
+      );
 }
 
 /// Reusable verification card for a pending astrologer. Used both by the

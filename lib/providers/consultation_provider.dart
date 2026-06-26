@@ -129,6 +129,50 @@ class ConsultationController extends Notifier<AsyncValue<void>> {
     }
   }
 
+  /// Books an In-App consultation and collects payment UPFRONT ("Book & Pay").
+  /// Payment is simulated in test mode (otherwise this is where the Razorpay
+  /// checkout would run before the booking is written). The booking lands at
+  /// `paid`, awaiting the astrologer's acceptance. Returns the new booking id.
+  Future<String> bookAndPay({
+    required String astrologerId,
+    required String astrologerName,
+    required int amount,
+    String note = '',
+  }) async {
+    state = const AsyncLoading();
+    try {
+      final me = ref.read(myProfileProvider).valueOrNull;
+      final user = ref.read(currentUserProvider).valueOrNull;
+      final uid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ??
+          user?.uid ??
+          '';
+      final booking = ConsultationBooking(
+        id: 'new',
+        astrologerId: astrologerId,
+        astrologerName: astrologerName,
+        userId: uid,
+        userName: me?.fullName ?? user?.displayName ?? 'User',
+        userPhotoUrl: me?.profilePhotoUrl ?? '',
+        mode: ConsultationMode.inApp,
+        status: ConsultationStatus.paid,
+        amount: amount,
+        note: note.trim(),
+        createdAt: DateTime.now(),
+      );
+      final paymentId = kSubscriptionTestMode
+          ? 'test_${DateTime.now().millisecondsSinceEpoch}'
+          : 'razorpay_${DateTime.now().millisecondsSinceEpoch}';
+      final id = await ref
+          .read(consultationServiceProvider)
+          .bookAndPay(booking, paymentId: paymentId);
+      state = const AsyncData(null);
+      return id;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
   Future<void> respond(ConsultationBooking b, bool accept) =>
       _guard(() => ref.read(consultationServiceProvider).respond(b, accept));
 
@@ -182,6 +226,23 @@ class ConsultationController extends Notifier<AsyncValue<void>> {
 
   Future<void> cancel(ConsultationBooking b) =>
       _guard(() => ref.read(consultationServiceProvider).cancel(b));
+
+  /// Admin: refund a paid booking the astrologer rejected.
+  Future<void> refund(ConsultationBooking b) =>
+      _guard(() => ref.read(consultationServiceProvider).refund(b));
+
+  /// Admin: settle (pay out) an astrologer's delivered bookings — 100%, no
+  /// commission. Only settleable bookings in [bookings] are paid out.
+  Future<void> settle({
+    required String astrologerId,
+    required String astrologerName,
+    required List<ConsultationBooking> bookings,
+  }) =>
+      _guard(() => ref.read(consultationServiceProvider).settleAstrologer(
+            astrologerId: astrologerId,
+            astrologerName: astrologerName,
+            bookings: bookings,
+          ));
 
   Future<void> _guard(Future<void> Function() action) async {
     state = const AsyncLoading();

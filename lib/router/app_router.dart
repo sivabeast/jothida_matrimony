@@ -41,6 +41,8 @@ import '../screens/admin/admin_shell.dart';
 import '../screens/admin/admin_dashboard.dart';
 import '../screens/admin/admin_users_page.dart';
 import '../screens/admin/admin_astrologer_verification.dart';
+import '../screens/admin/admin_astrologer_profile_screen.dart';
+import '../screens/admin/admin_settlements_screen.dart';
 import '../screens/admin/admin_horoscope_requests_screen.dart';
 import '../screens/admin/admin_expired_bookings_screen.dart';
 import '../screens/admin/astrologer_verification_screen.dart';
@@ -469,10 +471,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               path: '/admin/users',
               builder: (_, __) => const AdminUsersPage()),
           GoRoute(path: '/admin/reports', builder: (_, __) => const AdminReportsScreen()),
-          // Astrologers page → verification management ONLY.
+          // Astrologers page → Pending Verification + Approved management.
           GoRoute(
               path: '/admin/astrologers',
               builder: (_, __) => const AdminAstrologerVerificationView()),
+          // Per-astrologer profile (Profile/Documents/Availability/Bookings/
+          // Reviews/Payouts).
+          GoRoute(
+              path: '/admin/astrologer/:id',
+              builder: (_, state) => AdminAstrologerProfileScreen(
+                  astrologerId: state.pathParameters['id'] ?? '')),
+          // Settlements & Payouts (astrologer payouts + refunds).
+          GoRoute(
+              path: '/admin/settlements',
+              builder: (_, __) => const AdminSettlementsScreen()),
           // Horoscope Requests → astrologer match-analysis request queue.
           GoRoute(
               path: '/admin/horoscope-requests',

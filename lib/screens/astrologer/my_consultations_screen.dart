@@ -101,11 +101,13 @@ class ConsultationBookingCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final b = booking;
     final color = consultationStatusColor(b.status);
-    final canPay = b.isInApp && b.status == ConsultationStatus.waitingForPayment;
     final canViewReport = b.hasReport;
+    // Only an unpaid, not-yet-accepted Direct-Visit booking can be cancelled by
+    // the user. In-App is paid upfront, so the astrologer accepts/rejects (a
+    // rejection is refunded by the admin).
     final canCancel = b.status == ConsultationStatus.pending;
-    // Chat is gated on payment + approval (in-app: paid; direct-visit: the
-    // in-person visit is confirmed on accept). No payment / pending = no chat.
+    // Chat unlocks once the booking is confirmed: an In-App booking once the
+    // astrologer accepts (it is already paid); a Direct-Visit booking on accept.
     final canChat = _chatEnabled(b);
 
     return Container(
@@ -153,18 +155,14 @@ class ConsultationBookingCard extends ConsumerWidget {
             ),
           const SizedBox(height: 8),
           _metaFooter(b),
-          if (canPay) ...[
+          if (b.isInApp && b.status == ConsultationStatus.paid) ...[
             const SizedBox(height: 10),
-            _payBanner(),
+            _awaitingBanner(),
           ],
-          if (canPay || canViewReport || canCancel) ...[
+          if (canViewReport || canCancel) ...[
             const SizedBox(height: 12),
             Row(
               children: [
-                if (canPay)
-                  Expanded(child: _payButton(context, ref, b)),
-                if (canPay && (canViewReport || canCancel))
-                  const SizedBox(width: 10),
                 if (canViewReport)
                   Expanded(
                     child: OutlinedButton.icon(
@@ -176,7 +174,8 @@ class ConsultationBookingCard extends ConsumerWidget {
                           side: const BorderSide(color: AppColors.primary)),
                     ),
                   ),
-                if (canCancel && !canPay)
+                if (canViewReport && canCancel) const SizedBox(width: 10),
+                if (canCancel)
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => _cancel(context, ref, b),
@@ -211,17 +210,21 @@ class ConsultationBookingCard extends ConsumerWidget {
     );
   }
 
-  /// Chat is unlocked only once the booking is confirmed: an in-app booking
-  /// must be paid; a direct-visit booking is confirmed on acceptance (paid in
-  /// person). Pending / rejected / cancelled / refunded never allow chat.
+  /// Chat unlocks only once the booking is confirmed: an In-App booking once the
+  /// astrologer accepts it (it advances to `analysisInProgress`, already paid);
+  /// a Direct-Visit booking on acceptance. A paid-but-unaccepted In-App booking
+  /// (`paid`) and pending / rejected / cancelled / refunded never allow chat.
   bool _chatEnabled(ConsultationBooking b) {
     switch (b.status) {
-      case ConsultationStatus.paid:
       case ConsultationStatus.analysisInProgress:
       case ConsultationStatus.reportSubmitted:
       case ConsultationStatus.completed:
         return true;
       case ConsultationStatus.accepted:
+        return b.isDirectVisit;
+      case ConsultationStatus.paid:
+        // Direct-Visit reaches `paid` only at completion (cash at visit) → chat
+        // stays available; In-App `paid` = awaiting acceptance → no chat yet.
         return b.isDirectVisit;
       default:
         return false;
@@ -256,51 +259,29 @@ class ConsultationBookingCard extends ConsumerWidget {
     }
   }
 
-  Widget _payButton(BuildContext context, WidgetRef ref, ConsultationBooking b) =>
-      ElevatedButton.icon(
-        onPressed: () => _pay(context, ref, b),
-        icon: const Icon(Icons.payment, size: 18),
-        label: Text('Pay ₹${b.amount}'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          visualDensity: VisualDensity.compact,
-        ),
-      );
-
-  Widget _payBanner() => Container(
+  /// Shown on a paid In-App booking that is still waiting for the astrologer to
+  /// accept. Reassures the user their money is held safely until then.
+  Widget _awaitingBanner() => Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: AppColors.info.withOpacity(0.08),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Row(
+        child: const Row(
           children: [
-            const Icon(Icons.check_circle_outline,
+            Icon(Icons.lock_clock_outlined,
                 size: 16, color: AppColors.info),
-            const SizedBox(width: 8),
-            const Expanded(
+            SizedBox(width: 8),
+            Expanded(
               child: Text(
-                'Accepted! Complete the payment to confirm your consultation.',
+                'Paid. Waiting for the astrologer to accept — you\'ll be '
+                'refunded if they can\'t take it.',
                 style: TextStyle(fontSize: 12.5),
               ),
             ),
           ],
         ),
       );
-
-  Future<void> _pay(
-      BuildContext context, WidgetRef ref, ConsultationBooking b) async {
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      await ref.read(consultationControllerProvider.notifier).pay(b);
-      messenger.showSnackBar(const SnackBar(
-          content: Text('Payment successful — your booking is confirmed.')));
-    } catch (_) {
-      messenger.showSnackBar(const SnackBar(
-          content: Text('Payment could not be completed. Please try again.')));
-    }
-  }
 
   Future<void> _cancel(
       BuildContext context, WidgetRef ref, ConsultationBooking b) async {

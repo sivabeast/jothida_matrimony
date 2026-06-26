@@ -322,6 +322,17 @@ service cloud.firestore {
                             || resource.data.userId == request.auth.uid));
     }
 
+    // ── Settlements (astrologer payout history) ──────────────────────────
+    // The admin collects consultation payments and pays them out in full (no
+    // commission). Each "Mark as Paid" batch writes one settlement doc. Only the
+    // admin may write; the admin and the owning astrologer may read their own.
+    match /settlements/{settlementId} {
+      allow read: if isAdmin()
+                  || (isAuthenticated()
+                      && resource.data.astrologerId == request.auth.uid);
+      allow create, update, delete: if isAdmin();
+    }
+
     // ── Astrologer requests (consultation / inquiry / matching) ──────────
     // Direction is USER → ASTROLOGER: only the user creates a request; the
     // astrologer may only respond (accept/complete/reject) to requests
