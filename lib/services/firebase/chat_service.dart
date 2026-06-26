@@ -119,14 +119,23 @@ class ChatService {
           .snapshots()
           .map((s) => s.docs.map(ChatMessage.fromFirestore).toList());
 
+  /// Sends a message into [threadId]. A plain text message passes just [text];
+  /// an attachment passes [type] + [attachmentUrl] (+ [fileName]/[fileType]).
+  /// The thread's `lastMessage` preview is set to [text] for a text message, or
+  /// a short label (📷 Photo / 📄 PDF / 📎 Attachment) for an attachment.
   Future<void> sendMessage({
     required String threadId,
     required String senderId,
     required String text,
+    ChatMessageType type = ChatMessageType.text,
+    String attachmentUrl = '',
+    String fileName = '',
+    String fileType = '',
   }) async {
     final threadRef = _chats.doc(threadId);
     final msgRef =
         threadRef.collection(AppConstants.messagesSubcollection).doc();
+    final preview = chatPreviewFor(type: type, text: text, fileName: fileName);
 
     await _db.runTransaction((txn) async {
       final thread = await txn.get(threadRef);
@@ -138,9 +147,13 @@ class ChatService {
         'senderId': senderId,
         'text': text,
         'sentAt': FieldValue.serverTimestamp(),
+        'type': type.key,
+        if (attachmentUrl.isNotEmpty) 'attachmentUrl': attachmentUrl,
+        if (fileName.isNotEmpty) 'fileName': fileName,
+        if (fileType.isNotEmpty) 'fileType': fileType,
       });
       txn.update(threadRef, {
-        'lastMessage': text,
+        'lastMessage': preview,
         'lastSenderId': senderId,
         'lastMessageAt': FieldValue.serverTimestamp(),
         'unread.$otherId': FieldValue.increment(1),

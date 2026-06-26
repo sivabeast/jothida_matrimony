@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/dev_config.dart';
 import '../models/chat_model.dart';
@@ -6,12 +8,27 @@ import 'demo_data_provider.dart';
 import 'profile_provider.dart';
 import 'service_providers.dart';
 
-/// Automatic system message sent FROM the astrologer the moment they accept a
-/// match-analysis booking (status → "In Progress"). The astrologer never types
-/// it — see [ChatController.sendBookingAcceptedMessage].
+/// Generic fallback for the auto booking-accepted message — used when the
+/// booking has no two named profiles (e.g. a non-matching request or a legacy
+/// booking). See [buildBookingAcceptedMessage].
 const String kBookingAcceptedMessage =
     '✅ உங்கள் Booking ஏற்றுக்கொள்ளப்பட்டது. '
     'உங்கள் Match Analysis தற்போது தொடங்கப்பட்டுள்ளது.';
+
+/// Builds the automatic system message sent FROM the astrologer the moment they
+/// accept a match-analysis booking (status → "In Progress"). When BOTH profile
+/// names are known it names the two profiles being analysed (dynamically — never
+/// hardcoded); otherwise it falls back to [kBookingAcceptedMessage]. The
+/// astrologer never types this — see [ChatController.sendBookingAcceptedMessage].
+String buildBookingAcceptedMessage({String? groomName, String? brideName}) {
+  final groom = groomName?.trim() ?? '';
+  final bride = brideName?.trim() ?? '';
+  if (groom.isEmpty || bride.isEmpty) return kBookingAcceptedMessage;
+  return '✅ உங்கள் Booking ஏற்றுக்கொள்ளப்பட்டுள்ளது.\n\n'
+      '👤 Match Analysis Profiles:\n'
+      '❤️ $groom  ×  ❤️ $bride\n\n'
+      'இந்த இரண்டு Profile-களுக்கான Match Analysis தற்போது தொடங்கப்பட்டுள்ளது.';
+}
 
 /// The TWO quick-message options shown to the USER inside an astrologer chat.
 /// Tapping one sends it instantly as a normal message (no dialog). The
@@ -70,13 +87,25 @@ class DemoChatNotifier extends Notifier<DemoChatState> {
     return id;
   }
 
-  void sendMessage(String threadId, String senderId, String text) {
+  void sendMessage(
+    String threadId,
+    String senderId,
+    String text, {
+    ChatMessageType type = ChatMessageType.text,
+    String attachmentUrl = '',
+    String fileName = '',
+    String fileType = '',
+  }) {
     final now = DateTime.now();
     final msg = ChatMessage(
       id: 'm${now.microsecondsSinceEpoch}',
       senderId: senderId,
       text: text,
       sentAt: now,
+      type: type,
+      attachmentUrl: attachmentUrl,
+      fileName: fileName,
+      fileType: fileType,
     );
     final thread = state.threads[threadId];
     state = state.copyWith(
@@ -92,7 +121,8 @@ class DemoChatNotifier extends Notifier<DemoChatState> {
             participantIds: thread.participantIds,
             participantNames: thread.participantNames,
             participantPhotos: thread.participantPhotos,
-            lastMessage: text,
+            lastMessage:
+                chatPreviewFor(type: type, text: text, fileName: fileName),
             lastSenderId: senderId,
             lastMessageAt: now,
             unread: thread.unread,
@@ -207,6 +237,52 @@ class ChatController {
         threadId: threadId, senderId: myUid, text: text.trim());
   }
 
+  /// Uploads [file] (image / pdf / document) to the thread's storage folder and
+  /// sends it as an attachment message. The Cloudinary URL is real even in demo
+  /// mode, so the attachment opens/previews identically. Rethrows so the screen
+  /// can surface a retry SnackBar on failure (graceful handling).
+  Future<void> sendAttachment(
+    String threadId,
+    File file,
+    ChatMessageType type, {
+    String fileName = '',
+  }) async {
+    final myUid = _ref.read(myUidProvider);
+    if (myUid == null) throw StateError('Not signed in');
+    final name = fileName.trim().isEmpty
+        ? file.path.split(RegExp(r'[\\/]')).last
+        : fileName.trim();
+    final ext = name.contains('.') ? name.split('.').last.toLowerCase() : '';
+    final url = await _ref.read(storageServiceProvider).uploadChatAttachment(
+          threadId: threadId,
+          file: file,
+          isImage: type == ChatMessageType.image,
+        );
+    final preview = chatPreviewFor(type: type, text: '', fileName: name);
+
+    if (kBypassAuth) {
+      _ref.read(demoChatProvider.notifier).sendMessage(
+            threadId,
+            myUid,
+            preview,
+            type: type,
+            attachmentUrl: url,
+            fileName: name,
+            fileType: ext,
+          );
+      return;
+    }
+    await _ref.read(chatServiceProvider).sendMessage(
+          threadId: threadId,
+          senderId: myUid,
+          text: preview,
+          type: type,
+          attachmentUrl: url,
+          fileName: name,
+          fileType: ext,
+        );
+  }
+
   /// Automatically sends the booking-accepted system message FROM the signed-in
   /// astrologer into the thread with [userUid] (creating the thread if needed),
   /// the instant a match-analysis request is accepted.
@@ -219,6 +295,8 @@ class ChatController {
     required String userUid,
     required String userName,
     required String userPhoto,
+    String? groomName,
+    String? brideName,
   }) async {
     try {
       final threadId = await openChatWith(
@@ -226,7 +304,10 @@ class ChatController {
         otherName: userName.trim().isEmpty ? 'User' : userName.trim(),
         otherPhoto: userPhoto,
       );
-      await sendMessage(threadId, kBookingAcceptedMessage);
+      await sendMessage(
+          threadId,
+          buildBookingAcceptedMessage(
+              groomName: groomName, brideName: brideName));
     } catch (_) {
       // Intentionally ignored — accept must succeed regardless.
     }

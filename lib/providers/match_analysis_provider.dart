@@ -274,6 +274,8 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
               userUid: request.userId,
               userName: request.userName,
               userPhoto: request.userPhotoUrl,
+              groomName: request.groomName,
+              brideName: request.brideName,
             );
       }
       state = const AsyncData(null);

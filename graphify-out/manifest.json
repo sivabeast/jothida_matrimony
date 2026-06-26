@@ -110,8 +110,8 @@
     "semantic_hash": ""
   },
   "lib/models/chat_model.dart": {
-    "mtime": 1781140124.0238936,
-    "ast_hash": "9706457dec2973c244eae121d9852cf4",
+    "mtime": 1782451134.928494,
+    "ast_hash": "dd9a642bc1a6f79ae47b3e13089cc4e5",
     "semantic_hash": ""
   },
   "lib/models/interest_model.dart": {
@@ -170,8 +170,8 @@
     "semantic_hash": ""
   },
   "lib/providers/chat_provider.dart": {
-    "mtime": 1782400675.0692136,
-    "ast_hash": "e07f830d1d403753ab10b0824fba08a1",
+    "mtime": 1782451210.2412734,
+    "ast_hash": "47f0a12b2285190d473bc91d8c8ea433",
     "semantic_hash": ""
   },
   "lib/providers/demo_data_provider.dart": {
@@ -340,8 +340,8 @@
     "semantic_hash": ""
   },
   "lib/screens/chat/chat_screen.dart": {
-    "mtime": 1782392404.1625671,
-    "ast_hash": "65f673453591e0330f319cc45d712070",
+    "mtime": 1782451350.123585,
+    "ast_hash": "5627940285b2fb7d8edf9f48a54cab42",
     "semantic_hash": ""
   },
   "lib/screens/home/home_screen.dart": {
@@ -430,8 +430,8 @@
     "semantic_hash": ""
   },
   "lib/services/firebase/chat_service.dart": {
-    "mtime": 1782404956.972704,
-    "ast_hash": "97eede2d63851990b2d5e58ddfb08ce4",
+    "mtime": 1782451125.3778338,
+    "ast_hash": "3bc580bb4ea92a25aa962a68e01903bd",
     "semantic_hash": ""
   },
   "lib/services/firebase/fcm_service.dart": {
@@ -445,8 +445,8 @@
     "semantic_hash": ""
   },
   "lib/services/firebase/storage_service.dart": {
-    "mtime": 1782129103.0161808,
-    "ast_hash": "55ddc45f0da8d400cc0c5cf402b293ba",
+    "mtime": 1782451108.7798405,
+    "ast_hash": "195265203d524f1294108948a1a721ff",
     "semantic_hash": ""
   },
   "lib/services/razorpay/razorpay_service.dart": {
@@ -515,7 +515,7 @@
     "semantic_hash": ""
   },
   "android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java": {
-    "mtime": 1782447332.800727,
+    "mtime": 1782451371.6369495,
     "ast_hash": "957f3f4fa91953a90f2d9690762329f7",
     "semantic_hash": ""
   },
@@ -575,13 +575,13 @@
     "semantic_hash": ""
   },
   "lib/services/cloudinary/cloudinary_storage_service.dart": {
-    "mtime": 1782129089.5237832,
-    "ast_hash": "c9005ff8e161699a0d1db865800754ce",
+    "mtime": 1782451091.8124602,
+    "ast_hash": "19b994ae3dbe9d73d5d7ff3cc5fc8ff4",
     "semantic_hash": ""
   },
   "lib/services/storage_service.dart": {
-    "mtime": 1782129076.7415996,
-    "ast_hash": "98d824577ec54f33b1af679810ac806a",
+    "mtime": 1782451082.005911,
+    "ast_hash": "eddf39488a7d06aacb47e7cc952b3067",
     "semantic_hash": ""
   },
   "test/widget_test.dart": {
@@ -1215,8 +1215,8 @@
     "semantic_hash": ""
   },
   "lib/providers/match_analysis_provider.dart": {
-    "mtime": 1782400238.7157412,
-    "ast_hash": "d753f3c4938287952b5a2cc6ede6bb90",
+    "mtime": 1782451217.7556217,
+    "ast_hash": "6ff466bef8ff8a9467d57759c276bc15",
     "semantic_hash": ""
   },
   "lib/screens/astrologer/book_match_analysis_screen.dart": {

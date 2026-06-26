@@ -58,6 +58,16 @@ abstract class StorageService {
     required String docType,
   });
 
+  /// Uploads a chat attachment (image or document) for [threadId] and returns
+  /// its public URL. Images use the image delivery type; everything else (PDFs,
+  /// other documents) uses the raw delivery type. Each upload gets a unique id
+  /// so attachments in a thread never overwrite one another.
+  Future<String> uploadChatAttachment({
+    required String threadId,
+    required File file,
+    required bool isImage,
+  });
+
   /// Replaces an existing profile photo at [index] (e.g. from an "Edit
   /// profile photo" screen) and returns the new public URL.
   Future<String> updateProfilePhoto({

@@ -150,6 +150,24 @@ class CloudinaryStorageService implements StorageService {
   }
 
   @override
+  Future<String> uploadChatAttachment({
+    required String threadId,
+    required File file,
+    required bool isImage,
+  }) {
+    return _uploadWithRetry(
+      file: file,
+      // PDFs / documents go through Cloudinary's "raw" delivery type; images
+      // via "image".
+      resourceType: isImage ? 'image' : 'raw',
+      folder: 'jothida_matrimony/chat/$threadId',
+      // Unique per upload so multiple attachments in a thread never collide.
+      publicId:
+          '${isImage ? 'img' : 'doc'}_${DateTime.now().millisecondsSinceEpoch}',
+    );
+  }
+
+  @override
   Future<String> updateProfilePhoto({
     required String userId,
     required File file,

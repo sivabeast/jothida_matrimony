@@ -73,19 +73,67 @@ class ChatThread {
       };
 }
 
+/// What a [ChatMessage] carries. Legacy messages have no `type` field and are
+/// treated as [ChatMessageType.text].
+enum ChatMessageType { text, image, pdf, file }
+
+extension ChatMessageTypeX on ChatMessageType {
+  String get key => name;
+
+  static ChatMessageType fromKey(String? k) => ChatMessageType.values
+      .firstWhere((t) => t.name == k, orElse: () => ChatMessageType.text);
+}
+
+/// Short thread-preview text for the Chats list / `lastMessage`. Text messages
+/// use their own text; attachments use a labelled placeholder so the list and
+/// unread badge never show a blank line.
+String chatPreviewFor({
+  required ChatMessageType type,
+  required String text,
+  String fileName = '',
+}) {
+  switch (type) {
+    case ChatMessageType.text:
+      return text;
+    case ChatMessageType.image:
+      return '📷 Photo';
+    case ChatMessageType.pdf:
+      return fileName.isNotEmpty ? '📄 $fileName' : '📄 PDF';
+    case ChatMessageType.file:
+      return fileName.isNotEmpty ? '📎 $fileName' : '📎 Attachment';
+  }
+}
+
 /// One message inside a thread. Firestore: `chats/{threadId}/messages/{id}`.
+///
+/// A message is either plain text or an attachment (image / pdf / file). For an
+/// attachment, [attachmentUrl] is the uploaded Cloudinary URL, [fileName] the
+/// original display name and [fileType] the extension (e.g. `pdf`, `jpg`).
+/// [text] still holds a short preview label for attachments so older renderers
+/// and the Chats-list never show a blank line.
 class ChatMessage {
   final String id;
   final String senderId;
   final String text;
   final DateTime sentAt;
+  final ChatMessageType type;
+  final String attachmentUrl;
+  final String fileName;
+  final String fileType;
 
   const ChatMessage({
     required this.id,
     required this.senderId,
     required this.text,
     required this.sentAt,
+    this.type = ChatMessageType.text,
+    this.attachmentUrl = '',
+    this.fileName = '',
+    this.fileType = '',
   });
+
+  bool get isAttachment => type != ChatMessageType.text;
+  bool get isImage => type == ChatMessageType.image;
 
   factory ChatMessage.fromFirestore(DocumentSnapshot doc) {
     final d = doc.data() as Map<String, dynamic>;
@@ -96,6 +144,10 @@ class ChatMessage {
       sentAt: d['sentAt'] != null
           ? (d['sentAt'] as Timestamp).toDate()
           : DateTime.now(),
+      type: ChatMessageTypeX.fromKey(d['type']),
+      attachmentUrl: d['attachmentUrl'] ?? '',
+      fileName: d['fileName'] ?? '',
+      fileType: d['fileType'] ?? '',
     );
   }
 
@@ -103,5 +155,9 @@ class ChatMessage {
         'senderId': senderId,
         'text': text,
         'sentAt': Timestamp.fromDate(sentAt),
+        'type': type.key,
+        if (attachmentUrl.isNotEmpty) 'attachmentUrl': attachmentUrl,
+        if (fileName.isNotEmpty) 'fileName': fileName,
+        if (fileType.isNotEmpty) 'fileType': fileType,
       };
 }

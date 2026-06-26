@@ -1,7 +1,11 @@
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/file_actions.dart';
 import '../../models/chat_model.dart';
 import '../../providers/astrologer_provider.dart';
 import '../../providers/chat_provider.dart';
@@ -64,6 +68,143 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return false;
     } finally {
       if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  /// Image extensions we treat as inline-previewable images.
+  static const _imageExts = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'bmp'};
+
+  /// Opens the attachment chooser (Camera / Gallery / PDF / Files).
+  void _showAttachmentSheet() {
+    if (_sending) return;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 6),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+            const SizedBox(height: 8),
+            _attachTile(ctx, Icons.photo_camera_outlined, 'Camera',
+                const Color(0xFF2F80ED), _pickCamera),
+            _attachTile(ctx, Icons.photo_library_outlined, 'Gallery / Photos',
+                AppColors.success, _pickGallery),
+            _attachTile(ctx, Icons.picture_as_pdf_outlined, 'PDF Document',
+                AppColors.error, _pickPdf),
+            _attachTile(ctx, Icons.attach_file_outlined, 'Files / Documents',
+                AppColors.primary, _pickFile),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _attachTile(BuildContext sheetCtx, IconData icon, String label,
+          Color color, Future<void> Function() onTap) =>
+      ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(9),
+          decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12)),
+          child: Icon(icon, color: color),
+        ),
+        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+        onTap: () {
+          Navigator.pop(sheetCtx);
+          onTap();
+        },
+      );
+
+  Future<void> _pickCamera() async {
+    try {
+      final x = await ImagePicker()
+          .pickImage(source: ImageSource.camera, imageQuality: 72);
+      if (x != null) await _sendAttachment(File(x.path), ChatMessageType.image);
+    } catch (e) {
+      _attachError(e);
+    }
+  }
+
+  Future<void> _pickGallery() async {
+    try {
+      final x = await ImagePicker()
+          .pickImage(source: ImageSource.gallery, imageQuality: 72);
+      if (x != null) await _sendAttachment(File(x.path), ChatMessageType.image);
+    } catch (e) {
+      _attachError(e);
+    }
+  }
+
+  Future<void> _pickPdf() async {
+    try {
+      final res = await FilePicker.platform.pickFiles(
+          type: FileType.custom, allowedExtensions: ['pdf']);
+      final path = res?.files.single.path;
+      if (path != null) await _sendAttachment(File(path), ChatMessageType.pdf);
+    } catch (e) {
+      _attachError(e);
+    }
+  }
+
+  Future<void> _pickFile() async {
+    try {
+      final res = await FilePicker.platform.pickFiles(type: FileType.any);
+      final path = res?.files.single.path;
+      if (path == null) return;
+      await _sendAttachment(File(path), _typeForPath(path));
+    } catch (e) {
+      _attachError(e);
+    }
+  }
+
+  /// Maps an arbitrary picked file to the right message type by extension.
+  ChatMessageType _typeForPath(String path) {
+    final ext = path.contains('.') ? path.split('.').last.toLowerCase() : '';
+    if (_imageExts.contains(ext)) return ChatMessageType.image;
+    if (ext == 'pdf') return ChatMessageType.pdf;
+    return ChatMessageType.file;
+  }
+
+  /// Uploads [file] and sends it as an attachment, showing the composer's
+  /// in-progress state and a graceful error on failure.
+  Future<void> _sendAttachment(File file, ChatMessageType type) async {
+    if (_sending) return;
+    setState(() => _sending = true);
+    final name = file.path.split(RegExp(r'[\\/]')).last;
+    try {
+      await ref
+          .read(chatControllerProvider)
+          .sendAttachment(widget.threadId, file, type, fileName: name);
+    } catch (e) {
+      debugPrint('[ChatScreen] attachment send failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content:
+                Text('Attachment couldn\'t be sent. Please try again.')));
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  void _attachError(Object e) {
+    debugPrint('[ChatScreen] pick failed: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Could not pick that file. Please try again.')));
     }
   }
 
@@ -185,10 +326,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
           SafeArea(
             child: Container(
-              padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+              padding: const EdgeInsets.fromLTRB(6, 8, 8, 8),
               color: Colors.white,
               child: Row(
                 children: [
+                  // "+" attachment button — Camera / Gallery / PDF / Files.
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline),
+                    color: AppColors.primary,
+                    tooltip: 'Attach',
+                    onPressed: _sending ? null : _showAttachmentSheet,
+                  ),
                   Expanded(
                     child: TextField(
                       controller: _controller,
@@ -242,11 +390,16 @@ class _Bubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isImage = message.isImage && message.attachmentUrl.isNotEmpty;
     return Align(
       alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 3),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        // Images get tight padding so the preview is prominent; text / cards
+        // keep the roomier bubble padding.
+        padding: isImage
+            ? const EdgeInsets.all(4)
+            : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         constraints: BoxConstraints(
             maxWidth: MediaQuery.of(context).size.width * 0.75),
         decoration: BoxDecoration(
@@ -265,22 +418,134 @@ class _Bubble extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              message.text,
-              style: TextStyle(
-                  color: isMine ? Colors.white : AppColors.textPrimary,
-                  fontSize: 14.5,
-                  height: 1.3),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              '${message.sentAt.hour.toString().padLeft(2, '0')}:${message.sentAt.minute.toString().padLeft(2, '0')}',
-              style: TextStyle(
-                  fontSize: 10,
-                  color: isMine ? Colors.white70 : Colors.grey[500]),
+            _content(context),
+            SizedBox(height: isImage ? 4 : 2),
+            Padding(
+              padding: isImage
+                  ? const EdgeInsets.only(right: 6, bottom: 2)
+                  : EdgeInsets.zero,
+              child: Text(
+                '${message.sentAt.hour.toString().padLeft(2, '0')}:${message.sentAt.minute.toString().padLeft(2, '0')}',
+                style: TextStyle(
+                    fontSize: 10,
+                    color: isMine && !isImage
+                        ? Colors.white70
+                        : Colors.grey[500]),
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _content(BuildContext context) {
+    switch (message.type) {
+      case ChatMessageType.image:
+        return _imageContent(context);
+      case ChatMessageType.pdf:
+      case ChatMessageType.file:
+        return _fileContent(context);
+      case ChatMessageType.text:
+        return Text(
+          message.text,
+          style: TextStyle(
+              color: isMine ? Colors.white : AppColors.textPrimary,
+              fontSize: 14.5,
+              height: 1.3),
+        );
+    }
+  }
+
+  Widget _imageContent(BuildContext context) {
+    if (message.attachmentUrl.isEmpty) {
+      return Text(message.text,
+          style: TextStyle(color: isMine ? Colors.white : AppColors.textPrimary));
+    }
+    return GestureDetector(
+      onTap: () => showImageGallery(context, [message.attachmentUrl]),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 240, minWidth: 140),
+          child: Image.network(
+            message.attachmentUrl,
+            fit: BoxFit.cover,
+            loadingBuilder: (ctx, child, progress) {
+              if (progress == null) return child;
+              return Container(
+                height: 160,
+                width: 200,
+                color: Colors.grey[200],
+                alignment: Alignment.center,
+                child: const CircularProgressIndicator(strokeWidth: 2),
+              );
+            },
+            errorBuilder: (ctx, _, __) => Container(
+              height: 120,
+              width: 200,
+              color: Colors.grey[200],
+              alignment: Alignment.center,
+              child: const Icon(Icons.broken_image_outlined,
+                  color: Colors.grey, size: 32),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _fileContent(BuildContext context) {
+    final isPdf = message.type == ChatMessageType.pdf;
+    final onTint = isMine ? Colors.white : AppColors.primary;
+    final subTint = isMine ? Colors.white70 : Colors.grey[600];
+    final name = message.fileName.isNotEmpty
+        ? message.fileName
+        : (isPdf ? 'Document.pdf' : 'Attachment');
+    return GestureDetector(
+      onTap: () => openRemoteFile(context, message.attachmentUrl, pdf: isPdf),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: (isMine ? Colors.white : AppColors.primary)
+                  .withOpacity(isMine ? 0.18 : 0.10),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+                isPdf ? Icons.picture_as_pdf : Icons.insert_drive_file_outlined,
+                color: onTint,
+                size: 22),
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        color: isMine ? Colors.white : AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13.5)),
+                const SizedBox(height: 2),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.download_outlined, size: 13, color: subTint),
+                    const SizedBox(width: 3),
+                    Text('Tap to open',
+                        style: TextStyle(fontSize: 11.5, color: subTint)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
