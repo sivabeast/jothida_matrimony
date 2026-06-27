@@ -135,6 +135,12 @@ class AstrologerRequestModel {
   final String id;
   final String astrologerId;
   final String astrologerName;
+
+  /// The responder's REAL Firebase uid. Match-analysis requests are addressed to
+  /// the synthetic [kInternalAstrologyId], so this is empty until the internal
+  /// astrology account accepts — at which point it stamps its actual uid here so
+  /// the USER side can open the same chat thread the internal account created.
+  final String astrologerUid;
   final String userId;
   final String userName;
   final String userPhotoUrl;
@@ -210,6 +216,7 @@ class AstrologerRequestModel {
     required this.id,
     required this.astrologerId,
     this.astrologerName = '',
+    this.astrologerUid = '',
     required this.userId,
     required this.userName,
     this.userPhotoUrl = '',
@@ -362,6 +369,7 @@ class AstrologerRequestModel {
       id: doc.id,
       astrologerId: d['astrologerId'] ?? '',
       astrologerName: d['astrologerName'] ?? '',
+      astrologerUid: d['astrologerUid'] ?? '',
       userId: d['userId'] ?? '',
       userName: d['userName'] ?? 'User',
       userPhotoUrl: d['userPhotoUrl'] ?? '',
@@ -407,6 +415,7 @@ class AstrologerRequestModel {
   Map<String, dynamic> toFirestore() => {
         'astrologerId': astrologerId,
         'astrologerName': astrologerName,
+        'astrologerUid': astrologerUid,
         'userId': userId,
         'userName': userName,
         'userPhotoUrl': userPhotoUrl,
@@ -452,6 +461,7 @@ class AstrologerRequestModel {
   AstrologerRequestModel copyWith({
     String? astrologerId,
     String? astrologerName,
+    String? astrologerUid,
     AstrologerRequestStatus? status,
     String? analysisText,
     List<String>? analysisImages,
@@ -476,6 +486,7 @@ class AstrologerRequestModel {
         id: id,
         astrologerId: astrologerId ?? this.astrologerId,
         astrologerName: astrologerName ?? this.astrologerName,
+        astrologerUid: astrologerUid ?? this.astrologerUid,
         userId: userId,
         userName: userName,
         userPhotoUrl: userPhotoUrl,

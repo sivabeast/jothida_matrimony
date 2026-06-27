@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../../core/config/admin_config.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/utils/working_hours.dart';
 import '../../models/astrologer_account_model.dart';
@@ -283,6 +284,23 @@ class AstrologerService {
           .map((s) =>
               s.docs.map(AstrologerRequestModel.fromFirestore).toList());
 
+  /// Realtime stream of EVERY Match Analysis request addressed to the single
+  /// internal astrology service ([kInternalAstrologyId]). Powers the internal
+  /// Astrology Dashboard. Single-field equality query (no composite index);
+  /// match-analysis filtering + newest-first sort are done client-side.
+  Stream<List<AstrologerRequestModel>> watchAllMatchRequests() => _db
+      .collection(AppConstants.astrologerRequestsCollection)
+      .where('astrologerId', isEqualTo: kInternalAstrologyId)
+      .snapshots()
+      .map((s) {
+        final list = s.docs
+            .map(AstrologerRequestModel.fromFirestore)
+            .where((r) => r.isMatchAnalysis)
+            .toList();
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return list;
+      });
+
   /// Requests this matrimony user has sent (to track status).
   ///
   /// Single-field equality query with NO server-side `orderBy` (which would
@@ -306,6 +324,11 @@ class AstrologerService {
     String astrologerName = '',
     String userId = '',
     int amount = 0,
+    // The REAL Firebase uid of the responder (the internal astrology account).
+    // Requests are addressed to the synthetic `internal_astrology` id, so we
+    // stamp the responder's actual uid on accept — that's what the USER side
+    // uses to open the same chat thread the internal account created.
+    String responderUid = '',
   }) async {
     final who =
         astrologerName.trim().isEmpty ? 'the astrologer' : astrologerName.trim();
@@ -330,6 +353,8 @@ class AstrologerService {
         .update({
       'status': status.name,
       'respondedAt': FieldValue.serverTimestamp(),
+      if (status == AstrologerRequestStatus.accepted && responderUid.isNotEmpty)
+        'astrologerUid': responderUid,
       if (label != null)
         'history':
             FieldValue.arrayUnion([BookingHistoryEntry.now(label).toMap()]),

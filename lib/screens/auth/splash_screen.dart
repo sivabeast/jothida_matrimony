@@ -57,15 +57,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       if (userModel == null) {
         debugPrint('[Splash] No Firestore user doc found → /account-type');
         context.go('/account-type');
+      } else if (userModel.isInternalAstrology) {
+        // The dedicated internal astrology account skips the whole matrimony
+        // experience and lands directly on the Astrology Dashboard.
+        debugPrint('[Splash] Internal astrology account → /astrology');
+        context.go('/astrology');
       } else if (userModel.role == 'admin') {
         // Only a *pure* admin auto-lands on the dashboard. A super_admin is a
         // normal user (with an extra Admin icon) and goes through the normal
         // user flow below.
         debugPrint('[Splash] Pure admin account → /admin');
         context.go('/admin');
-      } else if (userModel.isAstrologer) {
-        debugPrint('[Splash] Astrologer user → /astrologer-dashboard');
-        context.go('/astrologer-dashboard');
       } else if (!userModel.isProfileComplete) {
         debugPrint('[Splash] Profile incomplete → /profile/create');
         context.go('/profile/create');

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/config/admin_config.dart';
 import '../core/config/dev_config.dart';
 import '../core/utils/working_hours.dart';
 import '../models/astrologer_request_model.dart';
@@ -66,8 +67,9 @@ final myMatchAnalysisRequestsProvider =
           .toList());
 });
 
-/// All match-analysis requests addressed to the signed-in astrologer
-/// (type == matching), powering the dashboard's dedicated module.
+/// DEPRECATED (legacy per-astrologer inbox). Retained only so the now-unwired
+/// astrologer screens still analyse; the live app routes match analysis through
+/// the single internal service ([internalAstrologyRequestsProvider]).
 final astrologerMatchRequestsProvider =
     Provider.autoDispose<AsyncValue<List<AstrologerRequestModel>>>((ref) {
   return ref
@@ -75,12 +77,30 @@ final astrologerMatchRequestsProvider =
       .whenData((list) => list.where((r) => r.isMatchAnalysis).toList());
 });
 
-/// A single astrologer request by id, kept live from the astrologer's request
+/// Every Match Analysis request addressed to the single INTERNAL astrology
+/// service ([kInternalAstrologyId]). Powers the internal Astrology Dashboard
+/// (the only place these are reviewed now that there is no per-astrologer
+/// inbox). Newest-first, real-time.
+final internalAstrologyRequestsProvider =
+    StreamProvider.autoDispose<List<AstrologerRequestModel>>((ref) {
+  if (kBypassAuth) {
+    final all = ref.watch(demoAstrologerRequestsProvider);
+    final list = all
+        .where((r) => r.type == AstrologerRequestType.matching)
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return Stream.value(list);
+  }
+  return ref.read(astrologerServiceProvider).watchAllMatchRequests();
+});
+
+/// A single match-analysis request by id, kept live from the internal service
 /// stream — so the workspace reflects accept / reject / complete immediately,
 /// without re-opening the screen.
 final astrologerRequestByIdProvider =
     Provider.autoDispose.family<AstrologerRequestModel?, String>((ref, id) {
-  final list = ref.watch(astrologerRequestsProvider).valueOrNull ?? const [];
+  final list =
+      ref.watch(internalAstrologyRequestsProvider).valueOrNull ?? const [];
   for (final r in list) {
     if (r.id == id) return r;
   }
@@ -193,6 +213,68 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     }
   }
 
+  /// Sends a pairing straight to the single INTERNAL astrology service for a
+  /// Match Analysis — no astrologer selection, no payment, no approval step.
+  ///
+  /// Spec flow: the option is only ever offered AFTER an interest is accepted
+  /// (so the horoscope is unlocked); pressing it instantly creates a request
+  /// addressed to [kInternalAstrologyId], which appears immediately on the
+  /// internal Astrology Dashboard. [groom]/[bride] are the two profiles whose
+  /// horoscopes are compared (always the user + their accepted match).
+  Future<void> requestInternalMatchAnalysis({
+    required ProfileModel groom,
+    required ProfileModel bride,
+    String note = '',
+  }) async {
+    state = const AsyncLoading();
+    try {
+      final me = ref.read(myProfileProvider).valueOrNull;
+      final user = ref.read(currentUserProvider).valueOrNull;
+      final uid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ??
+          user?.uid ??
+          '';
+      final location = me == null
+          ? ''
+          : [me.city, me.state].where((s) => s.trim().isNotEmpty).join(', ');
+      final lang = ref.read(localeProvider)?.languageCode ?? 'en';
+      final now = DateTime.now();
+
+      final request = AstrologerRequestModel(
+        id: 'new',
+        astrologerId: kInternalAstrologyId,
+        astrologerName: kInternalAstrologyName,
+        userId: uid,
+        userName: me?.fullName ?? user?.displayName ?? 'User',
+        userPhotoUrl: me?.profilePhotoUrl ?? '',
+        userLocation: location,
+        type: AstrologerRequestType.matching,
+        status: AstrologerRequestStatus.pending,
+        message: note.trim(),
+        amount: 0, // internal service — no per-request payment
+        profileAId: groom.id,
+        profileAName: groom.fullName,
+        profileBId: bride.id,
+        profileBName: bride.fullName,
+        createdAt: now,
+        userLanguage: lang,
+        history: [
+          BookingHistoryEntry(
+              at: now, label: 'Sent for astrology match analysis'),
+        ],
+      );
+
+      if (kBypassAuth) {
+        ref.read(demoAstrologerRequestsProvider.notifier).add(request);
+      } else {
+        await ref.read(astrologerServiceProvider).createRequest(request);
+      }
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
   /// Best-effort: flag this user's OWN booking Expired once the 24-hour window
   /// lapses (security rules permit the owner this limited update; there is no
   /// Cloud Functions backend to do it server-side). Safe to call repeatedly.
@@ -280,12 +362,17 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
             .read(demoAstrologerRequestsProvider.notifier)
             .setStatus(request.id, status);
       } else {
+        // Stamp the responder's REAL uid (the internal astrology account) on
+        // accept so the user can open the same chat thread it creates.
+        final responderUid =
+            ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ?? '';
         await ref.read(astrologerServiceProvider).updateRequestStatus(
               request.id,
               status,
               astrologerName: request.astrologerName,
               userId: request.userId,
               amount: request.amount,
+              responderUid: responderUid,
             );
       }
       // On ACCEPT the booking is "In Progress" and chat opens for both sides —

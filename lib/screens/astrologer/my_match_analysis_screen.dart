@@ -196,12 +196,19 @@ class MatchAnalysisBookingCard extends ConsumerWidget {
   Future<void> _chat(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
+      // Match-analysis requests are addressed to the synthetic internal id, so
+      // chat with the responder's REAL uid (stamped on accept) — that's the
+      // thread the internal astrology account created. Falls back to the
+      // addressed id only for legacy per-astrologer bookings.
+      final otherUid = request.astrologerUid.isNotEmpty
+          ? request.astrologerUid
+          : request.astrologerId;
       final photo =
           ref.read(astrologerByIdProvider(request.astrologerId))?.photoUrl ?? '';
       debugPrint('[MyMatchAnalysis] open chat → booking=${request.id} '
-          'astrologerId=${request.astrologerId} userId=${request.userId}');
+          'otherUid=$otherUid userId=${request.userId}');
       final id = await ref.read(chatControllerProvider).openChatWith(
-            otherUid: request.astrologerId,
+            otherUid: otherUid,
             otherName: request.astrologerName.isEmpty
                 ? 'Astrologer'
                 : request.astrologerName,

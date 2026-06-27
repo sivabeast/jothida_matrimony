@@ -9,7 +9,6 @@ import '../../models/profile_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/interest_provider.dart';
 import '../../providers/match_analysis_provider.dart';
-import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../widgets/common/horoscope_match_badge.dart' show categoryColor;
 
@@ -20,14 +19,34 @@ import '../../widgets/common/horoscope_match_badge.dart' show categoryColor;
 /// (photo, name, age, location, match category) plus the four horoscope
 /// actions (View Horoscope · Compare Horoscope · Request Astrologer Analysis ·
 /// Book Consultation). Tapping a card opens the full horoscope-matching detail.
-class HoroscopeMatchingScreen extends ConsumerWidget {
+class HoroscopeMatchingScreen extends StatelessWidget {
   const HoroscopeMatchingScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.scaffoldBg,
+      appBar: AppBar(
+        title: const Text('Horoscope Matching'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+      ),
+      body: const AcceptedMatchesView(),
+    );
+  }
+}
+
+/// The accepted-matches list (no Scaffold / AppBar) — reused by the standalone
+/// Horoscope Matching screen and the Home "Astrology" tab. Lists ONLY members
+/// the user has a mutually-accepted interest with; each card offers the
+/// horoscope actions including "Send for Match Analysis".
+class AcceptedMatchesView extends ConsumerWidget {
+  const AcceptedMatchesView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
-    final sent =
-        ref.watch(sentInterestsProvider).valueOrNull ?? const [];
+    final sent = ref.watch(sentInterestsProvider).valueOrNull ?? const [];
     final received =
         ref.watch(receivedInterestsProvider).valueOrNull ?? const [];
 
@@ -42,20 +61,11 @@ class HoroscopeMatchingScreen extends ConsumerWidget {
     uids.remove(myUid);
     final uidList = uids.toList();
 
-    return Scaffold(
-      backgroundColor: AppColors.scaffoldBg,
-      appBar: AppBar(
-        title: const Text('Horoscope Matching'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
-      body: uidList.isEmpty
-          ? const _EmptyMatches()
-          : ListView.builder(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
-              itemCount: uidList.length,
-              itemBuilder: (_, i) => _AcceptedMatchCard(userId: uidList[i]),
-            ),
+    if (uidList.isEmpty) return const _EmptyMatches();
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
+      itemCount: uidList.length,
+      itemBuilder: (_, i) => _AcceptedMatchCard(userId: uidList[i]),
     );
   }
 }
@@ -176,20 +186,21 @@ class _AcceptedMatchCard extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _actionChip(Icons.insights_outlined,
-                          'Request Analysis',
-                          () => _consult(context, ref, other)),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () =>
+                        sendForMatchAnalysis(context, ref, me, other),
+                    icon: const Icon(Icons.insights_outlined, size: 18),
+                    label: const Text('Send for Match Analysis'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(42),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _actionChip(Icons.event_note_outlined,
-                          'Book Consultation',
-                          () => _consult(context, ref, other)),
-                    ),
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -260,16 +271,74 @@ class _AcceptedMatchCard extends ConsumerWidget {
       builder: (_) => HoroscopeMatchDetailScreen(other: other),
     ));
   }
+}
 
-  /// Stash this pairing and jump to the Astrologers tab, where the user picks
-  /// an astrologer and books a match analysis / consultation for the pair.
-  void _consult(BuildContext context, WidgetRef ref, ProfileModel other) {
-    ref.read(consultMatchProvider.notifier).state = ConsultMatchContext(
-      partnerUserId: other.userId,
-      partnerName: other.name,
-    );
-    ref.read(homeTabIndexProvider.notifier).state = kAstrologerTabIndex;
-    context.go('/home');
+/// Sends this accepted-match pairing straight to the internal astrology service
+/// for a Match Analysis — no astrologer selection, no payment. Offered ONLY on
+/// accepted matches (so the horoscope is unlocked), per the spec flow.
+///
+/// The user's own profile + the matched profile become the groom/bride pair
+/// (split by gender; falls back to user=A, match=B when genders are equal or
+/// unknown). On success it jumps to "My Match Analysis" to track the request.
+Future<void> sendForMatchAnalysis(
+  BuildContext context,
+  WidgetRef ref,
+  ProfileModel? me,
+  ProfileModel other,
+) async {
+  final messenger = ScaffoldMessenger.of(context);
+  if (me == null) {
+    messenger.showSnackBar(const SnackBar(
+        content: Text('Complete your own profile before requesting analysis.')));
+    return;
+  }
+  bool isMale(ProfileModel p) => p.gender.trim().toLowerCase().startsWith('m');
+  final ProfileModel groom;
+  final ProfileModel bride;
+  if (isMale(me) && !isMale(other)) {
+    groom = me;
+    bride = other;
+  } else if (!isMale(me) && isMale(other)) {
+    groom = other;
+    bride = me;
+  } else {
+    groom = me;
+    bride = other;
+  }
+
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Send for Match Analysis'),
+      content: Text(
+          'Send your horoscope and ${other.name}\'s for an astrology match '
+          'analysis? Our astrology team will review and share a detailed report.'),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel')),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+          child: const Text('Send'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true) return;
+
+  try {
+    await ref
+        .read(matchAnalysisControllerProvider.notifier)
+        .requestInternalMatchAnalysis(groom: groom, bride: bride);
+    if (!context.mounted) return;
+    messenger.showSnackBar(const SnackBar(
+        content: Text('Sent for astrology match analysis.')));
+    context.push('/my-analysis');
+  } catch (_) {
+    messenger.showSnackBar(const SnackBar(
+        content: Text('Could not send the request. Please try again.')));
   }
 }
 
@@ -358,7 +427,7 @@ class HoroscopeMatchDetailScreen extends ConsumerWidget {
             _noCompatibility(me),
           _analysisSection(context, analysis),
           const SizedBox(height: 16),
-          _bookConsultationButton(context, ref),
+          if (analysis == null) _sendForAnalysisButton(context, ref, me),
           const SizedBox(height: 24),
         ],
       ),
@@ -630,20 +699,14 @@ class HoroscopeMatchDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _bookConsultationButton(BuildContext context, WidgetRef ref) =>
+  Widget _sendForAnalysisButton(
+          BuildContext context, WidgetRef ref, ProfileModel? me) =>
       SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(
-          onPressed: () {
-            ref.read(consultMatchProvider.notifier).state = ConsultMatchContext(
-              partnerUserId: other.userId,
-              partnerName: other.name,
-            );
-            ref.read(homeTabIndexProvider.notifier).state = kAstrologerTabIndex;
-            context.go('/home');
-          },
-          icon: const Icon(Icons.event_note_outlined),
-          label: const Text('Book Consultation'),
+          onPressed: () => sendForMatchAnalysis(context, ref, me, other),
+          icon: const Icon(Icons.insights_outlined),
+          label: const Text('Send for Match Analysis'),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,

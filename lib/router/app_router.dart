@@ -6,20 +6,11 @@ import 'package:go_router/go_router.dart';
 import '../core/config/dev_config.dart';
 import '../core/navigation/root_navigator.dart';
 import '../providers/auth_provider.dart';
-import '../providers/astrologer_session_provider.dart';
 import '../providers/service_providers.dart';
 import '../models/astrologer_request_model.dart';
-import '../screens/astrologer/astrologer_dashboard_screen.dart';
-import '../screens/astrologer/astrologer_login_screen.dart';
-import '../screens/astrologer/astrologer_register_screen.dart';
-import '../screens/astrologer/book_match_analysis_screen.dart';
-import '../screens/astrologer/consultation_booking_screen.dart';
-import '../screens/astrologer/my_consultations_screen.dart';
-import '../screens/astrologer/astrologer_consultations_screen.dart';
-import '../screens/astrologer/astrologer_earnings_screen.dart';
-import '../screens/astrologer/profile/astrologer_bank_details_screen.dart';
-import '../screens/astrologer/match_requests_screen.dart';
-import '../screens/astrologer/astrologer_requests_page.dart';
+// Internal astrology service (single owner) — lightweight dashboard + the
+// shared match-analysis workspace. All other astrologer screens were retired.
+import '../screens/astrology/astrology_dashboard_screen.dart';
 import '../screens/astrologer/match_workspace_screen.dart';
 import '../screens/astrologer/my_match_analysis_screen.dart';
 import '../screens/auth/account_type_screen.dart';
@@ -35,7 +26,6 @@ import '../screens/profile/profile_creation_screen.dart';
 import '../screens/profile/profile_success_screen.dart';
 import '../screens/profile/profile_view_screen.dart';
 import '../screens/match/match_details_screen.dart';
-import '../screens/astrologer/astrologer_profile_screen.dart';
 import '../screens/privacy/privacy_settings_screen.dart';
 import '../screens/settings/language_screen.dart';
 import '../screens/subscription/subscription_screen.dart';
@@ -128,27 +118,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           loc == '/login' ||
           loc == '/register' ||
           loc == '/forgot-password' ||
-          loc == '/astrologer-login' ||
           loc.startsWith('/otp');
       final onSplash = loc == '/';
-
-      // Astrologer portal has its OWN gate (login/signup before dashboard).
-      // /astrologer-register is the first-time setup screen: pre-fills name,
-      // email and photo from Google auth — never asks for credentials again.
-      final inAstrologerPortal =
-          loc == '/astrologer-register' || loc == '/astrologer-dashboard';
-      if (inAstrologerPortal) {
-        final onboarded = ref.read(isAstrologerOnboardedProvider);
-        if (!onboarded && loc == '/astrologer-dashboard') {
-          // In demo mode the astrologer signup creates the session locally; in
-          // real mode the session is hydrated after Firebase login.
-          return kBypassAuth ? '/astrologer-register' : '/astrologer-login';
-        }
-        if (onboarded && loc == '/astrologer-register') {
-          return '/astrologer-dashboard';
-        }
-        return null;
-      }
 
       // ── Demo mode (kBypassAuth): everything reachable, Home shows the
       // profile-completion card instead of force-redirecting. ──
@@ -168,14 +139,39 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return (onAuthPage || onSplash) ? null : '/account-type';
       }
 
-      // Authenticated → route by role / onboarding status.
+      // Authenticated → route by account type / onboarding status.
       final userAsync = ref.read(currentUserProvider);
       if (userAsync.isLoading) return null; // wait for the user doc to load
       final user = userAsync.valueOrNull;
       debugPrint('[Router] redirect check: loc=$loc, uid=${user?.uid}, '
           'role=${user?.role}, isAdmin=${user?.isAdmin}, '
-          'isAstrologer=${user?.isAstrologer}, '
+          'isInternalAstrology=${user?.isInternalAstrology}, '
           'isProfileComplete=${user?.isProfileComplete}');
+
+      // ── Internal Astrology account ───────────────────────────────────────
+      // The dedicated internal astrology/admin Gmail skips the ENTIRE matrimony
+      // experience — no onboarding, home, matches or profile. It lives only in
+      // the Astrology Dashboard, the request workspace, and chat threads with
+      // users. Everything else redirects straight to the dashboard.
+      if (user != null && user.isInternalAstrology) {
+        final allowed = loc == '/astrology' ||
+            loc.startsWith('/match-workspace') ||
+            loc.startsWith('/chat');
+        if (!allowed) {
+          debugPrint('[Router] internal astrology account → /astrology');
+          return '/astrology';
+        }
+        return null;
+      }
+
+      // ── /astrology protection ────────────────────────────────────────────
+      // Only the internal astrology account or an admin may open the Astrology
+      // Dashboard (admins reach it from the Home header for oversight).
+      final onAstrology = loc == '/astrology';
+      if (onAstrology && !(user?.isAdmin ?? false)) {
+        debugPrint('[Router] ⛔ non-privileged blocked from "$loc" → /home');
+        return '/home';
+      }
 
       // ── Admin route protection ───────────────────────────────────────────
       // Only 'admin' / 'super_admin' accounts may reach any /admin route.
@@ -185,30 +181,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return '/home';
       }
 
-      if (user != null && user.isAstrologer && (onAuthPage || loc == '/home')) {
-        debugPrint('[Router] redirect: astrologer account → /astrologer-dashboard');
-        return '/astrologer-dashboard';
-      }
       if (onAuthPage) {
         // Only a *pure* admin account auto-lands on the dashboard. A
         // super_admin is a normal user with extra powers, so they land on Home
         // and open the dashboard via the header Admin icon.
         if (user?.role == 'admin') return '/admin';
-        // Came from the astrologer portal's Google sign-in and isn't an
-        // astrologer yet → go straight to astrologer profile setup, not the
-        // matrimony profile wizard.
-        if (loc == '/astrologer-login' &&
-            user != null &&
-            !user.isAstrologer &&
-            !user.isProfileComplete) {
-          debugPrint('[Router] redirect: astrologer Google sign-in → /astrologer-register');
-          return '/astrologer-register';
-        }
         // A pure admin account is exempt from onboarding; a super_admin is a
         // NORMAL matrimony user and onboards exactly like everyone else.
         if (user != null &&
             !user.isProfileComplete &&
-            !user.isAstrologer &&
             user.role != 'admin') {
           debugPrint('[Router] redirect: profile incomplete → /profile/create');
           return '/profile/create';
@@ -221,7 +202,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final onProfileCreate = loc == '/profile/create';
       if (user != null &&
           !onAdmin && // admins may still open /admin with an incomplete profile
-          !user.isAstrologer &&
           !user.isProfileComplete &&
           !onProfileCreate &&
           !onSplash) {
@@ -243,12 +223,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/account-type', builder: (_, __) => const AccountTypeScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      // Internal Astrology Dashboard (single internal service). Gated in
+      // `redirect` to the internal astrology account + admins.
       GoRoute(
-          path: '/astrologer-login',
-          builder: (_, __) => const AstrologerLoginScreen()),
-      GoRoute(
-          path: '/astrologer-register',
-          builder: (_, __) => const AstrologerRegisterScreen()),
+          path: '/astrology',
+          builder: (_, __) => const AstrologyDashboardScreen()),
       GoRoute(path: '/chats', builder: (_, __) => const ChatListScreen()),
       GoRoute(
         path: '/chat/:id',
@@ -307,70 +286,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) =>
             ReportProfileScreen(profileId: state.pathParameters['id']!),
       ),
-      // Astrologer portal (distinct prefix so it never collides with
-      // '/astrologer/:id' above).
-      GoRoute(
-        path: '/astrologer-dashboard',
-        builder: (_, __) => const AstrologerDashboardScreen(),
-      ),
-      GoRoute(
-        path: '/astrologer/:id',
-        builder: (_, state) =>
-            AstrologerProfileScreen(astrologerId: state.pathParameters['id']!),
-      ),
       // ── Match-analysis pipeline ──────────────────────────────────────────
-      // User: book a porutham analysis (groom/bride from accepted matches).
-      GoRoute(
-        path: '/book-analysis/:id',
-        builder: (_, state) =>
-            BookMatchAnalysisScreen(astrologerId: state.pathParameters['id']!),
-      ),
       // User: "My Match Analysis" (Pending / Accepted / Completed + reports).
       GoRoute(
           path: '/my-analysis', builder: (_, __) => const MyMatchAnalysisScreen()),
-      // ── Consultation booking system (In-App + Direct Visit) ──────────────
-      GoRoute(
-        path: '/book-consultation/:id',
-        builder: (_, state) =>
-            ConsultationBookingScreen(astrologerId: state.pathParameters['id']!),
-      ),
-      // User: track consultations, pay after acceptance, read reports.
-      GoRoute(
-          path: '/my-consultations',
-          builder: (_, __) => const MyConsultationsScreen()),
-      // Astrologer: consultation requests inbox + lifecycle actions.
-      GoRoute(
-          path: '/consultation-requests',
-          builder: (_, __) => const AstrologerConsultationsScreen()),
-      // Astrologer: earnings dashboard + transaction history.
-      GoRoute(
-          path: '/astrologer-earnings',
-          builder: (_, __) => const AstrologerEarningsScreen()),
-      // Astrologer: payout bank account / UPI + flat fees.
-      GoRoute(
-          path: '/astrologer-bank-details',
-          builder: (_, __) => const AstrologerBankDetailsScreen()),
-      // Astrologer: dedicated Match Analysis Requests module
-      // (Pending / Accepted / Completed).
-      GoRoute(
-        path: '/match-requests',
-        builder: (_, __) => const MatchRequestsScreen(),
-      ),
-      // Astrologer: unified Requests page (Match Analysis + Direct Visit tabs).
-      // ?tab=visit opens the Direct Visit tab; default is Match Analysis. Used by
-      // the dashboard banner and FCM notification taps.
-      GoRoute(
-        path: '/astrologer-requests',
-        builder: (_, state) => AstrologerRequestsPage(
-          initialTab: state.uri.queryParameters['tab'] == 'visit' ? 1 : 0,
-        ),
-      ),
-      // Astrologer: the analysis "Status" page / workspace for a request. The
-      // request id is in the path so the page ALWAYS resolves the live request
-      // (the optional `extra` snapshot only speeds up the first paint). This is
-      // what makes "click Status → open the correct page" reliable even after a
-      // restart / deep link. Distinct prefix so it never collides with
-      // '/astrologer/:id'.
+      // The analysis workspace for a request, opened from the Astrology
+      // Dashboard. The request id is in the path so the page ALWAYS resolves the
+      // live request (the optional `extra` snapshot only speeds up the first
+      // paint) — reliable even after a restart or FCM deep link.
       GoRoute(
         path: '/match-workspace/:id',
         builder: (_, state) => MatchWorkspaceScreen(

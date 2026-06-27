@@ -20,11 +20,6 @@ class _AccountTypeScreenState extends State<AccountTypeScreen>
   late final AnimationController _controller;
   late final Animation<double> _fade;
   late final Animation<Offset> _slideUser;
-  late final Animation<Offset> _slideAstro;
-
-  // Astrologer-card accent (royal purple) — distinguishes it from the maroon
-  // matrimony card while staying within the luxury palette.
-  static const Color _astroAccent = Color(0xFF6A3CA5);
 
   @override
   void initState() {
@@ -36,10 +31,6 @@ class _AccountTypeScreenState extends State<AccountTypeScreen>
         .animate(CurvedAnimation(
             parent: _controller,
             curve: const Interval(0.25, 0.85, curve: Curves.easeOutCubic)));
-    _slideAstro = Tween<Offset>(begin: const Offset(0, 0.30), end: Offset.zero)
-        .animate(CurvedAnimation(
-            parent: _controller,
-            curve: const Interval(0.45, 1.0, curve: Curves.easeOutCubic)));
     _controller.forward();
   }
 
@@ -66,7 +57,7 @@ class _AccountTypeScreenState extends State<AccountTypeScreen>
                 child: Column(
                   children: [
                     const Text(
-                      'Who are you joining as?',
+                      'Find Your Perfect Match',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: AppColors.primary,
@@ -79,7 +70,7 @@ class _AccountTypeScreenState extends State<AccountTypeScreen>
                     _goldDivider(),
                     const SizedBox(height: 8),
                     Text(
-                      'Choose your role to continue',
+                      'Continue to create your profile and discover matches',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           color: Colors.brown.shade400, fontSize: 14.5),
@@ -92,30 +83,13 @@ class _AccountTypeScreenState extends State<AccountTypeScreen>
                         badgeIcon: Icons.favorite,
                         heroIcon: Icons.favorite_rounded,
                         title: 'Looking for a\nLife Partner',
-                        subtitle: 'Matrimony User',
+                        subtitle: 'Get Started',
                         features: const [
                           (Icons.person_outline, 'Create Your Profile'),
                           (Icons.favorite_border, 'Discover Matches'),
                           (Icons.auto_awesome_outlined, 'Horoscope Matching'),
                         ],
                         onTap: () => context.push('/login'),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    SlideTransition(
-                      position: _slideAstro,
-                      child: _RoleCard(
-                        accent: _astroAccent,
-                        badgeIcon: Icons.auto_awesome,
-                        heroIcon: Icons.nightlight_round,
-                        title: 'Offer Astrological\nGuidance',
-                        subtitle: 'Astrologer',
-                        features: const [
-                          (Icons.calendar_today_outlined, 'Accept Bookings'),
-                          (Icons.chat_bubble_outline, 'Chat with Clients'),
-                          (Icons.event_note_outlined, 'Manage Consultations'),
-                        ],
-                        onTap: () => context.push('/astrologer-login'),
                       ),
                     ),
                     const SizedBox(height: 24),

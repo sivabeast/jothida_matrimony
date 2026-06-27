@@ -6,18 +6,15 @@ import 'package:go_router/go_router.dart';
 import '../../../core/services/match_score_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/profile_completion.dart';
-import '../../../models/astrologer_model.dart';
 import '../../../models/interest_model.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/account_provider.dart';
-import '../../../providers/astrologer_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/interest_provider.dart';
 import '../../../providers/navigation_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/match_score_badge.dart';
-import '../../../widgets/common/network_photo.dart';
 import 'notifications_tab.dart';
 
 /// Home dashboard tab. Clean, modern flow:
@@ -105,10 +102,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
 
           // ── Recent Interests ──────────────────────────────────────────────
           _buildRecentInterests(context),
-          const SizedBox(height: 22),
-
-          // ── Astrologers ───────────────────────────────────────────────────
-          _buildAstrologers(context),
           const SizedBox(height: 24),
         ],
       ),
@@ -179,6 +172,10 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         ? myProfile!.profilePhotoUrl!
         : (user?.photoUrl ?? '');
     final unread = ref.watch(unreadNotificationCountProvider);
+    // Admin + Astrology dashboard shortcuts are visible ONLY to the privileged
+    // super-admin account (the one whitelisted Gmail). Regular users and the
+    // internal astrology account never see them.
+    final isSuperAdmin = user?.isSuperAdmin ?? false;
 
     return Row(
       children: [
@@ -225,6 +222,22 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             ],
           ),
         ),
+        if (isSuperAdmin) ...[
+          IconButton(
+            tooltip: 'Admin Dashboard',
+            visualDensity: VisualDensity.compact,
+            onPressed: () => context.push('/admin'),
+            icon: const Icon(Icons.admin_panel_settings,
+                color: AppColors.gold, size: 25),
+          ),
+          IconButton(
+            tooltip: 'Astrology Dashboard',
+            visualDensity: VisualDensity.compact,
+            onPressed: () => context.push('/astrology'),
+            icon: const Icon(Icons.auto_awesome,
+                color: AppColors.gold, size: 24),
+          ),
+        ],
         IconButton(
           tooltip: 'Notifications',
           onPressed: () => _openNotifications(context),
@@ -537,32 +550,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
                   _RecentInterestCard(interest: recent[i]),
             ),
           ),
-      ],
-    );
-  }
-
-  // ── Astrologers ────────────────────────────────────────────────────────────
-
-  Widget _buildAstrologers(BuildContext context) {
-    final astrologers = ref.watch(topRatedAstrologersProvider);
-    if (astrologers.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionHeader(context, '🔮', 'Astrologers',
-            onViewAll: () => ref.read(homeTabIndexProvider.notifier).state = 3),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 202,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: astrologers.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (_, i) =>
-                _HomeAstrologerCard(astrologer: astrologers[i]),
-          ),
-        ),
       ],
     );
   }
@@ -957,117 +944,6 @@ class _RecentInterestCard extends ConsumerWidget {
 }
 
 // ── Home Astrologer Card ──────────────────────────────────────────────────────
-
-class _HomeAstrologerCard extends StatelessWidget {
-  final Astrologer astrologer;
-  const _HomeAstrologerCard({required this.astrologer});
-
-  // A single fixed image height keeps every card's photo identical in size, so
-  // the row of cards aligns perfectly regardless of the source image's own
-  // dimensions (no stretching, no random cropping, no blank gaps).
-  static const double _imageHeight = 116;
-
-  @override
-  Widget build(BuildContext context) {
-    final a = astrologer;
-    return GestureDetector(
-      onTap: () => context.push('/astrologer/${a.id}'),
-      child: Container(
-        width: 150,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Photo (uniform aspect ratio, cover-fit, rounded top) ──
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: NetworkPhoto(
-                    url: a.photoUrl,
-                    height: _imageHeight,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    alignment: Alignment.topCenter,
-                    fallbackIcon: Icons.person,
-                    fallbackIconSize: 46,
-                    fallbackBg: AppColors.primary.withOpacity(0.10),
-                  ),
-                ),
-                // Verified tick — a clean white disc with a soft shadow so it
-                // reads clearly over any photo and never bleeds into the image.
-                if (a.verified)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withOpacity(0.18),
-                              blurRadius: 3),
-                        ],
-                      ),
-                      child: const Icon(Icons.verified,
-                          color: AppColors.success, size: 17),
-                    ),
-                  ),
-              ],
-            ),
-            // ── Details (Expanded → absorbs leftover height, never overflows) ──
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Text(a.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 13)),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.star, size: 13, color: AppColors.gold),
-                        const SizedBox(width: 3),
-                        Text(a.rating.toStringAsFixed(1),
-                            style: const TextStyle(
-                                fontSize: 11.5, fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      a.specializations.isEmpty
-                          ? 'Astrologer'
-                          : a.specializations.first,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 11, color: AppColors.primary),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ── Curved header clipper ─────────────────────────────────────────────────────
 

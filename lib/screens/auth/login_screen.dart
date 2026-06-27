@@ -223,16 +223,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        const Divider(),
-                        // Entry to the astrologer portal (its own login flow).
-                        TextButton.icon(
-                          onPressed: () => context.push('/astrologer-login'),
-                          icon: const Icon(Icons.auto_awesome, size: 18),
-                          label: Text(l10n.astrologerSignInHere),
-                          style: TextButton.styleFrom(
-                              foregroundColor: AppColors.goldDark),
-                        ),
                       ],
                     ),
                   ),

@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/config/admin_config.dart';
+
 class UserModel {
   final String uid;
   final String? email;
@@ -206,4 +208,9 @@ class UserModel {
   bool get isAdmin => role == 'admin' || role == 'super_admin';
   bool get isAstrologer => role == 'astrologer';
   bool get isSuperAdmin => role == 'super_admin';
+
+  /// The dedicated INTERNAL astrology account (identified purely by email). This
+  /// account skips the entire matrimony experience and lands on the Astrology
+  /// Dashboard. See [AdminConfig.internalAstrologyEmail].
+  bool get isInternalAstrology => AdminConfig.isInternalAstrologyEmail(email);
 }

@@ -68,10 +68,8 @@ class AppDrawer extends ConsumerWidget {
                 _section('🧿  ASTROLOGY'),
                 _item(context, Icons.favorite_outline, 'Horoscope Matching',
                     () => context.push('/horoscope-matching')),
-                _item(context, Icons.event_note_outlined, 'My Consultations',
-                    () => context.push('/my-consultations')),
-                _item(context, Icons.auto_awesome, 'Astrologers',
-                    () => _openTab(context, ref, kAstrologerTabIndex)),
+                _item(context, Icons.insights_outlined, 'Match Analysis',
+                    () => context.push('/my-analysis')),
 
                 // ── 💳 MEMBERSHIP ────────────────────────────────────────────
                 _section('💳  MEMBERSHIP'),

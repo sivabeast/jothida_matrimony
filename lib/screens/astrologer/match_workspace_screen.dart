@@ -11,7 +11,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/file_actions.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../models/profile_model.dart';
-import '../../providers/astrologer_session_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../providers/profile_provider.dart';
@@ -194,7 +193,7 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
         ),
-        body: ref.watch(astrologerRequestsProvider).when(
+        body: ref.watch(internalAstrologyRequestsProvider).when(
               loading: () => const Center(
                   child: CircularProgressIndicator(color: AppColors.primary)),
               error: (_, __) => const Center(
@@ -260,10 +259,10 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Chat opens for both sides once the request is accepted
-            // ("In Progress"). The astrologer types normally — only the
-            // acceptance message is automatic.
-            _chatWithUserButton(r),
+            // "Start" opens the analysis conversation. Until the analyst starts,
+            // a prominent Start Analysis button moves the request to In Progress
+            // and opens the chat; afterwards it's a plain "Open Chat / Analysis".
+            _startOrChatButton(r),
             const SizedBox(height: 18),
             const _SectionTitle('🔮 Your Analysis'),
             const SizedBox(height: 8),
@@ -273,19 +272,60 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
     }
   }
 
-  Widget _chatWithUserButton(AstrologerRequestModel r) => SizedBox(
+  Widget _startOrChatButton(AstrologerRequestModel r) {
+    final notStarted =
+        r.status == AstrologerRequestStatus.accepted && !r.inProgress;
+    if (notStarted) {
+      return SizedBox(
         width: double.infinity,
-        child: OutlinedButton.icon(
-          onPressed: () => _openChat(r),
-          icon: const Icon(Icons.chat_bubble_outline, size: 18),
-          label: const Text('Chat with User'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.primary),
-            minimumSize: const Size.fromHeight(46),
+        child: ElevatedButton.icon(
+          onPressed: _working ? null : () => _start(r),
+          icon: _working
+              ? const SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white))
+              : const Icon(Icons.play_arrow_rounded, size: 20),
+          label: const Text('Start Analysis'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(48),
           ),
         ),
       );
+    }
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => _openChat(r),
+        icon: const Icon(Icons.chat_bubble_outline, size: 18),
+        label: const Text('Open Chat / Analysis'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          side: const BorderSide(color: AppColors.primary),
+          minimumSize: const Size.fromHeight(46),
+        ),
+      ),
+    );
+  }
+
+  /// Spec "Start": flag the request In Progress, then open the conversation.
+  Future<void> _start(AstrologerRequestModel r) async {
+    setState(() => _working = true);
+    try {
+      await ref
+          .read(matchAnalysisControllerProvider.notifier)
+          .startAnalysis(r);
+      if (!mounted) return;
+      await _openChat(r);
+    } catch (_) {
+      if (mounted) _snack('Could not start the analysis. Please try again.');
+    } finally {
+      if (mounted) setState(() => _working = false);
+    }
+  }
 
   Future<void> _openChat(AstrologerRequestModel r) async {
     final name = r.userName.trim().isEmpty ? 'User' : r.userName.trim();

@@ -26,6 +26,16 @@ service cloud.firestore {
       return isAuthenticated() && getUserData().role == 'astrologer';
     }
 
+    // The single INTERNAL astrology service account, identified purely by its
+    // Google email (no special role needed). It owns all Match Analysis
+    // requests addressed to the synthetic 'internal_astrology' id and may read /
+    // respond to every one of them. Keep this in sync with
+    // AdminConfig.internalAstrologyEmail.
+    function isInternalAstrology() {
+      return isAuthenticated()
+          && request.auth.token.email == 'sivasanmuganathan2005@gmail.com';
+    }
+
     // Deterministic id of the connection between two users (sorted, '_'-joined)
     // so it can be looked up from either side.
     function pairId(a, b) {
@@ -342,11 +352,17 @@ service cloud.firestore {
                   && (resource.data.userId == request.auth.uid
                       || resource.data.astrologerId == request.auth.uid);
       allow read: if isAdmin();
+      // The internal astrology service reads/responds to every request addressed
+      // to it (Match Analysis triage on the Astrology Dashboard).
+      allow read: if isInternalAstrology()
+                  && resource.data.astrologerId == 'internal_astrology';
       allow create: if isAuthenticated()
                     && request.resource.data.userId == request.auth.uid;
       allow update: if isAuthenticated()
                     && resource.data.astrologerId == request.auth.uid;
       allow update: if isAdmin();
+      allow update: if isInternalAstrology()
+                    && resource.data.astrologerId == 'internal_astrology';
       // The booking's owner (matrimony user) may run the client-side expiry
       // sweep, pay the analysis fee (dev-mode payment flags), and — for "choose
       // another later" bookings — reassign it to a new astrologer. Restricted to
