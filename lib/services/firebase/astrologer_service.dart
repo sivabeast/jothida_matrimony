@@ -11,11 +11,26 @@ import '../../models/astrologer_model.dart' as model;
 import '../../models/astrologer_request_model.dart';
 import '../../models/astrologer_review_model.dart';
 
+/// Thrown when an in-person appointment slot is already taken by another user.
+class AppointmentSlotTakenException implements Exception {
+  @override
+  String toString() =>
+      'That time slot has just been booked. Please pick another.';
+}
+
 /// Firestore CRUD + realtime streams for the astrologer side of the app:
 /// `astrologers/{uid}` accounts and `astrologer_requests` (consultations,
 /// inquiries, horoscope-matching requests).
 class AstrologerService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  /// Public per-date index of taken appointment slot keys for the internal
+  /// astrology service (`astrology_booked_slots/{dateKey}` → `{taken: [...]}`).
+  /// Holds no PII, so any signed-in user may read it to grey out booked slots
+  /// without reading other users' requests. The authoritative one-per-slot lock
+  /// is the deterministic appointment doc id.
+  DocumentReference<Map<String, dynamic>> _appointmentSlotsDoc(String dateKey) =>
+      _db.collection('astrology_booked_slots').doc(dateKey);
 
   // ── Accounts ────────────────────────────────────────────────────────────
   /// Creates (or overwrites) the astrologer account document and marks the
@@ -247,6 +262,76 @@ class AstrologerService {
       );
     }
   }
+
+  /// Creates an in-person **appointment** request for the internal astrology
+  /// service (Horoscope Compatibility Report). Uses a DETERMINISTIC doc id +
+  /// transaction so a single slot can be held by only ONE user — a second
+  /// booking of the same slot throws [AppointmentSlotTakenException]. Also drops
+  /// the slot into the public booked-slots index and notifies both parties.
+  /// Returns the new request id (used as the user-facing Booking ID).
+  Future<String> createAppointmentRequest(
+      AstrologerRequestModel request) async {
+    if (request.visitDate == null || request.slotStartMinutes == null) {
+      throw ArgumentError('Appointment request needs a visitDate + slot.');
+    }
+    final id = AstrologerRequestModel.appointmentDocId(
+        request.astrologerId, request.visitDate!, request.slotStartMinutes!);
+    final ref = _db
+        .collection(AppConstants.astrologerRequestsCollection)
+        .doc(id);
+    final slotsRef = _appointmentSlotsDoc(request.visitDateKey);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (snap.exists) throw AppointmentSlotTakenException();
+      tx.set(ref, request.toFirestore());
+      tx.set(
+          slotsRef,
+          {
+            'taken': FieldValue.arrayUnion([request.slotKey])
+          },
+          SetOptions(merge: true));
+    });
+    // Notify the internal astrology team of the new (already-paid) request.
+    await _notify(
+      request.astrologerId,
+      'New Horoscope Report Booking',
+      '${request.userName} booked a horoscope compatibility report '
+          '(appointment ${request.visitDateKey}).',
+      'new_match_analysis',
+      data: {
+        'requestId': id,
+        'route': '/match-workspace/$id',
+        'tab': 'matchAnalysis',
+      },
+    );
+    if (request.userId.trim().isNotEmpty) {
+      await _notify(
+        request.userId,
+        'Appointment Confirmed',
+        'Your horoscope compatibility report appointment is confirmed. '
+            'Booking ID: $id.',
+        'booking_submitted',
+        data: {'requestId': id, 'route': '/my-analysis'},
+      );
+    }
+    return id;
+  }
+
+  /// Live `dateKey → {taken slot keys}` for the internal astrology service,
+  /// powering the appointment date/slot picker. Single-collection read (doc id =
+  /// dateKey), so no composite index is needed.
+  Stream<Map<String, Set<String>>> watchInternalBookedSlots() => _db
+      .collection('astrology_booked_slots')
+      .snapshots()
+      .map((s) {
+        final out = <String, Set<String>>{};
+        for (final d in s.docs) {
+          final taken =
+              (d.data()['taken'] as List?)?.cast<String>() ?? const [];
+          out[d.id] = taken.toSet();
+        }
+        return out;
+      });
 
   /// Astrologer begins working on an accepted booking (spec §11:
   /// Accepted → Analysis In Progress). Sets the `inProgress` flag + audit trail

@@ -61,6 +61,42 @@ class RazorpayService {
     }
   }
 
+  /// Opens the Razorpay checkout for an in-person Horoscope Compatibility Report
+  /// appointment. [amountPaise] is the service charge in paise (₹499 → 49900).
+  /// The success/failure callbacks wired in [init] drive the booking creation.
+  void openAppointmentCheckout({
+    required int amountPaise,
+    required String userPhone,
+    required String userEmail,
+    required String userName,
+    required String userId,
+    String bookingRef = '',
+  }) {
+    final options = {
+      'key': RazorpayConstants.keyId,
+      'amount': amountPaise,
+      'name': RazorpayConstants.appName,
+      'description': 'Horoscope Compatibility Report',
+      'prefill': {
+        'contact': userPhone,
+        'email': userEmail,
+        'name': userName,
+      },
+      'notes': {
+        'type': 'horoscope_appointment',
+        'userId': userId,
+        if (bookingRef.isNotEmpty) 'ref': bookingRef,
+      },
+      'theme': {'color': RazorpayConstants.themeColor},
+      'currency': 'INR',
+    };
+    try {
+      _razorpay.open(options);
+    } catch (e) {
+      debugPrint('RazorpayService.openAppointmentCheckout error: $e');
+    }
+  }
+
   String _planDisplayName(String plan) {
     switch (plan) {
       case AppConstants.planBasic:

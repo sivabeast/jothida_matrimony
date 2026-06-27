@@ -37,7 +37,7 @@ class AstrologyServicesTab extends ConsumerWidget {
             const SizedBox(width: 8),
             const Expanded(
               child: Text(
-                'Astrology Match Analysis',
+                'Horoscope Compatibility',
                 style: TextStyle(
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.w700,
@@ -47,7 +47,7 @@ class AstrologyServicesTab extends ConsumerWidget {
             TextButton.icon(
               onPressed: () => context.push('/my-analysis'),
               icon: const Icon(Icons.receipt_long_outlined, size: 18),
-              label: const Text('My Requests'),
+              label: const Text('My Reports'),
               style: TextButton.styleFrom(foregroundColor: AppColors.primary),
             ),
           ],

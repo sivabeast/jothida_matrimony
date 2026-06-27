@@ -78,6 +78,27 @@ List<ConsultationSlot> generateSlots({
   return slots;
 }
 
+/// The next [count] working days (Mon–Fri by default), starting today and
+/// skipping weekends (spec §8/§9). [workingWeekdays] uses Dart weekday ints
+/// (Mon = 1 … Sun = 7). Never returns weekend dates and never looks a month
+/// ahead — it stops as soon as [count] working days are collected.
+List<DateTime> nextWorkingDays(
+  int count, {
+  List<int> workingWeekdays = const [1, 2, 3, 4, 5],
+}) {
+  final out = <DateTime>[];
+  final today = DateTime.now();
+  var d = DateTime(today.year, today.month, today.day);
+  // Hard safety bound so a misconfigured (empty) weekday list can't loop forever.
+  var guard = 0;
+  while (out.length < count && guard < 60) {
+    if (workingWeekdays.contains(d.weekday)) out.add(d);
+    d = d.add(const Duration(days: 1));
+    guard++;
+  }
+  return out;
+}
+
 /// All slots for [account]'s configured window (no booking info applied).
 List<ConsultationSlot> slotsForAccount(AstrologerAccount account) =>
     generateSlots(

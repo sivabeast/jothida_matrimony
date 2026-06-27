@@ -5,12 +5,67 @@ import 'package:go_router/go_router.dart';
 import '../../core/services/porutham_match.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_request_model.dart';
+import '../../models/astrology_service_config.dart';
 import '../../models/profile_model.dart';
+import '../../providers/astrology_config_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/chat_provider.dart';
 import '../../providers/interest_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../widgets/common/horoscope_match_badge.dart' show categoryColor;
+
+/// Opens (or explains the not-yet-ready state of) the Astrology Analysis Chat
+/// for a horoscope-report request [r]. Shared by the accepted-match card and the
+/// detail screen so every "Open Analysis Chat" shortcut lands in the SAME thread
+/// — the request's responder uid once the team accepts, else the internal
+/// account uid captured in config (spec §12).
+Future<void> openAnalysisChat(
+  BuildContext context,
+  WidgetRef ref,
+  AstrologerRequestModel r,
+  AstrologyServiceConfig cfg,
+) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final otherUid =
+      r.astrologerUid.isNotEmpty ? r.astrologerUid : cfg.internalUid;
+  if (otherUid.isEmpty) {
+    messenger.showSnackBar(const SnackBar(
+        content: Text(
+            'Your analysis chat will open once our team begins your report.')));
+    return;
+  }
+  final name = cfg.expertName.trim().isEmpty ? 'Astrology Service' : cfg.expertName;
+  try {
+    final id = await ref.read(chatControllerProvider).openChatWith(
+          otherUid: otherUid,
+          otherName: name,
+          otherPhoto: cfg.expertPhotoUrl,
+        );
+    if (!context.mounted) return;
+    context.push('/chat/$id', extra: {
+      'name': name,
+      'photo': cfg.expertPhotoUrl,
+      'isAstrologer': true,
+    });
+  } catch (_) {
+    messenger.showSnackBar(const SnackBar(
+        content: Text('Could not open chat. Please try again.')));
+  }
+}
+
+/// The user's horoscope-report request for the pairing with [otherUserId], if
+/// one exists (so the card/detail can show the "Open Analysis Chat" shortcut).
+AstrologerRequestModel? _reportRequestFor(WidgetRef ref, String otherProfileId) {
+  final analyses =
+      ref.watch(myMatchAnalysisRequestsProvider).valueOrNull ?? const [];
+  for (final r in analyses) {
+    if (r.profileAId == otherProfileId || r.profileBId == otherProfileId) {
+      return r;
+    }
+  }
+  return null;
+}
 
 /// Horoscope Matching — lists ONLY the members the signed-in user has a
 /// mutually-accepted interest with, for horoscope-focused matching.
@@ -89,6 +144,8 @@ class _AcceptedMatchCard extends ConsumerWidget {
     final other = otherAsync.valueOrNull;
     if (other == null) return const SizedBox.shrink();
 
+    final cfg = ref.watch(astrologyServiceConfigValueProvider);
+    final existingReport = _reportRequestFor(ref, other.id);
     final result = me == null ? null : computePorutham(me, other);
     final photo = other.photos.isNotEmpty ? other.photos.first : null;
 
@@ -190,9 +247,9 @@ class _AcceptedMatchCard extends ConsumerWidget {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () =>
-                        sendForMatchAnalysis(context, ref, me, other),
-                    icon: const Icon(Icons.insights_outlined, size: 18),
-                    label: const Text('Send for Match Analysis'),
+                        context.push('/horoscope-report/$userId'),
+                    icon: const Icon(Icons.description_outlined, size: 18),
+                    label: const Text('Get Horoscope Compatibility Report'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
@@ -202,6 +259,28 @@ class _AcceptedMatchCard extends ConsumerWidget {
                     ),
                   ),
                 ),
+                // Shortcut to the Astrology Analysis Chat — shown only once the
+                // user has purchased a report for this pairing (spec §12).
+                if (existingReport != null) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () =>
+                          openAnalysisChat(context, ref, existingReport, cfg),
+                      icon: const Icon(Icons.chat_outlined, size: 18),
+                      label: const Text('Open Analysis Chat'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: BorderSide(
+                            color: AppColors.primary.withOpacity(0.4)),
+                        minimumSize: const Size.fromHeight(40),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -270,75 +349,6 @@ class _AcceptedMatchCard extends ConsumerWidget {
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => HoroscopeMatchDetailScreen(other: other),
     ));
-  }
-}
-
-/// Sends this accepted-match pairing straight to the internal astrology service
-/// for a Match Analysis — no astrologer selection, no payment. Offered ONLY on
-/// accepted matches (so the horoscope is unlocked), per the spec flow.
-///
-/// The user's own profile + the matched profile become the groom/bride pair
-/// (split by gender; falls back to user=A, match=B when genders are equal or
-/// unknown). On success it jumps to "My Match Analysis" to track the request.
-Future<void> sendForMatchAnalysis(
-  BuildContext context,
-  WidgetRef ref,
-  ProfileModel? me,
-  ProfileModel other,
-) async {
-  final messenger = ScaffoldMessenger.of(context);
-  if (me == null) {
-    messenger.showSnackBar(const SnackBar(
-        content: Text('Complete your own profile before requesting analysis.')));
-    return;
-  }
-  bool isMale(ProfileModel p) => p.gender.trim().toLowerCase().startsWith('m');
-  final ProfileModel groom;
-  final ProfileModel bride;
-  if (isMale(me) && !isMale(other)) {
-    groom = me;
-    bride = other;
-  } else if (!isMale(me) && isMale(other)) {
-    groom = other;
-    bride = me;
-  } else {
-    groom = me;
-    bride = other;
-  }
-
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Send for Match Analysis'),
-      content: Text(
-          'Send your horoscope and ${other.name}\'s for an astrology match '
-          'analysis? Our astrology team will review and share a detailed report.'),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel')),
-        ElevatedButton(
-          onPressed: () => Navigator.pop(ctx, true),
-          style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-          child: const Text('Send'),
-        ),
-      ],
-    ),
-  );
-  if (confirmed != true) return;
-
-  try {
-    await ref
-        .read(matchAnalysisControllerProvider.notifier)
-        .requestInternalMatchAnalysis(groom: groom, bride: bride);
-    if (!context.mounted) return;
-    messenger.showSnackBar(const SnackBar(
-        content: Text('Sent for astrology match analysis.')));
-    context.push('/my-analysis');
-  } catch (_) {
-    messenger.showSnackBar(const SnackBar(
-        content: Text('Could not send the request. Please try again.')));
   }
 }
 
@@ -427,7 +437,10 @@ class HoroscopeMatchDetailScreen extends ConsumerWidget {
             _noCompatibility(me),
           _analysisSection(context, analysis),
           const SizedBox(height: 16),
-          if (analysis == null) _sendForAnalysisButton(context, ref, me),
+          if (analysis == null)
+            _getReportButton(context)
+          else
+            _openChatButton(context, ref, analysis),
           const SizedBox(height: 24),
         ],
       ),
@@ -699,17 +712,34 @@ class HoroscopeMatchDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _sendForAnalysisButton(
-          BuildContext context, WidgetRef ref, ProfileModel? me) =>
-      SizedBox(
+  Widget _getReportButton(BuildContext context) => SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(
-          onPressed: () => sendForMatchAnalysis(context, ref, me, other),
-          icon: const Icon(Icons.insights_outlined),
-          label: const Text('Send for Match Analysis'),
+          onPressed: () => context.push('/horoscope-report/${other.userId}'),
+          icon: const Icon(Icons.description_outlined),
+          label: const Text('Get Horoscope Compatibility Report'),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(52),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      );
+
+  Widget _openChatButton(
+          BuildContext context, WidgetRef ref, AstrologerRequestModel analysis) =>
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () => openAnalysisChat(
+              context, ref, analysis, ref.read(astrologyServiceConfigValueProvider)),
+          icon: const Icon(Icons.chat_outlined),
+          label: const Text('Open Analysis Chat'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary),
             minimumSize: const Size.fromHeight(52),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

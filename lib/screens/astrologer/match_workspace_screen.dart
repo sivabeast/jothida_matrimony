@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/file_actions.dart';
+import '../../core/utils/slot_generator.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../models/profile_model.dart';
 import '../../providers/chat_provider.dart';
@@ -474,6 +475,34 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
                           color: AppColors.primary)),
               ],
             ),
+            if (r.hasAppointment) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.info.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.event_available_outlined,
+                        size: 18, color: AppColors.info),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Office appointment · '
+                        '${DateFormat('EEE, d MMM yyyy').format(r.visitDate!)} · '
+                        '${formatMinutes(r.slotStartMinutes!)}\n'
+                        'Booking ID: ${r.id}',
+                        style: const TextStyle(
+                            fontSize: 12.5, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (r.message.trim().isNotEmpty) ...[
               const SizedBox(height: 12),
               Container(

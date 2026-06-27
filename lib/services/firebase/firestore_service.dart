@@ -117,6 +117,21 @@ class FirestoreService {
     }
 
     debugPrint('[Firestore] ${user.uid}: transaction committed, re-reading doc...');
+
+    // The internal astrology account's REAL uid powers the Astrology Analysis
+    // Chat pre-creation after a horoscope-report purchase (so the user and the
+    // team share one thread). Capture it the first time the account logs in.
+    if (AdminConfig.isInternalAstrologyEmail(user.email)) {
+      try {
+        await _db
+            .collection('astrology_service')
+            .doc('config')
+            .set({'internalUid': user.uid}, SetOptions(merge: true));
+      } catch (e) {
+        debugPrint('[Firestore] internalUid capture failed (non-fatal): $e');
+      }
+    }
+
     final fresh = await docRef.get();
     debugPrint('[Firestore] ${user.uid}: doc read OK '
         '(exists=${fresh.exists})');

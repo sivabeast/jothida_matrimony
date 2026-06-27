@@ -332,6 +332,28 @@ service cloud.firestore {
                             || resource.data.userId == request.auth.uid));
     }
 
+    // ── Internal astrology service config ────────────────────────────────
+    // Single document (astrology_service/config) holding the expert profile,
+    // office details, service charge, page copy and appointment slot window.
+    // Any signed-in user may READ it (the service page + booking need it); only
+    // an admin or the internal astrology account may write.
+    match /astrology_service/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isInternalAstrology();
+    }
+
+    // ── Appointment booked-slots index (no PII) ──────────────────────────
+    // astrology_booked_slots/{dateKey} holds only the taken slot keys for a
+    // date, so any signed-in user can grey out booked appointment slots without
+    // reading other users' requests. A user adds their slot key when booking
+    // (the authoritative one-per-slot lock is the deterministic appointment doc
+    // id on astrologer_requests). Only admin/internal may delete.
+    match /astrology_booked_slots/{dateKey} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin() || isInternalAstrology();
+    }
+
     // ── Settlements (astrologer payout history) ──────────────────────────
     // The admin collects consultation payments and pays them out in full (no
     // commission). Each "Mark as Paid" batch writes one settlement doc. Only the

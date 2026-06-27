@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/file_actions.dart';
 import '../../models/chat_model.dart';
@@ -299,8 +300,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                   itemCount: messages.length,
-                  itemBuilder: (_, i) =>
-                      _Bubble(message: messages[i], isMine: messages[i].senderId == myUid),
+                  itemBuilder: (_, i) {
+                    final msg = messages[i];
+                    // Messages are newest-first; the next index is the
+                    // chronologically OLDER message. A date separator is shown
+                    // above the oldest message of each day (WhatsApp-style §14).
+                    final older =
+                        i + 1 < messages.length ? messages[i + 1] : null;
+                    final showHeader = older == null ||
+                        !_sameDay(older.sentAt, msg.sentAt);
+                    return Column(
+                      children: [
+                        if (showHeader) _DateSeparator(date: msg.sentAt),
+                        _Bubble(message: msg, isMine: msg.senderId == myUid),
+                      ],
+                    );
+                  },
                 );
               },
             ),
@@ -383,6 +398,47 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 }
 
+/// True when [a] and [b] fall on the same calendar day.
+bool _sameDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
+
+/// A centered "Today / Yesterday / 12 Jun 2026" pill between message groups.
+class _DateSeparator extends StatelessWidget {
+  final DateTime date;
+  const _DateSeparator({required this.date});
+
+  String get _label {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final that = DateTime(date.year, date.month, date.day);
+    final diff = today.difference(that).inDays;
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Yesterday';
+    return DateFormat('d MMM yyyy').format(date);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Text(_label,
+              style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700])),
+        ),
+      ),
+    );
+  }
+}
+
 class _Bubble extends StatelessWidget {
   final ChatMessage message;
   final bool isMine;
@@ -425,7 +481,8 @@ class _Bubble extends StatelessWidget {
                   ? const EdgeInsets.only(right: 6, bottom: 2)
                   : EdgeInsets.zero,
               child: Text(
-                '${message.sentAt.hour.toString().padLeft(2, '0')}:${message.sentAt.minute.toString().padLeft(2, '0')}',
+                // 12-hour AM/PM time for every message (spec §14).
+                DateFormat('h:mm a').format(message.sentAt),
                 style: TextStyle(
                     fontSize: 10,
                     color: isMine && !isImage

@@ -11,6 +11,9 @@ import '../models/astrologer_request_model.dart';
 // Internal astrology service (single owner) — lightweight dashboard + the
 // shared match-analysis workspace. All other astrologer screens were retired.
 import '../screens/astrology/astrology_dashboard_screen.dart';
+import '../screens/astrology/horoscope_report_service_screen.dart';
+import '../screens/astrology/appointment_booking_screen.dart';
+import '../screens/astrology/appointment_confirmation_screen.dart';
 import '../screens/astrologer/match_workspace_screen.dart';
 import '../screens/astrologer/my_match_analysis_screen.dart';
 import '../screens/auth/account_type_screen.dart';
@@ -30,6 +33,7 @@ import '../screens/privacy/privacy_settings_screen.dart';
 import '../screens/settings/language_screen.dart';
 import '../screens/subscription/subscription_screen.dart';
 import '../screens/admin/admin_shell.dart';
+import '../screens/admin/astrology_service_settings_screen.dart';
 import '../screens/admin/admin_dashboard.dart';
 import '../screens/admin/admin_users_page.dart';
 import '../screens/admin/admin_astrologer_verification.dart';
@@ -286,6 +290,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) =>
             ReportProfileScreen(profileId: state.pathParameters['id']!),
       ),
+      // ── Horoscope Compatibility Report (in-person appointment) ───────────
+      // Service details page → appointment booking → confirmation. Opened from
+      // an accepted match's "Get Horoscope Compatibility Report".
+      GoRoute(
+        path: '/horoscope-report/:userId',
+        builder: (_, state) => HoroscopeReportServiceScreen(
+            otherUserId: state.pathParameters['userId']!),
+      ),
+      GoRoute(
+        path: '/book-appointment/:userId',
+        builder: (_, state) => AppointmentBookingScreen(
+            otherUserId: state.pathParameters['userId']!),
+      ),
+      GoRoute(
+        path: '/appointment-confirmation/:id',
+        builder: (_, state) => AppointmentConfirmationScreen(
+          bookingId: state.pathParameters['id']!,
+          extra: state.extra is Map<String, dynamic>
+              ? state.extra as Map<String, dynamic>
+              : null,
+        ),
+      ),
       // ── Match-analysis pipeline ──────────────────────────────────────────
       // User: "My Match Analysis" (Pending / Accepted / Completed + reports).
       GoRoute(
@@ -433,6 +459,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/admin/notifications', builder: (_, __) => const AnnouncementManagementScreen()),
           GoRoute(path: '/admin/premium', builder: (_, __) => const PremiumManagementScreen()),
           GoRoute(path: '/admin/revenue-settings', builder: (_, __) => const RevenueSettingsScreen()),
+          GoRoute(
+              path: '/admin/astrology-service',
+              builder: (_, __) => const AstrologyServiceSettingsScreen()),
           GoRoute(path: '/admin/analytics', builder: (_, __) => const AdminReportsPage()),
           GoRoute(path: '/admin/settings', builder: (_, __) => const AdminSettingsScreen()),
           GoRoute(path: '/admin/married', builder: (_, __) => const MarriedUsersScreen()),

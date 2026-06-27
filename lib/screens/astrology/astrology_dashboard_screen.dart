@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/slot_generator.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/match_analysis_provider.dart';
@@ -280,6 +281,29 @@ class _RequestCard extends StatelessWidget {
                 ],
               ),
             ),
+            if (r.hasAppointment) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.event_available_outlined,
+                      size: 15, color: AppColors.info),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Appointment: ${DateFormat('d MMM yyyy').format(r.visitDate!)} · '
+                      '${formatMinutes(r.slotStartMinutes!)}',
+                      style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.info),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text('Booking ID: ${r.id}',
+                  style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+            ],
             if (r.message.trim().isNotEmpty) ...[
               const SizedBox(height: 8),
               Text('“${r.message.trim()}”',

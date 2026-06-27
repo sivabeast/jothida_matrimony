@@ -212,6 +212,19 @@ class AstrologerRequestModel {
   final bool inProgress;
   final DateTime? startedAt;
 
+  // ── In-person appointment (Horoscope Compatibility Report booking) ─────────
+  /// The office-visit day (date-only). Null for non-appointment requests.
+  final DateTime? visitDate;
+
+  /// Visit slot start as minutes-from-midnight (e.g. 10:00 AM = 600). Null when
+  /// there is no appointment.
+  final int? slotStartMinutes;
+
+  /// Office address + contact number snapshotted at booking time, so the
+  /// confirmation stays stable even if the admin later edits the service config.
+  final String officeAddress;
+  final String officeContact;
+
   const AstrologerRequestModel({
     required this.id,
     required this.astrologerId,
@@ -248,10 +261,38 @@ class AstrologerRequestModel {
     this.paymentId = '',
     this.inProgress = false,
     this.startedAt,
+    this.visitDate,
+    this.slotStartMinutes,
+    this.officeAddress = '',
+    this.officeContact = '',
   });
 
   /// True for a "Book Match Analysis" booking (groom + bride porutham request).
   bool get isMatchAnalysis => type == AstrologerRequestType.matching;
+
+  /// True when this request was purchased via an in-person appointment.
+  bool get hasAppointment => visitDate != null && slotStartMinutes != null;
+
+  /// `yyyy-MM-dd` of the appointment day (empty when none).
+  String get visitDateKey => visitDate == null
+      ? ''
+      : '${visitDate!.year.toString().padLeft(4, '0')}-${visitDate!.month.toString().padLeft(2, '0')}-${visitDate!.day.toString().padLeft(2, '0')}';
+
+  /// `HHmm` of the slot (empty when none).
+  String get slotKey => slotStartMinutes == null
+      ? ''
+      : '${(slotStartMinutes! ~/ 60).toString().padLeft(2, '0')}${(slotStartMinutes! % 60).toString().padLeft(2, '0')}';
+
+  /// Deterministic doc id for an appointment so one slot can be held by only
+  /// one user (a second booking of the same slot fails the create).
+  static String appointmentDocId(
+      String astrologerId, DateTime date, int slotStartMinutes) {
+    final dateKey =
+        '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final slotKey =
+        '${(slotStartMinutes ~/ 60).toString().padLeft(2, '0')}${(slotStartMinutes % 60).toString().padLeft(2, '0')}';
+    return '${astrologerId}_${dateKey}_$slotKey';
+  }
 
   /// Display bucket for the astrologer Requests page (spec §2 / §11):
   /// 'pending' | 'expired' | 'accepted' | 'inProgress' | 'completed' |
@@ -409,6 +450,10 @@ class AstrologerRequestModel {
       paymentId: (d['paymentId'] ?? '').toString(),
       inProgress: d['inProgress'] == true,
       startedAt: _toDate(d['startedAt']),
+      visitDate: _toDate(d['visitDate']),
+      slotStartMinutes: (d['slotStartMinutes'] as num?)?.toInt(),
+      officeAddress: (d['officeAddress'] ?? '').toString(),
+      officeContact: (d['officeContact'] ?? '').toString(),
     );
   }
 
@@ -456,6 +501,14 @@ class AstrologerRequestModel {
         'paymentId': paymentId,
         'inProgress': inProgress,
         'startedAt': startedAt != null ? Timestamp.fromDate(startedAt!) : null,
+        'visitDate': visitDate != null ? Timestamp.fromDate(visitDate!) : null,
+        'slotStartMinutes': slotStartMinutes,
+        // Denormalised keys so a date's taken slots can be derived without
+        // parsing (mirrors the consultations booked-slots index).
+        'visitDateKey': visitDateKey,
+        'slotKey': slotKey,
+        'officeAddress': officeAddress,
+        'officeContact': officeContact,
       };
 
   AstrologerRequestModel copyWith({
@@ -525,5 +578,10 @@ class AstrologerRequestModel {
         inProgress: inProgress ?? this.inProgress,
         startedAt: startedAt ??
             (inProgress == true ? DateTime.now() : this.startedAt),
+        // Appointment details are fixed at booking time.
+        visitDate: visitDate,
+        slotStartMinutes: slotStartMinutes,
+        officeAddress: officeAddress,
+        officeContact: officeContact,
       );
 }

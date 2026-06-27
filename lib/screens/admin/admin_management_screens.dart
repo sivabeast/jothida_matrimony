@@ -1610,6 +1610,13 @@ class AdminSettingsScreen extends StatelessWidget {
           color: AppColors.gold,
           onTap: () => context.go('/admin/revenue-settings'),
         ),
+        _ActionTile(
+          icon: Icons.auto_awesome_outlined,
+          title: 'Astrology Service',
+          subtitle: 'Expert, office, charge & appointment slots',
+          color: AppColors.primary,
+          onTap: () => context.go('/admin/astrology-service'),
+        ),
         const Divider(height: 28),
         const Padding(
           padding: EdgeInsets.only(left: 4, bottom: 8),

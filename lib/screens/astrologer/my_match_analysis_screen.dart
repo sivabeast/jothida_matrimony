@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/file_actions.dart';
 import '../../core/utils/l10n_ext.dart';
+import '../../core/utils/slot_generator.dart';
 import '../../models/astrologer_model.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../providers/astrologer_provider.dart';
@@ -46,11 +47,11 @@ class MyMatchAnalysisScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(myMatchAnalysisRequestsProvider);
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Scaffold(
         backgroundColor: AppColors.scaffoldBg,
         appBar: AppBar(
-          title: const Text('My Match Analysis'),
+          title: const Text('My Reports'),
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           bottom: const TabBar(
@@ -58,8 +59,7 @@ class MyMatchAnalysisScreen extends ConsumerWidget {
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
             tabs: [
-              Tab(text: 'Pending'),
-              Tab(text: 'Accepted'),
+              Tab(text: 'Under Analysis'),
               Tab(text: 'Completed'),
             ],
           ),
@@ -71,25 +71,18 @@ class MyMatchAnalysisScreen extends ConsumerWidget {
           data: (all) {
             // Flag any of the user's bookings whose response window has lapsed.
             _sweepExpiry(ref, all);
-            // Pending tab also surfaces rejected/expired outcomes (status chip
-            // makes the result clear) so nothing the user booked silently
-            // disappears.
-            final pending = all
-                .where((r) =>
-                    r.status == AstrologerRequestStatus.pending ||
-                    r.status == AstrologerRequestStatus.rejected)
-                .toList();
-            final accepted = all
-                .where((r) => r.status == AstrologerRequestStatus.accepted)
+            // Two sections only (spec §15): everything still being worked on
+            // (booked / accepted / in progress / rejected) vs delivered reports.
+            final underAnalysis = all
+                .where((r) => r.status != AstrologerRequestStatus.completed)
                 .toList();
             final completed = all
                 .where((r) => r.status == AstrologerRequestStatus.completed)
                 .toList();
             return TabBarView(
               children: [
-                _list(pending, 'No pending requests'),
-                _list(accepted, 'No accepted requests yet'),
-                _list(completed, 'No completed analysis yet'),
+                _list(underAnalysis, 'Nothing under analysis yet'),
+                _list(completed, 'No completed reports yet'),
               ],
             );
           },
@@ -327,32 +320,43 @@ class MatchAnalysisBookingCard extends ConsumerWidget {
           if (reportLocked) _reportLockCard(context, ref, r),
           if (canChat || canViewReport) ...[
             const SizedBox(height: 12),
-            Row(
+            // Completed → View Report · Download PDF · Open Analysis Chat
+            // (spec §15). Wrapped so three actions never overflow.
+            Wrap(
+              spacing: 10,
+              runSpacing: 8,
               children: [
                 if (canViewReport)
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _showReport(context, r),
-                      icon: const Icon(Icons.description_outlined, size: 18),
-                      label: const Text('View Report'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        visualDensity: VisualDensity.compact,
-                      ),
+                  ElevatedButton.icon(
+                    onPressed: () => _showReport(context, r),
+                    icon: const Icon(Icons.description_outlined, size: 18),
+                    label: const Text('View Report'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      visualDensity: VisualDensity.compact,
                     ),
                   ),
-                if (canViewReport && canChat) const SizedBox(width: 10),
+                if (canViewReport && r.analysisPdfs.isNotEmpty)
+                  OutlinedButton.icon(
+                    onPressed: () => _downloadPdf(context, r),
+                    icon: const Icon(Icons.download_outlined, size: 18),
+                    label: const Text('Download PDF'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
                 if (canChat)
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _chat(context, ref),
-                      icon: const Icon(Icons.chat_outlined, size: 18),
-                      label: const Text('Chat'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary),
-                      ),
+                  OutlinedButton.icon(
+                    onPressed: () => _chat(context, ref),
+                    icon: const Icon(Icons.chat_outlined, size: 18),
+                    label: const Text('Open Analysis Chat'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      visualDensity: VisualDensity.compact,
                     ),
                   ),
               ],
@@ -361,6 +365,17 @@ class MatchAnalysisBookingCard extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Opens the completed report's PDF(s) for download. A single PDF opens
+  /// directly; multiple PDFs open the full report sheet (each with its own
+  /// download action).
+  void _downloadPdf(BuildContext context, AstrologerRequestModel r) {
+    if (r.analysisPdfs.length == 1) {
+      openRemoteFile(context, r.analysisPdfs.first, pdf: true);
+    } else {
+      _showReport(context, r);
+    }
   }
 
   /// Booking ID · service type · payment status footer (spec display fields).
@@ -378,7 +393,13 @@ class MatchAnalysisBookingCard extends ConsumerWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         _metaPill(Icons.tag, '#$shortId'),
-        _metaPill(Icons.auto_awesome_outlined, 'Match Analysis'),
+        _metaPill(Icons.auto_awesome_outlined, 'Compatibility Report'),
+        if (r.hasAppointment)
+          _metaPill(
+              Icons.event_outlined,
+              '${DateFormat('d MMM').format(r.visitDate!)} · '
+                  '${formatMinutes(r.slotStartMinutes!)}',
+              color: AppColors.info),
         if (r.amount > 0)
           _metaPill(Icons.payments_outlined, r.paymentStatusLabel,
               color: payColor),

@@ -5,6 +5,7 @@ import '../core/config/admin_config.dart';
 import '../core/config/dev_config.dart';
 import '../core/utils/working_hours.dart';
 import '../models/astrologer_request_model.dart';
+import '../models/astrology_service_config.dart';
 import '../models/profile_model.dart';
 import 'astrologer_session_provider.dart';
 import 'auth_provider.dart';
@@ -92,6 +93,25 @@ final internalAstrologyRequestsProvider =
     return Stream.value(list);
   }
   return ref.read(astrologerServiceProvider).watchAllMatchRequests();
+});
+
+/// Live `dateKey → {taken slot keys}` for the internal astrology service's
+/// in-person appointments — powers the appointment date/slot picker so a slot
+/// booked by one user immediately greys out for everyone.
+final internalBookedSlotsProvider =
+    StreamProvider.autoDispose<Map<String, Set<String>>>((ref) {
+  if (kBypassAuth) {
+    // Derive taken slots from the in-memory demo requests so the picker still
+    // locks slots in demo mode.
+    final all = ref.watch(demoAstrologerRequestsProvider);
+    final out = <String, Set<String>>{};
+    for (final r in all) {
+      if (!r.hasAppointment) continue;
+      out.putIfAbsent(r.visitDateKey, () => <String>{}).add(r.slotKey);
+    }
+    return Stream.value(out);
+  }
+  return ref.read(astrologerServiceProvider).watchInternalBookedSlots();
 });
 
 /// A single match-analysis request by id, kept live from the internal service
@@ -269,6 +289,109 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         await ref.read(astrologerServiceProvider).createRequest(request);
       }
       state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
+  /// Books an in-person **Horoscope Compatibility Report** appointment after a
+  /// successful (real Razorpay) payment. Creates ONE paid match-analysis request
+  /// addressed to the internal astrology service — carrying the chosen
+  /// [date]/[slotMinutes] and an office-details snapshot — using the
+  /// slot-locking deterministic-id create (throws [AppointmentSlotTakenException]
+  /// if the slot was just taken). It then **pre-creates the Astrology Analysis
+  /// Chat** thread to the internal account so the user can open it immediately
+  /// (spec §12). Returns the new request id (the user-facing Booking ID).
+  Future<String> bookAppointment({
+    required ProfileModel groom,
+    required ProfileModel bride,
+    required DateTime date,
+    required int slotMinutes,
+    required int amount,
+    required String paymentId,
+    required AstrologyServiceConfig config,
+    String note = '',
+  }) async {
+    state = const AsyncLoading();
+    try {
+      final me = ref.read(myProfileProvider).valueOrNull;
+      final user = ref.read(currentUserProvider).valueOrNull;
+      final uid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ??
+          user?.uid ??
+          '';
+      final location = me == null
+          ? ''
+          : [me.city, me.state].where((s) => s.trim().isNotEmpty).join(', ');
+      final lang = ref.read(localeProvider)?.languageCode ?? 'en';
+      final now = DateTime.now();
+      final visitDay = DateTime(date.year, date.month, date.day);
+
+      final request = AstrologerRequestModel(
+        id: 'new',
+        astrologerId: kInternalAstrologyId,
+        astrologerName: kInternalAstrologyName,
+        userId: uid,
+        userName: me?.fullName ?? user?.displayName ?? 'User',
+        userPhotoUrl: me?.profilePhotoUrl ?? '',
+        userLocation: location,
+        type: AstrologerRequestType.matching,
+        status: AstrologerRequestStatus.pending,
+        message: note.trim(),
+        amount: amount,
+        profileAId: groom.id,
+        profileAName: groom.fullName,
+        profileBId: bride.id,
+        profileBName: bride.fullName,
+        createdAt: now,
+        userLanguage: lang,
+        // Paid upfront via Razorpay — the report is never payment-locked.
+        paid: true,
+        paidAt: now,
+        paymentId: paymentId,
+        visitDate: visitDay,
+        slotStartMinutes: slotMinutes,
+        officeAddress: config.officeAddress,
+        officeContact: config.officeContactNumber,
+        history: [
+          BookingHistoryEntry(at: now, label: 'Appointment booked'),
+          BookingHistoryEntry(
+              at: now, label: 'Payment received ($paymentId)'),
+        ],
+      );
+
+      final String id;
+      if (kBypassAuth) {
+        // Deterministic id mirrors the real slot lock so the demo picker locks
+        // the slot too.
+        id = AstrologerRequestModel.appointmentDocId(
+            kInternalAstrologyId, visitDay, slotMinutes);
+        ref.read(demoAstrologerRequestsProvider.notifier).add(request);
+      } else {
+        id = await ref
+            .read(astrologerServiceProvider)
+            .createAppointmentRequest(request);
+      }
+
+      // Pre-create the Astrology Analysis Chat to the internal account's real
+      // uid so the user can open it immediately and the team shares one thread
+      // (idempotent → no duplicate). Best-effort: a chat hiccup never fails the
+      // booking. If internalUid isn't known yet, the thread is created when the
+      // team accepts (existing astrologerUid path).
+      if (config.internalUid.isNotEmpty) {
+        try {
+          await ref.read(chatControllerProvider).openChatWith(
+                otherUid: config.internalUid,
+                otherName: config.expertName.trim().isEmpty
+                    ? kInternalAstrologyName
+                    : config.expertName.trim(),
+                otherPhoto: config.expertPhotoUrl,
+              );
+        } catch (_) {}
+      }
+
+      state = const AsyncData(null);
+      return id;
     } catch (e, st) {
       state = AsyncError(e, st);
       rethrow;
