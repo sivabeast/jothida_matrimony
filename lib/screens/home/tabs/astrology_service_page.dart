@@ -8,13 +8,13 @@ import '../../../models/astrology_service_config.dart';
 import '../../../providers/astrology_config_provider.dart';
 import '../../../widgets/common/network_photo.dart';
 
-/// The Home "Astrology" bottom-nav tab — a professional Astrology Service page.
+/// The Home "Astrology" bottom-nav tab — the official Astrology Service page.
 ///
-/// Everything shown here is loaded LIVE from the admin-managed
-/// `astrology_service/config` ([astrologyServiceConfigProvider]) — astrologer
-/// photo, name, address, description, services offered and professional
-/// details. There is no hardcoded astrology data. A prominent "Book Your
-/// Appointment" CTA opens the in-person appointment booking flow.
+/// EVERYTHING here is loaded LIVE from the admin-managed `astrology_service/config`
+/// ([astrologyServiceConfigProvider]): the hero photo, name, address, about,
+/// experience, specialization, services, certificates, awards, news & media and
+/// contact details. Nothing is hardcoded. A large "Book Your Appointment" CTA
+/// opens the in-person appointment booking flow.
 class AstrologyServicePage extends ConsumerWidget {
   const AstrologyServicePage({super.key});
 
@@ -26,8 +26,7 @@ class AstrologyServicePage extends ConsumerWidget {
       child: async.when(
         loading: () => const Center(
             child: CircularProgressIndicator(color: AppColors.primary)),
-        // Defaults keep the page fully functional even before any admin edit.
-        error: (_, __) => _Body(cfg: AstrologyServiceConfig.defaults),
+        error: (_, __) => const _Body(cfg: AstrologyServiceConfig.defaults),
         data: (cfg) => _Body(cfg: cfg),
       ),
     );
@@ -38,21 +37,18 @@ class _Body extends StatelessWidget {
   final AstrologyServiceConfig cfg;
   const _Body({required this.cfg});
 
-  String get _name =>
-      cfg.expertName.trim().isEmpty ? 'Our Astrology Expert' : cfg.expertName.trim();
+  String get _name => cfg.expertName.trim().isEmpty
+      ? 'Our Astrology Expert'
+      : cfg.expertName.trim();
 
-  Future<void> _call(BuildContext context) async {
-    final number = cfg.contactPhone.replaceAll(RegExp(r'[^0-9+]'), '');
-    if (number.isEmpty) return;
+  Future<void> _launch(BuildContext context, Uri uri, String fallback) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
-      if (!await launchUrl(Uri(scheme: 'tel', path: number))) {
-        messenger.showSnackBar(
-            SnackBar(content: Text('Call us at ${cfg.contactPhone}')));
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        messenger.showSnackBar(SnackBar(content: Text(fallback)));
       }
     } catch (_) {
-      messenger.showSnackBar(
-          SnackBar(content: Text('Call us at ${cfg.contactPhone}')));
+      messenger.showSnackBar(SnackBar(content: Text(fallback)));
     }
   }
 
@@ -64,17 +60,11 @@ class _Body extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
             children: [
-              _heroCard(context),
+              _hero(),
               const SizedBox(height: 14),
-              if (cfg.officeAddress.trim().isNotEmpty) ...[
-                _locationCard(),
-                const SizedBox(height: 14),
-              ],
-              _aboutCard(),
-              const SizedBox(height: 14),
-              _servicesCard(),
-              const SizedBox(height: 14),
-              _professionalCard(context),
+              _nameAddress(),
+              const SizedBox(height: 16),
+              ..._sections(context),
               const SizedBox(height: 8),
             ],
           ),
@@ -84,199 +74,245 @@ class _Body extends StatelessWidget {
     );
   }
 
-  // ── Hero header ─────────────────────────────────────────────────────────
-  Widget _heroCard(BuildContext context) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-                color: AppColors.primary.withOpacity(0.25),
-                blurRadius: 16,
-                offset: const Offset(0, 8)),
-          ],
-        ),
-        child: Column(
-          children: [
-            // Photo with a gold ring.
-            Container(
-              padding: const EdgeInsets.all(3),
-              decoration: const BoxDecoration(
-                  shape: BoxShape.circle, color: AppColors.gold),
-              child: ClipOval(
-                child: NetworkPhoto(
-                  url: cfg.expertPhotoUrl,
-                  width: 96,
-                  height: 96,
-                  showLoadingSpinner: true,
+  // ── Hero: full astrologer photo filling the card ───────────────────────────
+  Widget _hero() => ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: AspectRatio(
+          aspectRatio: 4 / 5,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              NetworkPhoto(
+                url: cfg.expertPhotoUrl,
+                fit: BoxFit.cover,
+                fallbackIcon: Icons.person,
+                fallbackIconSize: 96,
+                showLoadingSpinner: true,
+              ),
+              // Subtle bottom gradient so the rounded card always feels premium
+              // even with a bright photo (no text over it — name sits below).
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 90,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.28),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              _name,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 21,
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (cfg.expertSpecialization.trim().isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(
-                cfg.expertSpecialization,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.gold, fontSize: 13),
               ),
             ],
-            if (cfg.expertExperience.trim().isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+      );
+
+  Widget _nameAddress() => Column(
+        children: [
+          Text(
+            _name,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 22,
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          if (cfg.officeAddress.trim().isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.location_on_outlined,
+                    size: 16, color: AppColors.primary),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    cfg.officeAddress,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                  ),
                 ),
+              ],
+            ),
+          ],
+        ],
+      );
+
+  // ── Sections (each only when it has content) ───────────────────────────────
+  List<Widget> _sections(BuildContext context) {
+    final out = <Widget>[];
+
+    if (cfg.expertIntro.trim().isNotEmpty || cfg.serviceIntro.trim().isNotEmpty) {
+      final about = [
+        if (cfg.expertIntro.trim().isNotEmpty) cfg.expertIntro.trim(),
+        if (cfg.serviceIntro.trim().isNotEmpty) cfg.serviceIntro.trim(),
+      ].join('\n\n');
+      out.add(_section('About', Icons.info_outline,
+          Text(about, style: const TextStyle(fontSize: 13.5, height: 1.5))));
+    }
+
+    if (cfg.expertExperience.trim().isNotEmpty) {
+      out.add(_section('Experience', Icons.workspace_premium_outlined,
+          Text(cfg.expertExperience,
+              style: const TextStyle(fontSize: 13.5, height: 1.5))));
+    }
+
+    if (cfg.expertSpecialization.trim().isNotEmpty) {
+      out.add(_section('Specialization', Icons.star_outline,
+          Text(cfg.expertSpecialization,
+              style: const TextStyle(fontSize: 13.5, height: 1.5))));
+    }
+
+    if (cfg.services.isNotEmpty) {
+      out.add(_section(
+        'Services',
+        Icons.auto_awesome_outlined,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final s in cfg.services)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.workspace_premium,
-                        size: 16, color: AppColors.gold),
-                    const SizedBox(width: 6),
-                    Text(
-                      cfg.expertExperience,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600),
-                    ),
+                    const Icon(Icons.check_circle,
+                        size: 18, color: AppColors.success),
+                    const SizedBox(width: 10),
+                    Expanded(
+                        child: Text(s,
+                            style:
+                                const TextStyle(fontSize: 13.5, height: 1.4))),
                   ],
                 ),
               ),
-            ],
           ],
         ),
-      );
+      ));
+    }
 
-  Widget _locationCard() => _card(
-        icon: Icons.location_on_outlined,
-        title: 'Address / Location',
-        child: Text(
-          cfg.officeAddress,
-          style: const TextStyle(fontSize: 13.5, height: 1.5),
+    if (cfg.certificates.isNotEmpty) {
+      out.add(_section(
+        'Certificates',
+        Icons.verified_outlined,
+        SizedBox(
+          height: 132,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: cfg.certificates.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, i) =>
+                _CertificateCard(cert: cfg.certificates[i], onOpen: _launch),
+          ),
         ),
-      );
+      ));
+    }
 
-  Widget _aboutCard() {
-    final about = [
-      if (cfg.expertIntro.trim().isNotEmpty) cfg.expertIntro.trim(),
-      if (cfg.serviceIntro.trim().isNotEmpty) cfg.serviceIntro.trim(),
-    ].join('\n\n');
-    return _card(
-      icon: Icons.info_outline,
-      title: 'About',
-      child: Text(
-        about.isEmpty ? 'A trusted astrology service.' : about,
-        style: const TextStyle(fontSize: 13.5, height: 1.5),
-      ),
-    );
+    if (cfg.awards.isNotEmpty) {
+      out.add(_section(
+        'Awards & Medals',
+        Icons.emoji_events_outlined,
+        Column(children: [for (final a in cfg.awards) _AwardTile(award: a)]),
+      ));
+    }
+
+    if (cfg.news.isNotEmpty) {
+      out.add(_section(
+        'News & Media',
+        Icons.newspaper_outlined,
+        Column(children: [for (final n in cfg.news) _NewsTile(news: n)]),
+      ));
+    }
+
+    final contacts = _contactRows(context);
+    if (contacts.isNotEmpty) {
+      out.add(_section('Contact Details', Icons.contact_phone_outlined,
+          Column(children: contacts)));
+    }
+
+    return out;
   }
 
-  Widget _servicesCard() => _card(
-        icon: Icons.auto_awesome_outlined,
-        title: 'Services Offered',
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (cfg.services.isEmpty)
-              const Text('Services will be listed soon.',
-                  style: TextStyle(fontSize: 13.5, color: Colors.grey))
-            else
-              for (final s in cfg.services)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 5),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.check_circle,
-                          size: 18, color: AppColors.success),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(s,
-                            style: const TextStyle(
-                                fontSize: 13.5, height: 1.4)),
-                      ),
-                    ],
-                  ),
-                ),
-          ],
-        ),
-      );
+  List<Widget> _contactRows(BuildContext context) {
+    final rows = <Widget>[];
+    final phone = cfg.officeContactNumber.trim();
+    final whatsapp = cfg.whatsappNumber.trim();
+    final email = cfg.email.trim();
+    final address = cfg.officeAddress.trim();
+    final location = cfg.mapLocation.trim();
 
-  Widget _professionalCard(BuildContext context) => _card(
-        icon: Icons.badge_outlined,
-        title: 'Professional Details',
-        child: Column(
-          children: [
-            if (cfg.expertExperience.trim().isNotEmpty)
-              _infoRow(Icons.workspace_premium_outlined, 'Experience',
-                  cfg.expertExperience),
-            if (cfg.expertSpecialization.trim().isNotEmpty)
-              _infoRow(Icons.star_outline, 'Specialization',
-                  cfg.expertSpecialization),
-            if (cfg.contactPhone.trim().isNotEmpty)
-              _infoRow(Icons.call_outlined, 'Contact', cfg.contactPhone),
-            if (cfg.deliveryTime.trim().isNotEmpty)
-              _infoRow(Icons.schedule_outlined, 'Report delivery',
-                  cfg.deliveryTime),
-            if (cfg.contactPhone.trim().isNotEmpty) ...[
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => _call(context),
-                  icon: const Icon(Icons.call_outlined, size: 18),
-                  label: const Text('Call'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
-                    minimumSize: const Size.fromHeight(44),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
+    String digits(String s) => s.replaceAll(RegExp(r'[^0-9+]'), '');
+
+    if (phone.isNotEmpty) {
+      rows.add(_contactRow(Icons.call_outlined, 'Phone', phone,
+          () => _launch(context, Uri(scheme: 'tel', path: digits(phone)),
+              'Call $phone')));
+    }
+    if (whatsapp.isNotEmpty) {
+      final wa = digits(whatsapp).replaceAll('+', '');
+      rows.add(_contactRow(Icons.chat_outlined, 'WhatsApp', whatsapp,
+          () => _launch(context, Uri.parse('https://wa.me/$wa'),
+              'WhatsApp: $whatsapp')));
+    }
+    if (email.isNotEmpty) {
+      rows.add(_contactRow(Icons.email_outlined, 'Email', email,
+          () => _launch(context, Uri(scheme: 'mailto', path: email),
+              'Email: $email')));
+    }
+    if (address.isNotEmpty) {
+      rows.add(_contactRow(Icons.location_on_outlined, 'Office', address, null));
+    }
+    if (location.isNotEmpty) {
+      final uri = location.startsWith('http')
+          ? Uri.parse(location)
+          : Uri.parse(
+              'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(location)}');
+      rows.add(_contactRow(Icons.map_outlined, 'Location', location,
+          () => _launch(context, uri, location)));
+    }
+    return rows;
+  }
+
+  Widget _contactRow(
+          IconData icon, String label, String value, VoidCallback? onTap) =>
+      InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, size: 18, color: AppColors.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label,
+                        style:
+                            TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+                    const SizedBox(height: 1),
+                    Text(value,
+                        style: const TextStyle(
+                            fontSize: 13.5, fontWeight: FontWeight.w600)),
+                  ],
                 ),
               ),
+              if (onTap != null)
+                const Icon(Icons.chevron_right, size: 18, color: Colors.grey),
             ],
-          ],
-        ),
-      );
-
-  Widget _infoRow(IconData icon, String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 18, color: AppColors.primary),
-            const SizedBox(width: 10),
-            Expanded(
-              flex: 4,
-              child: Text(label,
-                  style: TextStyle(fontSize: 13, color: Colors.grey[700])),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              flex: 5,
-              child: Text(value,
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(
-                      fontSize: 13.5, fontWeight: FontWeight.w600)),
-            ),
-          ],
+          ),
         ),
       );
 
@@ -305,16 +341,16 @@ class _Body extends StatelessWidget {
                 size: 20),
             label: Text(
               open ? 'Book Your Appointment' : 'Booking Currently Closed',
-              style: const TextStyle(
-                  fontSize: 15.5, fontWeight: FontWeight.w700),
+              style:
+                  const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               disabledBackgroundColor: Colors.grey.shade300,
               minimumSize: const Size.fromHeight(54),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
           ),
         ),
@@ -322,14 +358,10 @@ class _Body extends StatelessWidget {
     );
   }
 
-  // ── Shared card shell ─────────────────────────────────────────────────────
-  Widget _card({
-    required IconData icon,
-    required String title,
-    required Widget child,
-  }) =>
-      Container(
+  // ── Shared section card shell ─────────────────────────────────────────────
+  Widget _section(String title, IconData icon, Widget child) => Container(
         width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -341,21 +373,181 @@ class _Body extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(icon, size: 18, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 15,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary)),
-              ],
-            ),
+            Row(children: [
+              Icon(icon, size: 18, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 15,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary)),
+            ]),
             const Divider(height: 18),
             child,
           ],
         ),
       );
+}
+
+// ── Certificate card (image thumb or PDF tile) ────────────────────────────────
+
+class _CertificateCard extends StatelessWidget {
+  final AstrologyCertificate cert;
+  final Future<void> Function(BuildContext, Uri, String) onOpen;
+  const _CertificateCard({required this.cert, required this.onOpen});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: cert.url.isEmpty
+          ? null
+          : () => onOpen(context, Uri.parse(cert.url), cert.title),
+      borderRadius: BorderRadius.circular(12),
+      child: SizedBox(
+        width: 110,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: cert.isPdf
+                  ? Container(
+                      width: 110,
+                      height: 100,
+                      color: AppColors.primary.withOpacity(0.08),
+                      alignment: Alignment.center,
+                      child: const Icon(Icons.picture_as_pdf,
+                          color: AppColors.error, size: 40),
+                    )
+                  : NetworkPhoto(
+                      url: cert.url,
+                      width: 110,
+                      height: 100,
+                      fallbackIcon: Icons.verified),
+            ),
+            const SizedBox(height: 4),
+            Text(cert.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11.5)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Award tile ────────────────────────────────────────────────────────────────
+
+class _AwardTile extends StatelessWidget {
+  final AstrologyAward award;
+  const _AwardTile({required this.award});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: NetworkPhoto(
+                url: award.imageUrl,
+                width: 56,
+                height: 56,
+                fallbackIcon: Icons.emoji_events),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(award.title,
+                          style: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w700)),
+                    ),
+                    if (award.year.trim().isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.gold.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(award.year,
+                            style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.goldDark)),
+                      ),
+                  ],
+                ),
+                if (award.description.trim().isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(award.description,
+                      style: TextStyle(
+                          fontSize: 12.5, height: 1.4, color: Colors.grey[700])),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── News tile ─────────────────────────────────────────────────────────────────
+
+class _NewsTile extends StatelessWidget {
+  final AstrologyNews news;
+  const _NewsTile({required this.news});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (news.imageUrl.trim().isNotEmpty)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: NetworkPhoto(
+                url: news.imageUrl,
+                width: double.infinity,
+                height: 150,
+                fallbackIcon: Icons.newspaper,
+              ),
+            ),
+          if (news.imageUrl.trim().isNotEmpty) const SizedBox(height: 8),
+          Text(news.headline,
+              style:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+          if (news.source.trim().isNotEmpty || news.date.trim().isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              [news.source, news.date].where((s) => s.trim().isNotEmpty).join(' · '),
+              style: TextStyle(
+                  fontSize: 11.5,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600),
+            ),
+          ],
+          if (news.description.trim().isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(news.description,
+                style: TextStyle(
+                    fontSize: 12.5, height: 1.4, color: Colors.grey[800])),
+          ],
+          const Divider(height: 18),
+        ],
+      ),
+    );
+  }
 }

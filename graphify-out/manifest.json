@@ -515,7 +515,7 @@
     "semantic_hash": ""
   },
   "android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java": {
-    "mtime": 1782657520.2674303,
+    "mtime": 1782660172.8337705,
     "ast_hash": "957f3f4fa91953a90f2d9690762329f7",
     "semantic_hash": ""
   },
@@ -1370,8 +1370,8 @@
     "semantic_hash": ""
   },
   "lib/core/utils/slot_generator.dart": {
-    "mtime": 1782656985.2425578,
-    "ast_hash": "f7cc0fad544f5bfd5598e4cbe30d386b",
+    "mtime": 1782659793.364371,
+    "ast_hash": "2d81ab8f1da3f233898586f2d8d938e3",
     "semantic_hash": ""
   },
   "lib/models/consultation_model.dart": {
@@ -1520,8 +1520,8 @@
     "semantic_hash": ""
   },
   "lib/models/astrology_service_config.dart": {
-    "mtime": 1782656970.599965,
-    "ast_hash": "04717c860223e6d39fe5ce0b911b2db0",
+    "mtime": 1782659771.6994872,
+    "ast_hash": "729198bcb7e78cb05c5daa6a87528bf2",
     "semantic_hash": ""
   },
   "lib/providers/astrology_config_provider.dart": {
@@ -1530,8 +1530,8 @@
     "semantic_hash": ""
   },
   "lib/screens/admin/astrology_service_settings_screen.dart": {
-    "mtime": 1782657282.6102943,
-    "ast_hash": "8b0d87bf7253ef72ecf5d3b53050e58f",
+    "mtime": 1782660139.419389,
+    "ast_hash": "5a9efa965c502fa7e46569f527f8f712",
     "semantic_hash": ""
   },
   "lib/screens/astrology/appointment_booking_screen.dart": {
@@ -1545,8 +1545,8 @@
     "semantic_hash": ""
   },
   "lib/screens/astrology/astrology_appointment_screen.dart": {
-    "mtime": 1782657139.8883674,
-    "ast_hash": "f7e5a40b4259fc470aea95cdcc5b75b0",
+    "mtime": 1782659801.3542852,
+    "ast_hash": "a2466d026209545bbe487b9eab632f6d",
     "semantic_hash": ""
   },
   "lib/screens/astrology/horoscope_report_service_screen.dart": {
@@ -1555,8 +1555,8 @@
     "semantic_hash": ""
   },
   "lib/screens/home/tabs/astrology_service_page.dart": {
-    "mtime": 1782657086.847866,
-    "ast_hash": "d4b2938dd6c9b1807a5cbc85f079778e",
+    "mtime": 1782660088.4068482,
+    "ast_hash": "611c5eff4ce352878079e4f0f284b1d8",
     "semantic_hash": ""
   },
   "lib/screens/home/tabs/reports_tab.dart": {

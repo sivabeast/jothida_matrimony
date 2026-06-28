@@ -78,6 +78,39 @@ List<ConsultationSlot> generateSlots({
   return slots;
 }
 
+/// Generates slots stepping by `slotDuration + breakDuration` so a configurable
+/// BREAK gap sits after every slot (spec: Slot Duration + Break Time). Each slot
+/// is [slotDuration] long; the next starts after the break. A slot that overlaps
+/// the optional lunch window is skipped. Pure — same inputs, same output.
+///
+/// Example: start 540 (9:00), duration 30, break 0 → 9:00, 9:30, 10:00 …
+///          start 540, duration 30, break 10 → 9:00, 9:40, 10:20 …
+List<ConsultationSlot> generateSlotsWithBreak({
+  required int startMinutes,
+  required int endMinutes,
+  required int slotDuration,
+  int breakDuration = 0,
+  int? lunchStart,
+  int? lunchEnd,
+}) {
+  final slots = <ConsultationSlot>[];
+  if (slotDuration <= 0 || endMinutes <= startMinutes) return slots;
+  final step = slotDuration + (breakDuration > 0 ? breakDuration : 0);
+  final ls = lunchStart;
+  final le = lunchEnd;
+  // Hard bound so a tiny step can't loop unreasonably long.
+  var guard = 0;
+  for (var t = startMinutes; t + slotDuration <= endMinutes; t += step) {
+    if (guard++ > 500) break;
+    final slotEnd = t + slotDuration;
+    if (ls != null && le != null && le > ls && t < le && slotEnd > ls) {
+      continue; // overlaps lunch
+    }
+    slots.add(ConsultationSlot(startMinutes: t, endMinutes: slotEnd));
+  }
+  return slots;
+}
+
 /// The next [count] working days (Mon–Fri by default), starting today and
 /// skipping weekends (spec §8/§9). [workingWeekdays] uses Dart weekday ints
 /// (Mon = 1 … Sun = 7). Never returns weekend dates and never looks a month

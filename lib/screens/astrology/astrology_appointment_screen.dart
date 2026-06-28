@@ -245,10 +245,11 @@ class _AstrologyAppointmentScreenState
     final isToday = dateKeyOf(_date!) == dateKeyOf(now);
     final nowMinutes = now.hour * 60 + now.minute;
 
-    final slots = generateSlots(
+    final slots = generateSlotsWithBreak(
       startMinutes: cfg.slotStartMinutes,
       endMinutes: cfg.slotEndMinutes,
       slotDuration: cfg.slotDurationMinutes,
+      breakDuration: cfg.breakDurationMinutes,
       lunchStart: cfg.lunchStartMinutes,
       lunchEnd: cfg.lunchEndMinutes,
     ).where((s) => !disabled.contains(s.startMinutes)).toList();
