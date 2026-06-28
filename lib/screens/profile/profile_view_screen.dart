@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/profile_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/chat_provider.dart';
 import '../../providers/interest_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
@@ -216,6 +217,26 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
               label: const Text('View Contact'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(52),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // 💬 Chat — opens the conversation with this matched user. Shown ONLY
+          // when the interest is accepted (this branch); the auto-created thread
+          // is idempotent so this always opens the SAME conversation as the
+          // Chats tab (spec §4/§7).
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _openChat(profile),
+              icon: const Icon(Icons.chat_bubble_outline),
+              label: const Text('💬 Chat'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.gold,
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(52),
                 shape: RoundedRectangleBorder(
@@ -835,6 +856,29 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
   /// Opens the Horoscope Compatibility Report service for this pairing.
   void _consultAstrologer(ProfileModel profile) {
     context.push('/horoscope-report/${profile.userId}');
+  }
+
+  /// Opens the one shared conversation with this accepted match. [openChatWith]
+  /// is idempotent (deterministic thread id), so it never creates a duplicate
+  /// room — the Chats tab and this button always land on the same chat (§7).
+  Future<void> _openChat(ProfileModel profile) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final pic = profile.profilePhotoUrl ?? '';
+    final photo = pic.isNotEmpty
+        ? pic
+        : (profile.photos.isNotEmpty ? profile.photos.first : '');
+    try {
+      final id = await ref.read(chatControllerProvider).openChatWith(
+            otherUid: profile.userId,
+            otherName: profile.name,
+            otherPhoto: photo,
+          );
+      if (!mounted) return;
+      context.push('/chat/$id', extra: {'name': profile.name, 'photo': photo});
+    } catch (_) {
+      messenger.showSnackBar(const SnackBar(
+          content: Text('Could not open chat. Please try again.')));
+    }
   }
 
   Widget _buildInfoSection(String title, List<_InfoItem> items) {

@@ -138,6 +138,26 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
 final interestNotifierProvider =
     NotifierProvider<InterestNotifier, AsyncValue<void>>(() => InterestNotifier());
 
+/// The set of OTHER users' UIDs the signed-in user has a mutually-accepted
+/// interest with (either direction). This is the single source of truth for
+/// chat access control (spec §5/§8): only these users may appear in the Chats
+/// list and exchange messages — pending / rejected / cancelled interests are
+/// excluded.
+final acceptedChatUserIdsProvider = Provider.autoDispose<Set<String>>((ref) {
+  final sent =
+      ref.watch(sentInterestsProvider).valueOrNull ?? const <InterestModel>[];
+  final received =
+      ref.watch(receivedInterestsProvider).valueOrNull ?? const <InterestModel>[];
+  final ids = <String>{};
+  for (final i in sent) {
+    if (i.isAccepted) ids.add(i.receiverId);
+  }
+  for (final i in received) {
+    if (i.isAccepted) ids.add(i.senderId);
+  }
+  return ids;
+});
+
 /// True when there is an ACCEPTED interest between the signed-in user and the
 /// profile [profileId], in EITHER direction (I accepted theirs, or they
 /// accepted mine). Drives profile / compatibility / contact unlock on the

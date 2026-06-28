@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/chat_model.dart';
 import '../../providers/chat_provider.dart';
+import '../../providers/interest_provider.dart';
 
 /// All conversations of the signed-in user, updated in realtime. The standalone
 /// route (`/chats`) wraps [ChatListView] in a Scaffold; the Chats bottom-nav tab
@@ -35,6 +36,9 @@ class ChatListView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final threadsAsync = ref.watch(myChatThreadsProvider);
     final myUid = ref.watch(myUidProvider) ?? '';
+    // Chat access control (spec §5/§8): only conversations with users the signed
+    // in member has a mutually-accepted interest with are listed here.
+    final acceptedUids = ref.watch(acceptedChatUserIdsProvider);
 
     return Container(
       color: AppColors.scaffoldBg,
@@ -53,19 +57,18 @@ class ChatListView extends ConsumerWidget {
           );
         },
         data: (allThreads) {
-          // Hide threads with no messages yet — e.g. a match-analysis booking's
-          // thread that was pre-created so the astrologer can post the
-          // acceptance message into it. Such a thread stays hidden until that
-          // first message arrives (so a still-Pending booking never surfaces a
-          // chat here).
+          // Show ONLY conversations with users whose interest is mutually
+          // accepted (spec §5/§8). This naturally excludes pre-created booking /
+          // astrology-analysis threads (those counterparts aren't accepted-
+          // interest matches) — those stay reachable via their own shortcuts.
           final threads = allThreads
-              .where((t) => t.lastMessage.trim().isNotEmpty)
+              .where((t) => acceptedUids.contains(t.otherId(myUid)))
               .toList();
           if (threads.isEmpty) {
             return const _ChatsPlaceholder(
               icon: Icons.chat_bubble_outline,
               title: 'No conversations yet',
-              subtitle: 'Send or receive an interest to start chatting.',
+              subtitle: 'Chat unlocks once an interest is accepted.',
             );
           }
           return ListView.separated(

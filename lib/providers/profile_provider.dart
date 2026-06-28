@@ -932,3 +932,37 @@ final homeMatchesProvider = FutureProvider.autoDispose<HomeMatches>((ref) async 
   return HomeMatches(
       veryGood: veryGood, good: good, average: average, all: all);
 });
+
+/// **New Profiles** for the Home page — newly-joined opposite-gender members,
+/// most-recent first. The Home page is only for discovering newly joined
+/// members, so this is sorted purely by join date (no porutham ranking /
+/// partner-preference filtering — that belongs on the Matches page). Basic
+/// eligibility (self / married / inactive / rejected / blocked) is still
+/// applied, and the list is capped to the most recent joiners.
+final newProfilesProvider =
+    FutureProvider.autoDispose<List<ProfileModel>>((ref) async {
+  final gender = ref.watch(matchGenderProvider);
+  final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+
+  final List<ProfileModel> pool;
+  if (kBypassAuth) {
+    pool = ref.read(demoProfilesProvider.notifier).discover(gender: gender);
+  } else {
+    final page = await ref
+        .read(profileRepositoryProvider)
+        .searchProfilesPage(gender: gender, limit: 60);
+    pool = page.profiles;
+  }
+
+  final eligible = pool.where((p) {
+    if (p.userId == myUid) return false;
+    if (p.isMarried) return false;
+    if (!p.isActive) return false;
+    if (p.status == 'rejected' || p.status == 'blocked') return false;
+    return true;
+  }).toList()
+    // Newest joiners first.
+    ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+  return eligible.take(20).toList();
+});

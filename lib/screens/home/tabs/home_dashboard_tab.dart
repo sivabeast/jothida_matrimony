@@ -79,12 +79,14 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
 
   @override
   Widget build(BuildContext context) {
-    final matchesAsync = ref.watch(homeMatchesProvider);
+    // Home is ONLY for discovering newly-joined members (spec). The full
+    // matching directory lives on the Matches tab.
+    final newProfilesAsync = ref.watch(newProfilesProvider);
     final myProfile = ref.watch(myProfileProvider).valueOrNull;
 
     return RefreshIndicator(
       color: AppColors.primary,
-      onRefresh: () async => ref.invalidate(homeMatchesProvider),
+      onRefresh: () async => ref.invalidate(newProfilesProvider),
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -96,8 +98,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           ..._buildActionCards(context, myProfile),
           const SizedBox(height: 8),
 
-          // ── Recommended Profiles ──────────────────────────────────────────
-          _buildRecommended(context, matchesAsync),
+          // ── New Profiles (newly joined members) ───────────────────────────
+          _buildNewProfiles(context, newProfilesAsync),
           const SizedBox(height: 22),
 
           // ── Recent Interests ──────────────────────────────────────────────
@@ -459,18 +461,18 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     if (confirmed != true) return;
     final messenger = ScaffoldMessenger.of(context);
     await ref.read(accountControllerProvider.notifier).markMarried(profile);
-    ref.invalidate(homeMatchesProvider);
+    ref.invalidate(newProfilesProvider);
     if (!mounted) return;
     messenger.showSnackBar(const SnackBar(
         content:
             Text('🎉 Congratulations! Your profile is now marked as Married.')));
   }
 
-  // ── Recommended Profiles ───────────────────────────────────────────────────
+  // ── New Profiles (newly joined members) ─────────────────────────────────────
 
-  Widget _buildRecommended(
-      BuildContext context, AsyncValue<HomeMatches> matchesAsync) {
-    return matchesAsync.when(
+  Widget _buildNewProfiles(
+      BuildContext context, AsyncValue<List<ProfileModel>> async) {
+    return async.when(
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: 32),
         child:
@@ -478,17 +480,17 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
       ),
       error: (_, __) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: _emptyBox('No matching profiles found.'),
+        child: _emptyBox('No new profiles found.'),
       ),
-      data: (m) {
-        if (m.isEmpty) {
+      data: (profiles) {
+        if (profiles.isEmpty) {
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _emptyBox('No matching profiles found.'),
+            child: _emptyBox('No new profiles yet.'),
           );
         }
         return _horizontalMatchSection(
-            context, '✨', 'Recommended Profiles', m.all);
+            context, '🆕', 'New Profiles', profiles);
       },
     );
   }
