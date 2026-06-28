@@ -148,18 +148,29 @@ class HoroscopeReportServiceScreen extends ConsumerWidget {
         ),
       );
 
-  Widget _metaRow(IconData icon, String label, String value) => Row(
-        children: [
-          Icon(icon, size: 18, color: AppColors.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(label,
-                style: TextStyle(fontSize: 13, color: Colors.grey[700])),
-          ),
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w700)),
-        ],
+  Widget _metaRow(IconData icon, String label, String value) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 18, color: AppColors.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              flex: 4,
+              child: Text(label,
+                  style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+            ),
+            const SizedBox(width: 8),
+            // Value wraps instead of overflowing (long delivery text fixed §3).
+            Expanded(
+              flex: 5,
+              child: Text(value,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
       );
 
   Widget _expertCard(BuildContext context, AstrologyServiceConfig cfg) =>

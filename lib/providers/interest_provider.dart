@@ -1,7 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/interest_model.dart';
-import 'service_providers.dart';
 import 'auth_provider.dart';
+import 'chat_provider.dart';
+import 'profile_provider.dart';
+import 'service_providers.dart';
+
+/// The one-time opening line dropped into a freshly-created accepted-interest
+/// chat so the conversation immediately appears in both users' Chats list.
+const String kInterestAcceptedChatGreeting =
+    "🎉 You're now connected! You can chat with each other here.";
 
 final sentInterestsProvider = StreamProvider.autoDispose<List<InterestModel>>((ref) {
   final userId = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
@@ -62,9 +69,57 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
 
   Future<void> acceptInterest(String interestId) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => ref.read(interestRepositoryProvider).acceptInterest(interestId),
-    );
+    state = await AsyncValue.guard(() async {
+      await ref.read(interestRepositoryProvider).acceptInterest(interestId);
+      // A user↔user chat is created automatically ONLY after an interest is
+      // accepted (spec §5). Best-effort — never block/fail the accept.
+      await _ensureAcceptedChat(interestId);
+    });
+  }
+
+  /// Creates (idempotently) the chat thread between the two now-matched users
+  /// and posts a one-time greeting so the conversation shows up in the Chats
+  /// tab for both. Resolves the OTHER user's name/photo from their profile.
+  Future<void> _ensureAcceptedChat(String interestId) async {
+    try {
+      final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
+      if (myUid == null) return;
+      final all = <InterestModel>[
+        ...(ref.read(receivedInterestsProvider).valueOrNull ?? const []),
+        ...(ref.read(sentInterestsProvider).valueOrNull ?? const []),
+      ];
+      InterestModel? interest;
+      for (final i in all) {
+        if (i.id == interestId) {
+          interest = i;
+          break;
+        }
+      }
+      if (interest == null) return;
+      final otherUid =
+          interest.senderId == myUid ? interest.receiverId : interest.senderId;
+      if (otherUid.isEmpty || otherUid == myUid) return;
+
+      final other = await ref.read(profileByUserIdProvider(otherUid).future);
+      final otherName = other?.fullName.trim();
+      final photoUrl = other?.profilePhotoUrl ?? '';
+      final String otherPhoto = photoUrl.isNotEmpty
+          ? photoUrl
+          : (other != null && other.photos.isNotEmpty ? other.photos.first : '');
+
+      final chat = ref.read(chatControllerProvider);
+      final threadId = await chat.openChatWith(
+        otherUid: otherUid,
+        otherName: (otherName == null || otherName.isEmpty) ? 'Member' : otherName,
+        otherPhoto: otherPhoto,
+      );
+      // Seed the opening greeting so the thread is non-empty and surfaces in the
+      // Chats list for both users. Accepting an interest is a one-time
+      // pending→accepted transition, so this won't double-post in practice.
+      await chat.sendMessage(threadId, kInterestAcceptedChatGreeting);
+    } catch (_) {
+      // Intentionally ignored — chat creation must never fail the accept.
+    }
   }
 
   Future<void> rejectInterest(String interestId) async {

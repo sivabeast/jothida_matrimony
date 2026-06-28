@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
-import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 
 /// Read-only horoscope view for an **accepted** match.
@@ -111,16 +110,10 @@ class _ConsultCard extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () {
-                ref.read(consultMatchProvider.notifier).state =
-                    ConsultMatchContext(
-                        partnerUserId: partnerUserId, partnerName: partnerName);
-                ref.read(homeTabIndexProvider.notifier).state =
-                    kAstrologerTabIndex;
-                context.go('/home');
-              },
-              icon: const Icon(Icons.auto_awesome, size: 18),
-              label: const Text('Consult Astrologer'),
+              onPressed: () =>
+                  context.push('/horoscope-report/$partnerUserId'),
+              icon: const Icon(Icons.description_outlined, size: 18),
+              label: const Text('Get Compatibility Report'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,

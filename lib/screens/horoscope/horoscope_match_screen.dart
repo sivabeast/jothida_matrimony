@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/services/porutham_match.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
-import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 
 /// Horoscope Match Result page (Interests → Accepted → "Horoscope").
@@ -92,20 +91,14 @@ class _ResultView extends ConsumerWidget {
         const SizedBox(height: 16),
         _RecommendationCard(result: result),
         const SizedBox(height: 14),
-        // Consult Astrologer — passes this match to the Astrologers/booking flow.
+        // Opens the Horoscope Compatibility Report service for this pairing.
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: () {
-              ref.read(consultMatchProvider.notifier).state =
-                  ConsultMatchContext(
-                      partnerUserId: other.userId, partnerName: other.name);
-              ref.read(homeTabIndexProvider.notifier).state =
-                  kAstrologerTabIndex;
-              context.go('/home');
-            },
-            icon: const Icon(Icons.auto_awesome),
-            label: const Text('Consult Astrologer'),
+            onPressed: () =>
+                context.push('/horoscope-report/${other.userId}'),
+            icon: const Icon(Icons.description_outlined),
+            label: const Text('Get Compatibility Report'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,

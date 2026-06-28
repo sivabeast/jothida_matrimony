@@ -6,15 +6,14 @@ import '../../core/theme/app_colors.dart';
 import '../../models/chat_model.dart';
 import '../../providers/chat_provider.dart';
 
-/// All conversations of the signed-in user, updated in realtime.
-class ChatListScreen extends ConsumerWidget {
+/// All conversations of the signed-in user, updated in realtime. The standalone
+/// route (`/chats`) wraps [ChatListView] in a Scaffold; the Chats bottom-nav tab
+/// embeds [ChatListView] directly (the Home shell already provides the AppBar).
+class ChatListScreen extends StatelessWidget {
   const ChatListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final threadsAsync = ref.watch(myChatThreadsProvider);
-    final myUid = ref.watch(myUidProvider) ?? '';
-
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
@@ -22,7 +21,24 @@ class ChatListScreen extends ConsumerWidget {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
-      body: threadsAsync.when(
+      body: const ChatListView(),
+    );
+  }
+}
+
+/// The conversations list body (no Scaffold) — every accepted conversation with
+/// photo, name, last message and time. Shared by the route and the Chats tab.
+class ChatListView extends ConsumerWidget {
+  const ChatListView({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final threadsAsync = ref.watch(myChatThreadsProvider);
+    final myUid = ref.watch(myUidProvider) ?? '';
+
+    return Container(
+      color: AppColors.scaffoldBg,
+      child: threadsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         // Never surface the raw Firebase error (e.g. a missing-index
         // failed-precondition) to users — log it and show a friendly state

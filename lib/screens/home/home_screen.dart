@@ -10,12 +10,12 @@ import '../../providers/announcement_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/common/app_drawer.dart';
+import '../chat/chat_list_screen.dart';
 import '../interests/interests_center_screen.dart';
-import 'tabs/astrology_services_tab.dart';
-import 'tabs/bookings_tab.dart';
 import 'tabs/discover_tab.dart';
 import 'tabs/home_dashboard_tab.dart';
 import 'tabs/notifications_tab.dart';
+import 'tabs/reports_tab.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -26,14 +26,14 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   // Tab index → widget. Order matches the spec bottom navigation:
-  // Home · Matches · Interests · Astrology · Bookings. Profile moved to the
-  // header Drawer (it is no longer a bottom-nav tab).
+  // Home · Matches · Chats · Interests · Reports. Profile moved to the header
+  // Drawer (it is no longer a bottom-nav tab).
   static const _tabs = <Widget>[
     HomeDashboardTab(),       // 0 – Home
     DiscoverTab(),            // 1 – Matches
-    InterestsCenterScreen(),  // 2 – Interests
-    AstrologyServicesTab(),   // 3 – Astrology
-    BookingsTab(),            // 4 – Bookings
+    ChatListView(),           // 2 – Chats
+    InterestsCenterScreen(),  // 3 – Interests
+    ReportsTab(),             // 4 – Reports
   ];
 
   @override
@@ -193,10 +193,11 @@ class _BottomNav extends StatelessWidget {
   static const _items = [
     _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home),
     _NavItem(icon: Icons.favorite_border, activeIcon: Icons.favorite),
-    _NavItem(icon: Icons.people_outline, activeIcon: Icons.people),
-    _NavItem(icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome),
     _NavItem(
-        icon: Icons.event_note_outlined, activeIcon: Icons.event_note),
+        icon: Icons.chat_bubble_outline, activeIcon: Icons.chat_bubble),
+    _NavItem(icon: Icons.people_outline, activeIcon: Icons.people),
+    _NavItem(
+        icon: Icons.description_outlined, activeIcon: Icons.description),
   ];
 
   @override
@@ -205,9 +206,9 @@ class _BottomNav extends StatelessWidget {
     final labels = [
       l10n.home,
       l10n.matches,
+      'Chats',
       l10n.interests,
-      l10n.astrologers,
-      'Bookings',
+      'Reports',
     ];
     return Container(
       decoration: BoxDecoration(

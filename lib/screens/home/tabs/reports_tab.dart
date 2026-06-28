@@ -6,28 +6,22 @@ import '../../../models/astrologer_request_model.dart';
 import '../../../providers/match_analysis_provider.dart';
 import '../../astrologer/my_match_analysis_screen.dart';
 
-/// Unified "Bookings" tab (bottom-nav item 5).
+/// Reports tab (bottom-nav item 5) — the user's Horoscope Compatibility Reports.
 ///
-/// The app's only booking pipeline is now Match Analysis (`astrologer_requests`,
-/// type==matching) — the per-astrologer consultation system was removed. Three
-/// tabs over the user's requests:
-///   • Match Analysis — every porutham request
-///   • Completed      — finished analyses
-///   • Cancelled      — rejected / expired requests
-///
-/// Cards are reused from "My Match Analysis" ([MatchAnalysisBookingCard]) so
-/// every request shows its id, service type, date, status and the full
-/// report / chat actions.
-class BookingsTab extends ConsumerStatefulWidget {
-  const BookingsTab({super.key});
+/// Two sections only (no booking terminology): **Under Analysis** (still being
+/// prepared) and **Completed Reports** (delivered). Cards are reused from
+/// [MatchAnalysisBookingCard], which exposes View Report · Download PDF · Open
+/// Analysis Chat on completed reports.
+class ReportsTab extends ConsumerStatefulWidget {
+  const ReportsTab({super.key});
 
   @override
-  ConsumerState<BookingsTab> createState() => _BookingsTabState();
+  ConsumerState<ReportsTab> createState() => _ReportsTabState();
 }
 
-class _BookingsTabState extends ConsumerState<BookingsTab>
+class _ReportsTabState extends ConsumerState<ReportsTab>
     with SingleTickerProviderStateMixin {
-  late final TabController _tab = TabController(length: 3, vsync: this);
+  late final TabController _tab = TabController(length: 2, vsync: this);
 
   @override
   void dispose() {
@@ -37,23 +31,17 @@ class _BookingsTabState extends ConsumerState<BookingsTab>
 
   @override
   Widget build(BuildContext context) {
-    final analysisAsync = ref.watch(myMatchAnalysisRequestsProvider);
+    final async = ref.watch(myMatchAnalysisRequestsProvider);
+    final all = async.valueOrNull ?? const <AstrologerRequestModel>[];
+    final loading = async.isLoading;
+    final hasError = async.hasError;
 
-    final analysis =
-        analysisAsync.valueOrNull ?? const <AstrologerRequestModel>[];
-    final loading = analysisAsync.isLoading;
-    final hasError = analysisAsync.hasError;
-
-    final analysisSorted = [...analysis]
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-    final completed = analysisSorted
-        .where((r) => r.status == AstrologerRequestStatus.completed)
+    final sorted = [...all]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final underAnalysis = sorted
+        .where((r) => r.status != AstrologerRequestStatus.completed)
         .toList();
-    final cancelled = analysisSorted
-        .where((r) =>
-            r.status == AstrologerRequestStatus.rejected ||
-            r.isEffectivelyExpired)
+    final completed = sorted
+        .where((r) => r.status == AstrologerRequestStatus.completed)
         .toList();
 
     return Column(
@@ -62,7 +50,7 @@ class _BookingsTabState extends ConsumerState<BookingsTab>
           color: Colors.white,
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
           alignment: Alignment.centerLeft,
-          child: const Text('My Bookings',
+          child: const Text('Reports',
               style: TextStyle(
                   fontFamily: 'Poppins',
                   fontWeight: FontWeight.w700,
@@ -72,17 +60,14 @@ class _BookingsTabState extends ConsumerState<BookingsTab>
           color: Colors.white,
           child: TabBar(
             controller: _tab,
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
             labelColor: AppColors.primary,
             unselectedLabelColor: Colors.grey,
             indicatorColor: AppColors.primary,
             labelStyle:
                 const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
             tabs: [
-              Tab(text: 'Match Analysis (${analysisSorted.length})'),
-              Tab(text: 'Completed (${completed.length})'),
-              Tab(text: 'Cancelled (${cancelled.length})'),
+              Tab(text: 'Under Analysis (${underAnalysis.length})'),
+              Tab(text: 'Completed Reports (${completed.length})'),
             ],
           ),
         ),
@@ -91,25 +76,18 @@ class _BookingsTabState extends ConsumerState<BookingsTab>
             controller: _tab,
             children: [
               _list(
-                analysisSorted,
+                underAnalysis,
                 loading: loading,
                 hasError: hasError,
-                emptyIcon: Icons.auto_awesome_outlined,
-                emptyText: 'No match analysis bookings yet',
+                emptyIcon: Icons.hourglass_empty,
+                emptyText: 'No reports under analysis yet',
               ),
               _list(
                 completed,
                 loading: loading,
                 hasError: hasError,
                 emptyIcon: Icons.verified_outlined,
-                emptyText: 'No completed bookings yet',
-              ),
-              _list(
-                cancelled,
-                loading: loading,
-                hasError: hasError,
-                emptyIcon: Icons.cancel_outlined,
-                emptyText: 'No cancelled bookings',
+                emptyText: 'No completed reports yet',
               ),
             ],
           ),
@@ -119,19 +97,19 @@ class _BookingsTabState extends ConsumerState<BookingsTab>
   }
 
   Widget _list(
-    List<AstrologerRequestModel> requests, {
+    List<AstrologerRequestModel> reports, {
     required bool loading,
     required bool hasError,
     required IconData emptyIcon,
     required String emptyText,
   }) {
-    if (requests.isEmpty) {
+    if (reports.isEmpty) {
       if (loading) {
         return const Center(
             child: CircularProgressIndicator(color: AppColors.primary));
       }
       if (hasError) {
-        return _empty(Icons.error_outline, 'Could not load your bookings',
+        return _empty(Icons.error_outline, 'Could not load your reports',
             retry: () => ref.invalidate(myMatchAnalysisRequestsProvider));
       }
       return _empty(emptyIcon, emptyText);
@@ -141,10 +119,10 @@ class _BookingsTabState extends ConsumerState<BookingsTab>
       onRefresh: () async => ref.invalidate(myMatchAnalysisRequestsProvider),
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
-        itemCount: requests.length,
+        itemCount: reports.length,
         separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (_, i) => MatchAnalysisBookingCard(
-            key: ValueKey('a_${requests[i].id}'), request: requests[i]),
+            key: ValueKey('r_${reports[i].id}'), request: reports[i]),
       ),
     );
   }

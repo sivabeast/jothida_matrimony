@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
 
-import '../../core/config/dev_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/slot_generator.dart';
 import '../../models/astrology_service_config.dart';
 import '../../models/profile_model.dart';
 import '../../providers/astrology_config_provider.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../providers/profile_provider.dart';
-import '../../providers/service_providers.dart';
 import '../../services/firebase/astrologer_service.dart';
 
 /// Book Your Appointment (spec §7–§11): pick one of the next 5 working days
@@ -56,35 +52,14 @@ class _AppointmentBookingScreenState
     }
     setState(() => _busy = true);
 
-    // Test mode (or auth bypass) simulates a successful payment, exactly like
-    // the rest of the app, so the flow is testable without a live gateway.
-    if (kSubscriptionTestMode || kBypassAuth) {
-      await _createBooking(
-          cfg, me, other, 'demo_${DateTime.now().millisecondsSinceEpoch}');
-      return;
-    }
-
-    final user = ref.read(currentUserProvider).valueOrNull;
-    final email =
-        ref.read(firebaseAuthStreamProvider).valueOrNull?.email ?? user?.email ?? '';
-    final razorpay = ref.read(razorpayServiceProvider);
-    razorpay.init(
-      onSuccess: (PaymentSuccessResponse res) {
-        _createBooking(cfg, me, other, res.paymentId ?? 'razorpay');
-      },
-      onFailure: (PaymentFailureResponse res) {
-        if (!mounted) return;
-        setState(() => _busy = false);
-        _snack(res.message ?? 'Payment failed. Please try again.');
-      },
-    );
-    razorpay.openAppointmentCheckout(
-      amountPaise: cfg.serviceCharge * 100,
-      userPhone: user?.phone ?? '',
-      userEmail: email,
-      userName: me.fullName,
-      userId: user?.uid ?? '',
-    );
+    // ── TESTING MODE ──────────────────────────────────────────────────────
+    // The app is in testing mode, so "Pay & Confirm" SIMULATES a successful
+    // payment and immediately creates + saves the appointment. To go live,
+    // replace this block with the real Razorpay checkout
+    // (RazorpayService.openAppointmentCheckout) and call _createBooking(...)
+    // from its payment-success callback with the real payment id.
+    final paymentId = 'demo_${DateTime.now().millisecondsSinceEpoch}';
+    await _createBooking(cfg, me, other, paymentId);
   }
 
   Future<void> _createBooking(AstrologyServiceConfig cfg, ProfileModel me,

@@ -7,7 +7,6 @@ import '../../core/theme/app_text_styles.dart';
 import '../../models/profile_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/interest_provider.dart';
-import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../providers/subscription_provider.dart';
@@ -833,15 +832,9 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     );
   }
 
-  /// Stash the selected match and jump to the Astrologers tab so the user can
-  /// book a consultation for this pairing.
+  /// Opens the Horoscope Compatibility Report service for this pairing.
   void _consultAstrologer(ProfileModel profile) {
-    ref.read(consultMatchProvider.notifier).state = ConsultMatchContext(
-      partnerUserId: profile.userId,
-      partnerName: profile.name,
-    );
-    ref.read(homeTabIndexProvider.notifier).state = kAstrologerTabIndex;
-    context.go('/home');
+    context.push('/horoscope-report/${profile.userId}');
   }
 
   Widget _buildInfoSection(String title, List<_InfoItem> items) {

@@ -531,7 +531,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         _sectionHeader(context, '💌', 'Recent Interests',
             onViewAll: recent.isEmpty
                 ? null
-                : () => ref.read(homeTabIndexProvider.notifier).state = 2),
+                : () => ref.read(homeTabIndexProvider.notifier).state =
+                    kInterestsTabIndex),
         const SizedBox(height: 12),
         if (recent.isEmpty)
           Padding(
