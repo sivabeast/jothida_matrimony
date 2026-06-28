@@ -10,6 +10,7 @@ import '../../../models/interest_model.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/account_provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/chat_provider.dart';
 import '../../../providers/interest_provider.dart';
 import '../../../providers/navigation_provider.dart';
 import '../../../providers/notification_provider.dart';
@@ -92,7 +93,11 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         children: [
           // ── Curved luxury header + overlapping hero banner ────────────────
           _buildHeaderBanner(context),
-          const SizedBox(height: 14),
+          const SizedBox(height: 18),
+
+          // ── Quick actions — one-tap access to the core journeys ───────────
+          _buildQuickActions(context),
+          const SizedBox(height: 18),
 
           // ── Compact notification-style action cards ───────────────────────
           ..._buildActionCards(context, myProfile),
@@ -174,6 +179,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         ? myProfile!.profilePhotoUrl!
         : (user?.photoUrl ?? '');
     final unread = ref.watch(unreadNotificationCountProvider);
+    final unreadChats = ref.watch(myUnreadChatCountProvider);
     // Admin + Astrology dashboard shortcuts are visible ONLY to the privileged
     // super-admin account (the one whitelisted Gmail). Regular users and the
     // internal astrology account never see them.
@@ -240,8 +246,27 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
                 color: AppColors.gold, size: 24),
           ),
         ],
+        // Chat icon with an unread badge — replaces the removed Chats tab so
+        // users see new messages straight from the Home header.
+        IconButton(
+          tooltip: 'Chats',
+          visualDensity: VisualDensity.compact,
+          onPressed: () => context.push('/chats'),
+          icon: unreadChats > 0
+              ? Badge(
+                  backgroundColor: Colors.red,
+                  label: Text('$unreadChats',
+                      style: const TextStyle(
+                          fontSize: 10, color: Colors.white)),
+                  child: const Icon(Icons.chat_bubble_outline,
+                      color: Colors.white, size: 24),
+                )
+              : const Icon(Icons.chat_bubble_outline,
+                  color: Colors.white, size: 24),
+        ),
         IconButton(
           tooltip: 'Notifications',
+          visualDensity: VisualDensity.compact,
           onPressed: () => _openNotifications(context),
           icon: unread > 0
               ? Badge(
@@ -310,6 +335,92 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     );
   }
 
+  // ── Quick actions ──────────────────────────────────────────────────────────
+
+  /// A clean row of four premium one-tap shortcuts to the core journeys. Keeps
+  /// the most important destinations visible without crowding the dashboard.
+  Widget _buildQuickActions(BuildContext context) {
+    void goTab(int i) => ref.read(homeTabIndexProvider.notifier).state = i;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: _quickAction(
+              icon: Icons.favorite,
+              label: 'Matches',
+              color: AppColors.primary,
+              onTap: () => goTab(kMatchesTabIndex),
+            ),
+          ),
+          Expanded(
+            child: _quickAction(
+              icon: Icons.people_alt_rounded,
+              label: 'Interests',
+              color: const Color(0xFF2F80ED),
+              onTap: () => goTab(kInterestsTabIndex),
+            ),
+          ),
+          Expanded(
+            child: _quickAction(
+              icon: Icons.auto_awesome,
+              label: 'Astrology',
+              color: AppColors.goldDark,
+              onTap: () => goTab(kAstrologyTabIndex),
+            ),
+          ),
+          Expanded(
+            child: _quickAction(
+              icon: Icons.workspace_premium,
+              label: 'Premium',
+              color: AppColors.gold,
+              onTap: () => context.push('/subscription'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _quickAction({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: color.withOpacity(0.18)),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Poppins'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ── Compact notification-style action cards ────────────────────────────────
 
   List<Widget> _buildActionCards(BuildContext context, ProfileModel? profile) {
@@ -327,16 +438,9 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
       ));
     }
 
-    // 🔍 Find Your Life Partner — jumps to the Matches tab.
-    cards.add(_notifCard(
-      emoji: '🔍',
-      title: 'Find Your Life Partner',
-      subtitle: 'Browse matching profiles',
-      accent: const Color(0xFF2F80ED),
-      onTap: () => ref.read(homeTabIndexProvider.notifier).state = 1,
-    ));
-
-    // 👑 Upgrade To Premium — opens the subscription plans.
+    // 👑 Upgrade To Premium — opens the subscription plans. (Matches now lives
+    // in the Quick Actions row above, so the redundant "Find Your Life Partner"
+    // card was removed to keep the dashboard clean.)
     cards.add(_notifCard(
       emoji: '👑',
       title: 'Upgrade To Premium',

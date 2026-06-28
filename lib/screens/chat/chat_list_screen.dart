@@ -7,9 +7,9 @@ import '../../models/chat_model.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/interest_provider.dart';
 
-/// All conversations of the signed-in user, updated in realtime. The standalone
-/// route (`/chats`) wraps [ChatListView] in a Scaffold; the Chats bottom-nav tab
-/// embeds [ChatListView] directly (the Home shell already provides the AppBar).
+/// All conversations of the signed-in user, updated in realtime. Reached from
+/// the Home header Chat icon via the `/chats` route, which wraps [ChatListView]
+/// in a Scaffold. (Chat is no longer a bottom-nav tab — it moved to the header.)
 class ChatListScreen extends StatelessWidget {
   const ChatListScreen({super.key});
 

@@ -7,11 +7,12 @@ import '../../core/utils/l10n_ext.dart';
 import '../../widgets/common/app_logo.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/announcement_provider.dart';
+import '../../providers/chat_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/common/app_drawer.dart';
-import '../chat/chat_list_screen.dart';
 import '../interests/interests_center_screen.dart';
+import 'tabs/astrology_service_page.dart';
 import 'tabs/discover_tab.dart';
 import 'tabs/home_dashboard_tab.dart';
 import 'tabs/notifications_tab.dart';
@@ -26,14 +27,14 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   // Tab index → widget. Order matches the spec bottom navigation:
-  // Home · Matches · Chats · Interests · Reports. Profile moved to the header
-  // Drawer (it is no longer a bottom-nav tab).
+  // Home · Matches · Interests · Reports · Astrology. Chat moved to the Home
+  // header (icon + unread badge); Profile lives in the header Drawer.
   static const _tabs = <Widget>[
     HomeDashboardTab(),       // 0 – Home
     DiscoverTab(),            // 1 – Matches
-    ChatListView(),           // 2 – Chats
-    InterestsCenterScreen(),  // 3 – Interests
-    ReportsTab(),             // 4 – Reports
+    InterestsCenterScreen(),  // 2 – Interests
+    ReportsTab(),             // 3 – Reports
+    AstrologyServicePage(),   // 4 – Astrology
   ];
 
   @override
@@ -96,6 +97,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
         actions: [
+          // Chat icon (beside Notifications) with an unread badge — replaces the
+          // removed Chats bottom-nav tab.
+          _ChatAction(unread: ref.watch(myUnreadChatCountProvider)),
           // Notification icon
           IconButton(
             icon: unread > 0
@@ -190,14 +194,15 @@ class _BottomNav extends StatelessWidget {
 
   // Icons only — labels are localized per-build from [_labels] so the bar
   // switches language instantly with the rest of the app.
+  // Order (spec): Home · Matches · Interests · Reports · Astrology.
   static const _items = [
     _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home),
     _NavItem(icon: Icons.favorite_border, activeIcon: Icons.favorite),
-    _NavItem(
-        icon: Icons.chat_bubble_outline, activeIcon: Icons.chat_bubble),
     _NavItem(icon: Icons.people_outline, activeIcon: Icons.people),
     _NavItem(
         icon: Icons.description_outlined, activeIcon: Icons.description),
+    _NavItem(
+        icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome),
   ];
 
   @override
@@ -206,9 +211,9 @@ class _BottomNav extends StatelessWidget {
     final labels = [
       l10n.home,
       l10n.matches,
-      'Chats',
       l10n.interests,
       'Reports',
+      'Astrology',
     ];
     return Container(
       decoration: BoxDecoration(
@@ -268,4 +273,25 @@ class _NavItem {
   final IconData icon;
   final IconData activeIcon;
   const _NavItem({required this.icon, required this.activeIcon});
+}
+
+/// AppBar Chat action with a red unread badge. Opens the Chats list.
+class _ChatAction extends StatelessWidget {
+  final int unread;
+  const _ChatAction({required this.unread});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'Chats',
+      onPressed: () => context.push('/chats'),
+      icon: unread > 0
+          ? Badge(
+              label: Text('$unread', style: const TextStyle(fontSize: 10)),
+              backgroundColor: Colors.red,
+              child: const Icon(Icons.chat_bubble_outline, size: 25),
+            )
+          : const Icon(Icons.chat_bubble_outline, size: 25),
+    );
+  }
 }

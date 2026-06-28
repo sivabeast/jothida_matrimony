@@ -13,6 +13,7 @@ import '../models/astrologer_request_model.dart';
 import '../screens/astrology/astrology_dashboard_screen.dart';
 import '../screens/astrology/horoscope_report_service_screen.dart';
 import '../screens/astrology/appointment_booking_screen.dart';
+import '../screens/astrology/astrology_appointment_screen.dart';
 import '../screens/astrology/appointment_confirmation_screen.dart';
 import '../screens/astrologer/match_workspace_screen.dart';
 import '../screens/astrologer/my_match_analysis_screen.dart';
@@ -302,6 +303,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/book-appointment/:userId',
         builder: (_, state) => AppointmentBookingScreen(
             otherUserId: state.pathParameters['userId']!),
+      ),
+      // Standalone "Book Your Appointment" from the Astrology page (not tied to
+      // a matched partner). Distinct path so the /astrology exact-match
+      // redirect guard never catches it.
+      GoRoute(
+        path: '/astrology-appointment',
+        builder: (_, __) => const AstrologyAppointmentScreen(),
       ),
       GoRoute(
         path: '/appointment-confirmation/:id',

@@ -99,6 +99,31 @@ List<DateTime> nextWorkingDays(
   return out;
 }
 
+/// The bookable days inside a ROLLING ONE-WEEK window (the new Astrology page
+/// schedule): the next 7 CALENDAR days starting today, keeping only working
+/// weekdays and dropping any [holidayDates] (`yyyy-MM-dd`). Weekends are never
+/// shown. Re-evaluated every call, so the strip automatically rolls forward
+/// each day.
+///
+/// Example (today = Wed, Mon–Fri working): Wed, Thu, Fri, Mon, Tue — Sat & Sun
+/// are skipped because they fall outside the working weekdays.
+List<DateTime> rollingWeekWorkingDays({
+  List<int> workingWeekdays = const [1, 2, 3, 4, 5],
+  List<String> holidayDates = const [],
+  int calendarDays = 7,
+}) {
+  final out = <DateTime>[];
+  final today = DateTime.now();
+  final holidays = holidayDates.toSet();
+  for (var i = 0; i < calendarDays; i++) {
+    final d = DateTime(today.year, today.month, today.day + i);
+    if (!workingWeekdays.contains(d.weekday)) continue; // weekend / non-working
+    if (holidays.contains(dateKeyOf(d))) continue; // admin holiday
+    out.add(d);
+  }
+  return out;
+}
+
 /// All slots for [account]'s configured window (no booking info applied).
 List<ConsultationSlot> slotsForAccount(AstrologerAccount account) =>
     generateSlots(

@@ -25,6 +25,10 @@ class AstrologyServiceConfig {
   final String expertSpecialization; // e.g. "Tamil Jathagam · Porutham"
   final String expertIntro;
 
+  /// Professional services the astrologer offers, shown on the user-facing
+  /// Astrology page ("Services Offered"). Admin-managed — never hardcoded.
+  final List<String> services;
+
   /// Phone number the "Contact Expert" dialer opens. Falls back to
   /// [officeContactNumber] when empty.
   final String expertContactPhone;
@@ -44,6 +48,24 @@ class AstrologyServiceConfig {
 
   /// How many working days ahead are bookable (spec §9: next 5 working days).
   final int maxAdvanceWorkingDays;
+
+  // ── Admin appointment controls ─────────────────────────────────────────
+  /// Master switch — when false, appointment booking is closed for everyone
+  /// and the user-facing "Book Your Appointment" button is disabled.
+  final bool bookingEnabled;
+
+  /// Specific calendar days (`yyyy-MM-dd`) the office is closed (holidays),
+  /// removed from the rolling-week schedule even if they fall on a working day.
+  final List<String> holidayDates;
+
+  /// Slot start times (minutes-from-midnight) the admin has switched OFF. A
+  /// disabled slot is hidden/greyed out for users even though it falls inside
+  /// the working window.
+  final List<int> disabledSlotMinutes;
+
+  /// Free-text appointment rules / instructions shown on the booking screen
+  /// (e.g. "Carry both horoscopes", "Arrive 10 minutes early").
+  final String appointmentRules;
 
   /// The internal astrology account's REAL Firebase uid, captured on its first
   /// login. Used to pre-create the Astrology Analysis Chat after purchase so the
@@ -71,6 +93,13 @@ class AstrologyServiceConfig {
         'A trusted astrologer with years of experience in marriage horoscope '
             'matching, guiding families with clear and reliable compatibility '
             'analysis.',
+    this.services = const [
+      'Horoscope (Jathagam) Compatibility Matching',
+      'Star & Rasi Porutham Analysis',
+      'Dosha Check & Remedies',
+      'Marriage Muhurtham Guidance',
+      'Personal Astrology Consultation',
+    ],
     this.expertContactPhone = '',
     this.officeAddress =
         'Jothida Matrimony Office, Main Road, Tamil Nadu',
@@ -82,6 +111,12 @@ class AstrologyServiceConfig {
     this.lunchEndMinutes = 840, // 2:00 PM
     this.slotDurationMinutes = 60,
     this.maxAdvanceWorkingDays = 5,
+    this.bookingEnabled = true,
+    this.holidayDates = const [],
+    this.disabledSlotMinutes = const [],
+    this.appointmentRules =
+        'This is an in-person office visit. Please arrive 10 minutes before '
+            'your slot and carry both horoscopes.',
     this.internalUid = '',
   });
 
@@ -126,6 +161,7 @@ class AstrologyServiceConfig {
       expertSpecialization:
           _toStr(d['expertSpecialization'], def.expertSpecialization),
       expertIntro: _toStr(d['expertIntro'], def.expertIntro),
+      services: _toStringList(d['services'], def.services),
       expertContactPhone: (d['expertContactPhone'] ?? '').toString(),
       officeAddress: _toStr(d['officeAddress'], def.officeAddress),
       officeContactNumber:
@@ -139,6 +175,13 @@ class AstrologyServiceConfig {
           _toInt(d['slotDurationMinutes'], def.slotDurationMinutes),
       maxAdvanceWorkingDays:
           _toInt(d['maxAdvanceWorkingDays'], def.maxAdvanceWorkingDays),
+      bookingEnabled: d['bookingEnabled'] is bool
+          ? d['bookingEnabled'] as bool
+          : def.bookingEnabled,
+      holidayDates: _toStringList(d['holidayDates'], def.holidayDates),
+      disabledSlotMinutes:
+          _toIntList(d['disabledSlotMinutes'], def.disabledSlotMinutes),
+      appointmentRules: _toStr(d['appointmentRules'], def.appointmentRules),
       internalUid: (d['internalUid'] ?? '').toString(),
     );
   }
@@ -153,6 +196,7 @@ class AstrologyServiceConfig {
         'expertExperience': expertExperience,
         'expertSpecialization': expertSpecialization,
         'expertIntro': expertIntro,
+        'services': services,
         'expertContactPhone': expertContactPhone,
         'officeAddress': officeAddress,
         'officeContactNumber': officeContactNumber,
@@ -163,6 +207,10 @@ class AstrologyServiceConfig {
         'lunchEndMinutes': lunchEndMinutes,
         'slotDurationMinutes': slotDurationMinutes,
         'maxAdvanceWorkingDays': maxAdvanceWorkingDays,
+        'bookingEnabled': bookingEnabled,
+        'holidayDates': holidayDates,
+        'disabledSlotMinutes': disabledSlotMinutes,
+        'appointmentRules': appointmentRules,
         'internalUid': internalUid,
         'updatedAt': FieldValue.serverTimestamp(),
       };
@@ -177,6 +225,7 @@ class AstrologyServiceConfig {
     String? expertExperience,
     String? expertSpecialization,
     String? expertIntro,
+    List<String>? services,
     String? expertContactPhone,
     String? officeAddress,
     String? officeContactNumber,
@@ -187,6 +236,10 @@ class AstrologyServiceConfig {
     int? lunchEndMinutes,
     int? slotDurationMinutes,
     int? maxAdvanceWorkingDays,
+    bool? bookingEnabled,
+    List<String>? holidayDates,
+    List<int>? disabledSlotMinutes,
+    String? appointmentRules,
     String? internalUid,
   }) =>
       AstrologyServiceConfig(
@@ -199,6 +252,7 @@ class AstrologyServiceConfig {
         expertExperience: expertExperience ?? this.expertExperience,
         expertSpecialization: expertSpecialization ?? this.expertSpecialization,
         expertIntro: expertIntro ?? this.expertIntro,
+        services: services ?? this.services,
         expertContactPhone: expertContactPhone ?? this.expertContactPhone,
         officeAddress: officeAddress ?? this.officeAddress,
         officeContactNumber: officeContactNumber ?? this.officeContactNumber,
@@ -210,6 +264,10 @@ class AstrologyServiceConfig {
         slotDurationMinutes: slotDurationMinutes ?? this.slotDurationMinutes,
         maxAdvanceWorkingDays:
             maxAdvanceWorkingDays ?? this.maxAdvanceWorkingDays,
+        bookingEnabled: bookingEnabled ?? this.bookingEnabled,
+        holidayDates: holidayDates ?? this.holidayDates,
+        disabledSlotMinutes: disabledSlotMinutes ?? this.disabledSlotMinutes,
+        appointmentRules: appointmentRules ?? this.appointmentRules,
         internalUid: internalUid ?? this.internalUid,
       );
 }

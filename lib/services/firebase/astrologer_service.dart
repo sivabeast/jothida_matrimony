@@ -291,12 +291,12 @@ class AstrologerService {
           },
           SetOptions(merge: true));
     });
-    // Notify the internal astrology team of the new (already-paid) request.
+    // Notify the internal astrology team of the new appointment booking.
     await _notify(
       request.astrologerId,
-      'New Horoscope Report Booking',
-      '${request.userName} booked a horoscope compatibility report '
-          '(appointment ${request.visitDateKey}).',
+      'New Appointment Booking',
+      '${request.userName} booked an in-person appointment for '
+          '${request.visitDateKey}.',
       'new_match_analysis',
       data: {
         'requestId': id,
@@ -308,8 +308,7 @@ class AstrologerService {
       await _notify(
         request.userId,
         'Appointment Confirmed',
-        'Your horoscope compatibility report appointment is confirmed. '
-            'Booking ID: $id.',
+        'Your appointment is confirmed. Booking ID: $id.',
         'booking_submitted',
         data: {'requestId': id, 'route': '/my-analysis'},
       );

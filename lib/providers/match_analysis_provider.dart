@@ -398,6 +398,81 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     }
   }
 
+  /// Books a standalone **in-person Astrology appointment** from the Astrology
+  /// page's "Book Your Appointment" flow (NOT tied to a matched partner). Writes
+  /// ONE appointment request addressed to the internal astrology service using
+  /// the SAME slot-locking deterministic-id create as the horoscope-report
+  /// booking — so a slot taken by ANY appointment (consultation or report)
+  /// immediately becomes unavailable to everyone (double-booking prevention at
+  /// the backend). Returns the new booking id; throws
+  /// [AppointmentSlotTakenException] if the slot was just taken.
+  Future<String> bookServiceAppointment({
+    required DateTime date,
+    required int slotMinutes,
+    required AstrologyServiceConfig config,
+    String note = '',
+  }) async {
+    state = const AsyncLoading();
+    try {
+      final me = ref.read(myProfileProvider).valueOrNull;
+      final user = ref.read(currentUserProvider).valueOrNull;
+      final uid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ??
+          user?.uid ??
+          '';
+      final location = me == null
+          ? ''
+          : [me.city, me.state].where((s) => s.trim().isNotEmpty).join(', ');
+      final lang = ref.read(localeProvider)?.languageCode ?? 'en';
+      final now = DateTime.now();
+      final visitDay = DateTime(date.year, date.month, date.day);
+      final userName = me?.fullName ?? user?.displayName ?? 'User';
+
+      final request = AstrologerRequestModel(
+        id: 'new',
+        astrologerId: kInternalAstrologyId,
+        astrologerName: kInternalAstrologyName,
+        userId: uid,
+        userName: userName,
+        userPhotoUrl: me?.profilePhotoUrl ?? '',
+        userLocation: location,
+        // Standalone appointment — a consultation visit, not a porutham report.
+        type: AstrologerRequestType.consultation,
+        status: AstrologerRequestStatus.pending,
+        message: note.trim(),
+        amount: 0, // free in-person appointment (no payment gate)
+        // The booking is the user's own visit — store them as profile A so the
+        // workspace/admin can identify who is coming in.
+        profileAId: me?.id,
+        profileAName: userName,
+        createdAt: now,
+        userLanguage: lang,
+        visitDate: visitDay,
+        slotStartMinutes: slotMinutes,
+        officeAddress: config.officeAddress,
+        officeContact: config.officeContactNumber,
+        history: [
+          BookingHistoryEntry(at: now, label: 'Appointment booked'),
+        ],
+      );
+
+      final String id;
+      if (kBypassAuth) {
+        id = AstrologerRequestModel.appointmentDocId(
+            kInternalAstrologyId, visitDay, slotMinutes);
+        ref.read(demoAstrologerRequestsProvider.notifier).add(request);
+      } else {
+        id = await ref
+            .read(astrologerServiceProvider)
+            .createAppointmentRequest(request);
+      }
+      state = const AsyncData(null);
+      return id;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
   /// Best-effort: flag this user's OWN booking Expired once the 24-hour window
   /// lapses (security rules permit the owner this limited update; there is no
   /// Cloud Functions backend to do it server-side). Safe to call repeatedly.

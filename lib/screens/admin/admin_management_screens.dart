@@ -1612,8 +1612,9 @@ class AdminSettingsScreen extends StatelessWidget {
         ),
         _ActionTile(
           icon: Icons.auto_awesome_outlined,
-          title: 'Astrology Service',
-          subtitle: 'Expert, office, charge & appointment slots',
+          title: 'Astrology Management',
+          subtitle:
+              'Astrologer, services, working days, slots & appointment rules',
           color: AppColors.primary,
           onTap: () => context.go('/admin/astrology-service'),
         ),

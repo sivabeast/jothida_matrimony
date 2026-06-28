@@ -7,10 +7,13 @@ import '../../core/utils/slot_generator.dart';
 import '../../models/astrology_service_config.dart';
 import '../../providers/astrology_config_provider.dart';
 
-/// Admin screen to edit the internal Horoscope Compatibility Report service
-/// (`astrology_service/config`): expert profile, office details, service charge,
-/// page copy and the appointment slot window. Writes are admin/internal-only
-/// (firestore.rules).
+/// Admin "Astrology Management" screen — the single source of truth for
+/// everything shown on the user-facing Astrology page and appointment booking
+/// (`astrology_service/config`): astrologer profile, address, description,
+/// services, professional details, working days, holidays, slot window, per-slot
+/// enable/disable, booking availability and appointment rules. Writes are
+/// admin/internal-only (firestore.rules). No astrology data is hardcoded in the
+/// user app — it all flows from here.
 class AstrologyServiceSettingsScreen extends ConsumerStatefulWidget {
   const AstrologyServiceSettingsScreen({super.key});
 
@@ -24,6 +27,14 @@ class _AstrologyServiceSettingsScreenState
   final _c = <String, TextEditingController>{};
   bool _seeded = false;
   bool _saving = false;
+
+  // Non-text state.
+  bool _bookingEnabled = true;
+  final Set<int> _workingWeekdays = {};
+  final List<String> _holidayDates = [];
+  final Set<int> _disabledSlots = {};
+
+  static const _weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   TextEditingController _ctrl(String key, [String initial = '']) =>
       _c.putIfAbsent(key, () => TextEditingController(text: initial));
@@ -40,15 +51,27 @@ class _AstrologyServiceSettingsScreenState
     _ctrl('expertExperience', cfg.expertExperience);
     _ctrl('expertSpecialization', cfg.expertSpecialization);
     _ctrl('expertIntro', cfg.expertIntro);
+    _ctrl('services', cfg.services.join('\n'));
     _ctrl('expertContactPhone', cfg.expertContactPhone);
     _ctrl('officeAddress', cfg.officeAddress);
     _ctrl('officeContactNumber', cfg.officeContactNumber);
+    _ctrl('appointmentRules', cfg.appointmentRules);
     _ctrl('slotStartMinutes', '${cfg.slotStartMinutes}');
     _ctrl('slotEndMinutes', '${cfg.slotEndMinutes}');
     _ctrl('lunchStartMinutes', '${cfg.lunchStartMinutes}');
     _ctrl('lunchEndMinutes', '${cfg.lunchEndMinutes}');
     _ctrl('slotDurationMinutes', '${cfg.slotDurationMinutes}');
     _ctrl('maxAdvanceWorkingDays', '${cfg.maxAdvanceWorkingDays}');
+    _bookingEnabled = cfg.bookingEnabled;
+    _workingWeekdays
+      ..clear()
+      ..addAll(cfg.workingWeekdays);
+    _holidayDates
+      ..clear()
+      ..addAll(cfg.holidayDates);
+    _disabledSlots
+      ..clear()
+      ..addAll(cfg.disabledSlotMinutes);
   }
 
   @override
@@ -62,17 +85,38 @@ class _AstrologyServiceSettingsScreenState
   int _int(String key, int fallback) =>
       int.tryParse(_ctrl(key).text.trim()) ?? fallback;
 
+  List<ConsultationSlot> _currentSlots(AstrologyServiceConfig cfg) =>
+      generateSlots(
+        startMinutes: _int('slotStartMinutes', cfg.slotStartMinutes),
+        endMinutes: _int('slotEndMinutes', cfg.slotEndMinutes),
+        slotDuration: _int('slotDurationMinutes', cfg.slotDurationMinutes),
+        lunchStart: _int('lunchStartMinutes', cfg.lunchStartMinutes),
+        lunchEnd: _int('lunchEndMinutes', cfg.lunchEndMinutes),
+      );
+
+  Future<void> _addHoliday() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: now,
+      lastDate: DateTime(now.year + 1, now.month, now.day),
+    );
+    if (picked == null) return;
+    final key = dateKeyOf(picked);
+    if (!_holidayDates.contains(key)) {
+      setState(() => _holidayDates
+        ..add(key)
+        ..sort());
+    }
+  }
+
   Future<void> _save(AstrologyServiceConfig base) async {
     setState(() => _saving = true);
     final messenger = ScaffoldMessenger.of(context);
     final updated = base.copyWith(
       serviceIntro: _ctrl('serviceIntro').text.trim(),
-      reportIncludes: _ctrl('reportIncludes')
-          .text
-          .split('\n')
-          .map((s) => s.trim())
-          .where((s) => s.isNotEmpty)
-          .toList(),
+      reportIncludes: _lines('reportIncludes'),
       deliveryTime: _ctrl('deliveryTime').text.trim(),
       serviceCharge: _int('serviceCharge', base.serviceCharge),
       expertName: _ctrl('expertName').text.trim(),
@@ -80,9 +124,11 @@ class _AstrologyServiceSettingsScreenState
       expertExperience: _ctrl('expertExperience').text.trim(),
       expertSpecialization: _ctrl('expertSpecialization').text.trim(),
       expertIntro: _ctrl('expertIntro').text.trim(),
+      services: _lines('services'),
       expertContactPhone: _ctrl('expertContactPhone').text.trim(),
       officeAddress: _ctrl('officeAddress').text.trim(),
       officeContactNumber: _ctrl('officeContactNumber').text.trim(),
+      appointmentRules: _ctrl('appointmentRules').text.trim(),
       slotStartMinutes: _int('slotStartMinutes', base.slotStartMinutes),
       slotEndMinutes: _int('slotEndMinutes', base.slotEndMinutes),
       lunchStartMinutes: _int('lunchStartMinutes', base.lunchStartMinutes),
@@ -91,11 +137,15 @@ class _AstrologyServiceSettingsScreenState
           _int('slotDurationMinutes', base.slotDurationMinutes),
       maxAdvanceWorkingDays:
           _int('maxAdvanceWorkingDays', base.maxAdvanceWorkingDays),
+      bookingEnabled: _bookingEnabled,
+      workingWeekdays: (_workingWeekdays.toList()..sort()),
+      holidayDates: List<String>.from(_holidayDates),
+      disabledSlotMinutes: (_disabledSlots.toList()..sort()),
     );
     try {
       await ref.read(astrologyConfigServiceProvider).save(updated);
       messenger.showSnackBar(
-          const SnackBar(content: Text('Astrology service settings saved.')));
+          const SnackBar(content: Text('Astrology settings saved.')));
     } catch (_) {
       messenger.showSnackBar(
           const SnackBar(content: Text('Could not save. Please try again.')));
@@ -104,13 +154,20 @@ class _AstrologyServiceSettingsScreenState
     }
   }
 
+  List<String> _lines(String key) => _ctrl(key)
+      .text
+      .split('\n')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(astrologyServiceConfigProvider);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Astrology Service'),
+        title: const Text('Astrology Management'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -125,40 +182,101 @@ class _AstrologyServiceSettingsScreenState
 
   Widget _form(AstrologyServiceConfig cfg) {
     _seed(cfg);
-    final previewSlots = generateSlots(
-      startMinutes: _int('slotStartMinutes', cfg.slotStartMinutes),
-      endMinutes: _int('slotEndMinutes', cfg.slotEndMinutes),
-      slotDuration: _int('slotDurationMinutes', cfg.slotDurationMinutes),
-      lunchStart: _int('lunchStartMinutes', cfg.lunchStartMinutes),
-      lunchEnd: _int('lunchEndMinutes', cfg.lunchEndMinutes),
-    );
+    final slots = _currentSlots(cfg);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _section('Service Page'),
+        // ── Astrologer profile (shown on the user Astrology page) ──────────
+        _section('Astrologer Profile'),
+        _field('expertName', 'Astrologer name'),
+        _field('expertPhotoUrl', 'Profile photo URL'),
+        _field('expertExperience', 'Experience (e.g. 15+ years)'),
+        _field('expertSpecialization', 'Specialization'),
+        _field('expertIntro', 'Description / about', maxLines: 3),
+        _field('expertContactPhone', 'Contact phone (blank = office number)'),
+
+        // ── Services Offered ───────────────────────────────────────────────
+        _section('Services Offered'),
+        _hint('One service per line — shown on the Astrology page.'),
+        _field('services', 'Services (one per line)', maxLines: 6),
+
+        // ── Office / address ───────────────────────────────────────────────
+        _section('Address / Office'),
+        _field('officeAddress', 'Address / location', maxLines: 2),
+        _field('officeContactNumber', 'Office contact number'),
+
+        // ── Horoscope report copy (existing service details) ───────────────
+        _section('Horoscope Report Service'),
         _field('serviceIntro', 'Service introduction', maxLines: 3),
         _field('reportIncludes', 'What the report includes (one per line)',
             maxLines: 5),
         _field('deliveryTime', 'Estimated delivery time'),
-        _field('serviceCharge', 'Service charge (₹)', number: true),
-        _section('Astrology Expert'),
-        _field('expertName', 'Expert name'),
-        _field('expertPhotoUrl', 'Expert photo URL'),
-        _field('expertExperience', 'Experience (e.g. 15+ years)'),
-        _field('expertSpecialization', 'Specialization'),
-        _field('expertIntro', 'Short introduction', maxLines: 3),
-        _field('expertContactPhone',
-            'Contact Expert phone (blank = office number)'),
-        _section('Office (Appointment Confirmation)'),
-        _field('officeAddress', 'Office address', maxLines: 2),
-        _field('officeContactNumber', 'Office contact number'),
-        _section('Appointment Slots (minutes from midnight)'),
-        const Text(
-          'Appointments are Mon–Fri only. 600 = 10:00 AM, 780 = 1:00 PM, '
-          '840 = 2:00 PM, 1020 = 5:00 PM.',
-          style: TextStyle(fontSize: 12, color: Colors.grey),
+        _field('serviceCharge', 'Report service charge (₹)', number: true),
+
+        // ── Appointment availability ───────────────────────────────────────
+        _section('Appointment Availability'),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          activeColor: AppColors.primary,
+          title: const Text('Booking available',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+          subtitle: Text(
+              _bookingEnabled
+                  ? 'Users can book appointments.'
+                  : 'Booking is closed for all users.',
+              style: const TextStyle(fontSize: 12)),
+          value: _bookingEnabled,
+          onChanged: (v) => setState(() => _bookingEnabled = v),
         ),
-        const SizedBox(height: 8),
+
+        // ── Working days ───────────────────────────────────────────────────
+        _section('Working Days'),
+        _hint('Only selected days appear in the booking schedule.'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: List.generate(7, (i) {
+            final weekday = i + 1; // Mon = 1 … Sun = 7
+            final on = _workingWeekdays.contains(weekday);
+            return FilterChip(
+              label: Text(_weekdayLabels[i]),
+              selected: on,
+              selectedColor: AppColors.primary.withOpacity(0.15),
+              checkmarkColor: AppColors.primary,
+              onSelected: (sel) => setState(() {
+                if (sel) {
+                  _workingWeekdays.add(weekday);
+                } else {
+                  _workingWeekdays.remove(weekday);
+                }
+              }),
+            );
+          }),
+        ),
+
+        // ── Holidays ───────────────────────────────────────────────────────
+        _section('Holiday Days'),
+        _hint('Specific dates the office is closed (removed from the schedule).'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final h in _holidayDates)
+              InputChip(
+                label: Text(h),
+                onDeleted: () => setState(() => _holidayDates.remove(h)),
+              ),
+            ActionChip(
+              avatar: const Icon(Icons.add, size: 18, color: AppColors.primary),
+              label: const Text('Add holiday'),
+              onPressed: _addHoliday,
+            ),
+          ],
+        ),
+
+        // ── Slot window ────────────────────────────────────────────────────
+        _section('Time Slot Window (minutes from midnight)'),
+        _hint('600 = 10:00 AM · 780 = 1:00 PM · 840 = 2:00 PM · 1020 = 5:00 PM'),
         _field('slotStartMinutes', 'Day start (minutes)', number: true),
         _field('slotEndMinutes', 'Day end (minutes)', number: true),
         _field('lunchStartMinutes', 'Lunch start (minutes)', number: true),
@@ -166,14 +284,45 @@ class _AstrologyServiceSettingsScreenState
         _field('slotDurationMinutes', 'Slot duration (minutes)', number: true),
         _field('maxAdvanceWorkingDays', 'Bookable working days ahead',
             number: true),
-        const SizedBox(height: 8),
-        Text(
-          'Preview: ${previewSlots.isEmpty ? 'no slots' : previewSlots.map((s) => s.label).join(', ')}',
-          style: const TextStyle(
-              fontSize: 12.5,
-              fontStyle: FontStyle.italic,
-              color: AppColors.primary),
-        ),
+
+        // ── Enable / disable individual slots ──────────────────────────────
+        _section('Available Time Slots'),
+        _hint('Tap a slot to enable/disable it. Disabled slots are hidden from '
+            'users.'),
+        if (slots.isEmpty)
+          const Text('No slots — check the window values above.',
+              style: TextStyle(color: Colors.grey))
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final s in slots)
+                () {
+                  final disabled = _disabledSlots.contains(s.startMinutes);
+                  return FilterChip(
+                    label: Text(s.label),
+                    selected: !disabled,
+                    selectedColor: AppColors.success.withOpacity(0.15),
+                    checkmarkColor: AppColors.success,
+                    backgroundColor: Colors.grey.shade200,
+                    onSelected: (_) => setState(() {
+                      if (disabled) {
+                        _disabledSlots.remove(s.startMinutes);
+                      } else {
+                        _disabledSlots.add(s.startMinutes);
+                      }
+                    }),
+                  );
+                }(),
+            ],
+          ),
+
+        // ── Appointment rules ──────────────────────────────────────────────
+        _section('Appointment Rules'),
+        _field('appointmentRules', 'Rules / instructions shown to users',
+            maxLines: 3),
+
         const SizedBox(height: 22),
         SizedBox(
           width: double.infinity,
@@ -202,12 +351,18 @@ class _AstrologyServiceSettingsScreenState
   }
 
   Widget _section(String t) => Padding(
-        padding: const EdgeInsets.only(top: 18, bottom: 8),
+        padding: const EdgeInsets.only(top: 20, bottom: 8),
         child: Text(t,
             style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
                 color: AppColors.primary)),
+      );
+
+  Widget _hint(String t) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(t,
+            style: const TextStyle(fontSize: 12, color: Colors.grey)),
       );
 
   Widget _field(String key, String label,
