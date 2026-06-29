@@ -60,7 +60,8 @@ class _AstrologyServiceSettingsScreenState
   int _breakDuration = 0;
 
   static const _weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  static const _durationOptions = [15, 20, 30, 45, 60];
+  // Appointment slot durations (spec §3): 30 / 45 / 60 / 90 / 120 / 180 minutes.
+  static const _durationOptions = [30, 45, 60, 90, 120, 180];
   static const _breakOptions = [0, 5, 10, 15, 30];
 
   TextEditingController _ctrl(String key, [String initial = '']) =>

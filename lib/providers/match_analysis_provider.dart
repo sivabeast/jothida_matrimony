@@ -305,6 +305,7 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     required ProfileModel bride,
     required int amount,
     String note = '',
+    String? paymentId,
   }) async {
     state = const AsyncLoading();
     try {
@@ -318,9 +319,12 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
           : [me.city, me.state].where((s) => s.trim().isNotEmpty).join(', ');
       final lang = ref.read(localeProvider)?.languageCode ?? 'en';
       final now = DateTime.now();
-      final paymentId = kSubscriptionTestMode
-          ? 'demo_${now.millisecondsSinceEpoch}'
-          : 'razorpay_${now.millisecondsSinceEpoch}';
+      // Use the REAL Razorpay payment id when supplied; otherwise fall back to a
+      // simulated id (demo / no-gateway path).
+      final txnId = paymentId ??
+          (kSubscriptionTestMode
+              ? 'demo_${now.millisecondsSinceEpoch}'
+              : 'razorpay_${now.millisecondsSinceEpoch}');
 
       final request = AstrologerRequestModel(
         id: 'new',
@@ -343,11 +347,11 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         userLanguage: lang,
         paid: amount > 0,
         paidAt: amount > 0 ? now : null,
-        paymentId: amount > 0 ? paymentId : '',
+        paymentId: amount > 0 ? txnId : '',
         history: [
           BookingHistoryEntry(at: now, label: 'Booking created'),
           if (amount > 0)
-            BookingHistoryEntry(at: now, label: 'Payment received ($paymentId)'),
+            BookingHistoryEntry(at: now, label: 'Payment received ($txnId)'),
         ],
       );
 
@@ -485,6 +489,8 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     required int slotMinutes,
     required AstrologyServiceConfig config,
     String note = '',
+    int amount = 0,
+    String? paymentId,
   }) async {
     state = const AsyncLoading();
     try {
@@ -513,11 +519,16 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         userPhotoUrl: me?.profilePhotoUrl ?? '',
         userLocation: location,
         userPhone: userPhone,
-        // Standalone appointment — a consultation visit, not a porutham report.
+        // Standalone office-visit appointment — independent of the online
+        // Horoscope Analysis report.
         type: AstrologerRequestType.consultation,
         status: AstrologerRequestStatus.pending,
         message: note.trim(),
-        amount: 0, // free in-person appointment (no payment gate)
+        // ₹50 booking charge collected up front to confirm the slot.
+        amount: amount,
+        paid: amount > 0,
+        paidAt: amount > 0 ? now : null,
+        paymentId: amount > 0 ? (paymentId ?? '') : '',
         // The booking is the user's own visit — store them as profile A so the
         // workspace/admin can identify who is coming in.
         profileAId: me?.id,
@@ -530,6 +541,9 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         officeContact: config.officeContactNumber,
         history: [
           BookingHistoryEntry(at: now, label: 'Appointment booked'),
+          if (amount > 0)
+            BookingHistoryEntry(
+                at: now, label: 'Payment received (${paymentId ?? ''})'),
         ],
       );
 

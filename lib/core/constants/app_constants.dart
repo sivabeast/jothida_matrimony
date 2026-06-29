@@ -73,10 +73,13 @@ class AppConstants {
   static const int mediumPrice = 299; // legacy
   static const int premiumPrice = 599;
   static const int poruthamsPrice = 199;
-  // Fee for a Horoscope Analysis (the paid, auto-assigned report a user requests
-  // from an accepted match). Collected by the platform; the assigned astrologer
-  // is settled separately. Adjust here to change the analysis price app-wide.
-  static const int horoscopeAnalysisFee = 500;
+  // Fee for the ONLINE Horoscope Analysis report (paid, auto-assigned, delivered
+  // to the user's Reports page). Completely separate from the office-visit
+  // appointment fee below. Collected by the platform via Razorpay.
+  static const int horoscopeAnalysisFee = 399;
+  // Booking charge to confirm a Direct Office-Visit appointment slot. A separate,
+  // independent service from the online analysis above.
+  static const int appointmentBookingFee = 50;
   static const int freePortuthamsPerMedium = 2;
 
   // Plan Durations (days)

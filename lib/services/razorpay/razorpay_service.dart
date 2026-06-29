@@ -28,6 +28,38 @@ class RazorpayService {
   void _handleFailure(PaymentFailureResponse response) => _onFailure?.call(response);
   void _handleExternalWallet(ExternalWalletResponse response) => _onExternalWallet?.call(response);
 
+  /// Generic one-off checkout used by the Horoscope Analysis (₹399) and the
+  /// office-visit appointment (₹50). [amountPaise] is the charge in paise. The
+  /// success/failure callbacks wired in [init] drive what happens next.
+  void openCheckout({
+    required int amountPaise,
+    required String description,
+    Map<String, String> notes = const {},
+    String userPhone = '',
+    String userEmail = '',
+    String userName = '',
+  }) {
+    final options = {
+      'key': RazorpayConstants.keyId,
+      'amount': amountPaise,
+      'name': RazorpayConstants.appName,
+      'description': description,
+      'prefill': {
+        'contact': userPhone,
+        'email': userEmail,
+        'name': userName,
+      },
+      'notes': notes,
+      'theme': {'color': RazorpayConstants.themeColor},
+      'currency': RazorpayConstants.currency,
+    };
+    try {
+      _razorpay.open(options);
+    } catch (e) {
+      debugPrint('RazorpayService.openCheckout error: $e');
+    }
+  }
+
   void openSubscriptionCheckout({
     required String plan,
     required int amountPaise, // amount in paise (e.g., 9900 for ₹99)
@@ -37,7 +69,7 @@ class RazorpayService {
     required String userId,
   }) {
     final options = {
-      'key': RazorpayConstants.testKeyId,
+      'key': RazorpayConstants.keyId,
       'amount': amountPaise,
       'name': RazorpayConstants.appName,
       'description': '${_planDisplayName(plan)} Subscription',

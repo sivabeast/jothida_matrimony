@@ -1,63 +1,158 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrology_service_config.dart';
+import '../../models/profile_model.dart';
 import '../../providers/astrology_config_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/match_analysis_provider.dart';
+import '../../providers/navigation_provider.dart';
+import '../../providers/profile_provider.dart';
+import '../../services/razorpay/razorpay_service.dart';
 
-/// Horoscope Compatibility Report — service details page (spec §4–§6).
+/// Online **Horoscope Analysis** — service details page (spec §1).
 ///
-/// Opened from an accepted match's "📄 Get Horoscope Compatibility Report"
-/// button. Presents the service as a professional horoscope compatibility
-/// analysis (NO mention of any internal tools/software): introduction, what the
-/// report includes, estimated delivery time and the service charge, plus a
-/// "Meet Our Astrology Expert" card with Contact Expert (phone dialer) and Book
-/// Your Appointment (in-person office visit). No chat button here.
-class HoroscopeReportServiceScreen extends ConsumerWidget {
+/// This is a fully ONLINE report service — NOT an appointment. Opened from an
+/// accepted match's "Get Horoscope Analysis" button. It explains the report,
+/// shows the ₹399 charge, and the user pays via Razorpay to create an analysis
+/// request that is auto-assigned to an astrologer. There is intentionally no
+/// "Contact Expert", "Book Appointment" or any office-visit content here.
+class HoroscopeReportServiceScreen extends ConsumerStatefulWidget {
   /// The accepted-match user id whose horoscope is compared with the user's.
   final String otherUserId;
   const HoroscopeReportServiceScreen({super.key, required this.otherUserId});
 
-  Future<void> _contactExpert(
-      BuildContext context, AstrologyServiceConfig cfg) async {
-    final number = cfg.contactPhone.replaceAll(RegExp(r'[^0-9+]'), '');
-    final uri = Uri(scheme: 'tel', path: number);
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      if (!await launchUrl(uri)) {
-        messenger.showSnackBar(SnackBar(
-            content: Text('Call our expert at ${cfg.contactPhone}')));
-      }
-    } catch (_) {
-      messenger.showSnackBar(
-          SnackBar(content: Text('Call our expert at ${cfg.contactPhone}')));
-    }
+  @override
+  ConsumerState<HoroscopeReportServiceScreen> createState() =>
+      _HoroscopeReportServiceScreenState();
+}
+
+class _HoroscopeReportServiceScreenState
+    extends ConsumerState<HoroscopeReportServiceScreen> {
+  static const int _fee = AppConstants.horoscopeAnalysisFee; // ₹399
+
+  final RazorpayService _razorpay = RazorpayService();
+  bool _busy = false;
+  // Profiles resolved at Pay time and reused by the success handler.
+  ProfileModel? _groom;
+  ProfileModel? _bride;
+
+  @override
+  void initState() {
+    super.initState();
+    _razorpay.init(
+      onSuccess: _onPaymentSuccess,
+      onFailure: _onPaymentFailure,
+    );
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    _razorpay.dispose();
+    super.dispose();
+  }
+
+  void _snack(String m) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  }
+
+  /// Resolve both profiles, then open the Razorpay ₹399 checkout.
+  Future<void> _payAndRequest() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final me = ref.read(myProfileProvider).valueOrNull;
+      final partner =
+          await ref.read(profileByUserIdProvider(widget.otherUserId).future);
+      if (me == null || partner == null) {
+        _snack('Could not load both profiles. Please try again.');
+        setState(() => _busy = false);
+        return;
+      }
+      // Groom = male, Bride = female (fallback: me = A, partner = B).
+      ProfileModel groom = me, bride = partner;
+      if (me.gender == 'Female' || partner.gender == 'Male') {
+        groom = partner;
+        bride = me;
+      }
+      _groom = groom;
+      _bride = bride;
+
+      final user = ref.read(currentUserProvider).valueOrNull;
+      _razorpay.openCheckout(
+        amountPaise: _fee * 100,
+        description: 'Horoscope Analysis Report',
+        notes: {'type': 'horoscope_analysis', 'partner': widget.otherUserId},
+        userPhone: user?.phone ?? '',
+        userEmail: user?.email ?? '',
+        userName: me.fullName,
+      );
+      // _busy stays true until the gateway returns success/failure.
+    } catch (_) {
+      _snack('Could not start the payment. Please try again.');
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _onPaymentSuccess(PaymentSuccessResponse response) async {
+    final groom = _groom, bride = _bride;
+    if (groom == null || bride == null) {
+      if (mounted) setState(() => _busy = false);
+      return;
+    }
+    try {
+      await ref.read(matchAnalysisControllerProvider.notifier)
+          .requestAndAssignAnalysis(
+            groom: groom,
+            bride: bride,
+            amount: _fee,
+            paymentId: response.paymentId ?? 'razorpay',
+          );
+      if (!mounted) return;
+      _snack('Payment successful. Your analysis has been assigned to an '
+          'astrologer — track it on the Reports tab.');
+      ref.read(homeTabIndexProvider.notifier).state = 3; // Reports tab
+      context.go('/home');
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _snack('Payment succeeded but we could not create the request. Please '
+          'contact support.');
+    }
+  }
+
+  void _onPaymentFailure(PaymentFailureResponse response) {
+    if (!mounted) return;
+    setState(() => _busy = false);
+    _snack('Payment failed or cancelled. You have not been charged.');
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final async = ref.watch(astrologyServiceConfigProvider);
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Horoscope Compatibility Report'),
+        title: const Text('Horoscope Analysis'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
       body: async.when(
         loading: () => const Center(
             child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (_, __) =>
-            _body(context, ref, AstrologyServiceConfig.defaults),
-        data: (cfg) => _body(context, ref, cfg),
+        error: (_, __) => _body(AstrologyServiceConfig.defaults),
+        data: (cfg) => _body(cfg),
       ),
+      bottomNavigationBar: _payBar(),
     );
   }
 
-  Widget _body(
-      BuildContext context, WidgetRef ref, AstrologyServiceConfig cfg) {
+  Widget _body(AstrologyServiceConfig cfg) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -69,15 +164,54 @@ class HoroscopeReportServiceScreen extends ConsumerWidget {
         const SizedBox(height: 18),
         const Text('Meet Our Astrology Expert',
             style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w700)),
+                fontSize: 16, fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
         const SizedBox(height: 10),
-        _expertCard(context, cfg),
-        const SizedBox(height: 24),
+        _expertCard(cfg),
+        const SizedBox(height: 16),
       ],
     );
   }
+
+  // ── Sticky Pay bar ─────────────────────────────────────────────────────────
+  Widget _payBar() => Container(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 12,
+                offset: const Offset(0, -2)),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _busy ? null : _payAndRequest,
+              icon: _busy
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.auto_awesome, size: 20),
+              label: Text(
+                _busy ? 'Processing…' : 'Pay ₹$_fee · Request Horoscope Analysis',
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(54),
+                shape:
+                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+          ),
+        ),
+      );
 
   Widget _introCard(AstrologyServiceConfig cfg) => Container(
         width: double.infinity,
@@ -93,17 +227,25 @@ class HoroscopeReportServiceScreen extends ConsumerWidget {
               children: [
                 Icon(Icons.description_outlined, color: Colors.white, size: 22),
                 SizedBox(width: 8),
-                Text('Professional Compatibility Analysis',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700)),
+                Expanded(
+                  child: Text('Online Horoscope Compatibility Report',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700)),
+                ),
               ],
             ),
             const SizedBox(height: 10),
             Text(cfg.serviceIntro,
                 style: const TextStyle(
                     color: Colors.white, fontSize: 13.5, height: 1.5)),
+            const SizedBox(height: 8),
+            const Text(
+              'A fully online service — your report is delivered to your Reports '
+              'page. No appointment or office visit needed.',
+              style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+            ),
           ],
         ),
       );
@@ -139,11 +281,13 @@ class HoroscopeReportServiceScreen extends ConsumerWidget {
         icon: Icons.info_outline,
         child: Column(
           children: [
+            _metaRow(Icons.cloud_done_outlined, 'Service type',
+                'Online report (no visit)'),
+            const Divider(height: 18),
             _metaRow(Icons.schedule_outlined, 'Estimated delivery',
                 cfg.deliveryTime),
             const Divider(height: 18),
-            _metaRow(Icons.payments_outlined, 'Service charge',
-                '₹${cfg.serviceCharge}'),
+            _metaRow(Icons.payments_outlined, 'Service charge', '₹$_fee'),
           ],
         ),
       );
@@ -161,7 +305,6 @@ class HoroscopeReportServiceScreen extends ConsumerWidget {
                   style: TextStyle(fontSize: 13, color: Colors.grey[700])),
             ),
             const SizedBox(width: 8),
-            // Value wraps instead of overflowing (long delivery text fixed §3).
             Expanded(
               flex: 5,
               child: Text(value,
@@ -173,8 +316,7 @@ class HoroscopeReportServiceScreen extends ConsumerWidget {
         ),
       );
 
-  Widget _expertCard(BuildContext context, AstrologyServiceConfig cfg) =>
-      Container(
+  Widget _expertCard(AstrologyServiceConfig cfg) => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -183,88 +325,33 @@ class HoroscopeReportServiceScreen extends ConsumerWidget {
             BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 34,
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
-                  backgroundImage: cfg.expertPhotoUrl.isNotEmpty
-                      ? NetworkImage(cfg.expertPhotoUrl)
-                      : null,
-                  child: cfg.expertPhotoUrl.isEmpty
-                      ? const Icon(Icons.person,
-                          color: AppColors.primary, size: 34)
-                      : null,
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(cfg.expertName,
-                          style: const TextStyle(
-                              fontSize: 16.5, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 3),
-                      _expertLine(
-                          Icons.workspace_premium_outlined,
-                          cfg.expertExperience),
-                      const SizedBox(height: 2),
-                      _expertLine(
-                          Icons.auto_awesome_outlined,
-                          cfg.expertSpecialization),
-                    ],
-                  ),
-                ),
-              ],
+            CircleAvatar(
+              radius: 32,
+              backgroundColor: AppColors.primary.withOpacity(0.1),
+              backgroundImage: cfg.expertPhotoUrl.isNotEmpty
+                  ? NetworkImage(cfg.expertPhotoUrl)
+                  : null,
+              child: cfg.expertPhotoUrl.isEmpty
+                  ? const Icon(Icons.person, color: AppColors.primary, size: 32)
+                  : null,
             ),
-            const SizedBox(height: 12),
-            Text(cfg.expertIntro,
-                style: TextStyle(
-                    fontSize: 13, height: 1.5, color: Colors.grey[800])),
-            const SizedBox(height: 16),
-            // 📞 Contact Expert — phone dialer (no chat here, per spec §5).
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _contactExpert(context, cfg),
-                icon: const Icon(Icons.call_outlined, size: 18),
-                label: const Text('Contact Expert'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
-                  minimumSize: const Size.fromHeight(46),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            // 📅 Book Your Appointment — in-person office visit.
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () =>
-                    context.push('/book-appointment/$otherUserId'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                child: Column(
-                  children: const [
-                    Text('📅  Book Your Appointment',
-                        style: TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w700)),
-                    SizedBox(height: 2),
-                    Text('Visit our office on your selected date and time.',
-                        style: TextStyle(fontSize: 11.5, color: Colors.white70)),
-                  ],
-                ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(cfg.expertName,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 3),
+                  _expertLine(Icons.workspace_premium_outlined,
+                      cfg.expertExperience),
+                  const SizedBox(height: 2),
+                  _expertLine(Icons.auto_awesome_outlined,
+                      cfg.expertSpecialization),
+                ],
               ),
             ),
           ],
