@@ -7,10 +7,11 @@ import '../../../models/astrologer_request_model.dart';
 import '../../../providers/match_analysis_provider.dart';
 import '../../../providers/profile_provider.dart';
 
-/// Reports tab (bottom-nav item 4) — the history of the user's COMPLETED
-/// Horoscope Analysis reports (spec §2). Only completed reports appear here;
-/// each card shows Partner Name · Request Date · Completed Date with View
-/// Report + Download PDF actions.
+/// Reports tab (bottom-nav item 4) — every Horoscope Analysis the user has
+/// requested, each shown as a status card so the user always knows the exact
+/// progress (spec §7): Payment Completed → Request Submitted → Assigned to
+/// Astrologer → Under Analysis → Report Ready → Completed. Completed reports
+/// expose View Report + Download PDF.
 class ReportsTab extends ConsumerWidget {
   const ReportsTab({super.key});
 
@@ -20,14 +21,9 @@ class ReportsTab extends ConsumerWidget {
     final all = async.valueOrNull ?? const <AstrologerRequestModel>[];
     final myName = ref.watch(myProfileProvider).valueOrNull?.fullName ?? '';
 
-    final completed = all
-        .where((r) => r.status == AstrologerRequestStatus.completed)
-        .toList()
+    final reports = [...all]
       ..sort((a, b) => (b.completedAt ?? b.createdAt)
           .compareTo(a.completedAt ?? a.createdAt));
-    final pendingCount = all
-        .where((r) => r.status != AstrologerRequestStatus.completed)
-        .length;
 
     return Column(
       children: [
@@ -41,29 +37,8 @@ class ReportsTab extends ConsumerWidget {
                   fontWeight: FontWeight.w700,
                   fontSize: 18)),
         ),
-        if (pendingCount > 0)
-          Container(
-            width: double.infinity,
-            color: Colors.orange.shade50,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                const Icon(Icons.hourglass_bottom,
-                    size: 16, color: Colors.orange),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '$pendingCount analysis ${pendingCount == 1 ? 'report is' : 'reports are'} '
-                    'being prepared. They will appear here once completed.',
-                    style: TextStyle(
-                        fontSize: 12.5, color: Colors.orange.shade900),
-                  ),
-                ),
-              ],
-            ),
-          ),
         Expanded(
-          child: _body(context, ref, completed, myName, async.isLoading,
+          child: _body(context, ref, reports, myName, async.isLoading,
               async.hasError),
         ),
       ],
@@ -87,7 +62,8 @@ class ReportsTab extends ConsumerWidget {
         return _empty(Icons.error_outline, 'Could not load your reports',
             retry: () => ref.invalidate(myMatchAnalysisRequestsProvider));
       }
-      return _empty(Icons.verified_outlined, 'No completed reports yet');
+      return _empty(Icons.description_outlined,
+          'No reports yet.\nRequest a Horoscope Analysis from an accepted match.');
     }
     return RefreshIndicator(
       color: AppColors.primary,
@@ -124,6 +100,25 @@ class ReportsTab extends ConsumerWidget {
       );
 }
 
+/// The six user-facing stages of a Horoscope Analysis (spec §7).
+const _stages = [
+  'Payment Completed',
+  'Request Submitted',
+  'Assigned to Astrologer',
+  'Under Analysis',
+  'Report Ready',
+  'Completed',
+];
+
+/// Index (0..5) of the current stage for [r].
+int _stageIndex(AstrologerRequestModel r) {
+  if (r.status == AstrologerRequestStatus.completed) return 5; // Completed
+  if (r.inProgress) return 3; // Under Analysis
+  if (r.astrologerUid.trim().isNotEmpty) return 2; // Assigned to Astrologer
+  if (r.paid) return 1; // Request Submitted (payment done)
+  return 0; // Payment Completed
+}
+
 class _ReportCard extends StatelessWidget {
   final AstrologerRequestModel report;
   final String myName;
@@ -133,7 +128,6 @@ class _ReportCard extends StatelessWidget {
       ? '—'
       : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
-  /// The partner = whichever of the two compared profiles is not the user.
   String get _partnerName {
     final groom = report.groomName ?? '';
     final bride = report.brideName ?? '';
@@ -145,7 +139,16 @@ class _ReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final completed = report.status == AstrologerRequestStatus.completed;
+    final idx = _stageIndex(report);
+    final label = _stages[idx];
+    final color = completed
+        ? Colors.green
+        : (idx >= 3
+            ? Colors.blue
+            : (idx == 2 ? Colors.indigo : Colors.orange));
     final hasPdf = report.analysisPdfs.isNotEmpty;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -172,6 +175,8 @@ class _ReportCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(_partnerName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         fontSize: 15.5, fontWeight: FontWeight.w700)),
               ),
@@ -179,51 +184,71 @@ class _ReportCard extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.12),
+                  color: color.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text('Completed',
+                child: Text(label,
                     style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: Colors.green)),
+                        color: color)),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          // Progress bar across the six stages.
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: (idx + 1) / _stages.length,
+              minHeight: 6,
+              backgroundColor: Colors.grey.shade200,
+              valueColor: AlwaysStoppedAnimation(color),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            completed
+                ? 'Your report is ready.'
+                : 'Step ${idx + 1} of ${_stages.length} · $label',
+            style: TextStyle(fontSize: 11.5, color: Colors.grey[600]),
           ),
           const SizedBox(height: 10),
           _row('Request Date', _date(report.createdAt)),
-          _row('Completed Date', _date(report.completedAt)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _viewReport(context),
-                  icon: const Icon(Icons.visibility_outlined, size: 18),
-                  label: const Text('View Report'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(42),
-                  ),
-                ),
-              ),
-              if (hasPdf) ...[
-                const SizedBox(width: 10),
+          if (completed) _row('Completed Date', _date(report.completedAt)),
+          if (completed) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
                 Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => openRemoteFile(
-                        context, report.analysisPdfs.first,
-                        pdf: true),
-                    icon: const Icon(Icons.download_outlined, size: 18),
-                    label: const Text('Download PDF'),
-                    style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(42)),
+                  child: ElevatedButton.icon(
+                    onPressed: () => _viewReport(context),
+                    icon: const Icon(Icons.visibility_outlined, size: 18),
+                    label: const Text('View Report'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(42),
+                    ),
                   ),
                 ),
+                if (hasPdf) ...[
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => openRemoteFile(
+                          context, report.analysisPdfs.first,
+                          pdf: true),
+                      icon: const Icon(Icons.download_outlined, size: 18),
+                      label: const Text('Download PDF'),
+                      style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(42)),
+                    ),
+                  ),
+                ],
               ],
-            ],
-          ),
+            ),
+          ],
         ],
       ),
     );

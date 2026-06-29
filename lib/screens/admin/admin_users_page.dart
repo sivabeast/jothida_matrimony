@@ -4,7 +4,9 @@ import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_account_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/admin_provider.dart';
+import '../../providers/astrology_team_stats_provider.dart';
 import '../../widgets/common/data_states.dart';
+import 'astrologer_performance.dart';
 
 /// Admin → Users. Two tabs:
 ///  • **Users**       — matrimony users, plan-wise counts (Free/Basic/Premium).
@@ -483,88 +485,20 @@ class _AstrologersTabState extends ConsumerState<_AstrologersTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final astrosAsync = ref.watch(allAstrologersProvider);
-
-    return astrosAsync.when(
-      loading: () => const LoadingState(message: 'Loading astrologers…'),
-      error: (e, _) => ErrorStateView(
-        message: 'Connection Error — unable to load astrologers.',
-        onRetry: () => ref.invalidate(allAstrologersProvider),
-      ),
-      data: (all) {
-        // Verified astrologers only — pending/rejected live on the
-        // Astrologers verification page, not here.
-        final verified =
-            all.where((a) => a.status == VerificationStatus.approved).toList();
-        final total = verified.length;
-        final free = verified.where((a) => astroPlanOf(a) == 'free').length;
-        final monthly =
-            verified.where((a) => astroPlanOf(a) == 'monthly').length;
-        final yearly =
-            verified.where((a) => astroPlanOf(a) == 'yearly').length;
-        final shown = verified.where(_matches).toList()
-          ..sort((a, b) => a.fullName.compareTo(b.fullName));
-
-        return Column(
-          children: [
-            _SummaryCard(
-                label: 'Total Verified Astrologers',
-                value: total,
-                icon: Icons.auto_awesome,
-                color: const Color(0xFF7C5CFC)),
-            SizedBox(
-              height: 46,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                children: [
-                  _CountChip(
-                      label: 'All',
-                      count: total,
-                      selected: _filter == _AstroPlan.all,
-                      onTap: () => setState(() => _filter = _AstroPlan.all)),
-                  _CountChip(
-                      label: 'Free',
-                      count: free,
-                      selected: _filter == _AstroPlan.free,
-                      onTap: () => setState(() => _filter = _AstroPlan.free)),
-                  _CountChip(
-                      label: 'Monthly',
-                      count: monthly,
-                      selected: _filter == _AstroPlan.monthly,
-                      onTap: () =>
-                          setState(() => _filter = _AstroPlan.monthly)),
-                  _CountChip(
-                      label: 'Yearly',
-                      count: yearly,
-                      selected: _filter == _AstroPlan.yearly,
-                      onTap: () =>
-                          setState(() => _filter = _AstroPlan.yearly)),
-                ],
-              ),
-            ),
-            _searchBar(_searchCtrl, _query, (v) => setState(() => _query = v),
-                () => setState(() {
-                      _query = '';
-                      _searchCtrl.clear();
-                    })),
-            Expanded(
-              child: shown.isEmpty
-                  ? const EmptyState(
-                      icon: Icons.auto_awesome_outlined,
-                      message: 'No astrologers match this filter')
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                      itemCount: shown.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (_, i) =>
-                          _AstrologerCard(astrologer: shown[i]),
-                    ),
-            ),
-          ],
-        );
-      },
+    // Astrologer PERFORMANCE dashboard (spec §4) — the old subscription
+    // (Free / Monthly / Yearly) filters were removed; this now reads the
+    // admin-provisioned astrology team + live request stats.
+    final stats = ref.watch(astrologerStatsProvider);
+    final active = stats.where((s) => s.member.active).length;
+    return Column(
+      children: [
+        _SummaryCard(
+            label: 'Astrologers ($active active)',
+            value: stats.length,
+            icon: Icons.auto_awesome,
+            color: const Color(0xFF7C5CFC)),
+        const Expanded(child: AstrologerPerformanceList()),
+      ],
     );
   }
 }

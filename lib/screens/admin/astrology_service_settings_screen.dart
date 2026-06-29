@@ -84,6 +84,8 @@ class _AstrologyServiceSettingsScreenState
     _ctrl('reportIncludes', cfg.reportIncludes.join('\n'));
     _ctrl('deliveryTime', cfg.deliveryTime);
     _ctrl('serviceCharge', '${cfg.serviceCharge}');
+    _ctrl('analysisCommission', '${cfg.analysisCommission}');
+    _ctrl('appointmentCommission', '${cfg.appointmentCommission}');
     _ctrl('maxAdvanceWorkingDays', '${cfg.maxAdvanceWorkingDays}');
     _photoUrl = cfg.expertPhotoUrl;
     _bookingEnabled = cfg.bookingEnabled;
@@ -216,6 +218,10 @@ class _AstrologyServiceSettingsScreenState
       reportIncludes: _lines('reportIncludes'),
       deliveryTime: _ctrl('deliveryTime').text.trim(),
       serviceCharge: _int('serviceCharge', base.serviceCharge),
+      analysisCommission:
+          _int('analysisCommission', base.analysisCommission),
+      appointmentCommission:
+          _int('appointmentCommission', base.appointmentCommission),
       maxAdvanceWorkingDays:
           _int('maxAdvanceWorkingDays', base.maxAdvanceWorkingDays),
       bookingEnabled: _bookingEnabled,
@@ -486,6 +492,17 @@ class _AstrologyServiceSettingsScreenState
               maxLines: 5),
           _field('deliveryTime', 'Estimated delivery time'),
           _field('serviceCharge', 'Report service charge (₹)', number: true),
+        ]),
+
+        // ── Commission Settings (astrologer earnings, completed only) ──────
+        _card('Commission Settings', Icons.savings_outlined, [
+          _emptyHint('Commission paid to the assigned astrologer per COMPLETED '
+              'request. Earnings = completed requests × commission.'),
+          const SizedBox(height: 8),
+          _field('analysisCommission', 'Horoscope Analysis commission (₹)',
+              number: true),
+          _field('appointmentCommission', 'Direct Appointment commission (₹)',
+              number: true),
         ]),
 
         // ── Appointment rules ──────────────────────────────────────────────

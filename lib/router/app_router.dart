@@ -43,6 +43,7 @@ import '../screens/admin/astrology_service_settings_screen.dart';
 import '../screens/admin/admin_dashboard.dart';
 import '../screens/admin/admin_users_page.dart';
 import '../screens/admin/astrologer_accounts_screen.dart';
+import '../screens/admin/astrologer_details_screen.dart';
 import '../screens/admin/admin_astrologer_profile_screen.dart';
 import '../screens/admin/admin_settlements_screen.dart';
 import '../screens/admin/admin_horoscope_requests_screen.dart';
@@ -496,6 +497,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/admin/astrologers',
               builder: (_, __) => const AstrologerAccountsScreen()),
+          // Per-astrologer performance + details (View Details). The id is the
+          // registry emailKey (URL-encoded when pushed).
+          GoRoute(
+              path: '/admin/astrologer-account/:id',
+              builder: (_, state) => AstrologerDetailsScreen(
+                  emailKey: state.pathParameters['id'] ?? '')),
           // Per-astrologer profile (Profile/Documents/Availability/Bookings/
           // Reviews/Payouts).
           GoRoute(

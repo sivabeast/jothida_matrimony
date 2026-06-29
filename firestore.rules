@@ -342,6 +342,29 @@ service cloud.firestore {
       allow write: if isAdmin() || isInternalAstrology();
     }
 
+    // ── Astrology team (admin-provisioned astrologer accounts) ────────────
+    // Doc id = the member's lowercased Gmail. Admins provision/enable/disable
+    // members. Any signed-in user may READ (the smart auto-assigner picks the
+    // lowest-pending member at booking time). Two narrowly-scoped self-service
+    // writes are allowed:
+    //   1. A member links their OWN uid on first Google sign-in (their email
+    //      must equal the doc id), plus lastLoginAt / displayName / photoUrl.
+    //   2. The booking user (or the submitting astrologer) updates ONLY the
+    //      workload counters (pendingCount / lastAssignedAt) so the assignment
+    //      stays balanced — they can touch nothing else on the document.
+    match /astrology_team/{emailKey} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+      allow update: if isAuthenticated()
+                    && request.auth.token.email.lower() == emailKey
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['uid', 'lastLoginAt', 'displayName',
+                                   'photoUrl']);
+      allow update: if isAuthenticated()
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['pendingCount', 'lastAssignedAt']);
+    }
+
     // ── Appointment booked-slots index (no PII) ──────────────────────────
     // astrology_booked_slots/{dateKey} holds only the taken slot keys for a
     // date, so any signed-in user can grey out booked appointment slots without
@@ -395,9 +418,9 @@ service cloud.firestore {
                     && request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly([
                            'expired', 'expiredAt', 'history', 'status',
-                           'astrologerId', 'astrologerName', 'reassigned',
-                           'reassignedAt', 'respondedAt', 'expiresAt',
-                           'paid', 'paidAt', 'paymentId'
+                           'astrologerId', 'astrologerName', 'astrologerUid',
+                           'reassigned', 'reassignedAt', 'respondedAt',
+                           'expiresAt', 'paid', 'paidAt', 'paymentId'
                          ]);
       // Either party may delete their own request as part of account deletion;
       // admins may delete any.

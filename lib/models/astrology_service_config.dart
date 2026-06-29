@@ -166,6 +166,15 @@ class AstrologyServiceConfig {
   /// One-time service charge for the horoscope compatibility report (₹).
   final int serviceCharge;
 
+  // ── Astrologer commission (per COMPLETED request) ───────────────────────
+  /// Commission paid to the assigned astrologer for each completed Horoscope
+  /// Analysis report (₹). Drives the astrologer earnings calculation.
+  final int analysisCommission;
+
+  /// Commission paid to the astrologer for each completed direct office-visit
+  /// appointment (₹).
+  final int appointmentCommission;
+
   // ── Meet Our Astrology Expert card ─────────────────────────────────────
   final String expertName;
   final String expertPhotoUrl;
@@ -251,8 +260,10 @@ class AstrologyServiceConfig {
       'Dosha check and remedies (if any)',
       'Overall compatibility verdict & recommendation',
     ],
-    this.deliveryTime = 'Within 2 working days after your appointment',
-    this.serviceCharge = 499,
+    this.deliveryTime = 'Within 2 working days after your payment is confirmed',
+    this.serviceCharge = 399,
+    this.analysisCommission = 150,
+    this.appointmentCommission = 20,
     this.expertName = 'Our Astrology Expert',
     this.expertPhotoUrl = '',
     this.expertExperience = '15+ years experience',
@@ -349,6 +360,10 @@ class AstrologyServiceConfig {
       reportIncludes: _toStringList(d['reportIncludes'], def.reportIncludes),
       deliveryTime: _toStr(d['deliveryTime'], def.deliveryTime),
       serviceCharge: _toInt(d['serviceCharge'], def.serviceCharge),
+      analysisCommission:
+          _toInt(d['analysisCommission'], def.analysisCommission),
+      appointmentCommission:
+          _toInt(d['appointmentCommission'], def.appointmentCommission),
       expertName: _toStr(d['expertName'], def.expertName),
       expertPhotoUrl: (d['expertPhotoUrl'] ?? '').toString(),
       expertExperience: _toStr(d['expertExperience'], def.expertExperience),
@@ -396,6 +411,8 @@ class AstrologyServiceConfig {
         'reportIncludes': reportIncludes,
         'deliveryTime': deliveryTime,
         'serviceCharge': serviceCharge,
+        'analysisCommission': analysisCommission,
+        'appointmentCommission': appointmentCommission,
         'expertName': expertName,
         'expertPhotoUrl': expertPhotoUrl,
         'expertExperience': expertExperience,
@@ -432,6 +449,8 @@ class AstrologyServiceConfig {
     List<String>? reportIncludes,
     String? deliveryTime,
     int? serviceCharge,
+    int? analysisCommission,
+    int? appointmentCommission,
     String? expertName,
     String? expertPhotoUrl,
     String? expertExperience,
@@ -466,6 +485,9 @@ class AstrologyServiceConfig {
         reportIncludes: reportIncludes ?? this.reportIncludes,
         deliveryTime: deliveryTime ?? this.deliveryTime,
         serviceCharge: serviceCharge ?? this.serviceCharge,
+        analysisCommission: analysisCommission ?? this.analysisCommission,
+        appointmentCommission:
+            appointmentCommission ?? this.appointmentCommission,
         expertName: expertName ?? this.expertName,
         expertPhotoUrl: expertPhotoUrl ?? this.expertPhotoUrl,
         expertExperience: expertExperience ?? this.expertExperience,

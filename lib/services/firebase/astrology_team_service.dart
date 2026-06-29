@@ -5,6 +5,15 @@ import '../../core/constants/app_constants.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../models/astrologer_team_member.dart';
 
+/// Thrown by [AstrologyTeamService.addMember] when the Gmail is already a
+/// registered astrologer, so the admin sees a clear "already exists" message.
+class AstrologerExistsException implements Exception {
+  final String email;
+  const AstrologerExistsException(this.email);
+  @override
+  String toString() => 'Astrologer $email is already registered.';
+}
+
 /// Firestore CRUD + the smart auto-assignment for the internal astrology TEAM
 /// (`astrology_team/{emailKey}`).
 ///
@@ -23,22 +32,32 @@ class AstrologyTeamService {
 
   // ── Admin: registry CRUD ────────────────────────────────────────────────
 
-  /// Registers a new team member by Gmail. Idempotent (merge) so re-adding an
-  /// existing Gmail just refreshes the display name and re-enables it.
-  Future<void> addMember({required String email, String displayName = ''}) {
+  /// Registers a new team member by Gmail. Rejects a duplicate Gmail with
+  /// [AstrologerExistsException]; any Firestore failure (e.g. permissions)
+  /// propagates so the caller can show the real reason.
+  Future<void> addMember({required String email, String displayName = ''}) async {
     final key = AstrologerTeamMember.keyFor(email);
-    return _team.doc(key).set({
+    final existing = await _team.doc(key).get();
+    if (existing.exists) {
+      throw AstrologerExistsException(key);
+    }
+    await _team.doc(key).set({
       'email': key,
       'displayName': displayName.trim(),
       'active': true,
+      'uid': '',
       'pendingCount': 0,
       'createdAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    });
   }
 
   /// Admin enable/disable. Takes effect immediately for the next assignment.
   Future<void> setActive(String emailKey, bool active) =>
       _team.doc(emailKey).update({'active': active});
+
+  /// Admin edits an astrologer's editable details (e.g. display name, photo).
+  Future<void> updateMember(String emailKey, Map<String, dynamic> data) =>
+      _team.doc(emailKey).update(data);
 
   Future<void> removeMember(String emailKey) => _team.doc(emailKey).delete();
 

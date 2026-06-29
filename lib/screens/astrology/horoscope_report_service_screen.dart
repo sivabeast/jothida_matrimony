@@ -160,7 +160,7 @@ class _HoroscopeReportServiceScreenState
         const SizedBox(height: 14),
         _includesCard(cfg),
         const SizedBox(height: 14),
-        _metaCard(cfg),
+        _metaCard(),
         const SizedBox(height: 18),
         const Text('Meet Our Astrology Expert',
             style: TextStyle(
@@ -276,7 +276,7 @@ class _HoroscopeReportServiceScreenState
         ),
       );
 
-  Widget _metaCard(AstrologyServiceConfig cfg) => _card(
+  Widget _metaCard() => _card(
         title: 'Service Details',
         icon: Icons.info_outline,
         child: Column(
@@ -285,7 +285,7 @@ class _HoroscopeReportServiceScreenState
                 'Online report (no visit)'),
             const Divider(height: 18),
             _metaRow(Icons.schedule_outlined, 'Estimated delivery',
-                cfg.deliveryTime),
+                'Within 2 working days after payment'),
             const Divider(height: 18),
             _metaRow(Icons.payments_outlined, 'Service charge', '₹$_fee'),
           ],

@@ -360,10 +360,18 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         id = 'demo_${now.millisecondsSinceEpoch}';
         ref.read(demoAstrologerRequestsProvider.notifier).add(request);
       } else {
+        // Creating the request is the critical step (payment already
+        // succeeded). Auto-assignment is BEST-EFFORT: a failure here (e.g. no
+        // assignable astrologer, or a transient permission/network hiccup) must
+        // NEVER surface as "could not create the request" — the request still
+        // exists and the admin can assign it. So assignment is awaited but never
+        // allowed to throw out of this method.
         id = await ref.read(astrologerServiceProvider).createRequest(request);
-        // Smart auto-assignment (lowest pending + round-robin). If no astrologer
-        // is available the request stays unassigned for the admin to handle.
-        await ref.read(astrologyTeamServiceProvider).assignRequest(id);
+        try {
+          await ref.read(astrologyTeamServiceProvider).assignRequest(id);
+        } catch (e) {
+          // Swallow — the request is created; assignment can be retried/admin-done.
+        }
       }
       state = const AsyncData(null);
       return id;
