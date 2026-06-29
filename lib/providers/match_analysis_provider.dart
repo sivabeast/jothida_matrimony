@@ -426,6 +426,9 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
       final now = DateTime.now();
       final visitDay = DateTime(date.year, date.month, date.day);
       final userName = me?.fullName ?? user?.displayName ?? 'User';
+      final userPhone = (me?.contact.mobileNumber.trim().isNotEmpty ?? false)
+          ? me!.contact.mobileNumber.trim()
+          : (user?.phone ?? '');
 
       final request = AstrologerRequestModel(
         id: 'new',
@@ -435,6 +438,7 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         userName: userName,
         userPhotoUrl: me?.profilePhotoUrl ?? '',
         userLocation: location,
+        userPhone: userPhone,
         // Standalone appointment — a consultation visit, not a porutham report.
         type: AstrologerRequestType.consultation,
         status: AstrologerRequestStatus.pending,

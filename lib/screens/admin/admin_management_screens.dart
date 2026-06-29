@@ -1618,6 +1618,13 @@ class AdminSettingsScreen extends StatelessWidget {
           color: AppColors.primary,
           onTap: () => context.go('/admin/astrology-service'),
         ),
+        _ActionTile(
+          icon: Icons.event_note_outlined,
+          title: 'Appointment Management',
+          subtitle: 'View & manage all astrology appointment bookings',
+          color: AppColors.primary,
+          onTap: () => context.go('/admin/appointments'),
+        ),
         const Divider(height: 28),
         const Padding(
           padding: EdgeInsets.only(left: 4, bottom: 8),

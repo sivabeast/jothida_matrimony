@@ -15,6 +15,7 @@ import '../screens/astrology/horoscope_report_service_screen.dart';
 import '../screens/astrology/appointment_booking_screen.dart';
 import '../screens/astrology/astrology_appointment_screen.dart';
 import '../screens/astrology/appointment_confirmation_screen.dart';
+import '../screens/astrology/my_appointments_screen.dart';
 import '../screens/astrologer/match_workspace_screen.dart';
 import '../screens/astrologer/my_match_analysis_screen.dart';
 import '../screens/auth/account_type_screen.dart';
@@ -42,6 +43,7 @@ import '../screens/admin/admin_astrologer_profile_screen.dart';
 import '../screens/admin/admin_settlements_screen.dart';
 import '../screens/admin/admin_horoscope_requests_screen.dart';
 import '../screens/admin/admin_expired_bookings_screen.dart';
+import '../screens/admin/admin_appointments_screen.dart';
 import '../screens/admin/astrologer_verification_screen.dart';
 import '../screens/admin/admin_reports_screen.dart';
 import '../screens/admin/admin_management_screens.dart';
@@ -311,6 +313,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/astrology-appointment',
         builder: (_, __) => const AstrologyAppointmentScreen(),
       ),
+      // The signed-in user's appointment booking history (status + date/time).
+      GoRoute(
+        path: '/my-appointments',
+        builder: (_, __) => const MyAppointmentsScreen(),
+      ),
       GoRoute(
         path: '/appointment-confirmation/:id',
         builder: (_, state) => AppointmentConfirmationScreen(
@@ -458,6 +465,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/admin/horoscope-requests',
               builder: (_, __) => const AdminHoroscopeRequestsScreen()),
+          // Appointment Management → all in-person astrology appointments.
+          GoRoute(
+              path: '/admin/appointments',
+              builder: (_, __) => const AdminAppointmentsScreen()),
           // Expired Bookings → reassign bookings whose astrologer didn't respond.
           GoRoute(
               path: '/admin/expired-bookings',

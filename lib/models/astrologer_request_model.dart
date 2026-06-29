@@ -145,6 +145,12 @@ class AstrologerRequestModel {
   final String userName;
   final String userPhotoUrl;
   final String userLocation;
+
+  /// Denormalised booking user's mobile number, captured at booking time so the
+  /// admin Appointment Management list can display + search by mobile without an
+  /// extra profile read. Empty for older records.
+  final String userPhone;
+
   final AstrologerRequestType type;
   final AstrologerRequestStatus status;
   final String message;
@@ -234,6 +240,7 @@ class AstrologerRequestModel {
     required this.userName,
     this.userPhotoUrl = '',
     this.userLocation = '',
+    this.userPhone = '',
     required this.type,
     this.status = AstrologerRequestStatus.pending,
     this.message = '',
@@ -415,6 +422,7 @@ class AstrologerRequestModel {
       userName: d['userName'] ?? 'User',
       userPhotoUrl: d['userPhotoUrl'] ?? '',
       userLocation: d['userLocation'] ?? d['location'] ?? '',
+      userPhone: (d['userPhone'] ?? '').toString(),
       type: AstrologerRequestType.values.firstWhere(
         (t) => t.name == (d['type'] ?? 'inquiry'),
         orElse: () => AstrologerRequestType.inquiry,
@@ -465,6 +473,7 @@ class AstrologerRequestModel {
         'userName': userName,
         'userPhotoUrl': userPhotoUrl,
         'userLocation': userLocation,
+        'userPhone': userPhone,
         'type': type.name,
         'status': status.name,
         'message': message,
@@ -544,6 +553,7 @@ class AstrologerRequestModel {
         userName: userName,
         userPhotoUrl: userPhotoUrl,
         userLocation: userLocation,
+        userPhone: userPhone,
         type: type,
         status: status ?? this.status,
         message: message,

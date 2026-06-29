@@ -282,7 +282,15 @@ class AstrologerService {
     final slotsRef = _appointmentSlotsDoc(request.visitDateKey);
     await _db.runTransaction((tx) async {
       final snap = await tx.get(ref);
-      if (snap.exists) throw AppointmentSlotTakenException();
+      if (snap.exists) {
+        // A previously CANCELLED appointment at this exact slot (status
+        // 'rejected') frees the slot — allow a new user to re-book it by
+        // overwriting the stale record. Any active booking still blocks it.
+        final existingStatus = (snap.data()?['status'] ?? '').toString();
+        if (existingStatus != AstrologerRequestStatus.rejected.name) {
+          throw AppointmentSlotTakenException();
+        }
+      }
       tx.set(ref, request.toFirestore());
       tx.set(
           slotsRef,
@@ -331,6 +339,83 @@ class AstrologerService {
         }
         return out;
       });
+
+  /// Every in-person APPOINTMENT addressed to the internal astrology service
+  /// (both standalone consultations and horoscope-report visits), newest first.
+  /// Powers the admin Appointment Management page. Single-field equality query
+  /// (no composite index); the `hasAppointment` filter + sort are client-side.
+  Stream<List<AstrologerRequestModel>> watchInternalAppointments() => _db
+      .collection(AppConstants.astrologerRequestsCollection)
+      .where('astrologerId', isEqualTo: kInternalAstrologyId)
+      .snapshots()
+      .map((s) {
+        final list = s.docs
+            .map(AstrologerRequestModel.fromFirestore)
+            .where((r) => r.hasAppointment)
+            .toList();
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return list;
+      });
+
+  /// Admin sets an appointment's status (Pending / Confirmed=accepted /
+  /// Completed / Cancelled=rejected). Writes `updatedAt` + an audit entry and
+  /// notifies the booking user so their Astrology page reflects it live. When an
+  /// appointment is CANCELLED its slot is freed (removed from the booked-slots
+  /// index) so it becomes bookable again.
+  Future<void> setAppointmentStatus(
+    AstrologerRequestModel r,
+    AstrologerRequestStatus status,
+  ) async {
+    final label = switch (status) {
+      AstrologerRequestStatus.pending => 'Marked as pending',
+      AstrologerRequestStatus.accepted => 'Appointment confirmed',
+      AstrologerRequestStatus.completed => 'Appointment completed',
+      AstrologerRequestStatus.rejected => 'Appointment cancelled',
+    };
+    await _db
+        .collection(AppConstants.astrologerRequestsCollection)
+        .doc(r.id)
+        .update({
+      'status': status.name,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'respondedAt': FieldValue.serverTimestamp(),
+      'history': FieldValue.arrayUnion([BookingHistoryEntry.now(label).toMap()]),
+    });
+    // Cancelling frees the slot for everyone else.
+    if (status == AstrologerRequestStatus.rejected && r.hasAppointment) {
+      await _freeSlot(r);
+    }
+    if (r.userId.trim().isNotEmpty) {
+      await _notify(
+        r.userId,
+        'Appointment Update',
+        '$label for ${r.visitDateKey}.',
+        'appointment_status',
+        data: {'requestId': r.id, 'route': '/my-appointments'},
+      );
+    }
+  }
+
+  /// Hard-deletes an appointment and frees its slot.
+  Future<void> deleteAppointment(AstrologerRequestModel r) async {
+    await _db
+        .collection(AppConstants.astrologerRequestsCollection)
+        .doc(r.id)
+        .delete();
+    if (r.hasAppointment) await _freeSlot(r);
+  }
+
+  /// Removes an appointment's slot key from the public booked-slots index so the
+  /// slot becomes selectable again (used on cancel / delete).
+  Future<void> _freeSlot(AstrologerRequestModel r) async {
+    if (r.visitDateKey.isEmpty || r.slotKey.isEmpty) return;
+    await _appointmentSlotsDoc(r.visitDateKey).set(
+      {
+        'taken': FieldValue.arrayRemove([r.slotKey])
+      },
+      SetOptions(merge: true),
+    );
+  }
 
   /// Astrologer begins working on an accepted booking (spec §11:
   /// Accepted → Analysis In Progress). Sets the `inProgress` flag + audit trail

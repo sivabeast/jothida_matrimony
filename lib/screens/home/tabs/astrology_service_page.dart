@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/appointment_status.dart';
+import '../../../core/utils/slot_generator.dart';
 import '../../../models/astrology_service_config.dart';
+import '../../../providers/appointment_provider.dart';
 import '../../../providers/astrology_config_provider.dart';
 import '../../../widgets/common/network_photo.dart';
 
@@ -60,6 +64,7 @@ class _Body extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
             children: [
+              const _AppointmentStatusCard(),
               _hero(),
               const SizedBox(height: 14),
               _nameAddress(),
@@ -406,6 +411,122 @@ class _Body extends StatelessWidget {
             child,
           ],
         ),
+      );
+}
+
+// ── Appointment status card (top of the Astrology page) ───────────────────────
+
+/// Shows the signed-in user's LATEST appointment with its live status. Renders
+/// nothing when the user has no appointment. Updates in real time as the admin
+/// changes the status (Pending → Confirmed → Completed / Cancelled).
+class _AppointmentStatusCard extends ConsumerWidget {
+  const _AppointmentStatusCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final list = ref.watch(myAppointmentsProvider).valueOrNull ?? const [];
+    if (list.isEmpty) return const SizedBox.shrink();
+    final appt = list.first;
+    final color = appointmentStatusColor(appt.status);
+    final date = appt.visitDate == null
+        ? '—'
+        : DateFormat('d MMMM yyyy').format(appt.visitDate!);
+    final time =
+        appt.slotStartMinutes == null ? '—' : formatMinutes(appt.slotStartMinutes!);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.35)),
+        boxShadow: [
+          BoxShadow(color: color.withOpacity(0.08), blurRadius: 12),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.event_available, size: 18, color: AppColors.primary),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Your Appointment',
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary)),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    Icon(appointmentStatusIcon(appt.status), size: 14, color: color),
+                    const SizedBox(width: 4),
+                    Text(appointmentStatusLabel(appt.status),
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: color)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 18),
+          _row(Icons.event_outlined, 'Date', date),
+          const SizedBox(height: 8),
+          _row(Icons.schedule_outlined, 'Time', time),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.07),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(appointmentStatusMessage(appt.status),
+                style: TextStyle(
+                    fontSize: 12.5, height: 1.4, color: Colors.grey[800])),
+          ),
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => context.push('/my-appointments'),
+              icon: const Icon(Icons.receipt_long_outlined, size: 16),
+              label: const Text('View all my bookings'),
+              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(IconData icon, String label, String value) => Row(
+        children: [
+          Icon(icon, size: 17, color: AppColors.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 3,
+            child: Text(label,
+                style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
+          ),
+          Expanded(
+            flex: 5,
+            child: Text(value,
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w600)),
+          ),
+        ],
       );
 }
 
