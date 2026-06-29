@@ -225,27 +225,33 @@ class AstrologerService {
       .map((s) => s.docs.map(AstrologerAccount.fromFirestore).toList());
 
   // ── Requests (consultations / inquiries / horoscope matching) ──────────
-  Future<void> createRequest(AstrologerRequestModel request) async {
+  /// Creates a request and returns its new doc id (so an auto-assigner can stamp
+  /// the chosen astrologer onto it). When [request] is still UNASSIGNED
+  /// (`astrologerId` empty), the astrologer notification is skipped — assignment
+  /// notifies the chosen astrologer instead.
+  Future<String> createRequest(AstrologerRequestModel request) async {
     final doc = await _db
         .collection(AppConstants.astrologerRequestsCollection)
         .add(request.toFirestore());
-    // Notify the astrologer of the new (already-paid) request. The notification
-    // data carries the booking id + a deep-link route so the FCM tap handler
-    // and the in-app inbox can open the exact booking (spec §8).
-    await _notify(
-      request.astrologerId,
-      'New ${request.type.label} Request',
-      request.isMatchAnalysis
-          ? '${request.userName} paid for a match analysis. Accept within 12 '
-              'working hours.'
-          : '${request.userName} has requested a ${request.type.label}.',
-      'new_match_analysis',
-      data: {
-        'requestId': doc.id,
-        'route': '/match-workspace/${doc.id}',
-        'tab': 'matchAnalysis',
-      },
-    );
+    // Notify the addressed astrologer (skipped for unassigned auto-assign
+    // requests). The notification data carries the booking id + a deep-link
+    // route so the FCM tap handler and the in-app inbox can open it (spec §8).
+    if (request.astrologerId.trim().isNotEmpty) {
+      await _notify(
+        request.astrologerId,
+        'New ${request.type.label} Request',
+        request.isMatchAnalysis
+            ? '${request.userName} paid for a match analysis. Accept within 12 '
+                'working hours.'
+            : '${request.userName} has requested a ${request.type.label}.',
+        'new_match_analysis',
+        data: {
+          'requestId': doc.id,
+          'route': '/match-workspace/${doc.id}',
+          'tab': 'matchAnalysis',
+        },
+      );
+    }
     // Confirm to the user that payment succeeded and the booking is on its way
     // (spec §4: pay online → booking created → reaches astrologer).
     if (request.userId.trim().isNotEmpty) {
@@ -261,6 +267,7 @@ class AstrologerService {
         data: {'requestId': doc.id, 'route': '/my-analysis'},
       );
     }
+    return doc.id;
   }
 
   /// Creates an in-person **appointment** request for the internal astrology
@@ -712,6 +719,27 @@ class AstrologerService {
     }
     throw Exception('Analysis file upload failed (HTTP ${response.statusCode})');
   }
+
+  /// Saves an in-progress report WITHOUT completing it (spec §11 "Save Draft").
+  /// The request stays `pending`, so it never reaches the user's Reports page;
+  /// the astrologer can re-open and continue editing later.
+  Future<void> saveDraft({
+    required String requestId,
+    required String text,
+    required List<String> images,
+    required List<String> pdfs,
+  }) =>
+      _db
+          .collection(AppConstants.astrologerRequestsCollection)
+          .doc(requestId)
+          .update({
+        'analysisText': text,
+        'analysisImages': images,
+        'analysisPdfs': pdfs,
+        'draftSavedAt': FieldValue.serverTimestamp(),
+        'history': FieldValue.arrayUnion(
+            [BookingHistoryEntry.now('Draft saved').toMap()]),
+      });
 
   /// Submits the astrologer's completed analysis for [requestId]: stores the
   /// report text + already-uploaded file URLs and flips the request to

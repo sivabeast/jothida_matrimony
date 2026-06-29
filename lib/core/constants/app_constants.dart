@@ -16,6 +16,12 @@ class AppConstants {
   static const String adminCollection = 'admin';
   static const String astrologersCollection = 'astrologers';
   static const String astrologerRequestsCollection = 'astrologer_requests';
+  // Internal astrology TEAM registry, provisioned by the admin (Google-only
+  // login). One doc per team member, keyed by the lowercased Gmail address:
+  //   astrology_team/{emailKey}
+  // Kept separate from the legacy `astrologers` collection so new lean
+  // team-member docs never collide with old marketplace astrologer documents.
+  static const String astrologyTeamCollection = 'astrology_team';
   // Reviews live in a subcollection of each astrologer document:
   //   astrologers/{astrologerId}/reviews/{userId}
   static const String astrologerReviewsSubcollection = 'reviews';
@@ -67,6 +73,10 @@ class AppConstants {
   static const int mediumPrice = 299; // legacy
   static const int premiumPrice = 599;
   static const int poruthamsPrice = 199;
+  // Fee for a Horoscope Analysis (the paid, auto-assigned report a user requests
+  // from an accepted match). Collected by the platform; the assigned astrologer
+  // is settled separately. Adjust here to change the analysis price app-wide.
+  static const int horoscopeAnalysisFee = 500;
   static const int freePortuthamsPerMedium = 2;
 
   // Plan Durations (days)

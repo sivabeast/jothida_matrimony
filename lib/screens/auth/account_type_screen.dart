@@ -92,7 +92,18 @@ class _AccountTypeScreenState extends State<AccountTypeScreen>
                         onTap: () => context.push('/login'),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
+                    // Discreet entry to the Astrologer portal (Google-only,
+                    // admin-provisioned accounts). Kept low-key so the main
+                    // surface stays focused on matrimony users.
+                    TextButton.icon(
+                      onPressed: () => context.push('/astrologer-login'),
+                      icon: const Icon(Icons.auto_awesome, size: 16),
+                      label: const Text('Astrologer? Sign in here'),
+                      style: TextButton.styleFrom(
+                          foregroundColor: AppColors.primary),
+                    ),
+                    const SizedBox(height: 16),
                     _footer(context),
                     const SizedBox(height: 24),
                   ],

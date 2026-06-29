@@ -295,6 +295,80 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     }
   }
 
+  /// Spec §4 — the user requests a **Horoscope Analysis** for an accepted match.
+  /// Pays online (simulated in test mode), creates a PAID, *unassigned* matching
+  /// request, then immediately auto-assigns it to the best-available astrologer
+  /// (lowest pending + round-robin). The user NEVER selects an astrologer.
+  /// Returns the new request id.
+  Future<String> requestAndAssignAnalysis({
+    required ProfileModel groom,
+    required ProfileModel bride,
+    required int amount,
+    String note = '',
+  }) async {
+    state = const AsyncLoading();
+    try {
+      final me = ref.read(myProfileProvider).valueOrNull;
+      final user = ref.read(currentUserProvider).valueOrNull;
+      final uid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ??
+          user?.uid ??
+          '';
+      final location = me == null
+          ? ''
+          : [me.city, me.state].where((s) => s.trim().isNotEmpty).join(', ');
+      final lang = ref.read(localeProvider)?.languageCode ?? 'en';
+      final now = DateTime.now();
+      final paymentId = kSubscriptionTestMode
+          ? 'demo_${now.millisecondsSinceEpoch}'
+          : 'razorpay_${now.millisecondsSinceEpoch}';
+
+      final request = AstrologerRequestModel(
+        id: 'new',
+        // Unassigned — auto-assignment stamps the chosen astrologer.
+        astrologerId: '',
+        astrologerName: '',
+        userId: uid,
+        userName: me?.fullName ?? user?.displayName ?? 'User',
+        userPhotoUrl: me?.profilePhotoUrl ?? '',
+        userLocation: location,
+        type: AstrologerRequestType.matching,
+        status: AstrologerRequestStatus.pending,
+        message: note.trim(),
+        amount: amount,
+        profileAId: groom.id,
+        profileAName: groom.fullName,
+        profileBId: bride.id,
+        profileBName: bride.fullName,
+        createdAt: now,
+        userLanguage: lang,
+        paid: amount > 0,
+        paidAt: amount > 0 ? now : null,
+        paymentId: amount > 0 ? paymentId : '',
+        history: [
+          BookingHistoryEntry(at: now, label: 'Booking created'),
+          if (amount > 0)
+            BookingHistoryEntry(at: now, label: 'Payment received ($paymentId)'),
+        ],
+      );
+
+      String id;
+      if (kBypassAuth) {
+        id = 'demo_${now.millisecondsSinceEpoch}';
+        ref.read(demoAstrologerRequestsProvider.notifier).add(request);
+      } else {
+        id = await ref.read(astrologerServiceProvider).createRequest(request);
+        // Smart auto-assignment (lowest pending + round-robin). If no astrologer
+        // is available the request stays unassigned for the admin to handle.
+        await ref.read(astrologyTeamServiceProvider).assignRequest(id);
+      }
+      state = const AsyncData(null);
+      return id;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
   /// Books an in-person **Horoscope Compatibility Report** appointment after a
   /// successful (real Razorpay) payment. Creates ONE paid match-analysis request
   /// addressed to the internal astrology service — carrying the chosen
@@ -618,6 +692,43 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     }
   }
 
+  /// Uploads newly-picked files and SAVES a draft (spec §11) without completing
+  /// the request — it stays `pending` and never appears on the user's Reports
+  /// page. Returns the uploaded URLs so the editor can swap its picked files for
+  /// their persisted URLs.
+  Future<({List<String> images, List<String> pdfs})> saveDraft({
+    required String requestId,
+    required String text,
+    List<File> newImages = const [],
+    List<File> newPdfs = const [],
+    List<String> existingImages = const [],
+    List<String> existingPdfs = const [],
+  }) async {
+    state = const AsyncLoading();
+    try {
+      final svc = ref.read(astrologerServiceProvider);
+      final images = [...existingImages];
+      final pdfs = [...existingPdfs];
+      if (!kBypassAuth) {
+        for (final f in newImages) {
+          images.add(await svc.uploadAnalysisFile(
+              requestId: requestId, file: f, fileType: 'image'));
+        }
+        for (final f in newPdfs) {
+          pdfs.add(await svc.uploadAnalysisFile(
+              requestId: requestId, file: f, fileType: 'pdf'));
+        }
+        await svc.saveDraft(
+            requestId: requestId, text: text.trim(), images: images, pdfs: pdfs);
+      }
+      state = const AsyncData(null);
+      return (images: images, pdfs: pdfs);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
   /// Uploads any newly-picked files, then stores the report and marks the
   /// request completed. [existingImages]/[existingPdfs] are kept (already
   /// uploaded URLs) so re-submitting an edit doesn't re-upload everything.
@@ -659,6 +770,13 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         images: images,
         pdfs: pdfs,
       );
+      // Free up the astrologer's workload counter so auto-assignment rebalances.
+      final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ?? '';
+      if (myUid.isNotEmpty) {
+        await ref
+            .read(astrologyTeamServiceProvider)
+            .decrementPendingForUid(myUid);
+      }
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);

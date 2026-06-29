@@ -18,6 +18,10 @@ import '../screens/astrology/appointment_confirmation_screen.dart';
 import '../screens/astrology/my_appointments_screen.dart';
 import '../screens/astrologer/match_workspace_screen.dart';
 import '../screens/astrologer/my_match_analysis_screen.dart';
+// Astrologer portal (multiple admin-provisioned, Google-only accounts).
+import '../screens/astrologer/astrologer_login_screen.dart';
+import '../screens/astrologer/portal/astrologer_dashboard_page.dart';
+import '../screens/astrologer/portal/astrologer_request_detail_page.dart';
 import '../screens/auth/account_type_screen.dart';
 import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -38,7 +42,7 @@ import '../screens/admin/admin_shell.dart';
 import '../screens/admin/astrology_service_settings_screen.dart';
 import '../screens/admin/admin_dashboard.dart';
 import '../screens/admin/admin_users_page.dart';
-import '../screens/admin/admin_astrologer_verification.dart';
+import '../screens/admin/astrologer_accounts_screen.dart';
 import '../screens/admin/admin_astrologer_profile_screen.dart';
 import '../screens/admin/admin_settlements_screen.dart';
 import '../screens/admin/admin_horoscope_requests_screen.dart';
@@ -123,6 +127,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final loc = state.matchedLocation;
       final onAuthPage = loc == '/account-type' ||
           loc == '/login' ||
+          loc == '/astrologer-login' ||
           loc == '/register' ||
           loc == '/forgot-password' ||
           loc.startsWith('/otp');
@@ -169,6 +174,29 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return '/astrology';
         }
         return null;
+      }
+
+      // ── Astrologer (team member) account ─────────────────────────────────
+      // A `astrologer`-role account is a dedicated, admin-provisioned login. It
+      // lives ONLY in the astrologer portal (dashboard + request detail) and is
+      // locked out of the whole matrimony experience for strict isolation.
+      if (user != null && user.isAstrologer) {
+        final allowed = loc == '/astrologer-dashboard' ||
+            loc.startsWith('/astrologer-request') ||
+            loc == '/astrologer-login';
+        if (!allowed) {
+          debugPrint('[Router] astrologer account → /astrologer-dashboard');
+          return '/astrologer-dashboard';
+        }
+        return null;
+      }
+
+      // The astrologer portal routes are off-limits to everyone else.
+      final onAstrologerPortal = loc == '/astrologer-dashboard' ||
+          loc.startsWith('/astrologer-request');
+      if (onAstrologerPortal && !(user?.isAstrologer ?? false)) {
+        debugPrint('[Router] ⛔ non-astrologer blocked from "$loc" → /home');
+        return '/home';
       }
 
       // ── /astrology protection ────────────────────────────────────────────
@@ -230,6 +258,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/account-type', builder: (_, __) => const AccountTypeScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      // ── Astrologer portal (Google-only, admin-provisioned accounts) ──────
+      GoRoute(
+          path: '/astrologer-login',
+          builder: (_, __) => const AstrologerLoginScreen()),
+      GoRoute(
+          path: '/astrologer-dashboard',
+          builder: (_, __) => const AstrologerDashboardPage()),
+      GoRoute(
+        path: '/astrologer-request/:id',
+        builder: (_, state) => AstrologerRequestDetailPage(
+          requestId: state.pathParameters['id']!,
+          initial: state.extra is AstrologerRequestModel
+              ? state.extra as AstrologerRequestModel
+              : null,
+        ),
+      ),
       // Internal Astrology Dashboard (single internal service). Gated in
       // `redirect` to the internal astrology account + admins.
       GoRoute(
@@ -447,10 +491,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               path: '/admin/users',
               builder: (_, __) => const AdminUsersPage()),
           GoRoute(path: '/admin/reports', builder: (_, __) => const AdminReportsScreen()),
-          // Astrologers page → Pending Verification + Approved management.
+          // Astrologers page → admin-provisioned account registry (add by
+          // Gmail, enable/disable; Google-only login + auto-assignment).
           GoRoute(
               path: '/admin/astrologers',
-              builder: (_, __) => const AdminAstrologerVerificationView()),
+              builder: (_, __) => const AstrologerAccountsScreen()),
           // Per-astrologer profile (Profile/Documents/Availability/Bookings/
           // Reviews/Payouts).
           GoRoute(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../../core/services/porutham_match.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_request_model.dart';
@@ -12,8 +13,72 @@ import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/interest_provider.dart';
 import '../../providers/match_analysis_provider.dart';
+import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../widgets/common/horoscope_match_badge.dart' show categoryColor;
+
+/// Spec §4 — "Get Horoscope Analysis" for an accepted match. Confirms the fee,
+/// pays (simulated in test mode), creates a PAID request and auto-assigns it to
+/// an astrologer, then drops the user on the Reports tab to track it. The user
+/// never selects an astrologer.
+Future<void> startHoroscopeAnalysis(
+  BuildContext context,
+  WidgetRef ref,
+  String partnerUserId,
+) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final me = ref.read(myProfileProvider).valueOrNull;
+  final partner = await ref.read(profileByUserIdProvider(partnerUserId).future);
+  if (me == null || partner == null) {
+    messenger.showSnackBar(const SnackBar(
+        content: Text('Could not load both profiles. Please try again.')));
+    return;
+  }
+  // Groom = male, Bride = female (fallback: me = A, partner = B).
+  ProfileModel groom = me, bride = partner;
+  if (me.gender == 'Female' || partner.gender == 'Male') {
+    groom = partner;
+    bride = me;
+  }
+  const fee = AppConstants.horoscopeAnalysisFee;
+  final pay = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Get Horoscope Analysis'),
+      content: Text(
+          'An expert astrologer will analyse the compatibility of '
+          '${groom.fullName} and ${bride.fullName} and deliver a written '
+          'report to your Reports page.\n\nFee: ₹$fee'),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel')),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Pay & Continue'),
+        ),
+      ],
+    ),
+  );
+  if (pay != true) return;
+  try {
+    await ref
+        .read(matchAnalysisControllerProvider.notifier)
+        .requestAndAssignAnalysis(groom: groom, bride: bride, amount: fee);
+    if (!context.mounted) return;
+    messenger.showSnackBar(const SnackBar(
+        content: Text('Payment successful. Your analysis has been assigned to '
+            'an astrologer — track it on the Reports tab.')));
+    ref.read(homeTabIndexProvider.notifier).state = 3; // Reports tab
+    context.go('/home');
+  } catch (_) {
+    if (!context.mounted) return;
+    messenger.showSnackBar(const SnackBar(
+        content: Text('Could not start the analysis. Please try again.')));
+  }
+}
 
 /// Opens (or explains the not-yet-ready state of) the Astrology Analysis Chat
 /// for a horoscope-report request [r]. Shared by the accepted-match card and the
@@ -247,9 +312,9 @@ class _AcceptedMatchCard extends ConsumerWidget {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () =>
-                        context.push('/horoscope-report/$userId'),
-                    icon: const Icon(Icons.description_outlined, size: 18),
-                    label: const Text('Get Horoscope Compatibility Report'),
+                        startHoroscopeAnalysis(context, ref, userId),
+                    icon: const Icon(Icons.auto_awesome, size: 18),
+                    label: const Text('Get Horoscope Analysis'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
