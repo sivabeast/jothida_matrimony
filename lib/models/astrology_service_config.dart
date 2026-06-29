@@ -5,12 +5,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class AstrologyCertificate {
   final String id;
   final String title;
+  final String description;
   final String url; // Cloudinary public URL of the image/PDF
   final String fileType; // 'pdf' | 'image'
 
   const AstrologyCertificate({
     required this.id,
     required this.title,
+    this.description = '',
     required this.url,
     this.fileType = 'image',
   });
@@ -21,17 +23,25 @@ class AstrologyCertificate {
       AstrologyCertificate(
         id: (m['id'] ?? '').toString(),
         title: (m['title'] ?? 'Certificate').toString(),
+        description: (m['description'] ?? '').toString(),
         url: (m['url'] ?? '').toString(),
         fileType: (m['fileType'] ?? 'image').toString().toLowerCase(),
       );
 
-  Map<String, dynamic> toMap() =>
-      {'id': id, 'title': title, 'url': url, 'fileType': fileType};
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'title': title,
+        'description': description,
+        'url': url,
+        'fileType': fileType,
+      };
 
-  AstrologyCertificate copyWith({String? title, String? url, String? fileType}) =>
+  AstrologyCertificate copyWith(
+          {String? title, String? description, String? url, String? fileType}) =>
       AstrologyCertificate(
         id: id,
         title: title ?? this.title,
+        description: description ?? this.description,
         url: url ?? this.url,
         fileType: fileType ?? this.fileType,
       );

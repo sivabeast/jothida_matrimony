@@ -206,11 +206,12 @@ class _Body extends StatelessWidget {
         'Certificates',
         Icons.verified_outlined,
         SizedBox(
-          height: 132,
+          height: 184,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.zero,
             itemCount: cfg.certificates.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (_, i) =>
                 _CertificateCard(cert: cfg.certificates[i], onOpen: _launch),
           ),
@@ -222,7 +223,16 @@ class _Body extends StatelessWidget {
       out.add(_section(
         'Awards & Medals',
         Icons.emoji_events_outlined,
-        Column(children: [for (final a in cfg.awards) _AwardTile(award: a)]),
+        SizedBox(
+          height: 210,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.zero,
+            itemCount: cfg.awards.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, i) => _AwardCard(award: cfg.awards[i]),
+          ),
+        ),
       ));
     }
 
@@ -230,7 +240,16 @@ class _Body extends StatelessWidget {
       out.add(_section(
         'News & Media',
         Icons.newspaper_outlined,
-        Column(children: [for (final n in cfg.news) _NewsTile(news: n)]),
+        SizedBox(
+          height: 248,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.zero,
+            itemCount: cfg.news.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, i) => _NewsCard(news: cfg.news[i]),
+          ),
+        ),
       ));
     }
 
@@ -390,47 +409,119 @@ class _Body extends StatelessWidget {
       );
 }
 
-// ── Certificate card (image thumb or PDF tile) ────────────────────────────────
+// ── Full-screen image viewer (tap a certificate/award/news image) ─────────────
+
+void _showFullScreenImage(BuildContext context, String url, String title) {
+  if (url.trim().isEmpty) return;
+  Navigator.of(context).push(MaterialPageRoute(
+    fullscreenDialog: true,
+    builder: (_) => _ImageViewerScreen(url: url, title: title),
+  ));
+}
+
+class _ImageViewerScreen extends StatelessWidget {
+  final String url;
+  final String title;
+  const _ImageViewerScreen({required this.url, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: Text(title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 15)),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          minScale: 0.8,
+          maxScale: 4,
+          child: NetworkPhoto(
+            url: url,
+            fit: BoxFit.contain,
+            fallbackIcon: Icons.broken_image_outlined,
+            showLoadingSpinner: true,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Certificate card (image thumb or PDF tile) — horizontal carousel ──────────
 
 class _CertificateCard extends StatelessWidget {
   final AstrologyCertificate cert;
   final Future<void> Function(BuildContext, Uri, String) onOpen;
   const _CertificateCard({required this.cert, required this.onOpen});
 
+  void _open(BuildContext context) {
+    if (cert.url.isEmpty) return;
+    if (cert.isPdf) {
+      onOpen(context, Uri.parse(cert.url), cert.title); // open PDF externally
+    } else {
+      _showFullScreenImage(context, cert.url, cert.title); // in-app viewer
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: cert.url.isEmpty
-          ? null
-          : () => onOpen(context, Uri.parse(cert.url), cert.title),
-      borderRadius: BorderRadius.circular(12),
-      child: SizedBox(
-        width: 110,
+      onTap: () => _open(context),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 150,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: cert.isPdf
-                  ? Container(
-                      width: 110,
-                      height: 100,
-                      color: AppColors.primary.withOpacity(0.08),
-                      alignment: Alignment.center,
-                      child: const Icon(Icons.picture_as_pdf,
-                          color: AppColors.error, size: 40),
-                    )
-                  : NetworkPhoto(
-                      url: cert.url,
-                      width: 110,
-                      height: 100,
-                      fallbackIcon: Icons.verified),
+            cert.isPdf
+                ? Container(
+                    width: double.infinity,
+                    height: 110,
+                    color: AppColors.primary.withOpacity(0.08),
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.picture_as_pdf,
+                        color: AppColors.error, size: 44),
+                  )
+                : NetworkPhoto(
+                    url: cert.url,
+                    width: double.infinity,
+                    height: 110,
+                    fallbackIcon: Icons.verified),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(cert.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 12.5, fontWeight: FontWeight.w600)),
+                  if (cert.description.trim().isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(cert.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            TextStyle(fontSize: 11, color: Colors.grey[600])),
+                  ],
+                ],
+              ),
             ),
-            const SizedBox(height: 4),
-            Text(cert.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 11.5)),
           ],
         ),
       ),
@@ -438,115 +529,162 @@ class _CertificateCard extends StatelessWidget {
   }
 }
 
-// ── Award tile ────────────────────────────────────────────────────────────────
+// ── Award card — horizontal carousel ──────────────────────────────────────────
 
-class _AwardTile extends StatelessWidget {
+class _AwardCard extends StatelessWidget {
   final AstrologyAward award;
-  const _AwardTile({required this.award});
+  const _AwardCard({required this.award});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: NetworkPhoto(
-                url: award.imageUrl,
-                width: 56,
-                height: 56,
-                fallbackIcon: Icons.emoji_events),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return InkWell(
+      onTap: award.imageUrl.trim().isEmpty
+          ? null
+          : () => _showFullScreenImage(context, award.imageUrl, award.title),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 180,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(award.title,
-                          style: const TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w700)),
-                    ),
-                    if (award.year.trim().isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.gold.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(award.year,
-                            style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.goldDark)),
+                NetworkPhoto(
+                    url: award.imageUrl,
+                    width: double.infinity,
+                    height: 110,
+                    fallbackIcon: Icons.emoji_events),
+                if (award.year.trim().isNotEmpty)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                  ],
-                ),
-                if (award.description.trim().isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(award.description,
-                      style: TextStyle(
-                          fontSize: 12.5, height: 1.4, color: Colors.grey[700])),
-                ],
+                      child: Text(award.year,
+                          style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white)),
+                    ),
+                  ),
               ],
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(award.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w700)),
+                  if (award.description.trim().isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(award.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            height: 1.35,
+                            color: Colors.grey[700])),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ── News tile ─────────────────────────────────────────────────────────────────
+// ── News card — horizontal carousel ───────────────────────────────────────────
 
-class _NewsTile extends StatelessWidget {
+class _NewsCard extends StatelessWidget {
   final AstrologyNews news;
-  const _NewsTile({required this.news});
+  const _NewsCard({required this.news});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (news.imageUrl.trim().isNotEmpty)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: NetworkPhoto(
+    return InkWell(
+      onTap: news.imageUrl.trim().isEmpty
+          ? null
+          : () => _showFullScreenImage(context, news.imageUrl, news.headline),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 230,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            NetworkPhoto(
                 url: news.imageUrl,
                 width: double.infinity,
-                height: 150,
-                fallbackIcon: Icons.newspaper,
+                height: 120,
+                fallbackIcon: Icons.newspaper),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(news.headline,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w700)),
+                  if (news.source.trim().isNotEmpty ||
+                      news.date.trim().isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      [news.source, news.date]
+                          .where((s) => s.trim().isNotEmpty)
+                          .join(' · '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                  if (news.description.trim().isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(news.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            height: 1.35,
+                            color: Colors.grey[800])),
+                  ],
+                ],
               ),
             ),
-          if (news.imageUrl.trim().isNotEmpty) const SizedBox(height: 8),
-          Text(news.headline,
-              style:
-                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-          if (news.source.trim().isNotEmpty || news.date.trim().isNotEmpty) ...[
-            const SizedBox(height: 2),
-            Text(
-              [news.source, news.date].where((s) => s.trim().isNotEmpty).join(' · '),
-              style: TextStyle(
-                  fontSize: 11.5,
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600),
-            ),
           ],
-          if (news.description.trim().isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(news.description,
-                style: TextStyle(
-                    fontSize: 12.5, height: 1.4, color: Colors.grey[800])),
-          ],
-          const Divider(height: 18),
-        ],
+        ),
       ),
     );
   }

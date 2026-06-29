@@ -151,10 +151,12 @@ class _AstrologyServiceSettingsScreenState
     try {
       final url = await _uploadAstrologyMedia(ref, File(picked.path),
           isImage: true);
+      if (!mounted) return;
       setState(() => _photoUrl = url);
-      _snack('Photo uploaded. Remember to Save.');
-    } catch (_) {
-      _snack('Photo upload failed — please try again.');
+      _snack('Photo uploaded. Tap "Save All Settings" to apply.');
+    } catch (e) {
+      debugPrint('[AstrologyManagement] photo upload failed: $e');
+      _snack('Photo upload failed: $e');
     } finally {
       if (mounted) setState(() => _uploadingPhoto = false);
     }
@@ -228,9 +230,16 @@ class _AstrologyServiceSettingsScreenState
     );
     try {
       await ref.read(astrologyConfigServiceProvider).save(updated);
-      _snack('Astrology settings saved.');
-    } catch (_) {
-      _snack('Could not save. Please try again.');
+      if (mounted) _snack('✅ Astrology settings saved.');
+    } catch (e, st) {
+      debugPrint('[AstrologyManagement] save failed: $e\n$st');
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('permission-denied') || msg.contains('permission_denied')) {
+        _snack('Save blocked by security rules. Deploy Firestore rules '
+            '(firebase deploy --only firestore:rules) and try again.');
+      } else {
+        _snack('Could not save: $e');
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -914,6 +923,7 @@ class _CertificateEditorSheet extends ConsumerStatefulWidget {
 class _CertificateEditorSheetState
     extends ConsumerState<_CertificateEditorSheet> {
   final _title = TextEditingController();
+  final _desc = TextEditingController();
   String _url = '';
   String _fileType = 'image';
   bool _busy = false;
@@ -954,6 +964,7 @@ class _CertificateEditorSheetState
   @override
   void dispose() {
     _title.dispose();
+    _desc.dispose();
     super.dispose();
   }
 
@@ -968,6 +979,7 @@ class _CertificateEditorSheetState
         AstrologyCertificate(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           title: _title.text.trim().isEmpty ? 'Certificate' : _title.text.trim(),
+          description: _desc.text.trim(),
           url: _url,
           fileType: _fileType,
         ),
@@ -977,6 +989,13 @@ class _CertificateEditorSheetState
           controller: _title,
           decoration: const InputDecoration(
               labelText: 'Title (optional)', border: OutlineInputBorder()),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _desc,
+          maxLines: 2,
+          decoration: const InputDecoration(
+              labelText: 'Description (optional)', border: OutlineInputBorder()),
         ),
         const SizedBox(height: 12),
         if (_url.isNotEmpty)
