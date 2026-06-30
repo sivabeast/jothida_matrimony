@@ -396,6 +396,10 @@ service cloud.firestore {
       allow read: if isAuthenticated()
                   && (resource.data.userId == request.auth.uid
                       || resource.data.astrologerId == request.auth.uid);
+      // The assigned astrologer reads their OWN requests by the stable Gmail
+      // stamped at assignment time (works even before their first uid link).
+      allow read: if isAuthenticated()
+                  && resource.data.astrologerEmail == request.auth.token.email;
       allow read: if isAdmin();
       // The internal astrology service reads/responds to every request addressed
       // to it (Match Analysis triage on the Astrology Dashboard).
@@ -405,6 +409,10 @@ service cloud.firestore {
                     && request.resource.data.userId == request.auth.uid;
       allow update: if isAuthenticated()
                     && resource.data.astrologerId == request.auth.uid;
+      // The assigned astrologer (matched by Gmail) starts the analysis and
+      // submits the report.
+      allow update: if isAuthenticated()
+                    && resource.data.astrologerEmail == request.auth.token.email;
       allow update: if isAdmin();
       allow update: if isInternalAstrology()
                     && resource.data.astrologerId == 'internal_astrology';
@@ -419,6 +427,7 @@ service cloud.firestore {
                          .hasOnly([
                            'expired', 'expiredAt', 'history', 'status',
                            'astrologerId', 'astrologerName', 'astrologerUid',
+                           'astrologerEmail', 'assignedAt',
                            'reassigned', 'reassignedAt', 'respondedAt',
                            'expiresAt', 'paid', 'paidAt', 'paymentId'
                          ]);

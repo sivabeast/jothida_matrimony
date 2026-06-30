@@ -109,30 +109,35 @@ class AstrologyTeamService {
 
   // ── Smart auto-assignment ───────────────────────────────────────────────
 
-  /// Picks the best assignable member for [requestId] and stamps it onto the
-  /// request, bumping that member's pending counter + round-robin cursor.
+  /// Round-robin assigns [requestId] to the next ACTIVE astrologer and stamps
+  /// the assignment onto the request.
   ///
-  /// Selection: lowest [AstrologerTeamMember.pendingCount]; ties broken by the
-  /// oldest [lastAssignedAt] (round-robin). Disabled / not-yet-signed-in members
-  /// are never chosen. Returns the chosen member, or null when there is no
-  /// assignable astrologer (request stays unassigned for the admin to handle).
+  /// Selection is pure ROUND ROBIN: the active astrologer assigned least
+  /// recently wins (oldest [lastAssignedAt] first; never-assigned members go
+  /// first), with createdAt as a stable tie-break — so with astrologers A, B
+  /// the sequence is A, B, A, B … Disabled (admin) astrologers are skipped.
+  ///
+  /// IMPORTANT: a not-yet-signed-in ("Awaiting sign-in") astrologer is STILL
+  /// eligible — the request is stamped with their stable Gmail
+  /// ([AstrologerRequestModel.astrologerEmail]); it appears on their dashboard
+  /// the moment they first log in. Returns the chosen member, or null when no
+  /// active astrologer exists (the request stays unassigned for the admin).
   Future<AstrologerTeamMember?> assignRequest(String requestId) async {
     final snap = await _team.where('active', isEqualTo: true).get();
-    final members = snap.docs
-        .map(AstrologerTeamMember.fromFirestore)
-        .where((m) => m.isLinked)
-        .toList();
+    final members =
+        snap.docs.map(AstrologerTeamMember.fromFirestore).toList();
     if (members.isEmpty) {
-      debugPrint('[AstrologyTeam] assignRequest($requestId): no assignable '
+      debugPrint('[AstrologyTeam] assignRequest($requestId): no active '
           'astrologers — leaving unassigned.');
       return null;
     }
     members.sort((a, b) {
-      final byPending = a.pendingCount.compareTo(b.pendingCount);
-      if (byPending != 0) return byPending;
       final at = a.lastAssignedAt?.millisecondsSinceEpoch ?? 0;
       final bt = b.lastAssignedAt?.millisecondsSinceEpoch ?? 0;
-      return at.compareTo(bt); // oldest assigned first (round-robin)
+      if (at != bt) return at.compareTo(bt); // least-recently assigned first
+      final ac = a.createdAt?.millisecondsSinceEpoch ?? 0;
+      final bc = b.createdAt?.millisecondsSinceEpoch ?? 0;
+      return ac.compareTo(bc); // stable order for the first round
     });
     final chosen = members.first;
     final name =
@@ -142,8 +147,11 @@ class AstrologyTeamService {
       final reqRef = _requests.doc(requestId);
       final reqSnap = await tx.get(reqRef);
       if (!reqSnap.exists) return;
-      // Idempotent: never double-assign if someone already claimed it.
-      if ((reqSnap.data()?['astrologerUid'] ?? '').toString().trim().isNotEmpty) {
+      // Idempotent: never double-assign if it already has an astrologer.
+      if ((reqSnap.data()?['astrologerEmail'] ?? '')
+          .toString()
+          .trim()
+          .isNotEmpty) {
         return;
       }
       tx.update(_team.doc(chosen.id), {
@@ -151,30 +159,59 @@ class AstrologyTeamService {
         'lastAssignedAt': FieldValue.serverTimestamp(),
       });
       tx.update(reqRef, {
-        'astrologerId': chosen.uid,
+        // astrologerId carries the uid once linked, else the registry key — but
+        // astrologerEmail is the stable dashboard/isolation key.
+        'astrologerId': chosen.uid.isNotEmpty ? chosen.uid : chosen.id,
         'astrologerUid': chosen.uid,
+        'astrologerEmail': chosen.email,
         'astrologerName': name,
+        'assignedAt': FieldValue.serverTimestamp(),
         'history': FieldValue.arrayUnion([
           BookingHistoryEntry.now('Auto-assigned to $name').toMap(),
         ]),
       });
     });
     debugPrint('[AstrologyTeam] assignRequest($requestId) → $name '
-        '(${chosen.uid}); pending was ${chosen.pendingCount}.');
+        '(${chosen.email}).');
     return chosen;
   }
 
+  /// Admin reassigns [requestId] to a specific team member: stamps the new
+  /// astrologer (id/uid/email/name + assignedAt), resets it to pending/not-
+  /// started, and bumps the new member's workload. Admin-only (rules).
+  Future<void> reassignTo(String requestId, AstrologerTeamMember m) async {
+    final name = m.displayName.trim().isEmpty ? m.email : m.displayName;
+    await _requests.doc(requestId).update({
+      'astrologerId': m.uid.isNotEmpty ? m.uid : m.id,
+      'astrologerUid': m.uid,
+      'astrologerEmail': m.email,
+      'astrologerName': name,
+      'assignedAt': FieldValue.serverTimestamp(),
+      'status': AstrologerRequestStatus.pending.name,
+      'inProgress': false,
+      'reassigned': true,
+      'reassignedAt': FieldValue.serverTimestamp(),
+      'history': FieldValue.arrayUnion([
+        BookingHistoryEntry.now('Reassigned by admin to $name').toMap(),
+      ]),
+    });
+    await _team.doc(m.id).update({
+      'pendingCount': FieldValue.increment(1),
+      'lastAssignedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   /// Decrements a member's open-request counter once they submit a report.
-  /// Looked up by uid (the member doc is keyed by email). Best-effort.
-  Future<void> decrementPendingForUid(String uid) async {
-    if (uid.trim().isEmpty) return;
+  /// Keyed by the member's Gmail (the doc id), so it works regardless of uid.
+  /// Best-effort — a counter hiccup must never fail the report submission.
+  Future<void> decrementPendingForEmail(String email) async {
+    if (email.trim().isEmpty) return;
     try {
-      final q = await _team.where('uid', isEqualTo: uid).limit(1).get();
-      if (q.docs.isEmpty) return;
-      await q.docs.first.reference
+      await _team
+          .doc(AstrologerTeamMember.keyFor(email))
           .update({'pendingCount': FieldValue.increment(-1)});
     } catch (e) {
-      debugPrint('[AstrologyTeam] decrementPendingForUid($uid) failed: $e');
+      debugPrint('[AstrologyTeam] decrementPendingForEmail($email) failed: $e');
     }
   }
 }

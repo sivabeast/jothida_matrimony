@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
-import '../../models/astrologer_account_model.dart';
 import '../../models/astrologer_request_model.dart';
+import '../../models/astrologer_team_member.dart';
 import '../../providers/admin_provider.dart';
+import '../../providers/astrology_team_provider.dart';
+import '../../providers/service_providers.dart';
 import '../../widgets/common/data_states.dart';
 
 /// Admin → Horoscope Requests (bottom-nav). Manages the astrologer

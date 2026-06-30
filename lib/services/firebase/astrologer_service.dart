@@ -460,6 +460,20 @@ class AstrologerService {
           .map((s) =>
               s.docs.map(AstrologerRequestModel.fromFirestore).toList());
 
+  /// Realtime stream of every request assigned to the astrologer with this
+  /// Gmail. This is the AUTHORITATIVE astrologer-dashboard query — it keys on
+  /// the stable `astrologerEmail` stamped at assignment time, so requests show
+  /// up even for an astrologer who was assigned work before their first login.
+  /// Single-field equality (no composite index); callers sort client-side.
+  Stream<List<AstrologerRequestModel>> watchRequestsForAstrologerEmail(
+          String email) =>
+      _db
+          .collection(AppConstants.astrologerRequestsCollection)
+          .where('astrologerEmail', isEqualTo: email)
+          .snapshots()
+          .map((s) =>
+              s.docs.map(AstrologerRequestModel.fromFirestore).toList());
+
   /// Realtime stream of EVERY Match Analysis request addressed to the single
   /// internal astrology service ([kInternalAstrologyId]). Powers the internal
   /// Astrology Dashboard. Single-field equality query (no composite index);

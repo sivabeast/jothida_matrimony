@@ -24,18 +24,20 @@ final myAstrologerTeamMemberProvider =
 });
 
 /// Every request assigned to the signed-in astrologer (any status), newest
-/// first. Drives the astrologer Dashboard / Pending / Completed pages. The
-/// underlying query is scoped to `astrologerId == myUid`, so an astrologer can
-/// only ever see their OWN requests.
+/// first. Drives the astrologer Dashboard / Pending / In Progress / Completed
+/// pages. Scoped to `astrologerEmail == my Gmail` (the stable assignment key),
+/// so an astrologer only ever sees their OWN requests — and sees them even if
+/// they were assigned before this astrologer's first sign-in.
 final myAssignedRequestsProvider =
     StreamProvider.autoDispose<List<AstrologerRequestModel>>((ref) {
-  final uid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
-  if (uid == null) return Stream.value(const []);
-  return ref.read(astrologerServiceProvider).watchRequestsForAstrologer(uid).map(
-    (list) {
-      final sorted = [...list]
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      return sorted;
-    },
-  );
+  final email = ref.watch(currentUserProvider).valueOrNull?.email;
+  if (email == null || email.trim().isEmpty) return Stream.value(const []);
+  return ref
+      .read(astrologerServiceProvider)
+      .watchRequestsForAstrologerEmail(email)
+      .map((list) {
+    final sorted = [...list]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return sorted;
+  });
 });

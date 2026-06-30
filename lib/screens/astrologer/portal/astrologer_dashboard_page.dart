@@ -5,14 +5,15 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/astrologer_request_model.dart';
 import '../../../providers/astrology_team_provider.dart';
+import '../../../providers/astrology_team_stats_provider.dart';
 import '../../../providers/auth_provider.dart';
 
 /// The astrologer portal home (Google-only, admin-provisioned accounts).
 ///
-/// Shows the 5 workload metrics (spec §7) and two tabs — Pending Requests
-/// (spec §8) and Completed Reports (spec §12). Every list is scoped to the
-/// signed-in astrologer's own requests; opening one navigates to the request
-/// details + report-submission page.
+/// Shows the full workload + earnings statistics (spec §7/§8) and three tabs —
+/// Pending · In Progress · Completed (spec §5). Every list is scoped to the
+/// signed-in astrologer's OWN requests (by Gmail), so one astrologer never sees
+/// another's. Opening a request navigates to the details + report screen.
 class AstrologerDashboardPage extends ConsumerWidget {
   const AstrologerDashboardPage({super.key});
 
@@ -21,28 +22,22 @@ class AstrologerDashboardPage extends ConsumerWidget {
     final requests =
         ref.watch(myAssignedRequestsProvider).valueOrNull ?? const [];
     final member = ref.watch(myAstrologerTeamMemberProvider).valueOrNull;
-
-    final now = DateTime.now();
-    bool sameDay(DateTime a, DateTime b) =>
-        a.year == b.year && a.month == b.month && a.day == b.day;
+    final stats = ref.watch(myAstrologerStatsProvider);
 
     final pending = requests
-        .where((r) => r.status == AstrologerRequestStatus.pending)
+        .where((r) =>
+            r.status == AstrologerRequestStatus.pending && !r.inProgress)
+        .toList();
+    final inProgress = requests
+        .where(
+            (r) => r.status == AstrologerRequestStatus.pending && r.inProgress)
         .toList();
     final completed = requests
         .where((r) => r.status == AstrologerRequestStatus.completed)
         .toList();
-    final todays =
-        requests.where((r) => sameDay(r.createdAt, now)).length;
-    final monthlyCompleted = completed
-        .where((r) =>
-            r.completedAt != null &&
-            r.completedAt!.year == now.year &&
-            r.completedAt!.month == now.month)
-        .length;
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         backgroundColor: AppColors.scaffoldBg,
         appBar: AppBar(
@@ -61,27 +56,21 @@ class AstrologerDashboardPage extends ConsumerWidget {
               },
             ),
           ],
-          bottom: const TabBar(
+          bottom: TabBar(
             indicatorColor: AppColors.gold,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
             tabs: [
-              Tab(text: 'Pending'),
-              Tab(text: 'Completed'),
+              Tab(text: 'Pending (${pending.length})'),
+              Tab(text: 'In Progress (${inProgress.length})'),
+              Tab(text: 'Completed (${completed.length})'),
             ],
           ),
         ),
         body: Column(
           children: [
-            if (member != null && !member.active)
-              _disabledBanner(),
-            _metrics(
-              total: requests.length,
-              pending: pending.length,
-              completed: completed.length,
-              todays: todays,
-              monthlyCompleted: monthlyCompleted,
-            ),
+            if (member != null && !member.active) _disabledBanner(),
+            if (stats != null) _metrics(stats),
             Expanded(
               child: TabBarView(
                 children: [
@@ -89,13 +78,19 @@ class AstrologerDashboardPage extends ConsumerWidget {
                     requests: pending,
                     emptyIcon: Icons.inbox_outlined,
                     emptyText: 'No pending requests',
-                    showSubmitted: false,
+                    trailing: 'Open Details',
+                  ),
+                  _RequestList(
+                    requests: inProgress,
+                    emptyIcon: Icons.timelapse_outlined,
+                    emptyText: 'Nothing in progress',
+                    trailing: 'Continue',
                   ),
                   _RequestList(
                     requests: completed,
                     emptyIcon: Icons.verified_outlined,
                     emptyText: 'No completed reports yet',
-                    showSubmitted: true,
+                    trailing: 'View',
                   ),
                 ],
               ),
@@ -125,41 +120,74 @@ class AstrologerDashboardPage extends ConsumerWidget {
         ),
       );
 
-  Widget _metrics({
-    required int total,
-    required int pending,
-    required int completed,
-    required int todays,
-    required int monthlyCompleted,
-  }) {
+  Widget _metrics(AstrologerStats s) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 10,
+      child: Column(
         children: [
-          _MetricCard(
-              label: 'Total Assigned', value: total, icon: Icons.assignment),
-          _MetricCard(
-              label: 'Pending',
-              value: pending,
-              icon: Icons.hourglass_bottom,
-              color: Colors.orange),
-          _MetricCard(
-              label: 'Completed',
-              value: completed,
-              icon: Icons.check_circle,
-              color: Colors.green),
-          _MetricCard(
-              label: "Today's Requests",
-              value: todays,
-              icon: Icons.today,
-              color: Colors.blue),
-          _MetricCard(
-              label: 'Monthly Completed',
-              value: monthlyCompleted,
-              icon: Icons.calendar_month,
-              color: Colors.purple),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _MetricCard(
+                  label: 'Total Assigned',
+                  value: '${s.totalAssigned}',
+                  icon: Icons.assignment),
+              _MetricCard(
+                  label: 'Pending',
+                  value: '${s.pending}',
+                  icon: Icons.hourglass_bottom,
+                  color: Colors.orange),
+              _MetricCard(
+                  label: 'In Progress',
+                  value: '${s.inProgress}',
+                  icon: Icons.timelapse,
+                  color: Colors.blue),
+              _MetricCard(
+                  label: 'Completed',
+                  value: '${s.completed}',
+                  icon: Icons.check_circle,
+                  color: Colors.green),
+              _MetricCard(
+                  label: "Today's Completed",
+                  value: '${s.todayCompleted}',
+                  icon: Icons.today,
+                  color: Colors.teal),
+              _MetricCard(
+                  label: 'This Month',
+                  value: '${s.monthCompleted}',
+                  icon: Icons.calendar_month,
+                  color: Colors.indigo),
+              _MetricCard(
+                  label: 'Revenue',
+                  value: '₹${s.revenue}',
+                  icon: Icons.payments,
+                  color: AppColors.primary),
+              _MetricCard(
+                  label: 'Commission',
+                  value: '₹${s.commission}',
+                  icon: Icons.savings,
+                  color: Colors.purple),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, size: 16, color: Colors.grey),
+                const SizedBox(width: 8),
+                Text('Commission per report: ₹${s.commissionPerReport}',
+                    style:
+                        TextStyle(fontSize: 12.5, color: Colors.grey[700])),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -168,7 +196,7 @@ class AstrologerDashboardPage extends ConsumerWidget {
 
 class _MetricCard extends StatelessWidget {
   final String label;
-  final int value;
+  final String value;
   final IconData icon;
   final Color color;
   const _MetricCard({
@@ -196,9 +224,9 @@ class _MetricCard extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 20),
           const SizedBox(height: 6),
-          Text('$value',
+          Text(value,
               style: const TextStyle(
-                  fontSize: 22, fontWeight: FontWeight.w800)),
+                  fontSize: 20, fontWeight: FontWeight.w800)),
           Text(label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -213,12 +241,12 @@ class _RequestList extends StatelessWidget {
   final List<AstrologerRequestModel> requests;
   final IconData emptyIcon;
   final String emptyText;
-  final bool showSubmitted;
+  final String trailing;
   const _RequestList({
     required this.requests,
     required this.emptyIcon,
     required this.emptyText,
-    required this.showSubmitted,
+    required this.trailing,
   });
 
   String _date(DateTime d) =>
@@ -256,18 +284,11 @@ class _RequestList extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.tag, size: 14, color: Colors.grey),
-                      Expanded(
-                        child: Text('Request ${r.id}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                fontSize: 11.5, color: Colors.grey[600])),
-                      ),
-                    ],
-                  ),
+                  Text('Request ${r.id}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                          TextStyle(fontSize: 11.5, color: Colors.grey[600])),
                   const SizedBox(height: 6),
                   Text(r.userName,
                       style: const TextStyle(
@@ -284,20 +305,14 @@ class _RequestList extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        showSubmitted && r.completedAt != null
-                            ? 'Submitted: ${_date(r.completedAt!)}'
-                            : 'Requested: ${_date(r.createdAt)}',
-                        style:
-                            TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
-                      Text(
-                        showSubmitted ? 'View Report' : 'Open Details',
-                        style: const TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12.5),
-                      ),
+                      Text('Requested: ${_date(r.createdAt)}',
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.grey[600])),
+                      Text(trailing,
+                          style: const TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12.5)),
                     ],
                   ),
                 ],

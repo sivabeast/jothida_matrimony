@@ -793,11 +793,11 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         pdfs: pdfs,
       );
       // Free up the astrologer's workload counter so auto-assignment rebalances.
-      final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ?? '';
-      if (myUid.isNotEmpty) {
+      final myEmail = ref.read(currentUserProvider).valueOrNull?.email ?? '';
+      if (myEmail.isNotEmpty) {
         await ref
             .read(astrologyTeamServiceProvider)
-            .decrementPendingForUid(myUid);
+            .decrementPendingForEmail(myEmail);
       }
       state = const AsyncData(null);
     } catch (e, st) {

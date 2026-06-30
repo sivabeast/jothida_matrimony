@@ -141,6 +141,16 @@ class AstrologerRequestModel {
   /// astrology account accepts — at which point it stamps its actual uid here so
   /// the USER side can open the same chat thread the internal account created.
   final String astrologerUid;
+
+  /// The assigned astrologer's registered Gmail. This is the STABLE key the
+  /// astrologer dashboard queries on — it is stamped at assignment time even
+  /// before the astrologer has signed in (so requests appear the moment they
+  /// first log in), whereas [astrologerUid] is only filled once they do.
+  final String astrologerEmail;
+
+  /// When the smart auto-assigner assigned this request to its astrologer.
+  final DateTime? assignedAt;
+
   final String userId;
   final String userName;
   final String userPhotoUrl;
@@ -236,6 +246,8 @@ class AstrologerRequestModel {
     required this.astrologerId,
     this.astrologerName = '',
     this.astrologerUid = '',
+    this.astrologerEmail = '',
+    this.assignedAt,
     required this.userId,
     required this.userName,
     this.userPhotoUrl = '',
@@ -276,6 +288,10 @@ class AstrologerRequestModel {
 
   /// True for a "Book Match Analysis" booking (groom + bride porutham request).
   bool get isMatchAnalysis => type == AstrologerRequestType.matching;
+
+  /// True once an astrologer has actually been assigned (auto or manual). The
+  /// admin shows the assigned name/email + the Reassign action only when true.
+  bool get isAssigned => astrologerEmail.trim().isNotEmpty;
 
   /// True when this request was purchased via an in-person appointment.
   bool get hasAppointment => visitDate != null && slotStartMinutes != null;
@@ -418,6 +434,8 @@ class AstrologerRequestModel {
       astrologerId: d['astrologerId'] ?? '',
       astrologerName: d['astrologerName'] ?? '',
       astrologerUid: d['astrologerUid'] ?? '',
+      astrologerEmail: d['astrologerEmail'] ?? '',
+      assignedAt: _toDate(d['assignedAt']),
       userId: d['userId'] ?? '',
       userName: d['userName'] ?? 'User',
       userPhotoUrl: d['userPhotoUrl'] ?? '',
@@ -469,6 +487,8 @@ class AstrologerRequestModel {
         'astrologerId': astrologerId,
         'astrologerName': astrologerName,
         'astrologerUid': astrologerUid,
+        'astrologerEmail': astrologerEmail,
+        'assignedAt': assignedAt != null ? Timestamp.fromDate(assignedAt!) : null,
         'userId': userId,
         'userName': userName,
         'userPhotoUrl': userPhotoUrl,
@@ -524,6 +544,8 @@ class AstrologerRequestModel {
     String? astrologerId,
     String? astrologerName,
     String? astrologerUid,
+    String? astrologerEmail,
+    DateTime? assignedAt,
     AstrologerRequestStatus? status,
     String? analysisText,
     List<String>? analysisImages,
@@ -549,6 +571,8 @@ class AstrologerRequestModel {
         astrologerId: astrologerId ?? this.astrologerId,
         astrologerName: astrologerName ?? this.astrologerName,
         astrologerUid: astrologerUid ?? this.astrologerUid,
+        astrologerEmail: astrologerEmail ?? this.astrologerEmail,
+        assignedAt: assignedAt ?? this.assignedAt,
         userId: userId,
         userName: userName,
         userPhotoUrl: userPhotoUrl,
