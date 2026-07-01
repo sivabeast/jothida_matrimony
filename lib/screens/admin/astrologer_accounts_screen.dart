@@ -34,6 +34,8 @@ class AstrologerAccountsScreen extends ConsumerWidget {
   Future<void> _addDialog(BuildContext context, WidgetRef ref) async {
     final emailCtrl = TextEditingController();
     final nameCtrl = TextEditingController();
+    final mobileCtrl = TextEditingController();
+    final salaryCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
     final added = await showDialog<bool>(
@@ -64,9 +66,22 @@ class AstrologerAccountsScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               TextFormField(
                 controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: mobileCtrl,
+                keyboardType: TextInputType.phone,
+                decoration:
+                    const InputDecoration(labelText: 'Mobile number'),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: salaryCtrl,
+                keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Display name (optional)',
-                ),
+                    labelText: 'Weekly salary (₹, optional)',
+                    prefixText: '₹ '),
               ),
             ],
           ),
@@ -95,6 +110,8 @@ class AstrologerAccountsScreen extends ConsumerWidget {
         await ref.read(astrologyTeamServiceProvider).addMember(
               email: emailCtrl.text,
               displayName: nameCtrl.text,
+              mobile: mobileCtrl.text,
+              weeklySalary: int.tryParse(salaryCtrl.text.trim()) ?? 0,
             );
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(

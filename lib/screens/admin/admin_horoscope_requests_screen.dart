@@ -408,7 +408,19 @@ class _RequestCard extends ConsumerWidget {
               ],
             )
           else if (request.status == AstrologerRequestStatus.pending)
-            _UnassignedActions(request: request),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _reassign(context, ref),
+                icon: const Icon(Icons.person_add_alt, size: 17),
+                label: const Text('Assign Astrologer'),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 9)),
+              ),
+            ),
         ],
       ),
     );
@@ -484,10 +496,14 @@ class _RequestCard extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Reassign to Astrologer',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(
+                    request.isAssigned
+                        ? 'Reassign to Astrologer'
+                        : 'Assign to Astrologer',
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
-                Text('The request resets to pending for the new astrologer.',
+                Text('The request is set to New for the chosen astrologer.',
                     style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                 const SizedBox(height: 12),
                 if (members.isEmpty)
@@ -556,51 +572,3 @@ class _RequestCard extends ConsumerWidget {
   }
 }
 
-/// Actions shown on an UNASSIGNED pending request: retry auto-assignment when
-/// an active astrologer exists, or explain that none do (spec §3).
-class _UnassignedActions extends ConsumerWidget {
-  final AstrologerRequestModel request;
-  const _UnassignedActions({required this.request});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final hasActive =
-        (ref.watch(allAstrologerTeamProvider).valueOrNull ?? const [])
-            .any((m) => m.active);
-    if (!hasActive) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: AppColors.warning.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Text('No active astrologer available.',
-            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500)),
-      );
-    }
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: () async {
-          final messenger = ScaffoldMessenger.of(context);
-          final chosen = await ref
-              .read(astrologyTeamServiceProvider)
-              .assignRequest(request.id);
-          messenger.showSnackBar(SnackBar(
-            content: Text(chosen == null
-                ? 'No active astrologer available.'
-                : 'Assigned to ${chosen.displayName.isEmpty ? chosen.email : chosen.displayName}.'),
-          ));
-        },
-        icon: const Icon(Icons.person_add_alt, size: 17),
-        label: const Text('Assign now'),
-        style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(vertical: 9)),
-      ),
-    );
-  }
-}

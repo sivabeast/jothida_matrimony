@@ -42,11 +42,13 @@ class _AstrologerShellState extends ConsumerState<AstrologerShell> {
         .where((r) => r.status == AstrologerRequestStatus.completed)
         .toList();
 
+    // "Requests" = active work (new + in progress); Completed is separate.
+    final active = [...pending, ...inProgress];
     final titles = [
       'Dashboard',
-      'Pending',
-      'In Progress',
+      'Requests',
       'Completed',
+      'Work Report',
       'Profile'
     ];
 
@@ -63,20 +65,17 @@ class _AstrologerShellState extends ConsumerState<AstrologerShell> {
         children: [
           const _DashboardPage(),
           _RequestsPage(
-              requests: pending,
+              requests: active,
               emptyIcon: Icons.inbox_outlined,
-              emptyText: 'No pending requests',
-              trailing: 'Open Details'),
-          _RequestsPage(
-              requests: inProgress,
-              emptyIcon: Icons.timelapse_outlined,
-              emptyText: 'Nothing in progress',
-              trailing: 'Continue'),
+              emptyText: 'No requests to work on',
+              trailing: 'Open',
+              showStatus: true),
           _RequestsPage(
               requests: completed,
               emptyIcon: Icons.verified_outlined,
               emptyText: 'No completed reports yet',
               trailing: 'View'),
+          const _WorkReportPage(),
           const _ProfilePage(),
         ],
       ),
@@ -89,13 +88,12 @@ class _AstrologerShellState extends ConsumerState<AstrologerShell> {
               selectedIcon: Icon(Icons.dashboard),
               label: 'Dashboard'),
           NavigationDestination(
-              icon: _badge(Icons.hourglass_bottom, pending.length),
-              label: 'Pending'),
-          NavigationDestination(
-              icon: _badge(Icons.timelapse, inProgress.length),
-              label: 'Progress'),
+              icon: _badge(Icons.assignment_outlined, active.length),
+              label: 'Requests'),
           const NavigationDestination(
               icon: Icon(Icons.check_circle_outline), label: 'Completed'),
+          const NavigationDestination(
+              icon: Icon(Icons.insights_outlined), label: 'Work Report'),
           const NavigationDestination(
               icon: Icon(Icons.person_outline),
               selectedIcon: Icon(Icons.person),
@@ -153,22 +151,20 @@ class _DashboardPage extends ConsumerWidget {
           mainAxisSpacing: 10,
           childAspectRatio: 1.7,
           children: [
-            _stat('Total Assigned', '${s.totalAssigned}', Icons.assignment,
+            _stat('Total Requests', '${s.totalAssigned}', Icons.assignment,
                 AppColors.primary),
-            _stat('Pending', '${s.pending}', Icons.hourglass_bottom,
+            _stat('New Requests', '${s.pending}', Icons.fiber_new_outlined,
                 Colors.orange),
             _stat('In Progress', '${s.inProgress}', Icons.timelapse,
                 Colors.blue),
             _stat('Completed', '${s.completed}', Icons.check_circle,
                 Colors.green),
-            _stat("Today's Completed", '${s.todayCompleted}', Icons.today,
-                Colors.teal),
-            _stat('This Month', '${s.monthCompleted}', Icons.calendar_month,
-                Colors.indigo),
-            _stat('Total Revenue', '₹${s.revenue}', Icons.payments,
-                AppColors.primary),
-            _stat('Total Commission', '₹${s.commission}', Icons.savings,
-                Colors.purple),
+            _stat('This Week Assigned', '${s.thisWeek.assigned}',
+                Icons.event_available, Colors.teal),
+            _stat('This Week Completed', '${s.thisWeek.completed}',
+                Icons.done_all, Colors.indigo),
+            _stat('Last Week Completed', '${s.lastWeek.completed}',
+                Icons.history, Colors.brown),
           ],
         ),
         const SizedBox(height: 12),
@@ -178,10 +174,13 @@ class _DashboardPage extends ConsumerWidget {
               color: Colors.white, borderRadius: BorderRadius.circular(14)),
           child: Row(
             children: [
-              const Icon(Icons.info_outline, size: 18, color: AppColors.primary),
+              const Icon(Icons.account_balance_wallet_outlined,
+                  size: 18, color: AppColors.primary),
               const SizedBox(width: 10),
               Expanded(
-                child: Text('Current commission per report: ₹${s.commissionPerReport}',
+                child: Text(
+                    'Weekly fixed salary: ₹${s.weeklySalary}  ·  '
+                    '${s.salaryStatus == 'paid' ? 'Paid' : 'Pending'}',
                     style: const TextStyle(fontWeight: FontWeight.w600)),
               ),
             ],
@@ -238,11 +237,13 @@ class _RequestsPage extends StatelessWidget {
   final IconData emptyIcon;
   final String emptyText;
   final String trailing;
+  final bool showStatus;
   const _RequestsPage({
     required this.requests,
     required this.emptyIcon,
     required this.emptyText,
     required this.trailing,
+    this.showStatus = false,
   });
 
   String _date(DateTime d) =>
@@ -279,11 +280,34 @@ class _RequestsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Request ${r.id}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style:
-                          TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text('Request ${r.id}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: 11.5, color: Colors.grey[600])),
+                      ),
+                      if (showStatus)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: (r.inProgress ? Colors.blue : Colors.orange)
+                                .withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(r.inProgress ? 'In Progress' : 'New',
+                              style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: r.inProgress
+                                      ? Colors.blue
+                                      : Colors.orange)),
+                        ),
+                    ],
+                  ),
                   const SizedBox(height: 6),
                   Text(r.userName,
                       style: const TextStyle(
@@ -318,6 +342,159 @@ class _RequestsPage extends StatelessWidget {
       },
     );
   }
+}
+
+// ── Work Report page (spec §14/§15) ─────────────────────────────────────────
+
+class _WorkReportPage extends ConsumerWidget {
+  const _WorkReportPage();
+
+  String _date(DateTime? d) => d == null
+      ? '—'
+      : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(myAstrologerStatsProvider);
+    final requests =
+        ref.watch(myAssignedRequestsProvider).valueOrNull ?? const [];
+    if (s == null) {
+      return const Center(
+          child: CircularProgressIndicator(color: AppColors.primary));
+    }
+    final recentCompleted = requests
+        .where((r) => r.status == AstrologerRequestStatus.completed)
+        .toList()
+      ..sort((a, b) =>
+          (b.completedAt ?? b.createdAt).compareTo(a.completedAt ?? a.createdAt));
+
+    return ListView(
+      padding: const EdgeInsets.all(14),
+      children: [
+        // Weekly summary (spec §15).
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(16)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('This Week',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700)),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _wk('Assigned', s.thisWeek.assigned),
+                  _wk('Completed', s.thisWeek.completed),
+                  _wk('Pending', s.thisWeek.pending),
+                  _wk('Rate', s.thisWeek.completionRate, suffix: '%'),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text('Weekly fixed salary: ₹${s.weeklySalary}  ·  '
+                  '${s.salaryStatus == 'paid' ? 'Paid' : 'Pending'}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12.5)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _reportCard('Today', [
+          _r('New Requests', s.todayAssigned),
+          _r('In Progress', s.inProgress),
+          _r('Completed Today', s.todayCompleted),
+        ]),
+        const SizedBox(height: 12),
+        _reportCard('Last Week', [
+          _r('Assigned', s.lastWeek.assigned),
+          _r('Completed', s.lastWeek.completed),
+          _r('Pending', s.lastWeek.pending),
+        ]),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+              color: Colors.white, borderRadius: BorderRadius.circular(14)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Recent Completed Reports',
+                  style:
+                      TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
+              const SizedBox(height: 8),
+              if (recentCompleted.isEmpty)
+                Text('No completed reports yet.',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 13))
+              else
+                for (final r in recentCompleted.take(8))
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 5),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle,
+                            size: 16, color: Colors.green),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(r.userName,
+                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ),
+                        Text(_date(r.completedAt),
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _wk(String label, int value, {String suffix = ''}) => Column(
+        children: [
+          Text('$value$suffix',
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800)),
+          Text(label,
+              style: const TextStyle(color: Colors.white70, fontSize: 11)),
+        ],
+      );
+
+  Widget _reportCard(String title, List<Widget> rows) => Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+            color: Colors.white, borderRadius: BorderRadius.circular(14)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style:
+                    const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
+            const SizedBox(height: 8),
+            ...rows,
+          ],
+        ),
+      );
+
+  Widget _r(String k, int v) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(k, style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+            Text('$v',
+                style:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+          ],
+        ),
+      );
 }
 
 // ── Profile page (spec §5/§6) ────────────────────────────────────────────────

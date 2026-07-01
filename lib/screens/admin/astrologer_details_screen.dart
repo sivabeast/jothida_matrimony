@@ -45,7 +45,7 @@ class AstrologerDetailsScreen extends ConsumerWidget {
                 const SizedBox(height: 14),
                 _performanceCard(stats),
                 const SizedBox(height: 14),
-                _earningsCard(stats),
+                _salaryCard(context, ref, stats),
                 const SizedBox(height: 18),
                 OutlinedButton.icon(
                   onPressed: () => _deleteAstrologer(context, ref, stats),
@@ -167,26 +167,109 @@ class AstrologerDetailsScreen extends ConsumerWidget {
             _sectionTitle('Performance'),
             const SizedBox(height: 10),
             _row('Assigned Requests', '${stats.totalAssigned}'),
-            _row('Pending Requests', '${stats.pending}'),
+            _row('New / Pending', '${stats.pending}'),
             _row('In Progress', '${stats.inProgress}'),
             _row('Completed Reports', '${stats.completed}'),
+            const Divider(height: 20),
+            _row('This Week — Assigned', '${stats.thisWeek.assigned}'),
+            _row('This Week — Completed', '${stats.thisWeek.completed}'),
+            _row('This Week — Pending', '${stats.thisWeek.pending}'),
+            const Divider(height: 20),
+            _row('Last Week — Assigned', '${stats.lastWeek.assigned}'),
+            _row('Last Week — Completed', '${stats.lastWeek.completed}'),
+            _row('Last Week — Pending', '${stats.lastWeek.pending}'),
+            const Divider(height: 20),
+            _row('Last Login', _date(stats.member.lastLoginAt)),
+            _row('Last Submitted Report', _date(stats.member.lastSubmittedAt)),
           ],
         ),
       );
 
-  Widget _earningsCard(AstrologerStats stats) => Container(
+  Widget _salaryCard(
+          BuildContext context, WidgetRef ref, AstrologerStats stats) =>
+      Container(
         padding: const EdgeInsets.all(16),
         decoration: _boxDecoration,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _sectionTitle('Earnings (completed only)'),
+            _sectionTitle('Weekly Salary'),
             const SizedBox(height: 10),
-            _row('Total Revenue Generated', '₹${stats.revenue}'),
-            _row('Total Commission', '₹${stats.commission}'),
+            _row('Weekly Salary', '₹${stats.member.weeklySalary}'),
+            _row('Salary Status',
+                stats.member.salaryStatus == 'paid' ? 'Paid' : 'Pending'),
+            _row('Last Paid', _date(stats.member.lastPaidDate)),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _editSalary(context, ref, stats),
+                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    label: const Text('Set Salary'),
+                    style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => ref
+                        .read(astrologyTeamServiceProvider)
+                        .setSalary(stats.member.id, markPaid: true),
+                    icon: const Icon(Icons.check, size: 16),
+                    label: const Text('Mark Paid'),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       );
+
+  Future<void> _editSalary(
+      BuildContext context, WidgetRef ref, AstrologerStats stats) async {
+    final ctrl =
+        TextEditingController(text: '${stats.member.weeklySalary}');
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Weekly Salary'),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+              labelText: 'Weekly salary (₹)', prefixText: '₹ '),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      final amount = int.tryParse(ctrl.text.trim()) ?? 0;
+      await ref
+          .read(astrologyTeamServiceProvider)
+          .setSalary(stats.member.id, weeklySalary: amount, salaryStatus: 'pending');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Weekly salary updated.')));
+      }
+    }
+  }
 
   Future<void> _editDialog(
       BuildContext context, WidgetRef ref, AstrologerStats stats) async {

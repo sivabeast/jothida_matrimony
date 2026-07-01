@@ -14,6 +14,7 @@ class AstrologerTeamMember {
   final String id;
   final String email;
   final String displayName;
+  final String mobile;
   final String photoUrl;
 
   /// Admin enable/disable switch (default true). A disabled member can neither
@@ -46,16 +47,32 @@ class AstrologerTeamMember {
   /// has to read other users' requests.
   final int pendingCount;
 
+  // ── Weekly fixed salary (spec §13, replaces per-report commission) ───────
+  /// Admin-defined fixed weekly salary (₹).
+  final int weeklySalary;
+
+  /// 'paid' | 'pending'.
+  final String salaryStatus;
+  final DateTime? lastPaidDate;
+
+  /// When this astrologer last submitted a completed report (admin perf view).
+  final DateTime? lastSubmittedAt;
+
   const AstrologerTeamMember({
     required this.id,
     required this.email,
     this.displayName = '',
+    this.mobile = '',
     this.photoUrl = '',
     this.active = true,
     this.available = true,
     this.about = '',
     this.experience = '',
     this.qualification = '',
+    this.weeklySalary = 0,
+    this.salaryStatus = 'pending',
+    this.lastPaidDate,
+    this.lastSubmittedAt,
     this.uid = '',
     this.createdAt,
     this.lastLoginAt,
@@ -89,12 +106,17 @@ class AstrologerTeamMember {
       id: doc.id,
       email: (d['email'] ?? doc.id).toString(),
       displayName: (d['displayName'] ?? '').toString(),
+      mobile: (d['mobile'] ?? '').toString(),
       photoUrl: (d['photoUrl'] ?? '').toString(),
       active: d['active'] != false, // default true
       available: d['available'] != false, // default true
       about: (d['about'] ?? '').toString(),
       experience: (d['experience'] ?? '').toString(),
       qualification: (d['qualification'] ?? '').toString(),
+      weeklySalary: (d['weeklySalary'] as num?)?.toInt() ?? 0,
+      salaryStatus: (d['salaryStatus'] ?? 'pending').toString(),
+      lastPaidDate: _ts(d['lastPaidDate']),
+      lastSubmittedAt: _ts(d['lastSubmittedAt']),
       uid: (d['uid'] ?? '').toString(),
       createdAt: _ts(d['createdAt']),
       lastLoginAt: _ts(d['lastLoginAt']),
@@ -106,12 +128,18 @@ class AstrologerTeamMember {
   Map<String, dynamic> toFirestore() => {
         'email': email,
         'displayName': displayName,
+        'mobile': mobile,
         'photoUrl': photoUrl,
         'active': active,
         'available': available,
         'about': about,
         'experience': experience,
         'qualification': qualification,
+        'weeklySalary': weeklySalary,
+        'salaryStatus': salaryStatus,
+        if (lastPaidDate != null) 'lastPaidDate': Timestamp.fromDate(lastPaidDate!),
+        if (lastSubmittedAt != null)
+          'lastSubmittedAt': Timestamp.fromDate(lastSubmittedAt!),
         'uid': uid,
         'pendingCount': pendingCount,
         if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt!),
@@ -122,12 +150,17 @@ class AstrologerTeamMember {
 
   AstrologerTeamMember copyWith({
     String? displayName,
+    String? mobile,
     String? photoUrl,
     bool? active,
     bool? available,
     String? about,
     String? experience,
     String? qualification,
+    int? weeklySalary,
+    String? salaryStatus,
+    DateTime? lastPaidDate,
+    DateTime? lastSubmittedAt,
     String? uid,
     DateTime? lastLoginAt,
     DateTime? lastAssignedAt,
@@ -137,12 +170,17 @@ class AstrologerTeamMember {
         id: id,
         email: email,
         displayName: displayName ?? this.displayName,
+        mobile: mobile ?? this.mobile,
         photoUrl: photoUrl ?? this.photoUrl,
         active: active ?? this.active,
         available: available ?? this.available,
         about: about ?? this.about,
         experience: experience ?? this.experience,
         qualification: qualification ?? this.qualification,
+        weeklySalary: weeklySalary ?? this.weeklySalary,
+        salaryStatus: salaryStatus ?? this.salaryStatus,
+        lastPaidDate: lastPaidDate ?? this.lastPaidDate,
+        lastSubmittedAt: lastSubmittedAt ?? this.lastSubmittedAt,
         uid: uid ?? this.uid,
         createdAt: createdAt,
         lastLoginAt: lastLoginAt ?? this.lastLoginAt,

@@ -132,6 +132,27 @@ class FirestoreService {
       }
     }
 
+    // ── Astrologer role auto-detection (spec §2) ─────────────────────────────
+    // If this Gmail was provisioned by the admin as an astrologer, flag the
+    // `astrologer` role on login (from ANY entry point) and link the uid, so the
+    // router opens the Astrologer Dashboard and never the matrimony pages.
+    // Super-admin accounts are excluded — admin and astrologer stay separate.
+    if (user.email != null && !AdminConfig.isSuperAdminEmail(user.email)) {
+      try {
+        final teamKey = user.email!.trim().toLowerCase();
+        final teamRef = _db.collection('astrology_team').doc(teamKey);
+        final teamDoc = await teamRef.get();
+        if (teamDoc.exists && teamDoc.data()?['active'] != false) {
+          await docRef.set({'role': 'astrologer'}, SetOptions(merge: true));
+          await teamRef.set(
+              {'uid': user.uid, 'lastLoginAt': FieldValue.serverTimestamp()},
+              SetOptions(merge: true));
+        }
+      } catch (e) {
+        debugPrint('[Firestore] astrologer role auto-detect failed: $e');
+      }
+    }
+
     final fresh = await docRef.get();
     debugPrint('[Firestore] ${user.uid}: doc read OK '
         '(exists=${fresh.exists})');

@@ -7,26 +7,36 @@ import 'astrology_config_provider.dart';
 import 'astrology_team_provider.dart';
 import 'service_providers.dart';
 
+/// Weekly work counters (assigned / completed / pending) for one period.
+class WeeklyStat {
+  final int assigned;
+  final int completed;
+  final int pending;
+  const WeeklyStat(
+      {this.assigned = 0, this.completed = 0, this.pending = 0});
+
+  /// Completion rate as a whole-number percentage (spec §15).
+  int get completionRate =>
+      assigned == 0 ? 0 : ((completed / assigned) * 100).round();
+}
+
 /// Performance metrics for one astrologer, computed from their assigned
-/// requests + the admin-configured per-completed-request commissions.
+/// requests. Earnings use a fixed WEEKLY SALARY (spec §13), not commission.
 class AstrologerStats {
   final AstrologerTeamMember member;
   final int totalAssigned;
-  final int pending;
+  final int pending; // "New" — assigned, not started
   final int inProgress;
   final int completed;
+  final int todayAssigned;
   final int todayCompleted;
   final int monthCompleted;
 
-  /// Sum of COMPLETED request amounts the user paid (₹) — the platform revenue
-  /// this astrologer generated.
+  final WeeklyStat thisWeek;
+  final WeeklyStat lastWeek;
+
+  /// Sum of COMPLETED request amounts the user paid (₹) — platform revenue.
   final int revenue;
-
-  /// Sum of per-completed-request commission owed to the astrologer (₹).
-  final int commission;
-
-  /// The current per-completed-report analysis commission (₹) from config.
-  final int commissionPerReport;
 
   const AstrologerStats({
     required this.member,
@@ -34,17 +44,26 @@ class AstrologerStats {
     this.pending = 0,
     this.inProgress = 0,
     this.completed = 0,
+    this.todayAssigned = 0,
     this.todayCompleted = 0,
     this.monthCompleted = 0,
+    this.thisWeek = const WeeklyStat(),
+    this.lastWeek = const WeeklyStat(),
     this.revenue = 0,
-    this.commission = 0,
-    this.commissionPerReport = 0,
   });
+
+  int get weeklySalary => member.weeklySalary;
+  String get salaryStatus => member.salaryStatus;
 }
 
-/// Computes [AstrologerStats] for [m] from [all] requests + [cfg] commissions.
-/// Matches on the stable `astrologerEmail` (works before/after the astrologer's
-/// first sign-in). Earnings are based on COMPLETED requests only (spec §6/§8).
+DateTime _startOfWeek(DateTime d) {
+  final day = DateTime(d.year, d.month, d.day);
+  return day.subtract(Duration(days: day.weekday - 1)); // Monday 00:00
+}
+
+/// Computes [AstrologerStats] for [m] from [all] requests. Matches on the stable
+/// `astrologerEmail` (works before/after first sign-in). Weekly buckets use
+/// `assignedAt` (assigned) and `completedAt` (completed).
 AstrologerStats computeAstrologerStats(
   AstrologerTeamMember m,
   List<AstrologerRequestModel> all,
@@ -53,11 +72,12 @@ AstrologerStats computeAstrologerStats(
   final now = DateTime.now();
   bool sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+  final thisWeekStart = _startOfWeek(now);
+  final lastWeekStart = thisWeekStart.subtract(const Duration(days: 7));
 
   final mine = all.where((r) => r.astrologerEmail == m.email).toList();
-  final completed =
+  final completedList =
       mine.where((r) => r.status == AstrologerRequestStatus.completed).toList();
-  // Pending = assigned, not yet started; In Progress = started (inProgress).
   final pending = mine
       .where((r) =>
           r.status == AstrologerRequestStatus.pending && !r.inProgress)
@@ -66,32 +86,55 @@ AstrologerStats computeAstrologerStats(
       .where(
           (r) => r.status == AstrologerRequestStatus.pending && r.inProgress)
       .length;
+
   var revenue = 0;
-  var commission = 0;
   var todayCompleted = 0;
   var monthCompleted = 0;
-  for (final r in completed) {
+  for (final r in completedList) {
     revenue += r.amount;
-    commission += r.type == AstrologerRequestType.matching
-        ? cfg.analysisCommission
-        : cfg.appointmentCommission;
     final c = r.completedAt;
     if (c != null) {
       if (sameDay(c, now)) todayCompleted++;
       if (c.year == now.year && c.month == now.month) monthCompleted++;
     }
   }
+  final todayAssigned = mine
+      .where((r) => r.assignedAt != null && sameDay(r.assignedAt!, now))
+      .length;
+
+  bool notCompleted(AstrologerRequestModel r) =>
+      r.status != AstrologerRequestStatus.completed;
+
+  WeeklyStat weekly(DateTime start, DateTime end) {
+    final assigned = mine
+        .where((r) =>
+            r.assignedAt != null &&
+            !r.assignedAt!.isBefore(start) &&
+            r.assignedAt!.isBefore(end))
+        .toList();
+    final completed = mine
+        .where((r) =>
+            r.completedAt != null &&
+            !r.completedAt!.isBefore(start) &&
+            r.completedAt!.isBefore(end))
+        .length;
+    final pend = assigned.where(notCompleted).length;
+    return WeeklyStat(
+        assigned: assigned.length, completed: completed, pending: pend);
+  }
+
   return AstrologerStats(
     member: m,
     totalAssigned: mine.length,
     pending: pending,
     inProgress: inProgress,
-    completed: completed.length,
+    completed: completedList.length,
+    todayAssigned: todayAssigned,
     todayCompleted: todayCompleted,
     monthCompleted: monthCompleted,
+    thisWeek: weekly(thisWeekStart, now.add(const Duration(days: 1))),
+    lastWeek: weekly(lastWeekStart, thisWeekStart),
     revenue: revenue,
-    commission: commission,
-    commissionPerReport: cfg.analysisCommission,
   );
 }
 

@@ -422,6 +422,14 @@ class _ProfileCard extends ConsumerWidget {
   String _date(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
+  int _age(DateTime dob) {
+    final now = DateTime.now();
+    var a = now.year - dob.year;
+    if (now.month < dob.month ||
+        (now.month == dob.month && now.day < dob.day)) a--;
+    return a;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(profileByIdProvider(profileId));
@@ -475,6 +483,24 @@ class _ProfileCard extends ConsumerWidget {
         _kv('Time of Birth', (h?.birthTime.isNotEmpty ?? false) ? h!.birthTime : '—'),
         _kv('Place of Birth',
             (h?.birthPlace.isNotEmpty ?? false) ? h!.birthPlace : '—'),
+        _kv('Age', p == null ? '—' : '${_age(p.dateOfBirth)}'),
+        _kv('Education',
+            (p?.education.isNotEmpty ?? false) ? p!.education : '—'),
+        _kv('Occupation',
+            (p?.occupation.isNotEmpty ?? false) ? p!.occupation : '—'),
+        _kv('Marital Status',
+            (p?.maritalStatus.isNotEmpty ?? false) ? p!.maritalStatus : '—'),
+        if (h != null) ...[
+          _kv('Rasi', h.rasi.isNotEmpty ? h.rasi : '—'),
+          _kv('Nakshatra', h.nakshatra.isNotEmpty ? h.nakshatra : '—'),
+          _kv('Lagnam', h.lagnam.isNotEmpty ? h.lagnam : '—'),
+        ],
+        if (p != null) ...[
+          _kv('Family Type',
+              p.family.familyType.isNotEmpty ? p.family.familyType : '—'),
+          _kv('Family Status',
+              p.family.familyStatus.isNotEmpty ? p.family.familyStatus : '—'),
+        ],
         if (h != null) ...[
           if (h.horoscopeImages.isNotEmpty) ...[
             const SizedBox(height: 10),

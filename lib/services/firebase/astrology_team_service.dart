@@ -39,7 +39,12 @@ class AstrologyTeamService {
   /// Registers a new team member by Gmail. Rejects a duplicate Gmail with
   /// [AstrologerExistsException]; any Firestore failure (e.g. permissions)
   /// propagates so the caller can show the real reason.
-  Future<void> addMember({required String email, String displayName = ''}) async {
+  Future<void> addMember({
+    required String email,
+    String displayName = '',
+    String mobile = '',
+    int weeklySalary = 0,
+  }) async {
     final key = AstrologerTeamMember.keyFor(email);
     final existing = await _team.doc(key).get();
     if (existing.exists) {
@@ -48,7 +53,11 @@ class AstrologyTeamService {
     await _team.doc(key).set({
       'email': key,
       'displayName': displayName.trim(),
+      'mobile': mobile.trim(),
       'active': true,
+      'available': true,
+      'weeklySalary': weeklySalary,
+      'salaryStatus': 'pending',
       'uid': '',
       'pendingCount': 0,
       'createdAt': FieldValue.serverTimestamp(),
@@ -259,17 +268,28 @@ class AstrologyTeamService {
     });
   }
 
-  /// Decrements a member's open-request counter once they submit a report.
-  /// Keyed by the member's Gmail (the doc id), so it works regardless of uid.
-  /// Best-effort — a counter hiccup must never fail the report submission.
-  Future<void> decrementPendingForEmail(String email) async {
+  /// Called when an astrologer submits a completed report: decrements their open
+  /// counter and stamps `lastSubmittedAt` (admin performance view). Keyed by the
+  /// member's Gmail so it works regardless of uid. Best-effort.
+  Future<void> markReportSubmitted(String email) async {
     if (email.trim().isEmpty) return;
     try {
-      await _team
-          .doc(AstrologerTeamMember.keyFor(email))
-          .update({'pendingCount': FieldValue.increment(-1)});
+      await _team.doc(AstrologerTeamMember.keyFor(email)).update({
+        'pendingCount': FieldValue.increment(-1),
+        'lastSubmittedAt': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
-      debugPrint('[AstrologyTeam] decrementPendingForEmail($email) failed: $e');
+      debugPrint('[AstrologyTeam] markReportSubmitted($email) failed: $e');
     }
   }
+
+  /// Admin sets an astrologer's weekly salary + payment status (spec §13).
+  Future<void> setSalary(String emailKey,
+          {int? weeklySalary, String? salaryStatus, bool markPaid = false}) =>
+      _team.doc(emailKey).update({
+        if (weeklySalary != null) 'weeklySalary': weeklySalary,
+        if (salaryStatus != null) 'salaryStatus': salaryStatus,
+        if (markPaid) 'lastPaidDate': FieldValue.serverTimestamp(),
+        if (markPaid) 'salaryStatus': 'paid',
+      });
 }
