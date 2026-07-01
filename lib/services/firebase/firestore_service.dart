@@ -147,6 +147,18 @@ class FirestoreService {
           await teamRef.set(
               {'uid': user.uid, 'lastLoginAt': FieldValue.serverTimestamp()},
               SetOptions(merge: true));
+          // Backfill the uid onto any requests assigned to this Gmail BEFORE the
+          // astrologer's first login, so `astrologerId == uid` holds too.
+          final assigned = await _db
+              .collection('astrologer_requests')
+              .where('astrologerEmail', isEqualTo: teamKey)
+              .get();
+          for (final d in assigned.docs) {
+            if ((d.data()['astrologerUid'] ?? '').toString().isEmpty) {
+              await d.reference.update(
+                  {'astrologerId': user.uid, 'astrologerUid': user.uid});
+            }
+          }
         }
       } catch (e) {
         debugPrint('[Firestore] astrologer role auto-detect failed: $e');

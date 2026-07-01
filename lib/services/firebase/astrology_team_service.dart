@@ -207,14 +207,12 @@ class AstrologyTeamService {
       return ac.compareTo(bc); // stable order for the first round
     });
     final chosen = members.first;
-    final name =
-        chosen.displayName.trim().isEmpty ? chosen.email : chosen.displayName;
 
     await _db.runTransaction((tx) async {
       final reqRef = _requests.doc(requestId);
       final reqSnap = await tx.get(reqRef);
       if (!reqSnap.exists) return;
-      // Idempotent: never double-assign if it already has an astrologer.
+      // Idempotent — never double-assign if it already has an astrologer.
       if ((reqSnap.data()?['astrologerEmail'] ?? '')
           .toString()
           .trim()
@@ -225,43 +223,51 @@ class AstrologyTeamService {
         'pendingCount': FieldValue.increment(1),
         'lastAssignedAt': FieldValue.serverTimestamp(),
       });
-      tx.update(reqRef, {
-        // astrologerId carries the uid once linked, else the registry key — but
-        // astrologerEmail is the stable dashboard/isolation key.
-        'astrologerId': chosen.uid.isNotEmpty ? chosen.uid : chosen.id,
-        'astrologerUid': chosen.uid,
-        'astrologerEmail': chosen.email,
-        'astrologerName': name,
-        'assignedAt': FieldValue.serverTimestamp(),
-        'history': FieldValue.arrayUnion([
-          BookingHistoryEntry.now('Auto-assigned to $name').toMap(),
-        ]),
-      });
+      tx.update(reqRef, _assignmentData(chosen, assignedBy: 'auto'));
     });
-    debugPrint('[AstrologyTeam] assignRequest($requestId) → $name '
-        '(${chosen.email}).');
+    debugPrint('[AstrologyTeam] assignRequest($requestId) → ${chosen.email}.');
     return chosen;
   }
 
-  /// Admin reassigns [requestId] to a specific team member: stamps the new
-  /// astrologer (id/uid/email/name + assignedAt), resets it to pending/not-
-  /// started, and bumps the new member's workload. Admin-only (rules).
-  Future<void> reassignTo(String requestId, AstrologerTeamMember m) async {
+  /// The canonical assignment payload written onto a request. Emails are always
+  /// stored LOWERCASED so the astrologer-dashboard query + security rule match
+  /// reliably, and every workflow field the app relies on is set in one place.
+  static Map<String, dynamic> _assignmentData(
+    AstrologerTeamMember m, {
+    required String assignedBy,
+  }) {
     final name = m.displayName.trim().isEmpty ? m.email : m.displayName;
-    await _requests.doc(requestId).update({
+    return {
+      // assignedAstrologerId = the real uid once linked, else the registry key.
       'astrologerId': m.uid.isNotEmpty ? m.uid : m.id,
       'astrologerUid': m.uid,
-      'astrologerEmail': m.email,
+      'astrologerEmail': m.email.trim().toLowerCase(),
       'astrologerName': name,
       'assignedAt': FieldValue.serverTimestamp(),
+      'assignedBy': assignedBy,
+      'assignmentStatus': 'assigned',
+      'workflowStatus': 'new',
       'status': AstrologerRequestStatus.pending.name,
       'inProgress': false,
-      'reassigned': true,
-      'reassignedAt': FieldValue.serverTimestamp(),
       'history': FieldValue.arrayUnion([
-        BookingHistoryEntry.now('Reassigned by admin to $name').toMap(),
+        BookingHistoryEntry.now(
+                'Assigned to $name (${assignedBy == 'auto' ? 'round robin' : 'admin'})')
+            .toMap(),
       ]),
-    });
+    };
+  }
+
+  /// Assigns [requestId] to a SPECIFIC team member (manual assignment, spec).
+  /// Writes every assignment field + bumps the member's workload counters.
+  /// Admin-only per rules.
+  Future<void> assignToAstrologer(
+    String requestId,
+    AstrologerTeamMember m, {
+    String assignedBy = 'admin',
+  }) async {
+    await _requests
+        .doc(requestId)
+        .update(_assignmentData(m, assignedBy: assignedBy));
     await _team.doc(m.id).update({
       'pendingCount': FieldValue.increment(1),
       'lastAssignedAt': FieldValue.serverTimestamp(),

@@ -405,8 +405,10 @@ service cloud.firestore {
                       || resource.data.astrologerId == request.auth.uid);
       // The assigned astrologer reads their OWN requests by the stable Gmail
       // stamped at assignment time (works even before their first uid link).
+      // astrologerEmail is stored lowercased, so lower-case the token too.
       allow read: if isAuthenticated()
-                  && resource.data.astrologerEmail == request.auth.token.email;
+                  && resource.data.astrologerEmail ==
+                      request.auth.token.email.lower();
       allow read: if isAdmin();
       // The internal astrology service reads/responds to every request addressed
       // to it (Match Analysis triage on the Astrology Dashboard).
@@ -419,7 +421,8 @@ service cloud.firestore {
       // The assigned astrologer (matched by Gmail) starts the analysis and
       // submits the report.
       allow update: if isAuthenticated()
-                    && resource.data.astrologerEmail == request.auth.token.email;
+                    && resource.data.astrologerEmail ==
+                        request.auth.token.email.lower();
       allow update: if isAdmin();
       allow update: if isInternalAstrology()
                     && resource.data.astrologerId == 'internal_astrology';

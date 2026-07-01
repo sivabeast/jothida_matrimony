@@ -148,8 +148,19 @@ class AstrologerRequestModel {
   /// first log in), whereas [astrologerUid] is only filled once they do.
   final String astrologerEmail;
 
-  /// When the smart auto-assigner assigned this request to its astrologer.
+  /// When the request was assigned to its astrologer.
   final DateTime? assignedAt;
+
+  /// Who performed the assignment: 'admin' | 'auto' (round robin) | ''.
+  final String assignedBy;
+
+  /// 'assigned' once an astrologer holds it; '' / 'unassigned' otherwise.
+  final String assignmentStatus;
+
+  /// Explicit astrologer-facing workflow state: 'new' → 'in_progress' →
+  /// 'completed'. Kept in sync with [status]/[inProgress] and used by the
+  /// astrologer dashboard tabs so a query can filter on it directly.
+  final String workflowStatus;
 
   final String userId;
   final String userName;
@@ -248,6 +259,9 @@ class AstrologerRequestModel {
     this.astrologerUid = '',
     this.astrologerEmail = '',
     this.assignedAt,
+    this.assignedBy = '',
+    this.assignmentStatus = '',
+    this.workflowStatus = '',
     required this.userId,
     required this.userName,
     this.userPhotoUrl = '',
@@ -436,6 +450,9 @@ class AstrologerRequestModel {
       astrologerUid: d['astrologerUid'] ?? '',
       astrologerEmail: d['astrologerEmail'] ?? '',
       assignedAt: _toDate(d['assignedAt']),
+      assignedBy: d['assignedBy'] ?? '',
+      assignmentStatus: d['assignmentStatus'] ?? '',
+      workflowStatus: d['workflowStatus'] ?? '',
       userId: d['userId'] ?? '',
       userName: d['userName'] ?? 'User',
       userPhotoUrl: d['userPhotoUrl'] ?? '',
@@ -489,6 +506,9 @@ class AstrologerRequestModel {
         'astrologerUid': astrologerUid,
         'astrologerEmail': astrologerEmail,
         'assignedAt': assignedAt != null ? Timestamp.fromDate(assignedAt!) : null,
+        'assignedBy': assignedBy,
+        'assignmentStatus': assignmentStatus,
+        'workflowStatus': workflowStatus,
         'userId': userId,
         'userName': userName,
         'userPhotoUrl': userPhotoUrl,
@@ -546,6 +566,9 @@ class AstrologerRequestModel {
     String? astrologerUid,
     String? astrologerEmail,
     DateTime? assignedAt,
+    String? assignedBy,
+    String? assignmentStatus,
+    String? workflowStatus,
     AstrologerRequestStatus? status,
     String? analysisText,
     List<String>? analysisImages,
@@ -573,6 +596,9 @@ class AstrologerRequestModel {
         astrologerUid: astrologerUid ?? this.astrologerUid,
         astrologerEmail: astrologerEmail ?? this.astrologerEmail,
         assignedAt: assignedAt ?? this.assignedAt,
+        assignedBy: assignedBy ?? this.assignedBy,
+        assignmentStatus: assignmentStatus ?? this.assignmentStatus,
+        workflowStatus: workflowStatus ?? this.workflowStatus,
         userId: userId,
         userName: userName,
         userPhotoUrl: userPhotoUrl,

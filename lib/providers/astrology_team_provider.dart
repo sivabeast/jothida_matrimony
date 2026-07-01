@@ -30,8 +30,11 @@ final myAstrologerTeamMemberProvider =
 /// they were assigned before this astrologer's first sign-in.
 final myAssignedRequestsProvider =
     StreamProvider.autoDispose<List<AstrologerRequestModel>>((ref) {
-  final email = ref.watch(currentUserProvider).valueOrNull?.email;
-  if (email == null || email.trim().isEmpty) return Stream.value(const []);
+  final rawEmail = ref.watch(currentUserProvider).valueOrNull?.email;
+  if (rawEmail == null || rawEmail.trim().isEmpty) return Stream.value(const []);
+  // Match the LOWERCASED email that assignment stores, so the query never
+  // misses on a case difference between the token email and the registry key.
+  final email = rawEmail.trim().toLowerCase();
   return ref
       .read(astrologerServiceProvider)
       .watchRequestsForAstrologerEmail(email)

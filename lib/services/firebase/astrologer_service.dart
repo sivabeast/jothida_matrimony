@@ -433,6 +433,7 @@ class AstrologerService {
         .doc(requestId)
         .update({
       'inProgress': true,
+      'workflowStatus': 'in_progress',
       'startedAt': FieldValue.serverTimestamp(),
       'history': FieldValue.arrayUnion(
           [BookingHistoryEntry.now('Analysis in progress').toMap()]),
@@ -773,6 +774,7 @@ class AstrologerService {
         'analysisImages': images,
         'analysisPdfs': pdfs,
         'status': AstrologerRequestStatus.completed.name,
+        'workflowStatus': 'completed',
         'completedAt': FieldValue.serverTimestamp(),
         'respondedAt': FieldValue.serverTimestamp(),
         'history': FieldValue.arrayUnion(

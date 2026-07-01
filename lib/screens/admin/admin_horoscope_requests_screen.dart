@@ -408,18 +408,33 @@ class _RequestCard extends ConsumerWidget {
               ],
             )
           else if (request.status == AstrologerRequestStatus.pending)
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => _reassign(context, ref),
-                icon: const Icon(Icons.person_add_alt, size: 17),
-                label: const Text('Assign Astrologer'),
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 9)),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _autoAssign(context, ref),
+                    icon: const Icon(Icons.autorenew, size: 17),
+                    label: const Text('Auto Assign'),
+                    style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary),
+                        padding: const EdgeInsets.symmetric(vertical: 9)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _reassign(context, ref),
+                    icon: const Icon(Icons.person_add_alt, size: 17),
+                    label: const Text('Assign'),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 9)),
+                  ),
+                ),
+              ],
             ),
         ],
       ),
@@ -470,6 +485,26 @@ class _RequestCard extends ConsumerWidget {
           : 'Reminder sent to ${request.astrologerName}.'),
       backgroundColor: st.hasError ? AppColors.error : null,
     ));
+  }
+
+  /// Round-robin auto-assign (spec) — distributes evenly across active +
+  /// available astrologers using the stored last-assigned rotation.
+  Future<void> _autoAssign(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final chosen = await ref
+          .read(astrologyTeamServiceProvider)
+          .assignRequest(request.id);
+      messenger.showSnackBar(SnackBar(
+        content: Text(chosen == null
+            ? 'No active astrologer available.'
+            : 'Auto-assigned to ${chosen.displayName.isEmpty ? chosen.email : chosen.displayName}.'),
+      ));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+          content: Text('Could not auto-assign: $e'),
+          backgroundColor: AppColors.error));
+    }
   }
 
   Future<void> _reassign(BuildContext context, WidgetRef ref) async {
@@ -550,12 +585,12 @@ class _RequestCard extends ConsumerWidget {
                             try {
                               await ref
                                   .read(astrologyTeamServiceProvider)
-                                  .reassignTo(request.id, m);
+                                  .assignToAstrologer(request.id, m);
                               messenger.showSnackBar(SnackBar(
-                                  content: Text('Reassigned to $name.')));
+                                  content: Text('Assigned to $name.')));
                             } catch (e) {
                               messenger.showSnackBar(SnackBar(
-                                  content: Text('Could not reassign: $e'),
+                                  content: Text('Could not assign: $e'),
                                   backgroundColor: AppColors.error));
                             }
                           },
