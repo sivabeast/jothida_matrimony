@@ -100,23 +100,23 @@ class ReportsTab extends ConsumerWidget {
       );
 }
 
-/// The six user-facing stages of a Horoscope Analysis (spec §7).
+/// The user-facing stages of a Horoscope Analysis. Internal assignment steps
+/// ("Request Submitted" / "Assigned") are deliberately hidden — the user has
+/// already paid, so they only ever see that the report is being prepared
+/// (spec §8): Payment Successful → Under Analysis → Report Ready → Completed.
 const _stages = [
-  'Payment Completed',
-  'Request Submitted',
-  'Assigned to Astrologer',
+  'Payment Successful',
   'Under Analysis',
   'Report Ready',
   'Completed',
 ];
 
-/// Index (0..5) of the current stage for [r].
+/// Index of the current user-facing stage for [r].
 int _stageIndex(AstrologerRequestModel r) {
-  if (r.status == AstrologerRequestStatus.completed) return 5; // Completed
-  if (r.inProgress) return 3; // Under Analysis
-  if (r.astrologerUid.trim().isNotEmpty) return 2; // Assigned to Astrologer
-  if (r.paid) return 1; // Request Submitted (payment done)
-  return 0; // Payment Completed
+  if (r.status == AstrologerRequestStatus.completed) return 3; // Completed
+  // Any paid-but-not-yet-completed request is simply "Under Analysis" to the
+  // user — assignment / progress details stay internal.
+  return 1;
 }
 
 class _ReportCard extends StatelessWidget {
@@ -142,11 +142,7 @@ class _ReportCard extends StatelessWidget {
     final completed = report.status == AstrologerRequestStatus.completed;
     final idx = _stageIndex(report);
     final label = _stages[idx];
-    final color = completed
-        ? Colors.green
-        : (idx >= 3
-            ? Colors.blue
-            : (idx == 2 ? Colors.indigo : Colors.orange));
+    final color = completed ? Colors.green : Colors.blue;
     final hasPdf = report.analysisPdfs.isNotEmpty;
 
     return Container(
@@ -210,7 +206,7 @@ class _ReportCard extends StatelessWidget {
           Text(
             completed
                 ? 'Your report is ready.'
-                : 'Step ${idx + 1} of ${_stages.length} · $label',
+                : 'Your report is being prepared by our astrologer.',
             style: TextStyle(fontSize: 11.5, color: Colors.grey[600]),
           ),
           const SizedBox(height: 10),

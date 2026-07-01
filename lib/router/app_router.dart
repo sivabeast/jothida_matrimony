@@ -20,7 +20,7 @@ import '../screens/astrologer/match_workspace_screen.dart';
 import '../screens/astrologer/my_match_analysis_screen.dart';
 // Astrologer portal (multiple admin-provisioned, Google-only accounts).
 import '../screens/astrologer/astrologer_login_screen.dart';
-import '../screens/astrologer/portal/astrologer_dashboard_page.dart';
+import '../screens/astrologer/portal/astrologer_shell.dart';
 import '../screens/astrologer/portal/astrologer_request_detail_page.dart';
 import '../screens/auth/account_type_screen.dart';
 import '../screens/auth/splash_screen.dart';
@@ -44,6 +44,7 @@ import '../screens/admin/admin_dashboard.dart';
 import '../screens/admin/admin_users_page.dart';
 import '../screens/admin/astrologer_accounts_screen.dart';
 import '../screens/admin/astrologer_details_screen.dart';
+import '../screens/admin/user_details_screen.dart';
 import '../screens/admin/admin_astrologer_profile_screen.dart';
 import '../screens/admin/admin_settlements_screen.dart';
 import '../screens/admin/admin_horoscope_requests_screen.dart';
@@ -267,7 +268,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           builder: (_, __) => const AstrologerLoginScreen()),
       GoRoute(
           path: '/astrologer-dashboard',
-          builder: (_, __) => const AstrologerDashboardPage()),
+          builder: (_, __) => const AstrologerShell()),
       GoRoute(
         path: '/astrologer-request/:id',
         builder: (_, state) => AstrologerRequestDetailPage(
@@ -493,6 +494,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/admin/users',
               builder: (_, __) => const AdminUsersPage()),
+          // Per-user details (Edit / Delete). Reached by tapping a user card.
+          GoRoute(
+              path: '/admin/user/:uid',
+              builder: (_, state) =>
+                  UserDetailsScreen(uid: state.pathParameters['uid'] ?? '')),
           GoRoute(path: '/admin/reports', builder: (_, __) => const AdminReportsScreen()),
           // Astrologers page → admin-provisioned account registry (add by
           // Gmail, enable/disable; Google-only login + auto-assignment).

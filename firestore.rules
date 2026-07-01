@@ -355,11 +355,17 @@ service cloud.firestore {
     match /astrology_team/{emailKey} {
       allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
+      // An astrologer may delete their OWN registration (spec §5 delete account).
+      allow delete: if isAuthenticated()
+                    && request.auth.token.email.lower() == emailKey;
+      // The member (matched by Gmail) manages their OWN profile + availability,
+      // but never the admin-controlled `active` flag or the assignment counters.
       allow update: if isAuthenticated()
                     && request.auth.token.email.lower() == emailKey
                     && request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly(['uid', 'lastLoginAt', 'displayName',
-                                   'photoUrl']);
+                                   'photoUrl', 'available', 'about',
+                                   'experience', 'qualification']);
       allow update: if isAuthenticated()
                     && request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly(['pendingCount', 'lastAssignedAt']);

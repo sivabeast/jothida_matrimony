@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 import '../../core/constants/app_constants.dart';
 import '../../models/astrologer_request_model.dart';
@@ -59,7 +63,58 @@ class AstrologyTeamService {
   Future<void> updateMember(String emailKey, Map<String, dynamic> data) =>
       _team.doc(emailKey).update(data);
 
+  /// The astrologer sets their own Available / Unavailable status (spec §6).
+  Future<void> setAvailable(String emailKey, bool available) =>
+      _team.doc(emailKey).update({'available': available});
+
+  /// The astrologer deletes their OWN registration (spec §5). Permitted by the
+  /// email-gated delete rule; the caller signs out afterwards.
+  Future<void> deleteSelf(String emailKey) => _team.doc(emailKey).delete();
+
+  // Cloudinary unsigned upload (cloud name / preset are public client config).
+  static const String _cloudName = 'dh8hzjx5q';
+  static const String _uploadPreset = 'matrimony_profiles';
+
+  /// Uploads an astrologer's profile photo to Cloudinary and returns the URL.
+  Future<String> uploadPhoto(File file) async {
+    final uri = Uri.parse(
+        'https://api.cloudinary.com/v1_1/$_cloudName/image/upload');
+    final request = http.MultipartRequest('POST', uri)
+      ..fields['upload_preset'] = _uploadPreset
+      ..fields['folder'] = 'jothida_matrimony/astrology_team'
+      ..files.add(await http.MultipartFile.fromPath('file', file.path));
+    final response = await http.Response.fromStream(await request.send());
+    if (response.statusCode == 200) {
+      final url = (jsonDecode(response.body) as Map<String, dynamic>)['secure_url']
+          as String?;
+      if (url != null && url.isNotEmpty) return url;
+    }
+    throw Exception('Photo upload failed (HTTP ${response.statusCode})');
+  }
+
   Future<void> removeMember(String emailKey) => _team.doc(emailKey).delete();
+
+  /// Admin deletes an astrologer and SAFELY reassigns their unfinished requests
+  /// to another active astrologer (spec §2). Deletes the member first, then
+  /// clears each unfinished request's assignment and re-runs round-robin
+  /// assignment (which now excludes the deleted member).
+  Future<void> deleteMemberAndReassign(AstrologerTeamMember m) async {
+    final q = await _requests.where('astrologerEmail', isEqualTo: m.email).get();
+    final unfinished =
+        q.docs.where((d) => (d.data()['status'] ?? '') != 'completed').toList();
+    await _team.doc(m.id).delete();
+    for (final d in unfinished) {
+      // Clear the old assignment so the round-robin assigner re-picks.
+      await d.reference.update({
+        'astrologerEmail': '',
+        'astrologerUid': '',
+        'astrologerId': '',
+        'astrologerName': '',
+        'assignedAt': null,
+      });
+      await assignRequest(d.id);
+    }
+  }
 
   /// All team members (admin list), newest first. Single-collection read.
   Stream<List<AstrologerTeamMember>> watchAll() => _team.snapshots().map((s) {
@@ -124,11 +179,14 @@ class AstrologyTeamService {
   /// active astrologer exists (the request stays unassigned for the admin).
   Future<AstrologerTeamMember?> assignRequest(String requestId) async {
     final snap = await _team.where('active', isEqualTo: true).get();
-    final members =
-        snap.docs.map(AstrologerTeamMember.fromFirestore).toList();
+    final members = snap.docs
+        .map(AstrologerTeamMember.fromFirestore)
+        // Skip astrologers who have marked themselves Unavailable (spec §6).
+        .where((m) => m.available)
+        .toList();
     if (members.isEmpty) {
-      debugPrint('[AstrologyTeam] assignRequest($requestId): no active '
-          'astrologers — leaving unassigned.');
+      debugPrint('[AstrologyTeam] assignRequest($requestId): no active + '
+          'available astrologers — leaving unassigned.');
       return null;
     }
     members.sort((a, b) {

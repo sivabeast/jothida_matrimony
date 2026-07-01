@@ -46,9 +46,58 @@ class AstrologerDetailsScreen extends ConsumerWidget {
                 _performanceCard(stats),
                 const SizedBox(height: 14),
                 _earningsCard(stats),
+                const SizedBox(height: 18),
+                OutlinedButton.icon(
+                  onPressed: () => _deleteAstrologer(context, ref, stats),
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Delete Astrologer'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: const BorderSide(color: AppColors.error),
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                ),
               ],
             ),
     );
+  }
+
+  Future<void> _deleteAstrologer(
+      BuildContext context, WidgetRef ref, AstrologerStats stats) async {
+    final unfinished = stats.pending + stats.inProgress;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete astrologer?'),
+        content: Text(unfinished > 0
+            ? 'This removes the astrologer. Their $unfinished unfinished '
+                'request(s) will be automatically reassigned to another active '
+                'astrologer. This cannot be undone.'
+            : 'This removes the astrologer. This cannot be undone.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: TextButton.styleFrom(foregroundColor: AppColors.error),
+              child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final nav = Navigator.of(context);
+    try {
+      await ref
+          .read(astrologyTeamServiceProvider)
+          .deleteMemberAndReassign(stats.member);
+      messenger.showSnackBar(const SnackBar(
+          content: Text('Astrologer deleted and requests reassigned.')));
+      nav.pop();
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Could not delete: $e')));
+    }
   }
 
   Widget _profileCard(
@@ -91,6 +140,7 @@ class AstrologerDetailsScreen extends ConsumerWidget {
           const Divider(height: 24),
           _row('Joined', _date(m.createdAt)),
           _row('Last sign-in', _date(m.lastLoginAt)),
+          _row('Availability', m.available ? 'Available' : 'Unavailable'),
           const SizedBox(height: 12),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
@@ -118,6 +168,7 @@ class AstrologerDetailsScreen extends ConsumerWidget {
             const SizedBox(height: 10),
             _row('Assigned Requests', '${stats.totalAssigned}'),
             _row('Pending Requests', '${stats.pending}'),
+            _row('In Progress', '${stats.inProgress}'),
             _row('Completed Reports', '${stats.completed}'),
           ],
         ),

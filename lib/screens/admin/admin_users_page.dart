@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_account_model.dart';
 import '../../models/user_model.dart';
@@ -300,7 +301,11 @@ class _UsersTabState extends ConsumerState<_UsersTab>
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                 itemCount: users.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (_, i) => _UserCard(user: users[i]),
+                itemBuilder: (ctx, i) => InkWell(
+                  onTap: () => ctx.push('/admin/user/${users[i].uid}'),
+                  borderRadius: BorderRadius.circular(14),
+                  child: _UserCard(user: users[i]),
+                ),
               );
             },
           ),

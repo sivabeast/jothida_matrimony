@@ -20,9 +20,19 @@ class AstrologerTeamMember {
   /// log in nor receive new auto-assigned requests.
   final bool active;
 
+  /// Astrologer-controlled Available / Unavailable switch (default true, set
+  /// from their Profile page). When false, the smart auto-assigner skips them
+  /// for NEW requests — independent of the admin's [active] flag.
+  final bool available;
+
   /// The astrologer's real Firebase uid. Empty until their first Google
   /// sign-in links the account ("inactive until sign-in").
   final String uid;
+
+  // ── Astrologer-managed profile (spec §5) ────────────────────────────────
+  final String about;
+  final String experience;
+  final String qualification;
 
   final DateTime? createdAt;
   final DateTime? lastLoginAt;
@@ -42,6 +52,10 @@ class AstrologerTeamMember {
     this.displayName = '',
     this.photoUrl = '',
     this.active = true,
+    this.available = true,
+    this.about = '',
+    this.experience = '',
+    this.qualification = '',
     this.uid = '',
     this.createdAt,
     this.lastLoginAt,
@@ -52,12 +66,15 @@ class AstrologerTeamMember {
   /// True once the astrologer has signed in at least once.
   bool get isLinked => uid.trim().isNotEmpty;
 
-  /// Eligible to receive a newly auto-assigned request.
-  bool get isAssignable => active && isLinked;
+  /// Eligible to receive a newly auto-assigned request: admin-enabled AND the
+  /// astrologer has marked themselves Available. Sign-in is NOT required — a
+  /// request can be assigned by the stable Gmail before their first login.
+  bool get isAssignable => active && available;
 
   /// A human label for the account state shown on the admin list.
   String get statusLabel {
     if (!active) return 'Disabled';
+    if (!available) return 'Unavailable';
     return isLinked ? 'Active' : 'Awaiting sign-in';
   }
 
@@ -74,6 +91,10 @@ class AstrologerTeamMember {
       displayName: (d['displayName'] ?? '').toString(),
       photoUrl: (d['photoUrl'] ?? '').toString(),
       active: d['active'] != false, // default true
+      available: d['available'] != false, // default true
+      about: (d['about'] ?? '').toString(),
+      experience: (d['experience'] ?? '').toString(),
+      qualification: (d['qualification'] ?? '').toString(),
       uid: (d['uid'] ?? '').toString(),
       createdAt: _ts(d['createdAt']),
       lastLoginAt: _ts(d['lastLoginAt']),
@@ -87,6 +108,10 @@ class AstrologerTeamMember {
         'displayName': displayName,
         'photoUrl': photoUrl,
         'active': active,
+        'available': available,
+        'about': about,
+        'experience': experience,
+        'qualification': qualification,
         'uid': uid,
         'pendingCount': pendingCount,
         if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt!),
@@ -99,6 +124,10 @@ class AstrologerTeamMember {
     String? displayName,
     String? photoUrl,
     bool? active,
+    bool? available,
+    String? about,
+    String? experience,
+    String? qualification,
     String? uid,
     DateTime? lastLoginAt,
     DateTime? lastAssignedAt,
@@ -110,6 +139,10 @@ class AstrologerTeamMember {
         displayName: displayName ?? this.displayName,
         photoUrl: photoUrl ?? this.photoUrl,
         active: active ?? this.active,
+        available: available ?? this.available,
+        about: about ?? this.about,
+        experience: experience ?? this.experience,
+        qualification: qualification ?? this.qualification,
         uid: uid ?? this.uid,
         createdAt: createdAt,
         lastLoginAt: lastLoginAt ?? this.lastLoginAt,

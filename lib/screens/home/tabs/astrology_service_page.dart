@@ -206,6 +206,26 @@ class _Body extends StatelessWidget {
       ));
     }
 
+    // Horoscope Analysis (online report) — booked from an accepted match.
+    out.add(_section(
+      'Horoscope Analysis (Online)',
+      Icons.auto_awesome_outlined,
+      const Text(
+        'Get a detailed online horoscope compatibility report for you and an '
+        'accepted match. Open a matched profile and tap "Get Horoscope '
+        'Analysis" — your report is delivered to your Reports tab.',
+        style: TextStyle(fontSize: 13.5, height: 1.5),
+      ),
+    ));
+
+    // Ratings — future-ready placeholder (spec §11).
+    out.add(_section(
+      'Ratings',
+      Icons.star_outline,
+      Text('Ratings & reviews are coming soon.',
+          style: TextStyle(fontSize: 13.5, color: Colors.grey[600])),
+    ));
+
     if (cfg.certificates.isNotEmpty) {
       out.add(_section(
         'Certificates',

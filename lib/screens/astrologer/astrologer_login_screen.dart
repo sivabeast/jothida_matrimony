@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/config/admin_config.dart';
 import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -35,6 +36,20 @@ class _AstrologerLoginScreenState
   Future<void> _afterAuth(String uid, String? email) async {
     final team = ref.read(astrologyTeamServiceProvider);
     try {
+      // Admin and astrologer roles are fully separated (spec §7): an admin
+      // account can NEVER enter the astrologer portal, even if its Gmail were
+      // somehow registered as a team member.
+      if (AdminConfig.isSuperAdminEmail(email)) {
+        await ref.read(authNotifierProvider.notifier).signOut();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('This is an admin account. Please use the Admin Panel '
+              '— admins cannot open the astrologer portal.'),
+          backgroundColor: Colors.red,
+        ));
+        return;
+      }
+
       final member = email == null ? null : await team.getByEmail(email);
       if (!mounted) return;
 

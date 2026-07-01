@@ -125,9 +125,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             tooltip: context.l10n.notifications,
           ),
-          // Admin + Astrology dashboards — visible ONLY to the Super Admin
-          // account (the whitelisted Gmail). Normal users never see these.
-          if (isSuperAdmin) ...[
+          // Admin dashboard shortcut — visible ONLY to the Super Admin account
+          // (the whitelisted Gmail). The Astrology/astrologer dashboard is
+          // intentionally NOT here: admin and astrologer roles are fully
+          // separated, so the admin account can never open an astrologer view.
+          if (isSuperAdmin)
             IconButton(
               icon: const Icon(Icons.admin_panel_settings,
                   size: 26, color: AppColors.gold),
@@ -137,13 +139,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 context.push('/admin');
               },
             ),
-            IconButton(
-              icon: const Icon(Icons.auto_awesome,
-                  size: 24, color: AppColors.gold),
-              tooltip: 'Astrology Dashboard',
-              onPressed: () => context.push('/astrology'),
-            ),
-          ],
           const SizedBox(width: 4),
         ],
       ),

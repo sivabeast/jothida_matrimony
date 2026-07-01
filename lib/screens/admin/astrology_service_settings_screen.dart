@@ -252,6 +252,24 @@ class _AstrologyServiceSettingsScreenState
     }
   }
 
+  /// Immediately persists the media lists (certificates / awards / news) to
+  /// Firestore so an uploaded item survives leaving the page and syncs to the
+  /// user app right away (spec §9/§10/§12) — without needing the main Save
+  /// button. Uses the latest saved config as the base so it never clobbers the
+  /// other (text) fields.
+  Future<void> _persistMedia() async {
+    try {
+      final base = ref.read(astrologyServiceConfigValueProvider);
+      await ref.read(astrologyConfigServiceProvider).save(base.copyWith(
+            certificates: List<AstrologyCertificate>.from(_certificates),
+            awards: List<AstrologyAward>.from(_awards),
+            news: List<AstrologyNews>.from(_news),
+          ));
+    } catch (e) {
+      if (mounted) _snack('Could not save media: $e');
+    }
+  }
+
   List<String> _lines(String key) => _ctrl(key)
       .text
       .split('\n')
@@ -650,9 +668,10 @@ class _AstrologyServiceSettingsScreenState
       title: Text(c.title, style: const TextStyle(fontSize: 13.5)),
       subtitle: Text(c.isPdf ? 'PDF' : 'Image',
           style: const TextStyle(fontSize: 11)),
-      trailing: _iconBtn(Icons.delete_outline,
-          () => setState(() => _certificates.removeAt(i)),
-          color: AppColors.error),
+      trailing: _iconBtn(Icons.delete_outline, () async {
+        setState(() => _certificates.removeAt(i));
+        await _persistMedia();
+      }, color: AppColors.error),
     );
   }
 
@@ -665,7 +684,10 @@ class _AstrologyServiceSettingsScreenState
           borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
       builder: (_) => const _CertificateEditorSheet(),
     );
-    if (item != null) setState(() => _certificates.add(item));
+    if (item != null) {
+      setState(() => _certificates.add(item));
+      await _persistMedia(); // persist immediately (spec §9)
+    }
   }
 
   // ── Awards ────────────────────────────────────────────────────────────────
@@ -687,9 +709,10 @@ class _AstrologyServiceSettingsScreenState
           style: const TextStyle(fontSize: 11)),
       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
         _iconBtn(Icons.edit_outlined, () => _addAward(edit: i)),
-        _iconBtn(Icons.delete_outline,
-            () => setState(() => _awards.removeAt(i)),
-            color: AppColors.error),
+        _iconBtn(Icons.delete_outline, () async {
+          setState(() => _awards.removeAt(i));
+          await _persistMedia();
+        }, color: AppColors.error),
       ]),
     );
   }
@@ -711,6 +734,7 @@ class _AstrologyServiceSettingsScreenState
         _awards[edit] = item;
       }
     });
+    await _persistMedia();
   }
 
   // ── News ──────────────────────────────────────────────────────────────────
@@ -735,8 +759,10 @@ class _AstrologyServiceSettingsScreenState
           style: const TextStyle(fontSize: 11)),
       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
         _iconBtn(Icons.edit_outlined, () => _addNews(edit: i)),
-        _iconBtn(Icons.delete_outline, () => setState(() => _news.removeAt(i)),
-            color: AppColors.error),
+        _iconBtn(Icons.delete_outline, () async {
+          setState(() => _news.removeAt(i));
+          await _persistMedia();
+        }, color: AppColors.error),
       ]),
     );
   }
@@ -758,6 +784,7 @@ class _AstrologyServiceSettingsScreenState
         _news[edit] = item;
       }
     });
+    await _persistMedia();
   }
 
   // ── Slots ─────────────────────────────────────────────────────────────────
