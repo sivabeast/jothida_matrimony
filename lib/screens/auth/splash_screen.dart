@@ -42,9 +42,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           '${authAsync.runtimeType}, user=${user?.uid}');
 
       if (user == null) {
-        debugPrint('[Splash] No signed-in user → /account-type');
-        // Signed out: ask who the account is for (User / Astrologer).
-        context.go('/account-type');
+        debugPrint('[Splash] No signed-in user → /login');
+        // Single common login for everyone (User / Admin / Employee).
+        context.go('/login');
         return;
       }
 
@@ -55,13 +55,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       if (!mounted) return;
 
       if (userModel == null) {
-        debugPrint('[Splash] No Firestore user doc found → /account-type');
-        context.go('/account-type');
+        debugPrint('[Splash] No Firestore user doc found → /login');
+        context.go('/login');
       } else if (userModel.isInternalAstrology) {
         // The dedicated internal astrology account skips the whole matrimony
         // experience and lands directly on the Astrology Dashboard.
         debugPrint('[Splash] Internal astrology account → /astrology');
         context.go('/astrology');
+      } else if (userModel.isAstrologer) {
+        // Employee (horoscope-analysis staff) → Employee Portal.
+        debugPrint('[Splash] Employee account → /astrologer-dashboard');
+        context.go('/astrologer-dashboard');
       } else if (userModel.role == 'admin') {
         // Only a *pure* admin auto-lands on the dashboard. A super_admin is a
         // normal user (with an extra Admin icon) and goes through the normal
@@ -82,7 +86,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       // the spinner forever with no navigation and no visible error.
       debugPrint('[Splash] _navigate() failed: $e\n$st');
       if (!mounted) return;
-      context.go('/account-type');
+      context.go('/login');
     }
   }
 

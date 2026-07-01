@@ -346,43 +346,68 @@ class _InterestCard extends ConsumerWidget {
           ],
         );
       case _CardMode.accepted:
-        return Row(
+        return Column(
           children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  if (otherUserId.isEmpty) {
-                    _snack(context, l10n.profileUnavailableMatch);
-                    return;
-                  }
-                  context.push('/profile-user/$otherUserId');
-                },
-                icon: const Icon(Icons.person_outline, size: 18),
-                label: Text(l10n.viewProfile),
-                style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary)),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      if (otherUserId.isEmpty) {
+                        _snack(context, l10n.profileUnavailableMatch);
+                        return;
+                      }
+                      context.push('/profile-user/$otherUserId');
+                    },
+                    icon: const Icon(Icons.person_outline, size: 18),
+                    label: Text(l10n.viewProfile),
+                    style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    // Accepted → opens the Horoscope Match Result page. It compares
+                    // the logged-in user's horoscope with this member's horoscope
+                    // and shows the compatibility (porutham) analysis only — the
+                    // member's raw horoscope fields are never revealed.
+                    onPressed: () {
+                      if (otherUserId.isEmpty) {
+                        _snack(context, l10n.horoscopeUnavailableMember);
+                        return;
+                      }
+                      context.push('/horoscope-match/$otherUserId');
+                    },
+                    icon: const Icon(Icons.auto_awesome, size: 18),
+                    label: Text(l10n.horoscope),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: ElevatedButton.icon(
-                // Accepted → opens the Horoscope Match Result page. It compares
-                // the logged-in user's horoscope with this member's horoscope
-                // and shows the compatibility (porutham) analysis only — the
-                // member's raw horoscope fields are never revealed.
+            const SizedBox(height: 10),
+            // Get a professional Horoscope Compatibility Report — creates a paid
+            // report request that is auto-assigned to an employee and delivered
+            // to the user's Reports page.
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
                 onPressed: () {
                   if (otherUserId.isEmpty) {
                     _snack(context, l10n.horoscopeUnavailableMember);
                     return;
                   }
-                  context.push('/horoscope-match/$otherUserId');
+                  context.push('/horoscope-report/$otherUserId');
                 },
-                icon: const Icon(Icons.auto_awesome, size: 18),
-                label: Text(l10n.horoscope),
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white),
+                icon: const Icon(Icons.description_outlined, size: 18),
+                label: const Text('Get Horoscope Compatibility Report'),
+                style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary)),
               ),
             ),
           ],

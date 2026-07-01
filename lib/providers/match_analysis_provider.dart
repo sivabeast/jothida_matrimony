@@ -95,23 +95,26 @@ final internalAstrologyRequestsProvider =
   return ref.read(astrologerServiceProvider).watchAllMatchRequests();
 });
 
-/// Live `dateKey → {taken slot keys}` for the internal astrology service's
-/// in-person appointments — powers the appointment date/slot picker so a slot
-/// booked by one user immediately greys out for everyone.
-final internalBookedSlotsProvider =
-    StreamProvider.autoDispose<Map<String, Set<String>>>((ref) {
+/// Live `dateKey → {morning: count, afternoon: count}` of booked appointment
+/// SESSIONS for the internal astrology service — powers the appointment
+/// date/session picker so a session that has reached its capacity greys out.
+final internalSessionCountsProvider =
+    StreamProvider.autoDispose<Map<String, Map<String, int>>>((ref) {
   if (kBypassAuth) {
-    // Derive taken slots from the in-memory demo requests so the picker still
-    // locks slots in demo mode.
+    // Derive session counts from the in-memory demo requests so the picker
+    // still enforces capacity in demo mode.
     final all = ref.watch(demoAstrologerRequestsProvider);
-    final out = <String, Set<String>>{};
+    final out = <String, Map<String, int>>{};
     for (final r in all) {
-      if (!r.hasAppointment) continue;
-      out.putIfAbsent(r.visitDateKey, () => <String>{}).add(r.slotKey);
+      if (!r.hasAppointment || r.session.isEmpty) continue;
+      if (r.status == AstrologerRequestStatus.rejected) continue;
+      final day = out.putIfAbsent(r.visitDateKey,
+          () => {AppointmentSession.morning: 0, AppointmentSession.afternoon: 0});
+      day[r.session] = (day[r.session] ?? 0) + 1;
     }
     return Stream.value(out);
   }
-  return ref.read(astrologerServiceProvider).watchInternalBookedSlots();
+  return ref.read(astrologerServiceProvider).watchInternalSessionCounts();
 });
 
 /// A single match-analysis request by id, kept live from the internal service
@@ -295,10 +298,11 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     }
   }
 
-  /// Spec §4 — the user requests a **Horoscope Analysis** for an accepted match.
-  /// Pays online (simulated in test mode), creates a PAID, *unassigned* matching
-  /// request, then immediately auto-assigns it to the best-available astrologer
-  /// (lowest pending + round-robin). The user NEVER selects an astrologer.
+  /// Spec §4 — the user requests a **Horoscope Compatibility Report** for an
+  /// accepted match. Pays online (real Razorpay, or simulated in test mode),
+  /// creates a PAID matching request, then immediately AUTO-ASSIGNS it to the
+  /// employee with the fewest pending reports (round-robin tie-break). The user
+  /// NEVER selects an employee and no admin action is required.
   /// Returns the new request id.
   Future<String> requestAndAssignAnalysis({
     required ProfileModel groom,
@@ -360,10 +364,15 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         id = 'demo_${now.millisecondsSinceEpoch}';
         ref.read(demoAstrologerRequestsProvider.notifier).add(request);
       } else {
-        // The request is created UNASSIGNED with status "Under Analysis" — the
-        // ADMIN assigns it to an astrologer from the Horoscope Requests page
-        // (spec §3). Payment succeeding always creates the request.
+        // Create the paid request, then immediately auto-assign it to the
+        // employee with the fewest pending reports — no admin action needed.
         id = await ref.read(astrologerServiceProvider).createRequest(request);
+        try {
+          await ref.read(astrologyTeamServiceProvider).assignRequest(id);
+        } catch (e) {
+          // If no employee is available the request stays unassigned; the admin
+          // can assign it later. Never fail the (already-paid) booking for this.
+        }
       }
       state = const AsyncData(null);
       return id;
@@ -428,6 +437,9 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         paidAt: now,
         paymentId: paymentId,
         visitDate: visitDay,
+        session: slotMinutes < AppointmentSession.afternoonStart
+            ? AppointmentSession.morning
+            : AppointmentSession.afternoon,
         slotStartMinutes: slotMinutes,
         officeAddress: config.officeAddress,
         officeContact: config.officeContactNumber,
@@ -438,17 +450,17 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         ],
       );
 
+      final session = slotMinutes < AppointmentSession.afternoonStart
+          ? AppointmentSession.morning
+          : AppointmentSession.afternoon;
       final String id;
       if (kBypassAuth) {
-        // Deterministic id mirrors the real slot lock so the demo picker locks
-        // the slot too.
-        id = AstrologerRequestModel.appointmentDocId(
-            kInternalAstrologyId, visitDay, slotMinutes);
+        id = 'appt_${now.millisecondsSinceEpoch}';
         ref.read(demoAstrologerRequestsProvider.notifier).add(request);
       } else {
-        id = await ref
-            .read(astrologerServiceProvider)
-            .createAppointmentRequest(request);
+        id = await ref.read(astrologerServiceProvider).createAppointmentRequest(
+            request,
+            capacity: config.capacityForSession(session));
       }
 
       // Pre-create the Astrology Analysis Chat to the internal account's real
@@ -477,16 +489,14 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
   }
 
   /// Books a standalone **in-person Astrology appointment** from the Astrology
-  /// page's "Book Your Appointment" flow (NOT tied to a matched partner). Writes
-  /// ONE appointment request addressed to the internal astrology service using
-  /// the SAME slot-locking deterministic-id create as the horoscope-report
-  /// booking — so a slot taken by ANY appointment (consultation or report)
-  /// immediately becomes unavailable to everyone (double-booking prevention at
-  /// the backend). Returns the new booking id; throws
-  /// [AppointmentSlotTakenException] if the slot was just taken.
+  /// page's "Book Your Appointment" flow. Writes ONE appointment request to the
+  /// internal astrology service for the chosen [session] (Morning / Afternoon).
+  /// The session's admin-configured capacity is enforced atomically at the
+  /// backend — a session that is already full throws
+  /// [AppointmentSlotTakenException]. Returns the new booking id.
   Future<String> bookServiceAppointment({
     required DateTime date,
-    required int slotMinutes,
+    required String session,
     required AstrologyServiceConfig config,
     String note = '',
     int amount = 0,
@@ -536,7 +546,8 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         createdAt: now,
         userLanguage: lang,
         visitDate: visitDay,
-        slotStartMinutes: slotMinutes,
+        session: session,
+        slotStartMinutes: AppointmentSession.startMinutes(session),
         officeAddress: config.officeAddress,
         officeContact: config.officeContactNumber,
         history: [
@@ -549,13 +560,12 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
 
       final String id;
       if (kBypassAuth) {
-        id = AstrologerRequestModel.appointmentDocId(
-            kInternalAstrologyId, visitDay, slotMinutes);
+        id = 'appt_${now.millisecondsSinceEpoch}';
         ref.read(demoAstrologerRequestsProvider.notifier).add(request);
       } else {
-        id = await ref
-            .read(astrologerServiceProvider)
-            .createAppointmentRequest(request);
+        id = await ref.read(astrologerServiceProvider).createAppointmentRequest(
+            request,
+            capacity: config.capacityForSession(session));
       }
       state = const AsyncData(null);
       return id;

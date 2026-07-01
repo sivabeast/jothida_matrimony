@@ -47,11 +47,16 @@ class AstrologerTeamMember {
   /// has to read other users' requests.
   final int pendingCount;
 
-  // ── Weekly fixed salary (spec §13, replaces per-report commission) ───────
-  /// Admin-defined fixed weekly salary (₹).
-  final int weeklySalary;
+  // ── Commission (per COMPLETED report) ───────────────────────────────────
+  /// Total commission (₹) the admin has already PAID this employee. Pending
+  /// commission = (completed reports × commission-per-report) − paidCommission.
+  /// The per-report rate is a single global value (`AstrologyServiceConfig
+  /// .analysisCommission`), editable by the admin at any time.
+  final int paidCommission;
 
-  /// 'paid' | 'pending'.
+  /// Legacy fixed-salary fields — retained only for backward-compatibility with
+  /// existing docs. No longer surfaced anywhere (employees are commission-paid).
+  final int weeklySalary;
   final String salaryStatus;
   final DateTime? lastPaidDate;
 
@@ -69,6 +74,7 @@ class AstrologerTeamMember {
     this.about = '',
     this.experience = '',
     this.qualification = '',
+    this.paidCommission = 0,
     this.weeklySalary = 0,
     this.salaryStatus = 'pending',
     this.lastPaidDate,
@@ -113,6 +119,7 @@ class AstrologerTeamMember {
       about: (d['about'] ?? '').toString(),
       experience: (d['experience'] ?? '').toString(),
       qualification: (d['qualification'] ?? '').toString(),
+      paidCommission: (d['paidCommission'] as num?)?.toInt() ?? 0,
       weeklySalary: (d['weeklySalary'] as num?)?.toInt() ?? 0,
       salaryStatus: (d['salaryStatus'] ?? 'pending').toString(),
       lastPaidDate: _ts(d['lastPaidDate']),
@@ -135,6 +142,7 @@ class AstrologerTeamMember {
         'about': about,
         'experience': experience,
         'qualification': qualification,
+        'paidCommission': paidCommission,
         'weeklySalary': weeklySalary,
         'salaryStatus': salaryStatus,
         if (lastPaidDate != null) 'lastPaidDate': Timestamp.fromDate(lastPaidDate!),
@@ -157,6 +165,7 @@ class AstrologerTeamMember {
     String? about,
     String? experience,
     String? qualification,
+    int? paidCommission,
     int? weeklySalary,
     String? salaryStatus,
     DateTime? lastPaidDate,
@@ -177,6 +186,7 @@ class AstrologerTeamMember {
         about: about ?? this.about,
         experience: experience ?? this.experience,
         qualification: qualification ?? this.qualification,
+        paidCommission: paidCommission ?? this.paidCommission,
         weeklySalary: weeklySalary ?? this.weeklySalary,
         salaryStatus: salaryStatus ?? this.salaryStatus,
         lastPaidDate: lastPaidDate ?? this.lastPaidDate,

@@ -23,7 +23,7 @@ class AstrologerDetailsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Astrologer Details'),
+        title: const Text('Employee Details'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         actions: [
@@ -45,12 +45,12 @@ class AstrologerDetailsScreen extends ConsumerWidget {
                 const SizedBox(height: 14),
                 _performanceCard(stats),
                 const SizedBox(height: 14),
-                _salaryCard(context, ref, stats),
+                _commissionCard(context, ref, stats),
                 const SizedBox(height: 18),
                 OutlinedButton.icon(
                   onPressed: () => _deleteAstrologer(context, ref, stats),
                   icon: const Icon(Icons.delete_outline),
-                  label: const Text('Delete Astrologer'),
+                  label: const Text('Delete Employee'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.error,
                     side: const BorderSide(color: AppColors.error),
@@ -68,12 +68,12 @@ class AstrologerDetailsScreen extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete astrologer?'),
+        title: const Text('Delete employee?'),
         content: Text(unfinished > 0
-            ? 'This removes the astrologer. Their $unfinished unfinished '
-                'request(s) will be automatically reassigned to another active '
-                'astrologer. This cannot be undone.'
-            : 'This removes the astrologer. This cannot be undone.'),
+            ? 'This removes the employee. Their $unfinished unfinished '
+                'report(s) will be automatically reassigned to another active '
+                'employee. This cannot be undone.'
+            : 'This removes the employee. This cannot be undone.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -185,7 +185,7 @@ class AstrologerDetailsScreen extends ConsumerWidget {
         ),
       );
 
-  Widget _salaryCard(
+  Widget _commissionCard(
           BuildContext context, WidgetRef ref, AstrologerStats stats) =>
       Container(
         padding: const EdgeInsets.all(16),
@@ -193,20 +193,24 @@ class AstrologerDetailsScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _sectionTitle('Weekly Salary'),
+            _sectionTitle('Commission'),
             const SizedBox(height: 10),
-            _row('Weekly Salary', '₹${stats.member.weeklySalary}'),
-            _row('Salary Status',
-                stats.member.salaryStatus == 'paid' ? 'Paid' : 'Pending'),
+            _row('Commission Per Report', '₹${stats.commissionPerReport}'),
+            _row('Completed Reports', '${stats.completed}'),
+            _row('Weekly Commission', '₹${stats.weeklyCommission}'),
+            _row('Monthly Commission', '₹${stats.monthlyCommission}'),
+            _row('Total Earned', '₹${stats.totalCommission}'),
+            _row('Paid', '₹${stats.paidCommission}'),
+            _row('Pending Payment', '₹${stats.pendingCommission}'),
             _row('Last Paid', _date(stats.member.lastPaidDate)),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => _editSalary(context, ref, stats),
+                    onPressed: () => _recordPayment(context, ref, stats),
                     icon: const Icon(Icons.edit_outlined, size: 16),
-                    label: const Text('Set Salary'),
+                    label: const Text('Record Payment'),
                     style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primary,
                         side: const BorderSide(color: AppColors.primary)),
@@ -215,11 +219,22 @@ class AstrologerDetailsScreen extends ConsumerWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => ref
-                        .read(astrologyTeamServiceProvider)
-                        .setSalary(stats.member.id, markPaid: true),
+                    onPressed: stats.pendingCommission <= 0
+                        ? null
+                        : () async {
+                            await ref
+                                .read(astrologyTeamServiceProvider)
+                                .payCommission(stats.member.id,
+                                    amount: stats.pendingCommission);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content:
+                                          Text('Pending commission paid.')));
+                            }
+                          },
                     icon: const Icon(Icons.check, size: 16),
-                    label: const Text('Mark Paid'),
+                    label: const Text('Pay Pending'),
                     style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white),
@@ -231,19 +246,19 @@ class AstrologerDetailsScreen extends ConsumerWidget {
         ),
       );
 
-  Future<void> _editSalary(
+  Future<void> _recordPayment(
       BuildContext context, WidgetRef ref, AstrologerStats stats) async {
     final ctrl =
-        TextEditingController(text: '${stats.member.weeklySalary}');
+        TextEditingController(text: '${stats.pendingCommission}');
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Weekly Salary'),
+        title: const Text('Record Commission Payment'),
         content: TextField(
           controller: ctrl,
           keyboardType: TextInputType.number,
           decoration: const InputDecoration(
-              labelText: 'Weekly salary (₹)', prefixText: '₹ '),
+              labelText: 'Amount paid (₹)', prefixText: '₹ '),
         ),
         actions: [
           TextButton(
@@ -261,12 +276,14 @@ class AstrologerDetailsScreen extends ConsumerWidget {
     );
     if (ok == true) {
       final amount = int.tryParse(ctrl.text.trim()) ?? 0;
-      await ref
-          .read(astrologyTeamServiceProvider)
-          .setSalary(stats.member.id, weeklySalary: amount, salaryStatus: 'pending');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Weekly salary updated.')));
+      if (amount > 0) {
+        await ref
+            .read(astrologyTeamServiceProvider)
+            .payCommission(stats.member.id, amount: amount);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Commission payment recorded.')));
+        }
       }
     }
   }
@@ -277,7 +294,7 @@ class AstrologerDetailsScreen extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Edit Astrologer'),
+        title: const Text('Edit Employee'),
         content: TextField(
           controller: nameCtrl,
           decoration: const InputDecoration(labelText: 'Display name'),

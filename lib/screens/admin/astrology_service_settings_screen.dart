@@ -51,18 +51,8 @@ class _AstrologyServiceSettingsScreenState
   final List<AstrologyAward> _awards = [];
   final List<AstrologyNews> _news = [];
   final List<String> _holidayDates = [];
-  final Set<int> _disabledSlots = {};
-  int _slotStart = 600;
-  int _slotEnd = 1020;
-  int _lunchStart = 780;
-  int _lunchEnd = 840;
-  int _slotDuration = 60;
-  int _breakDuration = 0;
 
   static const _weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  // Appointment slot durations (spec §3): 30 / 45 / 60 / 90 / 120 / 180 minutes.
-  static const _durationOptions = [30, 45, 60, 90, 120, 180];
-  static const _breakOptions = [0, 5, 10, 15, 30];
 
   TextEditingController _ctrl(String key, [String initial = '']) =>
       _c.putIfAbsent(key, () => TextEditingController(text: initial));
@@ -84,9 +74,8 @@ class _AstrologyServiceSettingsScreenState
     _ctrl('reportIncludes', cfg.reportIncludes.join('\n'));
     _ctrl('deliveryTime', cfg.deliveryTime);
     _ctrl('serviceCharge', '${cfg.serviceCharge}');
-    _ctrl('analysisCommission', '${cfg.analysisCommission}');
-    _ctrl('appointmentCommission', '${cfg.appointmentCommission}');
-    _ctrl('maxAdvanceWorkingDays', '${cfg.maxAdvanceWorkingDays}');
+    _ctrl('morningCapacity', '${cfg.morningCapacity}');
+    _ctrl('afternoonCapacity', '${cfg.afternoonCapacity}');
     _photoUrl = cfg.expertPhotoUrl;
     _bookingEnabled = cfg.bookingEnabled;
     _workingWeekdays
@@ -107,17 +96,6 @@ class _AstrologyServiceSettingsScreenState
     _holidayDates
       ..clear()
       ..addAll(cfg.holidayDates);
-    _disabledSlots
-      ..clear()
-      ..addAll(cfg.disabledSlotMinutes);
-    _slotStart = cfg.slotStartMinutes;
-    _slotEnd = cfg.slotEndMinutes;
-    _lunchStart = cfg.lunchStartMinutes;
-    _lunchEnd = cfg.lunchEndMinutes;
-    _slotDuration =
-        _durationOptions.contains(cfg.slotDurationMinutes) ? cfg.slotDurationMinutes : 60;
-    _breakDuration =
-        _breakOptions.contains(cfg.breakDurationMinutes) ? cfg.breakDurationMinutes : 0;
   }
 
   @override
@@ -135,15 +113,6 @@ class _AstrologyServiceSettingsScreenState
 
   int _int(String key, int fallback) =>
       int.tryParse(_ctrl(key).text.trim()) ?? fallback;
-
-  List<ConsultationSlot> _currentSlots() => generateSlotsWithBreak(
-        startMinutes: _slotStart,
-        endMinutes: _slotEnd,
-        slotDuration: _slotDuration,
-        breakDuration: _breakDuration,
-        lunchStart: _lunchStart,
-        lunchEnd: _lunchEnd,
-      );
 
   // ── Uploads ───────────────────────────────────────────────────────────────
   Future<void> _changePhoto() async {
@@ -182,15 +151,6 @@ class _AstrologyServiceSettingsScreenState
     }
   }
 
-  Future<void> _pickTime(int initialMinutes, ValueChanged<int> onPicked) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime:
-          TimeOfDay(hour: initialMinutes ~/ 60, minute: initialMinutes % 60),
-    );
-    if (picked != null) onPicked(picked.hour * 60 + picked.minute);
-  }
-
   // ── Save ────────────────────────────────────────────────────────────────
   Future<void> _save(AstrologyServiceConfig base) async {
     if (_ctrl('expertName').text.trim().isEmpty) {
@@ -218,22 +178,11 @@ class _AstrologyServiceSettingsScreenState
       reportIncludes: _lines('reportIncludes'),
       deliveryTime: _ctrl('deliveryTime').text.trim(),
       serviceCharge: _int('serviceCharge', base.serviceCharge),
-      analysisCommission:
-          _int('analysisCommission', base.analysisCommission),
-      appointmentCommission:
-          _int('appointmentCommission', base.appointmentCommission),
-      maxAdvanceWorkingDays:
-          _int('maxAdvanceWorkingDays', base.maxAdvanceWorkingDays),
       bookingEnabled: _bookingEnabled,
       workingWeekdays: (_workingWeekdays.toList()..sort()),
       holidayDates: List<String>.from(_holidayDates),
-      disabledSlotMinutes: (_disabledSlots.toList()..sort()),
-      slotStartMinutes: _slotStart,
-      slotEndMinutes: _slotEnd,
-      lunchStartMinutes: _lunchStart,
-      lunchEndMinutes: _lunchEnd,
-      slotDurationMinutes: _slotDuration,
-      breakDurationMinutes: _breakDuration,
+      morningCapacity: _int('morningCapacity', base.morningCapacity),
+      afternoonCapacity: _int('afternoonCapacity', base.afternoonCapacity),
     );
     try {
       await ref.read(astrologyConfigServiceProvider).save(updated);
@@ -415,61 +364,22 @@ class _AstrologyServiceSettingsScreenState
             }),
           ),
           const SizedBox(height: 14),
-          _subLabel('Working Hours'),
-          Row(
-            children: [
-              Expanded(
-                  child: _timeTile('Start', _slotStart,
-                      (m) => setState(() => _slotStart = m))),
-              const SizedBox(width: 10),
-              Expanded(
-                  child: _timeTile(
-                      'End', _slotEnd, (m) => setState(() => _slotEnd = m))),
-            ],
-          ),
+          _subLabel('Session Capacity'),
+          _emptyHint(
+              'Two fixed sessions. Set how many bookings each accepts per day — '
+              'once full, that session becomes unavailable for booking.'),
           const SizedBox(height: 10),
-          _subLabel('Break Window (lunch — slots overlapping are skipped)'),
           Row(
             children: [
               Expanded(
-                  child: _timeTile('Break start', _lunchStart,
-                      (m) => setState(() => _lunchStart = m))),
+                  child: _capacityField(
+                      'morningCapacity', 'Morning', '9:00 AM – 1:00 PM')),
               const SizedBox(width: 10),
               Expanded(
-                  child: _timeTile('Break end', _lunchEnd,
-                      (m) => setState(() => _lunchEnd = m))),
+                  child: _capacityField('afternoonCapacity', 'Afternoon',
+                      '2:00 PM – 5:00 PM')),
             ],
           ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _dropdown<int>(
-                  label: 'Slot Duration',
-                  value: _slotDuration,
-                  items: _durationOptions,
-                  display: (v) => '$v min',
-                  onChanged: (v) => setState(() => _slotDuration = v),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _dropdown<int>(
-                  label: 'Break Between Slots',
-                  value: _breakDuration,
-                  items: _breakOptions,
-                  display: (v) => v == 0 ? 'None' : '$v min',
-                  onChanged: (v) => setState(() => _breakDuration = v),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _field('maxAdvanceWorkingDays',
-              'Report booking — working days ahead',
-              number: true),
-          const SizedBox(height: 6),
-          _slotPreview(),
         ]),
 
         // ── Manual block / holiday dates ───────────────────────────────────
@@ -495,31 +405,13 @@ class _AstrologyServiceSettingsScreenState
           ),
         ]),
 
-        // ── Available time slots (enable/disable individual) ───────────────
-        _card('Available Time Slots', Icons.schedule_outlined, [
-          _emptyHint('Tap to enable/disable a slot. Disabled slots are hidden '
-              'from users.'),
-          const SizedBox(height: 8),
-          _slotToggles(),
-        ]),
-
         // ── Horoscope report copy (existing service) ───────────────────────
-        _card('Horoscope Report Service', Icons.description_outlined, [
+        _card('Consultation & Report Charges', Icons.description_outlined, [
           _field('serviceIntro', 'Service introduction', maxLines: 3),
           _field('reportIncludes', 'What the report includes (one per line)',
               maxLines: 5),
           _field('deliveryTime', 'Estimated delivery time'),
-          _field('serviceCharge', 'Report service charge (₹)', number: true),
-        ]),
-
-        // ── Commission Settings (astrologer earnings, completed only) ──────
-        _card('Commission Settings', Icons.savings_outlined, [
-          _emptyHint('Commission paid to the assigned astrologer per COMPLETED '
-              'request. Earnings = completed requests × commission.'),
-          const SizedBox(height: 8),
-          _field('analysisCommission', 'Horoscope Analysis commission (₹)',
-              number: true),
-          _field('appointmentCommission', 'Direct Appointment commission (₹)',
+          _field('serviceCharge', 'Consultation / report charge (₹)',
               number: true),
         ]),
 
@@ -787,49 +679,6 @@ class _AstrologyServiceSettingsScreenState
     await _persistMedia();
   }
 
-  // ── Slots ─────────────────────────────────────────────────────────────────
-  Widget _slotPreview() {
-    final slots = _currentSlots();
-    return Text(
-      'Generates ${slots.length} slot(s): '
-      '${slots.isEmpty ? '—' : slots.take(6).map((s) => s.label).join(', ')}'
-      '${slots.length > 6 ? ' …' : ''}',
-      style: const TextStyle(
-          fontSize: 12, fontStyle: FontStyle.italic, color: AppColors.primary),
-    );
-  }
-
-  Widget _slotToggles() {
-    final slots = _currentSlots();
-    if (slots.isEmpty) {
-      return _emptyHint('No slots — set working hours and duration above.');
-    }
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final s in slots)
-          () {
-            final disabled = _disabledSlots.contains(s.startMinutes);
-            return FilterChip(
-              label: Text(s.label),
-              selected: !disabled,
-              selectedColor: AppColors.success.withOpacity(0.15),
-              checkmarkColor: AppColors.success,
-              backgroundColor: Colors.grey.shade200,
-              onSelected: (_) => setState(() {
-                if (disabled) {
-                  _disabledSlots.remove(s.startMinutes);
-                } else {
-                  _disabledSlots.add(s.startMinutes);
-                }
-              }),
-            );
-          }(),
-      ],
-    );
-  }
-
   // ── Reusable bits ───────────────────────────────────────────────────────
   Widget _card(String title, IconData icon, List<Widget> children) => Container(
         width: double.infinity,
@@ -918,40 +767,23 @@ class _AstrologyServiceSettingsScreenState
         ),
       );
 
-  Widget _timeTile(String label, int minutes, ValueChanged<int> onPicked) =>
-      InkWell(
-        onTap: () => _pickTime(minutes, onPicked),
-        borderRadius: BorderRadius.circular(12),
-        child: InputDecorator(
-          decoration: _inputDecoration(label),
-          child: Text(formatMinutes(minutes),
-              style: const TextStyle(fontSize: 14)),
-        ),
-      );
-
-  Widget _dropdown<T>({
-    required String label,
-    required T value,
-    required List<T> items,
-    required String Function(T) display,
-    required ValueChanged<T> onChanged,
-  }) =>
-      InputDecorator(
-        decoration: _inputDecoration(label),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<T>(
-            isDense: true,
-            isExpanded: true,
-            value: value,
-            items: [
-              for (final it in items)
-                DropdownMenuItem(value: it, child: Text(display(it))),
-            ],
-            onChanged: (v) {
-              if (v != null) onChanged(v);
-            },
+  /// A labelled numeric capacity field for a session, showing its fixed window.
+  Widget _capacityField(String key, String session, String window) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(session,
+              style: const TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w700)),
+          Text(window,
+              style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _ctrl(key),
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: _inputDecoration('Max bookings'),
           ),
-        ),
+        ],
       );
 }
 

@@ -2,48 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
-import '../../models/astrologer_account_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/admin_provider.dart';
-import '../../providers/astrology_team_stats_provider.dart';
 import '../../widgets/common/data_states.dart';
-import 'astrologer_performance.dart';
 
-/// Admin → Users. Two tabs:
-///  • **Users**       — matrimony users, plan-wise counts (Free/Basic/Premium).
-///  • **Astrologers** — **verified** astrologers only, plan-wise counts.
-/// Each tab shows a total summary card and filter chips with live count badges.
+/// Admin → Users. Manages MATRIMONY USERS only, with plan-wise counts
+/// (Free / Basic / Premium): a total summary card + filter chips with live
+/// count badges. (Horoscope-analysis staff are managed under admin → Employees;
+/// the old Astrologers tab was removed.)
 class AdminUsersPage extends StatelessWidget {
   const AdminUsersPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const DefaultTabController(
-      length: 2,
-      child: Column(
-        children: [
-          Material(
-            color: Colors.white,
-            child: TabBar(
-              labelColor: AppColors.primary,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: AppColors.primary,
-              labelStyle: TextStyle(fontWeight: FontWeight.bold),
-              tabs: [
-                Tab(text: 'Users'),
-                Tab(text: 'Astrologers'),
-              ],
-            ),
-          ),
-          Expanded(
-            child: TabBarView(
-              children: [_UsersTab(), _AstrologersTab()],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const _UsersTab();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -439,184 +410,5 @@ class _UserCard extends ConsumerWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Astrologers tab (verified only)
-// ─────────────────────────────────────────────────────────────────────────────
-enum _AstroPlan { all, free, monthly, yearly }
-
-/// Free = no active subscription · Monthly / Yearly = the active plan period.
-/// Any legacy/unknown active plan is bucketed as Monthly.
-String astroPlanOf(AstrologerAccount a) {
-  if (!a.subscriptionActive) return 'free';
-  return a.subscriptionPlan.toLowerCase() == 'yearly' ? 'yearly' : 'monthly';
-}
-
-class _AstrologersTab extends ConsumerStatefulWidget {
-  const _AstrologersTab();
-  @override
-  ConsumerState<_AstrologersTab> createState() => _AstrologersTabState();
-}
-
-class _AstrologersTabState extends ConsumerState<_AstrologersTab>
-    with AutomaticKeepAliveClientMixin {
-  final _searchCtrl = TextEditingController();
-  String _query = '';
-  _AstroPlan _filter = _AstroPlan.all;
-
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
-  }
-
-  bool _matches(AstrologerAccount a) {
-    final q = _query.trim().toLowerCase();
-    if (q.isNotEmpty &&
-        !a.fullName.toLowerCase().contains(q) &&
-        !a.email.toLowerCase().contains(q)) {
-      return false;
-    }
-    return switch (_filter) {
-      _AstroPlan.all => true,
-      _AstroPlan.free => astroPlanOf(a) == 'free',
-      _AstroPlan.monthly => astroPlanOf(a) == 'monthly',
-      _AstroPlan.yearly => astroPlanOf(a) == 'yearly',
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    // Astrologer PERFORMANCE dashboard (spec §4) — the old subscription
-    // (Free / Monthly / Yearly) filters were removed; this now reads the
-    // admin-provisioned astrology team + live request stats.
-    final stats = ref.watch(astrologerStatsProvider);
-    final active = stats.where((s) => s.member.active).length;
-    return Column(
-      children: [
-        _SummaryCard(
-            label: 'Astrologers ($active active)',
-            value: stats.length,
-            icon: Icons.auto_awesome,
-            color: const Color(0xFF7C5CFC)),
-        const Expanded(child: AstrologerPerformanceList()),
-      ],
-    );
-  }
-}
-
-class _AstrologerCard extends ConsumerWidget {
-  final AstrologerAccount astrologer;
-  const _AstrologerCard({required this.astrologer});
-
-  String get _location {
-    final parts = [
-      astrologer.district.isNotEmpty ? astrologer.district : astrologer.city,
-      astrologer.state,
-    ].where((p) => p.trim().isNotEmpty).toList();
-    return parts.isEmpty ? '—' : parts.join(', ');
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final plan = astroPlanOf(astrologer);
-    final planColor = plan == 'yearly'
-        ? AppColors.premiumPlan
-        : plan == 'monthly'
-            ? AppColors.basicPlan
-            : Colors.grey;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)
-        ],
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: const Color(0xFF7C5CFC).withOpacity(0.12),
-            backgroundImage: astrologer.photoUrl.isNotEmpty
-                ? NetworkImage(astrologer.photoUrl)
-                : null,
-            child: astrologer.photoUrl.isEmpty
-                ? Text(
-                    astrologer.fullName.isNotEmpty
-                        ? astrologer.fullName[0].toUpperCase()
-                        : '?',
-                    style: const TextStyle(
-                        color: Color(0xFF7C5CFC),
-                        fontWeight: FontWeight.bold))
-                : null,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                          astrologer.fullName.isEmpty
-                              ? 'Unnamed'
-                              : astrologer.fullName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 14)),
-                    ),
-                    const SizedBox(width: 6),
-                    const Icon(Icons.star_rounded,
-                        color: Color(0xFFFFB300), size: 15),
-                    Text(astrologer.rating.toStringAsFixed(1),
-                        style: const TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(_location,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                const SizedBox(height: 5),
-                _chip(plan.toUpperCase(), planColor),
-              ],
-            ),
-          ),
-          PopupMenuButton<String>(
-            onSelected: (v) async {
-              final messenger = ScaffoldMessenger.of(context);
-              if (v == 'suspend') {
-                await ref
-                    .read(adminActionsProvider.notifier)
-                    .suspendAstrologer(astrologer.id);
-                final st = ref.read(adminActionsProvider);
-                messenger.showSnackBar(SnackBar(
-                  content: Text(st.hasError
-                      ? 'Action failed.'
-                      : '${astrologer.fullName} moved back to pending review.'),
-                  backgroundColor: st.hasError ? AppColors.error : null,
-                ));
-              }
-            },
-            itemBuilder: (_) => [
-              const PopupMenuItem(
-                  value: 'suspend',
-                  child: ListTile(
-                      leading: Icon(Icons.pause_circle_outline),
-                      title: Text('Suspend'),
-                      contentPadding: EdgeInsets.zero)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
+// (The Astrologers tab + its cards were removed — the Users page now manages
+// matrimony users only; horoscope-analysis staff live under admin → Employees.)

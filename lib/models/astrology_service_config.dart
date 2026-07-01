@@ -226,6 +226,14 @@ class AstrologyServiceConfig {
   /// How many working days ahead are bookable (spec §9: next 5 working days).
   final int maxAdvanceWorkingDays;
 
+  // ── Session-based appointment capacity (spec §6) ───────────────────────────
+  /// Max bookings allowed in the MORNING session (9:00 AM–1:00 PM) per day.
+  /// Once reached, the Morning session is unavailable for that day.
+  final int morningCapacity;
+
+  /// Max bookings allowed in the AFTERNOON session (2:00 PM–5:00 PM) per day.
+  final int afternoonCapacity;
+
   // ── Admin appointment controls ─────────────────────────────────────────
   /// Master switch — when false, appointment booking is closed for everyone
   /// and the user-facing "Book Your Appointment" button is disabled.
@@ -297,6 +305,8 @@ class AstrologyServiceConfig {
     this.slotDurationMinutes = 60,
     this.breakDurationMinutes = 0,
     this.maxAdvanceWorkingDays = 5,
+    this.morningCapacity = 5,
+    this.afternoonCapacity = 5,
     this.bookingEnabled = true,
     this.holidayDates = const [],
     this.disabledSlotMinutes = const [],
@@ -308,6 +318,10 @@ class AstrologyServiceConfig {
 
   /// Built-in defaults used before any admin edit exists.
   static const AstrologyServiceConfig defaults = AstrologyServiceConfig();
+
+  /// Booking capacity for a given session key ('morning' | 'afternoon').
+  int capacityForSession(String session) =>
+      session == 'afternoon' ? afternoonCapacity : morningCapacity;
 
   /// The number to dial from "Contact Expert" (expert phone → office number).
   String get contactPhone =>
@@ -395,6 +409,8 @@ class AstrologyServiceConfig {
           _toInt(d['breakDurationMinutes'], def.breakDurationMinutes),
       maxAdvanceWorkingDays:
           _toInt(d['maxAdvanceWorkingDays'], def.maxAdvanceWorkingDays),
+      morningCapacity: _toInt(d['morningCapacity'], def.morningCapacity),
+      afternoonCapacity: _toInt(d['afternoonCapacity'], def.afternoonCapacity),
       bookingEnabled: d['bookingEnabled'] is bool
           ? d['bookingEnabled'] as bool
           : def.bookingEnabled,
@@ -436,6 +452,8 @@ class AstrologyServiceConfig {
         'slotDurationMinutes': slotDurationMinutes,
         'breakDurationMinutes': breakDurationMinutes,
         'maxAdvanceWorkingDays': maxAdvanceWorkingDays,
+        'morningCapacity': morningCapacity,
+        'afternoonCapacity': afternoonCapacity,
         'bookingEnabled': bookingEnabled,
         'holidayDates': holidayDates,
         'disabledSlotMinutes': disabledSlotMinutes,
@@ -474,6 +492,8 @@ class AstrologyServiceConfig {
     int? slotDurationMinutes,
     int? breakDurationMinutes,
     int? maxAdvanceWorkingDays,
+    int? morningCapacity,
+    int? afternoonCapacity,
     bool? bookingEnabled,
     List<String>? holidayDates,
     List<int>? disabledSlotMinutes,
@@ -512,6 +532,8 @@ class AstrologyServiceConfig {
         breakDurationMinutes: breakDurationMinutes ?? this.breakDurationMinutes,
         maxAdvanceWorkingDays:
             maxAdvanceWorkingDays ?? this.maxAdvanceWorkingDays,
+        morningCapacity: morningCapacity ?? this.morningCapacity,
+        afternoonCapacity: afternoonCapacity ?? this.afternoonCapacity,
         bookingEnabled: bookingEnabled ?? this.bookingEnabled,
         holidayDates: holidayDates ?? this.holidayDates,
         disabledSlotMinutes: disabledSlotMinutes ?? this.disabledSlotMinutes,

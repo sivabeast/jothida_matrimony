@@ -1578,11 +1578,11 @@ class AdminSettingsScreen extends StatelessWidget {
         const SizedBox(height: 16),
         // ── Core settings groups ────────────────────────────────────────────
         _ActionTile(
-          icon: Icons.workspace_premium,
-          title: 'Subscription Plans',
-          subtitle: 'User & astrologer plans, pricing',
+          icon: Icons.savings_outlined,
+          title: 'Employee Commission',
+          subtitle: 'Set the commission paid per completed report',
           color: AppColors.gold,
-          onTap: () => context.go('/admin/premium'),
+          onTap: () => context.go('/admin/commission'),
         ),
         _ActionTile(
           icon: Icons.app_settings_alt_outlined,
@@ -1597,24 +1597,10 @@ class AdminSettingsScreen extends StatelessWidget {
           onTap: () => context.go('/admin/notifications'),
         ),
         _ActionTile(
-          icon: Icons.account_balance_wallet_outlined,
-          title: 'Settlements & Payouts',
-          subtitle: 'Astrologer payouts, refunds & history',
-          color: AppColors.success,
-          onTap: () => context.go('/admin/settlements'),
-        ),
-        _ActionTile(
-          icon: Icons.payments_outlined,
-          title: 'Subscription Pricing',
-          subtitle: 'User & astrologer plan prices',
-          color: AppColors.gold,
-          onTap: () => context.go('/admin/revenue-settings'),
-        ),
-        _ActionTile(
           icon: Icons.auto_awesome_outlined,
           title: 'Astrology Management',
           subtitle:
-              'Astrologer, services, working days, slots & appointment rules',
+              'Consultation service — working days, sessions & appointment rules',
           color: AppColors.primary,
           onTap: () => context.go('/admin/astrology-service'),
         ),
@@ -1636,7 +1622,7 @@ class AdminSettingsScreen extends StatelessWidget {
         _ActionTile(
           icon: Icons.event_busy_outlined,
           title: 'Expired Bookings',
-          subtitle: 'Reassign bookings the astrologer missed',
+          subtitle: 'Reassign bookings the employee missed',
           color: AppColors.error,
           onTap: () => context.go('/admin/expired-bookings'),
         ),
@@ -1655,7 +1641,7 @@ class AdminSettingsScreen extends StatelessWidget {
         _ActionTile(
           icon: Icons.star_rate_rounded,
           title: 'Ratings Management',
-          subtitle: 'Moderate astrologer ratings',
+          subtitle: 'Moderate employee ratings',
           onTap: () => context.go('/admin/ratings'),
         ),
         _ActionTile(

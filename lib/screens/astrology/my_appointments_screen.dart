@@ -57,8 +57,11 @@ class AppointmentHistoryCard extends StatelessWidget {
     final dateStr = appt.visitDate == null
         ? '—'
         : DateFormat('EEEE, d MMM yyyy').format(appt.visitDate!);
-    final timeStr =
-        appt.slotStartMinutes == null ? '—' : formatMinutes(appt.slotStartMinutes!);
+    final sessionStr = appt.session.isNotEmpty
+        ? appt.sessionLabel
+        : (appt.slotStartMinutes == null
+            ? '—'
+            : formatMinutes(appt.slotStartMinutes!));
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -103,7 +106,7 @@ class AppointmentHistoryCard extends StatelessWidget {
           const Divider(height: 18),
           _row(Icons.event_outlined, 'Date', dateStr),
           const SizedBox(height: 8),
-          _row(Icons.schedule_outlined, 'Time', timeStr),
+          _row(Icons.schedule_outlined, 'Session', sessionStr),
           const SizedBox(height: 8),
           _row(Icons.confirmation_number_outlined, 'Booking ID', appt.id),
         ],

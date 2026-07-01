@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/utils/slot_generator.dart';
+import '../../models/astrologer_request_model.dart';
 import '../../providers/chat_provider.dart';
 
 /// Appointment confirmation (spec §11). Shown after a successful payment, it
@@ -14,7 +14,7 @@ import '../../providers/chat_provider.dart';
 class AppointmentConfirmationScreen extends ConsumerWidget {
   final String bookingId;
 
-  /// `{date, slot, address, contact, groom, bride, internalUid, expertName,
+  /// `{date, session, address, contact, groom, bride, internalUid, expertName,
   /// expertPhoto}` passed from the booking screen.
   final Map<String, dynamic>? extra;
 
@@ -25,7 +25,7 @@ class AppointmentConfirmationScreen extends ConsumerWidget {
   });
 
   DateTime? get _date => extra?['date'] as DateTime?;
-  int? get _slot => extra?['slot'] as int?;
+  String get _session => (extra?['session'] as String?) ?? '';
   String get _address => (extra?['address'] as String?) ?? '';
   String get _contact => (extra?['contact'] as String?) ?? '';
   String get _internalUid => (extra?['internalUid'] as String?) ?? '';
@@ -119,8 +119,8 @@ class AppointmentConfirmationScreen extends ConsumerWidget {
                         ? '—'
                         : DateFormat('EEEE, d MMM yyyy').format(_date!)),
                 const Divider(height: 20),
-                _row(Icons.schedule_outlined, 'Appointment Time',
-                    _slot == null ? '—' : formatMinutes(_slot!)),
+                _row(Icons.schedule_outlined, 'Session',
+                    _session.isEmpty ? '—' : AppointmentSession.label(_session)),
                 const Divider(height: 20),
                 _row(Icons.location_on_outlined, 'Office Address',
                     _address.isEmpty ? '—' : _address),

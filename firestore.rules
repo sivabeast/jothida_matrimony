@@ -427,17 +427,19 @@ service cloud.firestore {
       allow update: if isInternalAstrology()
                     && resource.data.astrologerId == 'internal_astrology';
       // The booking's owner (matrimony user) may run the client-side expiry
-      // sweep, pay the analysis fee (dev-mode payment flags), and — for "choose
-      // another later" bookings — reassign it to a new astrologer. Restricted to
-      // these workflow fields so they can never edit the analysis, amount,
-      // profiles, etc.
+      // sweep, pay the analysis fee (dev-mode payment flags), reassign a "choose
+      // another later" booking, AND trigger the automatic assignment of a newly
+      // created Horoscope Compatibility Report to an employee (stamping the
+      // assignment + workflow fields). Restricted to these workflow fields so
+      // they can never edit the analysis, amount, profiles, etc.
       allow update: if isAuthenticated()
                     && resource.data.userId == request.auth.uid
                     && request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly([
                            'expired', 'expiredAt', 'history', 'status',
                            'astrologerId', 'astrologerName', 'astrologerUid',
-                           'astrologerEmail', 'assignedAt',
+                           'astrologerEmail', 'assignedAt', 'assignedBy',
+                           'assignmentStatus', 'workflowStatus', 'inProgress',
                            'reassigned', 'reassignedAt', 'respondedAt',
                            'expiresAt', 'paid', 'paidAt', 'paymentId'
                          ]);

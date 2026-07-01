@@ -11,11 +11,12 @@ import '../../models/astrologer_model.dart' as model;
 import '../../models/astrologer_request_model.dart';
 import '../../models/astrologer_review_model.dart';
 
-/// Thrown when an in-person appointment slot is already taken by another user.
+/// Thrown when the chosen in-person appointment SESSION is already full (its
+/// booking capacity has been reached).
 class AppointmentSlotTakenException implements Exception {
   @override
   String toString() =>
-      'That time slot has just been booked. Please pick another.';
+      'That session has just filled up. Please pick another.';
 }
 
 /// Firestore CRUD + realtime streams for the astrologer side of the app:
@@ -24,11 +25,13 @@ class AppointmentSlotTakenException implements Exception {
 class AstrologerService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  /// Public per-date index of taken appointment slot keys for the internal
-  /// astrology service (`astrology_booked_slots/{dateKey}` → `{taken: [...]}`).
-  /// Holds no PII, so any signed-in user may read it to grey out booked slots
-  /// without reading other users' requests. The authoritative one-per-slot lock
-  /// is the deterministic appointment doc id.
+  /// Public per-date index of appointment SESSION booking counts for the
+  /// internal astrology service
+  /// (`astrology_booked_slots/{dateKey}` → `{morning: n, afternoon: n}`).
+  /// Holds no PII, so any signed-in user may read it to see how full each
+  /// session is (and hide full ones) without reading other users' requests.
+  /// The count is updated in the same transaction that creates a booking, so it
+  /// atomically enforces each session's capacity.
   DocumentReference<Map<String, dynamic>> _appointmentSlotsDoc(String dateKey) =>
       _db.collection('astrology_booked_slots').doc(dateKey);
 
@@ -271,47 +274,41 @@ class AstrologerService {
   }
 
   /// Creates an in-person **appointment** request for the internal astrology
-  /// service (Horoscope Compatibility Report). Uses a DETERMINISTIC doc id +
-  /// transaction so a single slot can be held by only ONE user — a second
-  /// booking of the same slot throws [AppointmentSlotTakenException]. Also drops
-  /// the slot into the public booked-slots index and notifies both parties.
-  /// Returns the new request id (used as the user-facing Booking ID).
+  /// service. Bookings are grouped into two daily SESSIONS (Morning /
+  /// Afternoon), each with an admin-set [capacity]. The per-date session counts
+  /// live in the public `astrology_booked_slots/{dateKey}` index and are read +
+  /// incremented in the SAME transaction that creates the booking, so a session
+  /// that is already full atomically throws [AppointmentSlotTakenException].
+  /// Passing a null [capacity] skips the limit. Returns the new request id.
   Future<String> createAppointmentRequest(
-      AstrologerRequestModel request) async {
-    if (request.visitDate == null || request.slotStartMinutes == null) {
-      throw ArgumentError('Appointment request needs a visitDate + slot.');
+    AstrologerRequestModel request, {
+    int? capacity,
+  }) async {
+    if (request.visitDate == null || request.session.isEmpty) {
+      throw ArgumentError('Appointment request needs a visitDate + session.');
     }
-    final id = AstrologerRequestModel.appointmentDocId(
-        request.astrologerId, request.visitDate!, request.slotStartMinutes!);
-    final ref = _db
-        .collection(AppConstants.astrologerRequestsCollection)
-        .doc(id);
+    // Auto-id document — many bookings share a session (unlike the old one-slot
+    // lock), so the id can't be deterministic.
+    final ref =
+        _db.collection(AppConstants.astrologerRequestsCollection).doc();
     final slotsRef = _appointmentSlotsDoc(request.visitDateKey);
+    final session = request.session;
     await _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      if (snap.exists) {
-        // A previously CANCELLED appointment at this exact slot (status
-        // 'rejected') frees the slot — allow a new user to re-book it by
-        // overwriting the stale record. Any active booking still blocks it.
-        final existingStatus = (snap.data()?['status'] ?? '').toString();
-        if (existingStatus != AstrologerRequestStatus.rejected.name) {
-          throw AppointmentSlotTakenException();
-        }
+      final snap = await tx.get(slotsRef);
+      final current = (snap.data()?[session] as num?)?.toInt() ?? 0;
+      if (capacity != null && current >= capacity) {
+        throw AppointmentSlotTakenException();
       }
       tx.set(ref, request.toFirestore());
-      tx.set(
-          slotsRef,
-          {
-            'taken': FieldValue.arrayUnion([request.slotKey])
-          },
-          SetOptions(merge: true));
+      tx.set(slotsRef, {session: current + 1}, SetOptions(merge: true));
     });
+    final id = ref.id;
     // Notify the internal astrology team of the new appointment booking.
     await _notify(
       request.astrologerId,
       'New Appointment Booking',
-      '${request.userName} booked an in-person appointment for '
-          '${request.visitDateKey}.',
+      '${request.userName} booked a ${AppointmentSession.shortLabel(session)} '
+          'appointment for ${request.visitDateKey}.',
       'new_match_analysis',
       data: {
         'requestId': id,
@@ -331,18 +328,23 @@ class AstrologerService {
     return id;
   }
 
-  /// Live `dateKey → {taken slot keys}` for the internal astrology service,
-  /// powering the appointment date/slot picker. Single-collection read (doc id =
-  /// dateKey), so no composite index is needed.
-  Stream<Map<String, Set<String>>> watchInternalBookedSlots() => _db
+  /// Live `dateKey → {morning: count, afternoon: count}` for the internal
+  /// astrology service, powering the appointment date/session picker so a full
+  /// session greys out. Single-collection read (doc id = dateKey), no composite
+  /// index needed.
+  Stream<Map<String, Map<String, int>>> watchInternalSessionCounts() => _db
       .collection('astrology_booked_slots')
       .snapshots()
       .map((s) {
-        final out = <String, Set<String>>{};
+        final out = <String, Map<String, int>>{};
         for (final d in s.docs) {
-          final taken =
-              (d.data()['taken'] as List?)?.cast<String>() ?? const [];
-          out[d.id] = taken.toSet();
+          final data = d.data();
+          out[d.id] = {
+            AppointmentSession.morning:
+                (data[AppointmentSession.morning] as num?)?.toInt() ?? 0,
+            AppointmentSession.afternoon:
+                (data[AppointmentSession.afternoon] as num?)?.toInt() ?? 0,
+          };
         }
         return out;
       });
@@ -412,14 +414,12 @@ class AstrologerService {
     if (r.hasAppointment) await _freeSlot(r);
   }
 
-  /// Removes an appointment's slot key from the public booked-slots index so the
-  /// slot becomes selectable again (used on cancel / delete).
+  /// Decrements an appointment's session count in the public booked-slots index
+  /// so the freed capacity becomes bookable again (used on cancel / delete).
   Future<void> _freeSlot(AstrologerRequestModel r) async {
-    if (r.visitDateKey.isEmpty || r.slotKey.isEmpty) return;
+    if (r.visitDateKey.isEmpty || r.session.isEmpty) return;
     await _appointmentSlotsDoc(r.visitDateKey).set(
-      {
-        'taken': FieldValue.arrayRemove([r.slotKey])
-      },
+      {r.session: FieldValue.increment(-1)},
       SetOptions(merge: true),
     );
   }

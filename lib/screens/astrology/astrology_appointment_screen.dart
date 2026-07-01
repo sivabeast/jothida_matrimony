@@ -6,6 +6,7 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/slot_generator.dart';
+import '../../models/astrologer_request_model.dart';
 import '../../models/astrology_service_config.dart';
 import '../../providers/astrology_config_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -15,12 +16,11 @@ import '../../services/razorpay/razorpay_service.dart';
 
 /// Standalone "Book Your Appointment" flow opened from the Astrology page.
 ///
-/// Steps: 1) Select a date from a ROLLING ONE-WEEK schedule (next 7 calendar
-/// days, weekends + admin holidays removed); 2) Select an available time slot
-/// (booked, disabled and past slots are greyed out — double-booking is also
-/// prevented at the backend via a deterministic slot-lock document); 3) Confirm.
-/// Every value (working days, holidays, slot window, disabled slots, booking
-/// availability) comes from the admin-managed config.
+/// Steps: 1) Select a date from a ROLLING ONE-WEEK schedule (working days only,
+/// admin holidays removed); 2) Select a SESSION — Morning (9 AM–1 PM) or
+/// Afternoon (2 PM–5 PM). Each session has an admin-set booking capacity; once
+/// full it is greyed out. 3) Confirm + pay. Everything (working days, holidays,
+/// session capacities, booking availability) comes from the admin-managed config.
 class AstrologyAppointmentScreen extends ConsumerStatefulWidget {
   const AstrologyAppointmentScreen({super.key});
 
@@ -34,7 +34,7 @@ class _AstrologyAppointmentScreenState
   static const int _fee = AppConstants.appointmentBookingFee; // ₹50
 
   DateTime? _date;
-  int? _slot;
+  String? _session;
   bool _busy = false;
 
   final RazorpayService _razorpay = RazorpayService();
@@ -55,11 +55,11 @@ class _AstrologyAppointmentScreenState
   void _snack(String m) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
-  /// Step 3 — collect the ₹50 booking charge via Razorpay; the slot is only
+  /// Step 3 — collect the ₹50 booking charge via Razorpay; the session is only
   /// reserved once payment succeeds (handled in [_onPaymentSuccess]).
   Future<void> _confirm(AstrologyServiceConfig cfg) async {
-    if (_date == null || _slot == null) {
-      _snack('Please select a date and time slot.');
+    if (_date == null || _session == null) {
+      _snack('Please select a date and session.');
       return;
     }
     setState(() => _busy = true);
@@ -77,7 +77,7 @@ class _AstrologyAppointmentScreenState
 
   Future<void> _onPaymentSuccess(PaymentSuccessResponse response) async {
     final cfg = _pendingCfg;
-    if (cfg == null || _date == null || _slot == null) {
+    if (cfg == null || _date == null || _session == null) {
       if (mounted) setState(() => _busy = false);
       return;
     }
@@ -86,7 +86,7 @@ class _AstrologyAppointmentScreenState
           .read(matchAnalysisControllerProvider.notifier)
           .bookServiceAppointment(
             date: _date!,
-            slotMinutes: _slot!,
+            session: _session!,
             config: cfg,
             amount: _fee,
             paymentId: response.paymentId ?? 'razorpay',
@@ -94,7 +94,7 @@ class _AstrologyAppointmentScreenState
       if (!mounted) return;
       context.pushReplacement('/appointment-confirmation/$id', extra: {
         'date': _date!,
-        'slot': _slot!,
+        'session': _session!,
         'address': cfg.officeAddress,
         'contact': cfg.officeContactNumber,
         'internalUid': cfg.internalUid,
@@ -105,9 +105,9 @@ class _AstrologyAppointmentScreenState
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _slot = null;
+        _session = null;
       });
-      _snack('That slot was just booked (you were not charged for it). '
+      _snack('That session just filled up (you were not charged for it). '
           'Please choose another.');
     } catch (_) {
       if (!mounted) return;
@@ -149,7 +149,9 @@ class _AstrologyAppointmentScreenState
       workingWeekdays: cfg.workingWeekdays,
       holidayDates: cfg.holidayDates,
     );
-    if (dates.isEmpty) return _closed(message: 'No working days available this week.');
+    if (dates.isEmpty) {
+      return _closed(message: 'No working days available this week.');
+    }
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -161,16 +163,17 @@ class _AstrologyAppointmentScreenState
         _dateStrip(dates),
         if (_date != null) ...[
           const SizedBox(height: 18),
-          _stepLabel(2, 'Select Time Slot'),
+          _stepLabel(2, 'Select Session'),
           const SizedBox(height: 8),
-          _slotGrid(cfg),
+          _sessionCards(cfg),
         ],
         const SizedBox(height: 24),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed:
-                (_busy || _date == null || _slot == null) ? null : () => _confirm(cfg),
+            onPressed: (_busy || _date == null || _session == null)
+                ? null
+                : () => _confirm(cfg),
             icon: _busy
                 ? const SizedBox(
                     height: 18,
@@ -178,7 +181,8 @@ class _AstrologyAppointmentScreenState
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.check_circle_outline, size: 20),
-            label: Text(_busy ? 'Processing…' : 'Pay ₹$_fee & Confirm Appointment',
+            label: Text(
+                _busy ? 'Processing…' : 'Pay ₹$_fee & Confirm Appointment',
                 style: const TextStyle(
                     fontSize: 15.5, fontWeight: FontWeight.w700)),
             style: ElevatedButton.styleFrom(
@@ -234,9 +238,10 @@ class _AstrologyAppointmentScreenState
             child: Text(
               rules.isEmpty
                   ? 'This is an in-person office visit. Choose your preferred '
-                      'date and time below.'
+                      'date and session below.'
                   : rules,
-              style: TextStyle(fontSize: 12.5, color: Colors.grey[800], height: 1.4),
+              style:
+                  TextStyle(fontSize: 12.5, color: Colors.grey[800], height: 1.4),
             ),
           ),
         ],
@@ -250,8 +255,8 @@ class _AstrologyAppointmentScreenState
             width: 22,
             height: 22,
             alignment: Alignment.center,
-            decoration:
-                const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+            decoration: const BoxDecoration(
+                color: AppColors.primary, shape: BoxShape.circle),
             child: Text('$n',
                 style: const TextStyle(
                     color: Colors.white,
@@ -260,7 +265,8 @@ class _AstrologyAppointmentScreenState
           ),
           const SizedBox(width: 8),
           Text(t,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
+              style:
+                  const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
         ],
       );
 
@@ -279,51 +285,47 @@ class _AstrologyAppointmentScreenState
               selected: selected,
               onTap: () => setState(() {
                 _date = d;
-                _slot = null;
+                _session = null;
               }),
             );
           },
         ),
       );
 
-  Widget _slotGrid(AstrologyServiceConfig cfg) {
-    final booked =
-        ref.watch(internalBookedSlotsProvider).valueOrNull ?? const {};
-    final takenKeys = booked[dateKeyOf(_date!)] ?? <String>{};
-    final takenMinutes =
-        takenKeys.map(minutesFromSlotKey).whereType<int>().toSet();
-    final disabled = cfg.disabledSlotMinutes.toSet();
+  Widget _sessionCards(AstrologyServiceConfig cfg) {
+    final counts =
+        ref.watch(internalSessionCountsProvider).valueOrNull ?? const {};
+    final dayCounts = counts[dateKeyOf(_date!)] ?? const <String, int>{};
     final now = DateTime.now();
     final isToday = dateKeyOf(_date!) == dateKeyOf(now);
     final nowMinutes = now.hour * 60 + now.minute;
 
-    final slots = generateSlotsWithBreak(
-      startMinutes: cfg.slotStartMinutes,
-      endMinutes: cfg.slotEndMinutes,
-      slotDuration: cfg.slotDurationMinutes,
-      breakDuration: cfg.breakDurationMinutes,
-      lunchStart: cfg.lunchStartMinutes,
-      lunchEnd: cfg.lunchEndMinutes,
-    ).where((s) => !disabled.contains(s.startMinutes)).toList();
-
-    if (slots.isEmpty) {
-      return const Text('No slots available for this date.',
-          style: TextStyle(color: Colors.grey));
+    Widget card(String session, String window, int capacity, int endMinutes) {
+      final booked = dayCounts[session] ?? 0;
+      final full = booked >= capacity;
+      final past = isToday && nowMinutes >= endMinutes;
+      final disabled = full || past || capacity <= 0;
+      final remaining = (capacity - booked).clamp(0, capacity);
+      return _SessionCard(
+        title: AppointmentSession.shortLabel(session),
+        window: window,
+        remaining: remaining,
+        disabled: disabled,
+        disabledLabel: past ? 'Closed' : (full ? 'Session Full' : 'Unavailable'),
+        selected: _session == session,
+        onTap: disabled ? null : () => setState(() => _session = session),
+      );
     }
 
-    final available = <Widget>[];
-    for (final s in slots) {
-      final past = isToday && s.startMinutes <= nowMinutes;
-      final taken = takenMinutes.contains(s.startMinutes) || past;
-      available.add(_SlotChip(
-        label: s.label,
-        booked: taken,
-        pastLabel: past ? 'Passed' : 'Booked',
-        selected: _slot == s.startMinutes,
-        onTap: taken ? null : () => setState(() => _slot = s.startMinutes),
-      ));
-    }
-    return Wrap(spacing: 8, runSpacing: 8, children: available);
+    return Column(
+      children: [
+        card(AppointmentSession.morning, '9:00 AM – 1:00 PM',
+            cfg.morningCapacity, AppointmentSession.morningEnd),
+        const SizedBox(height: 10),
+        card(AppointmentSession.afternoon, '2:00 PM – 5:00 PM',
+            cfg.afternoonCapacity, AppointmentSession.afternoonEnd),
+      ],
+    );
   }
 }
 
@@ -375,47 +377,99 @@ class _DateCard extends StatelessWidget {
   }
 }
 
-class _SlotChip extends StatelessWidget {
-  final String label;
-  final bool booked;
-  final String pastLabel;
+/// A selectable Morning / Afternoon session card showing remaining capacity.
+class _SessionCard extends StatelessWidget {
+  final String title;
+  final String window;
+  final int remaining;
+  final bool disabled;
+  final String disabledLabel;
   final bool selected;
   final VoidCallback? onTap;
-  const _SlotChip({
-    required this.label,
-    required this.booked,
-    required this.pastLabel,
+  const _SessionCard({
+    required this.title,
+    required this.window,
+    required this.remaining,
+    required this.disabled,
+    required this.disabledLabel,
     required this.selected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bg = selected
+    final borderColor = selected
         ? AppColors.primary
-        : (booked ? Colors.grey.shade200 : Colors.white);
-    final fg = selected
-        ? Colors.white
-        : (booked ? Colors.grey : Colors.black87);
+        : (disabled ? Colors.grey.withOpacity(0.3) : Colors.grey.withOpacity(0.4));
+    final bg = selected
+        ? AppColors.primary.withOpacity(0.08)
+        : (disabled ? Colors.grey.shade100 : Colors.white);
+    final titleColor = disabled ? Colors.grey : Colors.black87;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-              color: selected
-                  ? AppColors.primary
-                  : Colors.grey.withOpacity(0.4)),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: borderColor, width: selected ? 1.6 : 1),
         ),
-        child: Text(
-          booked ? '$label · $pastLabel' : label,
-          style: TextStyle(
-              fontSize: 12.5,
-              color: fg,
-              decoration: booked ? TextDecoration.lineThrough : null),
+        child: Row(
+          children: [
+            Icon(
+                title == 'Morning'
+                    ? Icons.wb_twilight
+                    : Icons.wb_sunny_outlined,
+                color: disabled ? Colors.grey : AppColors.primary,
+                size: 26),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: TextStyle(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w700,
+                          color: titleColor)),
+                  const SizedBox(height: 2),
+                  Text(window,
+                      style:
+                          TextStyle(fontSize: 12.5, color: Colors.grey[600])),
+                ],
+              ),
+            ),
+            if (disabled)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(disabledLabel,
+                    style: const TextStyle(
+                        fontSize: 11, fontWeight: FontWeight.w600)),
+              )
+            else
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('$remaining',
+                      style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primary)),
+                  Text('left',
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                ],
+              ),
+            if (selected) ...[
+              const SizedBox(width: 8),
+              const Icon(Icons.check_circle, color: AppColors.primary),
+            ],
+          ],
         ),
       ),
     );

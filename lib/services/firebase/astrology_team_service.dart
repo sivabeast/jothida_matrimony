@@ -173,38 +173,45 @@ class AstrologyTeamService {
 
   // ── Smart auto-assignment ───────────────────────────────────────────────
 
-  /// Round-robin assigns [requestId] to the next ACTIVE astrologer and stamps
-  /// the assignment onto the request.
+  /// Automatically assigns [requestId] to the ACTIVE, available employee who
+  /// currently has the FEWEST pending (open, not-yet-completed) reports and
+  /// stamps the assignment onto the request.
   ///
-  /// Selection is pure ROUND ROBIN: the active astrologer assigned least
-  /// recently wins (oldest [lastAssignedAt] first; never-assigned members go
-  /// first), with createdAt as a stable tie-break — so with astrologers A, B
-  /// the sequence is A, B, A, B … Disabled (admin) astrologers are skipped.
+  /// Selection: lowest [pendingCount] wins; ties break by least-recently
+  /// assigned ([lastAssignedAt], round-robin) then [createdAt] for a stable
+  /// first round. Disabled (admin) or Unavailable employees are skipped. This
+  /// keeps the workload balanced with no admin action.
   ///
-  /// IMPORTANT: a not-yet-signed-in ("Awaiting sign-in") astrologer is STILL
+  /// IMPORTANT: a not-yet-signed-in ("Awaiting sign-in") employee is STILL
   /// eligible — the request is stamped with their stable Gmail
   /// ([AstrologerRequestModel.astrologerEmail]); it appears on their dashboard
   /// the moment they first log in. Returns the chosen member, or null when no
-  /// active astrologer exists (the request stays unassigned for the admin).
+  /// active employee exists (the request stays unassigned for the admin).
   Future<AstrologerTeamMember?> assignRequest(String requestId) async {
     final snap = await _team.where('active', isEqualTo: true).get();
     final members = snap.docs
         .map(AstrologerTeamMember.fromFirestore)
-        // Skip astrologers who have marked themselves Unavailable (spec §6).
+        // Skip employees who have marked themselves Unavailable (spec §6).
         .where((m) => m.available)
         .toList();
     if (members.isEmpty) {
       debugPrint('[AstrologyTeam] assignRequest($requestId): no active + '
-          'available astrologers — leaving unassigned.');
+          'available employees — leaving unassigned.');
       return null;
     }
     members.sort((a, b) {
+      // 1) Fewest pending reports first (the balancing signal).
+      if (a.pendingCount != b.pendingCount) {
+        return a.pendingCount.compareTo(b.pendingCount);
+      }
+      // 2) Tie-break: least-recently assigned (round robin).
       final at = a.lastAssignedAt?.millisecondsSinceEpoch ?? 0;
       final bt = b.lastAssignedAt?.millisecondsSinceEpoch ?? 0;
-      if (at != bt) return at.compareTo(bt); // least-recently assigned first
+      if (at != bt) return at.compareTo(bt);
+      // 3) Stable order for the very first round.
       final ac = a.createdAt?.millisecondsSinceEpoch ?? 0;
       final bc = b.createdAt?.millisecondsSinceEpoch ?? 0;
-      return ac.compareTo(bc); // stable order for the first round
+      return ac.compareTo(bc);
     });
     final chosen = members.first;
 
@@ -289,13 +296,20 @@ class AstrologyTeamService {
     }
   }
 
-  /// Admin sets an astrologer's weekly salary + payment status (spec §13).
-  Future<void> setSalary(String emailKey,
-          {int? weeklySalary, String? salaryStatus, bool markPaid = false}) =>
+  /// Admin records a commission payout to an employee. [amount] is added to the
+  /// employee's `paidCommission` total, so pending commission
+  /// (earned − paid) drops accordingly. Stamps `lastPaidDate`.
+  Future<void> payCommission(String emailKey, {required int amount}) =>
       _team.doc(emailKey).update({
-        if (weeklySalary != null) 'weeklySalary': weeklySalary,
-        if (salaryStatus != null) 'salaryStatus': salaryStatus,
-        if (markPaid) 'lastPaidDate': FieldValue.serverTimestamp(),
-        if (markPaid) 'salaryStatus': 'paid',
+        'paidCommission': FieldValue.increment(amount),
+        'lastPaidDate': FieldValue.serverTimestamp(),
+      });
+
+  /// Admin sets the exact total commission already paid to an employee (used by
+  /// the employee details screen's editable field). Stamps `lastPaidDate`.
+  Future<void> setPaidCommission(String emailKey, int paidCommission) =>
+      _team.doc(emailKey).update({
+        'paidCommission': paidCommission,
+        'lastPaidDate': FieldValue.serverTimestamp(),
       });
 }

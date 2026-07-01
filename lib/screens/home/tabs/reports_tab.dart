@@ -7,11 +7,11 @@ import '../../../models/astrologer_request_model.dart';
 import '../../../providers/match_analysis_provider.dart';
 import '../../../providers/profile_provider.dart';
 
-/// Reports tab (bottom-nav item 4) — every Horoscope Analysis the user has
-/// requested, each shown as a status card so the user always knows the exact
-/// progress (spec §7): Payment Completed → Request Submitted → Assigned to
-/// Astrologer → Under Analysis → Report Ready → Completed. Completed reports
-/// expose View Report + Download PDF.
+/// Reports tab (bottom-nav item 4) — every Horoscope Compatibility Report the
+/// user has requested, split into two tabs:
+///   • Under Analysis — requests still being prepared (not completed).
+///   • Completed      — finished reports, with View Report + Download PDF.
+/// Each is shown as a status card so the user always knows the progress.
 class ReportsTab extends ConsumerWidget {
   const ReportsTab({super.key});
 
@@ -21,37 +21,69 @@ class ReportsTab extends ConsumerWidget {
     final all = async.valueOrNull ?? const <AstrologerRequestModel>[];
     final myName = ref.watch(myProfileProvider).valueOrNull?.fullName ?? '';
 
-    final reports = [...all]
+    final sorted = [...all]
       ..sort((a, b) => (b.completedAt ?? b.createdAt)
           .compareTo(a.completedAt ?? a.createdAt));
+    final underAnalysis = sorted
+        .where((r) => r.status != AstrologerRequestStatus.completed)
+        .toList();
+    final completed = sorted
+        .where((r) => r.status == AstrologerRequestStatus.completed)
+        .toList();
 
-    return Column(
-      children: [
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          alignment: Alignment.centerLeft,
-          child: const Text('Reports',
-              style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 18)),
-        ),
-        Expanded(
-          child: _body(context, ref, reports, myName, async.isLoading,
-              async.hasError),
-        ),
-      ],
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            alignment: Alignment.centerLeft,
+            child: const Text('Reports',
+                style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18)),
+          ),
+          Container(
+            color: Colors.white,
+            child: TabBar(
+              labelColor: AppColors.primary,
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: AppColors.primary,
+              labelStyle:
+                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+              tabs: [
+                Tab(text: 'Under Analysis (${underAnalysis.length})'),
+                Tab(text: 'Completed (${completed.length})'),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _list(context, ref, underAnalysis, myName, async.isLoading,
+                    async.hasError,
+                    'No reports under analysis.\nRequest a Horoscope '
+                        'Compatibility Report from an accepted match.'),
+                _list(context, ref, completed, myName, async.isLoading,
+                    async.hasError, 'No completed reports yet.'),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _body(
+  Widget _list(
     BuildContext context,
     WidgetRef ref,
     List<AstrologerRequestModel> reports,
     String myName,
     bool loading,
     bool hasError,
+    String emptyText,
   ) {
     if (reports.isEmpty) {
       if (loading) {
@@ -62,8 +94,7 @@ class ReportsTab extends ConsumerWidget {
         return _empty(Icons.error_outline, 'Could not load your reports',
             retry: () => ref.invalidate(myMatchAnalysisRequestsProvider));
       }
-      return _empty(Icons.description_outlined,
-          'No reports yet.\nRequest a Horoscope Analysis from an accepted match.');
+      return _empty(Icons.description_outlined, emptyText);
     }
     return RefreshIndicator(
       color: AppColors.primary,

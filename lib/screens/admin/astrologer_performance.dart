@@ -27,7 +27,7 @@ class AstrologerPerformanceList extends ConsumerWidget {
             children: [
               Icon(Icons.insights_outlined, size: 56, color: AppColors.primary),
               SizedBox(height: 12),
-              Text('No astrologer accounts yet.\n'
+              Text('No employee accounts yet.\n'
                   'Add one by Gmail to see performance here.',
                   textAlign: TextAlign.center),
             ],
@@ -136,7 +136,9 @@ class AstrologerPerformanceCard extends StatelessWidget {
                   Icons.history, Colors.brown),
               _stat('Total Completed', '${stats.completed}', Icons.check_circle,
                   AppColors.primary),
-              _stat('Weekly Salary', '₹${stats.weeklySalary}',
+              _stat('Weekly Comm.', '₹${stats.weeklyCommission}',
+                  Icons.savings_outlined, Colors.teal),
+              _stat('Pending Comm.', '₹${stats.pendingCommission}',
                   Icons.account_balance_wallet, Colors.purple),
             ],
           ),

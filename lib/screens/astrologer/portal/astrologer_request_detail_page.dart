@@ -194,54 +194,13 @@ class _AstrologerRequestDetailPageState
           const SizedBox(height: 18),
           if (completed)
             _completedNote()
-          else ...[
-            if (!r.inProgress) _startAnalysisCard(r),
+          else
+            // No "Start" step (spec §4): an assigned report is Pending and
+            // immediately ready to write + submit.
             _reportSection(),
-          ],
         ],
       ),
     );
-  }
-
-  /// Pending → In Progress. Marks the request started so it moves into the
-  /// astrologer's "In Progress" tab and the user/admin see "Under Analysis".
-  Widget _startAnalysisCard(AstrologerRequestModel r) => Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.blue.shade50,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.timelapse_outlined, color: Colors.blue),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                'Start the analysis to move this request to In Progress.',
-                style: TextStyle(fontSize: 13),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: _busy ? null : () => _startAnalysis(r),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue, foregroundColor: Colors.white),
-              child: const Text('Start'),
-            ),
-          ],
-        ),
-      );
-
-  Future<void> _startAnalysis(AstrologerRequestModel r) async {
-    setState(() => _busy = true);
-    try {
-      await ref.read(matchAnalysisControllerProvider.notifier).startAnalysis(r);
-      if (mounted) _snack('Analysis started — moved to In Progress.');
-    } catch (_) {
-      if (mounted) _snack('Could not start. Please try again.');
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
   }
 
   Widget _requestHeader(AstrologerRequestModel r) => Container(

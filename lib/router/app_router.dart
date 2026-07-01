@@ -54,6 +54,7 @@ import '../screens/admin/astrologer_verification_screen.dart';
 import '../screens/admin/admin_reports_screen.dart';
 import '../screens/admin/admin_management_screens.dart';
 import '../screens/admin/admin_reports_page.dart';
+import '../screens/admin/employee_commission_screen.dart';
 import '../screens/admin/account_admin_screens.dart';
 import '../screens/admin/announcement_management_screen.dart';
 import '../screens/horoscope/horoscope_details_screen.dart';
@@ -150,7 +151,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isAuthenticated = ref.read(authRepositoryProvider).currentUser != null;
       debugPrint('[Router] redirect: loc=$loc, isAuthenticated=$isAuthenticated');
       if (!isAuthenticated) {
-        return (onAuthPage || onSplash) ? null : '/account-type';
+        // Single common login — unauthenticated users always land on /login
+        // (the old /account-type role chooser is retired).
+        return (onAuthPage || onSplash) ? null : '/login';
       }
 
       // Authenticated → route by account type / onboarding status.
@@ -543,6 +546,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               builder: (_, __) => const AstrologyServiceSettingsScreen()),
           GoRoute(path: '/admin/analytics', builder: (_, __) => const AdminReportsPage()),
           GoRoute(path: '/admin/settings', builder: (_, __) => const AdminSettingsScreen()),
+          GoRoute(path: '/admin/commission', builder: (_, __) => const EmployeeCommissionScreen()),
           GoRoute(path: '/admin/married', builder: (_, __) => const MarriedUsersScreen()),
           GoRoute(path: '/admin/deletion-requests', builder: (_, __) => const AccountDeletionRequestsScreen()),
           GoRoute(path: '/admin/support', builder: (_, __) => const SupportTicketsScreen()),

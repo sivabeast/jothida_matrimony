@@ -9,8 +9,8 @@ class AdminShell extends ConsumerWidget {
   const AdminShell({super.key, required this.child});
 
   // Bottom-nav destinations. Notifications now live inside Settings; the bottom
-  // bar surfaces the five primary admin areas: Dashboard · Users · Astrologers
-  // (verification) · Horoscope Requests · Settings.
+  // bar surfaces the five primary admin areas: Dashboard · Users · Employees
+  // (horoscope-analysis staff) · Horoscope Requests · Settings.
   static const _routes = [
     '/admin',
     '/admin/users',
@@ -73,7 +73,7 @@ class AdminShell extends ConsumerWidget {
           destinations: const [
             NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Dashboard'),
             NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Users'),
-            NavigationDestination(icon: Icon(Icons.verified_user_outlined), selectedIcon: Icon(Icons.verified_user), label: 'Astrologers'),
+            NavigationDestination(icon: Icon(Icons.badge_outlined), selectedIcon: Icon(Icons.badge), label: 'Employees'),
             NavigationDestination(icon: Icon(Icons.auto_stories_outlined), selectedIcon: Icon(Icons.auto_stories), label: 'Horoscope'),
             NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
           ],

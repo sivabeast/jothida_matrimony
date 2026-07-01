@@ -252,8 +252,11 @@ class _AppointmentAdminCard extends ConsumerWidget {
     final date = appt.visitDate == null
         ? '—'
         : DateFormat('EEE, d MMM yyyy').format(appt.visitDate!);
-    final time =
-        appt.slotStartMinutes == null ? '—' : formatMinutes(appt.slotStartMinutes!);
+    final time = appt.session.isNotEmpty
+        ? AppointmentSession.shortLabel(appt.session)
+        : (appt.slotStartMinutes == null
+            ? '—'
+            : formatMinutes(appt.slotStartMinutes!));
     final created = DateFormat('d MMM yyyy, h:mm a').format(appt.createdAt);
 
     return Container(
@@ -315,7 +318,7 @@ class _AppointmentAdminCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(child: _info(Icons.event_outlined, 'Date', date)),
-              Expanded(child: _info(Icons.schedule_outlined, 'Time', time)),
+              Expanded(child: _info(Icons.schedule_outlined, 'Session', time)),
             ],
           ),
           const SizedBox(height: 8),

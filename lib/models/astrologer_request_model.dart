@@ -5,6 +5,50 @@ import '../core/utils/working_hours.dart';
 /// Kind of request a matrimony user sends to an astrologer.
 enum AstrologerRequestType { consultation, inquiry, matching }
 
+/// The two fixed in-person appointment sessions (spec §6). Each has an
+/// admin-configurable booking capacity; once full it becomes unavailable.
+class AppointmentSession {
+  static const String morning = 'morning';
+  static const String afternoon = 'afternoon';
+
+  // Fixed windows (minutes-from-midnight).
+  static const int morningStart = 540; // 9:00 AM
+  static const int morningEnd = 780; // 1:00 PM
+  static const int afternoonStart = 840; // 2:00 PM
+  static const int afternoonEnd = 1020; // 5:00 PM
+
+  static const List<String> all = [morning, afternoon];
+
+  /// Human label incl. the time window.
+  static String label(String session) {
+    switch (session) {
+      case morning:
+        return 'Morning (9:00 AM – 1:00 PM)';
+      case afternoon:
+        return 'Afternoon (2:00 PM – 5:00 PM)';
+      default:
+        return '—';
+    }
+  }
+
+  /// Short label (no window).
+  static String shortLabel(String session) {
+    switch (session) {
+      case morning:
+        return 'Morning';
+      case afternoon:
+        return 'Afternoon';
+      default:
+        return '—';
+    }
+  }
+
+  /// The session's start (used to keep [AstrologerRequestModel.slotStartMinutes]
+  /// populated for back-compatible display / ordering).
+  static int startMinutes(String session) =>
+      session == afternoon ? afternoonStart : morningStart;
+}
+
 /// Lifecycle of a request.
 ///
 /// NOTE: "Expired" and "Reassigned" are intentionally NOT enum values — they
@@ -244,8 +288,13 @@ class AstrologerRequestModel {
   final DateTime? visitDate;
 
   /// Visit slot start as minutes-from-midnight (e.g. 10:00 AM = 600). Null when
-  /// there is no appointment.
+  /// there is no appointment. For session bookings this mirrors the session's
+  /// start so ordering/display keep working.
   final int? slotStartMinutes;
+
+  /// The booked appointment session — 'morning' | 'afternoon' (spec §6). Empty
+  /// for non-appointment requests (and legacy slot-based bookings).
+  final String session;
 
   /// Office address + contact number snapshotted at booking time, so the
   /// confirmation stays stable even if the admin later edits the service config.
@@ -296,6 +345,7 @@ class AstrologerRequestModel {
     this.startedAt,
     this.visitDate,
     this.slotStartMinutes,
+    this.session = '',
     this.officeAddress = '',
     this.officeContact = '',
   });
@@ -307,8 +357,13 @@ class AstrologerRequestModel {
   /// admin shows the assigned name/email + the Reassign action only when true.
   bool get isAssigned => astrologerEmail.trim().isNotEmpty;
 
-  /// True when this request was purchased via an in-person appointment.
-  bool get hasAppointment => visitDate != null && slotStartMinutes != null;
+  /// True when this request was purchased via an in-person appointment (either a
+  /// session booking or a legacy slot booking).
+  bool get hasAppointment =>
+      visitDate != null && (session.isNotEmpty || slotStartMinutes != null);
+
+  /// Human label for the booked session incl. its time window.
+  String get sessionLabel => AppointmentSession.label(session);
 
   /// `yyyy-MM-dd` of the appointment day (empty when none).
   String get visitDateKey => visitDate == null
@@ -495,6 +550,7 @@ class AstrologerRequestModel {
       startedAt: _toDate(d['startedAt']),
       visitDate: _toDate(d['visitDate']),
       slotStartMinutes: (d['slotStartMinutes'] as num?)?.toInt(),
+      session: (d['session'] ?? '').toString(),
       officeAddress: (d['officeAddress'] ?? '').toString(),
       officeContact: (d['officeContact'] ?? '').toString(),
     );
@@ -552,6 +608,7 @@ class AstrologerRequestModel {
         'startedAt': startedAt != null ? Timestamp.fromDate(startedAt!) : null,
         'visitDate': visitDate != null ? Timestamp.fromDate(visitDate!) : null,
         'slotStartMinutes': slotStartMinutes,
+        'session': session,
         // Denormalised keys so a date's taken slots can be derived without
         // parsing (mirrors the consultations booked-slots index).
         'visitDateKey': visitDateKey,
@@ -641,6 +698,7 @@ class AstrologerRequestModel {
         // Appointment details are fixed at booking time.
         visitDate: visitDate,
         slotStartMinutes: slotStartMinutes,
+        session: session,
         officeAddress: officeAddress,
         officeContact: officeContact,
       );

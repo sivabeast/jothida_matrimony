@@ -30,23 +30,18 @@ class _AstrologerShellState extends ConsumerState<AstrologerShell> {
   Widget build(BuildContext context) {
     final requests =
         ref.watch(myAssignedRequestsProvider).valueOrNull ?? const [];
+    // Only two states now (spec §4): Pending = every assigned report not yet
+    // completed; Completed = submitted reports. No "Start" / In-Progress step.
     final pending = requests
-        .where((r) =>
-            r.status == AstrologerRequestStatus.pending && !r.inProgress)
-        .toList();
-    final inProgress = requests
-        .where(
-            (r) => r.status == AstrologerRequestStatus.pending && r.inProgress)
+        .where((r) => r.status != AstrologerRequestStatus.completed)
         .toList();
     final completed = requests
         .where((r) => r.status == AstrologerRequestStatus.completed)
         .toList();
 
-    // "Requests" = active work (new + in progress); Completed is separate.
-    final active = [...pending, ...inProgress];
     final titles = [
       'Dashboard',
-      'Requests',
+      'Pending',
       'Completed',
       'Work Report',
       'Profile'
@@ -65,11 +60,10 @@ class _AstrologerShellState extends ConsumerState<AstrologerShell> {
         children: [
           const _DashboardPage(),
           _RequestsPage(
-              requests: active,
+              requests: pending,
               emptyIcon: Icons.inbox_outlined,
-              emptyText: 'No requests to work on',
-              trailing: 'Open',
-              showStatus: true),
+              emptyText: 'No pending reports',
+              trailing: 'Open'),
           _RequestsPage(
               requests: completed,
               emptyIcon: Icons.verified_outlined,
@@ -88,8 +82,8 @@ class _AstrologerShellState extends ConsumerState<AstrologerShell> {
               selectedIcon: Icon(Icons.dashboard),
               label: 'Dashboard'),
           NavigationDestination(
-              icon: _badge(Icons.assignment_outlined, active.length),
-              label: 'Requests'),
+              icon: _badge(Icons.assignment_outlined, pending.length),
+              label: 'Pending'),
           const NavigationDestination(
               icon: Icon(Icons.check_circle_outline), label: 'Completed'),
           const NavigationDestination(
@@ -110,124 +104,35 @@ class _AstrologerShellState extends ConsumerState<AstrologerShell> {
 
 // ── Dashboard (home) ─────────────────────────────────────────────────────────
 
-class _DashboardPage extends ConsumerWidget {
+class _DashboardPage extends StatelessWidget {
   const _DashboardPage();
 
+  // Intentionally an empty placeholder for now (spec §4) — the Employee
+  // Dashboard will be built later. Employees use the Pending / Completed tabs.
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final member = ref.watch(myAstrologerTeamMemberProvider).valueOrNull;
-    final s = ref.watch(myAstrologerStatsProvider);
-    if (s == null) {
-      return const Center(
-          child: CircularProgressIndicator(color: AppColors.primary));
-    }
-    return ListView(
-      padding: const EdgeInsets.all(14),
-      children: [
-        if (member != null && !member.active) _banner(
-            'Your account is disabled by the admin. You will not receive new '
-            'requests until it is re-enabled.',
-            Colors.red),
-        if (member != null && member.active && !member.available)
-          _banner(
-              'You are marked Unavailable — new requests are paused. Turn '
-              'Available back on in Profile to resume.',
-              Colors.orange),
-        Text(
-          member?.displayName.isNotEmpty == true
-              ? 'Welcome, ${member!.displayName}'
-              : 'Welcome',
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 4),
-        Text('Here is your performance at a glance.',
-            style: TextStyle(fontSize: 13, color: Colors.grey[600])),
-        const SizedBox(height: 14),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          childAspectRatio: 1.7,
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            _stat('Total Requests', '${s.totalAssigned}', Icons.assignment,
-                AppColors.primary),
-            _stat('New Requests', '${s.pending}', Icons.fiber_new_outlined,
-                Colors.orange),
-            _stat('In Progress', '${s.inProgress}', Icons.timelapse,
-                Colors.blue),
-            _stat('Completed', '${s.completed}', Icons.check_circle,
-                Colors.green),
-            _stat('This Week Assigned', '${s.thisWeek.assigned}',
-                Icons.event_available, Colors.teal),
-            _stat('This Week Completed', '${s.thisWeek.completed}',
-                Icons.done_all, Colors.indigo),
-            _stat('Last Week Completed', '${s.lastWeek.completed}',
-                Icons.history, Colors.brown),
+            Icon(Icons.dashboard_customize_outlined,
+                size: 64, color: AppColors.primary.withOpacity(0.3)),
+            const SizedBox(height: 14),
+            const Text('Dashboard coming soon',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 6),
+            Text(
+              'Your reports are in the Pending and Completed tabs below.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            ),
           ],
         ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-              color: Colors.white, borderRadius: BorderRadius.circular(14)),
-          child: Row(
-            children: [
-              const Icon(Icons.account_balance_wallet_outlined,
-                  size: 18, color: AppColors.primary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                    'Weekly fixed salary: ₹${s.weeklySalary}  ·  '
-                    '${s.salaryStatus == 'paid' ? 'Paid' : 'Pending'}',
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
-
-  Widget _banner(String text, Color color) => Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-            color: color.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(12)),
-        child: Row(children: [
-          Icon(Icons.info_outline, color: color, size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-              child: Text(text,
-                  style: TextStyle(fontSize: 12.5, color: color))),
-        ]),
-      );
-
-  Widget _stat(String label, String value, IconData icon, Color color) =>
-      Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: 8),
-            Text(value,
-                style:
-                    const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-            Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-          ],
-        ),
-      );
 }
 
 // ── Requests list page (Pending / In Progress / Completed) ───────────────────
@@ -237,13 +142,11 @@ class _RequestsPage extends StatelessWidget {
   final IconData emptyIcon;
   final String emptyText;
   final String trailing;
-  final bool showStatus;
   const _RequestsPage({
     required this.requests,
     required this.emptyIcon,
     required this.emptyText,
     required this.trailing,
-    this.showStatus = false,
   });
 
   String _date(DateTime d) =>
@@ -289,23 +192,6 @@ class _RequestsPage extends StatelessWidget {
                             style: TextStyle(
                                 fontSize: 11.5, color: Colors.grey[600])),
                       ),
-                      if (showStatus)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: (r.inProgress ? Colors.blue : Colors.orange)
-                                .withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(r.inProgress ? 'In Progress' : 'New',
-                              style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: r.inProgress
-                                      ? Colors.blue
-                                      : Colors.orange)),
-                        ),
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -396,12 +282,23 @@ class _WorkReportPage extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Text('Weekly fixed salary: ₹${s.weeklySalary}  ·  '
-                  '${s.salaryStatus == 'paid' ? 'Paid' : 'Pending'}',
+              Text(
+                  'Weekly commission: ₹${s.weeklyCommission}  '
+                  '(${s.thisWeek.completed} × ₹${s.commissionPerReport})',
                   style: const TextStyle(color: Colors.white70, fontSize: 12.5)),
             ],
           ),
         ),
+        const SizedBox(height: 12),
+        // Commission earnings (spec §Employee Statistics).
+        _reportCard('Commission', [
+          _r('Commission Per Report', s.commissionPerReport),
+          _r('Weekly Commission', s.weeklyCommission),
+          _r('Monthly Commission', s.monthlyCommission),
+          _r('Total Earned', s.totalCommission),
+          _r('Paid', s.paidCommission),
+          _r('Pending Payment', s.pendingCommission),
+        ]),
         const SizedBox(height: 12),
         _reportCard('Today', [
           _r('New Requests', s.todayAssigned),
@@ -598,7 +495,7 @@ class _ProfilePageState extends ConsumerState<_ProfilePage> {
 
   Future<void> _logout() async {
     await ref.read(authNotifierProvider.notifier).signOut();
-    if (mounted) context.go('/account-type');
+    if (mounted) context.go('/login');
   }
 
   Future<void> _deleteAccount(AstrologerTeamMember m) async {
@@ -607,7 +504,7 @@ class _ProfilePageState extends ConsumerState<_ProfilePage> {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete account?'),
         content: const Text(
-            'This removes your astrologer account. You will be signed out and '
+            'This removes your employee account. You will be signed out and '
             'can no longer receive requests. This cannot be undone.'),
         actions: [
           TextButton(
@@ -624,7 +521,7 @@ class _ProfilePageState extends ConsumerState<_ProfilePage> {
     try {
       await ref.read(astrologyTeamServiceProvider).deleteSelf(m.id);
       await ref.read(authNotifierProvider.notifier).signOut();
-      if (mounted) context.go('/account-type');
+      if (mounted) context.go('/login');
     } catch (_) {
       if (mounted) _snack('Could not delete the account. Please try again.');
     }

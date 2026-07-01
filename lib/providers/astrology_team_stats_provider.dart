@@ -20,12 +20,13 @@ class WeeklyStat {
       assigned == 0 ? 0 : ((completed / assigned) * 100).round();
 }
 
-/// Performance metrics for one astrologer, computed from their assigned
-/// requests. Earnings use a fixed WEEKLY SALARY (spec §13), not commission.
+/// Performance metrics for one employee, computed from their assigned
+/// requests. Earnings use a COMMISSION PER COMPLETED REPORT (a single global
+/// rate the admin configures), not a salary.
 class AstrologerStats {
   final AstrologerTeamMember member;
   final int totalAssigned;
-  final int pending; // "New" — assigned, not started
+  final int pending; // assigned, not yet completed
   final int inProgress;
   final int completed;
   final int todayAssigned;
@@ -37,6 +38,10 @@ class AstrologerStats {
 
   /// Sum of COMPLETED request amounts the user paid (₹) — platform revenue.
   final int revenue;
+
+  /// Commission (₹) paid to the employee per completed report — the single
+  /// global rate from `AstrologyServiceConfig.analysisCommission`.
+  final int commissionPerReport;
 
   const AstrologerStats({
     required this.member,
@@ -50,10 +55,24 @@ class AstrologerStats {
     this.thisWeek = const WeeklyStat(),
     this.lastWeek = const WeeklyStat(),
     this.revenue = 0,
+    this.commissionPerReport = 0,
   });
 
-  int get weeklySalary => member.weeklySalary;
-  String get salaryStatus => member.salaryStatus;
+  /// Commission earned this week = completed-this-week × rate (spec §12).
+  int get weeklyCommission => thisWeek.completed * commissionPerReport;
+
+  /// Commission earned this month = completed-this-month × rate.
+  int get monthlyCommission => monthCompleted * commissionPerReport;
+
+  /// Total commission earned (all-time) = total completed × rate.
+  int get totalCommission => completed * commissionPerReport;
+
+  /// Commission the admin has already paid out to this employee.
+  int get paidCommission => member.paidCommission;
+
+  /// Commission earned but not yet paid.
+  int get pendingCommission =>
+      (totalCommission - member.paidCommission).clamp(0, 1 << 31);
 }
 
 DateTime _startOfWeek(DateTime d) {
@@ -135,6 +154,7 @@ AstrologerStats computeAstrologerStats(
     thisWeek: weekly(thisWeekStart, now.add(const Duration(days: 1))),
     lastWeek: weekly(lastWeekStart, thisWeekStart),
     revenue: revenue,
+    commissionPerReport: cfg.analysisCommission,
   );
 }
 

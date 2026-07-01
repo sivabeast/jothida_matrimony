@@ -116,17 +116,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             padding: const EdgeInsets.all(24),
             child: Column(
               children: [
-                // Back to the Role Selection page (Matrimony User / Astrologer).
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    onPressed: () => context.go('/account-type'),
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    tooltip: 'Back',
-                    padding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
                 const SizedBox(height: 8),
                 Image.asset(
                   'assets/images/app_logo.png',
