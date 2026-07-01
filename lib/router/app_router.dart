@@ -166,7 +166,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // experience — no onboarding, home, matches or profile. It lives only in
       // the Astrology Dashboard, the request workspace, and chat threads with
       // users. Everything else redirects straight to the dashboard.
-      if (user != null && user.isInternalAstrology) {
+      // NOTE: if this same Gmail has been provisioned as a team astrologer
+      // (role == 'astrologer'), the astrologer portal below takes precedence.
+      if (user != null && user.isInternalAstrology && !user.isAstrologer) {
         final allowed = loc == '/astrology' ||
             loc.startsWith('/match-workspace') ||
             loc.startsWith('/chat');

@@ -320,7 +320,6 @@ class _RequestCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final badge = _statusBadge;
     final waiting = _waited(DateTime.now().difference(request.createdAt));
-    final isPending = request.status == AstrologerRequestStatus.pending;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -364,12 +363,21 @@ class _RequestCard extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           _line(Icons.favorite_border, 'Match', _matchName),
-          _line(Icons.auto_awesome, 'Astrologer',
-              request.astrologerName.isEmpty ? 'Unassigned' : request.astrologerName),
+          if (request.isAssigned) ...[
+            _line(Icons.auto_awesome, 'Astrologer', request.astrologerName),
+            _line(Icons.alternate_email, 'Gmail', request.astrologerEmail),
+            if (request.assignedAt != null)
+              _line(Icons.schedule, 'Assigned',
+                  _fmtDateTime(request.assignedAt!)),
+          ] else
+            _line(Icons.auto_awesome, 'Astrologer', 'Unassigned'),
+          _line(Icons.info_outline, 'Status', badge.text),
           _line(Icons.event_outlined, 'Requested', _fmtDate(request.createdAt)),
           _line(Icons.timelapse, 'Waiting', waiting),
-          if (isPending) ...[
-            const SizedBox(height: 10),
+          const SizedBox(height: 10),
+          // Reassign only appears once an astrologer is actually assigned;
+          // otherwise offer to (re)run auto-assignment / explain none exist.
+          if (request.isAssigned)
             Row(
               children: [
                 Expanded(
@@ -398,11 +406,18 @@ class _RequestCard extends ConsumerWidget {
                   ),
                 ),
               ],
-            ),
-          ],
+            )
+          else if (request.status == AstrologerRequestStatus.pending)
+            _UnassignedActions(request: request),
         ],
       ),
     );
+  }
+
+  String _fmtDateTime(DateTime d) {
+    final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
+    final ampm = d.hour >= 12 ? 'PM' : 'AM';
+    return '${_fmtDate(d)} · ${h.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')} $ampm';
   }
 
   Widget _line(IconData icon, String label, String value) => Padding(
@@ -454,13 +469,14 @@ class _RequestCard extends ConsumerWidget {
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (sheetCtx) => Consumer(
         builder: (ctx, sheetRef, _) {
-          final approved = (sheetRef.watch(allAstrologersProvider).valueOrNull ??
-                  const <AstrologerAccount>[])
-              .where((a) =>
-                  a.status == VerificationStatus.approved &&
-                  a.id != request.astrologerId)
-              .toList()
-            ..sort((a, b) => a.fullName.compareTo(b.fullName));
+          // Reassign targets the ACTIVE astrology team (excluding the current
+          // assignee), so it always matches the real astrologer roster.
+          final members =
+              (sheetRef.watch(allAstrologerTeamProvider).valueOrNull ??
+                      const <AstrologerTeamMember>[])
+                  .where((m) => m.active && m.email != request.astrologerEmail)
+                  .toList()
+                ..sort((a, b) => a.email.compareTo(b.email));
 
           return Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -469,67 +485,63 @@ class _RequestCard extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Reassign to Astrologer',
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold)),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Text('The request resets to pending for the new astrologer.',
                     style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                 const SizedBox(height: 12),
-                if (approved.isEmpty)
+                if (members.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Center(
-                        child: Text('No other verified astrologers available.')),
+                        child: Text('No active astrologer available.')),
                   )
                 else
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxHeight: 360),
                     child: ListView.separated(
                       shrinkWrap: true,
-                      itemCount: approved.length,
+                      itemCount: members.length,
                       separatorBuilder: (_, __) => const Divider(height: 1),
                       itemBuilder: (_, i) {
-                        final a = approved[i];
+                        final m = members[i];
+                        final name = m.displayName.isEmpty
+                            ? m.email
+                            : m.displayName;
                         return ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: CircleAvatar(
                             backgroundColor:
                                 const Color(0xFF7C5CFC).withOpacity(0.12),
-                            backgroundImage: a.photoUrl.isNotEmpty
-                                ? NetworkImage(a.photoUrl)
+                            backgroundImage: m.photoUrl.isNotEmpty
+                                ? NetworkImage(m.photoUrl)
                                 : null,
-                            child: a.photoUrl.isEmpty
-                                ? Text(
-                                    a.fullName.isNotEmpty
-                                        ? a.fullName[0].toUpperCase()
-                                        : '?',
+                            child: m.photoUrl.isEmpty
+                                ? Text(name[0].toUpperCase(),
                                     style: const TextStyle(
                                         color: Color(0xFF7C5CFC),
                                         fontWeight: FontWeight.bold))
                                 : null,
                           ),
-                          title: Text(a.fullName,
+                          title: Text(name,
                               style: const TextStyle(
                                   fontWeight: FontWeight.w600)),
-                          subtitle: Text(
-                              '${a.experienceYears} yrs · ⭐ ${a.rating.toStringAsFixed(1)}',
+                          subtitle: Text('${m.email} · ${m.statusLabel}',
                               style: const TextStyle(fontSize: 12)),
                           onTap: () async {
                             Navigator.pop(sheetCtx);
                             final messenger = ScaffoldMessenger.of(context);
-                            await ref
-                                .read(adminActionsProvider.notifier)
-                                .reassignRequest(request.id,
-                                    astrologerId: a.id,
-                                    astrologerName: a.fullName);
-                            final st = ref.read(adminActionsProvider);
-                            messenger.showSnackBar(SnackBar(
-                              content: Text(st.hasError
-                                  ? 'Could not reassign.'
-                                  : 'Reassigned to ${a.fullName}.'),
-                              backgroundColor:
-                                  st.hasError ? AppColors.error : null,
-                            ));
+                            try {
+                              await ref
+                                  .read(astrologyTeamServiceProvider)
+                                  .reassignTo(request.id, m);
+                              messenger.showSnackBar(SnackBar(
+                                  content: Text('Reassigned to $name.')));
+                            } catch (e) {
+                              messenger.showSnackBar(SnackBar(
+                                  content: Text('Could not reassign: $e'),
+                                  backgroundColor: AppColors.error));
+                            }
                           },
                         );
                       },
@@ -539,6 +551,55 @@ class _RequestCard extends ConsumerWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Actions shown on an UNASSIGNED pending request: retry auto-assignment when
+/// an active astrologer exists, or explain that none do (spec §3).
+class _UnassignedActions extends ConsumerWidget {
+  final AstrologerRequestModel request;
+  const _UnassignedActions({required this.request});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasActive =
+        (ref.watch(allAstrologerTeamProvider).valueOrNull ?? const [])
+            .any((m) => m.active);
+    if (!hasActive) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: AppColors.warning.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Text('No active astrologer available.',
+            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500)),
+      );
+    }
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () async {
+          final messenger = ScaffoldMessenger.of(context);
+          final chosen = await ref
+              .read(astrologyTeamServiceProvider)
+              .assignRequest(request.id);
+          messenger.showSnackBar(SnackBar(
+            content: Text(chosen == null
+                ? 'No active astrologer available.'
+                : 'Assigned to ${chosen.displayName.isEmpty ? chosen.email : chosen.displayName}.'),
+          ));
+        },
+        icon: const Icon(Icons.person_add_alt, size: 17),
+        label: const Text('Assign now'),
+        style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(vertical: 9)),
       ),
     );
   }
