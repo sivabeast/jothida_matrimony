@@ -13,16 +13,10 @@ class OtpScreen extends ConsumerStatefulWidget {
   final String verificationId;
   final String phone;
 
-  /// When true the OTP came from the Astrologer portal, so a verified-but-new
-  /// account is sent to the astrologer onboarding form (not matrimony profile
-  /// creation), and an existing astrologer lands on their dashboard.
-  final bool isAstrologer;
-
   const OtpScreen({
     super.key,
     required this.verificationId,
     required this.phone,
-    this.isAstrologer = false,
   });
 
   @override

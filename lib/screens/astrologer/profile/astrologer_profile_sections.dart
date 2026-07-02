@@ -655,9 +655,8 @@ class AstrologerAccountSettingsScreen extends ConsumerWidget {
     if (!kBypassAuth) {
       await ref.read(authNotifierProvider.notifier).signOut();
     }
-    // Astrologer → return to the Astrologer login page only (never the
-    // role-selection page).
-    router.go('/astrologer-login');
+    // Back to the single common login page.
+    router.go('/login');
   }
 
   /// Permanently deletes the astrologer account immediately (no admin approval)

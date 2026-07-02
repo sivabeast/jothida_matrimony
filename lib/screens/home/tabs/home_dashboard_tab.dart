@@ -230,7 +230,9 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             ],
           ),
         ),
-        if (isSuperAdmin) ...[
+        // Admin shortcut only — the old Astrology Dashboard icon was removed
+        // along with the whole email-based astrology access system.
+        if (isSuperAdmin)
           IconButton(
             tooltip: 'Admin Dashboard',
             visualDensity: VisualDensity.compact,
@@ -238,14 +240,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             icon: const Icon(Icons.admin_panel_settings,
                 color: AppColors.gold, size: 25),
           ),
-          IconButton(
-            tooltip: 'Astrology Dashboard',
-            visualDensity: VisualDensity.compact,
-            onPressed: () => context.push('/astrology'),
-            icon: const Icon(Icons.auto_awesome,
-                color: AppColors.gold, size: 24),
-          ),
-        ],
         // Chat icon with an unread badge — replaces the removed Chats tab so
         // users see new messages straight from the Home header.
         IconButton(

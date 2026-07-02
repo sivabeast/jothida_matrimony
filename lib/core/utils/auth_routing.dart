@@ -12,7 +12,6 @@ import '../../providers/service_providers.dart';
 ///
 ///  • Employee (horoscope-analysis staff, registered in the `astrology_team`
 ///    registry) → Employee Portal.
-///  • Internal astrology account → Astrology Dashboard.
 ///  • Pure admin → Admin panel. (A super_admin is a normal user with an extra
 ///    Admin icon and falls through to the user flow.)
 ///  • Everyone else → onboarding (if incomplete) or Home.
@@ -23,17 +22,16 @@ Future<void> routeAuthenticatedUser(
   String tag = 'Auth',
 }) async {
   debugPrint('[$tag] routeAuthenticatedUser: uid=${user.uid}, role=${user.role}, '
-      'isAdmin=${user.isAdmin}, isInternalAstrology=${user.isInternalAstrology}, '
-      'isProfileComplete=${user.isProfileComplete}');
+      'isAdmin=${user.isAdmin}, isProfileComplete=${user.isProfileComplete}');
 
   // ── Employee (horoscope-analysis staff) auto-detection ──────────────────
   // A Gmail the admin has registered in the astrology_team registry opens the
-  // Employee Portal. Admins / the internal astrology account are never treated
-  // as employees. This links the uid + flags the `astrologer` role on first
-  // sign-in so the router gates them to the portal on every future launch.
+  // Employee Portal. Admins are never treated as employees. This links the
+  // uid + flags the `astrologer` role on first sign-in so the router gates
+  // them to the portal on every future launch.
   final email = user.email;
   final alreadyEmployee = user.isAstrologer; // returning employee
-  if (!user.isAdmin && !user.isInternalAstrology) {
+  if (!user.isAdmin) {
     if (alreadyEmployee) {
       debugPrint('[$tag] routeAuthenticatedUser: employee → /astrologer-dashboard');
       context.go('/astrologer-dashboard');
@@ -69,10 +67,7 @@ Future<void> routeAuthenticatedUser(
 
   if (!context.mounted) return;
 
-  if (user.isInternalAstrology) {
-    debugPrint('[$tag] routeAuthenticatedUser: internal astrology → /astrology');
-    context.go('/astrology');
-  } else if (user.role == 'admin') {
+  if (user.role == 'admin') {
     // Pure admin only. A super_admin is a normal matrimony user (with an extra
     // Admin icon in the header) and falls through to the normal user flow.
     debugPrint('[$tag] routeAuthenticatedUser: admin account → /admin');

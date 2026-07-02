@@ -207,7 +207,7 @@ class _AstrologerRegisterScreenState
     if (uid == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Please sign in with Google first.')));
-      context.go('/astrologer-login');
+      context.go('/login');
       return;
     }
 

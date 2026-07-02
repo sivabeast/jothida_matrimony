@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/interest_model.dart';
 import '../services/firebase/firestore_service.dart';
 

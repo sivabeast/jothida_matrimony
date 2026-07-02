@@ -145,7 +145,7 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
     } catch (e, st) {
       // Even if sign-out fails (e.g. network error), clear local state so the
       // user is not stuck on an authenticated screen. The router redirect will
-      // see currentUser == null and navigate to /account-type.
+      // see currentUser == null and navigate to /login.
       debugPrint('[AuthNotifier] signOut: Firebase sign-out failed (non-fatal): '
           '$e\n$st');
     }
@@ -154,7 +154,7 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
     ref.invalidate(currentUserProvider);
     state = const AsyncData(null);
     debugPrint('[AuthNotifier] signOut: local state cleared — '
-        'GoRouterRefreshStream will redirect to /account-type.');
+        'GoRouterRefreshStream will redirect to /login.');
   }
 }
 

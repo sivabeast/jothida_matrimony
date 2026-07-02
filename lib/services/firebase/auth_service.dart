@@ -155,14 +155,14 @@ class AuthService {
     } catch (e, st) {
       debugPrint('[AuthService] signInWithGoogle failed: $e\n$st');
       // Make sure a half-finished Google session doesn't get stuck.
-      await _googleSignIn.signOut().catchError((_) {});
+      await _googleSignIn.signOut().catchError((_) => null);
       throw AuthException.from(e);
     }
   }
 
   // ── Sign out ───────────────────────────────────────────────────────────────
   Future<void> signOut() async {
-    await _googleSignIn.signOut().catchError((_) {});
+    await _googleSignIn.signOut().catchError((_) => null);
     await _auth.signOut();
   }
 

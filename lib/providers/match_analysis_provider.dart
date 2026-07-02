@@ -78,10 +78,9 @@ final astrologerMatchRequestsProvider =
       .whenData((list) => list.where((r) => r.isMatchAnalysis).toList());
 });
 
-/// Every Match Analysis request addressed to the single INTERNAL astrology
-/// service ([kInternalAstrologyId]). Powers the internal Astrology Dashboard
-/// (the only place these are reviewed now that there is no per-astrologer
-/// inbox). Newest-first, real-time.
+/// Every Match Analysis request addressed to the official consultation
+/// service ([kInternalAstrologyId]). Admin-only read (per rules) — powers the
+/// legacy match-workspace screen. Newest-first, real-time.
 final internalAstrologyRequestsProvider =
     StreamProvider.autoDispose<List<AstrologerRequestModel>>((ref) {
   if (kBypassAuth) {
@@ -229,68 +228,6 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
               otherPhoto: astrologerPhoto,
             );
       } catch (_) {}
-      state = const AsyncData(null);
-    } catch (e, st) {
-      state = AsyncError(e, st);
-      rethrow;
-    }
-  }
-
-  /// Sends a pairing straight to the single INTERNAL astrology service for a
-  /// Match Analysis — no astrologer selection, no payment, no approval step.
-  ///
-  /// Spec flow: the option is only ever offered AFTER an interest is accepted
-  /// (so the horoscope is unlocked); pressing it instantly creates a request
-  /// addressed to [kInternalAstrologyId], which appears immediately on the
-  /// internal Astrology Dashboard. [groom]/[bride] are the two profiles whose
-  /// horoscopes are compared (always the user + their accepted match).
-  Future<void> requestInternalMatchAnalysis({
-    required ProfileModel groom,
-    required ProfileModel bride,
-    String note = '',
-  }) async {
-    state = const AsyncLoading();
-    try {
-      final me = ref.read(myProfileProvider).valueOrNull;
-      final user = ref.read(currentUserProvider).valueOrNull;
-      final uid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ??
-          user?.uid ??
-          '';
-      final location = me == null
-          ? ''
-          : [me.city, me.state].where((s) => s.trim().isNotEmpty).join(', ');
-      final lang = ref.read(localeProvider)?.languageCode ?? 'en';
-      final now = DateTime.now();
-
-      final request = AstrologerRequestModel(
-        id: 'new',
-        astrologerId: kInternalAstrologyId,
-        astrologerName: kInternalAstrologyName,
-        userId: uid,
-        userName: me?.fullName ?? user?.displayName ?? 'User',
-        userPhotoUrl: me?.profilePhotoUrl ?? '',
-        userLocation: location,
-        type: AstrologerRequestType.matching,
-        status: AstrologerRequestStatus.pending,
-        message: note.trim(),
-        amount: 0, // internal service — no per-request payment
-        profileAId: groom.id,
-        profileAName: groom.fullName,
-        profileBId: bride.id,
-        profileBName: bride.fullName,
-        createdAt: now,
-        userLanguage: lang,
-        history: [
-          BookingHistoryEntry(
-              at: now, label: 'Sent for astrology match analysis'),
-        ],
-      );
-
-      if (kBypassAuth) {
-        ref.read(demoAstrologerRequestsProvider.notifier).add(request);
-      } else {
-        await ref.read(astrologerServiceProvider).createRequest(request);
-      }
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);

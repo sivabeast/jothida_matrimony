@@ -1,38 +1,33 @@
-/// The synthetic astrologer id every Match Analysis request is addressed to.
-///
-/// The app no longer has multiple astrologers — there is ONE internal astrology
-/// service owned by the application owner. All match-analysis requests carry
-/// this constant as their `astrologerId`, and the internal Astrology Dashboard
-/// (only reachable by [AdminConfig.internalAstrologyEmail]) streams every
-/// request addressed to it. It is intentionally NOT a real user uid.
+/// The synthetic addressee id carried by appointment / match-analysis request
+/// documents (`astrologerId`). It is a plain DATA constant — intentionally NOT
+/// a real user uid and NOT tied to any account or permission. The admin panel
+/// queries on it to list the official consultation service's bookings.
 const String kInternalAstrologyId = 'internal_astrology';
 
-/// Display name shown on internal match-analysis requests / reports.
+/// Display name shown on those requests / reports.
 const String kInternalAstrologyName = 'Astrology Service';
 
-/// Configuration for privileged (Super Admin) and internal-service access.
+/// Configuration for privileged (Super Admin) access.
 ///
 /// The email addresses listed here are automatically granted the
 /// `super_admin` role on login (see
 /// `FirestoreService.createOrUpdateUserOnLogin`). Comparison is
 /// case-insensitive and trimmed. To grant another super admin, add their
 /// Gmail address to [superAdminEmails] — no other change is required.
+///
+/// NOTE: there is NO email-based astrology access anymore — the old internal
+/// astrology account and its Astrology Dashboard were removed. Horoscope
+/// reports are handled by admin-provisioned EMPLOYEES (the astrology_team
+/// registry), detected at login by registry lookup, never by hardcoded email.
 class AdminConfig {
   AdminConfig._();
 
   /// Whitelisted Super Admin accounts. ONLY these emails receive the
   /// `super_admin` role (automatically, on login). This account behaves like a
-  /// normal matrimony user but also sees the Admin + Astrology dashboard
-  /// shortcuts in the Home header.
+  /// normal matrimony user but also sees the Admin shortcut in the Home header.
   static const List<String> superAdminEmails = <String>[
     'sivabeast123123@gmail.com',
   ];
-
-  /// The dedicated INTERNAL astrology/admin account. This Gmail skips the whole
-  /// matrimony experience (no onboarding, home, matches or profile) and lands
-  /// directly on the lightweight Astrology Dashboard. It is the only account
-  /// that owns and manages the internal Match Analysis service.
-  static const String internalAstrologyEmail = 'sivasanmuganathan2005@gmail.com';
 
   static const String roleSuperAdmin = 'super_admin';
   static const String roleAdmin = 'admin';
@@ -43,12 +38,6 @@ class AdminConfig {
     if (email == null || email.trim().isEmpty) return false;
     final normalized = email.trim().toLowerCase();
     return superAdminEmails.any((e) => e.toLowerCase() == normalized);
-  }
-
-  /// True when [email] is the dedicated internal astrology account.
-  static bool isInternalAstrologyEmail(String? email) {
-    if (email == null || email.trim().isEmpty) return false;
-    return email.trim().toLowerCase() == internalAstrologyEmail.toLowerCase();
   }
 
   /// Role that should be assigned to a freshly-created user document.

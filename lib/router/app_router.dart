@@ -8,9 +8,6 @@ import '../core/navigation/root_navigator.dart';
 import '../providers/auth_provider.dart';
 import '../providers/service_providers.dart';
 import '../models/astrologer_request_model.dart';
-// Internal astrology service (single owner) — lightweight dashboard + the
-// shared match-analysis workspace. All other astrologer screens were retired.
-import '../screens/astrology/astrology_dashboard_screen.dart';
 import '../screens/astrology/horoscope_report_service_screen.dart';
 import '../screens/astrology/appointment_booking_screen.dart';
 import '../screens/astrology/astrology_appointment_screen.dart';
@@ -18,11 +15,11 @@ import '../screens/astrology/appointment_confirmation_screen.dart';
 import '../screens/astrology/my_appointments_screen.dart';
 import '../screens/astrologer/match_workspace_screen.dart';
 import '../screens/astrologer/my_match_analysis_screen.dart';
-// Astrologer portal (multiple admin-provisioned, Google-only accounts).
-import '../screens/astrologer/astrologer_login_screen.dart';
+// Employee Portal (admin-provisioned horoscope-analysis staff; they sign in
+// through the SAME common login as everyone else — there is no separate
+// employee/astrologer login).
 import '../screens/astrologer/portal/astrologer_shell.dart';
 import '../screens/astrologer/portal/astrologer_request_detail_page.dart';
-import '../screens/auth/account_type_screen.dart';
 import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/chat/chat_list_screen.dart';
@@ -128,9 +125,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: refreshStream,
     redirect: (context, state) {
       final loc = state.matchedLocation;
-      final onAuthPage = loc == '/account-type' ||
-          loc == '/login' ||
-          loc == '/astrologer-login' ||
+      final onAuthPage = loc == '/login' ||
           loc == '/register' ||
           loc == '/forgot-password' ||
           loc.startsWith('/otp');
@@ -151,8 +146,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isAuthenticated = ref.read(authRepositoryProvider).currentUser != null;
       debugPrint('[Router] redirect: loc=$loc, isAuthenticated=$isAuthenticated');
       if (!isAuthenticated) {
-        // Single common login — unauthenticated users always land on /login
-        // (the old /account-type role chooser is retired).
+        // Single common login — unauthenticated users always land on /login.
         return (onAuthPage || onSplash) ? null : '/login';
       }
 
@@ -162,56 +156,27 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final user = userAsync.valueOrNull;
       debugPrint('[Router] redirect check: loc=$loc, uid=${user?.uid}, '
           'role=${user?.role}, isAdmin=${user?.isAdmin}, '
-          'isInternalAstrology=${user?.isInternalAstrology}, '
           'isProfileComplete=${user?.isProfileComplete}');
 
-      // ── Internal Astrology account ───────────────────────────────────────
-      // The dedicated internal astrology/admin Gmail skips the ENTIRE matrimony
-      // experience — no onboarding, home, matches or profile. It lives only in
-      // the Astrology Dashboard, the request workspace, and chat threads with
-      // users. Everything else redirects straight to the dashboard.
-      // NOTE: if this same Gmail has been provisioned as a team astrologer
-      // (role == 'astrologer'), the astrologer portal below takes precedence.
-      if (user != null && user.isInternalAstrology && !user.isAstrologer) {
-        final allowed = loc == '/astrology' ||
-            loc.startsWith('/match-workspace') ||
-            loc.startsWith('/chat');
-        if (!allowed) {
-          debugPrint('[Router] internal astrology account → /astrology');
-          return '/astrology';
-        }
-        return null;
-      }
-
-      // ── Astrologer (team member) account ─────────────────────────────────
-      // A `astrologer`-role account is a dedicated, admin-provisioned login. It
-      // lives ONLY in the astrologer portal (dashboard + request detail) and is
-      // locked out of the whole matrimony experience for strict isolation.
+      // ── Employee (team member) account ───────────────────────────────────
+      // An `astrologer`-role account is an admin-provisioned EMPLOYEE. It lives
+      // ONLY in the Employee Portal (dashboard + request detail) and is locked
+      // out of the whole matrimony experience for strict isolation.
       if (user != null && user.isAstrologer) {
         final allowed = loc == '/astrologer-dashboard' ||
-            loc.startsWith('/astrologer-request') ||
-            loc == '/astrologer-login';
+            loc.startsWith('/astrologer-request');
         if (!allowed) {
-          debugPrint('[Router] astrologer account → /astrologer-dashboard');
+          debugPrint('[Router] employee account → /astrologer-dashboard');
           return '/astrologer-dashboard';
         }
         return null;
       }
 
-      // The astrologer portal routes are off-limits to everyone else.
+      // The Employee Portal routes are off-limits to everyone else.
       final onAstrologerPortal = loc == '/astrologer-dashboard' ||
           loc.startsWith('/astrologer-request');
       if (onAstrologerPortal && !(user?.isAstrologer ?? false)) {
-        debugPrint('[Router] ⛔ non-astrologer blocked from "$loc" → /home');
-        return '/home';
-      }
-
-      // ── /astrology protection ────────────────────────────────────────────
-      // Only the internal astrology account or an admin may open the Astrology
-      // Dashboard (admins reach it from the Home header for oversight).
-      final onAstrology = loc == '/astrology';
-      if (onAstrology && !(user?.isAdmin ?? false)) {
-        debugPrint('[Router] ⛔ non-privileged blocked from "$loc" → /home');
+        debugPrint('[Router] ⛔ non-employee blocked from "$loc" → /home');
         return '/home';
       }
 
@@ -262,13 +227,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
-      GoRoute(
-          path: '/account-type', builder: (_, __) => const AccountTypeScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-      // ── Astrologer portal (Google-only, admin-provisioned accounts) ──────
-      GoRoute(
-          path: '/astrologer-login',
-          builder: (_, __) => const AstrologerLoginScreen()),
+      // ── Employee Portal (admin-provisioned staff; common login only) ─────
       GoRoute(
           path: '/astrologer-dashboard',
           builder: (_, __) => const AstrologerShell()),
@@ -281,11 +241,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               : null,
         ),
       ),
-      // Internal Astrology Dashboard (single internal service). Gated in
-      // `redirect` to the internal astrology account + admins.
-      GoRoute(
-          path: '/astrology',
-          builder: (_, __) => const AstrologyDashboardScreen()),
       GoRoute(path: '/chats', builder: (_, __) => const ChatListScreen()),
       GoRoute(
         path: '/chat/:id',
@@ -301,7 +256,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return OtpScreen(
             verificationId: extra['verificationId'] as String,
             phone: extra['phone'] as String,
-            isAstrologer: extra['isAstrologer'] == true,
           );
         },
       ),

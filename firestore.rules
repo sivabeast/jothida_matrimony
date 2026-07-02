@@ -26,15 +26,9 @@ service cloud.firestore {
       return isAuthenticated() && getUserData().role == 'astrologer';
     }
 
-    // The single INTERNAL astrology service account, identified purely by its
-    // Google email (no special role needed). It owns all Match Analysis
-    // requests addressed to the synthetic 'internal_astrology' id and may read /
-    // respond to every one of them. Keep this in sync with
-    // AdminConfig.internalAstrologyEmail.
-    function isInternalAstrology() {
-      return isAuthenticated()
-          && request.auth.token.email == 'sivasanmuganathan2005@gmail.com';
-    }
+    // NOTE: there is no email-based astrology access anymore — the old
+    // internal astrology account was removed. Requests addressed to the
+    // synthetic 'internal_astrology' id are managed by ADMINS only.
 
     // Deterministic id of the connection between two users (sorted, '_'-joined)
     // so it can be looked up from either side.
@@ -332,14 +326,14 @@ service cloud.firestore {
                             || resource.data.userId == request.auth.uid));
     }
 
-    // ── Internal astrology service config ────────────────────────────────
+    // ── Astrology service config ─────────────────────────────────────────
     // Single document (astrology_service/config) holding the expert profile,
-    // office details, service charge, page copy and appointment slot window.
-    // Any signed-in user may READ it (the service page + booking need it); only
-    // an admin or the internal astrology account may write.
+    // office details, service charge, page copy and appointment sessions.
+    // Any signed-in user may READ it (the service page + booking need it);
+    // only an admin may write.
     match /astrology_service/{docId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin() || isInternalAstrology();
+      allow write: if isAdmin();
     }
 
     // ── Astrology team (admin-provisioned astrologer accounts) ────────────
@@ -381,7 +375,7 @@ service cloud.firestore {
     match /astrology_booked_slots/{dateKey} {
       allow read: if isAuthenticated();
       allow create, update: if isAuthenticated();
-      allow delete: if isAdmin() || isInternalAstrology();
+      allow delete: if isAdmin();
     }
 
     // ── Settlements (astrologer payout history) ──────────────────────────
@@ -410,10 +404,6 @@ service cloud.firestore {
                   && resource.data.astrologerEmail ==
                       request.auth.token.email.lower();
       allow read: if isAdmin();
-      // The internal astrology service reads/responds to every request addressed
-      // to it (Match Analysis triage on the Astrology Dashboard).
-      allow read: if isInternalAstrology()
-                  && resource.data.astrologerId == 'internal_astrology';
       allow create: if isAuthenticated()
                     && request.resource.data.userId == request.auth.uid;
       allow update: if isAuthenticated()
@@ -424,8 +414,6 @@ service cloud.firestore {
                     && resource.data.astrologerEmail ==
                         request.auth.token.email.lower();
       allow update: if isAdmin();
-      allow update: if isInternalAstrology()
-                    && resource.data.astrologerId == 'internal_astrology';
       // The booking's owner (matrimony user) may run the client-side expiry
       // sweep, pay the analysis fee (dev-mode payment flags), reassign a "choose
       // another later" booking, AND trigger the automatic assignment of a newly

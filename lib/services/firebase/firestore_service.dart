@@ -83,7 +83,7 @@ class FirestoreService {
           // Existing user → bump lastLoginAt and refresh the login provider
           // (no duplicate document). Also auto-promote a configured Super Admin
           // account if its document was created before being whitelisted.
-          final existing = snap.data() as Map<String, dynamic>?;
+          final existing = snap.data();
           final currentRole = existing?['role'];
           final isWhitelisted = AdminConfig.isSuperAdminEmail(user.email);
           final promoteSuperAdmin =
@@ -118,25 +118,12 @@ class FirestoreService {
 
     debugPrint('[Firestore] ${user.uid}: transaction committed, re-reading doc...');
 
-    // The internal astrology account's REAL uid powers the Astrology Analysis
-    // Chat pre-creation after a horoscope-report purchase (so the user and the
-    // team share one thread). Capture it the first time the account logs in.
-    if (AdminConfig.isInternalAstrologyEmail(user.email)) {
-      try {
-        await _db
-            .collection('astrology_service')
-            .doc('config')
-            .set({'internalUid': user.uid}, SetOptions(merge: true));
-      } catch (e) {
-        debugPrint('[Firestore] internalUid capture failed (non-fatal): $e');
-      }
-    }
-
-    // ── Astrologer role auto-detection (spec §2) ─────────────────────────────
-    // If this Gmail was provisioned by the admin as an astrologer, flag the
-    // `astrologer` role on login (from ANY entry point) and link the uid, so the
-    // router opens the Astrologer Dashboard and never the matrimony pages.
-    // Super-admin accounts are excluded — admin and astrologer stay separate.
+    // ── Employee role auto-detection ─────────────────────────────────────────
+    // If this Gmail was provisioned by the admin as an employee (astrology_team
+    // registry), flag the `astrologer` role on login (from ANY entry point) and
+    // link the uid, so the router opens the Employee Portal and never the
+    // matrimony pages. Super-admin accounts are excluded — admin and employee
+    // stay separate.
     if (user.email != null && !AdminConfig.isSuperAdminEmail(user.email)) {
       try {
         final teamKey = user.email!.trim().toLowerCase();
@@ -570,20 +557,10 @@ class FirestoreService {
   // ── Reports ───────────────────────────────────────────────────────────────
   Future<void> submitReport(ReportModel report) async {
     await _db.collection(AppConstants.reportsCollection).doc(report.id).set(report.toFirestore());
-    // Update profile report count and alert level
-    final count = await _getProfileReportCount(report.reportedProfileId);
+    // Bump the reported profile's report count.
     await _db.collection(AppConstants.profilesCollection).doc(report.reportedProfileId).update({
       'reportCount': FieldValue.increment(1),
     });
-  }
-
-  Future<int> _getProfileReportCount(String profileId) async {
-    final snap = await _db
-        .collection(AppConstants.reportsCollection)
-        .where('reportedProfileId', isEqualTo: profileId)
-        .count()
-        .get();
-    return snap.count ?? 0;
   }
 
   Future<List<ReportModel>> getAllReports() async {

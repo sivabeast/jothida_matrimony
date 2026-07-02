@@ -57,11 +57,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       if (userModel == null) {
         debugPrint('[Splash] No Firestore user doc found → /login');
         context.go('/login');
-      } else if (userModel.isInternalAstrology) {
-        // The dedicated internal astrology account skips the whole matrimony
-        // experience and lands directly on the Astrology Dashboard.
-        debugPrint('[Splash] Internal astrology account → /astrology');
-        context.go('/astrology');
       } else if (userModel.isAstrologer) {
         // Employee (horoscope-analysis staff) → Employee Portal.
         debugPrint('[Splash] Employee account → /astrologer-dashboard');
