@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/astrologer_request_model.dart';
 import '../models/astrologer_team_member.dart';
 import '../models/astrology_service_config.dart';
+import '../models/payroll_payment.dart';
 import 'astrology_config_provider.dart';
 import 'astrology_team_provider.dart';
 import 'service_providers.dart';
@@ -43,6 +44,12 @@ class AstrologerStats {
   /// global rate from `AstrologyServiceConfig.analysisCommission`.
   final int commissionPerReport;
 
+  /// Reports completed in the CURRENT payroll cycle — i.e. since the admin
+  /// last hit "Mark As Paid" (`member.lastPaidDate`). This is what the weekly
+  /// payroll pays out: after a payment the cycle restarts from ZERO, so
+  /// commission never accumulates across paid weeks.
+  final int cycleCompleted;
+
   const AstrologerStats({
     required this.member,
     this.totalAssigned = 0,
@@ -56,9 +63,10 @@ class AstrologerStats {
     this.lastWeek = const WeeklyStat(),
     this.revenue = 0,
     this.commissionPerReport = 0,
+    this.cycleCompleted = 0,
   });
 
-  /// Commission earned this week = completed-this-week × rate (spec §12).
+  /// Commission earned this calendar week = completed-this-week × rate.
   int get weeklyCommission => thisWeek.completed * commissionPerReport;
 
   /// Commission earned this month = completed-this-month × rate.
@@ -70,9 +78,19 @@ class AstrologerStats {
   /// Commission the admin has already paid out to this employee.
   int get paidCommission => member.paidCommission;
 
-  /// Commission earned but not yet paid.
-  int get pendingCommission =>
-      (totalCommission - member.paidCommission).clamp(0, 1 << 31);
+  /// THE payroll number: commission owed for the CURRENT cycle (reports
+  /// completed since the last "Mark As Paid"). Resets to ₹0 the moment the
+  /// admin pays — e.g. week 1 earns ₹5000, admin pays, week 2 earning ₹50
+  /// shows ₹50 (never ₹5050).
+  int get cycleCommission => cycleCompleted * commissionPerReport;
+
+  /// Payment status for the current cycle: money owed → Pending; nothing owed
+  /// after at least one payout → Paid; brand-new employee with no activity → —.
+  String get paymentStatusLabel {
+    if (cycleCommission > 0) return 'Pending';
+    if (member.lastPaidDate != null) return 'Paid';
+    return '—';
+  }
 }
 
 DateTime _startOfWeek(DateTime d) {
@@ -109,12 +127,15 @@ AstrologerStats computeAstrologerStats(
   var revenue = 0;
   var todayCompleted = 0;
   var monthCompleted = 0;
+  var cycleCompleted = 0;
+  final cycleStart = m.lastPaidDate; // null → everything is still unpaid
   for (final r in completedList) {
     revenue += r.amount;
     final c = r.completedAt;
     if (c != null) {
       if (sameDay(c, now)) todayCompleted++;
       if (c.year == now.year && c.month == now.month) monthCompleted++;
+      if (cycleStart == null || c.isAfter(cycleStart)) cycleCompleted++;
     }
   }
   final todayAssigned = mine
@@ -155,6 +176,7 @@ AstrologerStats computeAstrologerStats(
     lastWeek: weekly(lastWeekStart, thisWeekStart),
     revenue: revenue,
     commissionPerReport: cfg.analysisCommission,
+    cycleCompleted: cycleCompleted,
   );
 }
 
@@ -200,4 +222,30 @@ final astrologerStatsByIdProvider =
     if (s.member.id == emailKey) return s;
   }
   return null;
+});
+
+// ── Weekly payroll ───────────────────────────────────────────────────────────
+
+/// Total commission payable RIGHT NOW across all employees (sum of every
+/// employee's current-cycle commission) — the Employees page payroll banner.
+final totalPayableCommissionProvider = Provider.autoDispose<int>((ref) {
+  var total = 0;
+  for (final s in ref.watch(astrologerStatsProvider)) {
+    total += s.cycleCommission;
+  }
+  return total;
+});
+
+/// Weekly payment history for one employee (newest first).
+final payrollHistoryProvider = StreamProvider.autoDispose
+    .family<List<PayrollPayment>, String>((ref, emailKey) {
+  return ref.read(astrologyTeamServiceProvider).watchPayrollHistory(emailKey);
+});
+
+/// The signed-in employee's own weekly payment history.
+final myPayrollHistoryProvider =
+    StreamProvider.autoDispose<List<PayrollPayment>>((ref) {
+  final member = ref.watch(myAstrologerTeamMemberProvider).valueOrNull;
+  if (member == null) return Stream.value(const []);
+  return ref.read(astrologyTeamServiceProvider).watchPayrollHistory(member.id);
 });

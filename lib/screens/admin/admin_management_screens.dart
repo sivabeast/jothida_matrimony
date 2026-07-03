@@ -14,8 +14,8 @@ import '../../providers/auth_provider.dart';
 import '../../widgets/common/data_states.dart';
 
 /// Admin management section screens, registered under the admin ShellRoute:
-///   /admin/astrologers · /admin/ratings · /admin/banners
-///   /admin/premium · /admin/analytics · /admin/settings
+///   /admin/astrologers · /admin/premium · /admin/revenue-settings ·
+///   /admin/analytics · /admin/settings
 ///
 /// These provide the navigable Super Admin sections requested for the
 /// dashboard. Sections backed by existing providers (Analytics) show live
@@ -1260,39 +1260,6 @@ class _CertificateViewer extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ⭐ Rating Management
-// ─────────────────────────────────────────────────────────────────────────────
-
-class RatingManagementScreen extends StatelessWidget {
-  const RatingManagementScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    debugPrint('[Admin] RatingManagement build — /admin/ratings');
-    return _adminScaffold(
-      title: 'Rating Management',
-      icon: Icons.star_rate_rounded,
-      subtitle: 'View and moderate user ratings',
-      children: [
-        _ActionTile(
-          icon: Icons.reviews_outlined,
-          title: 'View All Ratings',
-          subtitle: 'See every rating left on the platform',
-          onTap: () => _soon(context, 'View All Ratings'),
-        ),
-        _ActionTile(
-          icon: Icons.gavel_outlined,
-          title: 'Moderate Ratings',
-          subtitle: 'Hide or remove inappropriate ratings',
-          color: AppColors.error,
-          onTap: () => _soon(context, 'Moderate Ratings'),
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // 📢 Banner Management — moved to banner_management_screen.dart (real,
 // Firestore-backed system with image + text banners, ordering and publishing).
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1492,43 +1459,10 @@ class AdminSettingsScreen extends StatelessWidget {
         ),
         // ── Other management areas (preserved) ──────────────────────────────
         _ActionTile(
-          icon: Icons.event_busy_outlined,
-          title: 'Expired Bookings',
-          subtitle: 'Reassign bookings the employee missed',
-          color: AppColors.error,
-          onTap: () => context.go('/admin/expired-bookings'),
-        ),
-        _ActionTile(
           icon: Icons.view_carousel,
           title: 'Banner Management',
           subtitle: 'Home screen banners',
           onTap: () => context.go('/admin/banners'),
-        ),
-        _ActionTile(
-          icon: Icons.support_agent,
-          title: 'Support Tickets',
-          subtitle: 'User help requests & complaints',
-          onTap: () => context.go('/admin/support'),
-        ),
-        _ActionTile(
-          icon: Icons.star_rate_rounded,
-          title: 'Ratings Management',
-          subtitle: 'Moderate employee ratings',
-          onTap: () => context.go('/admin/ratings'),
-        ),
-        _ActionTile(
-          icon: Icons.report_problem_outlined,
-          title: 'Reported Profiles',
-          subtitle: 'Review user reports & moderation',
-          color: AppColors.error,
-          onTap: () => context.go('/admin/reports'),
-        ),
-        _ActionTile(
-          icon: Icons.delete_sweep_outlined,
-          title: 'Account Deletion Requests',
-          subtitle: 'Approve or reject deletions',
-          color: AppColors.error,
-          onTap: () => context.go('/admin/deletion-requests'),
         ),
       ],
     );
@@ -1630,35 +1564,3 @@ class _PriceRow extends StatelessWidget {
       );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 🎫 Support Tickets
-// ─────────────────────────────────────────────────────────────────────────────
-
-class SupportTicketsScreen extends StatelessWidget {
-  const SupportTicketsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    debugPrint('[Admin] SupportTickets build — /admin/support');
-    return _adminScaffold(
-      title: 'Support Tickets',
-      icon: Icons.support_agent,
-      subtitle: 'User help requests and complaints',
-      children: [
-        _ActionTile(
-          icon: Icons.inbox_outlined,
-          title: 'Open Tickets',
-          subtitle: 'Review and respond to user issues',
-          onTap: () => _soon(context, 'Open Tickets'),
-        ),
-        _ActionTile(
-          icon: Icons.done_all,
-          title: 'Resolved Tickets',
-          subtitle: 'History of closed support requests',
-          color: AppColors.success,
-          onTap: () => _soon(context, 'Resolved Tickets'),
-        ),
-      ],
-    );
-  }
-}

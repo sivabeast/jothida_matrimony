@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import '../../core/constants/app_constants.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../models/astrologer_team_member.dart';
+import '../../models/payroll_payment.dart';
 
 /// Thrown by [AstrologyTeamService.addMember] when the Gmail is already a
 /// registered astrologer, so the admin sees a clear "already exists" message.
@@ -187,7 +188,11 @@ class AstrologyTeamService {
   /// ([AstrologerRequestModel.astrologerEmail]); it appears on their dashboard
   /// the moment they first log in. Returns the chosen member, or null when no
   /// active employee exists (the request stays unassigned for the admin).
-  Future<AstrologerTeamMember?> assignRequest(String requestId) async {
+  /// [resetStatus] (default true) stamps the workflow back to Pending — right
+  /// for horoscope reports. Pass FALSE for paid appointments, which are already
+  /// CONFIRMED at creation and must never fall back to a pending state.
+  Future<AstrologerTeamMember?> assignRequest(String requestId,
+      {bool resetStatus = true}) async {
     final snap = await _team.where('active', isEqualTo: true).get();
     final members = snap.docs
         .map(AstrologerTeamMember.fromFirestore)
@@ -230,7 +235,8 @@ class AstrologyTeamService {
         'pendingCount': FieldValue.increment(1),
         'lastAssignedAt': FieldValue.serverTimestamp(),
       });
-      tx.update(reqRef, _assignmentData(chosen, assignedBy: 'auto'));
+      tx.update(reqRef,
+          _assignmentData(chosen, assignedBy: 'auto', resetStatus: resetStatus));
     });
     debugPrint('[AstrologyTeam] assignRequest($requestId) → ${chosen.email}.');
     return chosen;
@@ -242,6 +248,7 @@ class AstrologyTeamService {
   static Map<String, dynamic> _assignmentData(
     AstrologerTeamMember m, {
     required String assignedBy,
+    bool resetStatus = true,
   }) {
     final name = m.displayName.trim().isEmpty ? m.email : m.displayName;
     return {
@@ -253,9 +260,9 @@ class AstrologyTeamService {
       'assignedAt': FieldValue.serverTimestamp(),
       'assignedBy': assignedBy,
       'assignmentStatus': 'assigned',
-      'workflowStatus': 'new',
-      'status': AstrologerRequestStatus.pending.name,
-      'inProgress': false,
+      if (resetStatus) 'workflowStatus': 'new',
+      if (resetStatus) 'status': AstrologerRequestStatus.pending.name,
+      if (resetStatus) 'inProgress': false,
       'history': FieldValue.arrayUnion([
         BookingHistoryEntry.now(
                 'Assigned to $name (${assignedBy == 'auto' ? 'round robin' : 'admin'})')
@@ -296,20 +303,58 @@ class AstrologyTeamService {
     }
   }
 
-  /// Admin records a commission payout to an employee. [amount] is added to the
-  /// employee's `paidCommission` total, so pending commission
-  /// (earned − paid) drops accordingly. Stamps `lastPaidDate`.
-  Future<void> payCommission(String emailKey, {required int amount}) =>
-      _team.doc(emailKey).update({
-        'paidCommission': FieldValue.increment(amount),
-        'lastPaidDate': FieldValue.serverTimestamp(),
-      });
-
   /// Admin sets the exact total commission already paid to an employee (used by
   /// the employee details screen's editable field). Stamps `lastPaidDate`.
   Future<void> setPaidCommission(String emailKey, int paidCommission) =>
       _team.doc(emailKey).update({
         'paidCommission': paidCommission,
         'lastPaidDate': FieldValue.serverTimestamp(),
+      });
+
+  // ── Weekly payroll ("Mark As Paid") ────────────────────────────────────────
+
+  CollectionReference<Map<String, dynamic>> get _payroll =>
+      _db.collection(AppConstants.payrollPaymentsCollection);
+
+  /// Closes the employee's CURRENT payroll cycle: records one payout document
+  /// in `payroll_payments` (the weekly payment history) and stamps
+  /// `lastPaidDate` on the registry entry — which is the cycle cut-off, so the
+  /// next week's commission starts again from ₹0 instead of accumulating.
+  /// [amount] = cycle commission being paid; [reportsCount] = completed reports
+  /// covered; [periodStart] = the previous cut-off (null for the first payout).
+  Future<void> markPayrollPaid(
+    AstrologerTeamMember m, {
+    required int amount,
+    required int reportsCount,
+    required int ratePerReport,
+  }) async {
+    final batch = _db.batch();
+    batch.set(_payroll.doc(), {
+      'employeeId': m.id,
+      'employeeEmail': m.email,
+      'employeeName': m.displayName.trim().isEmpty ? m.email : m.displayName,
+      'amount': amount,
+      'reportsCount': reportsCount,
+      'ratePerReport': ratePerReport,
+      'periodStart':
+          m.lastPaidDate == null ? null : Timestamp.fromDate(m.lastPaidDate!),
+      'paidAt': FieldValue.serverTimestamp(),
+    });
+    batch.update(_team.doc(m.id), {
+      'lastPaidDate': FieldValue.serverTimestamp(), // new cycle cut-off
+      'paidCommission': FieldValue.increment(amount),
+      'salaryStatus': 'paid',
+    });
+    await batch.commit();
+  }
+
+  /// Payment history for ONE employee, newest first (admin history view and the
+  /// employee's own earnings page). Single-field filter — no composite index;
+  /// sorted client-side.
+  Stream<List<PayrollPayment>> watchPayrollHistory(String emailKey) =>
+      _payroll.where('employeeId', isEqualTo: emailKey).snapshots().map((s) {
+        final list = s.docs.map(PayrollPayment.fromFirestore).toList();
+        list.sort((a, b) => b.paidAt.compareTo(a.paidAt));
+        return list;
       });
 }

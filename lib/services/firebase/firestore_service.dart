@@ -7,13 +7,11 @@ import '../../models/profile_model.dart';
 import '../../models/interest_model.dart';
 import '../../models/subscription_model.dart';
 import '../../models/report_model.dart';
-import '../../models/account_deletion_request_model.dart';
 import '../../models/notification_model.dart';
 import '../../models/announcement_model.dart';
 import '../../models/banner_model.dart';
 import '../../models/user_model.dart';
 import '../../models/dashboard_analytics.dart';
-import '../../models/admin_activity.dart';
 
 /// A single page of search results plus the cursor for the next page.
 typedef ProfilePage = ({
@@ -564,14 +562,6 @@ class FirestoreService {
     });
   }
 
-  Future<List<ReportModel>> getAllReports() async {
-    final snap = await _db
-        .collection(AppConstants.reportsCollection)
-        .orderBy('createdAt', descending: true)
-        .get();
-    return snap.docs.map((d) => ReportModel.fromFirestore(d)).toList();
-  }
-
   // ── Notifications ─────────────────────────────────────────────────────────
   Future<void> saveNotification(NotificationModel notification) => _db
       .collection(AppConstants.notificationsCollection)
@@ -717,7 +707,13 @@ class FirestoreService {
     final users = <UserModel>[];
     for (final d in snap.docs) {
       try {
-        users.add(UserModel.fromFirestore(d));
+        final u = UserModel.fromFirestore(d);
+        // MATRIMONY USERS ONLY: employee/astrologer and admin accounts are
+        // managed in their own modules and must never appear in the Users
+        // list. (Docs without a role parse as 'user', so legacy members are
+        // kept.) Filtered client-side because a Firestore `where role ==`
+        // would silently drop docs missing the field.
+        if (u.role == 'user') users.add(u);
       } catch (e) {
         debugPrint('[getAllUsers] skipped malformed user ${d.id}: $e');
       }
@@ -918,138 +914,26 @@ class FirestoreService {
     }
   }
 
-  /// Recent platform events (newest first, max [limit]) for the Dashboard
-  /// activity feed: new users, new astrologers, new subscriptions and new
-  /// account-deletion requests. Each source is guarded independently.
-  Future<List<AdminActivity>> getRecentActivity({int limit = 10}) async {
-    final items = <AdminActivity>[];
-    DateTime? ts(dynamic v) => v is Timestamp ? v.toDate() : null;
-
-    try {
-      final s = await _db
-          .collection(AppConstants.usersCollection)
-          .orderBy('createdAt', descending: true)
-          .limit(limit)
-          .get();
-      for (final d in s.docs) {
-        final m = d.data();
-        items.add(AdminActivity(
-          type: AdminActivityType.user,
-          title: (m['displayName'] ?? m['email'] ?? 'New user').toString(),
-          subtitle: 'New user registered',
-          time: ts(m['createdAt']) ?? DateTime.now(),
-        ));
-      }
-    } catch (e) {
-      debugPrint('[Activity] users failed: $e');
-    }
-
-    try {
-      final s = await _db
-          .collection(AppConstants.astrologersCollection)
-          .orderBy('createdAt', descending: true)
-          .limit(limit)
-          .get();
-      for (final d in s.docs) {
-        final m = d.data();
-        items.add(AdminActivity(
-          type: AdminActivityType.astrologer,
-          title: (m['fullName'] ?? 'New astrologer').toString(),
-          subtitle: 'New astrologer registered',
-          time: ts(m['createdAt']) ?? DateTime.now(),
-        ));
-      }
-    } catch (e) {
-      debugPrint('[Activity] astrologers failed: $e');
-    }
-
-    try {
-      final s = await _db
-          .collection(AppConstants.subscriptionsCollection)
-          .orderBy('createdAt', descending: true)
-          .limit(limit)
-          .get();
-      for (final d in s.docs) {
-        final m = d.data();
-        final amount = (m['amountPaid'] is num) ? (m['amountPaid'] as num).toInt() : 0;
-        items.add(AdminActivity(
-          type: AdminActivityType.subscription,
-          title: '${m['plan'] ?? 'Plan'} · ₹$amount',
-          subtitle: 'New subscription purchased',
-          time: ts(m['createdAt']) ?? DateTime.now(),
-        ));
-      }
-    } catch (e) {
-      debugPrint('[Activity] subscriptions failed: $e');
-    }
-
-    try {
-      final s = await _db
-          .collection(AppConstants.accountDeletionRequestsCollection)
-          .orderBy('requestDate', descending: true)
-          .limit(limit)
-          .get();
-      for (final d in s.docs) {
-        final m = d.data();
-        items.add(AdminActivity(
-          type: AdminActivityType.deletion,
-          title: (m['userName'] ?? m['email'] ?? 'User').toString(),
-          subtitle: 'New account deletion request',
-          time: ts(m['requestDate']) ?? DateTime.now(),
-        ));
-      }
-    } catch (e) {
-      debugPrint('[Activity] deletion requests failed: $e');
-    }
-
-    // Astrologer verifications — only docs with a `verifiedAt` are returned by
-    // the single-field orderBy (no composite index needed).
-    try {
-      final s = await _db
-          .collection(AppConstants.astrologersCollection)
-          .orderBy('verifiedAt', descending: true)
-          .limit(limit)
-          .get();
-      for (final d in s.docs) {
-        final m = d.data();
-        items.add(AdminActivity(
-          type: AdminActivityType.verification,
-          title: (m['fullName'] ?? 'Astrologer').toString(),
-          subtitle: 'Astrologer verified',
-          time: ts(m['verifiedAt']) ?? DateTime.now(),
-        ));
-      }
-    } catch (e) {
-      debugPrint('[Activity] verifications failed: $e');
-    }
-
-    // Completed horoscope / match-analysis reports — only completed requests
-    // carry a `completedAt`, so the single-field orderBy returns just those.
-    try {
-      final s = await _db
-          .collection(AppConstants.astrologerRequestsCollection)
-          .orderBy('completedAt', descending: true)
-          .limit(limit)
-          .get();
-      for (final d in s.docs) {
-        final m = d.data();
-        items.add(AdminActivity(
-          type: AdminActivityType.horoscope,
-          title: (m['astrologerName'] ?? 'Astrologer').toString(),
-          subtitle: 'Horoscope report completed',
-          time: ts(m['completedAt']) ?? DateTime.now(),
-        ));
-      }
-    } catch (e) {
-      debugPrint('[Activity] horoscope reports failed: $e');
-    }
-
-    items.sort((a, b) => b.time.compareTo(a.time));
-    return items.take(limit).toList();
-  }
-
   Future<Map<String, dynamic>> getAdminStats() async {
+    // "Total Users" counts MATRIMONY users only. Employee/astrologer and admin
+    // accounts live in the users collection too (shared sign-in), so subtract
+    // them from the raw count — docs with NO role field are legacy members and
+    // must stay counted, which is why this isn't a `where role == 'user'`.
     final users = await _db.collection(AppConstants.usersCollection).count().get();
+    var nonMemberAccounts = 0;
+    for (final role in ['astrologer', 'admin', 'super_admin']) {
+      try {
+        nonMemberAccounts += (await _db
+                    .collection(AppConstants.usersCollection)
+                    .where('role', isEqualTo: role)
+                    .count()
+                    .get())
+                .count ??
+            0;
+      } catch (e) {
+        debugPrint('[AdminStats] role count($role) failed (→0): $e');
+      }
+    }
     final profiles = await _db.collection(AppConstants.profilesCollection).count().get();
     final pendingProfiles = await _db
         .collection(AppConstants.profilesCollection)
@@ -1060,11 +944,6 @@ class FirestoreService {
     final married = await _db
         .collection(AppConstants.profilesCollection)
         .where('isMarried', isEqualTo: true)
-        .count()
-        .get();
-    final pendingDeletions = await _db
-        .collection(AppConstants.accountDeletionRequestsCollection)
-        .where('status', isEqualTo: 'pending')
         .count()
         .get();
     final astrologers =
@@ -1105,7 +984,8 @@ class FirestoreService {
         .collection(AppConstants.interestsCollection)
         .where('status', isEqualTo: AppConstants.interestAccepted));
 
-    final totalUsers = users.count ?? 0;
+    final totalUsers =
+        ((users.count ?? 0) - nonMemberAccounts).clamp(0, users.count ?? 0);
 
     return {
       'totalUsers': totalUsers,
@@ -1113,7 +993,6 @@ class FirestoreService {
       'pendingProfiles': pendingProfiles.count,
       'totalReports': reports.count,
       'marriedUsers': married.count,
-      'pendingDeletions': pendingDeletions.count,
       'totalAstrologers': astrologers.count,
       'totalConsultations': consultations.count,
       // Breakdowns for the mobile dashboard.
@@ -1211,6 +1090,9 @@ class FirestoreService {
 
     // ── Consultations (from `astrologer_requests`) ──────────────────────────
     int cToday = 0, cWeek = 0, cMonth = 0, cCompleted = 0, cCancelled = 0;
+    // PAID astrology-service revenue (horoscope reports + appointments) — the
+    // app's real per-service income now that all matrimony features are free.
+    int svcRevToday = 0, svcRevMonth = 0, svcRevTotal = 0;
     final consultByAstro = <String, int>{};
     // Completed-report count + consultation revenue per astrologer (leaderboard).
     final completedByAstro = <String, int>{};
@@ -1227,6 +1109,15 @@ class FirestoreService {
           if (!created.isBefore(todayStart)) cToday++;
           if (!created.isBefore(weekStart)) cWeek++;
           if (!created.isBefore(monthStart)) cMonth++;
+        }
+        final amount = toInt(m['amount']);
+        if (m['paid'] == true && amount > 0) {
+          svcRevTotal += amount;
+          final paidAt = ts(m['paidAt']) ?? created;
+          if (paidAt != null) {
+            if (!paidAt.isBefore(todayStart)) svcRevToday += amount;
+            if (!paidAt.isBefore(monthStart)) svcRevMonth += amount;
+          }
         }
         final aid = (m['astrologerId'] ?? '') as String;
         if (status == 'completed') {
@@ -1412,12 +1303,13 @@ class FirestoreService {
       totalMessages: totalMessages,
       premiumSubscribers: activePremium,
       marriedUsers: marriedUsers,
-      // Combined revenue = user subs + astrologer subs.
-      revenueToday: revToday + astroRevToday,
+      // Combined revenue = user subs + astrologer subs + PAID astrology
+      // services (horoscope reports & appointments).
+      revenueToday: revToday + astroRevToday + svcRevToday,
       revenueWeek: revWeek,
-      revenueMonth: revMonth + astroRevMonth,
+      revenueMonth: revMonth + astroRevMonth + svcRevMonth,
       revenueYear: revYear,
-      revenueTotal: revTotal + astroRevTotal,
+      revenueTotal: revTotal + astroRevTotal + svcRevTotal,
       revenueDaily: revenueDaily,
       revenueWeekly: revenueWeekly,
       revenueMonthly: revenueMonthly,
@@ -1476,74 +1368,4 @@ class FirestoreService {
     return snap.docs.map((d) => ProfileModel.fromFirestore(d)).toList();
   }
 
-  // ── Account deletion requests ──────────────────────────────────────────────
-  Future<void> submitDeletionRequest(AccountDeletionRequest req) async {
-    await _db
-        .collection(AppConstants.accountDeletionRequestsCollection)
-        .doc(req.id)
-        .set(req.toFirestore());
-    await _db.collection(AppConstants.usersCollection).doc(req.userId).update({
-      'deletionRequested': true,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-  }
-
-  Future<List<AccountDeletionRequest>> getDeletionRequests() async {
-    final snap = await _db
-        .collection(AppConstants.accountDeletionRequestsCollection)
-        .orderBy('requestDate', descending: true)
-        .get();
-    return snap.docs
-        .map((d) => AccountDeletionRequest.fromFirestore(d))
-        .toList();
-  }
-
-  /// Approve → permanently remove the user's Firestore data and mark the
-  /// request approved. NOTE: deleting the Firebase Auth account itself requires
-  /// the Admin SDK (a Cloud Function) triggered on this status flip.
-  Future<void> approveDeletionRequest(AccountDeletionRequest req) async {
-    final batch = _db.batch();
-    final profiles = await _db
-        .collection(AppConstants.profilesCollection)
-        .where('userId', isEqualTo: req.userId)
-        .get();
-    for (final doc in profiles.docs) {
-      batch.delete(doc.reference);
-    }
-    final sent = await _db
-        .collection(AppConstants.interestsCollection)
-        .where('senderId', isEqualTo: req.userId)
-        .get();
-    for (final doc in sent.docs) {
-      batch.delete(doc.reference);
-    }
-    final received = await _db
-        .collection(AppConstants.interestsCollection)
-        .where('receiverId', isEqualTo: req.userId)
-        .get();
-    for (final doc in received.docs) {
-      batch.delete(doc.reference);
-    }
-    batch.delete(_db.collection(AppConstants.usersCollection).doc(req.userId));
-    batch.update(
-      _db.collection(AppConstants.accountDeletionRequestsCollection).doc(req.id),
-      {'status': 'approved', 'resolvedAt': FieldValue.serverTimestamp()},
-    );
-    await batch.commit();
-  }
-
-  Future<void> rejectDeletionRequest(String requestId, String userId) async {
-    final batch = _db.batch();
-    batch.update(
-      _db
-          .collection(AppConstants.accountDeletionRequestsCollection)
-          .doc(requestId),
-      {'status': 'rejected', 'resolvedAt': FieldValue.serverTimestamp()},
-    );
-    batch.update(
-      _db.collection(AppConstants.usersCollection).doc(userId),
-      {'deletionRequested': false, 'updatedAt': FieldValue.serverTimestamp()},
-    );
-    await batch.commit();
-  }
 }

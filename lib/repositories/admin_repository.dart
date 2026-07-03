@@ -1,8 +1,6 @@
 import '../models/user_model.dart';
 import '../models/profile_model.dart';
-import '../models/report_model.dart';
 import '../models/dashboard_analytics.dart';
-import '../models/admin_activity.dart';
 import '../services/firebase/firestore_service.dart';
 
 class AdminRepository {
@@ -27,11 +25,6 @@ class AdminRepository {
   Future<void> unblockUser(String userId) => _firestore.unblockUser(userId);
 
   Future<void> deleteUser(String userId) => _firestore.deleteUser(userId);
-
-  Future<List<AdminActivity>> getRecentActivity({int limit = 10}) =>
-      _firestore.getRecentActivity(limit: limit);
-
-  Future<List<ReportModel>> getAllReports() => _firestore.getAllReports();
 
   Future<Map<String, dynamic>> getAdminStats() => _firestore.getAdminStats();
 

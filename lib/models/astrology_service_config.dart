@@ -157,6 +157,51 @@ class AstrologyNews {
 /// account edits it from the admin "Astrology Service" screen; sensible
 /// [AstrologyServiceConfig.defaults] are used until then so the flow always
 /// works out of the box.
+/// One admin-managed consultation category users pick while booking an
+/// appointment ("Appointment Settings"). Disabled categories stay stored but
+/// disappear from the user-facing dropdown.
+class ConsultationCategory {
+  final String id;
+  final String name;
+  final bool enabled;
+
+  const ConsultationCategory({
+    required this.id,
+    required this.name,
+    this.enabled = true,
+  });
+
+  factory ConsultationCategory.fromMap(Map<String, dynamic> m) =>
+      ConsultationCategory(
+        id: (m['id'] ?? '').toString(),
+        name: (m['name'] ?? '').toString(),
+        enabled: m['enabled'] != false,
+      );
+
+  Map<String, dynamic> toMap() => {'id': id, 'name': name, 'enabled': enabled};
+
+  ConsultationCategory copyWith({String? name, bool? enabled}) =>
+      ConsultationCategory(
+        id: id,
+        name: name ?? this.name,
+        enabled: enabled ?? this.enabled,
+      );
+}
+
+/// The default consultation categories (admin can add/edit/disable/delete).
+const List<ConsultationCategory> kDefaultConsultationCategories = [
+  ConsultationCategory(id: 'marriage_matching', name: 'Marriage Matching'),
+  ConsultationCategory(
+      id: 'marriage_consultation', name: 'Marriage Consultation'),
+  ConsultationCategory(id: 'career_guidance', name: 'Career Guidance'),
+  ConsultationCategory(id: 'business', name: 'Business'),
+  ConsultationCategory(id: 'family', name: 'Family'),
+  ConsultationCategory(id: 'finance', name: 'Finance'),
+  ConsultationCategory(id: 'education', name: 'Education'),
+  ConsultationCategory(id: 'general_horoscope', name: 'General Horoscope'),
+  ConsultationCategory(id: 'other', name: 'Other'),
+];
+
 class AstrologyServiceConfig {
   // ── Service details page copy ──────────────────────────────────────────
   final String serviceIntro;
@@ -257,6 +302,11 @@ class AstrologyServiceConfig {
   /// user and the team share one thread.
   final String internalUid;
 
+  /// Admin-managed consultation categories ("Appointment Settings") — the
+  /// dropdown users pick from while booking an appointment. NOT hardcoded:
+  /// add / edit / enable / disable / delete from the admin panel.
+  final List<ConsultationCategory> consultationCategories;
+
   const AstrologyServiceConfig({
     this.serviceIntro =
         'Get a detailed, professional horoscope compatibility analysis for you '
@@ -314,6 +364,7 @@ class AstrologyServiceConfig {
         'This is an in-person office visit. Please arrive 10 minutes before '
             'your slot and carry both horoscopes.',
     this.internalUid = '',
+    this.consultationCategories = kDefaultConsultationCategories,
   });
 
   /// Built-in defaults used before any admin edit exists.
@@ -322,6 +373,10 @@ class AstrologyServiceConfig {
   /// Booking capacity for a given session key ('morning' | 'afternoon').
   int capacityForSession(String session) =>
       session == 'afternoon' ? afternoonCapacity : morningCapacity;
+
+  /// The categories users may pick while booking (enabled only, in order).
+  List<ConsultationCategory> get enabledCategories =>
+      consultationCategories.where((c) => c.enabled).toList();
 
   /// The number to dial from "Contact Expert" (expert phone → office number).
   String get contactPhone =>
@@ -419,6 +474,13 @@ class AstrologyServiceConfig {
           _toIntList(d['disabledSlotMinutes'], def.disabledSlotMinutes),
       appointmentRules: _toStr(d['appointmentRules'], def.appointmentRules),
       internalUid: (d['internalUid'] ?? '').toString(),
+      // Editable list semantics: once the field exists, the stored value wins
+      // (even empty) so admin deletions never resurrect the defaults.
+      consultationCategories: d.containsKey('consultationCategories')
+          ? _toMapList(d['consultationCategories'])
+              .map(ConsultationCategory.fromMap)
+              .toList()
+          : def.consultationCategories,
     );
   }
 
@@ -459,6 +521,8 @@ class AstrologyServiceConfig {
         'disabledSlotMinutes': disabledSlotMinutes,
         'appointmentRules': appointmentRules,
         'internalUid': internalUid,
+        'consultationCategories':
+            consultationCategories.map((e) => e.toMap()).toList(),
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
@@ -499,6 +563,7 @@ class AstrologyServiceConfig {
     List<int>? disabledSlotMinutes,
     String? appointmentRules,
     String? internalUid,
+    List<ConsultationCategory>? consultationCategories,
   }) =>
       AstrologyServiceConfig(
         serviceIntro: serviceIntro ?? this.serviceIntro,
@@ -539,5 +604,7 @@ class AstrologyServiceConfig {
         disabledSlotMinutes: disabledSlotMinutes ?? this.disabledSlotMinutes,
         appointmentRules: appointmentRules ?? this.appointmentRules,
         internalUid: internalUid ?? this.internalUid,
+        consultationCategories:
+            consultationCategories ?? this.consultationCategories,
       );
 }

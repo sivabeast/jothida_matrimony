@@ -198,16 +198,12 @@ service cloud.firestore {
       allow update: if isAdmin();
     }
 
-    // ── Account deletion requests ─────────────────────────────────────────
-    // A user files a request to delete their OWN account; only admins
-    // (super_admin) can review, approve or reject them.
+    // ── Account deletion requests (RETIRED collection) ────────────────────
+    // The admin-approval deletion workflow was removed — account deletion is
+    // immediate and self-service. Only the legacy-cleanup delete remains so
+    // deleting an account can purge any old request docs; nothing creates or
+    // reads these any more.
     match /account_deletion_requests/{requestId} {
-      allow read: if isAdmin();
-      allow create: if isAuthenticated()
-                    && request.resource.data.userId == request.auth.uid;
-      allow update: if isAdmin();
-      // The owner may clear their own (stale) request as part of self-service
-      // account deletion; admins may delete any.
       allow delete: if isAdmin()
                     || (isAuthenticated()
                         && resource.data.userId == request.auth.uid);
@@ -384,6 +380,18 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create, update: if isAuthenticated();
       allow delete: if isAdmin();
+    }
+
+    // ── Payroll payments (weekly employee-commission payouts) ─────────────
+    // Written ONLY by the admin ("Mark As Paid" closes an employee's weekly
+    // payroll cycle). The admin reads everything; an employee may read their
+    // OWN payment history (matched by the Gmail their registry entry uses).
+    match /payroll_payments/{paymentId} {
+      allow read: if isAdmin()
+                  || (isAuthenticated()
+                      && resource.data.employeeEmail ==
+                          request.auth.token.email.lower());
+      allow create, update, delete: if isAdmin();
     }
 
     // ── Settlements (astrologer payout history) ──────────────────────────

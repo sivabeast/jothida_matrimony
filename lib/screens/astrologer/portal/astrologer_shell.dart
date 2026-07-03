@@ -12,6 +12,7 @@ import '../../../providers/astrology_team_provider.dart';
 import '../../../providers/astrology_team_stats_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/service_providers.dart';
+import '../../../widgets/common/payroll_history_tile.dart';
 
 /// The astrologer portal shell (spec §3/§4). A bottom navigation with five
 /// destinations — Dashboard · Pending · In Progress · Completed · Profile —
@@ -290,15 +291,18 @@ class _WorkReportPage extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 12),
-        // Commission earnings (spec §Employee Statistics).
-        _reportCard('Commission', [
+        // Weekly payroll (commission resets to ₹0 each time the admin pays).
+        _reportCard('My Earnings', [
           _r('Commission Per Report', s.commissionPerReport),
-          _r('Weekly Commission', s.weeklyCommission),
-          _r('Monthly Commission', s.monthlyCommission),
-          _r('Total Earned', s.totalCommission),
-          _r('Paid', s.paidCommission),
-          _r('Pending Payment', s.pendingCommission),
+          _r('Current Week Earnings', s.cycleCommission),
+          _r('Reports This Week', s.cycleCompleted),
+          _r('Total Earned (all-time)', s.totalCommission),
+          _r('Total Paid', s.paidCommission),
         ]),
+        const SizedBox(height: 8),
+        _payrollStatusCard(s),
+        const SizedBox(height: 12),
+        const _MyPaymentHistory(),
         const SizedBox(height: 12),
         _reportCard('Today', [
           _r('New Requests', s.todayAssigned),
@@ -392,6 +396,66 @@ class _WorkReportPage extends ConsumerWidget {
           ],
         ),
       );
+
+  /// Current payroll-cycle status banner: Pending (money owed this week) or
+  /// Paid (the admin has settled everything earned so far).
+  Widget _payrollStatusCard(AstrologerStats s) {
+    final pending = s.cycleCommission > 0;
+    final color = pending ? AppColors.warning : AppColors.success;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(pending ? Icons.hourglass_top : Icons.verified,
+              size: 18, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              pending
+                  ? 'Payment Status: PENDING — ₹${s.cycleCommission} will be '
+                      'paid in this week\'s payroll.'
+                  : 'Payment Status: PAID — your commission restarts from ₹0 '
+                      'for the new week.',
+              style: TextStyle(fontSize: 12.5, color: Colors.grey[800]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The employee's own weekly payment history (read-only).
+class _MyPaymentHistory extends ConsumerWidget {
+  const _MyPaymentHistory();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final items = ref.watch(myPayrollHistoryProvider).valueOrNull ?? const [];
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+          color: Colors.white, borderRadius: BorderRadius.circular(14)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Payment History',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
+          const SizedBox(height: 8),
+          if (items.isEmpty)
+            Text('No payments received yet.',
+                style: TextStyle(color: Colors.grey[600], fontSize: 13))
+          else
+            for (final p in items.take(10)) PayrollHistoryTile(payment: p),
+        ],
+      ),
+    );
+  }
 }
 
 // ── Profile page (spec §5/§6) ────────────────────────────────────────────────

@@ -24,6 +24,9 @@ class AppConstants {
   // Kept separate from the legacy `astrologers` collection so new lean
   // team-member docs never collide with old marketplace astrologer documents.
   static const String astrologyTeamCollection = 'astrology_team';
+  // Weekly employee-commission payouts ("Mark As Paid" history). One doc per
+  // closed payroll cycle per employee.
+  static const String payrollPaymentsCollection = 'payroll_payments';
   // Reviews live in a subcollection of each astrologer document:
   //   astrologers/{astrologerId}/reviews/{userId}
   static const String astrologerReviewsSubcollection = 'reviews';

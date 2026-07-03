@@ -104,6 +104,10 @@ class AppointmentHistoryCard extends StatelessWidget {
             ],
           ),
           const Divider(height: 18),
+          if (appt.category.trim().isNotEmpty) ...[
+            _row(Icons.category_outlined, 'Consultation', appt.category),
+            const SizedBox(height: 8),
+          ],
           _row(Icons.event_outlined, 'Date', dateStr),
           const SizedBox(height: 8),
           _row(Icons.schedule_outlined, 'Session', sessionStr),

@@ -12,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/interest_provider.dart';
 import '../../providers/match_analysis_provider.dart';
+import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../widgets/common/horoscope_match_badge.dart' show categoryColor;
 
@@ -435,7 +436,7 @@ class HoroscopeMatchDetailScreen extends ConsumerWidget {
             const SizedBox(height: 16),
           ] else
             _noCompatibility(me),
-          _analysisSection(context, analysis),
+          _analysisSection(context, ref, analysis),
           const SizedBox(height: 16),
           if (analysis == null)
             _getReportButton(context)
@@ -622,7 +623,7 @@ class HoroscopeMatchDetailScreen extends ConsumerWidget {
 
   // ── Astrologer Analysis (if available) ──
   Widget _analysisSection(
-      BuildContext context, AstrologerRequestModel? analysis) {
+      BuildContext context, WidgetRef ref, AstrologerRequestModel? analysis) {
     if (analysis == null) {
       return _card(
         title: 'Astrologer Analysis',
@@ -674,7 +675,7 @@ class HoroscopeMatchDetailScreen extends ConsumerWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () => context.push('/my-analysis'),
+                onPressed: () => goToReportsTab(context, ref),
                 icon: const Icon(Icons.lock_open, size: 16),
                 label: const Text('Complete Payment'),
                 style: ElevatedButton.styleFrom(
@@ -693,13 +694,15 @@ class HoroscopeMatchDetailScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          // Single-company service: the report is presented as prepared by the
+          // company's astrology team — individual employee names never appear.
+          const Row(
             children: [
-              const Icon(Icons.verified, size: 16, color: AppColors.success),
-              const SizedBox(width: 6),
+              Icon(Icons.verified, size: 16, color: AppColors.success),
+              SizedBox(width: 6),
               Expanded(
-                child: Text('By ${analysis.astrologerName}',
-                    style: const TextStyle(
+                child: Text('By our Astrology Team',
+                    style: TextStyle(
                         fontSize: 13, fontWeight: FontWeight.w600)),
               ),
             ],

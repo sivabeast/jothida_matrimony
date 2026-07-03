@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../providers/navigation_provider.dart';
 
 /// Everything the details page needs, independent of whether the source was a
 /// per-user `notifications` document or an admin `announcements` broadcast.
@@ -41,17 +43,23 @@ class NotificationDetailArgs {
 /// Full-page details of a single notification: complete title + description,
 /// exact date & time, its type, and the related action button (if any). The
 /// caller marks the notification read BEFORE opening this page.
-class NotificationDetailScreen extends StatelessWidget {
+class NotificationDetailScreen extends ConsumerWidget {
   final NotificationDetailArgs args;
   const NotificationDetailScreen({super.key, required this.args});
 
-  Future<void> _openAction(BuildContext context) async {
+  Future<void> _openAction(BuildContext context, WidgetRef ref) async {
     final raw = (args.actionUrl ?? '').trim();
     if (raw.isEmpty) return;
 
-    // Internal app page → in-app navigation.
+    // Internal app page → in-app navigation. Reports links (including legacy
+    // '/my-analysis' ones) open the bottom-nav Reports tab — the standalone
+    // "My Reports" page no longer exists.
     if (raw.startsWith('/')) {
-      context.push(raw);
+      if (isReportsRoute(raw)) {
+        goToReportsTab(context, ref);
+      } else {
+        context.push(raw);
+      }
       return;
     }
 
@@ -78,7 +86,7 @@ class NotificationDetailScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final dateText = DateFormat('d MMMM yyyy · h:mm a').format(args.date);
 
     return Scaffold(
@@ -175,7 +183,7 @@ class NotificationDetailScreen extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () => _openAction(context),
+                      onPressed: () => _openAction(context, ref),
                       icon: Icon(
                           args.actionUrl!.trim().startsWith('/')
                               ? Icons.arrow_forward

@@ -19,13 +19,15 @@ class AppointmentSession {
 
   static const List<String> all = [morning, afternoon];
 
-  /// Human label incl. the time window.
+  /// Human label incl. the time window. The second session is DISPLAYED as
+  /// "Evening" (spec: Morning / Evening sessions) — the stored key stays
+  /// 'afternoon' for Firebase data compatibility with existing bookings.
   static String label(String session) {
     switch (session) {
       case morning:
-        return 'Morning (9:00 AM – 1:00 PM)';
+        return 'Morning Session (9:00 AM – 1:00 PM)';
       case afternoon:
-        return 'Afternoon (2:00 PM – 5:00 PM)';
+        return 'Evening Session (2:00 PM – 5:00 PM)';
       default:
         return '—';
     }
@@ -37,7 +39,7 @@ class AppointmentSession {
       case morning:
         return 'Morning';
       case afternoon:
-        return 'Afternoon';
+        return 'Evening';
       default:
         return '—';
     }
@@ -296,6 +298,12 @@ class AstrologerRequestModel {
   /// for non-appointment requests (and legacy slot-based bookings).
   final String session;
 
+  /// The consultation CATEGORY the user picked while booking an appointment
+  /// (Marriage Matching, Career Guidance…). Admin-managed list — see
+  /// `AstrologyServiceConfig.consultationCategories`. Empty for non-appointment
+  /// requests and legacy bookings.
+  final String category;
+
   /// Office address + contact number snapshotted at booking time, so the
   /// confirmation stays stable even if the admin later edits the service config.
   final String officeAddress;
@@ -346,6 +354,7 @@ class AstrologerRequestModel {
     this.visitDate,
     this.slotStartMinutes,
     this.session = '',
+    this.category = '',
     this.officeAddress = '',
     this.officeContact = '',
   });
@@ -551,6 +560,7 @@ class AstrologerRequestModel {
       visitDate: _toDate(d['visitDate']),
       slotStartMinutes: (d['slotStartMinutes'] as num?)?.toInt(),
       session: (d['session'] ?? '').toString(),
+      category: (d['category'] ?? '').toString(),
       officeAddress: (d['officeAddress'] ?? '').toString(),
       officeContact: (d['officeContact'] ?? '').toString(),
     );
@@ -609,6 +619,7 @@ class AstrologerRequestModel {
         'visitDate': visitDate != null ? Timestamp.fromDate(visitDate!) : null,
         'slotStartMinutes': slotStartMinutes,
         'session': session,
+        'category': category,
         // Denormalised keys so a date's taken slots can be derived without
         // parsing (mirrors the consultations booked-slots index).
         'visitDateKey': visitDateKey,

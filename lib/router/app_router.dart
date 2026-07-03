@@ -14,7 +14,6 @@ import '../screens/astrology/astrology_appointment_screen.dart';
 import '../screens/astrology/appointment_confirmation_screen.dart';
 import '../screens/astrology/my_appointments_screen.dart';
 import '../screens/astrologer/match_workspace_screen.dart';
-import '../screens/astrologer/my_match_analysis_screen.dart';
 // Employee Portal (admin-provisioned horoscope-analysis staff; they sign in
 // through the SAME common login as everyone else — there is no separate
 // employee/astrologer login).
@@ -45,10 +44,8 @@ import '../screens/admin/user_details_screen.dart';
 import '../screens/admin/admin_astrologer_profile_screen.dart';
 import '../screens/admin/admin_settlements_screen.dart';
 import '../screens/admin/admin_horoscope_requests_screen.dart';
-import '../screens/admin/admin_expired_bookings_screen.dart';
 import '../screens/admin/admin_appointments_screen.dart';
 import '../screens/admin/astrologer_verification_screen.dart';
-import '../screens/admin/admin_reports_screen.dart';
 import '../screens/admin/admin_management_screens.dart';
 import '../screens/admin/admin_reports_page.dart';
 import '../screens/admin/employee_commission_screen.dart';
@@ -61,7 +58,6 @@ import '../screens/horoscope/horoscope_matching_screen.dart';
 import '../screens/horoscope/member_horoscope_screen.dart';
 import '../screens/horoscope/horoscope_match_screen.dart';
 import '../screens/profile/personal_details_screen.dart';
-import '../screens/profile/payments_screen.dart';
 import '../screens/profile/complete_profile_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
 import '../screens/profile/profile_section_edit_screens.dart';
@@ -334,9 +330,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       // ── Match-analysis pipeline ──────────────────────────────────────────
-      // User: "My Match Analysis" (Pending / Accepted / Completed + reports).
-      GoRoute(
-          path: '/my-analysis', builder: (_, __) => const MyMatchAnalysisScreen()),
+      // (The standalone "My Reports" page was removed — the user's reports live
+      // ONLY on the bottom-nav Reports tab now; see goToReportsTab.)
       // The analysis workspace for a request, opened from the Astrology
       // Dashboard. The request id is in the path so the page ALWAYS resolves the
       // live request (the optional `extra` snapshot only speeds up the first
@@ -373,7 +368,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return InterestsCenterScreen(initialTab: idx, standalone: true);
         },
       ),
-      GoRoute(path: '/payments', builder: (_, __) => const PaymentsScreen()),
       GoRoute(
           path: '/notifications',
           builder: (_, __) => const NotificationsScreen()),
@@ -457,7 +451,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               path: '/admin/user/:uid',
               builder: (_, state) =>
                   UserDetailsScreen(uid: state.pathParameters['uid'] ?? '')),
-          GoRoute(path: '/admin/reports', builder: (_, __) => const AdminReportsScreen()),
           // Astrologers page → admin-provisioned account registry (add by
           // Gmail, enable/disable; Google-only login + auto-assignment).
           GoRoute(
@@ -487,11 +480,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/admin/appointments',
               builder: (_, __) => const AdminAppointmentsScreen()),
-          // Expired Bookings → reassign bookings whose astrologer didn't respond.
-          GoRoute(
-              path: '/admin/expired-bookings',
-              builder: (_, __) => const AdminExpiredBookingsScreen()),
-          GoRoute(path: '/admin/ratings', builder: (_, __) => const RatingManagementScreen()),
           GoRoute(path: '/admin/banners', builder: (_, __) => const BannerManagementScreen()),
           GoRoute(path: '/admin/notifications', builder: (_, __) => const AnnouncementManagementScreen()),
           GoRoute(path: '/admin/premium', builder: (_, __) => const PremiumManagementScreen()),
@@ -503,8 +491,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/admin/settings', builder: (_, __) => const AdminSettingsScreen()),
           GoRoute(path: '/admin/commission', builder: (_, __) => const EmployeeCommissionScreen()),
           GoRoute(path: '/admin/married', builder: (_, __) => const MarriedUsersScreen()),
-          GoRoute(path: '/admin/deletion-requests', builder: (_, __) => const AccountDeletionRequestsScreen()),
-          GoRoute(path: '/admin/support', builder: (_, __) => const SupportTicketsScreen()),
         ],
       ),
     ],

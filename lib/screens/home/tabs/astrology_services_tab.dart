@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../providers/navigation_provider.dart';
 import '../../horoscope/horoscope_matching_screen.dart';
 
 /// The Home "Astrology" tab.
@@ -21,14 +21,14 @@ class AstrologyServicesTab extends ConsumerWidget {
       color: AppColors.scaffoldBg,
       child: Column(
         children: [
-          _header(context),
+          _header(context, ref),
           const Expanded(child: AcceptedMatchesView()),
         ],
       ),
     );
   }
 
-  Widget _header(BuildContext context) => Container(
+  Widget _header(BuildContext context, WidgetRef ref) => Container(
         color: Colors.white,
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
         child: Row(
@@ -45,7 +45,7 @@ class AstrologyServicesTab extends ConsumerWidget {
               ),
             ),
             TextButton.icon(
-              onPressed: () => context.push('/my-analysis'),
+              onPressed: () => goToReportsTab(context, ref),
               icon: const Icon(Icons.receipt_long_outlined, size: 18),
               label: const Text('My Reports'),
               style: TextButton.styleFrom(foregroundColor: AppColors.primary),

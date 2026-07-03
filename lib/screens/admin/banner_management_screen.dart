@@ -13,12 +13,15 @@ import '../../widgets/home/home_banner_slide.dart';
 /// Admin "Banner Management" — full control of the Home page banner carousel.
 /// Registered at `/admin/banners`.
 ///
-///  • Image banners: upload finished artwork (offers / posters / promotions).
-///  • Text banners: built with the Text Banner Builder (title, subtitle,
-///    description, background & text colours, font size, alignment) with a
-///    LIVE preview — no image required.
-///  • Per banner: enable/disable (publish), display order (move up/down),
-///    height, edit and delete. Users only ever see enabled banners.
+///  • Image banners: upload finished artwork. The banner size is FIXED to the
+///    user Home banner dimensions — a recommended upload size is shown and
+///    wrong-sized images are rejected (no manual width/height inputs).
+///  • Text banners: the professional advertisement builder — premium templates
+///    (Red Premium, Royal Blue, Purple, Gold Luxury, Green, Dark Elegant),
+///    fixed text-left / graphics-right layout, gradient text, background
+///    styles, fonts and logo illustrations, with a live preview that matches
+///    the user app exactly.
+///  • Per banner: enable/disable (publish), display order, edit, delete.
 class BannerManagementScreen extends ConsumerWidget {
   const BannerManagementScreen({super.key});
 
@@ -118,11 +121,11 @@ class _BannerCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Small live preview of exactly what users see.
+          // Preview at the exact user Home banner aspect ratio.
           Opacity(
             opacity: banner.enabled ? 1 : 0.45,
             child: AspectRatio(
-              aspectRatio: 1 / banner.heightRatio.clamp(0.3, 1.2),
+              aspectRatio: 1 / kBannerAspectRatio,
               child: HomeBannerSlide(banner: banner),
             ),
           ),
@@ -163,7 +166,6 @@ class _BannerCard extends ConsumerWidget {
                               : Colors.grey)),
                 ),
                 const Spacer(),
-                // Reorder.
                 IconButton(
                   tooltip: 'Move up',
                   visualDensity: VisualDensity.compact,
@@ -177,7 +179,6 @@ class _BannerCard extends ConsumerWidget {
                   onPressed: isLast ? null : () => ctrl.move(all, banner, 1),
                   icon: const Icon(Icons.arrow_downward, size: 19),
                 ),
-                // Publish toggle.
                 Switch.adaptive(
                   value: banner.enabled,
                   activeColor: AppColors.success,
@@ -252,23 +253,35 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
   late final TextEditingController _subtitleC;
   late final TextEditingController _descC;
   String _imageUrl = '';
-  late Color _bgColor;
+
+  late BannerTemplate _template;
+  Color? _primaryOverride; // null → template default
+  Color? _secondaryOverride; // null → template default
   late Color _textColor;
+  late BannerBackgroundStyle _bgStyle;
+  late BannerTextFill _textFill;
+  late List<Color> _gradientColors;
+  late String _fontFamily;
+  late BannerLogoStyle _logoStyle;
   late double _fontSize; // 0 = auto
   late String _textAlign;
-  late double _heightRatio;
+
   bool _uploading = false;
   bool _saving = false;
 
-  static const _bgPalette = <Color>[
-    Color(0xFF8B0000), Color(0xFF800020), Color(0xFF1B5E20),
-    Color(0xFF0D47A1), Color(0xFF4A148C), Color(0xFFE65100),
-    Color(0xFFB8860B), Color(0xFF263238), Color(0xFF000000),
-    Color(0xFFFFF8E1), Color(0xFFFFFFFF),
+  static const _overridePalette = <Color>[
+    Color(0xFF8B0000), Color(0xFF14337F), Color(0xFF5B2C93),
+    Color(0xFFB8860B), Color(0xFF1B5E20), Color(0xFF262B38),
+    Color(0xFFE65100), Color(0xFF880E4F), Color(0xFF00695C),
   ];
   static const _textPalette = <Color>[
-    Colors.white, Color(0xFFFFD700), Color(0xFFFFF8E1), Color(0xFF212121),
-    Color(0xFF8B0000), Color(0xFF1B5E20), Color(0xFF0D47A1),
+    Colors.white, Color(0xFFFFD700), Color(0xFFFFF3C9), Color(0xFFFFE0B2),
+    Color(0xFFB9F6CA), Color(0xFFE0B3FF), Color(0xFF212121),
+  ];
+  static const _fonts = <(String, String)>[
+    ('Poppins', 'Poppins'),
+    ('NotoSansTamil', 'Tamil (Noto Sans)'),
+    ('', 'System Default'),
   ];
 
   @override
@@ -280,11 +293,26 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
     _subtitleC = TextEditingController(text: e?.subtitle ?? '');
     _descC = TextEditingController(text: e?.description ?? '');
     _imageUrl = e?.imageUrl ?? '';
-    _bgColor = e?.bgColor ?? const Color(0xFF8B0000);
+    _template = e?.templateEnum ?? BannerTemplate.redPremium;
+    _primaryOverride = (e != null && e.primaryColor.trim().isNotEmpty)
+        ? e.effectivePrimary
+        : null;
+    _secondaryOverride = (e != null && e.secondaryColor.trim().isNotEmpty)
+        ? e.effectiveSecondary
+        : null;
     _textColor = e?.fgColor ?? Colors.white;
+    _bgStyle = e?.backgroundStyleEnum ?? BannerBackgroundStyle.gradient;
+    _textFill = e?.textFillEnum ?? BannerTextFill.solid;
+    _gradientColors = e != null && e.textGradientColors.isNotEmpty
+        ? [
+            for (final h in e.textGradientColors)
+              HomeBannerModel.parseHexColor(h, _template.accent),
+          ]
+        : [Colors.white, _template.accent];
+    _fontFamily = e?.fontFamily ?? 'Poppins';
+    _logoStyle = e?.logoStyleEnum ?? BannerLogoStyle.zodiacWheel;
     _fontSize = e?.fontSize ?? 0;
     _textAlign = e?.textAlign ?? 'left';
-    _heightRatio = (e?.heightRatio ?? 0.6).clamp(0.35, 1.0);
   }
 
   @override
@@ -295,7 +323,8 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
     super.dispose();
   }
 
-  /// The banner as currently configured — drives the LIVE preview.
+  /// The banner as currently configured — drives the LIVE preview, which is
+  /// rendered by the same [HomeBannerSlide] the user Home page uses.
   HomeBannerModel get _draft => HomeBannerModel(
         id: widget.existing?.id ?? '',
         type: _type,
@@ -303,13 +332,25 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
         title: _titleC.text,
         subtitle: _subtitleC.text,
         description: _descC.text,
-        backgroundColor: HomeBannerModel.colorToHex(_bgColor),
+        template: _template.key,
+        primaryColor: _primaryOverride == null
+            ? ''
+            : HomeBannerModel.colorToHex(_primaryOverride!),
+        secondaryColor: _secondaryOverride == null
+            ? ''
+            : HomeBannerModel.colorToHex(_secondaryOverride!),
         textColor: HomeBannerModel.colorToHex(_textColor),
+        backgroundStyle: _bgStyle.key,
+        textFill: _textFill.key,
+        textGradientColors: [
+          for (final c in _gradientColors) HomeBannerModel.colorToHex(c),
+        ],
+        fontFamily: _fontFamily,
+        logoStyle: _logoStyle.key,
         fontSize: _fontSize,
         textAlign: _textAlign,
         enabled: widget.existing?.enabled ?? true,
         order: widget.existing?.order ?? 0,
-        heightRatio: _heightRatio,
         createdAt: widget.existing?.createdAt ?? DateTime.now(),
       );
 
@@ -317,17 +358,42 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(m)));
 
+  // ── Image upload with dimension validation ────────────────────────────────
+
   Future<void> _pickImage() async {
-    final picked = await ImagePicker()
-        .pickImage(source: ImageSource.gallery, imageQuality: 88);
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked == null) return;
     setState(() => _uploading = true);
     try {
+      final file = File(picked.path);
+      final bytes = await file.readAsBytes();
+      final decoded = await decodeImageFromList(bytes);
+      final w = decoded.width, h = decoded.height;
+      decoded.dispose();
+
+      // The banner renders at the FIXED user Home banner shape (5:3). Reject
+      // uploads whose aspect ratio deviates beyond the tolerance, or that are
+      // too small to look crisp.
+      final ratio = h / w;
+      final off = (ratio - kBannerAspectRatio).abs() / kBannerAspectRatio;
+      if (off > kBannerAspectTolerance) {
+        _snack('Image rejected: ${w}×$h is not the required banner shape. '
+            'Please upload $kBannerRecommendedWidth × '
+            '$kBannerRecommendedHeight px (5:3).');
+        return;
+      }
+      if (w < kBannerMinUploadWidth) {
+        _snack('Image rejected: too small (${w}px wide). Upload at least '
+            '$kBannerMinUploadWidth px wide — recommended '
+            '$kBannerRecommendedWidth × $kBannerRecommendedHeight px.');
+        return;
+      }
+
       final url = await ref.read(storageServiceProvider).uploadChatAttachment(
-          threadId: 'home_banners', file: File(picked.path), isImage: true);
+          threadId: 'home_banners', file: file, isImage: true);
       if (!mounted) return;
       setState(() => _imageUrl = url);
-      _snack('Image uploaded');
+      _snack('Image uploaded (${w}×$h)');
     } catch (e) {
       if (mounted) _snack('Upload failed: $e');
     } finally {
@@ -351,7 +417,6 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
     final draft = _draft;
     try {
       if (widget.existing == null) {
-        // New banners go to the END of the carousel.
         final current = ref.read(allBannersProvider).valueOrNull ?? const [];
         final nextOrder = current.isEmpty
             ? 0
@@ -363,13 +428,19 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
           title: draft.title.trim(),
           subtitle: draft.subtitle.trim(),
           description: draft.description.trim(),
-          backgroundColor: draft.backgroundColor,
+          template: draft.template,
+          primaryColor: draft.primaryColor,
+          secondaryColor: draft.secondaryColor,
           textColor: draft.textColor,
+          backgroundStyle: draft.backgroundStyle,
+          textFill: draft.textFill,
+          textGradientColors: draft.textGradientColors,
+          fontFamily: draft.fontFamily,
+          logoStyle: draft.logoStyle,
           fontSize: draft.fontSize,
           textAlign: draft.textAlign,
           enabled: true,
           order: nextOrder,
-          heightRatio: draft.heightRatio,
           createdAt: DateTime.now(),
         ));
       } else {
@@ -379,11 +450,17 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
           'title': draft.title.trim(),
           'subtitle': draft.subtitle.trim(),
           'description': draft.description.trim(),
-          'backgroundColor': draft.backgroundColor,
+          'template': draft.template,
+          'primaryColor': draft.primaryColor,
+          'secondaryColor': draft.secondaryColor,
           'textColor': draft.textColor,
+          'backgroundStyle': draft.backgroundStyle,
+          'textFill': draft.textFill,
+          'textGradientColors': draft.textGradientColors,
+          'fontFamily': draft.fontFamily,
+          'logoStyle': draft.logoStyle,
           'fontSize': draft.fontSize,
           'textAlign': draft.textAlign,
-          'heightRatio': draft.heightRatio,
         });
       }
       if (!mounted) return;
@@ -423,12 +500,12 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ── Live preview ────────────────────────────────────────────────
+          // ── Live preview — identical to the user Home banner ────────────
           _sectionLabel('Live Preview'),
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: AspectRatio(
-              aspectRatio: 1 / _heightRatio,
+              aspectRatio: 1 / kBannerAspectRatio,
               child: HomeBannerSlide(banner: _draft),
             ),
           ),
@@ -444,7 +521,7 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
                   label: Text('Image Banner')),
               ButtonSegment(
                   value: HomeBannerModel.typeText,
-                  icon: Icon(Icons.text_fields),
+                  icon: Icon(Icons.auto_awesome),
                   label: Text('Text Banner')),
             ],
             selected: {_type},
@@ -459,10 +536,30 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
           // ── Image banner content ────────────────────────────────────────
           if (isImage) ...[
             _sectionLabel('Banner Image'),
-            Text(
-              'Upload the finished artwork — offers, posters, promotions or '
-              'announcements are shown exactly as uploaded.',
-              style: TextStyle(fontSize: 12.5, color: Colors.grey[600]),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(12),
+                border:
+                    Border.all(color: AppColors.primary.withOpacity(0.25)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.straighten,
+                      size: 18, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Recommended size: $kBannerRecommendedWidth × '
+                      '$kBannerRecommendedHeight px (5:3). The banner always '
+                      'renders at the user Home banner dimensions — uploads '
+                      'with a different shape are rejected.',
+                      style: const TextStyle(fontSize: 12.5, height: 1.35),
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 10),
             OutlinedButton.icon(
@@ -486,7 +583,17 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
 
           // ── Text banner builder ─────────────────────────────────────────
           if (!isImage) ...[
-            _sectionLabel('Text Banner Builder'),
+            _sectionLabel('Background Theme (Templates)'),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final t in BannerTemplate.values)
+                  _templateChip(t, selected: t == _template),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _sectionLabel('Content'),
             TextField(
               controller: _titleC,
               textCapitalization: TextCapitalization.sentences,
@@ -514,23 +621,129 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
                   border: OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
-            _sectionLabel('Background Color'),
-            _swatchRow(_bgPalette, _bgColor,
-                (c) => setState(() => _bgColor = c)),
+            _sectionLabel('Background Style'),
+            SegmentedButton<BannerBackgroundStyle>(
+              segments: [
+                for (final s in BannerBackgroundStyle.values)
+                  ButtonSegment(value: s, label: Text(s.label)),
+              ],
+              selected: {_bgStyle},
+              onSelectionChanged: (s) => setState(() => _bgStyle = s.first),
+              style: SegmentedButton.styleFrom(
+                selectedBackgroundColor: AppColors.primary.withOpacity(0.12),
+                selectedForegroundColor: AppColors.primary,
+              ),
+            ),
             const SizedBox(height: 14),
-            _sectionLabel('Text Color'),
-            _swatchRow(_textPalette, _textColor,
-                (c) => setState(() => _textColor = c)),
+            _sectionLabel('Primary Color'),
+            _swatchRow(
+              [null, ..._overridePalette],
+              _primaryOverride,
+              (c) => setState(() => _primaryOverride = c),
+              templateDefault: _template.primary,
+            ),
+            const SizedBox(height: 12),
+            _sectionLabel('Secondary Color'),
+            _swatchRow(
+              [null, ..._overridePalette],
+              _secondaryOverride,
+              (c) => setState(() => _secondaryOverride = c),
+              templateDefault: _template.secondary,
+            ),
+            const SizedBox(height: 14),
+            _sectionLabel('Text Style'),
+            SegmentedButton<BannerTextFill>(
+              segments: [
+                for (final f in BannerTextFill.values)
+                  ButtonSegment(
+                      value: f,
+                      label: Text(f == BannerTextFill.solid
+                          ? 'Solid'
+                          : f == BannerTextFill.gradient2
+                              ? '2-Color'
+                              : 'Multi')),
+              ],
+              selected: {_textFill},
+              onSelectionChanged: (s) =>
+                  setState(() => _textFill = s.first),
+              style: SegmentedButton.styleFrom(
+                selectedBackgroundColor: AppColors.primary.withOpacity(0.12),
+                selectedForegroundColor: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (_textFill == BannerTextFill.solid) ...[
+              _sectionLabel('Text Color'),
+              _swatchRow(
+                [for (final c in _textPalette) c],
+                _textColor,
+                (c) => setState(() => _textColor = c ?? Colors.white),
+              ),
+            ] else ...[
+              _sectionLabel(_textFill == BannerTextFill.gradient2
+                  ? 'Gradient Colors (2)'
+                  : 'Gradient Colors (3)'),
+              for (var i = 0;
+                  i < (_textFill == BannerTextFill.gradient2 ? 2 : 3);
+                  i++) ...[
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _swatchRow(
+                    [for (final c in _textPalette) c],
+                    i < _gradientColors.length ? _gradientColors[i] : null,
+                    (c) => setState(() {
+                      while (_gradientColors.length <= i) {
+                        _gradientColors.add(_template.accent);
+                      }
+                      _gradientColors[i] = c ?? Colors.white;
+                    }),
+                  ),
+                ),
+              ],
+            ],
+            const SizedBox(height: 6),
+            _sectionLabel('Font'),
+            DropdownButtonFormField<String>(
+              value: _fontFamily,
+              decoration: const InputDecoration(
+                  border: OutlineInputBorder(), isDense: true),
+              items: [
+                for (final (v, label) in _fonts)
+                  DropdownMenuItem(value: v, child: Text(label)),
+              ],
+              onChanged: (v) => setState(() => _fontFamily = v ?? 'Poppins'),
+            ),
+            const SizedBox(height: 14),
+            _sectionLabel('Logo Template (right-side graphic)'),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final s in BannerLogoStyle.values)
+                  ChoiceChip(
+                    label: Text(s.label),
+                    selected: s == _logoStyle,
+                    selectedColor: AppColors.primary.withOpacity(0.15),
+                    labelStyle: TextStyle(
+                        fontSize: 12.5,
+                        color: s == _logoStyle
+                            ? AppColors.primary
+                            : Colors.grey[800],
+                        fontWeight: FontWeight.w600),
+                    onSelected: (_) => setState(() => _logoStyle = s),
+                  ),
+              ],
+            ),
             const SizedBox(height: 14),
             _sectionLabel('Font Size'),
             Row(
               children: [
                 Expanded(
                   child: Slider(
-                    value: _fontSize == 0 ? 22 : _fontSize,
+                    value: _fontSize == 0 ? 21 : _fontSize,
                     min: 14,
-                    max: 40,
-                    divisions: 26,
+                    max: 34,
+                    divisions: 20,
                     activeColor: AppColors.primary,
                     label:
                         _fontSize == 0 ? 'Auto' : _fontSize.round().toString(),
@@ -565,24 +778,6 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
             ),
           ],
 
-          const SizedBox(height: 18),
-          _sectionLabel('Banner Height'),
-          Text(
-            'Height relative to the banner width — applies to how tall the '
-            'banner renders on the Home page.',
-            style: TextStyle(fontSize: 12.5, color: Colors.grey[600]),
-          ),
-          Slider(
-            value: _heightRatio,
-            min: 0.35,
-            max: 1.0,
-            divisions: 13,
-            activeColor: AppColors.primary,
-            label: _heightRatio < 0.5
-                ? 'Compact'
-                : (_heightRatio <= 0.7 ? 'Standard' : 'Tall'),
-            onChanged: (v) => setState(() => _heightRatio = v),
-          ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: _saving ? null : _save,
@@ -604,7 +799,7 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
   }
 
   Widget _sectionLabel(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.only(bottom: 8, top: 2),
         child: Text(text,
             style: const TextStyle(
                 fontSize: 13.5,
@@ -613,8 +808,60 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
                 color: AppColors.textPrimary)),
       );
 
+  /// A premium template chip showing its gradient + name.
+  Widget _templateChip(BannerTemplate t, {required bool selected}) {
+    return GestureDetector(
+      onTap: () => setState(() {
+        _template = t;
+        // Re-anchor the default gradient text to the new template's accent
+        // when the admin hasn't customised it away from defaults.
+        if (_gradientColors.length == 2 &&
+            _gradientColors[0] == Colors.white) {
+          _gradientColors = [Colors.white, t.accent];
+        }
+      }),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [t.primary, t.secondary]),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected ? t.accent : Colors.transparent,
+            width: 2,
+          ),
+          boxShadow: selected
+              ? [BoxShadow(color: t.primary.withOpacity(0.4), blurRadius: 8)]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (selected) ...[
+              Icon(Icons.check_circle, size: 15, color: t.accent),
+              const SizedBox(width: 5),
+            ],
+            Text(t.label,
+                style: const TextStyle(
+                    fontSize: 12.5,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Colour swatch row. A `null` entry renders the "template default" swatch
+  /// (shown with the [templateDefault] colour and a refresh glyph).
   Widget _swatchRow(
-      List<Color> palette, Color selected, ValueChanged<Color> onPick) {
+    List<Color?> palette,
+    Color? selected,
+    ValueChanged<Color?> onPick, {
+    Color? templateDefault,
+  }) {
+    bool same(Color? a, Color? b) =>
+        (a == null && b == null) ||
+        (a != null && b != null && a.value == b.value);
     return Wrap(
       spacing: 10,
       runSpacing: 10,
@@ -626,23 +873,26 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: c,
+                color: c ?? templateDefault ?? Colors.grey,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: selected.value == c.value
+                  color: same(selected, c)
                       ? AppColors.primary
                       : Colors.grey.shade300,
-                  width: selected.value == c.value ? 3 : 1,
+                  width: same(selected, c) ? 3 : 1,
                 ),
               ),
-              child: selected.value == c.value
-                  ? Icon(Icons.check,
-                      size: 16,
-                      color: ThemeData.estimateBrightnessForColor(c) ==
-                              Brightness.dark
-                          ? Colors.white
-                          : Colors.black87)
-                  : null,
+              child: c == null
+                  ? const Icon(Icons.auto_fix_high,
+                      size: 15, color: Colors.white)
+                  : (same(selected, c)
+                      ? Icon(Icons.check,
+                          size: 16,
+                          color: ThemeData.estimateBrightnessForColor(c) ==
+                                  Brightness.dark
+                              ? Colors.white
+                              : Colors.black87)
+                      : null),
             ),
           ),
       ],

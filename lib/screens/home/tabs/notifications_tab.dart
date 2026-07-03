@@ -5,6 +5,7 @@ import '../../../core/utils/l10n_ext.dart';
 import '../../../models/announcement_model.dart';
 import '../../../models/notification_model.dart';
 import '../../../providers/announcement_provider.dart';
+import '../../../providers/navigation_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../notifications/notification_detail_screen.dart';
 
@@ -269,11 +270,18 @@ class _NotificationTile extends ConsumerWidget {
         ],
       ),
       onTap: () {
-        // Opening the details marks it read once and for all.
+        // Opening the notification marks it read once and for all.
         if (unread) {
           ref.read(notificationNotifierProvider.notifier).markRead(n.id);
         }
-        final route = n.data?['route']?.toString();
+        final route = n.data?['route']?.toString() ?? '';
+        // Report notifications open the bottom-nav Reports tab DIRECTLY (the
+        // standalone "My Reports" page was removed; legacy '/my-analysis'
+        // links land on the tab too).
+        if (isReportsRoute(route)) {
+          goToReportsTab(context, ref);
+          return;
+        }
         _openDetails(
           context,
           NotificationDetailArgs(
@@ -283,7 +291,7 @@ class _NotificationTile extends ConsumerWidget {
             typeLabel: _typeLabel(n.type),
             icon: _typeIcon(n.type),
             color: color,
-            actionUrl: (route != null && route.isNotEmpty) ? route : null,
+            actionUrl: route.isNotEmpty ? route : null,
             actionLabel: 'Open',
           ),
         );

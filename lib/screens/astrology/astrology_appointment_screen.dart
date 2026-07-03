@@ -16,11 +16,14 @@ import '../../services/razorpay/razorpay_service.dart';
 
 /// Standalone "Book Your Appointment" flow opened from the Astrology page.
 ///
-/// Steps: 1) Select a date from a ROLLING ONE-WEEK schedule (working days only,
-/// admin holidays removed); 2) Select a SESSION — Morning (9 AM–1 PM) or
-/// Afternoon (2 PM–5 PM). Each session has an admin-set booking capacity; once
-/// full it is greyed out. 3) Confirm + pay. Everything (working days, holidays,
-/// session capacities, booking availability) comes from the admin-managed config.
+/// Steps: 1) Select a CONSULTATION CATEGORY (admin-managed dropdown — never
+/// hardcoded); 2) Select a date from a ROLLING ONE-WEEK schedule (working days
+/// only, admin holidays removed); 3) Select a SESSION — Morning (9 AM–1 PM) or
+/// Evening (2 PM–5 PM); no exact time slots — the assigned employee contacts
+/// the user personally with the exact timing. Each session has a booking
+/// capacity (max 5 by default); once full it is greyed out. 4) Pay — a
+/// successful payment CONFIRMS the booking automatically (no admin approval
+/// step). Everything comes from the admin-managed config.
 class AstrologyAppointmentScreen extends ConsumerStatefulWidget {
   const AstrologyAppointmentScreen({super.key});
 
@@ -35,6 +38,7 @@ class _AstrologyAppointmentScreenState
 
   DateTime? _date;
   String? _session;
+  String? _category;
   bool _busy = false;
 
   final RazorpayService _razorpay = RazorpayService();
@@ -58,6 +62,10 @@ class _AstrologyAppointmentScreenState
   /// Step 3 — collect the ₹50 booking charge via Razorpay; the session is only
   /// reserved once payment succeeds (handled in [_onPaymentSuccess]).
   Future<void> _confirm(AstrologyServiceConfig cfg) async {
+    if (_category == null || _category!.trim().isEmpty) {
+      _snack('Please select a consultation category.');
+      return;
+    }
     if (_date == null || _session == null) {
       _snack('Please select a date and session.');
       return;
@@ -88,6 +96,7 @@ class _AstrologyAppointmentScreenState
             date: _date!,
             session: _session!,
             config: cfg,
+            category: _category ?? '',
             amount: _fee,
             paymentId: response.paymentId ?? 'razorpay',
           );
@@ -158,12 +167,22 @@ class _AstrologyAppointmentScreenState
       children: [
         _banner(cfg),
         const SizedBox(height: 16),
-        _stepLabel(1, 'Select Date'),
+        _stepLabel(1, 'Select Consultation Category'),
+        const SizedBox(height: 8),
+        _categoryDropdown(cfg),
+        const SizedBox(height: 18),
+        _stepLabel(2, 'Select Date'),
         const SizedBox(height: 8),
         _dateStrip(dates),
         if (_date != null) ...[
           const SizedBox(height: 18),
-          _stepLabel(2, 'Select Session'),
+          _stepLabel(3, 'Select Session — Morning or Evening'),
+          const SizedBox(height: 4),
+          Text(
+            'No fixed time slots — after your booking is confirmed, our '
+            'employee will contact you personally with the exact timing.',
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
           const SizedBox(height: 8),
           _sessionCards(cfg),
         ],
@@ -171,7 +190,10 @@ class _AstrologyAppointmentScreenState
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: (_busy || _date == null || _session == null)
+            onPressed: (_busy ||
+                    _category == null ||
+                    _date == null ||
+                    _session == null)
                 ? null
                 : () => _confirm(cfg),
             icon: _busy
@@ -246,6 +268,49 @@ class _AstrologyAppointmentScreenState
           ),
         ],
       ),
+    );
+  }
+
+  /// Admin-managed consultation categories (Appointment Settings) — the user
+  /// must pick one before paying.
+  Widget _categoryDropdown(AstrologyServiceConfig cfg) {
+    final categories = cfg.enabledCategories;
+    if (categories.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.withOpacity(0.3)),
+        ),
+        child: Text(
+          'No consultation categories are available right now. Please try '
+          'again later.',
+          style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+        ),
+      );
+    }
+    // If a previously-selected category was disabled meanwhile, clear it.
+    final names = categories.map((c) => c.name).toList();
+    final value = names.contains(_category) ? _category : null;
+    return DropdownButtonFormField<String>(
+      value: value,
+      isExpanded: true,
+      hint: const Text('Choose your consultation reason'),
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.white,
+        prefixIcon:
+            const Icon(Icons.category_outlined, color: AppColors.primary),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      items: [
+        for (final c in categories)
+          DropdownMenuItem(value: c.name, child: Text(c.name)),
+      ],
+      onChanged: (v) => setState(() => _category = v),
     );
   }
 

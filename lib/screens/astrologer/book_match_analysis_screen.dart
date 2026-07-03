@@ -9,6 +9,7 @@ import '../../models/astrologer_request_model.dart';
 import '../../models/profile_model.dart';
 import '../../providers/astrologer_provider.dart';
 import '../../providers/match_analysis_provider.dart';
+import '../../providers/navigation_provider.dart';
 
 /// "Book Match Analysis" — the user picks a GROOM and a BRIDE profile and sends
 /// a porutham request to an astrologer.
@@ -98,10 +99,11 @@ class _BookMatchAnalysisScreenState
             reassignMode: _mode,
           );
       if (!mounted) return;
+      // Single-company service: never name the individual employee/astrologer.
       _snack(fee > 0
-          ? 'Payment successful — booking sent to ${astrologer.name}.'
-          : 'Match analysis request sent to ${astrologer.name}.');
-      context.go('/my-analysis');
+          ? 'Payment successful — your analysis request has been received.'
+          : 'Match analysis request sent.');
+      goToReportsTab(context, ref);
     } catch (_) {
       if (!mounted) return;
       setState(() => _submitting = false);

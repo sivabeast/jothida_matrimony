@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../providers/chat_provider.dart';
+import '../../providers/navigation_provider.dart';
 
 /// Appointment confirmation (spec §11). Shown after a successful payment, it
 /// displays the Booking ID, appointment date & time, office address and contact
@@ -122,6 +123,12 @@ class AppointmentConfirmationScreen extends ConsumerWidget {
                 _row(Icons.schedule_outlined, 'Session',
                     _session.isEmpty ? '—' : AppointmentSession.label(_session)),
                 const Divider(height: 20),
+                _row(
+                    Icons.support_agent_outlined,
+                    'Exact Timing',
+                    'Our employee will contact you personally to fix the '
+                        'exact time within your session.'),
+                const Divider(height: 20),
                 _row(Icons.location_on_outlined, 'Office Address',
                     _address.isEmpty ? '—' : _address),
                 const Divider(height: 20),
@@ -150,7 +157,7 @@ class AppointmentConfirmationScreen extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () => context.go('/my-analysis'),
+              onPressed: () => goToReportsTab(context, ref),
               icon: const Icon(Icons.receipt_long_outlined, size: 18),
               label: const Text('View My Reports'),
               style: OutlinedButton.styleFrom(

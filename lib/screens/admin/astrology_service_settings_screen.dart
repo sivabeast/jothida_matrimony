@@ -51,6 +51,7 @@ class _AstrologyServiceSettingsScreenState
   final List<AstrologyAward> _awards = [];
   final List<AstrologyNews> _news = [];
   final List<String> _holidayDates = [];
+  final List<ConsultationCategory> _categories = [];
 
   static const _weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -96,6 +97,9 @@ class _AstrologyServiceSettingsScreenState
     _holidayDates
       ..clear()
       ..addAll(cfg.holidayDates);
+    _categories
+      ..clear()
+      ..addAll(cfg.consultationCategories);
   }
 
   @override
@@ -183,6 +187,7 @@ class _AstrologyServiceSettingsScreenState
       holidayDates: List<String>.from(_holidayDates),
       morningCapacity: _int('morningCapacity', base.morningCapacity),
       afternoonCapacity: _int('afternoonCapacity', base.afternoonCapacity),
+      consultationCategories: List<ConsultationCategory>.from(_categories),
     );
     try {
       await ref.read(astrologyConfigServiceProvider).save(updated);
@@ -366,8 +371,10 @@ class _AstrologyServiceSettingsScreenState
           const SizedBox(height: 14),
           _subLabel('Session Capacity'),
           _emptyHint(
-              'Two fixed sessions. Set how many bookings each accepts per day — '
-              'once full, that session becomes unavailable for booking.'),
+              'Two fixed sessions (no exact time slots — the assigned employee '
+              'contacts the user personally with the exact timing). Set how '
+              'many bookings each accepts per day (max 5 recommended) — once '
+              'full, that session becomes unavailable for booking.'),
           const SizedBox(height: 10),
           Row(
             children: [
@@ -376,10 +383,22 @@ class _AstrologyServiceSettingsScreenState
                       'morningCapacity', 'Morning', '9:00 AM – 1:00 PM')),
               const SizedBox(width: 10),
               Expanded(
-                  child: _capacityField('afternoonCapacity', 'Afternoon',
+                  child: _capacityField('afternoonCapacity', 'Evening',
                       '2:00 PM – 5:00 PM')),
             ],
           ),
+          const SizedBox(height: 14),
+          _subLabel('Consultation Categories'),
+          _emptyHint(
+              'Users choose one of these while booking. Add, edit, enable / '
+              'disable or delete — nothing is hardcoded.'),
+          const SizedBox(height: 8),
+          if (_categories.isEmpty)
+            _emptyHint('No categories yet. Tap "Add Category".')
+          else
+            for (int i = 0; i < _categories.length; i++) _categoryRow(i),
+          const SizedBox(height: 8),
+          _addButton('Add Category', _addCategory),
         ]),
 
         // ── Manual block / holiday dates ───────────────────────────────────
@@ -542,6 +561,114 @@ class _AstrologyServiceSettingsScreenState
     );
     if (result != null && result.isNotEmpty) {
       setState(() => _services[i] = result);
+    }
+  }
+
+  // ── Consultation categories (Appointment Settings) ────────────────────────
+  Widget _categoryRow(int i) {
+    final c = _categories[i];
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Icon(Icons.category_outlined,
+              size: 16,
+              color: c.enabled ? AppColors.primary : Colors.grey),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              c.name,
+              style: TextStyle(
+                fontSize: 13.5,
+                color: c.enabled ? Colors.black87 : Colors.grey,
+                decoration: c.enabled ? null : TextDecoration.lineThrough,
+              ),
+            ),
+          ),
+          Switch.adaptive(
+            value: c.enabled,
+            activeColor: AppColors.primary,
+            onChanged: (v) => setState(
+                () => _categories[i] = c.copyWith(enabled: v)),
+          ),
+          _iconBtn(Icons.edit_outlined, () => _editCategory(i)),
+          _iconBtn(Icons.delete_outline, () async {
+            final ok = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Delete Category'),
+                content: Text('Delete "${c.name}"? Users will no longer see '
+                    'it while booking.'),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Cancel')),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.error,
+                        foregroundColor: Colors.white),
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Delete'),
+                  ),
+                ],
+              ),
+            );
+            if (ok == true) setState(() => _categories.removeAt(i));
+          }, color: AppColors.error),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addCategory() async {
+    final ctrl = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add Consultation Category'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(
+              labelText: 'Category name',
+              hintText: 'e.g. Career Guidance'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+              child: const Text('Add')),
+        ],
+      ),
+    );
+    if (result == null || result.isEmpty) return;
+    setState(() => _categories.add(ConsultationCategory(
+          id: 'cat_${DateTime.now().millisecondsSinceEpoch}',
+          name: result,
+        )));
+  }
+
+  Future<void> _editCategory(int i) async {
+    final ctrl = TextEditingController(text: _categories[i].name);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit Category'),
+        content: TextField(controller: ctrl, autofocus: true),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+              child: const Text('Save')),
+        ],
+      ),
+    );
+    if (result != null && result.isNotEmpty) {
+      setState(
+          () => _categories[i] = _categories[i].copyWith(name: result));
     }
   }
 

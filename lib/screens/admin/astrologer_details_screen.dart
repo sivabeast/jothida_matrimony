@@ -193,98 +193,71 @@ class AstrologerDetailsScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _sectionTitle('Commission'),
+            _sectionTitle('Weekly Payroll'),
             const SizedBox(height: 10),
             _row('Commission Per Report', '₹${stats.commissionPerReport}'),
-            _row('Completed Reports', '${stats.completed}'),
-            _row('Weekly Commission', '₹${stats.weeklyCommission}'),
-            _row('Monthly Commission', '₹${stats.monthlyCommission}'),
-            _row('Total Earned', '₹${stats.totalCommission}'),
-            _row('Paid', '₹${stats.paidCommission}'),
-            _row('Pending Payment', '₹${stats.pendingCommission}'),
-            _row('Last Paid', _date(stats.member.lastPaidDate)),
+            _row('Reports This Cycle', '${stats.cycleCompleted}'),
+            _row('This Week Commission', '₹${stats.cycleCommission}'),
+            _row('Total Earned (all-time)', '₹${stats.totalCommission}'),
+            _row('Total Paid', '₹${stats.paidCommission}'),
+            _row('Last Payment', _date(stats.member.lastPaidDate)),
+            _row('Payment Status', stats.paymentStatusLabel),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _recordPayment(context, ref, stats),
-                    icon: const Icon(Icons.edit_outlined, size: 16),
-                    label: const Text('Record Payment'),
-                    style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary)),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: stats.pendingCommission <= 0
-                        ? null
-                        : () async {
-                            await ref
-                                .read(astrologyTeamServiceProvider)
-                                .payCommission(stats.member.id,
-                                    amount: stats.pendingCommission);
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content:
-                                          Text('Pending commission paid.')));
-                            }
-                          },
-                    icon: const Icon(Icons.check, size: 16),
-                    label: const Text('Pay Pending'),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white),
-                  ),
-                ),
-              ],
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: stats.cycleCommission <= 0
+                    ? null
+                    : () => _markPaid(context, ref, stats),
+                icon: const Icon(Icons.task_alt, size: 16),
+                label: Text(stats.cycleCommission <= 0
+                    ? 'Nothing Due This Week'
+                    : 'Mark As Paid · ₹${stats.cycleCommission}'),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(44)),
+              ),
             ),
           ],
         ),
       );
 
-  Future<void> _recordPayment(
+  /// Closes the employee's current payroll cycle (records the payout in
+  /// `payroll_payments`) — the next week restarts from ₹0.
+  Future<void> _markPaid(
       BuildContext context, WidgetRef ref, AstrologerStats stats) async {
-    final ctrl =
-        TextEditingController(text: '${stats.pendingCommission}');
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Record Commission Payment'),
-        content: TextField(
-          controller: ctrl,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-              labelText: 'Amount paid (₹)', prefixText: '₹ '),
-        ),
+        title: const Text('Mark As Paid'),
+        content: Text('Pay ₹${stats.cycleCommission} for '
+            '${stats.cycleCompleted} completed report(s)? The next week '
+            'starts again from ₹0.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
               child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: Colors.green,
                 foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Save'),
+            child: const Text('Mark As Paid'),
           ),
         ],
       ),
     );
-    if (ok == true) {
-      final amount = int.tryParse(ctrl.text.trim()) ?? 0;
-      if (amount > 0) {
-        await ref
-            .read(astrologyTeamServiceProvider)
-            .payCommission(stats.member.id, amount: amount);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Commission payment recorded.')));
-        }
-      }
+    if (ok != true) return;
+    await ref.read(astrologyTeamServiceProvider).markPayrollPaid(
+          stats.member,
+          amount: stats.cycleCommission,
+          reportsCount: stats.cycleCompleted,
+          ratePerReport: stats.commissionPerReport,
+        );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Weekly payroll closed and recorded.')));
     }
   }
 

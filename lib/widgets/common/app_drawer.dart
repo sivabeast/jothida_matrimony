@@ -61,22 +61,20 @@ class AppDrawer extends ConsumerWidget {
                     () => context.push('/interests?tab=received')),
                 _item(context, Icons.chat_bubble_outline, 'Messages',
                     () => context.push('/chats')),
-                _item(context, Icons.insights_outlined, 'Match Analysis',
-                    () => context.push('/my-analysis')),
 
                 // ── 🧿 ASTROLOGY ─────────────────────────────────────────────
                 _section('🧿  ASTROLOGY'),
                 _item(context, Icons.favorite_outline, 'Horoscope Matching',
                     () => context.push('/horoscope-matching')),
-                _item(context, Icons.insights_outlined, 'Match Analysis',
-                    () => context.push('/my-analysis')),
+                // Reports live ONLY on the bottom-nav Reports tab (the old
+                // standalone "My Reports" page was removed).
+                _item(context, Icons.receipt_long_outlined, 'My Reports',
+                    () => _openTab(context, ref, kReportsTabIndex)),
 
                 // ── 💳 MEMBERSHIP ────────────────────────────────────────────
                 _section('💳  MEMBERSHIP'),
                 _item(context, Icons.workspace_premium_outlined,
                     'Subscription Plans', () => context.push('/subscription')),
-                _item(context, Icons.account_balance_wallet_outlined,
-                    'Wallet / Payments', () => context.push('/payments')),
 
                 const SizedBox(height: 8),
                 const Divider(height: 1),
@@ -193,8 +191,8 @@ class AppDrawer extends ConsumerWidget {
         },
       );
 
-  /// Switches the Home shell to [index] (Matches = 1, Astrology = 3) and ensures
-  /// we are on the Home route so the selected tab is visible.
+  /// Switches the Home shell to [index] (see the k*TabIndex constants) and
+  /// ensures we are on the Home route so the selected tab is visible.
   void _openTab(BuildContext context, WidgetRef ref, int index) {
     ref.read(homeTabIndexProvider.notifier).state = index;
     context.go('/home');

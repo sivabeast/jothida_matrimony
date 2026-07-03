@@ -20,7 +20,6 @@ import '../../../providers/notification_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/match_score_badge.dart';
 import '../../../widgets/home/home_banner_slide.dart';
-import 'notifications_tab.dart';
 
 /// Home dashboard tab. Clean, modern flow:
 ///   Header → Profile Completion · Find Your Life Partner · Upgrade To Premium
@@ -131,18 +130,10 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   List<HomeBannerModel> get _remoteBanners =>
       ref.watch(activeBannersProvider).valueOrNull ?? const [];
 
-  /// Carousel height as a fraction of its width — the admin-configured height
-  /// (largest ratio among the published banners), or the classic 0.60 for the
-  /// built-in fallback banners.
-  double get _bannerRatio {
-    final remote = _remoteBanners;
-    if (remote.isEmpty) return 0.60;
-    var r = 0.0;
-    for (final b in remote) {
-      if (b.heightRatio > r) r = b.heightRatio;
-    }
-    return r.clamp(0.35, 1.0);
-  }
+  /// Carousel height as a fraction of its width — FIXED to the official Home
+  /// banner shape ([kBannerAspectRatio]); admin banners are produced/validated
+  /// at exactly this shape, so there is no per-banner height any more.
+  double get _bannerRatio => kBannerAspectRatio;
 
   /// A premium curved maroon header (profile + name on the left, a single
   /// notification bell on the right) whose background extends behind the hero
@@ -306,18 +297,11 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     );
   }
 
-  void _openNotifications(BuildContext context) {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => Scaffold(
-        appBar: AppBar(
-          title: const Text('Notifications'),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-        ),
-        body: const NotificationsTab(),
-      ),
-    ));
-  }
+  /// Opens the notifications inbox via its go_router route so that a
+  /// notification tap that jumps to a Home tab (e.g. Reports) can cleanly
+  /// replace the navigation stack with `go('/home')`.
+  void _openNotifications(BuildContext context) =>
+      context.push('/notifications');
 
   // ── Banner Carousel ────────────────────────────────────────────────────────
 

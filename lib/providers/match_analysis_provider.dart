@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/admin_config.dart';
@@ -435,6 +436,7 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     required DateTime date,
     required String session,
     required AstrologyServiceConfig config,
+    String category = '',
     String note = '',
     int amount = 0,
     String? paymentId,
@@ -469,8 +471,12 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         // Standalone office-visit appointment — independent of the online
         // Horoscope Analysis report.
         type: AstrologerRequestType.consultation,
-        status: AstrologerRequestStatus.pending,
+        // Payment already succeeded when this runs → the booking is CONFIRMED
+        // immediately. The admin never manually confirms; their only actions
+        // are Complete / Cancel.
+        status: AstrologerRequestStatus.accepted,
         message: note.trim(),
+        category: category.trim(),
         // ₹50 booking charge collected up front to confirm the slot.
         amount: amount,
         paid: amount > 0,
@@ -492,6 +498,8 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
           if (amount > 0)
             BookingHistoryEntry(
                 at: now, label: 'Payment received (${paymentId ?? ''})'),
+          BookingHistoryEntry(
+              at: now, label: 'Appointment confirmed (paid booking)'),
         ],
       );
 
@@ -503,6 +511,17 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         id = await ref.read(astrologerServiceProvider).createAppointmentRequest(
             request,
             capacity: config.capacityForSession(session));
+        // Auto-assign the confirmed appointment to the employee with the
+        // fewest open requests — that employee contacts the user personally
+        // with the exact timing (no fixed time slots). Best-effort: an
+        // unassigned booking stays visible to the admin either way.
+        try {
+          await ref
+              .read(astrologyTeamServiceProvider)
+              .assignRequest(id, resetStatus: false);
+        } catch (e) {
+          debugPrint('[MatchAnalysis] appointment auto-assign failed: $e');
+        }
       }
       state = const AsyncData(null);
       return id;

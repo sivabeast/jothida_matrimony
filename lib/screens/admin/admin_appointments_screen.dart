@@ -315,10 +315,31 @@ class _AppointmentAdminCard extends ConsumerWidget {
             ],
           ),
           const Divider(height: 18),
+          // Consultation reason (admin-managed category picked at booking).
+          _info(Icons.category_outlined, 'Consultation Reason',
+              appt.category.trim().isEmpty ? '—' : appt.category),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(child: _info(Icons.event_outlined, 'Date', date)),
               Expanded(child: _info(Icons.schedule_outlined, 'Session', time)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _info(
+                    Icons.payments_outlined,
+                    'Payment',
+                    appt.paid
+                        ? 'Paid${appt.amount > 0 ? ' · ₹${appt.amount}' : ''}'
+                        : 'Not Paid'),
+              ),
+              Expanded(
+                child: _info(Icons.badge_outlined, 'Assigned Employee',
+                    appt.astrologerName.trim().isEmpty ? '—' : appt.astrologerName),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -347,19 +368,18 @@ class _AppointmentAdminCard extends ConsumerWidget {
         ],
       );
 
+  /// Paid bookings are CONFIRMED automatically at payment time, so there is no
+  /// manual Confirm (or back-to-Pending) action — the admin's only actions are
+  /// Complete and Cancel (plus Delete for cleanup).
   Widget _actions(BuildContext context, WidgetRef ref) {
     final s = appt.status;
     final chips = <Widget>[
-      if (s != AstrologerRequestStatus.accepted)
-        _actionBtn(context, 'Confirm', Icons.check_circle_outline,
-            AppColors.success, () => _setStatus(context, ref, AstrologerRequestStatus.accepted)),
-      if (s != AstrologerRequestStatus.pending)
-        _actionBtn(context, 'Pending', Icons.hourglass_top_outlined,
-            AppColors.warning, () => _setStatus(context, ref, AstrologerRequestStatus.pending)),
-      if (s != AstrologerRequestStatus.completed)
+      if (s != AstrologerRequestStatus.completed &&
+          s != AstrologerRequestStatus.rejected)
         _actionBtn(context, 'Complete', Icons.verified_outlined, AppColors.info,
             () => _setStatus(context, ref, AstrologerRequestStatus.completed)),
-      if (s != AstrologerRequestStatus.rejected)
+      if (s != AstrologerRequestStatus.rejected &&
+          s != AstrologerRequestStatus.completed)
         _actionBtn(context, 'Cancel', Icons.cancel_outlined, AppColors.error,
             () => _setStatus(context, ref, AstrologerRequestStatus.rejected)),
       _actionBtn(context, 'Delete', Icons.delete_outline, Colors.grey.shade700,

@@ -257,17 +257,19 @@ class AstrologerService {
     }
     // Confirm to the user that payment succeeded and the booking is on its way
     // (spec §4: pay online → booking created → reaches astrologer).
+    // Single-company service: user-facing copy never names the individual
+    // employee, and report notifications open the bottom-nav Reports tab.
     if (request.userId.trim().isNotEmpty) {
       await _notify(
         request.userId,
         request.paid ? 'Payment Successful' : 'Booking Submitted',
         request.paid
-            ? 'Your payment was received and your match-analysis booking has '
-                'been sent to ${request.astrologerName.isEmpty ? 'the astrologer' : request.astrologerName}.'
-            : 'Your ${request.type.label} request has been sent to '
-                '${request.astrologerName.isEmpty ? 'the astrologer' : request.astrologerName}.',
+            ? 'Your payment was received and your match-analysis request is '
+                'now with our astrology team.'
+            : 'Your ${request.type.label} request has been received by our '
+                'astrology team.',
         'booking_submitted',
-        data: {'requestId': doc.id, 'route': '/my-analysis'},
+        data: {'requestId': doc.id, 'route': '/reports'},
       );
     }
     return doc.id;
@@ -322,7 +324,7 @@ class AstrologerService {
         'Appointment Confirmed',
         'Your appointment is confirmed. Booking ID: $id.',
         'booking_submitted',
-        data: {'requestId': id, 'route': '/my-analysis'},
+        data: {'requestId': id, 'route': '/my-appointments'},
       );
     }
     return id;
@@ -440,8 +442,9 @@ class AstrologerService {
     });
     if (userId.trim().isNotEmpty) {
       await _notify(userId, 'Analysis In Progress',
-          'The astrologer has started your match analysis.', 'analysis_started',
-          data: {'requestId': requestId, 'route': '/my-analysis'});
+          'Our astrology team has started your match analysis.',
+          'analysis_started',
+          data: {'requestId': requestId, 'route': '/reports'});
     }
   }
 
@@ -551,7 +554,9 @@ class AstrologerService {
             FieldValue.arrayUnion([BookingHistoryEntry.now(label).toMap()]),
     });
     // Notify the user of the outcome (spec: Booking Accepted / Payment Pending /
-    // rejected). Best-effort.
+    // rejected). Best-effort. Single-company service: the user-facing copy
+    // NEVER names the individual employee — only "our astrology team" — and
+    // report updates deep-link to the bottom-nav Reports tab.
     if (userId.trim().isEmpty) return;
     switch (status) {
       case AstrologerRequestStatus.accepted:
@@ -559,17 +564,24 @@ class AstrologerService {
             userId,
             'Booking Accepted',
             amount > 0
-                ? '$who accepted your request. Please pay ₹$amount to confirm.'
-                : '$who accepted your request.',
-            'booking_accepted');
+                ? 'Our astrology team accepted your request. Please pay '
+                    '₹$amount to confirm.'
+                : 'Our astrology team accepted your request.',
+            'booking_accepted',
+            data: {'requestId': requestId, 'route': '/reports'});
         break;
       case AstrologerRequestStatus.rejected:
-        await _notify(userId, 'Booking Declined',
-            '$who is unable to take your request right now.', 'booking_rejected');
+        await _notify(
+            userId,
+            'Booking Declined',
+            'Our astrology team is unable to take your request right now.',
+            'booking_rejected',
+            data: {'requestId': requestId, 'route': '/reports'});
         break;
       case AstrologerRequestStatus.completed:
         await _notify(userId, 'Report Ready',
-            'Your analysis report from $who is ready to view.', 'porutham_ready');
+            'Your analysis report is ready to view.', 'porutham_ready',
+            data: {'requestId': requestId, 'route': '/reports'});
         break;
       case AstrologerRequestStatus.pending:
         break;
@@ -688,12 +700,15 @@ class AstrologerService {
             : 'A horoscope request has been assigned to you.',
         'request_reassigned');
     if (userId.trim().isNotEmpty) {
+      // Single-company service: the user never learns which team member the
+      // booking moved to.
       await _notify(
           userId,
           'Booking reassigned',
-          'Your booking has been assigned to $astrologerName, who now has '
-              '24 hours to respond.',
-          'booking_reassigned');
+          'Your booking has been reassigned within our astrology team and '
+              'will be handled shortly.',
+          'booking_reassigned',
+          data: {'route': '/reports'});
     }
   }
 
