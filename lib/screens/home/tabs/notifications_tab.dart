@@ -1,34 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../models/announcement_model.dart';
 import '../../../models/notification_model.dart';
 import '../../../providers/announcement_provider.dart';
 import '../../../providers/notification_provider.dart';
+import '../../notifications/notification_detail_screen.dart';
 
 /// Notification page — admin announcements (platform-wide) plus the user's own
 /// notifications (interests, approvals…), merged newest-first.
-class NotificationsTab extends ConsumerStatefulWidget {
+///
+/// Read/unread contract:
+///  • every NEW notification arrives Unread and shows a dot + highlight;
+///  • tapping a row marks THAT item read and opens its full details page;
+///  • a read item never flips back to Unread. (Nothing is bulk-marked read just
+///    because the list was opened — that was the old, buggy behaviour.)
+class NotificationsTab extends ConsumerWidget {
   const NotificationsTab({super.key});
 
   @override
-  ConsumerState<NotificationsTab> createState() => _NotificationsTabState();
-}
-
-class _NotificationsTabState extends ConsumerState<NotificationsTab> {
-  @override
-  void initState() {
-    super.initState();
-    // Opening the inbox clears the announcement unread badge.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(announcementsLastSeenProvider.notifier).markSeen();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final announcements =
         ref.watch(announcementsProvider).valueOrNull ?? const <AnnouncementModel>[];
     final notifsAsync = ref.watch(notificationsProvider);
@@ -66,6 +58,12 @@ class _NotificationsTabState extends ConsumerState<NotificationsTab> {
   }
 }
 
+void _openDetails(BuildContext context, NotificationDetailArgs args) {
+  Navigator.of(context).push(MaterialPageRoute(
+    builder: (_) => NotificationDetailScreen(args: args),
+  ));
+}
+
 /// One row in the merged feed — either an admin announcement or a per-user
 /// notification.
 class _Item {
@@ -74,49 +72,116 @@ class _Item {
   const _Item(this.date, this.build);
 
   factory _Item.announcement(AnnouncementModel a) =>
-      _Item(a.createdAt, (context, ref) => _announcementTile(a));
+      _Item(a.createdAt, (context, ref) => _AnnouncementTile(announcement: a));
 
   factory _Item.notification(NotificationModel n) =>
-      _Item(n.createdAt, (context, ref) => _notificationTile(context, ref, n));
+      _Item(n.createdAt, (context, ref) => _NotificationTile(notification: n));
 
-  static Widget _announcementTile(AnnouncementModel a) => ListTile(
-        tileColor: AppColors.gold.withOpacity(0.06),
-        leading: CircleAvatar(
-          backgroundColor: AppColors.gold.withOpacity(0.18),
-          child: const Icon(Icons.campaign, color: AppColors.gold, size: 22),
-        ),
-        title: Text(a.title,
-            style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(a.message),
-        isThreeLine: a.message.length > 40,
-        trailing: Text(_fmtDate(a.createdAt),
-            style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-      );
+  static String timeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inHours < 1) return '${diff.inMinutes}m';
+    if (diff.inDays < 1) return '${diff.inHours}h';
+    if (diff.inDays < 30) return '${diff.inDays}d';
+    return fmtDate(dt);
+  }
 
-  static Widget _notificationTile(
-          BuildContext context, WidgetRef ref, NotificationModel n) =>
-      ListTile(
-        tileColor: n.isRead ? null : AppColors.primary.withOpacity(0.04),
-        leading: CircleAvatar(
-          backgroundColor: _typeColor(n.type).withOpacity(0.15),
-          child: Icon(_typeIcon(n.type), color: _typeColor(n.type), size: 22),
-        ),
-        title: Text(n.title,
-            style: TextStyle(
-                fontWeight: n.isRead ? FontWeight.normal : FontWeight.bold)),
-        subtitle: Text(n.body, maxLines: 2, overflow: TextOverflow.ellipsis),
-        trailing: Text(_timeAgo(n.createdAt),
-            style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-        onTap: () {
-          if (!n.isRead) {
-            ref.read(notificationNotifierProvider.notifier).markRead(n.id);
-          }
-          // Deep-link to the booking/screen carried in the notification data
-          // (spec §8: tapping a notification opens the corresponding booking).
-          final route = n.data?['route']?.toString();
-          if (route != null && route.isNotEmpty) context.push(route);
-        },
+  static String fmtDate(DateTime d) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${d.day} ${months[d.month - 1]} ${d.year}';
+  }
+}
+
+/// The small "new" dot shown on unread rows.
+class _UnreadDot extends StatelessWidget {
+  final Color color;
+  const _UnreadDot({required this.color});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 9,
+        height: 9,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       );
+}
+
+// ── Admin announcement row ────────────────────────────────────────────────────
+
+class _AnnouncementTile extends ConsumerWidget {
+  final AnnouncementModel announcement;
+  const _AnnouncementTile({required this.announcement});
+
+  static (IconData, Color) _visual(AnnouncementType t) => switch (t) {
+        AnnouncementType.featureUpdate =>
+          (Icons.new_releases_outlined, Colors.blue),
+        AnnouncementType.offer => (Icons.local_offer_outlined, Colors.orange),
+        AnnouncementType.maintenance =>
+          (Icons.build_circle_outlined, Colors.brown),
+        AnnouncementType.announcement => (Icons.campaign, AppColors.gold),
+        _ => (Icons.notifications_none, AppColors.primary),
+      };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final a = announcement;
+    final readIds = ref.watch(announcementsReadProvider);
+    final lastSeen = ref.watch(announcementsLastSeenProvider);
+    final unread = isAnnouncementUnread(a, readIds, lastSeen);
+    final (icon, color) = _visual(a.typeEnum);
+
+    return ListTile(
+      tileColor: unread ? color.withOpacity(0.06) : null,
+      leading: CircleAvatar(
+        backgroundColor: color.withOpacity(0.15),
+        child: Icon(icon, color: color, size: 22),
+      ),
+      title: Text(a.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+              fontWeight: unread ? FontWeight.bold : FontWeight.normal)),
+      subtitle: Text(a.message, maxLines: 2, overflow: TextOverflow.ellipsis),
+      trailing: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(_Item.timeAgo(a.createdAt),
+              style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+          if (unread) ...[
+            const SizedBox(height: 5),
+            _UnreadDot(color: color),
+          ],
+        ],
+      ),
+      onTap: () {
+        // Opening the details is what marks it read — permanently.
+        ref.read(announcementsReadProvider.notifier).markRead(a.id);
+        _openDetails(
+          context,
+          NotificationDetailArgs(
+            title: a.title,
+            body: a.message,
+            date: a.createdAt,
+            typeLabel: a.typeEnum.label,
+            icon: icon,
+            color: color,
+            actionUrl: a.hasAction ? a.actionUrl : null,
+            actionLabel: a.effectiveActionLabel,
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Per-user notification row ─────────────────────────────────────────────────
+
+class _NotificationTile extends ConsumerWidget {
+  final NotificationModel notification;
+  const _NotificationTile({required this.notification});
 
   static Color _typeColor(String type) {
     switch (type) {
@@ -154,20 +219,75 @@ class _Item {
     }
   }
 
-  static String _timeAgo(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return 'just now';
-    if (diff.inHours < 1) return '${diff.inMinutes}m';
-    if (diff.inDays < 1) return '${diff.inHours}h';
-    if (diff.inDays < 30) return '${diff.inDays}d';
-    return _fmtDate(dt);
+  static String _typeLabel(String type) {
+    switch (type) {
+      case 'interest_received':
+        return 'Interest Received';
+      case 'interest_accepted':
+        return 'Interest Accepted';
+      case 'interest_rejected':
+        return 'Interest Update';
+      case 'porutham_ready':
+        return 'Horoscope Match';
+      case 'subscription_expiry':
+        return 'Subscription';
+      case 'profile_approval':
+        return 'Profile';
+      default:
+        return 'Notification';
+    }
   }
 
-  static String _fmtDate(DateTime d) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return '${d.day} ${months[d.month - 1]} ${d.year}';
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final n = notification;
+    final color = _typeColor(n.type);
+    final unread = !n.isRead;
+
+    return ListTile(
+      tileColor: unread ? AppColors.primary.withOpacity(0.04) : null,
+      leading: CircleAvatar(
+        backgroundColor: color.withOpacity(0.15),
+        child: Icon(_typeIcon(n.type), color: color, size: 22),
+      ),
+      title: Text(n.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+              fontWeight: unread ? FontWeight.bold : FontWeight.normal)),
+      subtitle: Text(n.body, maxLines: 2, overflow: TextOverflow.ellipsis),
+      trailing: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(_Item.timeAgo(n.createdAt),
+              style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+          if (unread) ...[
+            const SizedBox(height: 5),
+            _UnreadDot(color: AppColors.primary),
+          ],
+        ],
+      ),
+      onTap: () {
+        // Opening the details marks it read once and for all.
+        if (unread) {
+          ref.read(notificationNotifierProvider.notifier).markRead(n.id);
+        }
+        final route = n.data?['route']?.toString();
+        _openDetails(
+          context,
+          NotificationDetailArgs(
+            title: n.title,
+            body: n.body,
+            date: n.createdAt,
+            typeLabel: _typeLabel(n.type),
+            icon: _typeIcon(n.type),
+            color: color,
+            actionUrl: (route != null && route.isNotEmpty) ? route : null,
+            actionLabel: 'Open',
+          ),
+        );
+      },
+    );
   }
 }

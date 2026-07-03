@@ -5,8 +5,12 @@ import '../../models/announcement_model.dart';
 import '../../providers/announcement_provider.dart';
 
 /// Admin "Notifications Management" — create, edit, delete platform-wide
-/// announcements shown to all users and astrologers. Registered at
-/// `/admin/notifications`.
+/// notifications shown to all users and astrologers. Registered at
+/// `/admin/notifications`. Each notification has a title, description, a TYPE
+/// (Feature Update / Announcement / Offer / Maintenance / General / Other) and
+/// an optional ACTION LINK (Play Store update, website, internal app page…)
+/// with a custom button label — rendered as an action button when the user
+/// opens the notification details.
 class AnnouncementManagementScreen extends ConsumerWidget {
   const AnnouncementManagementScreen({super.key});
 
@@ -96,6 +100,50 @@ class AnnouncementManagementScreen extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(a.typeEnum.label,
+                    style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary)),
+              ),
+              if (a.hasAction)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.link, size: 12, color: Colors.blue),
+                      const SizedBox(width: 3),
+                      Flexible(
+                        child: Text(
+                            '${a.effectiveActionLabel} → ${a.actionUrl}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 11, color: Colors.blue)),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
           if (a.message.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(a.message, style: TextStyle(color: Colors.grey[800])),
@@ -130,7 +178,10 @@ class AnnouncementManagementScreen extends ConsumerWidget {
       {AnnouncementModel? existing}) async {
     final titleC = TextEditingController(text: existing?.title ?? '');
     final msgC = TextEditingController(text: existing?.message ?? '');
+    final urlC = TextEditingController(text: existing?.actionUrl ?? '');
+    final labelC = TextEditingController(text: existing?.actionLabel ?? '');
     var active = existing?.isActive ?? true;
+    var type = existing?.typeEnum ?? AnnouncementType.general;
 
     final saved = await showDialog<bool>(
       context: context,
@@ -138,7 +189,7 @@ class AnnouncementManagementScreen extends ConsumerWidget {
         builder: (ctx, setLocal) => AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(existing == null ? 'New Announcement' : 'Edit Announcement'),
+          title: Text(existing == null ? 'New Notification' : 'Edit Notification'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -155,7 +206,45 @@ class AnnouncementManagementScreen extends ConsumerWidget {
                   maxLines: 4,
                   textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(
-                      labelText: 'Message', border: OutlineInputBorder()),
+                      labelText: 'Description', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<AnnouncementType>(
+                  value: type,
+                  decoration: const InputDecoration(
+                      labelText: 'Notification Type',
+                      border: OutlineInputBorder()),
+                  items: [
+                    for (final t in AnnouncementType.values)
+                      DropdownMenuItem(value: t, child: Text(t.label)),
+                  ],
+                  onChanged: (v) =>
+                      setLocal(() => type = v ?? AnnouncementType.general),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: urlC,
+                  keyboardType: TextInputType.url,
+                  decoration: const InputDecoration(
+                    labelText: 'Action Link (optional)',
+                    hintText: 'https://play.google.com/…  or  /subscription',
+                    helperText:
+                        'Play Store / website URL, or an internal page like /subscription',
+                    helperMaxLines: 2,
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: labelC,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    labelText: 'Action Button Label (optional)',
+                    hintText: type.defaultActionLabel,
+                    helperText:
+                        'e.g. Update Now, Open, Learn More — defaults per type',
+                    border: const OutlineInputBorder(),
+                  ),
                 ),
                 if (existing != null)
                   SwitchListTile.adaptive(
@@ -188,6 +277,8 @@ class AnnouncementManagementScreen extends ConsumerWidget {
     if (saved != true) return;
     final title = titleC.text.trim();
     final message = msgC.text.trim();
+    final actionUrl = urlC.text.trim();
+    final actionLabel = labelC.text.trim();
     if (title.isEmpty) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -197,16 +288,26 @@ class AnnouncementManagementScreen extends ConsumerWidget {
     }
     final ctrl = ref.read(announcementControllerProvider.notifier);
     if (existing == null) {
-      await ctrl.create(title: title, message: message);
+      await ctrl.create(
+          title: title,
+          message: message,
+          type: type.key,
+          actionUrl: actionUrl,
+          actionLabel: actionLabel);
     } else {
       await ctrl.update(existing.id,
-          title: title, message: message, isActive: active);
+          title: title,
+          message: message,
+          isActive: active,
+          type: type.key,
+          actionUrl: actionUrl,
+          actionLabel: actionLabel);
     }
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(existing == null
-              ? 'Announcement published'
-              : 'Announcement updated')));
+              ? 'Notification published'
+              : 'Notification updated')));
     }
   }
 

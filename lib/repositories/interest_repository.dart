@@ -23,6 +23,11 @@ class InterestRepository {
   Future<void> ensureConnection(InterestModel interest) =>
       _firestore.createConnection(interest);
 
+  /// Loads a single interest straight from Firestore — used by the
+  /// accepted-interest chat creation so it never depends on a provider cache.
+  Future<InterestModel?> getInterestById(String interestId) =>
+      _firestore.getInterestById(interestId);
+
   Future<void> rejectInterest(String interestId) =>
       _firestore.updateInterestStatus(interestId, 'rejected');
 

@@ -7,17 +7,16 @@ enum AppPlan { free, basic, premium }
 /// for per-feature access control across the UI — gate features off this rather
 /// than re-deriving from membership strings.
 ///
-/// Mirrors the product spec:
-///  • Free    — browse + filters + astrologers LIST; 2 interests/day; contact &
-///              WhatsApp hidden; astrologer booking, horoscope-match filter and
-///              who-viewed-me disabled.
-///  • Basic   — ₹299 / 30 days — unlimited interests, contact + WhatsApp,
-///              horoscope-match filter, astrologer booking, who-viewed-me,
-///              better visibility.
-///  • Premium — ₹599 / 60 days — everything in Basic plus featured badge, top
-///              search placement, priority recommendations, advanced filters
-///              (height/occupation/income/marital/horoscope), profile analytics,
-///              highest visibility and priority support.
+/// FREE-FEATURES POLICY: every core MATRIMONY feature is free for everyone —
+/// browsing/searching profiles, all filters, match suggestions, unlimited
+/// interests (send/accept/reject), chat, and contact/WhatsApp details. The ONLY
+/// paid services in the app are the ASTROLOGY ones (Horoscope Report/Analysis
+/// and astrologer appointment booking), and those are paid PER SERVICE via
+/// Razorpay at booking time — never through a subscription gate. Paid plans now
+/// only add cosmetic/visibility perks:
+///  • Basic   — better visibility.
+///  • Premium — featured badge, top search placement, priority recommendations,
+///              profile analytics, highest visibility and priority support.
 class PlanFeatures {
   final AppPlan plan;
 
@@ -63,18 +62,20 @@ class PlanFeatures {
   bool get isPremium => plan == AppPlan.premium;
   bool get hasUnlimitedInterests => interestsPerDay < 0;
 
+  // All matrimony features are free for everyone (see class doc). Only the
+  // astrology services carry a per-service charge, handled at booking time.
   static const free = PlanFeatures(
     plan: AppPlan.free,
-    interestsPerDay: AppConstants.freeInterestsPerDay, // 2/day
-    canViewContact: false,
-    canViewWhatsapp: false,
-    canUseHoroscopeMatchFilter: false,
-    canBookAstrologer: false,
-    canSeeWhoViewedMe: false,
+    interestsPerDay: -1, // unlimited — sending interest is free
+    canViewContact: true,
+    canViewWhatsapp: true,
+    canUseHoroscopeMatchFilter: true,
+    canBookAstrologer: true, // booking itself is paid per appointment
+    canSeeWhoViewedMe: true,
     featuredBadge: false,
     topSearchPlacement: false,
     priorityRecommendations: false,
-    advancedFilters: false,
+    advancedFilters: true,
     profileAnalytics: false,
     prioritySupport: false,
     visibilityBoost: 1.0,
@@ -91,7 +92,7 @@ class PlanFeatures {
     featuredBadge: false,
     topSearchPlacement: false,
     priorityRecommendations: false,
-    advancedFilters: false,
+    advancedFilters: true,
     profileAnalytics: false,
     prioritySupport: false,
     visibilityBoost: 1.3, // better visibility

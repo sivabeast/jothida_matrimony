@@ -71,6 +71,11 @@ class ChatService {
         'participantNames': {myUid: myName, otherUid: otherName},
         'participantPhotos': {myUid: myPhoto, otherUid: otherPhoto},
         'unread': {myUid: 0, otherUid: 0},
+        'createdAt': FieldValue.serverTimestamp(),
+        // Stamped at creation so a brand-new (still message-less) conversation
+        // sorts to the TOP of the Chats list immediately — the accepted-interest
+        // thread must be visible without waiting for a first message.
+        'lastMessageAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
       debugPrint('[ChatService] thread $threadId created');
       return threadId;

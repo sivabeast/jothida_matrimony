@@ -12,6 +12,8 @@ class AppConstants {
   static const String reportsCollection = 'reports';
   static const String notificationsCollection = 'notifications';
   static const String announcementsCollection = 'announcements';
+  // Admin-managed Home page banners (image banners + text-builder banners).
+  static const String bannersCollection = 'banners';
   static const String transactionsCollection = 'transactions';
   static const String adminCollection = 'admin';
   static const String astrologersCollection = 'astrologers';

@@ -20,11 +20,21 @@ class AnnouncementController extends Notifier<AsyncValue<void>> {
   @override
   AsyncValue<void> build() => const AsyncData(null);
 
-  Future<void> create({required String title, required String message}) async {
+  Future<void> create({
+    required String title,
+    required String message,
+    String type = 'general',
+    String actionUrl = '',
+    String actionLabel = '',
+  }) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => ref
-        .read(firestoreServiceProvider)
-        .createAnnouncement(title: title, message: message));
+    state = await AsyncValue.guard(() =>
+        ref.read(firestoreServiceProvider).createAnnouncement(
+            title: title,
+            message: message,
+            type: type,
+            actionUrl: actionUrl,
+            actionLabel: actionLabel));
   }
 
   Future<void> update(
@@ -32,12 +42,19 @@ class AnnouncementController extends Notifier<AsyncValue<void>> {
     required String title,
     required String message,
     required bool isActive,
+    String type = 'general',
+    String actionUrl = '',
+    String actionLabel = '',
   }) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => ref
-        .read(firestoreServiceProvider)
-        .updateAnnouncement(id,
-            title: title, message: message, isActive: isActive));
+    state = await AsyncValue.guard(() =>
+        ref.read(firestoreServiceProvider).updateAnnouncement(id,
+            title: title,
+            message: message,
+            isActive: isActive,
+            type: type,
+            actionUrl: actionUrl,
+            actionLabel: actionLabel));
   }
 
   Future<void> delete(String id) async {
@@ -51,11 +68,17 @@ final announcementControllerProvider =
     NotifierProvider<AnnouncementController, AsyncValue<void>>(
         AnnouncementController.new);
 
-// ── Unread tracking (per-device) ─────────────────────────────────────────────
-// Announcements are global, so "unread" is tracked locally: the timestamp the
-// user last opened their notifications screen. Anything newer counts as unread.
+// ── Read/unread tracking (per-device, per-announcement) ─────────────────────
+// Announcements are global documents, so read state is tracked locally as a
+// SET of announcement ids the user has OPENED. This fixes the old behaviour
+// where merely opening the notifications LIST stamped a "last seen" time and
+// silently marked everything read: now an announcement stays Unread until its
+// details are actually opened, and once read it never shows as Unread again.
+// The legacy last-seen timestamp is kept as a baseline so announcements from
+// before this change don't all flip back to Unread.
 
 const String _kLastSeenKey = 'announcements_last_seen_ms';
+const String _kReadIdsKey = 'announcements_read_ids';
 
 class AnnouncementsSeenNotifier extends Notifier<int> {
   @override
@@ -70,28 +93,56 @@ class AnnouncementsSeenNotifier extends Notifier<int> {
       state = prefs.getInt(_kLastSeenKey) ?? 0;
     } catch (_) {/* keep 0 */}
   }
-
-  /// Marks all current announcements as seen (call when the inbox is opened).
-  Future<void> markSeen() async {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    state = now;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(_kLastSeenKey, now);
-    } catch (_) {/* best-effort */}
-  }
 }
 
 final announcementsLastSeenProvider =
     NotifierProvider<AnnouncementsSeenNotifier, int>(
         AnnouncementsSeenNotifier.new);
 
-/// Number of announcements created after the user last opened the inbox.
+/// The ids of the announcements this device has opened (read).
+class AnnouncementsReadNotifier extends Notifier<Set<String>> {
+  @override
+  Set<String> build() {
+    _load();
+    return const {};
+  }
+
+  Future<void> _load() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      state = (prefs.getStringList(_kReadIdsKey) ?? const []).toSet();
+    } catch (_) {/* keep empty */}
+  }
+
+  /// Marks one announcement as read (called when its details are opened).
+  /// Permanent: a read announcement never becomes unread again.
+  Future<void> markRead(String id) async {
+    if (id.isEmpty || state.contains(id)) return;
+    state = {...state, id};
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_kReadIdsKey, state.toList());
+    } catch (_) {/* best-effort */}
+  }
+}
+
+final announcementsReadProvider =
+    NotifierProvider<AnnouncementsReadNotifier, Set<String>>(
+        AnnouncementsReadNotifier.new);
+
+/// True when [a] has not been opened yet on this device (and is newer than the
+/// legacy last-seen baseline).
+bool isAnnouncementUnread(
+    AnnouncementModel a, Set<String> readIds, int legacyLastSeenMs) {
+  if (readIds.contains(a.id)) return false;
+  return a.createdAt.millisecondsSinceEpoch > legacyLastSeenMs;
+}
+
+/// Number of unopened announcements — drives the bell badges.
 final unreadAnnouncementsCountProvider = Provider.autoDispose<int>((ref) {
   final lastSeen = ref.watch(announcementsLastSeenProvider);
+  final readIds = ref.watch(announcementsReadProvider);
   final list =
       ref.watch(announcementsProvider).valueOrNull ?? const <AnnouncementModel>[];
-  return list
-      .where((a) => a.createdAt.millisecondsSinceEpoch > lastSeen)
-      .length;
+  return list.where((a) => isAnnouncementUnread(a, readIds, lastSeen)).length;
 });

@@ -54,6 +54,7 @@ import '../screens/admin/admin_reports_page.dart';
 import '../screens/admin/employee_commission_screen.dart';
 import '../screens/admin/account_admin_screens.dart';
 import '../screens/admin/announcement_management_screen.dart';
+import '../screens/admin/banner_management_screen.dart';
 import '../screens/horoscope/horoscope_details_screen.dart';
 import '../screens/horoscope/horoscope_files_screen.dart';
 import '../screens/horoscope/horoscope_matching_screen.dart';

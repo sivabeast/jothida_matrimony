@@ -230,16 +230,13 @@ class _Body extends StatelessWidget {
       out.add(_section(
         'Certificates',
         Icons.verified_outlined,
-        SizedBox(
-          height: 184,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.zero,
-            itemCount: cfg.certificates.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (_, i) =>
-                _CertificateCard(cert: cfg.certificates[i], onOpen: _launch),
-          ),
+        Column(
+          children: [
+            for (var i = 0; i < cfg.certificates.length; i++) ...[
+              if (i > 0) const SizedBox(height: 20),
+              _CertificateRow(cert: cfg.certificates[i], onOpen: _launch),
+            ],
+          ],
         ),
       ));
     }
@@ -593,12 +590,16 @@ class _ImageViewerScreen extends StatelessWidget {
   }
 }
 
-// ── Certificate card (image thumb or PDF tile) — horizontal carousel ──────────
+// ── Certificate row — one certificate per full-width row ─────────────────────
+// The image spans the section's full width and keeps its natural aspect ratio
+// (capped so one certificate never fills more than most of a screen), so the
+// uploaded document stays clearly readable. The name/description sit BELOW the
+// image as their own block, not overlaid or squeezed beside it.
 
-class _CertificateCard extends StatelessWidget {
+class _CertificateRow extends StatelessWidget {
   final AstrologyCertificate cert;
   final Future<void> Function(BuildContext, Uri, String) onOpen;
-  const _CertificateCard({required this.cert, required this.onOpen});
+  const _CertificateRow({required this.cert, required this.onOpen});
 
   void _open(BuildContext context) {
     if (cert.url.isEmpty) return;
@@ -611,60 +612,81 @@ class _CertificateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final maxImageHeight = MediaQuery.of(context).size.height * 0.6;
+
     return InkWell(
       onTap: () => _open(context),
       borderRadius: BorderRadius.circular(14),
-      child: Container(
-        width: 150,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade200),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            cert.isPdf
-                ? Container(
-                    width: double.infinity,
-                    height: 110,
-                    color: AppColors.primary.withOpacity(0.08),
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.picture_as_pdf,
-                        color: AppColors.error, size: 44),
-                  )
-                : NetworkPhoto(
-                    url: cert.url,
-                    width: double.infinity,
-                    height: 110,
-                    fallbackIcon: Icons.verified),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(cert.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 12.5, fontWeight: FontWeight.w600)),
-                  if (cert.description.trim().isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(cert.description,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style:
-                            TextStyle(fontSize: 11, color: Colors.grey[600])),
-                  ],
-                ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              width: double.infinity,
+              constraints:
+                  BoxConstraints(minHeight: 160, maxHeight: maxImageHeight),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                border: Border.all(color: Colors.grey.shade200),
+                borderRadius: BorderRadius.circular(14),
               ),
+              child: cert.isPdf
+                  ? Container(
+                      height: 180,
+                      alignment: Alignment.center,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.picture_as_pdf,
+                              color: AppColors.error, size: 56),
+                          const SizedBox(height: 8),
+                          Text('Tap to open PDF',
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.grey[600])),
+                        ],
+                      ),
+                    )
+                  : NetworkPhoto(
+                      url: cert.url,
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                      fallbackIcon: Icons.verified,
+                      fallbackIconSize: 56,
+                      showLoadingSpinner: true,
+                    ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.workspace_premium,
+                  size: 18, color: AppColors.gold),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(cert.title,
+                        style: const TextStyle(
+                            fontSize: 14.5,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w700)),
+                    if (cert.description.trim().isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(cert.description,
+                          style: TextStyle(
+                              fontSize: 12.5,
+                              height: 1.4,
+                              color: Colors.grey[700])),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

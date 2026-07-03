@@ -6,16 +6,20 @@ import 'package:go_router/go_router.dart';
 import '../../../core/services/match_score_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/profile_completion.dart';
+import '../../../models/banner_model.dart';
 import '../../../models/interest_model.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/account_provider.dart';
+import '../../../providers/announcement_provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/banner_provider.dart';
 import '../../../providers/chat_provider.dart';
 import '../../../providers/interest_provider.dart';
 import '../../../providers/navigation_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/match_score_badge.dart';
+import '../../../widgets/home/home_banner_slide.dart';
 import 'notifications_tab.dart';
 
 /// Home dashboard tab. Clean, modern flow:
@@ -34,9 +38,14 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   int _bannerPage = 0;
   Timer? _bannerTimer;
 
-  // Custom hero banners provided by the brand. The full artwork (headline,
-  // sub-text and CTA) is baked into each image, so the slide simply renders the
-  // asset edge-to-edge. The headline/subtitle/cta below are only used by the
+  /// How many slides the carousel currently shows — admin-published banners
+  /// when any exist, otherwise the built-in asset banners. Kept as a field so
+  /// the auto-scroll timer always wraps at the LIVE count.
+  int _bannerCount = _banners.length;
+
+  // Built-in FALLBACK hero banners — shown only while the admin has not
+  // published any banner in Banner Management (`banners` collection). The full
+  // artwork is baked into each image; headline/subtitle/cta are used by the
   // graceful fallback if an asset ever fails to load.
   static const _banners = [
     _BannerData(
@@ -68,8 +77,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
 
   void _startAutoScroll() {
     _bannerTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (!mounted) return;
-      final next = (_bannerPage + 1) % _banners.length;
+      if (!mounted || _bannerCount <= 1 || !_bannerCtrl.hasClients) return;
+      final next = (_bannerPage + 1) % _bannerCount;
       _bannerCtrl.animateToPage(
         next,
         duration: const Duration(milliseconds: 600),
@@ -117,6 +126,24 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
 
   // ── Curved header + overlapping banner ─────────────────────────────────────
 
+  /// The admin-published banners (Banner Management). Empty = fall back to the
+  /// built-in asset banners.
+  List<HomeBannerModel> get _remoteBanners =>
+      ref.watch(activeBannersProvider).valueOrNull ?? const [];
+
+  /// Carousel height as a fraction of its width — the admin-configured height
+  /// (largest ratio among the published banners), or the classic 0.60 for the
+  /// built-in fallback banners.
+  double get _bannerRatio {
+    final remote = _remoteBanners;
+    if (remote.isEmpty) return 0.60;
+    var r = 0.0;
+    for (final b in remote) {
+      if (b.heightRatio > r) r = b.heightRatio;
+    }
+    return r.clamp(0.35, 1.0);
+  }
+
   /// A premium curved maroon header (profile + name on the left, a single
   /// notification bell on the right) whose background extends behind the hero
   /// banner. The banner is positioned to overlap the curve so the two feel like
@@ -126,7 +153,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     final topPad = media.padding.top;
     const headerRowHeight = 56.0;
     final bannerWidth = media.size.width - 24;
-    final bannerHeight = bannerWidth * 0.60;
+    final bannerHeight = bannerWidth * _bannerRatio;
     final bannerTop = topPad + headerRowHeight + 10;
     final headerBgHeight = bannerTop + bannerHeight * 0.45;
     final totalHeight = bannerTop + bannerHeight + 28; // + dots block
@@ -178,7 +205,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     final photo = (myProfile?.profilePhotoUrl?.isNotEmpty ?? false)
         ? myProfile!.profilePhotoUrl!
         : (user?.photoUrl ?? '');
-    final unread = ref.watch(unreadNotificationCountProvider);
+    final unread = ref.watch(unreadNotificationCountProvider) +
+        ref.watch(unreadAnnouncementsCountProvider);
     final unreadChats = ref.watch(myUnreadChatCountProvider);
     // Admin + Astrology dashboard shortcuts are visible ONLY to the privileged
     // super-admin account (the one whitelisted Gmail). Regular users and the
@@ -295,7 +323,14 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
 
   Widget _buildBannerCarousel(BuildContext context) {
     final bannerWidth = MediaQuery.of(context).size.width - 24;
-    final bannerHeight = bannerWidth * 0.60;
+    final bannerHeight = bannerWidth * _bannerRatio;
+
+    // Admin-published banners take over the carousel; the built-in asset
+    // banners remain only as the fallback when none are published.
+    final remote = _remoteBanners;
+    final count = remote.isNotEmpty ? remote.length : _banners.length;
+    _bannerCount = count; // keep the auto-scroll timer wrapping correctly
+    final page = _bannerPage < count ? _bannerPage : 0;
 
     return Column(
       children: [
@@ -303,16 +338,18 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           height: bannerHeight,
           child: PageView.builder(
             controller: _bannerCtrl,
-            itemCount: _banners.length,
+            itemCount: count,
             onPageChanged: (i) => setState(() => _bannerPage = i),
-            itemBuilder: (_, i) => _BannerSlide(data: _banners[i]),
+            itemBuilder: (_, i) => remote.isNotEmpty
+                ? _bannerCard(HomeBannerSlide(banner: remote[i]))
+                : _BannerSlide(data: _banners[i]),
           ),
         ),
         const SizedBox(height: 10),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(_banners.length, (i) {
-            final active = i == _bannerPage;
+          children: List.generate(count, (i) {
+            final active = i == page;
             return AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               margin: const EdgeInsets.symmetric(horizontal: 3),
@@ -328,6 +365,28 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
       ],
     );
   }
+
+  /// Wraps an admin banner slide in the same rounded, elevated card the asset
+  /// banners use, so the carousel look stays consistent.
+  Widget _bannerCard(Widget child) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.22),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: child,
+          ),
+        ),
+      );
 
   // ── Quick actions ──────────────────────────────────────────────────────────
 

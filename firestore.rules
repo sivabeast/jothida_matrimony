@@ -220,6 +220,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── Home banners (admin-managed carousel) ──────────────────────────────
+    // Admin has full control (add / edit / delete / publish / order); any
+    // signed-in user may READ (the Home page filters to enabled banners).
+    match /banners/{bannerId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
     // ── Notifications ─────────────────────────────────────────────────────
     // BUSINESS RULE: astrologers must not contact users. Notifications are
     // therefore created only by admins / privileged server logic — never by an

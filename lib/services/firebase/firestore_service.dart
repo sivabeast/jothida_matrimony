@@ -10,6 +10,7 @@ import '../../models/report_model.dart';
 import '../../models/account_deletion_request_model.dart';
 import '../../models/notification_model.dart';
 import '../../models/announcement_model.dart';
+import '../../models/banner_model.dart';
 import '../../models/user_model.dart';
 import '../../models/dashboard_analytics.dart';
 import '../../models/admin_activity.dart';
@@ -615,13 +616,21 @@ class FirestoreService {
         return list;
       });
 
-  Future<void> createAnnouncement(
-          {required String title, required String message}) =>
+  Future<void> createAnnouncement({
+    required String title,
+    required String message,
+    String type = 'general',
+    String actionUrl = '',
+    String actionLabel = '',
+  }) =>
       _db.collection(AppConstants.announcementsCollection).add({
         'title': title,
         'message': message,
         'createdBy': 'admin',
         'isActive': true,
+        'type': type,
+        'actionUrl': actionUrl,
+        'actionLabel': actionLabel,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -630,11 +639,17 @@ class FirestoreService {
     required String title,
     required String message,
     required bool isActive,
+    String type = 'general',
+    String actionUrl = '',
+    String actionLabel = '',
   }) =>
       _db.collection(AppConstants.announcementsCollection).doc(id).update({
         'title': title,
         'message': message,
         'isActive': isActive,
+        'type': type,
+        'actionUrl': actionUrl,
+        'actionLabel': actionLabel,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
@@ -642,6 +657,52 @@ class FirestoreService {
       .collection(AppConstants.announcementsCollection)
       .doc(id)
       .delete();
+
+  // ── Home banners (admin-managed carousel) ──────────────────────────────────
+  /// PUBLISHED banners only (enabled == true), sorted by display order. Sorting
+  /// is client-side so no composite index is required.
+  Stream<List<HomeBannerModel>> watchActiveBanners() => _db
+      .collection(AppConstants.bannersCollection)
+      .where('enabled', isEqualTo: true)
+      .snapshots()
+      .map((s) {
+        final list = s.docs.map(HomeBannerModel.fromFirestore).toList();
+        list.sort((a, b) => a.order.compareTo(b.order));
+        return list;
+      });
+
+  /// ALL banners (any status) for the admin management screen, by order.
+  Stream<List<HomeBannerModel>> watchAllBanners() => _db
+      .collection(AppConstants.bannersCollection)
+      .snapshots()
+      .map((s) {
+        final list = s.docs.map(HomeBannerModel.fromFirestore).toList();
+        list.sort((a, b) => a.order.compareTo(b.order));
+        return list;
+      });
+
+  Future<void> createBanner(HomeBannerModel banner) => _db
+      .collection(AppConstants.bannersCollection)
+      .add(banner.toFirestore()
+        ..['createdAt'] = FieldValue.serverTimestamp());
+
+  Future<void> updateBanner(String id, Map<String, dynamic> fields) => _db
+      .collection(AppConstants.bannersCollection)
+      .doc(id)
+      .update({...fields, 'updatedAt': FieldValue.serverTimestamp()});
+
+  Future<void> deleteBanner(String id) =>
+      _db.collection(AppConstants.bannersCollection).doc(id).delete();
+
+  /// Swaps the display order of two banners atomically (Move Up / Move Down).
+  Future<void> swapBannerOrder(
+      String idA, int orderA, String idB, int orderB) async {
+    final batch = _db.batch();
+    final col = _db.collection(AppConstants.bannersCollection);
+    batch.update(col.doc(idA), {'order': orderB});
+    batch.update(col.doc(idB), {'order': orderA});
+    await batch.commit();
+  }
 
   // ── Admin ─────────────────────────────────────────────────────────────────
   Future<List<UserModel>> getAllUsers({int limit = 50}) async {

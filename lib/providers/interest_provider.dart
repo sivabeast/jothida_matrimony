@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/interest_model.dart';
 import 'auth_provider.dart';
@@ -78,47 +79,89 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
   }
 
   /// Creates (idempotently) the chat thread between the two now-matched users
-  /// and posts a one-time greeting so the conversation shows up in the Chats
-  /// tab for both. Resolves the OTHER user's name/photo from their profile.
+  /// the moment the interest is accepted — WITHOUT waiting for anyone to send
+  /// a first message — and posts a one-time greeting so the conversation shows
+  /// a "latest status" line for both. Resolves the OTHER user's name/photo from
+  /// their profile.
+  ///
+  /// Reads the interest STRAIGHT from Firestore (not from provider caches,
+  /// which may not be loaded on the screen the accept happened from — that was
+  /// why the chat sometimes only appeared after the first manual message), and
+  /// each step degrades independently: a profile-lookup failure still creates
+  /// the thread with a fallback name, and a greeting failure still leaves the
+  /// created thread visible in both Chats lists.
   Future<void> _ensureAcceptedChat(String interestId) async {
     try {
       final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
       if (myUid == null) return;
-      final all = <InterestModel>[
-        ...(ref.read(receivedInterestsProvider).valueOrNull ?? const []),
-        ...(ref.read(sentInterestsProvider).valueOrNull ?? const []),
-      ];
+
+      // 1) Resolve the interest — Firestore first, provider caches as backup.
       InterestModel? interest;
-      for (final i in all) {
-        if (i.id == interestId) {
-          interest = i;
-          break;
+      try {
+        interest =
+            await ref.read(interestRepositoryProvider).getInterestById(interestId);
+      } catch (_) {/* fall through to caches */}
+      if (interest == null) {
+        final all = <InterestModel>[
+          ...(ref.read(receivedInterestsProvider).valueOrNull ?? const []),
+          ...(ref.read(sentInterestsProvider).valueOrNull ?? const []),
+        ];
+        for (final i in all) {
+          if (i.id == interestId) {
+            interest = i;
+            break;
+          }
         }
       }
-      if (interest == null) return;
+      if (interest == null) {
+        debugPrint('[InterestNotifier] accepted-chat: interest $interestId '
+            'not found — no thread created');
+        return;
+      }
       final otherUid =
           interest.senderId == myUid ? interest.receiverId : interest.senderId;
       if (otherUid.isEmpty || otherUid == myUid) return;
 
-      final other = await ref.read(profileByUserIdProvider(otherUid).future);
-      final otherName = other?.fullName.trim();
-      final photoUrl = other?.profilePhotoUrl ?? '';
-      final String otherPhoto = photoUrl.isNotEmpty
-          ? photoUrl
-          : (other != null && other.photos.isNotEmpty ? other.photos.first : '');
+      // 2) Resolve the other member's display name/photo (best-effort).
+      String otherName = 'Member';
+      String otherPhoto = '';
+      try {
+        final other = await ref.read(profileByUserIdProvider(otherUid).future);
+        final name = other?.fullName.trim() ?? '';
+        if (name.isNotEmpty) otherName = name;
+        final photoUrl = other?.profilePhotoUrl ?? '';
+        otherPhoto = photoUrl.isNotEmpty
+            ? photoUrl
+            : (other != null && other.photos.isNotEmpty
+                ? other.photos.first
+                : '');
+      } catch (e) {
+        debugPrint('[InterestNotifier] accepted-chat: profile lookup for '
+            '$otherUid failed ($e) — using fallback name');
+      }
 
+      // 3) Create the thread NOW (this alone makes the conversation appear in
+      // both users' Chats pages — the list does not require any message).
       final chat = ref.read(chatControllerProvider);
       final threadId = await chat.openChatWith(
         otherUid: otherUid,
-        otherName: (otherName == null || otherName.isEmpty) ? 'Member' : otherName,
+        otherName: otherName,
         otherPhoto: otherPhoto,
       );
-      // Seed the opening greeting so the thread is non-empty and surfaces in the
-      // Chats list for both users. Accepting an interest is a one-time
-      // pending→accepted transition, so this won't double-post in practice.
-      await chat.sendMessage(threadId, kInterestAcceptedChatGreeting);
-    } catch (_) {
-      // Intentionally ignored — chat creation must never fail the accept.
+
+      // 4) Seed the opening greeting as the thread's latest status. Accepting
+      // an interest is a one-time pending→accepted transition, so this won't
+      // double-post in practice; if it fails, the thread still exists.
+      try {
+        await chat.sendMessage(threadId, kInterestAcceptedChatGreeting);
+      } catch (e) {
+        debugPrint(
+            '[InterestNotifier] accepted-chat: greeting failed ($e) — '
+            'thread $threadId still created');
+      }
+    } catch (e) {
+      // Never fail the accept because of a chat hiccup — but leave a trace.
+      debugPrint('[InterestNotifier] accepted-chat creation failed: $e');
     }
   }
 

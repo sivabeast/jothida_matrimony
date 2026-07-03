@@ -20,13 +20,8 @@ class AstrologerNotificationsTab extends ConsumerStatefulWidget {
 
 class _AstrologerNotificationsTabState
     extends ConsumerState<AstrologerNotificationsTab> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(announcementsLastSeenProvider.notifier).markSeen();
-    });
-  }
+  // NOTE: announcements are no longer bulk-marked "seen" when the list opens —
+  // each one is marked read individually when tapped (see _AnnouncementCard).
 
   @override
   Widget build(BuildContext context) {
@@ -68,14 +63,20 @@ class _Row {
   const _Row(this.date, this.child);
 }
 
-/// Admin announcement card (read-only).
-class _AnnouncementCard extends StatelessWidget {
+/// Admin announcement card — tapping it marks the announcement read.
+class _AnnouncementCard extends ConsumerWidget {
   final AnnouncementModel announcement;
   const _AnnouncementCard(this.announcement);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final readIds = ref.watch(announcementsReadProvider);
+    final lastSeen = ref.watch(announcementsLastSeenProvider);
+    final unread = isAnnouncementUnread(announcement, readIds, lastSeen);
+
     return AstrologerCard(
+      onTap: () =>
+          ref.read(announcementsReadProvider.notifier).markRead(announcement.id),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -92,9 +93,25 @@ class _AnnouncementCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(announcement.title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 14)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(announcement.title,
+                          style: TextStyle(
+                              fontWeight: unread
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                              fontSize: 14)),
+                    ),
+                    if (unread)
+                      Container(
+                        width: 9,
+                        height: 9,
+                        decoration: const BoxDecoration(
+                            color: AppColors.gold, shape: BoxShape.circle),
+                      ),
+                  ],
+                ),
                 if (announcement.message.isNotEmpty) ...[
                   const SizedBox(height: 3),
                   Text(announcement.message,
