@@ -467,6 +467,56 @@ service cloud.firestore {
                         || resource.data.astrologerId == request.auth.uid);
     }
 
+    // ── Weddings (Marriage Fixed → Wedding Workspace) ─────────────────────
+    // weddings/{pairId} (sorted uids '_'-joined) is created when one partner
+    // taps "Marriage Fixed" and unlocks (status 'fixed') when the other
+    // confirms. Access:
+    //   • the COUPLE (uid in coupleIds) — full read/update (confirmations,
+    //     wedding date, family invitations);
+    //   • invited FAMILY members (login gmail in memberEmails) — read the
+    //     wedding + full access to the workspace subcollections;
+    //   • admins — moderation.
+    // Queries: coupleIds array-contains uid · memberEmails array-contains
+    // email — both provable against the read rules below.
+    match /weddings/{weddingId} {
+      allow read: if isAuthenticated()
+                  && request.auth.uid in resource.data.coupleIds;
+      allow read: if isAuthenticated()
+                  && request.auth.token.email.lower()
+                      in resource.data.memberEmails;
+      allow read: if isAdmin();
+      // Only one of the two matched users creates the wedding, and only for
+      // a pair that includes themself.
+      allow create: if isAuthenticated()
+                    && request.resource.data.coupleIds.size() == 2
+                    && request.auth.uid in request.resource.data.coupleIds;
+      allow update: if isAuthenticated()
+                    && request.auth.uid in resource.data.coupleIds;
+      // A family member may only flip their OWN invite status to 'joined'
+      // (first login) — nothing else on the document.
+      allow update: if isAuthenticated()
+                    && request.auth.token.email.lower()
+                        in resource.data.memberEmails
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['members']);
+      allow update, delete: if isAdmin();
+
+      // ── Workspace subcollections ────────────────────────────────────────
+      // checklist / documents / contacts / guests — every workspace member
+      // (couple + invited family) collaborates with full CRUD.
+      match /{section}/{itemId} {
+        allow read, write: if isAdmin();
+        allow read, write: if isAuthenticated()
+          && section in ['checklist', 'documents', 'contacts', 'guests']
+          && (request.auth.uid in
+                  get(/databases/$(database)/documents/weddings/$(weddingId))
+                      .data.coupleIds
+              || request.auth.token.email.lower() in
+                  get(/databases/$(database)/documents/weddings/$(weddingId))
+                      .data.memberEmails);
+      }
+    }
+
     // ── Chats ─────────────────────────────────────────────────────────────
     // Only the two participants may read or write a thread / its messages.
     // BUSINESS RULE: astrologers must not COLD-initiate contact, so an

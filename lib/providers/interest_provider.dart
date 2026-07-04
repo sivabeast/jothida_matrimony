@@ -55,6 +55,12 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
+      // A Married profile has left the matchmaking pool — it can no longer
+      // send new interests (mirrors being hidden from the Matches feed).
+      if (ref.read(myProfileProvider).valueOrNull?.isMarried ?? false) {
+        throw Exception(
+            'Your profile is marked as Married — new interests are disabled.');
+      }
       final interest = InterestModel(
         id: '${senderProfileId}_$receiverProfileId',
         senderId: senderId,
@@ -71,6 +77,11 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
   Future<void> acceptInterest(String interestId) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
+      // Married profiles can no longer form new matches.
+      if (ref.read(myProfileProvider).valueOrNull?.isMarried ?? false) {
+        throw Exception(
+            'Your profile is marked as Married — new interests are disabled.');
+      }
       await ref.read(interestRepositoryProvider).acceptInterest(interestId);
       // A user↔user chat is created automatically ONLY after an interest is
       // accepted (spec §5). Best-effort — never block/fail the accept.

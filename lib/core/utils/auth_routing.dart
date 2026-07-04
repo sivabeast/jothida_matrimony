@@ -24,6 +24,18 @@ Future<void> routeAuthenticatedUser(
   debugPrint('[$tag] routeAuthenticatedUser: uid=${user.uid}, role=${user.role}, '
       'isAdmin=${user.isAdmin}, isProfileComplete=${user.isProfileComplete}');
 
+  // ── Family user (invited into a Wedding Workspace) ───────────────────────
+  // A returning family account goes straight to the workspace — they have no
+  // matrimony profile and never see onboarding / Home. (First-time family
+  // sign-in happens via the Login screen's "Family Member Login", which
+  // verifies the invitation and promotes the role before routing.)
+  if (user.isFamily) {
+    debugPrint('[$tag] routeAuthenticatedUser: family user → '
+        '/wedding-workspace');
+    context.go('/wedding-workspace');
+    return;
+  }
+
   // ── Employee (horoscope-analysis staff) auto-detection ──────────────────
   // A Gmail the admin has registered in the astrology_team registry opens the
   // Employee Portal. Admins are never treated as employees. This links the

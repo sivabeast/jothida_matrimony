@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../models/interest_model.dart';
+import '../../models/wedding_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/interest_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../providers/wedding_provider.dart';
 
 /// Interest Management Center — replaces the old chat/messages page.
 ///
@@ -410,6 +412,10 @@ class _InterestCard extends ConsumerWidget {
                     side: const BorderSide(color: AppColors.primary)),
               ),
             ),
+            const SizedBox(height: 10),
+            // Marriage Fixed → mutual confirmation unlocks the shared
+            // Wedding Workspace for the couple + invited family members.
+            _MarriageFixedButton(otherUserId: otherUserId, otherName: name),
           ],
         );
       case _CardMode.sent:
@@ -462,6 +468,125 @@ class _InterestCard extends ConsumerWidget {
           style: TextStyle(
               color: color, fontSize: 11, fontWeight: FontWeight.bold)),
     );
+  }
+}
+
+/// The "Marriage Fixed" action for an accepted match. Reflects the live
+/// wedding state between the two users:
+///   • no wedding yet          → "💍 Marriage Fixed" (starts the confirmation)
+///   • I confirmed, they haven't → waiting chip
+///   • they confirmed, I haven't → "Confirm Marriage Fixed"
+///   • both confirmed (fixed)  → "Open Wedding Workspace"
+class _MarriageFixedButton extends ConsumerWidget {
+  final String otherUserId;
+  final String otherName;
+  const _MarriageFixedButton(
+      {required this.otherUserId, required this.otherName});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (otherUserId.isEmpty) return const SizedBox.shrink();
+    final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid ?? '';
+    final wedding =
+        ref.watch(weddingWithUserProvider(otherUserId)).valueOrNull;
+
+    // ── Workspace unlocked ──
+    if (wedding != null && wedding.isFixed) {
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: () => context.push('/wedding-workspace'),
+          icon: const Text('💍', style: TextStyle(fontSize: 15)),
+          label: const Text('Open Wedding Workspace'),
+          style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.success,
+              foregroundColor: Colors.white),
+        ),
+      );
+    }
+
+    // ── I already confirmed — waiting for the partner ──
+    if (wedding != null && wedding.confirmedBy(myUid)) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        decoration: BoxDecoration(
+          color: AppColors.warning.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.warning.withOpacity(0.4)),
+        ),
+        child: Text(
+          '💍 Marriage Fixed sent — waiting for $otherName to confirm.',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.warning),
+        ),
+      );
+    }
+
+    // ── They proposed / nothing yet — I can confirm ──
+    final partnerProposed = wedding != null && !wedding.confirmedBy(myUid);
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () => _confirm(context, ref, partnerProposed),
+        icon: const Text('💍', style: TextStyle(fontSize: 15)),
+        label: Text(partnerProposed
+            ? 'Confirm Marriage Fixed'
+            : 'Marriage Fixed'),
+        style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.goldDark,
+            foregroundColor: Colors.white),
+      ),
+    );
+  }
+
+  Future<void> _confirm(
+      BuildContext context, WidgetRef ref, bool partnerProposed) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Marriage Fixed 💍'),
+        content: Text(partnerProposed
+            ? '$otherName has confirmed the marriage. Confirm from your side '
+                'too?\n\nOnce both of you confirm, the Wedding Workspace '
+                'unlocks — a shared space for your families to plan the '
+                'wedding together.'
+            : 'Have both families decided to proceed with the marriage with '
+                '$otherName?\n\nWhen $otherName also confirms, the Wedding '
+                'Workspace unlocks — a shared space for your families to '
+                'plan the wedding together.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Not Yet')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.success,
+                foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Yes, Marriage Fixed'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final WeddingModel? wedding = await ref
+        .read(weddingControllerProvider.notifier)
+        .confirmMarriageFixed(otherUserId);
+    if (wedding == null) {
+      messenger.showSnackBar(const SnackBar(
+          content: Text('Could not save Marriage Fixed. Please try again.')));
+      return;
+    }
+    messenger.showSnackBar(SnackBar(
+        content: Text(wedding.isFixed
+            ? '🎉 Marriage Fixed! Your Wedding Workspace is now unlocked.'
+            : '💍 Marriage Fixed sent — waiting for $otherName to confirm.')));
   }
 }
 

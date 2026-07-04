@@ -168,6 +168,24 @@ class CloudinaryStorageService implements StorageService {
   }
 
   @override
+  Future<String> uploadWeddingDocument({
+    required String weddingId,
+    required File file,
+    required bool isImage,
+  }) {
+    return _uploadWithRetry(
+      file: file,
+      // PDFs / documents go through Cloudinary's "raw" delivery type; images
+      // via "image".
+      resourceType: isImage ? 'image' : 'raw',
+      folder: 'jothida_matrimony/weddings/$weddingId',
+      // Unique per upload so workspace documents never collide.
+      publicId:
+          '${isImage ? 'img' : 'doc'}_${DateTime.now().millisecondsSinceEpoch}',
+    );
+  }
+
+  @override
   Future<String> updateProfilePhoto({
     required String userId,
     required File file,

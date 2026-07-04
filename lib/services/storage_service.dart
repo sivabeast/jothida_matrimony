@@ -68,6 +68,15 @@ abstract class StorageService {
     required bool isImage,
   });
 
+  /// Uploads a Wedding Workspace document (invitation card, receipt,
+  /// agreement — image or PDF) for [weddingId] and returns its public URL.
+  /// Each upload gets a unique id so documents never overwrite one another.
+  Future<String> uploadWeddingDocument({
+    required String weddingId,
+    required File file,
+    required bool isImage,
+  });
+
   /// Replaces an existing profile photo at [index] (e.g. from an "Edit
   /// profile photo" screen) and returns the new public URL.
   Future<String> updateProfilePhoto({

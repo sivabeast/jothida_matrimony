@@ -203,4 +203,9 @@ class UserModel {
   /// legacy name 'astrologer' for data compatibility.
   bool get isAstrologer => role == 'astrologer';
   bool get isSuperAdmin => role == 'super_admin';
+
+  /// FAMILY user — invited (by gmail) into a couple's Wedding Workspace.
+  /// Family users have NO matrimony profile and are locked to the workspace;
+  /// they can never browse matches, send interests or chat.
+  bool get isFamily => role == 'family';
 }

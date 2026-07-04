@@ -129,6 +129,24 @@ class FirebaseStorageService implements StorageService {
   }
 
   @override
+  Future<String> uploadWeddingDocument({
+    required String weddingId,
+    required File file,
+    required bool isImage,
+  }) async {
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    final ext = file.path.split('.').last.toLowerCase();
+    final ref = _storage
+        .ref('weddings/$weddingId/${isImage ? 'img' : 'doc'}_$ts.$ext');
+    await ref.putFile(
+      file,
+      SettableMetadata(
+          contentType: isImage ? 'image/jpeg' : 'application/octet-stream'),
+    );
+    return await ref.getDownloadURL();
+  }
+
+  @override
   Future<String> updateProfilePhoto({
     required String userId,
     required File file,

@@ -71,6 +71,9 @@ import '../screens/support/help_support_screen.dart';
 import '../screens/legal/privacy_policy_screen.dart';
 import '../screens/legal/terms_conditions_screen.dart';
 import '../screens/report/report_profile_screen.dart';
+import '../screens/muhurtham/muhurtham_calendar_screen.dart';
+import '../screens/wedding/wedding_workspace_screen.dart';
+import '../providers/wedding_provider.dart';
 import '../core/theme/app_colors.dart';
 
 /// Bridges a [Stream] (here, Firebase's `authStateChanges`) to a
@@ -175,6 +178,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (onAstrologerPortal && !(user?.isAstrologer ?? false)) {
         debugPrint('[Router] ⛔ non-employee blocked from "$loc" → /home');
         return '/home';
+      }
+
+      // ── Family user (invited Wedding Workspace member) ───────────────────
+      // A 'family' account has NO matrimony profile and must never reach the
+      // matchmaking experience: it lives ONLY in the Wedding Workspace (plus
+      // the public Muhurtham Calendar). Placed before the profile-completion
+      // check because family users intentionally never complete onboarding.
+      if (user != null && user.isFamily) {
+        final allowed = loc == '/wedding-workspace' ||
+            loc == '/muhurtham-calendar';
+        if (!allowed) {
+          debugPrint('[Router] family account → /wedding-workspace');
+          return '/wedding-workspace';
+        }
+        return null;
+      }
+
+      // While the Login screen's "Family Member Login" flow is verifying an
+      // invitation, hold the just-authenticated account on /login instead of
+      // racing it into matrimony onboarding (its role may be about to become
+      // 'family').
+      if (onAuthPage && ref.read(familyLoginInProgressProvider)) {
+        debugPrint('[Router] family login in progress — holding on /login');
+        return null;
       }
 
       // ── Admin route protection ───────────────────────────────────────────
@@ -344,6 +371,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               ? state.extra as AstrologerRequestModel
               : null,
         ),
+      ),
+      // ── Marriage Muhurtham Calendar (general auspicious dates) ───────────
+      GoRoute(
+        path: '/muhurtham-calendar',
+        builder: (_, __) => const MuhurthamCalendarScreen(),
+      ),
+      // ── Wedding Workspace (unlocked after mutual "Marriage Fixed") ───────
+      // Shared by the couple and their invited family members.
+      GoRoute(
+        path: '/wedding-workspace',
+        builder: (_, __) => const WeddingWorkspaceScreen(),
       ),
       GoRoute(path: '/subscription', builder: (_, __) => const SubscriptionScreen()),
       GoRoute(path: '/privacy', builder: (_, __) => const PrivacySettingsScreen()),

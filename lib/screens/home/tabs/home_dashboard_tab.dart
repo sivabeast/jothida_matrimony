@@ -18,6 +18,7 @@ import '../../../providers/interest_provider.dart';
 import '../../../providers/navigation_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../providers/profile_provider.dart';
+import '../../../providers/wedding_provider.dart';
 import '../../../widgets/common/match_score_badge.dart';
 import '../../../widgets/home/home_banner_slide.dart';
 
@@ -93,6 +94,17 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     final newProfilesAsync = ref.watch(newProfilesProvider);
     final myProfile = ref.watch(myProfileProvider).valueOrNull;
 
+    // Automatic "Married" status: once the wedding date passes, the couple
+    // member's profile leaves matchmaking. The sweep no-ops unless due.
+    ref.listen(myCoupleWeddingProvider, (_, next) {
+      final wedding = next.valueOrNull;
+      if (wedding != null) {
+        ref
+            .read(weddingControllerProvider.notifier)
+            .runMarriedSweepIfDue(wedding);
+      }
+    });
+
     return RefreshIndicator(
       color: AppColors.primary,
       onRefresh: () async => ref.invalidate(newProfilesProvider),
@@ -106,6 +118,13 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           // ── Quick actions — one-tap access to the core journeys ───────────
           _buildQuickActions(context),
           const SizedBox(height: 18),
+
+          // ── Wedding Workspace (only once a wedding exists) ────────────────
+          _buildWeddingCard(context),
+
+          // ── Marriage Muhurtham Calendar ───────────────────────────────────
+          _buildMuhurthamCard(context),
+          const SizedBox(height: 8),
 
           // ── Compact notification-style action cards ───────────────────────
           ..._buildActionCards(context, myProfile),
@@ -453,6 +472,166 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
                   fontFamily: 'Poppins'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  // ── Marriage Muhurtham Calendar card ────────────────────────────────────────
+
+  /// Home entry for the Marriage Muhurtham Calendar — a "View Calendar"
+  /// button that opens the month-wise auspicious-dates page.
+  Widget _buildMuhurthamCard(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFFF8EC), Color(0xFFFDEFD2)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.gold.withOpacity(0.45)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.gold.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: const Text('📅', style: TextStyle(fontSize: 20)),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Marriage Muhurtham Calendar',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                          fontFamily: 'Poppins')),
+                  SizedBox(height: 2),
+                  Text('Auspicious marriage & engagement dates',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Colors.black54, fontSize: 11.5)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.goldDark,
+                foregroundColor: Colors.white,
+                visualDensity: VisualDensity.compact,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                textStyle: const TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w700),
+              ),
+              onPressed: () => context.push('/muhurtham-calendar'),
+              child: const Text('View Calendar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Wedding Workspace card ──────────────────────────────────────────────────
+
+  /// Shown once a Marriage Fixed proposal / wedding exists for this user:
+  ///   • fixed → opens the shared Wedding Workspace (with countdown teaser);
+  ///   • proposed & awaiting MY confirmation → confirm prompt;
+  ///   • proposed & awaiting partner → status card.
+  Widget _buildWeddingCard(BuildContext context) {
+    final wedding = ref.watch(myCoupleWeddingProvider).valueOrNull;
+    if (wedding == null) return const SizedBox.shrink();
+    final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid ?? '';
+    final partnerName = wedding.nameOf(wedding.otherUid(myUid));
+
+    final String subtitle;
+    if (wedding.isFixed) {
+      final days = wedding.daysRemaining;
+      subtitle = days == null
+          ? 'Plan the wedding together with both families'
+          : days > 0
+              ? '$days days to go — keep the preparation moving!'
+              : days == 0
+                  ? 'The wedding is today! 🎊'
+                  : 'Congratulations on your wedding! 🎉';
+    } else if (wedding.confirmedBy(myUid)) {
+      subtitle = 'Waiting for $partnerName to confirm Marriage Fixed';
+    } else {
+      subtitle = '$partnerName confirmed — tap to confirm Marriage Fixed';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          // Fixed → open the workspace; still proposed → jump to the
+          // Interests tab (Accepted), where the confirm button lives.
+          onTap: () => wedding.isFixed
+              ? context.push('/wedding-workspace')
+              : ref.read(homeTabIndexProvider.notifier).state =
+                  kInterestsTabIndex,
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text('💍', style: TextStyle(fontSize: 20)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Wedding Workspace',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13.5,
+                              fontFamily: 'Poppins')),
+                      const SizedBox(height: 2),
+                      Text(subtitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.85),
+                              fontSize: 11.5)),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: Colors.white70),
+              ],
+            ),
+          ),
         ),
       ),
     );
