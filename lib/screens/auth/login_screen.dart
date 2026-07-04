@@ -7,16 +7,17 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/auth_routing.dart';
 import '../../core/utils/l10n_ext.dart';
-import '../../core/utils/validators.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/wedding_provider.dart';
-import '../../widgets/common/gradient_button.dart';
-import '../../widgets/common/app_text_field.dart';
 
-/// Matrimony **User** login. Two passwordless methods only:
-///   • Mobile Number + OTP
-///   • Continue with Google
-/// (Email / password login was removed — see the spec auth redesign.)
+/// App entry — ROLE-BASED. Instead of a classic login form, the user first
+/// picks WHO they are with two large cards:
+///   • Matrimony User  → looking for a life partner (matrimony experience);
+///   • Family Member   → invited (by gmail) into a couple's Wedding Workspace.
+///
+/// Both roles sign in the SAME way: Continue with Google only (mobile-number
+/// OTP login was removed). One Gmail may hold BOTH roles — the selected card
+/// (not the account) decides which interface opens.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -24,48 +25,22 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
+enum _EntryRole { matrimony, family }
+
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _phoneController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
+  /// null = the two role cards; otherwise the Google sign-in step for that role.
+  _EntryRole? _role;
 
   // Covers the *entire* Google flow — credential exchange AND the post-auth
-  // routing (which itself does async Firestore work for astrologer accounts) —
-  // so the button stays busy until the user actually leaves this screen, and a
-  // `finally` always clears it. Without this, the window between sign-in
-  // completing and navigation finishing had no loading indicator.
+  // routing — so the button stays busy until the user actually leaves this
+  // screen, and a `finally` always clears it.
   bool _busy = false;
 
-  @override
-  void dispose() {
-    _phoneController.dispose();
-    super.dispose();
-  }
+  // ── Matrimony User sign-in ──────────────────────────────────────────────
 
-  Future<void> _sendOtp() async {
-    debugPrint('[LoginScreen] "Send OTP" tapped for '
-        '+91${_phoneController.text.trim()}');
-    if (!_formKey.currentState!.validate()) return;
-    await ref
-        .read(otpNotifierProvider.notifier)
-        .sendOtp(_phoneController.text.trim());
-    if (!mounted) return;
-    final otpState = ref.read(otpNotifierProvider);
-    if (otpState.codeSent && otpState.verificationId != null) {
-      debugPrint('[LoginScreen] OTP sent — opening OTP screen.');
-      context.push('/otp', extra: {
-        'verificationId': otpState.verificationId!,
-        'phone': _phoneController.text.trim(),
-      });
-    } else if (otpState.error != null) {
-      debugPrint('[LoginScreen] sendOtp failed: ${otpState.error}');
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(otpState.error!)));
-    }
-  }
-
-  Future<void> _signInWithGoogle() async {
+  Future<void> _signInAsMatrimony() async {
     if (_busy) return; // guard against double-taps
-    debugPrint('[LoginScreen] "Continue with Google" tapped.');
+    debugPrint('[LoginScreen] Matrimony User → Continue with Google tapped.');
     setState(() => _busy = true);
     try {
       await ref.read(authNotifierProvider.notifier).signInWithGoogle();
@@ -73,42 +48,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final auth = ref.read(authNotifierProvider);
 
       if (auth.hasError) {
-        final err = auth.error;
-        final message =
-            err is AuthException ? err.message : context.l10n.googleSignInFailed;
-        debugPrint('[LoginScreen] signInWithGoogle error: $err');
-        if (!(err is AuthException && err.cancelled)) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(message)));
-        }
+        _showAuthError(auth.error);
         return;
       }
 
       final user = auth.valueOrNull;
-      if (user != null) {
-        debugPrint(
-            '[LoginScreen] Sign-in successful (uid=${user.uid}). Routing...');
-        await routeAuthenticatedUser(context, ref, user, tag: 'LoginScreen');
-      } else {
+      if (user == null) {
         debugPrint('[LoginScreen] Google picker dismissed — staying on login.');
+        return;
       }
+
+      // The Matrimony card was chosen → matrimony interface on next open too.
+      ref.read(entryModeProvider.notifier).state = WeddingEntryMode.matrimony;
+      await WeddingEntryMode.save(WeddingEntryMode.matrimony);
+      if (!mounted) return;
+      debugPrint(
+          '[LoginScreen] Sign-in successful (uid=${user.uid}). Routing...');
+      await routeAuthenticatedUser(context, ref, user, tag: 'LoginScreen');
     } finally {
-      // Always clear the spinner — on success (if still mounted), on error, on
-      // cancellation, or on an unexpected throw. Never leaves the UI stuck.
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  /// FAMILY user login (spec: two user types). Signs in with Google, then
-  /// verifies the Gmail is invited to a Wedding Workspace:
-  ///   • invited → role becomes 'family' (no matrimony profile ever) and they
-  ///     enter the Wedding Workspace directly;
-  ///   • not invited → signed out again with "You don't have access.".
-  /// A Gmail that already belongs to a matrimony / staff / admin account is
-  /// routed through the normal flow instead of being converted.
+  // ── Family Member sign-in ───────────────────────────────────────────────
+
+  /// FAMILY entry. Signs in with Google, then verifies the Gmail is invited
+  /// to a Wedding Workspace:
+  ///   • invited → opens the Family Workspace (the same Gmail may ALSO be a
+  ///     matrimony user — the card, not the account, picks the interface);
+  ///   • not invited → "You have not been invited to any Wedding Workspace
+  ///     yet. Please contact the Bride or Groom." and signed out again.
   Future<void> _signInAsFamily() async {
     if (_busy) return;
-    debugPrint('[LoginScreen] "Family Member Login" tapped.');
+    debugPrint('[LoginScreen] Family Member → Continue with Google tapped.');
     setState(() => _busy = true);
     // Holds the router redirect on /login while the invite check runs, so a
     // brand-new family Gmail is never raced into matrimony onboarding.
@@ -119,27 +91,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final auth = ref.read(authNotifierProvider);
 
       if (auth.hasError) {
-        final err = auth.error;
-        final message =
-            err is AuthException ? err.message : context.l10n.googleSignInFailed;
-        if (!(err is AuthException && err.cancelled)) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(message)));
-        }
+        _showAuthError(auth.error);
         return;
       }
 
       final user = auth.valueOrNull;
       if (user == null) return; // picker dismissed
-
-      // Staff / admin / existing matrimony accounts keep their normal flow.
-      if (user.isAdmin || user.isAstrologer || user.isProfileComplete) {
-        debugPrint('[LoginScreen] family login: ${user.email} is an existing '
-            '${user.role} account — routing normally.');
-        if (!mounted) return;
-        await routeAuthenticatedUser(context, ref, user, tag: 'LoginScreen');
-        return;
-      }
 
       final email = user.email?.toLowerCase() ?? '';
       final wedding = email.isEmpty
@@ -149,20 +106,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               .getWeddingByMemberEmail(email);
 
       if (wedding == null) {
-        // Not invited → no access. Sign back out so the incomplete account
-        // can't wander into matrimony onboarding.
-        debugPrint('[LoginScreen] family login: $email is NOT invited.');
+        // Not invited → no Family Workspace access. Sign back out so the
+        // account can't wander into matrimony onboarding from this card.
+        debugPrint('[LoginScreen] family entry: $email is NOT invited.');
         await ref.read(authNotifierProvider.notifier).signOut();
         if (!mounted) return;
         await showDialog<void>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('No Access'),
+            title: const Text('Not Invited Yet'),
             content: const Text(
-                "You don't have access.\n\nOnly Gmail addresses invited by "
-                'the bride or groom can log in as a Family User.'),
+                'You have not been invited to any Wedding Workspace yet. '
+                'Please contact the Bride or Groom.'),
             actions: [
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white),
                 onPressed: () => Navigator.pop(ctx),
                 child: const Text('OK'),
               ),
@@ -172,13 +132,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return;
       }
 
-      debugPrint('[LoginScreen] family login: $email invited to wedding '
-          '${wedding.id} — promoting to family role.');
+      debugPrint('[LoginScreen] family entry: $email invited to wedding '
+          '${wedding.id} — opening the Family Workspace.');
       final weddingService = ref.read(weddingServiceProvider);
-      if (!user.isFamily) {
+      // Only a Gmail with NO other account type becomes a dedicated 'family'
+      // account. A dual-role Gmail (also a matrimony user / admin) keeps its
+      // role — the persisted entry mode opens the workspace instead.
+      if (!user.isFamily &&
+          !user.isAdmin &&
+          !user.isAstrologer &&
+          !user.isProfileComplete) {
         await weddingService.promoteToFamilyRole(user.uid);
       }
       await weddingService.markMemberJoined(wedding.id, email);
+      ref.read(entryModeProvider.notifier).state = WeddingEntryMode.family;
+      await WeddingEntryMode.save(WeddingEntryMode.family);
       ref.invalidate(currentUserProvider);
       await ref.read(currentUserProvider.future);
       if (!mounted) return;
@@ -189,14 +157,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  void _showAuthError(Object? err) {
+    final message =
+        err is AuthException ? err.message : context.l10n.googleSignInFailed;
+    debugPrint('[LoginScreen] signInWithGoogle error: $err');
+    if (!(err is AuthException && err.cancelled)) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  // ── UI ──────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
-    final otpState = ref.watch(otpNotifierProvider);
     final authAsync = ref.watch(authNotifierProvider);
-    // `googleBusy` drives the Google button's spinner; `isLoading` disables
-    // every action while any auth operation is in flight.
     final googleBusy = _busy || authAsync.isLoading;
-    final isLoading = otpState.isLoading || googleBusy;
     final l10n = context.l10n;
 
     return Scaffold(
@@ -210,135 +186,194 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 8),
                 Image.asset(
                   'assets/images/app_logo.png',
-                  width: 140,
-                  height: 140,
+                  width: 120,
+                  height: 120,
                   fit: BoxFit.contain,
                   errorBuilder: (_, __, ___) => Column(
                     children: [
                       const Icon(Icons.favorite,
-                          color: AppColors.gold, size: 72),
+                          color: AppColors.gold, size: 64),
                       const SizedBox(height: 8),
                       Text(l10n.appTitle, style: AppTextStyles.appName),
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black.withOpacity(0.1), blurRadius: 20),
-                    ],
-                  ),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(l10n.welcomeBack, style: AppTextStyles.heading2),
-                        const SizedBox(height: 4),
-                        Text(l10n.signInToContinue,
-                            style: AppTextStyles.bodyMedium),
-                        const SizedBox(height: 22),
-                        // ── Mobile number + OTP ──────────────────────────────
-                        AppTextField(
-                          controller: _phoneController,
-                          label: l10n.mobileNumber,
-                          hint: '9876543210',
-                          keyboardType: TextInputType.phone,
-                          prefixText: '+91 ',
-                          validator: Validators.phone,
-                        ),
-                        const SizedBox(height: 16),
-                        GradientButton(
-                          onPressed: isLoading ? null : _sendOtp,
-                          isLoading: otpState.isLoading,
-                          text: l10n.sendOtp,
-                        ),
-                        if (otpState.error != null) ...[
-                          const SizedBox(height: 8),
-                          Text(otpState.error!,
-                              style: const TextStyle(
-                                  color: Colors.red, fontSize: 13)),
-                        ],
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            const Expanded(child: Divider()),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                              child: Text(l10n.orLabel,
-                                  style: const TextStyle(color: Colors.grey)),
-                            ),
-                            const Expanded(child: Divider()),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        // ── Continue with Google ─────────────────────────────
-                        OutlinedButton.icon(
-                          onPressed: isLoading ? null : _signInWithGoogle,
-                          icon: googleBusy
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : Image.network(
-                                  'https://www.google.com/favicon.ico',
-                                  width: 20,
-                                  height: 20,
-                                  errorBuilder: (_, __, ___) => const Icon(
-                                      Icons.g_mobiledata,
-                                      size: 24),
-                                ),
-                          label: Text(l10n.continueWithGoogle),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(50),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        // ── Family Member Login ─────────────────────────────
-                        // For invited family members (Wedding Workspace).
-                        // Only Gmails invited by the bride/groom get access.
-                        OutlinedButton.icon(
-                          onPressed: isLoading ? null : _signInAsFamily,
-                          icon: const Icon(Icons.family_restroom,
-                              size: 20, color: AppColors.primary),
-                          label: const Text('Family Member Login'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            side: BorderSide(
-                                color: AppColors.primary.withOpacity(0.5)),
-                            minimumSize: const Size.fromHeight(50),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Center(
-                          child: Text(
-                            'Invited to a Wedding Workspace? Log in here '
-                            'with your invited Gmail.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                                color: Colors.grey[600], fontSize: 11.5),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                const SizedBox(height: 20),
+                if (_role == null)
+                  _buildRoleCards()
+                else
+                  _buildGoogleStep(googleBusy),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// Step 1 — the two large role cards.
+  Widget _buildRoleCards() {
+    return Column(
+      children: [
+        const Text(
+          'How would you like to continue?',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              color: Colors.white,
+              fontSize: 17,
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 20),
+        _roleCard(
+          role: _EntryRole.matrimony,
+          emoji: '💍',
+          title: 'Matrimony User',
+          description:
+              'Looking for a life partner? Continue as a Matrimony User.',
+          color: AppColors.primary,
+        ),
+        const SizedBox(height: 16),
+        _roleCard(
+          role: _EntryRole.family,
+          emoji: '👨‍👩‍👧‍👦',
+          title: 'Family Member',
+          description: 'Join an existing Wedding Workspace using your '
+              'invited Google account.',
+          color: AppColors.goldDark,
+        ),
+      ],
+    );
+  }
+
+  Widget _roleCard({
+    required _EntryRole role,
+    required String emoji,
+    required String title,
+    required String description,
+    required Color color,
+  }) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => setState(() => _role = role),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: color.withOpacity(0.25), width: 1.5),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                    color: color.withOpacity(0.1), shape: BoxShape.circle),
+                alignment: Alignment.center,
+                child: Text(emoji, style: const TextStyle(fontSize: 30)),
+              ),
+              const SizedBox(height: 12),
+              Text(title,
+                  style: TextStyle(
+                      fontSize: 17,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.bold,
+                      color: color)),
+              const SizedBox(height: 6),
+              Text(description,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[700], fontSize: 13)),
+              const SizedBox(height: 12),
+              Icon(Icons.arrow_forward_rounded, color: color, size: 22),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Step 2 — the selected role's ONLY sign-in method: Continue with Google.
+  Widget _buildGoogleStep(bool googleBusy) {
+    final isFamily = _role == _EntryRole.family;
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                tooltip: 'Back',
+                visualDensity: VisualDensity.compact,
+                onPressed:
+                    googleBusy ? null : () => setState(() => _role = null),
+                icon: const Icon(Icons.arrow_back),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  isFamily ? 'Family Member' : 'Matrimony User',
+                  style: AppTextStyles.heading2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isFamily
+                ? 'Sign in with the Google account the Bride or Groom '
+                    'invited to their Wedding Workspace.'
+                : 'Sign in with your Google account to find your life partner.',
+            style: AppTextStyles.bodyMedium,
+          ),
+          const SizedBox(height: 24),
+          OutlinedButton.icon(
+            onPressed: googleBusy
+                ? null
+                : (isFamily ? _signInAsFamily : _signInAsMatrimony),
+            icon: googleBusy
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Image.network(
+                    'https://www.google.com/favicon.ico',
+                    width: 20,
+                    height: 20,
+                    errorBuilder: (_, __, ___) =>
+                        const Icon(Icons.g_mobiledata, size: 24),
+                  ),
+            label: Text(context.l10n.continueWithGoogle),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          if (isFamily) ...[
+            const SizedBox(height: 12),
+            Center(
+              child: Text(
+                'Only Gmail addresses invited by the Bride or Groom can '
+                'open the Wedding Workspace.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[600], fontSize: 11.5),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

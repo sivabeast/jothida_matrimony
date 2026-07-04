@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/wedding_model.dart';
 import '../services/firebase/wedding_service.dart';
@@ -23,6 +24,40 @@ final weddingServiceProvider =
 /// window instead of racing them into the matrimony onboarding.
 final familyLoginInProgressProvider = StateProvider<bool>((ref) => false);
 
+// ── Entry mode (role-based entry) ─────────────────────────────────────────────
+
+/// Which entry card the user chose on the login screen. ONE Gmail can hold
+/// BOTH roles — the selected card (not the account) decides which interface
+/// opens:
+///   • 'matrimony' → the matrimony experience (Home, matches, …);
+///   • 'family'    → the Wedding Workspace they were invited to (by gmail).
+/// Persisted so the next app open restores the same interface.
+class WeddingEntryMode {
+  static const matrimony = 'matrimony';
+  static const family = 'family';
+  static const _prefsKey = 'wedding_entry_mode';
+
+  static Future<String?> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_prefsKey);
+  }
+
+  static Future<void> save(String? mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mode == null) {
+      await prefs.remove(_prefsKey);
+    } else {
+      await prefs.setString(_prefsKey, mode);
+    }
+  }
+}
+
+/// In-memory mirror of the persisted entry mode. Set by the login flow /
+/// splash and by the "Switch to Matrimony" workspace action. When 'family',
+/// the workspace resolves the wedding by the login GMAIL (invited member)
+/// even for an account that is also a matrimony user.
+final entryModeProvider = StateProvider<String?>((ref) => null);
+
 // ── Resolution ────────────────────────────────────────────────────────────────
 
 /// The signed-in MATRIMONY user's wedding (as bride or groom), if any.
@@ -33,14 +68,17 @@ final myCoupleWeddingProvider =
   return ref.watch(weddingServiceProvider).watchWeddingForCouple(uid);
 });
 
-/// The wedding the signed-in user belongs to, resolved by account type:
-/// a FAMILY user is matched by their invited gmail, everyone else as a
-/// couple member. Drives the Wedding Workspace screen.
+/// The wedding the signed-in user belongs to, resolved by entry role:
+/// a FAMILY entry (dedicated 'family' account OR a dual-role Gmail that chose
+/// the Family Member card) is matched by their invited gmail, everyone else
+/// as a couple member. Drives the Wedding Workspace screen.
 final activeWeddingProvider = StreamProvider.autoDispose<WeddingModel?>((ref) {
   final user = ref.watch(currentUserProvider).valueOrNull;
   if (user == null) return Stream.value(null);
   final service = ref.watch(weddingServiceProvider);
-  if (user.isFamily) {
+  final familyEntry = user.isFamily ||
+      ref.watch(entryModeProvider) == WeddingEntryMode.family;
+  if (familyEntry) {
     final email = user.email?.toLowerCase() ?? '';
     if (email.isEmpty) return Stream.value(null);
     return service.watchWeddingByMemberEmail(email);
@@ -74,6 +112,18 @@ final weddingContactsProvider = StreamProvider.autoDispose
 final weddingGuestsProvider = StreamProvider.autoDispose
     .family<List<WeddingGuest>, String>((ref, weddingId) =>
         ref.watch(weddingServiceProvider).watchGuests(weddingId));
+
+final weddingGalleryProvider = StreamProvider.autoDispose
+    .family<List<WeddingPhoto>, String>((ref, weddingId) =>
+        ref.watch(weddingServiceProvider).watchGallery(weddingId));
+
+final weddingVendorsProvider = StreamProvider.autoDispose
+    .family<List<WeddingVendor>, String>((ref, weddingId) =>
+        ref.watch(weddingServiceProvider).watchVendors(weddingId));
+
+final weddingChatProvider = StreamProvider.autoDispose
+    .family<List<WeddingChatMessage>, String>((ref, weddingId) =>
+        ref.watch(weddingServiceProvider).watchChat(weddingId));
 
 // ── Who am I inside the workspace? ────────────────────────────────────────────
 
@@ -185,6 +235,7 @@ class WeddingController extends Notifier<AsyncValue<void>> {
     String weddingId, {
     required String title,
     String notes = '',
+    String scope = 'shared',
     required WeddingIdentity me,
     String assignedToKey = '',
     String assignedToName = '',
@@ -195,6 +246,7 @@ class WeddingController extends Notifier<AsyncValue<void>> {
             id: '',
             title: title,
             notes: notes,
+            scope: scope,
             createdByKey: me.key,
             createdByName: me.name,
             assignedToKey: assignedToKey,
@@ -241,6 +293,7 @@ class WeddingController extends Notifier<AsyncValue<void>> {
     required bool isImage,
     required String title,
     required String category,
+    String scope = 'shared',
     required WeddingIdentity me,
   }) async {
     await _guarded(() async {
@@ -252,6 +305,7 @@ class WeddingController extends Notifier<AsyncValue<void>> {
           id: '',
           title: title,
           category: category,
+          scope: scope,
           url: url,
           isImage: isImage,
           uploadedByName: me.name,
@@ -340,6 +394,153 @@ class WeddingController extends Notifier<AsyncValue<void>> {
 
   Future<void> deleteGuest(String weddingId, String guestId) async {
     await _guarded(() => _service.deleteGuest(weddingId, guestId));
+  }
+
+  // ── Shared photo gallery ──────────────────────────────────────────────────
+
+  Future<void> uploadPhoto(
+    String weddingId, {
+    required File file,
+    required String album,
+    String scope = 'shared',
+    String caption = '',
+    required WeddingIdentity me,
+  }) async {
+    await _guarded(() async {
+      final url = await ref.read(storageServiceProvider).uploadWeddingDocument(
+          weddingId: weddingId, file: file, isImage: true);
+      await _service.addPhoto(
+        weddingId,
+        WeddingPhoto(
+          id: '',
+          album: album,
+          scope: scope,
+          url: url,
+          caption: caption,
+          uploadedByName: me.name,
+          uploadedAt: DateTime.now(),
+        ),
+      );
+    });
+  }
+
+  Future<void> deletePhoto(String weddingId, String photoId) async {
+    await _guarded(() => _service.deletePhoto(weddingId, photoId));
+  }
+
+  // ── Vendors (couple-only management) ──────────────────────────────────────
+
+  Future<void> saveVendor(
+    String weddingId, {
+    String? vendorId,
+    required String category,
+    required String name,
+    String contactPerson = '',
+    String mobile = '',
+    String altMobile = '',
+    String address = '',
+    String notes = '',
+    required List<String> visibleTo,
+    required WeddingIdentity me,
+  }) async {
+    await _guarded(() {
+      if (vendorId != null) {
+        return _service.updateVendor(weddingId, vendorId, {
+          'category': category,
+          'name': name,
+          'contactPerson': contactPerson,
+          'mobile': mobile,
+          'altMobile': altMobile,
+          'address': address,
+          'notes': notes,
+          'visibleTo': visibleTo,
+        });
+      }
+      return _service.addVendor(
+        weddingId,
+        WeddingVendor(
+          id: '',
+          category: category,
+          name: name,
+          contactPerson: contactPerson,
+          mobile: mobile,
+          altMobile: altMobile,
+          address: address,
+          notes: notes,
+          visibleTo: visibleTo,
+          createdByName: me.name,
+          createdAt: DateTime.now(),
+        ),
+      );
+    });
+  }
+
+  Future<void> deleteVendor(String weddingId, String vendorId) async {
+    await _guarded(() => _service.deleteVendor(weddingId, vendorId));
+  }
+
+  // ── Family Group Chat ─────────────────────────────────────────────────────
+
+  Future<void> sendChatText(
+      String weddingId, String text, WeddingIdentity me) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return;
+    await _guarded(() => _service.sendChatMessage(
+          weddingId,
+          WeddingChatMessage(
+            id: '',
+            senderKey: me.key,
+            senderName: me.name,
+            type: 'text',
+            text: trimmed,
+            sentAt: DateTime.now(),
+          ),
+        ));
+  }
+
+  Future<void> sendChatAttachment(
+    String weddingId, {
+    required File file,
+    required bool isImage,
+    required String fileName,
+    required WeddingIdentity me,
+  }) async {
+    await _guarded(() async {
+      final url = await ref.read(storageServiceProvider).uploadWeddingDocument(
+          weddingId: weddingId, file: file, isImage: isImage);
+      await _service.sendChatMessage(
+        weddingId,
+        WeddingChatMessage(
+          id: '',
+          senderKey: me.key,
+          senderName: me.name,
+          type: isImage ? 'image' : 'file',
+          url: url,
+          fileName: fileName,
+          sentAt: DateTime.now(),
+        ),
+      );
+    });
+  }
+
+  // ── Postpone & Cancel ─────────────────────────────────────────────────────
+
+  Future<void> postponeWedding(String weddingId, DateTime? newDate) async {
+    await _guarded(() => _service.postponeWedding(weddingId, newDate));
+  }
+
+  Future<void> resumeWedding(String weddingId, DateTime newDate) async {
+    await _guarded(() => _service.resumeWedding(weddingId, newDate));
+  }
+
+  /// PERMANENT: removes the Wedding Workspace and every piece of its data.
+  /// Returns true on success so the UI can navigate away.
+  Future<bool> cancelWedding(String weddingId) async {
+    final ok = await _guarded(() async {
+      await _service.cancelWedding(weddingId);
+      return true;
+    });
+    return ok == true;
   }
 
   // ── Automatic Married status ──────────────────────────────────────────────

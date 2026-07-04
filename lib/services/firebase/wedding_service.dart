@@ -26,6 +26,16 @@ class WeddingService {
       .map((s) =>
           s.docs.isEmpty ? null : WeddingModel.fromFirestore(s.docs.first));
 
+  /// One-shot couple lookup — used by app-entry routing to open the Wedding
+  /// Workspace directly once Marriage Fixed is confirmed.
+  Future<WeddingModel?> getWeddingForCouple(String uid) async {
+    final s = await _weddings
+        .where('coupleIds', arrayContains: uid)
+        .limit(1)
+        .get();
+    return s.docs.isEmpty ? null : WeddingModel.fromFirestore(s.docs.first);
+  }
+
   /// The wedding an invited FAMILY member belongs to (matched by gmail).
   Stream<WeddingModel?> watchWeddingByMemberEmail(String email) => _weddings
       .where('memberEmails', arrayContains: email.toLowerCase())
@@ -105,6 +115,55 @@ class WeddingService {
 
   Future<void> setWeddingDate(String weddingId, DateTime date) =>
       _doc(weddingId).update({'weddingDate': Timestamp.fromDate(date)});
+
+  // ── Postpone & Cancel ─────────────────────────────────────────────────────
+
+  /// Postpones the wedding: status becomes 'postponed' and only the wedding
+  /// date changes ([newDate] null = date not decided yet). Checklist,
+  /// documents, vendors, chat, gallery, guests and contacts all stay active.
+  Future<void> postponeWedding(String weddingId, DateTime? newDate) =>
+      _doc(weddingId).update({
+        'status': 'postponed',
+        'weddingDate': newDate != null ? Timestamp.fromDate(newDate) : null,
+      });
+
+  /// Un-postpones: back to 'fixed' with the confirmed [newDate].
+  Future<void> resumeWedding(String weddingId, DateTime newDate) =>
+      _doc(weddingId).update({
+        'status': 'fixed',
+        'weddingDate': Timestamp.fromDate(newDate),
+      });
+
+  /// Cancels the marriage PERMANENTLY: deletes every workspace subcollection
+  /// (checklist, documents, contacts, guests, gallery, vendors, chat) and
+  /// then the wedding document itself. Irreversible.
+  Future<void> cancelWedding(String weddingId) async {
+    const sections = [
+      'checklist', 'documents', 'contacts', 'guests',
+      'gallery', 'vendors', 'chat',
+    ];
+    for (final section in sections) {
+      await _deleteCollection(_doc(weddingId).collection(section));
+    }
+    await _doc(weddingId).delete();
+    debugPrint('[WeddingService] cancelWedding($weddingId) — workspace and '
+        'all data deleted.');
+  }
+
+  /// Deletes every document of [col] in pages of 200 (batch limit safe).
+  Future<void> _deleteCollection(
+      CollectionReference<Map<String, dynamic>> col) async {
+    while (true) {
+      final page = await col.limit(200).get();
+      if (page.docs.isEmpty) return;
+      final batch = _db.batch();
+      for (final d in page.docs) {
+        batch.delete(d.reference);
+      }
+      await batch.commit();
+      if (page.docs.length < 200) return;
+    }
+  }
 
   // ── Family invitations (stored on the wedding doc) ────────────────────────
 
@@ -314,4 +373,58 @@ class WeddingService {
 
   Future<void> deleteGuest(String weddingId, String guestId) =>
       _guests(weddingId).doc(guestId).delete();
+
+  // ── Shared photo gallery ──────────────────────────────────────────────────
+
+  CollectionReference<Map<String, dynamic>> _gallery(String weddingId) =>
+      _doc(weddingId).collection('gallery');
+
+  Stream<List<WeddingPhoto>> watchGallery(String weddingId) =>
+      _gallery(weddingId)
+          .orderBy('uploadedAt', descending: true)
+          .snapshots()
+          .map((s) => s.docs.map(WeddingPhoto.fromFirestore).toList());
+
+  Future<void> addPhoto(String weddingId, WeddingPhoto photo) =>
+      _gallery(weddingId).add(photo.toFirestore());
+
+  Future<void> deletePhoto(String weddingId, String photoId) =>
+      _gallery(weddingId).doc(photoId).delete();
+
+  // ── Vendors (couple-managed, per-participant visibility) ──────────────────
+
+  CollectionReference<Map<String, dynamic>> _vendors(String weddingId) =>
+      _doc(weddingId).collection('vendors');
+
+  Stream<List<WeddingVendor>> watchVendors(String weddingId) =>
+      _vendors(weddingId).orderBy('createdAt', descending: false).snapshots().map(
+          (s) => s.docs.map(WeddingVendor.fromFirestore).toList());
+
+  Future<void> addVendor(String weddingId, WeddingVendor vendor) =>
+      _vendors(weddingId).add(vendor.toFirestore());
+
+  Future<void> updateVendor(
+          String weddingId, String vendorId, Map<String, dynamic> data) =>
+      _vendors(weddingId).doc(vendorId).update(data);
+
+  Future<void> deleteVendor(String weddingId, String vendorId) =>
+      _vendors(weddingId).doc(vendorId).delete();
+
+  // ── Family Group Chat ─────────────────────────────────────────────────────
+
+  CollectionReference<Map<String, dynamic>> _chat(String weddingId) =>
+      _doc(weddingId).collection('chat');
+
+  /// Latest 200 messages, oldest → newest (rendered bottom-anchored).
+  Stream<List<WeddingChatMessage>> watchChat(String weddingId) =>
+      _chat(weddingId)
+          .orderBy('sentAt', descending: true)
+          .limit(200)
+          .snapshots()
+          .map((s) => s.docs.reversed
+              .map(WeddingChatMessage.fromFirestore)
+              .toList());
+
+  Future<void> sendChatMessage(String weddingId, WeddingChatMessage msg) =>
+      _chat(weddingId).add(msg.toFirestore());
 }

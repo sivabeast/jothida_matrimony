@@ -6,14 +6,17 @@ import '../../models/wedding_model.dart';
 import '../../providers/wedding_provider.dart';
 import 'wedding_workspace_screen.dart' show weddingByLine;
 
-/// Shared Wedding Checklist: everyone in the workspace (bride, groom, both
+/// Wedding Checklist: everyone in the workspace (bride, groom, both
 /// families) can create items, assign them to another member (who accepts or
 /// rejects, optionally with a reason) and mark them Pending / Completed.
+/// [scope] narrows the list to 'shared' / 'bride' / 'groom' tasks (null =
+/// everything); new tasks are created in the current scope.
 class WeddingChecklistTab extends ConsumerStatefulWidget {
   final WeddingModel wedding;
   final WeddingIdentity identity;
+  final String? scope;
   const WeddingChecklistTab(
-      {super.key, required this.wedding, required this.identity});
+      {super.key, required this.wedding, required this.identity, this.scope});
 
   @override
   ConsumerState<WeddingChecklistTab> createState() =>
@@ -44,7 +47,10 @@ class _WeddingChecklistTabState extends ConsumerState<WeddingChecklistTab> {
   @override
   Widget build(BuildContext context) {
     final itemsAsync = ref.watch(weddingChecklistProvider(wedding.id));
-    final all = itemsAsync.valueOrNull ?? const <WeddingChecklistItem>[];
+    final everything = itemsAsync.valueOrNull ?? const <WeddingChecklistItem>[];
+    final all = widget.scope == null
+        ? everything
+        : everything.where((i) => i.scope == widget.scope).toList();
     final items = _onlyMyTasks
         ? all.where((i) => i.assignedToKey == me.key).toList()
         : all;
@@ -170,7 +176,10 @@ class _WeddingChecklistTabState extends ConsumerState<WeddingChecklistTab> {
                           size: 15, color: AppColors.primary),
                       onPressed: () => ref
                           .read(weddingControllerProvider.notifier)
-                          .addChecklistItem(wedding.id, title: s, me: me),
+                          .addChecklistItem(wedding.id,
+                              title: s,
+                              scope: widget.scope ?? 'shared',
+                              me: me),
                     ))
                 .toList(),
           ),
@@ -439,6 +448,7 @@ class _WeddingChecklistTabState extends ConsumerState<WeddingChecklistTab> {
                           wedding.id,
                           title: titleCtrl.text.trim(),
                           notes: notesCtrl.text.trim(),
+                          scope: widget.scope ?? 'shared',
                           me: me,
                           assignedToKey: assignee?.key ?? '',
                           assignedToName: assignee?.name ?? '',

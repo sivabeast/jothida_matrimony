@@ -11,13 +11,16 @@ import '../../models/wedding_model.dart';
 import '../../providers/wedding_provider.dart';
 import 'wedding_workspace_screen.dart' show weddingByLine;
 
-/// Wedding Documents: upload and manage invitation cards, booking receipts,
-/// agreements and other wedding papers (images or PDFs, stored on Cloudinary).
+/// Wedding Documents: upload and manage invitations, hall bookings, catering,
+/// decoration, photographer papers and other wedding documents (images or
+/// PDFs, stored on Cloudinary). [scope] narrows to 'shared' / 'bride' /
+/// 'groom' documents (null = everything); uploads go to the current scope.
 class WeddingDocumentsTab extends ConsumerStatefulWidget {
   final WeddingModel wedding;
   final WeddingIdentity identity;
+  final String? scope;
   const WeddingDocumentsTab(
-      {super.key, required this.wedding, required this.identity});
+      {super.key, required this.wedding, required this.identity, this.scope});
 
   @override
   ConsumerState<WeddingDocumentsTab> createState() =>
@@ -26,11 +29,11 @@ class WeddingDocumentsTab extends ConsumerStatefulWidget {
 
 class _WeddingDocumentsTabState extends ConsumerState<WeddingDocumentsTab> {
   static const _categories = [
-    'Invitation Card',
-    'Hall Booking Receipt',
-    'Catering Receipt',
-    'Decoration Receipt',
-    'Photographer Agreement',
+    'Invitation',
+    'Hall Booking',
+    'Catering',
+    'Decoration',
+    'Photographer',
     'Other Wedding Documents',
   ];
 
@@ -39,7 +42,10 @@ class _WeddingDocumentsTabState extends ConsumerState<WeddingDocumentsTab> {
   @override
   Widget build(BuildContext context) {
     final docsAsync = ref.watch(weddingDocumentsProvider(widget.wedding.id));
-    final docs = docsAsync.valueOrNull ?? const <WeddingDocument>[];
+    final allDocs = docsAsync.valueOrNull ?? const <WeddingDocument>[];
+    final docs = widget.scope == null
+        ? allDocs
+        : allDocs.where((d) => d.scope == widget.scope).toList();
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -66,6 +72,17 @@ class _WeddingDocumentsTabState extends ConsumerState<WeddingDocumentsTab> {
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
                   children: [
                     for (final category in _categories)
+                      ..._categorySection(
+                          category,
+                          docs
+                              .where((d) => d.category == category)
+                              .toList()),
+                    // Documents whose stored category predates the current
+                    // list (e.g. 'Invitation Card') still show up here.
+                    for (final category in docs
+                        .map((d) => d.category)
+                        .where((c) => !_categories.contains(c))
+                        .toSet())
                       ..._categorySection(
                           category,
                           docs
@@ -321,6 +338,7 @@ class _WeddingDocumentsTabState extends ConsumerState<WeddingDocumentsTab> {
             isImage: image,
             title: title,
             category: cat,
+            scope: widget.scope ?? 'shared',
             me: widget.identity,
           );
       final failed = ref.read(weddingControllerProvider).hasError;

@@ -499,21 +499,44 @@ service cloud.firestore {
                         in resource.data.memberEmails
                     && request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly(['members']);
+      // Cancel Marriage: either couple member may permanently delete the
+      // wedding (the client first empties every workspace subcollection).
+      allow delete: if isAuthenticated()
+                    && request.auth.uid in resource.data.coupleIds;
       allow update, delete: if isAdmin();
 
       // ── Workspace subcollections ────────────────────────────────────────
-      // checklist / documents / contacts / guests — every workspace member
-      // (couple + invited family) collaborates with full CRUD.
+      // checklist / documents / contacts / guests / gallery / chat — every
+      // workspace member (couple + invited family) collaborates with full
+      // CRUD. Vendors are the exception (couple-only writes, block below).
       match /{section}/{itemId} {
         allow read, write: if isAdmin();
         allow read, write: if isAuthenticated()
-          && section in ['checklist', 'documents', 'contacts', 'guests']
+          && section in ['checklist', 'documents', 'contacts', 'guests',
+                         'gallery', 'chat']
           && (request.auth.uid in
                   get(/databases/$(database)/documents/weddings/$(weddingId))
                       .data.coupleIds
               || request.auth.token.email.lower() in
                   get(/databases/$(database)/documents/weddings/$(weddingId))
                       .data.memberEmails);
+      }
+      // Vendors: every workspace member may READ (per-vendor visibility is
+      // enforced in the app via visibleTo), but ONLY the couple manages —
+      // family members NEVER create, edit or delete vendors.
+      match /vendors/{vendorId} {
+        allow read: if isAuthenticated()
+          && (request.auth.uid in
+                  get(/databases/$(database)/documents/weddings/$(weddingId))
+                      .data.coupleIds
+              || request.auth.token.email.lower() in
+                  get(/databases/$(database)/documents/weddings/$(weddingId))
+                      .data.memberEmails);
+        allow write: if isAuthenticated()
+          && request.auth.uid in
+                  get(/databases/$(database)/documents/weddings/$(weddingId))
+                      .data.coupleIds;
+        allow read, write: if isAdmin();
       }
     }
 

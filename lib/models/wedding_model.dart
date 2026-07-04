@@ -50,8 +50,11 @@ class WeddingMember {
 /// workflow and powering the whole Wedding Workspace.
 ///
 /// Lifecycle: one partner proposes "Marriage Fixed" (`proposed`), the other
-/// confirms (`fixed`, workspace unlocked). When the wedding date passes and
-/// both profiles have been auto-marked Married it becomes `completed`.
+/// confirms (`fixed`, workspace unlocked). When the wedding is delayed the
+/// couple may mark it `postponed` (everything stays active — only the date
+/// changes). When the wedding date passes and both profiles have been
+/// auto-marked Married it becomes `completed`. Cancelling a marriage DELETES
+/// the wedding document and all workspace data — there is no cancelled state.
 class WeddingModel {
   final String id;
   final List<String> coupleIds; // exactly the two matched users' uids
@@ -59,7 +62,7 @@ class WeddingModel {
   final Map<String, String> sides; // uid → 'bride' | 'groom'
   final String initiatedBy;
   final Map<String, bool> confirmations; // uid → confirmed Marriage Fixed
-  final String status; // 'proposed' | 'fixed' | 'completed'
+  final String status; // 'proposed' | 'fixed' | 'postponed' | 'completed'
   final DateTime? weddingDate;
   final List<String> memberEmails; // invited family gmails (lowercased)
   final List<WeddingMember> members;
@@ -128,8 +131,11 @@ class WeddingModel {
 
   bool get isProposed => status == 'proposed';
 
-  /// Workspace unlocked — both parties confirmed Marriage Fixed.
-  bool get isFixed => status == 'fixed' || status == 'completed';
+  /// Workspace unlocked — both parties confirmed Marriage Fixed. A postponed
+  /// wedding stays fully unlocked: only the date changed.
+  bool get isFixed =>
+      status == 'fixed' || status == 'postponed' || status == 'completed';
+  bool get isPostponed => status == 'postponed';
   bool get isCompleted => status == 'completed';
 
   bool confirmedBy(String uid) => confirmations[uid] == true;
@@ -165,6 +171,7 @@ class WeddingChecklistItem {
   final String id;
   final String title;
   final String notes;
+  final String scope; // 'shared' | 'bride' | 'groom'
   final String status; // 'pending' | 'completed'
   final String createdByKey; // uid (couple) or email (family member)
   final String createdByName;
@@ -179,6 +186,7 @@ class WeddingChecklistItem {
     required this.id,
     required this.title,
     this.notes = '',
+    this.scope = 'shared',
     this.status = 'pending',
     required this.createdByKey,
     required this.createdByName,
@@ -196,6 +204,7 @@ class WeddingChecklistItem {
       id: doc.id,
       title: d['title'] ?? '',
       notes: d['notes'] ?? '',
+      scope: d['scope'] ?? 'shared',
       status: d['status'] ?? 'pending',
       createdByKey: d['createdByKey'] ?? '',
       createdByName: d['createdByName'] ?? '',
@@ -215,6 +224,7 @@ class WeddingChecklistItem {
   Map<String, dynamic> toFirestore() => {
         'title': title,
         'notes': notes,
+        'scope': scope,
         'status': status,
         'createdByKey': createdByKey,
         'createdByName': createdByName,
@@ -235,7 +245,8 @@ class WeddingChecklistItem {
 class WeddingDocument {
   final String id;
   final String title;
-  final String category; // Invitation Card / Hall Booking Receipt / …
+  final String category; // Invitation / Hall Booking / Catering / …
+  final String scope; // 'shared' | 'bride' | 'groom'
   final String url;
   final bool isImage;
   final String uploadedByName;
@@ -245,6 +256,7 @@ class WeddingDocument {
     required this.id,
     required this.title,
     required this.category,
+    this.scope = 'shared',
     required this.url,
     required this.isImage,
     required this.uploadedByName,
@@ -257,6 +269,7 @@ class WeddingDocument {
       id: doc.id,
       title: d['title'] ?? '',
       category: d['category'] ?? 'Other Wedding Documents',
+      scope: d['scope'] ?? 'shared',
       url: d['url'] ?? '',
       isImage: d['isImage'] ?? true,
       uploadedByName: d['uploadedByName'] ?? '',
@@ -269,10 +282,202 @@ class WeddingDocument {
   Map<String, dynamic> toFirestore() => {
         'title': title,
         'category': category,
+        'scope': scope,
         'url': url,
         'isImage': isImage,
         'uploadedByName': uploadedByName,
         'uploadedAt': Timestamp.fromDate(uploadedAt),
+      };
+}
+
+/// A photo in the Shared Wedding Gallery (`weddings/{id}/gallery/{photoId}`).
+/// Photos are organised into fixed ALBUMS (hall, invitation designs, dress,
+/// decoration references, jewellery, makeup, catering, other) and can also be
+/// side-scoped (bride / groom gallery) — 'shared' by default.
+class WeddingPhoto {
+  static const albums = [
+    'Hall Photos',
+    'Invitation Designs',
+    'Dress Photos',
+    'Decoration References',
+    'Jewellery Photos',
+    'Makeup References',
+    'Catering Photos',
+    'Other Wedding Photos',
+  ];
+
+  final String id;
+  final String album;
+  final String scope; // 'shared' | 'bride' | 'groom'
+  final String url;
+  final String caption;
+  final String uploadedByName;
+  final DateTime uploadedAt;
+
+  const WeddingPhoto({
+    required this.id,
+    required this.album,
+    this.scope = 'shared',
+    required this.url,
+    this.caption = '',
+    required this.uploadedByName,
+    required this.uploadedAt,
+  });
+
+  factory WeddingPhoto.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return WeddingPhoto(
+      id: doc.id,
+      album: d['album'] ?? 'Other Wedding Photos',
+      scope: d['scope'] ?? 'shared',
+      url: d['url'] ?? '',
+      caption: d['caption'] ?? '',
+      uploadedByName: d['uploadedByName'] ?? '',
+      uploadedAt: d['uploadedAt'] != null
+          ? (d['uploadedAt'] as Timestamp).toDate()
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toFirestore() => {
+        'album': album,
+        'scope': scope,
+        'url': url,
+        'caption': caption,
+        'uploadedByName': uploadedByName,
+        'uploadedAt': Timestamp.fromDate(uploadedAt),
+      };
+}
+
+/// A wedding vendor (`weddings/{id}/vendors/{vendorId}`).
+///
+/// ONLY the couple (bride / groom) may create, edit or delete vendors.
+/// Each vendor carries an explicit visibility list of participant keys
+/// (couple uids + family gmails) — only those participants (plus the couple,
+/// who always see everything they manage) can see the vendor.
+class WeddingVendor {
+  static const categories = [
+    'Wedding Hall',
+    'Photographer',
+    'Videographer',
+    'Makeup Artist',
+    'Decorator',
+    'Catering',
+    'Flower Decoration',
+    'Travel',
+    'Invitation Printing',
+    'Others',
+  ];
+
+  final String id;
+  final String category;
+  final String name;
+  final String contactPerson;
+  final String mobile;
+  final String altMobile;
+  final String address;
+  final String notes;
+  final List<String> visibleTo; // participant keys (uids + emails)
+  final String createdByName;
+  final DateTime createdAt;
+
+  const WeddingVendor({
+    required this.id,
+    required this.category,
+    required this.name,
+    this.contactPerson = '',
+    this.mobile = '',
+    this.altMobile = '',
+    this.address = '',
+    this.notes = '',
+    this.visibleTo = const [],
+    required this.createdByName,
+    required this.createdAt,
+  });
+
+  factory WeddingVendor.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return WeddingVendor(
+      id: doc.id,
+      category: d['category'] ?? 'Others',
+      name: d['name'] ?? '',
+      contactPerson: d['contactPerson'] ?? '',
+      mobile: d['mobile'] ?? '',
+      altMobile: d['altMobile'] ?? '',
+      address: d['address'] ?? '',
+      notes: d['notes'] ?? '',
+      visibleTo: List<String>.from(d['visibleTo'] ?? const []),
+      createdByName: d['createdByName'] ?? '',
+      createdAt: d['createdAt'] != null
+          ? (d['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toFirestore() => {
+        'category': category,
+        'name': name,
+        'contactPerson': contactPerson,
+        'mobile': mobile,
+        'altMobile': altMobile,
+        'address': address,
+        'notes': notes,
+        'visibleTo': visibleTo,
+        'createdByName': createdByName,
+        'createdAt': Timestamp.fromDate(createdAt),
+      };
+
+  bool visibleToKey(String key) => visibleTo.contains(key);
+}
+
+/// A Family Group Chat message (`weddings/{id}/chat/{messageId}`) — the
+/// whole workspace (couple + both families) shares one group thread.
+/// Supports text (incl. emoji), images and files.
+class WeddingChatMessage {
+  final String id;
+  final String senderKey; // uid (couple) or email (family)
+  final String senderName;
+  final String type; // 'text' | 'image' | 'file'
+  final String text;
+  final String url; // attachment url for image / file
+  final String fileName;
+  final DateTime sentAt;
+
+  const WeddingChatMessage({
+    required this.id,
+    required this.senderKey,
+    required this.senderName,
+    this.type = 'text',
+    this.text = '',
+    this.url = '',
+    this.fileName = '',
+    required this.sentAt,
+  });
+
+  factory WeddingChatMessage.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return WeddingChatMessage(
+      id: doc.id,
+      senderKey: d['senderKey'] ?? '',
+      senderName: d['senderName'] ?? '',
+      type: d['type'] ?? 'text',
+      text: d['text'] ?? '',
+      url: d['url'] ?? '',
+      fileName: d['fileName'] ?? '',
+      sentAt: d['sentAt'] != null
+          ? (d['sentAt'] as Timestamp).toDate()
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toFirestore() => {
+        'senderKey': senderKey,
+        'senderName': senderName,
+        'type': type,
+        'text': text,
+        'url': url,
+        'fileName': fileName,
+        'sentAt': Timestamp.fromDate(sentAt),
       };
 }
 

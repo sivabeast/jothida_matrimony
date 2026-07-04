@@ -8,11 +8,16 @@ import 'wedding_overview_tab.dart' show SideToggleInline;
 
 /// Family Contacts: separate bride-side and groom-side contact books
 /// (name, relationship, mobile, gmail) shared with the whole workspace.
+/// [sideFilter] shows a single side only ('bride' / 'groom'); null = both.
 class WeddingContactsTab extends ConsumerWidget {
   final WeddingModel wedding;
   final WeddingIdentity identity;
+  final String? sideFilter;
   const WeddingContactsTab(
-      {super.key, required this.wedding, required this.identity});
+      {super.key,
+      required this.wedding,
+      required this.identity,
+      this.sideFilter});
 
   static const _relationships = [
     'Father', 'Mother', 'Brother', 'Sister', 'Uncle', 'Others',
@@ -21,7 +26,10 @@ class WeddingContactsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final contactsAsync = ref.watch(weddingContactsProvider(wedding.id));
-    final contacts = contactsAsync.valueOrNull ?? const <WeddingContact>[];
+    final allContacts = contactsAsync.valueOrNull ?? const <WeddingContact>[];
+    final contacts = sideFilter == null
+        ? allContacts
+        : allContacts.where((c) => c.side == sideFilter).toList();
     final brideSide = contacts.where((c) => c.side == 'bride').toList();
     final groomSide = contacts.where((c) => c.side == 'groom').toList();
 
@@ -43,9 +51,12 @@ class WeddingContactsTab extends ConsumerWidget {
               : ListView(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
                   children: [
-                    _sideSection(context, ref, '👰 Bride Side', brideSide),
-                    const SizedBox(height: 16),
-                    _sideSection(context, ref, '🤵 Groom Side', groomSide),
+                    if (sideFilter != 'groom') ...[
+                      _sideSection(context, ref, '👰 Bride Side', brideSide),
+                      const SizedBox(height: 16),
+                    ],
+                    if (sideFilter != 'bride')
+                      _sideSection(context, ref, '🤵 Groom Side', groomSide),
                   ],
                 ),
     );
@@ -210,6 +221,7 @@ class WeddingContactsTab extends ConsumerWidget {
     String relationship = existing?.relationship ?? 'Father';
     if (!_relationships.contains(relationship)) relationship = 'Others';
     String side = existing?.side ??
+        sideFilter ??
         (identity.isCouple ? wedding.sideOf(identity.key) : 'bride');
     final formKey = GlobalKey<FormState>();
 

@@ -23,7 +23,6 @@ import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/chat/chat_list_screen.dart';
 import '../screens/chat/chat_screen.dart';
-import '../screens/auth/otp_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/home/home_screen.dart';
@@ -127,8 +126,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final loc = state.matchedLocation;
       final onAuthPage = loc == '/login' ||
           loc == '/register' ||
-          loc == '/forgot-password' ||
-          loc.startsWith('/otp');
+          loc == '/forgot-password';
       final onSplash = loc == '/';
 
       // ── Demo mode (kBypassAuth): everything reachable, Home shows the
@@ -272,16 +270,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           threadId: state.pathParameters['id']!,
           extra: state.extra as Map<String, dynamic>?,
         ),
-      ),
-      GoRoute(
-        path: '/otp',
-        builder: (_, state) {
-          final extra = state.extra as Map<String, dynamic>;
-          return OtpScreen(
-            verificationId: extra['verificationId'] as String,
-            phone: extra['phone'] as String,
-          );
-        },
       ),
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
       GoRoute(path: '/forgot-password', builder: (_, __) => const ForgotPasswordScreen()),

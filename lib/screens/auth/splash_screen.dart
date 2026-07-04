@@ -6,6 +6,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../widgets/common/app_logo.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../providers/wedding_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -57,7 +58,37 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       if (userModel == null) {
         debugPrint('[Splash] No Firestore user doc found → /login');
         context.go('/login');
-      } else if (userModel.isAstrologer) {
+        return;
+      }
+
+      // ── Family entry (role-based) ───────────────────────────────────────
+      // A dedicated 'family' account, or a dual-role Gmail whose last chosen
+      // card was "Family Member", re-opens the Family Workspace directly.
+      final entryMode = await WeddingEntryMode.load();
+      if (!mounted) return;
+      if (userModel.isFamily ||
+          (entryMode == WeddingEntryMode.family &&
+              !userModel.isAstrologer &&
+              userModel.role != 'admin')) {
+        final email = userModel.email?.toLowerCase() ?? '';
+        final invitedWedding = email.isEmpty
+            ? null
+            : await ref
+                .read(weddingServiceProvider)
+                .getWeddingByMemberEmail(email);
+        if (!mounted) return;
+        if (invitedWedding != null || userModel.isFamily) {
+          ref.read(entryModeProvider.notifier).state = WeddingEntryMode.family;
+          debugPrint('[Splash] Family entry → /wedding-workspace');
+          context.go('/wedding-workspace');
+          return;
+        }
+        // Invitation revoked → drop the stale family mode, continue normally.
+        await WeddingEntryMode.save(null);
+        if (!mounted) return;
+      }
+
+      if (userModel.isAstrologer) {
         // Employee (horoscope-analysis staff) → Employee Portal.
         debugPrint('[Splash] Employee account → /astrologer-dashboard');
         context.go('/astrologer-dashboard');
@@ -71,6 +102,26 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         debugPrint('[Splash] Profile incomplete → /profile/create');
         context.go('/profile/create');
       } else {
+        // ── Workspace-first entry after Marriage Fixed ───────────────────
+        // Once both partners confirmed Marriage Fixed, the app opens the
+        // Wedding Workspace directly (a "Switch to Matrimony" button lives
+        // inside the workspace menu).
+        try {
+          final wedding = await ref
+              .read(weddingServiceProvider)
+              .getWeddingForCouple(user.uid);
+          if (!mounted) return;
+          if (wedding != null && wedding.isFixed) {
+            ref.read(entryModeProvider.notifier).state =
+                WeddingEntryMode.matrimony;
+            debugPrint('[Splash] Marriage Fixed → /wedding-workspace');
+            context.go('/wedding-workspace');
+            return;
+          }
+        } catch (e) {
+          debugPrint('[Splash] couple wedding lookup failed (non-fatal): $e');
+        }
+        if (!mounted) return;
         debugPrint('[Splash] Profile complete → /home');
         context.go('/home');
       }
