@@ -14,6 +14,7 @@ import 'wedding_family_pages.dart';
 import 'wedding_gallery_tab.dart';
 import 'wedding_history_pages.dart';
 import 'wedding_notes_page.dart';
+import 'wedding_planning_page.dart';
 import 'wedding_search_page.dart';
 import 'wedding_section_pages.dart';
 import 'wedding_tasks_tab.dart';
@@ -263,6 +264,9 @@ class _WeddingWorkspaceScreenState
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 children: [
                   _menuGroup('Planning'),
+                  _menuTile(Icons.playlist_add_check_circle_outlined,
+                      'Wedding Planning',
+                      () => _push(const WeddingPlanningPage())),
                   _menuTile(Icons.storefront_outlined, 'Vendor Management',
                       () => _push(const WeddingVendorsPage())),
                   _menuTile(Icons.account_balance_wallet_outlined,

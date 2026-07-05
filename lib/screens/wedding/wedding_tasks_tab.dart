@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/data/wedding_planning_template.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/file_actions.dart';
 import '../../models/wedding_model.dart';
 import '../../providers/wedding_provider.dart';
+import 'wedding_planning_page.dart';
 import 'wedding_workspace_screen.dart' show weddingByLine;
 
 /// TASKS — the workspace to-do system with strict side visibility (my side +
@@ -31,9 +33,18 @@ class WeddingTasksTab extends ConsumerStatefulWidget {
 class _WeddingTasksTabState extends ConsumerState<WeddingTasksTab> {
   late String _scope = widget.identity.side; // my side first; Shared next
   bool _onlyMyTasks = false;
+  String _category = 'All'; // 'All' | 'General' | <category name>
+  String _statusFilter = 'All'; // 'All' | 'Pending' | 'In Progress' | 'Completed'
 
   WeddingModel get wedding => widget.wedding;
   WeddingIdentity get me => widget.identity;
+
+  /// Derived status: an accepted-but-unfinished assignment is "In Progress".
+  String _statusOf(WeddingChecklistItem t) {
+    if (t.isCompleted) return 'Completed';
+    if (t.assignmentStatus == 'accepted') return 'In Progress';
+    return 'Pending';
+  }
 
   // ── Role-based access control ─────────────────────────────────────────────
 
@@ -72,11 +83,45 @@ class _WeddingTasksTabState extends ConsumerState<WeddingTasksTab> {
     final all = everything
         .where((i) => i.scope == _scope && me.visibleScopes.contains(i.scope))
         .toList();
-    final items = _onlyMyTasks
-        ? all.where((i) => i.assignedToKey == me.key).toList()
-        : all;
+    // Categories present in this scope, in template order + any extras.
+    final presentCategories = <String>{
+      for (final t in all) if (t.category.isNotEmpty) t.category,
+    };
+    final orderedCategories = [
+      ...kWeddingPlanCategoryNames.where(presentCategories.contains),
+      ...presentCategories.where((c) => !kWeddingPlanCategoryNames.contains(c)),
+    ];
+
+    Iterable<WeddingChecklistItem> filtered = all;
+    if (_onlyMyTasks) {
+      filtered = filtered.where((i) => i.assignedToKey == me.key);
+    }
+    if (_category == 'General') {
+      filtered = filtered.where((i) => i.isGeneral);
+    } else if (_category != 'All') {
+      filtered = filtered.where((i) => i.category == _category);
+    }
+    if (_statusFilter != 'All') {
+      filtered = filtered.where((i) => _statusOf(i) == _statusFilter);
+    }
+    final items = filtered.toList();
+
+    // General tasks always surface separately when viewing everything.
+    final generalItems = (_category == 'All' && _statusFilter == 'All')
+        ? items.where((i) => i.isGeneral).toList()
+        : const <WeddingChecklistItem>[];
+    final mainItems = (_category == 'All' && _statusFilter == 'All')
+        ? items.where((i) => !i.isGeneral).toList()
+        : items;
+
     final total = all.length;
     final done = all.where((i) => i.isCompleted).length;
+
+    /// A category is complete when it has ≥1 task and all are done.
+    bool categoryComplete(String cat) {
+      final catTasks = all.where((t) => t.category == cat).toList();
+      return catTasks.isNotEmpty && catTasks.every((t) => t.isCompleted);
+    }
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -93,6 +138,8 @@ class _WeddingTasksTabState extends ConsumerState<WeddingTasksTab> {
       body: Column(
         children: [
           _scopeSwitcher(),
+          _categoryChips(orderedCategories, categoryComplete),
+          _statusChips(),
           Expanded(
             child: itemsAsync.isLoading && everything.isEmpty
                 ? const Center(
@@ -101,8 +148,10 @@ class _WeddingTasksTabState extends ConsumerState<WeddingTasksTab> {
                 : ListView(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 90),
                     children: [
+                      _planBanner(),
+                      const SizedBox(height: 10),
                       _progressHeader(total: total, done: done),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
                       Row(
                         children: [
                           FilterChip(
@@ -123,11 +172,164 @@ class _WeddingTasksTabState extends ConsumerState<WeddingTasksTab> {
                       ),
                       const SizedBox(height: 8),
                       if (items.isEmpty) _empty(),
-                      ...items.map(_taskCard),
+                      // General Tasks surfaced first (unassigned).
+                      if (generalItems.isNotEmpty) ...[
+                        _sectionHeader(
+                            'General Tasks', generalItems.length,
+                            'Unassigned — anyone with permission can pick these up'),
+                        ...generalItems.map(_taskCard),
+                        if (mainItems.isNotEmpty) const SizedBox(height: 6),
+                      ],
+                      ...mainItems.map(_taskCard),
                     ],
                   ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Entry point to the template-driven Planning page.
+  Widget _planBanner() {
+    return Material(
+      color: AppColors.primary.withOpacity(0.06),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const WeddingPlanningPage())),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.12),
+                    shape: BoxShape.circle),
+                child: const Icon(Icons.playlist_add_check_circle_outlined,
+                    color: AppColors.primary, size: 22),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Plan the Wedding',
+                        style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13.5)),
+                    Text('Pick what you need — tasks are created for you',
+                        style: TextStyle(fontSize: 11, color: Colors.grey)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.primary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionHeader(String title, int count, String subtitle) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6, top: 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(title,
+                  style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13.5)),
+              const SizedBox(width: 6),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.teal.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text('$count',
+                    style: const TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.teal)),
+              ),
+            ],
+          ),
+          Text(subtitle,
+              style: TextStyle(fontSize: 10.5, color: Colors.grey[500])),
+        ],
+      ),
+    );
+  }
+
+  // ── Category chips (with ✔ completion indicator) ──────────────────────────
+
+  Widget _categoryChips(
+      List<String> categories, bool Function(String) categoryComplete) {
+    final chips = <String>['All', 'General', ...categories].map((cat) {
+      final selected = _category == cat;
+      final complete = cat != 'All' && cat != 'General' && categoryComplete(cat);
+      return Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: ChoiceChip(
+          label: Text(
+            complete ? '✔ $cat' : cat,
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: selected
+                    ? Colors.white
+                    : complete
+                        ? AppColors.success
+                        : Colors.grey[700]),
+          ),
+          selected: selected,
+          selectedColor: AppColors.primary,
+          backgroundColor:
+              complete ? AppColors.success.withOpacity(0.1) : Colors.white,
+          onSelected: (_) => setState(() => _category = cat),
+        ),
+      );
+    }).toList();
+
+    return SizedBox(
+      height: 44,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: chips,
+      ),
+    );
+  }
+
+  Widget _statusChips() {
+    const statuses = ['All', 'Pending', 'In Progress', 'Completed'];
+    return SizedBox(
+      height: 40,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: statuses.map((s) {
+          final selected = _statusFilter == s;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              label: Text(s, style: const TextStyle(fontSize: 11.5)),
+              selected: selected,
+              selectedColor: AppColors.primary.withOpacity(0.15),
+              checkmarkColor: AppColors.primary,
+              onSelected: (_) => setState(() => _statusFilter = s),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

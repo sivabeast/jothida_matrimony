@@ -711,4 +711,82 @@ class WeddingService {
         'memberPermissions.${weddingFieldKey(email.toLowerCase())}':
             permissions,
       });
+
+  // ── Custom planning-item learning (GLOBAL) ────────────────────────────────
+
+  CollectionReference<Map<String, dynamic>> get _customPlanItems =>
+      _db.collection('wedding_plan_custom_items');
+
+  /// All APPROVED custom items — merged into the master template shown to every
+  /// wedding's Planning page.
+  Stream<List<WeddingPlanCustomItem>> watchApprovedCustomPlanItems() =>
+      _customPlanItems
+          .where('status', isEqualTo: 'approved')
+          .snapshots()
+          .map((s) => s.docs.map(WeddingPlanCustomItem.fromFirestore).toList());
+
+  /// Admin moderation queue — every pending custom item awaiting approval.
+  Stream<List<WeddingPlanCustomItem>> watchPendingCustomPlanItems() =>
+      _customPlanItems
+          .where('status', isEqualTo: 'pending')
+          .snapshots()
+          .map((s) => s.docs.map(WeddingPlanCustomItem.fromFirestore).toList());
+
+  /// Records that [weddingId] used a custom planning item [title] in category
+  /// [categoryKey]/[categoryName]. The same item across weddings collides on a
+  /// normalised id and its usage count rises; once [WeddingPlanCustomItem
+  /// .promoteThreshold] distinct weddings use it, it auto-promotes to
+  /// 'approved' (unless already moderated). Best-effort.
+  Future<void> recordCustomPlanItem({
+    required String categoryKey,
+    required String categoryName,
+    required String title,
+    required String weddingId,
+    required String addedByName,
+  }) async {
+    final id = weddingPlanCustomId(categoryKey, title);
+    final ref = _customPlanItems.doc(id);
+    try {
+      await _db.runTransaction((tx) async {
+        final snap = await tx.get(ref);
+        if (!snap.exists) {
+          tx.set(ref, {
+            'categoryKey': categoryKey,
+            'categoryName': categoryName,
+            'title': title.trim(),
+            'usageCount': 1,
+            'weddingIds': [weddingId],
+            'status': 'pending',
+            'firstAddedByName': addedByName,
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+          return;
+        }
+        final data = snap.data()!;
+        final weddingIds = List<String>.from(data['weddingIds'] ?? const []);
+        if (weddingIds.contains(weddingId)) return; // already counted
+        weddingIds.add(weddingId);
+        final status = data['status'] ?? 'pending';
+        // Auto-promote by cross-wedding usage (never overrides a rejection).
+        final promote = status == 'pending' &&
+            weddingIds.length >= WeddingPlanCustomItem.promoteThreshold;
+        tx.update(ref, {
+          'weddingIds': weddingIds,
+          'usageCount': weddingIds.length,
+          if (promote) 'status': 'approved',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      });
+    } catch (e) {
+      debugPrint('[WeddingService] recordCustomPlanItem failed (non-fatal): $e');
+    }
+  }
+
+  /// Admin approves / rejects a pending custom item.
+  Future<void> moderateCustomPlanItem(String id, {required bool approve}) =>
+      _customPlanItems.doc(id).update({
+        'status': approve ? 'approved' : 'rejected',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 }

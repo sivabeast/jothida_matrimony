@@ -248,6 +248,7 @@ class WeddingChecklistItem {
   final String description;
   final String notes;
   final String category; // free text, optional
+  final String templateKey; // '' or the planning-template item key that made it
   final String priority; // '' | Low | Medium | High | Urgent
   final DateTime? dueDate;
   final List<String> attachments; // uploaded file URLs (optional)
@@ -269,6 +270,7 @@ class WeddingChecklistItem {
     this.description = '',
     this.notes = '',
     this.category = '',
+    this.templateKey = '',
     this.priority = '',
     this.dueDate,
     this.attachments = const [],
@@ -293,6 +295,7 @@ class WeddingChecklistItem {
       description: d['description'] ?? '',
       notes: d['notes'] ?? '',
       category: d['category'] ?? '',
+      templateKey: d['templateKey'] ?? '',
       priority: d['priority'] ?? '',
       dueDate: d['dueDate'] != null
           ? (d['dueDate'] as Timestamp).toDate()
@@ -321,6 +324,7 @@ class WeddingChecklistItem {
         'description': description,
         'notes': notes,
         'category': category,
+        'templateKey': templateKey,
         'priority': priority,
         'dueDate': dueDate != null ? Timestamp.fromDate(dueDate!) : null,
         'attachments': attachments,
@@ -1199,4 +1203,77 @@ List<WeddingParticipant> weddingParticipants(WeddingModel w) {
     ));
   }
   return list;
+}
+
+// ── Custom planning-item learning ─────────────────────────────────────────────
+
+/// A family-contributed custom planning item, stored GLOBALLY (outside any one
+/// wedding) in `wedding_plan_custom_items/{id}`. The system learns from these:
+/// when the same item is used across enough weddings — or an admin approves it —
+/// it is promoted (`status == 'approved'`) and merged into the master template
+/// shown to all future weddings.
+class WeddingPlanCustomItem {
+  /// Auto-promotion threshold: used by this many distinct weddings → approved.
+  static const promoteThreshold = 3;
+
+  final String id; // normalised '<categoryKey>__<slug>'
+  final String categoryKey;
+  final String categoryName;
+  final String title;
+  final int usageCount; // distinct weddings that added it
+  final List<String> weddingIds;
+  final String status; // 'pending' | 'approved' | 'rejected'
+  final String firstAddedByName;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  const WeddingPlanCustomItem({
+    required this.id,
+    required this.categoryKey,
+    required this.categoryName,
+    required this.title,
+    this.usageCount = 0,
+    this.weddingIds = const [],
+    this.status = 'pending',
+    this.firstAddedByName = '',
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory WeddingPlanCustomItem.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return WeddingPlanCustomItem(
+      id: doc.id,
+      categoryKey: d['categoryKey'] ?? '',
+      categoryName: d['categoryName'] ?? '',
+      title: d['title'] ?? '',
+      usageCount: (d['usageCount'] ?? 0) as int,
+      weddingIds: List<String>.from(d['weddingIds'] ?? const []),
+      status: d['status'] ?? 'pending',
+      firstAddedByName: d['firstAddedByName'] ?? '',
+      createdAt: d['createdAt'] != null
+          ? (d['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+      updatedAt: d['updatedAt'] != null
+          ? (d['updatedAt'] as Timestamp).toDate()
+          : DateTime.now(),
+    );
+  }
+
+  /// The stable template key this custom item maps to once selected as a task.
+  String get templateKey => 'custom.$id';
+
+  bool get isApproved => status == 'approved';
+}
+
+/// Normalises a free-text custom item name into a stable slug for the global
+/// learning id — so the same item added by two families collides (and its
+/// usage count rises) instead of creating duplicates.
+String weddingPlanCustomId(String categoryKey, String title) {
+  final slug = title
+      .toLowerCase()
+      .trim()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+      .replaceAll(RegExp(r'(^-+|-+$)'), '');
+  return '${categoryKey}__$slug';
 }

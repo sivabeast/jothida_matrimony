@@ -495,7 +495,7 @@
     "semantic_hash": ""
   },
   "android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java": {
-    "mtime": 1783244114.6437297,
+    "mtime": 1783249480.3769915,
     "ast_hash": "957f3f4fa91953a90f2d9690762329f7",
     "semantic_hash": ""
   },
@@ -1635,13 +1635,13 @@
     "semantic_hash": ""
   },
   "lib/models/wedding_model.dart": {
-    "mtime": 1783221900.0216856,
-    "ast_hash": "ec0f0542d775c20edcc118729c3b64e7",
+    "mtime": 1783249120.177862,
+    "ast_hash": "9b19bd14edd4abdbcd150c8046b92ebe",
     "semantic_hash": ""
   },
   "lib/providers/wedding_provider.dart": {
-    "mtime": 1783243965.9384918,
-    "ast_hash": "18cb8b379d3369baa14b586e89a2f381",
+    "mtime": 1783249190.5216722,
+    "ast_hash": "4f4291308e99e5c943df23ebe043462c",
     "semantic_hash": ""
   },
   "lib/screens/muhurtham/muhurtham_calendar_screen.dart": {
@@ -1660,13 +1660,13 @@
     "semantic_hash": ""
   },
   "lib/screens/wedding/wedding_workspace_screen.dart": {
-    "mtime": 1783222170.9875352,
-    "ast_hash": "582af6c95cf6cb762916789a313b69a2",
+    "mtime": 1783249351.6895494,
+    "ast_hash": "4aa34921d4a56bb50420b99e061868b6",
     "semantic_hash": ""
   },
   "lib/services/firebase/wedding_service.dart": {
-    "mtime": 1783221976.5742471,
-    "ast_hash": "89f2e5b1a8b26bc3b64ab900d0dd7bf7",
+    "mtime": 1783249138.621584,
+    "ast_hash": "82e67dc77e106c9acab884f272982435",
     "semantic_hash": ""
   },
   "lib/widgets/common/payroll_history_tile.dart": {
@@ -1730,8 +1730,18 @@
     "semantic_hash": ""
   },
   "lib/screens/wedding/wedding_tasks_tab.dart": {
-    "mtime": 1783244077.9369073,
-    "ast_hash": "536c1f4a6fc1b967022fa41ece620f55",
+    "mtime": 1783249424.1198237,
+    "ast_hash": "a468a5126573503d1b2c5bdde203a80c",
+    "semantic_hash": ""
+  },
+  "lib/core/data/wedding_planning_template.dart": {
+    "mtime": 1783249422.1913521,
+    "ast_hash": "4d3bb7acf2d183f41f5dbb8c725a6e3b",
+    "semantic_hash": ""
+  },
+  "lib/screens/wedding/wedding_planning_page.dart": {
+    "mtime": 1783249436.4999852,
+    "ast_hash": "1a741de62ed057d6eb15dc0c1845792c",
     "semantic_hash": ""
   }
 }

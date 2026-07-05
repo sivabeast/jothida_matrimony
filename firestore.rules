@@ -559,6 +559,27 @@ service cloud.firestore {
       }
     }
 
+    // ── Wedding planning custom-item learning (GLOBAL) ─────────────────────
+    // Family-contributed custom planning items, aggregated across weddings so
+    // popular ones get promoted into the master template. Any authenticated
+    // workspace user may read the approved catalogue and contribute an item
+    // (create / merge usage). Only admins moderate (approve / reject) and
+    // delete. Writes are constrained to the learning fields.
+    match /wedding_plan_custom_items/{itemId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated()
+                    && request.resource.data.status == 'pending';
+      allow update: if isAuthenticated()
+                    && request.resource.data.diff(resource.data)
+                         .affectedKeys()
+                         .hasOnly(['weddingIds', 'usageCount', 'status',
+                                   'updatedAt'])
+                    // A normal user may only auto-promote by usage, never
+                    // reject; explicit moderation is admin-only (below).
+                    && request.resource.data.status in ['pending', 'approved'];
+      allow update, delete: if isAdmin();
+    }
+
     // ── Chats ─────────────────────────────────────────────────────────────
     // Only the two participants may read or write a thread / its messages.
     // BUSINESS RULE: astrologers must not COLD-initiate contact, so an

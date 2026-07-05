@@ -2,9 +2,11 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/data/wedding_planning_template.dart';
 import '../models/wedding_model.dart';
 import '../services/firebase/wedding_service.dart';
 import 'auth_provider.dart';
@@ -159,6 +161,61 @@ final weddingActivityProvider = StreamProvider.autoDispose
 final weddingScheduleProvider = StreamProvider.autoDispose
     .family<List<WeddingScheduleItem>, String>((ref, weddingId) =>
         ref.watch(weddingServiceProvider).watchSchedule(weddingId));
+
+/// Approved family-contributed custom planning items (learned globally),
+/// merged on top of the static master template on the Planning page.
+final approvedCustomPlanItemsProvider =
+    StreamProvider.autoDispose<List<WeddingPlanCustomItem>>((ref) =>
+        ref.watch(weddingServiceProvider).watchApprovedCustomPlanItems());
+
+/// The MASTER planning template merged with approved custom items — the exact
+/// catalogue the Planning page renders. Custom items are appended to their
+/// category (or a new category if the admin promoted a fresh one).
+final weddingPlanTemplateProvider =
+    Provider.autoDispose<List<WeddingPlanCategory>>((ref) {
+  final approved =
+      ref.watch(approvedCustomPlanItemsProvider).valueOrNull ?? const [];
+  if (approved.isEmpty) return kWeddingPlanTemplate;
+
+  // Group approved items by category key.
+  final byCategory = <String, List<WeddingPlanCustomItem>>{};
+  for (final c in approved) {
+    byCategory.putIfAbsent(c.categoryKey, () => []).add(c);
+  }
+
+  final merged = <WeddingPlanCategory>[];
+  final usedKeys = <String>{};
+  for (final cat in kWeddingPlanTemplate) {
+    usedKeys.add(cat.key);
+    final extras = byCategory[cat.key] ?? const [];
+    if (extras.isEmpty) {
+      merged.add(cat);
+    } else {
+      merged.add(WeddingPlanCategory(
+        key: cat.key,
+        name: cat.name,
+        icon: cat.icon,
+        items: [
+          ...cat.items,
+          for (final e in extras) WeddingPlanItem(e.templateKey, e.title),
+        ],
+      ));
+    }
+  }
+  // Approved items whose category isn't in the static template → own category.
+  for (final entry in byCategory.entries) {
+    if (usedKeys.contains(entry.key)) continue;
+    merged.add(WeddingPlanCategory(
+      key: entry.key,
+      name: entry.value.first.categoryName,
+      icon: Icons.auto_awesome_outlined,
+      items: [
+        for (final e in entry.value) WeddingPlanItem(e.templateKey, e.title),
+      ],
+    ));
+  }
+  return merged;
+});
 
 // ── Who am I inside the workspace? ────────────────────────────────────────────
 
@@ -376,6 +433,123 @@ class WeddingController extends Notifier<AsyncValue<void>> {
           actorName: me.name,
           scope: item.scope);
     });
+  }
+
+  // ── Planning → auto task generation ──────────────────────────────────────
+
+  /// Generates a Task from a selected planning-template item. Idempotent per
+  /// (scope, templateKey) — ticking an already-selected item is a no-op.
+  /// Unassigned by design, so it lands in "General Tasks".
+  Future<void> generatePlanTask(
+    String weddingId, {
+    required String templateKey,
+    required String title,
+    required String category,
+    required String scope,
+    required WeddingIdentity me,
+  }) async {
+    await _guarded(() async {
+      // Guard against duplicates using the live task list.
+      final existing = ref
+              .read(weddingChecklistProvider(weddingId))
+              .valueOrNull ??
+          const <WeddingChecklistItem>[];
+      final already = existing.any(
+          (t) => t.scope == scope && t.templateKey == templateKey);
+      if (already) return;
+      await _service.addChecklistItem(
+        weddingId,
+        WeddingChecklistItem(
+          id: '',
+          title: title,
+          category: category,
+          templateKey: templateKey,
+          scope: scope,
+          createdByKey: me.key,
+          createdByName: me.name,
+          createdAt: DateTime.now(),
+        ),
+      );
+      await _service.logActivity(weddingId,
+          type: 'task',
+          text: '${me.name} added "$title" ($category) to tasks',
+          actorName: me.name,
+          scope: scope);
+    });
+  }
+
+  /// Un-ticks a planning item — deletes the auto-generated task IF it is still
+  /// pending and unassigned (never destroys work in progress). Returns false
+  /// when the task was kept because it already has progress.
+  Future<bool> removePlanTask(
+    String weddingId, {
+    required String templateKey,
+    required String scope,
+  }) async {
+    final existing =
+        ref.read(weddingChecklistProvider(weddingId)).valueOrNull ??
+            const <WeddingChecklistItem>[];
+    final matches = existing
+        .where((t) => t.scope == scope && t.templateKey == templateKey)
+        .toList();
+    if (matches.isEmpty) return true;
+    // Keep any task that has been assigned or completed.
+    final safe = matches
+        .where((t) => t.status == 'pending' && !t.isAssigned)
+        .toList();
+    if (safe.isEmpty) return false;
+    await _guarded(() async {
+      for (final t in safe) {
+        await _service.deleteChecklistItem(weddingId, t.id);
+      }
+    });
+    return true;
+  }
+
+  /// Adds a family-typed custom planning item: generates the task immediately
+  /// AND records it in the global learning collection (so it can be promoted
+  /// into the master template for future weddings). Returns the item's
+  /// template key for the Planning page to reflect the selection.
+  Future<String?> addCustomPlanItem(
+    String weddingId, {
+    required String categoryKey,
+    required String categoryName,
+    required String title,
+    required String scope,
+    required WeddingIdentity me,
+  }) async {
+    final id = weddingPlanCustomId(categoryKey, title);
+    final templateKey = 'custom.$id';
+    final ok = await _guarded(() async {
+      await _service.recordCustomPlanItem(
+        categoryKey: categoryKey,
+        categoryName: categoryName,
+        title: title.trim(),
+        weddingId: weddingId,
+        addedByName: me.name,
+      );
+      await _service.addChecklistItem(
+        weddingId,
+        WeddingChecklistItem(
+          id: '',
+          title: title.trim(),
+          category: categoryName,
+          templateKey: templateKey,
+          scope: scope,
+          createdByKey: me.key,
+          createdByName: me.name,
+          createdAt: DateTime.now(),
+        ),
+      );
+      await _service.logActivity(weddingId,
+          type: 'task',
+          text: '${me.name} added custom item "${title.trim()}" '
+              '($categoryName)',
+          actorName: me.name,
+          scope: scope);
+      return true;
+    });
+    return ok == true ? templateKey : null;
   }
 
   /// Moves a side-private task into the Shared workspace.
