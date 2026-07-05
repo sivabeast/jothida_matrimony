@@ -4,20 +4,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/wedding_model.dart';
 import '../../providers/wedding_provider.dart';
-import 'wedding_overview_tab.dart' show SideToggleInline;
+import 'wedding_section_pages.dart' show SideToggleInline;
 
-/// Family Contacts: separate bride-side and groom-side contact books
-/// (name, relationship, mobile, gmail) shared with the whole workspace.
-/// [sideFilter] shows a single side only ('bride' / 'groom'); null = both.
+/// Family Contacts (name, relationship, mobile, gmail) with STRICT side
+/// privacy: bride-side contacts are visible only to the bride side, groom
+/// contacts only to the groom side — until a contact is explicitly moved to
+/// SHARED, which makes it visible to both sides ("Shared Contacts").
+///
+/// [sideFilter] narrows to one side; [sharedOnly] shows only shared
+/// contacts (the menu's Shared Contacts page).
 class WeddingContactsTab extends ConsumerWidget {
   final WeddingModel wedding;
   final WeddingIdentity identity;
   final String? sideFilter;
+  final bool sharedOnly;
   const WeddingContactsTab(
       {super.key,
       required this.wedding,
       required this.identity,
-      this.sideFilter});
+      this.sideFilter,
+      this.sharedOnly = false});
 
   static const _relationships = [
     'Father', 'Mother', 'Brother', 'Sister', 'Uncle', 'Others',
@@ -27,22 +33,30 @@ class WeddingContactsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final contactsAsync = ref.watch(weddingContactsProvider(wedding.id));
     final allContacts = contactsAsync.valueOrNull ?? const <WeddingContact>[];
-    final contacts = sideFilter == null
-        ? allContacts
-        : allContacts.where((c) => c.side == sideFilter).toList();
+    // STRICT side visibility: my side's private contacts + shared ones.
+    final visible = allContacts
+        .where((c) => identity.visibleScopes.contains(c.scope))
+        .toList();
+    final contacts = sharedOnly
+        ? visible.where((c) => c.scope == 'shared').toList()
+        : sideFilter == null
+            ? visible
+            : visible.where((c) => c.side == sideFilter).toList();
     final brideSide = contacts.where((c) => c.side == 'bride').toList();
     final groomSide = contacts.where((c) => c.side == 'groom').toList();
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'wedding_contacts_fab',
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.person_add_alt),
-        label: const Text('Add Contact'),
-        onPressed: () => _showContactSheet(context, ref),
-      ),
+      floatingActionButton: sharedOnly
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'wedding_contacts_fab',
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.person_add_alt),
+              label: const Text('Add Contact'),
+              onPressed: () => _showContactSheet(context, ref),
+            ),
       body: contactsAsync.isLoading && contacts.isEmpty
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary))
@@ -51,11 +65,11 @@ class WeddingContactsTab extends ConsumerWidget {
               : ListView(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
                   children: [
-                    if (sideFilter != 'groom') ...[
+                    if (sideFilter != 'groom' && brideSide.isNotEmpty) ...[
                       _sideSection(context, ref, '👰 Bride Side', brideSide),
                       const SizedBox(height: 16),
                     ],
-                    if (sideFilter != 'bride')
+                    if (sideFilter != 'bride' && groomSide.isNotEmpty)
                       _sideSection(context, ref, '🤵 Groom Side', groomSide),
                   ],
                 ),
@@ -71,12 +85,16 @@ class WeddingContactsTab extends ConsumerWidget {
           children: [
             Icon(Icons.contacts_outlined, size: 64, color: Colors.grey[350]),
             const SizedBox(height: 14),
-            const Text('No family contacts yet',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            Text(sharedOnly ? 'No shared contacts yet' : 'No contacts yet',
+                style: const TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
             Text(
-              'Keep both families\' important contacts (father, mother, '
-              'siblings, uncle…) in one shared place.',
+              sharedOnly
+                  ? 'Contacts moved to Shared from either side appear here '
+                      'for both families.'
+                  : 'Keep your side\'s important contacts here. They stay '
+                      'private to your side until moved to Shared.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey[600], fontSize: 12.5),
             ),
@@ -97,11 +115,7 @@ class WeddingContactsTab extends ConsumerWidget {
                 fontWeight: FontWeight.bold,
                 fontSize: 14.5)),
         const SizedBox(height: 8),
-        if (contacts.isEmpty)
-          Text('No contacts added.',
-              style: TextStyle(color: Colors.grey[500], fontSize: 12.5))
-        else
-          ...contacts.map((c) => _contactCard(context, ref, c)),
+        ...contacts.map((c) => _contactCard(context, ref, c)),
       ],
     );
   }
@@ -131,11 +145,32 @@ class WeddingContactsTab extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${c.name} · ${c.relationship}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 13.5)),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text('${c.name} · ${c.relationship}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 13.5)),
+                    ),
+                    if (c.scope == 'shared')
+                      Container(
+                        margin: const EdgeInsets.only(left: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text('Shared',
+                            style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.success)),
+                      ),
+                  ],
+                ),
                 const SizedBox(height: 3),
                 if (c.mobile.isNotEmpty)
                   Row(
@@ -172,18 +207,52 @@ class WeddingContactsTab extends ConsumerWidget {
               switch (v) {
                 case 'edit':
                   _showContactSheet(context, ref, existing: c);
+                case 'share':
+                  _confirmMoveToShared(context, ref, c);
                 case 'delete':
                   _confirmDelete(context, ref, c);
               }
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'edit', child: Text('Edit')),
-              PopupMenuItem(value: 'delete', child: Text('Delete')),
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: 'edit', child: Text('Edit')),
+              if (c.scope != 'shared')
+                const PopupMenuItem(
+                    value: 'share', child: Text('Move to Shared')),
+              const PopupMenuItem(value: 'delete', child: Text('Delete')),
             ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmMoveToShared(
+      BuildContext context, WidgetRef ref, WeddingContact c) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Move to Shared?'),
+        content: Text(
+            '"${c.name}" will move into Shared Contacts and become visible '
+            'to BOTH sides.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Move to Shared'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref
+        .read(weddingControllerProvider.notifier)
+        .moveContactToShared(wedding.id, c, identity);
   }
 
   Future<void> _confirmDelete(
@@ -220,9 +289,8 @@ class WeddingContactsTab extends ConsumerWidget {
     final gmailCtrl = TextEditingController(text: existing?.gmail ?? '');
     String relationship = existing?.relationship ?? 'Father';
     if (!_relationships.contains(relationship)) relationship = 'Others';
-    String side = existing?.side ??
-        sideFilter ??
-        (identity.isCouple ? wedding.sideOf(identity.key) : 'bride');
+    // New contacts belong to MY side (Super Admins may pick either side).
+    String side = existing?.side ?? sideFilter ?? identity.side;
     final formKey = GlobalKey<FormState>();
 
     showModalBottomSheet(
@@ -246,11 +314,20 @@ class WeddingContactsTab extends ConsumerWidget {
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.bold,
                           fontSize: 16)),
-                  const SizedBox(height: 16),
-                  SideToggleInline(
-                      side: side,
-                      onChanged: (v) => setSheetState(() => side = v)),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Stays private to the '
+                    '${side == 'groom' ? 'groom' : 'bride'} side until moved '
+                    'to Shared.',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 11.5),
+                  ),
+                  const SizedBox(height: 14),
+                  if (identity.isSuperAdmin && existing == null) ...[
+                    SideToggleInline(
+                        side: side,
+                        onChanged: (v) => setSheetState(() => side = v)),
+                    const SizedBox(height: 12),
+                  ],
                   TextFormField(
                     controller: nameCtrl,
                     decoration: _input('Name'),
@@ -301,6 +378,7 @@ class WeddingContactsTab extends ConsumerWidget {
                               wedding.id,
                               contactId: existing?.id,
                               side: side,
+                              scope: existing?.scope,
                               name: nameCtrl.text.trim(),
                               relationship: relationship,
                               mobile: mobileCtrl.text.trim(),

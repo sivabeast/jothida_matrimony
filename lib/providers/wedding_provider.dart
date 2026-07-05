@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -125,18 +126,75 @@ final weddingChatProvider = StreamProvider.autoDispose
     .family<List<WeddingChatMessage>, String>((ref, weddingId) =>
         ref.watch(weddingServiceProvider).watchChat(weddingId));
 
+final weddingGalleryCategoriesProvider = StreamProvider.autoDispose
+    .family<List<WeddingGalleryCategory>, String>((ref, weddingId) =>
+        ref.watch(weddingServiceProvider).watchGalleryCategories(weddingId));
+
+/// (weddingId, participantKey) → category-key → last-seen time.
+final weddingGallerySeenProvider = StreamProvider.autoDispose
+    .family<Map<String, DateTime>, (String, String)>((ref, args) => ref
+        .watch(weddingServiceProvider)
+        .watchGallerySeen(args.$1, args.$2));
+
+final weddingExpensesProvider = StreamProvider.autoDispose
+    .family<List<WeddingExpense>, String>((ref, weddingId) =>
+        ref.watch(weddingServiceProvider).watchExpenses(weddingId));
+
+final weddingEventsProvider = StreamProvider.autoDispose
+    .family<List<WeddingEvent>, String>((ref, weddingId) =>
+        ref.watch(weddingServiceProvider).watchEvents(weddingId));
+
+final weddingNotesProvider = StreamProvider.autoDispose
+    .family<List<WeddingNote>, String>((ref, weddingId) =>
+        ref.watch(weddingServiceProvider).watchNotes(weddingId));
+
+final weddingDecisionsProvider = StreamProvider.autoDispose
+    .family<List<WeddingDecision>, String>((ref, weddingId) =>
+        ref.watch(weddingServiceProvider).watchDecisions(weddingId));
+
+final weddingActivityProvider = StreamProvider.autoDispose
+    .family<List<WeddingActivity>, String>((ref, weddingId) =>
+        ref.watch(weddingServiceProvider).watchActivity(weddingId));
+
+final weddingScheduleProvider = StreamProvider.autoDispose
+    .family<List<WeddingScheduleItem>, String>((ref, weddingId) =>
+        ref.watch(weddingServiceProvider).watchSchedule(weddingId));
+
 // ── Who am I inside the workspace? ────────────────────────────────────────────
 
 class WeddingIdentity {
   final String key; // uid (couple) or email (family)
   final String name;
-  final bool isCouple;
-  const WeddingIdentity(
-      {required this.key, required this.name, required this.isCouple});
+  final bool isCouple; // Bride / Groom = Super Admin
+  final String side; // 'bride' | 'groom'
+  final Set<String> permissions; // family-member permissions (couple: all)
+
+  const WeddingIdentity({
+    required this.key,
+    required this.name,
+    required this.isCouple,
+    required this.side,
+    this.permissions = const {},
+  });
+
+  /// The Bride and Groom are Super Admins — they override every permission
+  /// and manage the entire workspace.
+  bool get isSuperAdmin => isCouple;
+
+  bool can(String permission) =>
+      isSuperAdmin || permissions.contains(permission);
+
+  /// The two workspaces this participant may see: their own side + Shared.
+  /// The opposite side's workspace is never visible.
+  List<String> get visibleScopes => [side, 'shared'];
+
+  String get sideLabel => side == 'groom' ? 'Groom Side' : 'Bride Side';
 }
 
 /// Resolves the signed-in user's participant identity for [wedding]:
 /// couple members are keyed by uid, family members by their invited gmail.
+/// Also resolves the participant's SIDE (bride/groom) and granted
+/// permissions — the basis of all workspace role-based access control.
 final weddingIdentityProvider = Provider.autoDispose
     .family<WeddingIdentity?, WeddingModel>((ref, wedding) {
   final user = ref.watch(currentUserProvider).valueOrNull;
@@ -146,17 +204,34 @@ final weddingIdentityProvider = Provider.autoDispose
       key: user.uid,
       name: wedding.nameOf(user.uid),
       isCouple: true,
+      side: wedding.sideOf(user.uid),
+      permissions: WeddingPermissions.all.toSet(),
     );
   }
   final email = user.email?.toLowerCase() ?? '';
+  Set<String> permsFor(String email) => (wedding
+              .memberPermissions[weddingFieldKey(email)] ??
+          WeddingPermissions.defaults)
+      .toSet();
   for (final m in wedding.members) {
     if (m.email == email) {
-      return WeddingIdentity(key: email, name: m.name, isCouple: false);
+      return WeddingIdentity(
+        key: email,
+        name: m.name,
+        isCouple: false,
+        side: m.side,
+        permissions: permsFor(email),
+      );
     }
   }
   if (email.isNotEmpty && wedding.memberEmails.contains(email)) {
     return WeddingIdentity(
-        key: email, name: user.displayName ?? 'Family Member', isCouple: false);
+      key: email,
+      name: user.displayName ?? 'Family Member',
+      isCouple: false,
+      side: 'bride',
+      permissions: permsFor(email),
+    );
   }
   return null;
 });
@@ -231,46 +306,95 @@ class WeddingController extends Notifier<AsyncValue<void>> {
 
   // ── Checklist ─────────────────────────────────────────────────────────────
 
+  /// Task Name is the ONLY mandatory field — every optional field may stay
+  /// empty without blocking creation. No Assign To → General Task.
   Future<void> addChecklistItem(
     String weddingId, {
     required String title,
+    String description = '',
     String notes = '',
+    String category = '',
+    String priority = '',
+    DateTime? dueDate,
+    List<String> attachments = const [],
     String scope = 'shared',
     required WeddingIdentity me,
     String assignedToKey = '',
     String assignedToName = '',
   }) async {
-    await _guarded(() => _service.addChecklistItem(
-          weddingId,
-          WeddingChecklistItem(
-            id: '',
-            title: title,
-            notes: notes,
-            scope: scope,
-            createdByKey: me.key,
-            createdByName: me.name,
-            assignedToKey: assignedToKey,
-            assignedToName: assignedToName,
-            assignmentStatus: assignedToKey.isEmpty ? 'none' : 'pending',
-            createdAt: DateTime.now(),
-          ),
-        ));
+    await _guarded(() async {
+      await _service.addChecklistItem(
+        weddingId,
+        WeddingChecklistItem(
+          id: '',
+          title: title,
+          description: description,
+          notes: notes,
+          category: category,
+          priority: priority,
+          dueDate: dueDate,
+          attachments: attachments,
+          scope: scope,
+          createdByKey: me.key,
+          createdByName: me.name,
+          assignedToKey: assignedToKey,
+          assignedToName: assignedToName,
+          assignmentStatus: assignedToKey.isEmpty ? 'none' : 'pending',
+          createdAt: DateTime.now(),
+        ),
+      );
+      await _service.logActivity(weddingId,
+          type: 'task',
+          text: assignedToName.isEmpty
+              ? '${me.name} created task "$title"'
+              : '${me.name} created task "$title" and assigned it to '
+                  '$assignedToName',
+          actorName: me.name,
+          scope: scope);
+    });
   }
 
-  Future<void> updateChecklistItem(String weddingId, String itemId,
-      {required String title, required String notes}) async {
-    await _guarded(() => _service
-        .updateChecklistItem(weddingId, itemId, {'title': title, 'notes': notes}));
+  Future<void> updateChecklistItem(
+      String weddingId, String itemId, Map<String, dynamic> data) async {
+    await _guarded(() => _service.updateChecklistItem(weddingId, itemId, data));
   }
 
   Future<void> deleteChecklistItem(String weddingId, String itemId) async {
     await _guarded(() => _service.deleteChecklistItem(weddingId, itemId));
   }
 
-  Future<void> setChecklistStatus(
-      String weddingId, String itemId, bool completed) async {
-    await _guarded(
-        () => _service.setChecklistStatus(weddingId, itemId, completed));
+  Future<void> setChecklistStatus(String weddingId, WeddingChecklistItem item,
+      bool completed, WeddingIdentity me) async {
+    await _guarded(() async {
+      await _service.setChecklistStatus(weddingId, item.id, completed,
+          completedByName: me.name);
+      await _service.logActivity(weddingId,
+          type: 'task',
+          text: completed
+              ? '${me.name} completed task "${item.title}"'
+              : '${me.name} reopened task "${item.title}"',
+          actorName: me.name,
+          scope: item.scope);
+    });
+  }
+
+  /// Moves a side-private task into the Shared workspace.
+  Future<void> moveTaskToShared(
+      String weddingId, WeddingChecklistItem item, WeddingIdentity me) async {
+    await _guarded(() async {
+      await _service.updateChecklistItem(weddingId, item.id, {'scope': 'shared'});
+      await _service.logActivity(weddingId,
+          type: 'task',
+          text: '${me.name} moved task "${item.title}" to Shared',
+          actorName: me.name);
+    });
+  }
+
+  /// Uploads a task attachment and returns its URL (null on failure).
+  Future<String?> uploadTaskAttachment(String weddingId, File file,
+      {required bool isImage}) {
+    return _guarded(() => ref.read(storageServiceProvider)
+        .uploadWeddingDocument(weddingId: weddingId, file: file, isImage: isImage));
   }
 
   Future<void> assignChecklistItem(String weddingId, String itemId,
@@ -321,10 +445,13 @@ class WeddingController extends Notifier<AsyncValue<void>> {
 
   // ── Contacts ──────────────────────────────────────────────────────────────
 
+  /// New contacts are PRIVATE to their side ([scope] defaults to [side]);
+  /// "Move to Shared" later flips the scope to 'shared'.
   Future<void> saveContact(
     String weddingId, {
     String? contactId,
     required String side,
+    String? scope,
     required String name,
     required String relationship,
     required String mobile,
@@ -335,6 +462,7 @@ class WeddingController extends Notifier<AsyncValue<void>> {
       if (contactId != null) {
         return _service.updateContact(weddingId, contactId, {
           'side': side,
+          'scope': scope ?? side,
           'name': name,
           'relationship': relationship,
           'mobile': mobile,
@@ -346,6 +474,7 @@ class WeddingController extends Notifier<AsyncValue<void>> {
         WeddingContact(
           id: '',
           side: side,
+          scope: scope ?? side,
           name: name,
           relationship: relationship,
           mobile: mobile,
@@ -396,7 +525,7 @@ class WeddingController extends Notifier<AsyncValue<void>> {
     await _guarded(() => _service.deleteGuest(weddingId, guestId));
   }
 
-  // ── Shared photo gallery ──────────────────────────────────────────────────
+  // ── Gallery v2 ────────────────────────────────────────────────────────────
 
   Future<void> uploadPhoto(
     String weddingId, {
@@ -404,6 +533,7 @@ class WeddingController extends Notifier<AsyncValue<void>> {
     required String album,
     String scope = 'shared',
     String caption = '',
+    String vendorId = '',
     required WeddingIdentity me,
   }) async {
     await _guarded(() async {
@@ -417,15 +547,136 @@ class WeddingController extends Notifier<AsyncValue<void>> {
           scope: scope,
           url: url,
           caption: caption,
+          vendorId: vendorId,
+          uploadedByKey: me.key,
           uploadedByName: me.name,
           uploadedAt: DateTime.now(),
         ),
       );
+      await _service.logActivity(weddingId,
+          type: 'gallery',
+          text: '${me.name} uploaded a photo to "$album"',
+          actorName: me.name,
+          scope: scope);
     });
   }
 
   Future<void> deletePhoto(String weddingId, String photoId) async {
     await _guarded(() => _service.deletePhoto(weddingId, photoId));
+  }
+
+  Future<void> renamePhoto(
+      String weddingId, String photoId, String caption) async {
+    await _guarded(
+        () => _service.updatePhoto(weddingId, photoId, {'caption': caption}));
+  }
+
+  /// Replaces the photo file, keeping votes / comments / selection intact.
+  Future<void> replacePhoto(
+      String weddingId, String photoId, File file) async {
+    await _guarded(() async {
+      final url = await ref.read(storageServiceProvider).uploadWeddingDocument(
+          weddingId: weddingId, file: file, isImage: true);
+      await _service.updatePhoto(weddingId, photoId, {'url': url});
+    });
+  }
+
+  Future<void> addGalleryCategory(
+      String weddingId, String name, WeddingIdentity me) async {
+    await _guarded(() async {
+      await _service.addGalleryCategory(
+        weddingId,
+        WeddingGalleryCategory(
+            id: '', name: name, createdByName: me.name, createdAt: DateTime.now()),
+      );
+      await _service.logActivity(weddingId,
+          type: 'gallery',
+          text: '${me.name} created gallery category "$name"',
+          actorName: me.name);
+    });
+  }
+
+  Future<void> votePhoto(String weddingId, WeddingPhoto photo,
+      {required WeddingIdentity me, String? vote}) async {
+    await _guarded(() async {
+      await _service.votePhoto(weddingId, photo.id,
+          participantKey: me.key, vote: vote);
+      if (vote != null) {
+        await _service.logActivity(weddingId,
+            type: 'approval',
+            text:
+                '${me.name} ${vote == 'approve' ? 'approved' : 'rejected'} a '
+                'photo in "${photo.album}"',
+            actorName: me.name,
+            scope: photo.scope);
+      }
+    });
+  }
+
+  Future<void> commentPhoto(String weddingId, String photoId,
+      {required WeddingIdentity me, required String text}) async {
+    await _guarded(() =>
+        _service.commentPhoto(weddingId, photoId, byName: me.name, text: text));
+  }
+
+  /// Marks a photo as the ⭐ Selected item of its category — and records the
+  /// change in the Decision History when it replaces a previous selection.
+  Future<void> selectPhoto(
+      String weddingId, WeddingPhoto photo, WeddingIdentity me,
+      {String reason = ''}) async {
+    await _guarded(() async {
+      final previous = await _service.selectPhoto(
+        weddingId,
+        photoId: photo.id,
+        album: photo.album,
+        scope: photo.scope,
+        selectedByName: me.name,
+      );
+      final label = photo.caption.isNotEmpty ? photo.caption : 'a photo';
+      await _service.addDecision(
+        weddingId,
+        WeddingDecision(
+          id: '',
+          field: 'Selected ${photo.album}',
+          oldValue: previous == null
+              ? '—'
+              : (previous.caption.isNotEmpty ? previous.caption : 'Previous photo'),
+          newValue: photo.caption.isNotEmpty ? photo.caption : 'New photo',
+          changedBy: me.name,
+          reason: reason,
+          changedAt: DateTime.now(),
+        ),
+      );
+      await _service.logActivity(weddingId,
+          type: 'selection',
+          text: '${me.name} selected $label as ⭐ ${photo.album}',
+          actorName: me.name,
+          scope: photo.scope);
+    });
+  }
+
+  Future<void> movePhotosToShared(
+      String weddingId, List<WeddingPhoto> photos, WeddingIdentity me) async {
+    await _guarded(() async {
+      await _service.movePhotosToShared(
+          weddingId, photos.map((p) => p.id).toList());
+      final albums = photos.map((p) => p.album).toSet().join(', ');
+      await _service.logActivity(weddingId,
+          type: 'shared',
+          text: '${me.name} moved ${photos.length} '
+              'photo${photos.length == 1 ? '' : 's'} ($albums) to Shared',
+          actorName: me.name);
+    });
+  }
+
+  /// Best-effort seen-marker → clears the category's "new uploads" badge.
+  Future<void> markCategorySeen(
+      String weddingId, WeddingIdentity me, String category) async {
+    try {
+      await _service.markCategorySeen(weddingId, me.key, category);
+    } catch (e) {
+      debugPrint('[WeddingController] markCategorySeen failed: $e');
+    }
   }
 
   // ── Vendors (couple-only management) ──────────────────────────────────────
@@ -436,27 +687,44 @@ class WeddingController extends Notifier<AsyncValue<void>> {
     required String category,
     required String name,
     String contactPerson = '',
-    String mobile = '',
+    required String mobile,
     String altMobile = '',
+    String whatsapp = '',
     String address = '',
     String notes = '',
+    num? price,
+    num advancePaid = 0,
+    num balanceAmount = 0,
+    String capacity = '',
+    String distance = '',
+    double rating = 0,
+    List<String> photos = const [],
     required List<String> visibleTo,
     required WeddingIdentity me,
   }) async {
-    await _guarded(() {
+    await _guarded(() async {
       if (vendorId != null) {
-        return _service.updateVendor(weddingId, vendorId, {
+        await _service.updateVendor(weddingId, vendorId, {
           'category': category,
           'name': name,
           'contactPerson': contactPerson,
           'mobile': mobile,
           'altMobile': altMobile,
+          'whatsapp': whatsapp,
           'address': address,
           'notes': notes,
+          'price': price,
+          'advancePaid': advancePaid,
+          'balanceAmount': balanceAmount,
+          'capacity': capacity,
+          'distance': distance,
+          'rating': rating,
+          'photos': photos,
           'visibleTo': visibleTo,
         });
+        return;
       }
-      return _service.addVendor(
+      await _service.addVendor(
         weddingId,
         WeddingVendor(
           id: '',
@@ -465,18 +733,279 @@ class WeddingController extends Notifier<AsyncValue<void>> {
           contactPerson: contactPerson,
           mobile: mobile,
           altMobile: altMobile,
+          whatsapp: whatsapp,
           address: address,
           notes: notes,
+          price: price,
+          advancePaid: advancePaid,
+          balanceAmount: balanceAmount,
+          capacity: capacity,
+          distance: distance,
+          rating: rating,
+          photos: photos,
           visibleTo: visibleTo,
           createdByName: me.name,
           createdAt: DateTime.now(),
         ),
       );
+      await _service.logActivity(weddingId,
+          type: 'vendor',
+          text: '${me.name} added vendor "$name" ($category)',
+          actorName: me.name);
     });
   }
 
   Future<void> deleteVendor(String weddingId, String vendorId) async {
     await _guarded(() => _service.deleteVendor(weddingId, vendorId));
+  }
+
+  /// Uploads one image into a vendor's photo list, returns its URL.
+  Future<String?> uploadVendorPhoto(String weddingId, File file) {
+    return _guarded(() => ref.read(storageServiceProvider)
+        .uploadWeddingDocument(weddingId: weddingId, file: file, isImage: true));
+  }
+
+  /// ⭐ Select Final Vendor of a category (+ Decision History + activity).
+  Future<void> selectFinalVendor(
+      String weddingId, WeddingVendor vendor, WeddingIdentity me,
+      {String reason = ''}) async {
+    await _guarded(() async {
+      final previous = await _service.selectVendor(
+        weddingId,
+        vendorId: vendor.id,
+        category: vendor.category,
+        selectedByName: me.name,
+      );
+      await _service.addDecision(
+        weddingId,
+        WeddingDecision(
+          id: '',
+          field: vendor.category,
+          oldValue: previous?.name ?? '—',
+          newValue: vendor.name,
+          changedBy: me.name,
+          reason: reason,
+          changedAt: DateTime.now(),
+        ),
+      );
+      await _service.logActivity(weddingId,
+          type: 'vendor',
+          text: '${me.name} selected "${vendor.name}" as the final '
+              '${vendor.category} vendor',
+          actorName: me.name);
+    });
+  }
+
+  // ── Expense Tracker ───────────────────────────────────────────────────────
+
+  Future<void> setBudget(String weddingId, num budget) async {
+    await _guarded(() => _service.setBudget(weddingId, budget));
+  }
+
+  Future<void> saveExpense(
+    String weddingId, {
+    String? expenseId,
+    required String title,
+    required String category,
+    required num amount,
+    String paidBy = '',
+    String notes = '',
+    required DateTime date,
+    required WeddingIdentity me,
+  }) async {
+    await _guarded(() async {
+      if (expenseId != null) {
+        await _service.updateExpense(weddingId, expenseId, {
+          'title': title,
+          'category': category,
+          'amount': amount,
+          'paidBy': paidBy,
+          'notes': notes,
+          'date': Timestamp.fromDate(date),
+        });
+        return;
+      }
+      await _service.addExpense(
+        weddingId,
+        WeddingExpense(
+          id: '',
+          title: title,
+          category: category,
+          amount: amount,
+          paidBy: paidBy,
+          notes: notes,
+          date: date,
+          createdByName: me.name,
+        ),
+      );
+      await _service.logActivity(weddingId,
+          type: 'expense',
+          text: '${me.name} added expense "$title" (₹$amount, $category)',
+          actorName: me.name);
+    });
+  }
+
+  Future<void> deleteExpense(String weddingId, String expenseId) async {
+    await _guarded(() => _service.deleteExpense(weddingId, expenseId));
+  }
+
+  // ── Calendar events ───────────────────────────────────────────────────────
+
+  Future<void> saveEvent(
+    String weddingId, {
+    String? eventId,
+    required String title,
+    required String type,
+    required DateTime dateTime,
+    String location = '',
+    String notes = '',
+    List<String> reminders = const [],
+    required WeddingIdentity me,
+  }) async {
+    await _guarded(() async {
+      if (eventId != null) {
+        await _service.updateEvent(weddingId, eventId, {
+          'title': title,
+          'type': type,
+          'dateTime': Timestamp.fromDate(dateTime),
+          'location': location,
+          'notes': notes,
+          'reminders': reminders,
+        });
+        return;
+      }
+      await _service.addEvent(
+        weddingId,
+        WeddingEvent(
+          id: '',
+          title: title,
+          type: type,
+          dateTime: dateTime,
+          location: location,
+          notes: notes,
+          reminders: reminders,
+          createdByName: me.name,
+        ),
+      );
+      await _service.logActivity(weddingId,
+          type: 'calendar',
+          text: '${me.name} added event "$title" '
+              '(${dateTime.day}/${dateTime.month}/${dateTime.year})',
+          actorName: me.name);
+    });
+  }
+
+  Future<void> deleteEvent(String weddingId, String eventId) async {
+    await _guarded(() => _service.deleteEvent(weddingId, eventId));
+  }
+
+  // ── Discussion Notes ──────────────────────────────────────────────────────
+
+  Future<void> saveNote(
+    String weddingId, {
+    String? noteId,
+    required String title,
+    required String body,
+    required String scope,
+    required WeddingIdentity me,
+  }) async {
+    await _guarded(() async {
+      if (noteId != null) {
+        await _service.updateNote(weddingId, noteId, {
+          'title': title,
+          'body': body,
+          'updatedAt': Timestamp.now(),
+        });
+        return;
+      }
+      final now = DateTime.now();
+      await _service.addNote(
+        weddingId,
+        WeddingNote(
+          id: '',
+          title: title,
+          body: body,
+          scope: scope,
+          createdByKey: me.key,
+          createdByName: me.name,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+      await _service.logActivity(weddingId,
+          type: 'note',
+          text: '${me.name} added discussion note "$title"',
+          actorName: me.name,
+          scope: scope);
+    });
+  }
+
+  Future<void> deleteNote(String weddingId, String noteId) async {
+    await _guarded(() => _service.deleteNote(weddingId, noteId));
+  }
+
+  Future<void> moveNoteToShared(
+      String weddingId, WeddingNote note, WeddingIdentity me) async {
+    await _guarded(() async {
+      await _service.updateNote(weddingId, note.id, {'scope': 'shared'});
+      await _service.logActivity(weddingId,
+          type: 'shared',
+          text: '${me.name} moved note "${note.title}" to Shared',
+          actorName: me.name);
+    });
+  }
+
+  // ── Contacts: move to shared ──────────────────────────────────────────────
+
+  Future<void> moveContactToShared(
+      String weddingId, WeddingContact contact, WeddingIdentity me) async {
+    await _guarded(() async {
+      await _service.moveContactToShared(weddingId, contact.id);
+      await _service.logActivity(weddingId,
+          type: 'shared',
+          text: '${me.name} moved contact "${contact.name}" to Shared',
+          actorName: me.name);
+    });
+  }
+
+  // ── Wedding Day Schedule ──────────────────────────────────────────────────
+
+  Future<void> saveScheduleItem(
+    String weddingId, {
+    String? itemId,
+    required int minutes,
+    required String event,
+    String location = '',
+    String person = '',
+    String notes = '',
+  }) async {
+    await _guarded(() {
+      final data = WeddingScheduleItem(
+        id: '',
+        minutes: minutes,
+        event: event,
+        location: location,
+        person: person,
+        notes: notes,
+      );
+      if (itemId != null) {
+        return _service.updateScheduleItem(
+            weddingId, itemId, data.toFirestore());
+      }
+      return _service.addScheduleItem(weddingId, data);
+    });
+  }
+
+  Future<void> deleteScheduleItem(String weddingId, String itemId) async {
+    await _guarded(() => _service.deleteScheduleItem(weddingId, itemId));
+  }
+
+  // ── Family permissions (couple-only) ──────────────────────────────────────
+
+  Future<void> setMemberPermissions(
+      String weddingId, String email, List<String> permissions) async {
+    await _guarded(
+        () => _service.setMemberPermissions(weddingId, email, permissions));
   }
 
   // ── Family Group Chat ─────────────────────────────────────────────────────

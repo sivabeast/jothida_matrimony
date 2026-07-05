@@ -6,22 +6,30 @@ import '../../core/theme/app_colors.dart';
 import '../../models/wedding_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/wedding_provider.dart';
-import 'wedding_gallery_page.dart';
+import 'wedding_calendar_tab.dart';
+import 'wedding_chat_page.dart';
+import 'wedding_dashboard_tab.dart';
+import 'wedding_expenses_page.dart';
+import 'wedding_family_pages.dart';
+import 'wedding_gallery_tab.dart';
+import 'wedding_history_pages.dart';
+import 'wedding_notes_page.dart';
+import 'wedding_search_page.dart';
 import 'wedding_section_pages.dart';
-import 'wedding_shared_tab.dart';
-import 'wedding_side_tab.dart';
+import 'wedding_tasks_tab.dart';
 import 'wedding_vendors_page.dart';
 
-/// The Wedding Workspace — a SEPARATE app experience (own navigation, own
-/// look) unlocked after both partners confirm "Marriage Fixed". The moment a
-/// user lands here they should feel "I am now inside the Wedding Workspace".
+/// The Wedding Workspace — the collaboration platform for the couple and
+/// their invited family members, unlocked after mutual "Marriage Fixed".
 ///
-///   • Bottom navigation: Bride Side · Shared (default) · Groom Side.
-///   • Top menu: Dashboard, Documents, Gallery, Vendors, Family Contacts,
-///     Guest List, Settings, Switch to Matrimony, Logout.
+/// Architecture: THREE independent workspaces — Bride, Shared, Groom — with
+/// strict side visibility: every participant sees only THEIR side + Shared;
+/// the opposite side's private content is never shown. The Bride and Groom
+/// are Super Admins.
 ///
-/// Participants: the couple (bride/groom, matrimony users) and their invited
-/// family members (Gmail-invited Family Users, locked to this workspace).
+///   • Bottom navigation: Dashboard · Tasks · Gallery · Calendar.
+///   • Header: "Bride ❤ Groom" + countdown, Search, and a right-side menu
+///     drawer grouped into Planning / Family / Workspace / Settings.
 class WeddingWorkspaceScreen extends ConsumerStatefulWidget {
   const WeddingWorkspaceScreen({super.key});
 
@@ -33,7 +41,7 @@ class WeddingWorkspaceScreen extends ConsumerStatefulWidget {
 class _WeddingWorkspaceScreenState
     extends ConsumerState<WeddingWorkspaceScreen> {
   bool _sweepRan = false;
-  int _tab = 1; // Shared is the default page.
+  int _tab = 0; // Dashboard is the control center and opening tab.
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +55,6 @@ class _WeddingWorkspaceScreenState
         body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
       ),
       error: (e, _) => _messageScaffold(
-        isFamily: isFamily,
         icon: Icons.cloud_off_outlined,
         title: 'Could not load the Wedding Workspace',
         subtitle: 'Please check your connection and try again.\n$e',
@@ -55,7 +62,6 @@ class _WeddingWorkspaceScreenState
       data: (wedding) {
         if (wedding == null || !wedding.isFixed) {
           return _messageScaffold(
-            isFamily: isFamily,
             icon: Icons.lock_outline,
             title: 'Wedding Workspace is locked',
             subtitle: wedding == null
@@ -81,7 +87,6 @@ class _WeddingWorkspaceScreenState
         final identity = ref.watch(weddingIdentityProvider(wedding));
         if (identity == null) {
           return _messageScaffold(
-            isFamily: isFamily,
             icon: Icons.no_accounts_outlined,
             title: "You don't have access.",
             subtitle:
@@ -92,13 +97,15 @@ class _WeddingWorkspaceScreenState
 
         return Scaffold(
           backgroundColor: AppColors.scaffoldBg,
-          appBar: _buildAppBar(wedding, identity, isFamily),
+          appBar: _buildAppBar(wedding, identity),
+          endDrawer: _buildMenuDrawer(wedding, identity, isFamily),
           body: IndexedStack(
             index: _tab,
             children: [
-              WeddingSideTab(side: 'bride', wedding: wedding, identity: identity),
-              WeddingSharedTab(wedding: wedding, identity: identity),
-              WeddingSideTab(side: 'groom', wedding: wedding, identity: identity),
+              WeddingDashboardTab(wedding: wedding, identity: identity),
+              WeddingTasksTab(wedding: wedding, identity: identity),
+              WeddingGalleryTab(wedding: wedding, identity: identity),
+              WeddingCalendarTab(wedding: wedding, identity: identity),
             ],
           ),
           bottomNavigationBar: BottomNavigationBar(
@@ -112,13 +119,21 @@ class _WeddingWorkspaceScreenState
                 const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
             items: const [
               BottomNavigationBarItem(
-                  icon: Text('👰', style: TextStyle(fontSize: 22)),
-                  label: 'Bride Side'),
+                  icon: Icon(Icons.dashboard_outlined),
+                  activeIcon: Icon(Icons.dashboard),
+                  label: 'Dashboard'),
               BottomNavigationBarItem(
-                  icon: Icon(Icons.favorite), label: 'Shared'),
+                  icon: Icon(Icons.task_alt_outlined),
+                  activeIcon: Icon(Icons.task_alt),
+                  label: 'Tasks'),
               BottomNavigationBarItem(
-                  icon: Text('🤵', style: TextStyle(fontSize: 22)),
-                  label: 'Groom Side'),
+                  icon: Icon(Icons.photo_library_outlined),
+                  activeIcon: Icon(Icons.photo_library),
+                  label: 'Gallery'),
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.calendar_month_outlined),
+                  activeIcon: Icon(Icons.calendar_month),
+                  label: 'Calendar'),
             ],
           ),
         );
@@ -126,97 +141,208 @@ class _WeddingWorkspaceScreenState
     );
   }
 
-  // ── App bar + top menu ────────────────────────────────────────────────────
+  // ── Header ────────────────────────────────────────────────────────────────
 
   PreferredSizeWidget _buildAppBar(
-      WeddingModel wedding, WeddingIdentity identity, bool isFamily) {
-    final groom = wedding.coupleIds
-        .where((u) => wedding.sideOf(u) == 'groom')
-        .map(wedding.nameOf)
-        .join();
+      WeddingModel wedding, WeddingIdentity identity) {
     final bride = wedding.coupleIds
         .where((u) => wedding.sideOf(u) == 'bride')
         .map(wedding.nameOf)
         .join();
+    final groom = wedding.coupleIds
+        .where((u) => wedding.sideOf(u) == 'groom')
+        .map(wedding.nameOf)
+        .join();
+    final date = wedding.weddingDate;
+    final remaining = wedding.daysRemaining;
+    final dateLine = date == null
+        ? (wedding.isPostponed ? 'Postponed · new date pending' : null)
+        : '${date.day}/${date.month}/${date.year}'
+            '${remaining != null && remaining > 0 ? ' · $remaining days to go' : ''}'
+            '${wedding.isPostponed ? ' · Postponed' : ''}';
 
     return AppBar(
       backgroundColor: AppColors.primary,
       foregroundColor: Colors.white,
       elevation: 0,
+      automaticallyImplyLeading: false,
+      titleSpacing: 16,
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Wedding Workspace',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.bold)),
           Text(
-            '$groom ❤ $bride'
-            '${wedding.isPostponed ? '  ·  Postponed' : ''}',
+            '$bride ❤️ $groom',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+                fontSize: 15.5,
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.bold),
+          ),
+          Text(
+            dateLine == null
+                ? 'Wedding Workspace'
+                : 'Wedding Workspace · $dateLine',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-                fontSize: 11.5, color: Colors.white.withOpacity(0.85)),
+                fontSize: 10.5, color: Colors.white.withOpacity(0.85)),
           ),
         ],
       ),
       actions: [
-        PopupMenuButton<String>(
-          tooltip: 'Menu',
-          icon: const Icon(Icons.menu),
-          onSelected: (v) => _onMenu(v, wedding, identity),
-          itemBuilder: (_) => [
-            _menuItem('dashboard', Icons.dashboard_outlined, 'Dashboard'),
-            _menuItem('documents', Icons.folder_outlined, 'Documents'),
-            _menuItem('gallery', Icons.photo_library_outlined, 'Gallery'),
-            _menuItem('vendors', Icons.storefront_outlined, 'Vendors'),
-            _menuItem('contacts', Icons.contacts_outlined, 'Family Contacts'),
-            _menuItem('guests', Icons.groups_outlined, 'Guest List'),
-            _menuItem('settings', Icons.settings_outlined, 'Settings'),
-            if (identity.isCouple && !isFamily)
-              _menuItem('switch', Icons.swap_horiz, 'Switch to Matrimony'),
-            _menuItem('logout', Icons.logout, 'Logout'),
-          ],
+        IconButton(
+          tooltip: 'Search',
+          icon: const Icon(Icons.search),
+          onPressed: () => _push(const WeddingSearchPage()),
         ),
+        Builder(
+          builder: (ctx) => IconButton(
+            tooltip: 'Menu',
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(ctx).openEndDrawer(),
+          ),
+        ),
+        const SizedBox(width: 4),
       ],
     );
   }
 
-  PopupMenuItem<String> _menuItem(String value, IconData icon, String label) {
-    return PopupMenuItem(
-      value: value,
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: AppColors.primary),
-          const SizedBox(width: 12),
-          Text(label, style: const TextStyle(fontSize: 13.5)),
-        ],
+  // ── Right-side menu drawer ────────────────────────────────────────────────
+
+  Widget _buildMenuDrawer(
+      WeddingModel wedding, WeddingIdentity identity, bool isFamily) {
+    return Drawer(
+      backgroundColor: Colors.white,
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Participant header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration:
+                  const BoxDecoration(gradient: AppColors.primaryGradient),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    child: Text(
+                      identity.name.isNotEmpty
+                          ? identity.name[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(identity.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15)),
+                  Text(
+                    identity.isSuperAdmin
+                        ? '${identity.side == 'groom' ? 'Groom' : 'Bride'} · Super Admin'
+                        : '${identity.sideLabel} · Family Member',
+                    style: TextStyle(
+                        color: Colors.white.withOpacity(0.85), fontSize: 11.5),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                children: [
+                  _menuGroup('Planning'),
+                  _menuTile(Icons.storefront_outlined, 'Vendor Management',
+                      () => _push(const WeddingVendorsPage())),
+                  _menuTile(Icons.account_balance_wallet_outlined,
+                      'Expense Tracker',
+                      () => _push(const WeddingExpensesPage())),
+                  _menuTile(Icons.sticky_note_2_outlined, 'Discussion Notes',
+                      () => _push(const WeddingNotesPage())),
+
+                  _menuGroup('Family'),
+                  _menuTile(Icons.family_restroom_outlined, 'Family Members',
+                      () => _push(const WeddingFamilyMembersPage())),
+                  if (identity.isSuperAdmin)
+                    _menuTile(Icons.admin_panel_settings_outlined,
+                        'Permissions',
+                        () => _push(const WeddingPermissionsPage())),
+                  _menuTile(Icons.contacts_outlined, 'Shared Contacts',
+                      () => _push(const WeddingContactsPage(
+                          sideFilter: null, sharedOnly: true))),
+                  _menuTile(Icons.forum_outlined, 'Family Chat',
+                      () => _push(const WeddingChatPage())),
+                  _menuTile(Icons.groups_outlined, 'Guest List',
+                      () => _push(const WeddingGuestsPage())),
+
+                  _menuGroup('Workspace'),
+                  _menuTile(Icons.history_outlined, 'Activity Log',
+                      () => _push(const WeddingActivityLogPage())),
+                  _menuTile(Icons.published_with_changes_outlined,
+                      'Decision History',
+                      () => _push(const WeddingDecisionHistoryPage())),
+                  _menuTile(Icons.notifications_outlined, 'Notifications',
+                      () => _push(const WeddingNotificationsPage())),
+
+                  _menuGroup('Settings'),
+                  _menuTile(Icons.settings_outlined, 'Workspace Settings',
+                      () => _push(const WeddingSettingsPage())),
+                  _menuTile(Icons.person_outline, 'Profile',
+                      () => _push(const WeddingProfilePage())),
+                  if (identity.isCouple && !isFamily)
+                    _menuTile(Icons.swap_horiz, 'Switch to Matrimony',
+                        _switchToMatrimony),
+                  _menuTile(Icons.logout, 'Logout', _logout,
+                      color: AppColors.error),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  void _onMenu(String value, WeddingModel wedding, WeddingIdentity identity) {
-    switch (value) {
-      case 'dashboard':
-        _push(const WeddingDashboardPage());
-      case 'documents':
-        _push(const WeddingDocumentsPage(scope: null));
-      case 'gallery':
-        _push(const WeddingGalleryPage(scope: null));
-      case 'vendors':
-        _push(const WeddingVendorsPage());
-      case 'contacts':
-        _push(const WeddingContactsPage(sideFilter: null));
-      case 'guests':
-        _push(const WeddingGuestsPage());
-      case 'settings':
-        _push(const WeddingSettingsPage());
-      case 'switch':
-        _switchToMatrimony();
-      case 'logout':
-        _logout();
-    }
+  Widget _menuGroup(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 4),
+      child: Text(title.toUpperCase(),
+          style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+              color: Colors.grey[500])),
+    );
+  }
+
+  Widget _menuTile(IconData icon, String label, VoidCallback onTap,
+      {Color? color}) {
+    return ListTile(
+      dense: true,
+      visualDensity: const VisualDensity(vertical: -1),
+      leading: Icon(icon, size: 21, color: color ?? AppColors.primary),
+      title: Text(label,
+          style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+              color: color ?? Colors.black87)),
+      onTap: () {
+        Navigator.of(context).pop(); // close the drawer first
+        onTap();
+      },
+    );
   }
 
   /// Sub-pages use a plain Navigator push so the go_router location stays on
@@ -262,7 +388,6 @@ class _WeddingWorkspaceScreenState
   // ── Locked / error states ─────────────────────────────────────────────────
 
   Scaffold _messageScaffold({
-    required bool isFamily,
     required IconData icon,
     required String title,
     required String subtitle,
@@ -321,3 +446,10 @@ class _WeddingWorkspaceScreenState
 /// Shared "who did what" caption used across workspace pages.
 String weddingByLine(String name, DateTime at) =>
     '$name · ${at.day}/${at.month}/${at.year}';
+
+/// Scope label helper shared by workspace modules.
+String weddingScopeLabel(String scope) => switch (scope) {
+      'bride' => 'Bride',
+      'groom' => 'Groom',
+      _ => 'Shared',
+    };

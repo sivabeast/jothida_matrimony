@@ -135,12 +135,12 @@ class WeddingService {
       });
 
   /// Cancels the marriage PERMANENTLY: deletes every workspace subcollection
-  /// (checklist, documents, contacts, guests, gallery, vendors, chat) and
-  /// then the wedding document itself. Irreversible.
+  /// and then the wedding document itself. Irreversible.
   Future<void> cancelWedding(String weddingId) async {
     const sections = [
       'checklist', 'documents', 'contacts', 'guests',
-      'gallery', 'vendors', 'chat',
+      'gallery', 'vendors', 'chat', 'galleryCategories', 'gallerySeen',
+      'expenses', 'events', 'notes', 'decisions', 'activity', 'schedule',
     ];
     for (final section in sections) {
       await _deleteCollection(_doc(weddingId).collection(section));
@@ -283,10 +283,12 @@ class WeddingService {
       _checklist(weddingId).doc(itemId).delete();
 
   Future<void> setChecklistStatus(
-          String weddingId, String itemId, bool completed) =>
+          String weddingId, String itemId, bool completed,
+          {String completedByName = ''}) =>
       _checklist(weddingId).doc(itemId).update({
         'status': completed ? 'completed' : 'pending',
         'completedAt': completed ? FieldValue.serverTimestamp() : null,
+        'completedByName': completed ? completedByName : '',
       });
 
   /// Assigns (or re-assigns) an item to a workspace participant. The assignee
@@ -427,4 +429,286 @@ class WeddingService {
 
   Future<void> sendChatMessage(String weddingId, WeddingChatMessage msg) =>
       _chat(weddingId).add(msg.toFirestore());
+
+  // ── Gallery v2: categories, ownership, votes, selection, move-to-shared ───
+
+  CollectionReference<Map<String, dynamic>> _galleryCategories(
+          String weddingId) =>
+      _doc(weddingId).collection('galleryCategories');
+
+  Stream<List<WeddingGalleryCategory>> watchGalleryCategories(
+          String weddingId) =>
+      _galleryCategories(weddingId)
+          .orderBy('createdAt')
+          .snapshots()
+          .map((s) =>
+              s.docs.map(WeddingGalleryCategory.fromFirestore).toList());
+
+  Future<void> addGalleryCategory(
+          String weddingId, WeddingGalleryCategory category) =>
+      _galleryCategories(weddingId).add(category.toFirestore());
+
+  Future<void> updatePhoto(
+          String weddingId, String photoId, Map<String, dynamic> data) =>
+      _gallery(weddingId).doc(photoId).update(data);
+
+  /// Approve / reject vote by [participantKey]; vote == null removes it.
+  Future<void> votePhoto(String weddingId, String photoId,
+      {required String participantKey, String? vote}) {
+    final key = 'votes.${weddingFieldKey(participantKey)}';
+    return _gallery(weddingId)
+        .doc(photoId)
+        .update({key: vote ?? FieldValue.delete()});
+  }
+
+  Future<void> commentPhoto(String weddingId, String photoId,
+          {required String byName, required String text}) =>
+      _gallery(weddingId).doc(photoId).update({
+        'comments': FieldValue.arrayUnion([
+          {'byName': byName, 'text': text, 'at': Timestamp.now()},
+        ]),
+      });
+
+  /// Marks [photoId] as the ⭐ Selected item of its category+scope,
+  /// unselecting any previous selection. Returns the previously selected
+  /// photo (for Decision History), if any.
+  Future<WeddingPhoto?> selectPhoto(
+    String weddingId, {
+    required String photoId,
+    required String album,
+    required String scope,
+    required String selectedByName,
+  }) async {
+    final prevSnap = await _gallery(weddingId)
+        .where('album', isEqualTo: album)
+        .where('scope', isEqualTo: scope)
+        .where('isSelected', isEqualTo: true)
+        .get();
+    final batch = _db.batch();
+    WeddingPhoto? previous;
+    for (final d in prevSnap.docs) {
+      if (d.id == photoId) continue;
+      previous = WeddingPhoto.fromFirestore(d);
+      batch.update(d.reference,
+          {'isSelected': false, 'selectedBy': '', 'selectedAt': null});
+    }
+    batch.update(_gallery(weddingId).doc(photoId), {
+      'isSelected': true,
+      'selectedBy': selectedByName,
+      'selectedAt': FieldValue.serverTimestamp(),
+    });
+    await batch.commit();
+    return previous;
+  }
+
+  /// Moves [photoIds] into the Shared gallery (same category). Batched.
+  Future<void> movePhotosToShared(String weddingId, List<String> photoIds) async {
+    final batch = _db.batch();
+    for (final id in photoIds) {
+      // A side-private ⭐ selection does not carry over to Shared.
+      batch.update(_gallery(weddingId).doc(id), {
+        'scope': 'shared',
+        'isSelected': false,
+        'selectedBy': '',
+        'selectedAt': null,
+      });
+    }
+    await batch.commit();
+  }
+
+  // ── Gallery "new uploads" seen-tracking ───────────────────────────────────
+
+  DocumentReference<Map<String, dynamic>> _seenDoc(
+          String weddingId, String participantKey) =>
+      _doc(weddingId)
+          .collection('gallerySeen')
+          .doc(weddingFieldKey(participantKey));
+
+  /// category-key → last time this participant opened that category.
+  Stream<Map<String, DateTime>> watchGallerySeen(
+          String weddingId, String participantKey) =>
+      _seenDoc(weddingId, participantKey).snapshots().map((d) {
+        final seen = (d.data()?['seen'] as Map<String, dynamic>? ?? const {});
+        return seen.map((k, v) => MapEntry(k, (v as Timestamp).toDate()));
+      });
+
+  Future<void> markCategorySeen(
+          String weddingId, String participantKey, String category) =>
+      _seenDoc(weddingId, participantKey).set({
+        'seen': {weddingFieldKey(category): FieldValue.serverTimestamp()},
+      }, SetOptions(merge: true));
+
+  // ── Vendors: final selection ──────────────────────────────────────────────
+
+  /// Marks [vendorId] as the ⭐ Selected (final) vendor of [category],
+  /// unselecting any previous one. Returns the previously selected vendor.
+  Future<WeddingVendor?> selectVendor(
+    String weddingId, {
+    required String vendorId,
+    required String category,
+    required String selectedByName,
+  }) async {
+    final prevSnap = await _vendors(weddingId)
+        .where('category', isEqualTo: category)
+        .where('isSelected', isEqualTo: true)
+        .get();
+    final batch = _db.batch();
+    WeddingVendor? previous;
+    for (final d in prevSnap.docs) {
+      if (d.id == vendorId) continue;
+      previous = WeddingVendor.fromFirestore(d);
+      batch.update(d.reference,
+          {'isSelected': false, 'selectedBy': '', 'selectedAt': null});
+    }
+    batch.update(_vendors(weddingId).doc(vendorId), {
+      'isSelected': true,
+      'selectedBy': selectedByName,
+      'selectedAt': FieldValue.serverTimestamp(),
+    });
+    await batch.commit();
+    return previous;
+  }
+
+  // ── Contacts: move to shared ──────────────────────────────────────────────
+
+  Future<void> moveContactToShared(String weddingId, String contactId) =>
+      _contacts(weddingId).doc(contactId).update({'scope': 'shared'});
+
+  // ── Expense Tracker ───────────────────────────────────────────────────────
+
+  CollectionReference<Map<String, dynamic>> _expenses(String weddingId) =>
+      _doc(weddingId).collection('expenses');
+
+  Stream<List<WeddingExpense>> watchExpenses(String weddingId) =>
+      _expenses(weddingId).orderBy('date', descending: true).snapshots().map(
+          (s) => s.docs.map(WeddingExpense.fromFirestore).toList());
+
+  Future<void> addExpense(String weddingId, WeddingExpense expense) =>
+      _expenses(weddingId).add(expense.toFirestore());
+
+  Future<void> updateExpense(
+          String weddingId, String expenseId, Map<String, dynamic> data) =>
+      _expenses(weddingId).doc(expenseId).update(data);
+
+  Future<void> deleteExpense(String weddingId, String expenseId) =>
+      _expenses(weddingId).doc(expenseId).delete();
+
+  Future<void> setBudget(String weddingId, num budget) =>
+      _doc(weddingId).update({'totalBudget': budget});
+
+  // ── Calendar events ───────────────────────────────────────────────────────
+
+  CollectionReference<Map<String, dynamic>> _events(String weddingId) =>
+      _doc(weddingId).collection('events');
+
+  Stream<List<WeddingEvent>> watchEvents(String weddingId) =>
+      _events(weddingId).orderBy('dateTime').snapshots().map(
+          (s) => s.docs.map(WeddingEvent.fromFirestore).toList());
+
+  Future<void> addEvent(String weddingId, WeddingEvent event) =>
+      _events(weddingId).add(event.toFirestore());
+
+  Future<void> updateEvent(
+          String weddingId, String eventId, Map<String, dynamic> data) =>
+      _events(weddingId).doc(eventId).update(data);
+
+  Future<void> deleteEvent(String weddingId, String eventId) =>
+      _events(weddingId).doc(eventId).delete();
+
+  // ── Discussion Notes ──────────────────────────────────────────────────────
+
+  CollectionReference<Map<String, dynamic>> _notes(String weddingId) =>
+      _doc(weddingId).collection('notes');
+
+  Stream<List<WeddingNote>> watchNotes(String weddingId) =>
+      _notes(weddingId).orderBy('updatedAt', descending: true).snapshots().map(
+          (s) => s.docs.map(WeddingNote.fromFirestore).toList());
+
+  Future<void> addNote(String weddingId, WeddingNote note) =>
+      _notes(weddingId).add(note.toFirestore());
+
+  Future<void> updateNote(
+          String weddingId, String noteId, Map<String, dynamic> data) =>
+      _notes(weddingId).doc(noteId).update(data);
+
+  Future<void> deleteNote(String weddingId, String noteId) =>
+      _notes(weddingId).doc(noteId).delete();
+
+  // ── Decision History ──────────────────────────────────────────────────────
+
+  CollectionReference<Map<String, dynamic>> _decisions(String weddingId) =>
+      _doc(weddingId).collection('decisions');
+
+  Stream<List<WeddingDecision>> watchDecisions(String weddingId) =>
+      _decisions(weddingId)
+          .orderBy('changedAt', descending: true)
+          .snapshots()
+          .map((s) => s.docs.map(WeddingDecision.fromFirestore).toList());
+
+  Future<void> addDecision(String weddingId, WeddingDecision decision) =>
+      _decisions(weddingId).add(decision.toFirestore());
+
+  // ── Activity Log (also feeds Notifications) ──────────────────────────────
+
+  CollectionReference<Map<String, dynamic>> _activity(String weddingId) =>
+      _doc(weddingId).collection('activity');
+
+  Stream<List<WeddingActivity>> watchActivity(String weddingId,
+          {int limit = 200}) =>
+      _activity(weddingId)
+          .orderBy('at', descending: true)
+          .limit(limit)
+          .snapshots()
+          .map((s) => s.docs.map(WeddingActivity.fromFirestore).toList());
+
+  /// Best-effort — an activity write must never fail the primary action.
+  Future<void> logActivity(
+    String weddingId, {
+    required String type,
+    required String text,
+    required String actorName,
+    String scope = 'shared',
+  }) async {
+    try {
+      await _activity(weddingId).add(WeddingActivity(
+        id: '',
+        type: type,
+        text: text,
+        actorName: actorName,
+        scope: scope,
+        at: DateTime.now(),
+      ).toFirestore());
+    } catch (e) {
+      debugPrint('[WeddingService] logActivity failed (non-fatal): $e');
+    }
+  }
+
+  // ── Wedding Day Schedule ──────────────────────────────────────────────────
+
+  CollectionReference<Map<String, dynamic>> _schedule(String weddingId) =>
+      _doc(weddingId).collection('schedule');
+
+  Stream<List<WeddingScheduleItem>> watchSchedule(String weddingId) =>
+      _schedule(weddingId).orderBy('minutes').snapshots().map(
+          (s) => s.docs.map(WeddingScheduleItem.fromFirestore).toList());
+
+  Future<void> addScheduleItem(String weddingId, WeddingScheduleItem item) =>
+      _schedule(weddingId).add(item.toFirestore());
+
+  Future<void> updateScheduleItem(
+          String weddingId, String itemId, Map<String, dynamic> data) =>
+      _schedule(weddingId).doc(itemId).update(data);
+
+  Future<void> deleteScheduleItem(String weddingId, String itemId) =>
+      _schedule(weddingId).doc(itemId).delete();
+
+  // ── Family permissions ────────────────────────────────────────────────────
+
+  /// Saves the permission list of one family member (couple-only action).
+  Future<void> setMemberPermissions(
+          String weddingId, String email, List<String> permissions) =>
+      _doc(weddingId).update({
+        'memberPermissions.${weddingFieldKey(email.toLowerCase())}':
+            permissions,
+      });
 }

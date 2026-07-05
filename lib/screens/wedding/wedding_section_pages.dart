@@ -5,11 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/wedding_model.dart';
 import '../../providers/wedding_provider.dart';
-import 'wedding_checklist_tab.dart';
 import 'wedding_contacts_tab.dart';
-import 'wedding_documents_tab.dart';
 import 'wedding_guests_tab.dart';
-import 'wedding_overview_tab.dart';
 
 /// Resolves the LIVE wedding + the signed-in participant's identity and
 /// hosts a workspace sub-page under its own AppBar. Every page pushed from
@@ -41,8 +38,7 @@ class WeddingPageScaffold extends ConsumerWidget {
         error: (e, _) => _message('Could not load this page.\n$e'),
         data: (wedding) {
           if (wedding == null || !wedding.isFixed) {
-            return _message(
-                'This Wedding Workspace is no longer available.');
+            return _message('This Wedding Workspace is no longer available.');
           }
           final identity = ref.watch(weddingIdentityProvider(wedding));
           if (identity == null) {
@@ -66,61 +62,29 @@ class WeddingPageScaffold extends ConsumerWidget {
 
 // ── Simple wrapped pages ──────────────────────────────────────────────────────
 
-/// Checklist page. [scope] 'shared' | 'bride' | 'groom' | null (= everything).
-class WeddingChecklistPage extends StatelessWidget {
-  final String? scope;
-  const WeddingChecklistPage({super.key, required this.scope});
-
-  @override
-  Widget build(BuildContext context) {
-    return WeddingPageScaffold(
-      title: switch (scope) {
-        'bride' => 'Bride Checklist',
-        'groom' => 'Groom Checklist',
-        'shared' => 'Shared Checklist',
-        _ => 'Wedding Checklist',
-      },
-      builder: (_, __, wedding, identity) =>
-          WeddingChecklistTab(wedding: wedding, identity: identity, scope: scope),
-    );
-  }
-}
-
-/// Documents page. [scope] 'shared' | 'bride' | 'groom' | null (= everything).
-class WeddingDocumentsPage extends StatelessWidget {
-  final String? scope;
-  const WeddingDocumentsPage({super.key, required this.scope});
-
-  @override
-  Widget build(BuildContext context) {
-    return WeddingPageScaffold(
-      title: switch (scope) {
-        'bride' => 'Bride Documents',
-        'groom' => 'Groom Documents',
-        'shared' => 'Shared Documents',
-        _ => 'Wedding Documents',
-      },
-      builder: (_, __, wedding, identity) =>
-          WeddingDocumentsTab(wedding: wedding, identity: identity, scope: scope),
-    );
-  }
-}
-
-/// Family Contacts page. [sideFilter] 'bride' | 'groom' | null (= both sides).
+/// Family Contacts page. [sideFilter] narrows to one side; [sharedOnly]
+/// shows ONLY contacts that were moved to Shared (menu → Shared Contacts).
 class WeddingContactsPage extends StatelessWidget {
   final String? sideFilter;
-  const WeddingContactsPage({super.key, required this.sideFilter});
+  final bool sharedOnly;
+  const WeddingContactsPage(
+      {super.key, required this.sideFilter, this.sharedOnly = false});
 
   @override
   Widget build(BuildContext context) {
     return WeddingPageScaffold(
-      title: switch (sideFilter) {
-        'bride' => 'Bride Contacts',
-        'groom' => 'Groom Contacts',
-        _ => 'Family Contacts',
-      },
+      title: sharedOnly
+          ? 'Shared Contacts'
+          : switch (sideFilter) {
+              'bride' => 'Bride Contacts',
+              'groom' => 'Groom Contacts',
+              _ => 'Family Contacts',
+            },
       builder: (_, __, wedding, identity) => WeddingContactsTab(
-          wedding: wedding, identity: identity, sideFilter: sideFilter),
+          wedding: wedding,
+          identity: identity,
+          sideFilter: sideFilter,
+          sharedOnly: sharedOnly),
     );
   }
 }
@@ -134,21 +98,6 @@ class WeddingGuestsPage extends StatelessWidget {
       title: 'Guest List',
       builder: (_, __, wedding, identity) =>
           WeddingGuestsTab(wedding: wedding, identity: identity),
-    );
-  }
-}
-
-/// Dashboard (menu): couple card, countdown, preparation progress, the
-/// Budget Tracker "Coming Soon" tile and family-member invitations.
-class WeddingDashboardPage extends StatelessWidget {
-  const WeddingDashboardPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return WeddingPageScaffold(
-      title: 'Dashboard',
-      builder: (_, __, wedding, identity) =>
-          WeddingOverviewTab(wedding: wedding, identity: identity),
     );
   }
 }
@@ -167,7 +116,7 @@ class WeddingSettingsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return WeddingPageScaffold(
-      title: 'Settings',
+      title: 'Workspace Settings',
       builder: (context, ref, wedding, identity) {
         final date = wedding.weddingDate;
         return ListView(
@@ -191,8 +140,8 @@ class WeddingSettingsPage extends ConsumerWidget {
                 color: AppColors.warning,
                 title: 'Postpone Wedding',
                 subtitle: 'The wedding is delayed. Everything stays active — '
-                    'checklist, documents, vendors, chat, gallery, guests and '
-                    'contacts. Only the wedding date changes.',
+                    'tasks, galleries, vendors, chat, guests and contacts. '
+                    'Only the wedding date changes.',
                 onTap: () => _postpone(context, ref, wedding),
               ),
               const SizedBox(height: 14),
@@ -337,9 +286,9 @@ class WeddingSettingsPage extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Postpone Wedding'),
         content: const Text(
-            'The wedding status becomes "Postponed". Your checklist, '
-            'documents, vendors, family chat, gallery, guest list and family '
-            'contacts all remain active — only the wedding date changes.\n\n'
+            'The wedding status becomes "Postponed". Your tasks, galleries, '
+            'vendors, family chat, guest list and family contacts all remain '
+            'active — only the wedding date changes.\n\n'
             'Pick the new date now, or decide it later.'),
         actions: [
           TextButton(
@@ -396,9 +345,9 @@ class WeddingSettingsPage extends ConsumerWidget {
         title: const Text('Cancel Marriage?'),
         content: const Text(
             'This action will permanently remove all Wedding Workspace '
-            'data.\n\nThe workspace, checklist, documents, vendors, gallery, '
-            'guest list, family contacts and family chat will ALL be deleted '
-            'for everyone. This cannot be undone.'),
+            'data.\n\nThe workspace, tasks, galleries, vendors, expenses, '
+            'calendar, notes, guest list, family contacts and family chat '
+            'will ALL be deleted for everyone. This cannot be undone.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -432,5 +381,54 @@ class WeddingSettingsPage extends ConsumerWidget {
         content:
             Text('Marriage cancelled — all Wedding Workspace data removed.')));
     router.go('/home');
+  }
+}
+
+// ── Shared widgets ────────────────────────────────────────────────────────────
+
+/// Bride/Groom side selector used inside form sheets (contacts, guests,
+/// family invitations).
+class SideToggleInline extends StatelessWidget {
+  final String side;
+  final ValueChanged<String> onChanged;
+  const SideToggleInline(
+      {super.key, required this.side, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    Widget chip(String value, String label) {
+      final active = side == value;
+      return Expanded(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () => onChanged(value),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: active
+                  ? AppColors.primary.withOpacity(0.1)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                  color: active ? AppColors.primary : Colors.grey.shade300),
+            ),
+            child: Text(label,
+                style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: active ? AppColors.primary : Colors.grey[600])),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        chip('bride', 'Bride Side'),
+        const SizedBox(width: 10),
+        chip('groom', 'Groom Side'),
+      ],
+    );
   }
 }

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/wedding_model.dart';
 import '../../providers/wedding_provider.dart';
-import 'wedding_overview_tab.dart' show SideToggleInline;
+import 'wedding_section_pages.dart' show SideToggleInline;
 import 'wedding_workspace_screen.dart' show weddingByLine;
 
 /// Guest List: bride-side and groom-side guest entries that any workspace

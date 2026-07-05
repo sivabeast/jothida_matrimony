@@ -495,7 +495,7 @@
     "semantic_hash": ""
   },
   "android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java": {
-    "mtime": 1783186939.558357,
+    "mtime": 1783244114.6437297,
     "ast_hash": "957f3f4fa91953a90f2d9690762329f7",
     "semantic_hash": ""
   },
@@ -1635,13 +1635,13 @@
     "semantic_hash": ""
   },
   "lib/models/wedding_model.dart": {
-    "mtime": 1783186104.7246819,
-    "ast_hash": "7b3028789ff8ba8cb1bd99ce3ce0f664",
+    "mtime": 1783221900.0216856,
+    "ast_hash": "ec0f0542d775c20edcc118729c3b64e7",
     "semantic_hash": ""
   },
   "lib/providers/wedding_provider.dart": {
-    "mtime": 1783186222.7572773,
-    "ast_hash": "e6dcb30019b15e3c8395b9e094f69779",
+    "mtime": 1783243965.9384918,
+    "ast_hash": "18cb8b379d3369baa14b586e89a2f381",
     "semantic_hash": ""
   },
   "lib/screens/muhurtham/muhurtham_calendar_screen.dart": {
@@ -1649,39 +1649,24 @@
     "ast_hash": "50dddcac201eac327fd3064c465fd7d9",
     "semantic_hash": ""
   },
-  "lib/screens/wedding/wedding_checklist_tab.dart": {
-    "mtime": 1783186804.4813623,
-    "ast_hash": "0cce27d2911f2d0004a35827165133ce",
-    "semantic_hash": ""
-  },
   "lib/screens/wedding/wedding_contacts_tab.dart": {
-    "mtime": 1783186861.0508165,
-    "ast_hash": "aa649b4c9e17297a8aac80b8a1a67e74",
-    "semantic_hash": ""
-  },
-  "lib/screens/wedding/wedding_documents_tab.dart": {
-    "mtime": 1783186832.5013752,
-    "ast_hash": "12df63244509a7ccf4a94cf539ec34a2",
+    "mtime": 1783243953.9776871,
+    "ast_hash": "61f52aa980a35cf8790bf36a5c9a4cbf",
     "semantic_hash": ""
   },
   "lib/screens/wedding/wedding_guests_tab.dart": {
-    "mtime": 1783166888.8870144,
-    "ast_hash": "7fe120872e3e4827e002edcaaee6fb05",
-    "semantic_hash": ""
-  },
-  "lib/screens/wedding/wedding_overview_tab.dart": {
-    "mtime": 1783166580.0104237,
-    "ast_hash": "839b23983cf0e28cc3da93bc5da3c972",
+    "mtime": 1783243993.287727,
+    "ast_hash": "6fe79b6980018b1a61087fd71cdd30b5",
     "semantic_hash": ""
   },
   "lib/screens/wedding/wedding_workspace_screen.dart": {
-    "mtime": 1783186889.5757782,
-    "ast_hash": "f76c01fd9f9079a39ce6c749df655ff7",
+    "mtime": 1783222170.9875352,
+    "ast_hash": "582af6c95cf6cb762916789a313b69a2",
     "semantic_hash": ""
   },
   "lib/services/firebase/wedding_service.dart": {
-    "mtime": 1783186145.67743,
-    "ast_hash": "946f7a902a04b85b212571ddf75f0545",
+    "mtime": 1783221976.5742471,
+    "ast_hash": "89f2e5b1a8b26bc3b64ab900d0dd7bf7",
     "semantic_hash": ""
   },
   "lib/widgets/common/payroll_history_tile.dart": {
@@ -1694,29 +1679,59 @@
     "ast_hash": "6c28e7cb4bd1031711d8bdbf6f72bbce",
     "semantic_hash": ""
   },
-  "lib/screens/wedding/wedding_gallery_page.dart": {
-    "mtime": 1783186664.110464,
-    "ast_hash": "9d405a1c41869b8c24ff5811c1ddb972",
-    "semantic_hash": ""
-  },
   "lib/screens/wedding/wedding_section_pages.dart": {
-    "mtime": 1783186545.1763186,
-    "ast_hash": "7825401e5f200f03057d25583a392311",
-    "semantic_hash": ""
-  },
-  "lib/screens/wedding/wedding_shared_tab.dart": {
-    "mtime": 1783186583.478624,
-    "ast_hash": "97e79e58f0843eefc51e5737dc17f900",
-    "semantic_hash": ""
-  },
-  "lib/screens/wedding/wedding_side_tab.dart": {
-    "mtime": 1783186608.8119872,
-    "ast_hash": "22751b67ecd63fd8871ecb6df25e004b",
+    "mtime": 1783223064.3041801,
+    "ast_hash": "77a59ef461f44cd1bdf200b9e7e9b658",
     "semantic_hash": ""
   },
   "lib/screens/wedding/wedding_vendors_page.dart": {
-    "mtime": 1783186782.9187057,
-    "ast_hash": "45b1958c8726464c1cf351543665cae9",
+    "mtime": 1783223009.1976423,
+    "ast_hash": "2857075d16c4e4d26df2d42a2a6de32d",
+    "semantic_hash": ""
+  },
+  "lib/screens/wedding/wedding_calendar_tab.dart": {
+    "mtime": 1783222539.7369282,
+    "ast_hash": "debc6aa74550edf293cb1a0b11b60cdf",
+    "semantic_hash": ""
+  },
+  "lib/screens/wedding/wedding_dashboard_tab.dart": {
+    "mtime": 1783222624.175085,
+    "ast_hash": "bc37c42a16f5b4277e5fafe66f0d9742",
+    "semantic_hash": ""
+  },
+  "lib/screens/wedding/wedding_expenses_page.dart": {
+    "mtime": 1783222688.3512523,
+    "ast_hash": "6b55a1ea43bcdd62e5958a6d455b473c",
+    "semantic_hash": ""
+  },
+  "lib/screens/wedding/wedding_family_pages.dart": {
+    "mtime": 1783222808.8487132,
+    "ast_hash": "82fa30be0acf57a7297aa1822ec33360",
+    "semantic_hash": ""
+  },
+  "lib/screens/wedding/wedding_gallery_tab.dart": {
+    "mtime": 1783222452.2325907,
+    "ast_hash": "cf2299b989cd517ae6ad41eed3953c87",
+    "semantic_hash": ""
+  },
+  "lib/screens/wedding/wedding_history_pages.dart": {
+    "mtime": 1783244058.974844,
+    "ast_hash": "3de49242e3ece8a7e70b7a8ec2bb215b",
+    "semantic_hash": ""
+  },
+  "lib/screens/wedding/wedding_notes_page.dart": {
+    "mtime": 1783222729.8712673,
+    "ast_hash": "2c7f472ec40c8da8c75065784a52ea41",
+    "semantic_hash": ""
+  },
+  "lib/screens/wedding/wedding_search_page.dart": {
+    "mtime": 1783222897.196895,
+    "ast_hash": "869a36c54ae11f0be57ba9d9f0d606ab",
+    "semantic_hash": ""
+  },
+  "lib/screens/wedding/wedding_tasks_tab.dart": {
+    "mtime": 1783244077.9369073,
+    "ast_hash": "536c1f4a6fc1b967022fa41ece620f55",
     "semantic_hash": ""
   }
 }
