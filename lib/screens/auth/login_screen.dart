@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/auth_routing.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/wedding_provider.dart';
+import '../../widgets/auth/login_illustrations.dart';
 
 /// App entry — ROLE-BASED. Instead of a classic login form, the user first
 /// picks WHO they are with two large cards:
@@ -168,127 +168,193 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   // ── UI ──────────────────────────────────────────────────────────────────
+  //
+  // Two distinct visual states, matching the reference design:
+  //   1. Welcome screen — deep maroon/gold gradient, zodiac-ring couple
+  //      emblem, two illustrated role cards, Taj Mahal skyline footer.
+  //   2. Role login screen — soft pink/cream backdrop, circular couple or
+  //      family illustration, "Continue with Google" pill button, feature
+  //      row, and Terms & Privacy footer.
+
+  static const _serifWeight = FontWeight.w700;
 
   @override
   Widget build(BuildContext context) {
     final authAsync = ref.watch(authNotifierProvider);
     final googleBusy = _busy || authAsync.isLoading;
-    final l10n = context.l10n;
 
+    return _role == null
+        ? _buildWelcomeScaffold()
+        : _buildRoleLoginScaffold(googleBusy);
+  }
+
+  // ── Screen 1: Welcome / role selection ──────────────────────────────────
+
+  Widget _buildWelcomeScaffold() {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.splashGradient),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                const SizedBox(height: 8),
-                Image.asset(
-                  'assets/images/app_logo.png',
-                  width: 120,
-                  height: 120,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => Column(
-                    children: [
-                      const Icon(Icons.favorite,
-                          color: AppColors.gold, size: 64),
-                      const SizedBox(height: 8),
-                      Text(l10n.appTitle, style: AppTextStyles.appName),
-                    ],
+          child: Stack(
+            children: [
+              const Positioned(
+                  top: 60,
+                  left: 28,
+                  child: Icon(Icons.star, size: 8, color: Color(0x99D4AF37))),
+              const Positioned(
+                  top: 150,
+                  right: 34,
+                  child: Icon(Icons.star, size: 6, color: Color(0x66FFD700))),
+              const Positioned(
+                  top: 340,
+                  left: 18,
+                  child: Icon(Icons.star, size: 6, color: Color(0x66D4AF37))),
+              Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(22, 26, 22, 8),
+                      child: Column(
+                        children: [
+                          const ZodiacCoupleLogo(size: 126),
+                          const SizedBox(height: 18),
+                          const Text(
+                            'Welcome!',
+                            style: TextStyle(
+                                fontFamily: 'serif',
+                                fontSize: 30,
+                                fontWeight: _serifWeight,
+                                color: AppColors.goldLight),
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                              width: 90,
+                              height: 1,
+                              color: AppColors.gold.withOpacity(0.5)),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'How would you like to continue?',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15.5,
+                                fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(height: 26),
+                          _roleCard(
+                            role: _EntryRole.matrimony,
+                            title: 'Matrimony User',
+                            description: 'Looking for a life partner? '
+                                'Continue as a Matrimony User.',
+                            accent: const Color(0xFFD6336C),
+                            illustration: const CoupleIllustrationCircle(
+                                size: 76, showFloatingHearts: false),
+                          ),
+                          const SizedBox(height: 18),
+                          _roleCard(
+                            role: _EntryRole.family,
+                            title: 'Family Member',
+                            description: 'Join an existing Wedding Workspace '
+                                'using your invited Google account.',
+                            accent: AppColors.goldDark,
+                            illustration: const FamilyIllustrationCircle(
+                                size: 76, showFloatingHearts: false),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                if (_role == null)
-                  _buildRoleCards()
-                else
-                  _buildGoogleStep(googleBusy),
-              ],
-            ),
+                  const TajMahalSkyline(height: 90),
+                ],
+              ),
+            ],
           ),
         ),
       ),
-    );
-  }
-
-  /// Step 1 — the two large role cards.
-  Widget _buildRoleCards() {
-    return Column(
-      children: [
-        const Text(
-          'How would you like to continue?',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-              color: Colors.white,
-              fontSize: 17,
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 20),
-        _roleCard(
-          role: _EntryRole.matrimony,
-          emoji: '💍',
-          title: 'Matrimony User',
-          description:
-              'Looking for a life partner? Continue as a Matrimony User.',
-          color: AppColors.primary,
-        ),
-        const SizedBox(height: 16),
-        _roleCard(
-          role: _EntryRole.family,
-          emoji: '👨‍👩‍👧‍👦',
-          title: 'Family Member',
-          description: 'Join an existing Wedding Workspace using your '
-              'invited Google account.',
-          color: AppColors.goldDark,
-        ),
-      ],
     );
   }
 
   Widget _roleCard({
     required _EntryRole role,
-    required String emoji,
     required String title,
     required String description,
-    required Color color,
+    required Color accent,
+    required Widget illustration,
   }) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () => setState(() => _role = role),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: color.withOpacity(0.25), width: 1.5),
-          ),
-          child: Column(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: Material(
+        color: AppColors.background,
+        child: InkWell(
+          onTap: () => setState(() => _role = role),
+          child: Stack(
             children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                    color: color.withOpacity(0.1), shape: BoxShape.circle),
-                alignment: Alignment.center,
-                child: Text(emoji, style: const TextStyle(fontSize: 30)),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 22, 18, 50),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipOval(
+                      child: SizedBox(
+                        width: 76,
+                        height: 76,
+                        child: illustration,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.favorite, size: 14, color: accent),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  title,
+                                  style: TextStyle(
+                                      fontFamily: 'serif',
+                                      fontSize: 19,
+                                      fontWeight: _serifWeight,
+                                      color: accent),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                              width: 64,
+                              height: 1.4,
+                              color: accent.withOpacity(0.35)),
+                          const SizedBox(height: 10),
+                          Text(
+                            description,
+                            style: TextStyle(
+                                color: Colors.grey[700],
+                                fontSize: 12.8,
+                                height: 1.35),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 12),
-              Text(title,
-                  style: TextStyle(
-                      fontSize: 17,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.bold,
-                      color: color)),
-              const SizedBox(height: 6),
-              Text(description,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey[700], fontSize: 13)),
-              const SizedBox(height: 12),
-              Icon(Icons.arrow_forward_rounded, color: color, size: 22),
+              Positioned(
+                right: 16,
+                bottom: 16,
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration:
+                      BoxDecoration(shape: BoxShape.circle, color: accent),
+                  child: const Icon(Icons.arrow_forward_rounded,
+                      color: Colors.white, size: 20),
+                ),
+              ),
+              CornerRibbon(color: accent),
             ],
           ),
         ),
@@ -296,85 +362,236 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  /// Step 2 — the selected role's ONLY sign-in method: Continue with Google.
-  Widget _buildGoogleStep(bool googleBusy) {
+  // ── Screen 2/3: Matrimony User / Family Member Google sign-in ───────────
+
+  Widget _buildRoleLoginScaffold(bool googleBusy) {
     final isFamily = _role == _EntryRole.family;
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final accent = isFamily ? AppColors.goldDark : const Color(0xFFD6336C);
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
         children: [
-          Row(
-            children: [
-              IconButton(
-                tooltip: 'Back',
-                visualDensity: VisualDensity.compact,
-                onPressed:
-                    googleBusy ? null : () => setState(() => _role = null),
-                icon: const Icon(Icons.arrow_back),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  isFamily ? 'Family Member' : 'Matrimony User',
-                  style: AppTextStyles.heading2,
+          Positioned.fill(
+            child: ClipPath(
+              clipper: LoginWaveClipper(),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: isFamily
+                        ? [const Color(0xFFFFF3D6), const Color(0xFFFFE7EC)]
+                        : [const Color(0xFFFFE1EA), const Color(0xFFFFF3F6)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            isFamily
-                ? 'Sign in with the Google account the Bride or Groom '
-                    'invited to their Wedding Workspace.'
-                : 'Sign in with your Google account to find your life partner.',
-            style: AppTextStyles.bodyMedium,
-          ),
-          const SizedBox(height: 24),
-          OutlinedButton.icon(
-            onPressed: googleBusy
-                ? null
-                : (isFamily ? _signInAsFamily : _signInAsMatrimony),
-            icon: googleBusy
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Image.network(
-                    'https://www.google.com/favicon.ico',
-                    width: 20,
-                    height: 20,
-                    errorBuilder: (_, __, ___) =>
-                        const Icon(Icons.g_mobiledata, size: 24),
-                  ),
-            label: Text(context.l10n.continueWithGoogle),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(52),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
             ),
           ),
-          if (isFamily) ...[
-            const SizedBox(height: 12),
-            Center(
-              child: Text(
-                'Only Gmail addresses invited by the Bride or Groom can '
-                'open the Wedding Workspace.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey[600], fontSize: 11.5),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(22, 8, 22, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  InkWell(
+                    onTap: googleBusy
+                        ? null
+                        : () => setState(() => _role = null),
+                    borderRadius: BorderRadius.circular(30),
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: accent.withOpacity(0.12),
+                      ),
+                      child: Icon(Icons.arrow_back, color: accent),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Column(
+                      children: [
+                        Text(
+                          isFamily ? 'Family Member' : 'Matrimony User',
+                          style: const TextStyle(
+                              fontFamily: 'serif',
+                              fontSize: 27,
+                              fontWeight: _serifWeight,
+                              color: AppColors.primary),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                                width: 26,
+                                height: 1,
+                                color: accent.withOpacity(0.5)),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                              child: Icon(Icons.favorite,
+                                  size: 12, color: accent),
+                            ),
+                            Container(
+                                width: 26,
+                                height: 1,
+                                color: accent.withOpacity(0.5)),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(
+                            isFamily
+                                ? 'Sign in with your Google account to join '
+                                    'your Wedding Workspace.'
+                                : 'Sign in with your Google account to find '
+                                    'your life partner.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                                fontSize: 14.5,
+                                color: Color(0xFF5C4048),
+                                height: 1.4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 26),
+                  Center(
+                    child: isFamily
+                        ? const FamilyIllustrationCircle(size: 190)
+                        : const CoupleIllustrationCircle(size: 190),
+                  ),
+                  const SizedBox(height: 30),
+                  OutlinedButton.icon(
+                    onPressed: googleBusy
+                        ? null
+                        : (isFamily ? _signInAsFamily : _signInAsMatrimony),
+                    icon: googleBusy
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Image.network(
+                            'https://www.google.com/favicon.ico',
+                            width: 20,
+                            height: 20,
+                            errorBuilder: (_, __, ___) =>
+                                const Icon(Icons.g_mobiledata, size: 24),
+                          ),
+                    label: Text(
+                      context.l10n.continueWithGoogle,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          color: Color(0xFF2A2A2A)),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(54),
+                      side: BorderSide(color: Colors.grey.shade300),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28)),
+                      elevation: 0,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(child: Divider(color: Colors.grey.shade300)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text('or',
+                            style: TextStyle(color: Colors.grey.shade500)),
+                      ),
+                      Expanded(child: Divider(color: Colors.grey.shade300)),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: isFamily
+                        ? [
+                            _featureItem(
+                                Icons.verified_user, 'Secure &\nPrivate', accent),
+                            _featureItem(
+                                Icons.email_outlined, 'Verified\nInvite', accent),
+                            _featureItem(Icons.groups_outlined,
+                                'Family\nWorkspace', accent),
+                          ]
+                        : [
+                            _featureItem(
+                                Icons.verified_user, 'Secure &\nPrivate', accent),
+                            _featureItem(Icons.badge_outlined,
+                                'Verified\nProfiles', accent),
+                            _featureItem(Icons.favorite_border,
+                                'Find Your\nPerfect Match', accent),
+                          ],
+                  ),
+                  const SizedBox(height: 22),
+                  Center(
+                    child: Column(
+                      children: [
+                        Text('By continuing, you agree to our',
+                            style: TextStyle(
+                                color: Colors.grey.shade600, fontSize: 12.5)),
+                        const SizedBox(height: 2),
+                        Text('Terms & Privacy Policy',
+                            style: TextStyle(
+                                color: accent,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12.5)),
+                      ],
+                    ),
+                  ),
+                  if (isFamily) ...[
+                    const SizedBox(height: 12),
+                    Center(
+                      child: Text(
+                        'Only Gmail addresses invited by the Bride or Groom '
+                        'can open the Wedding Workspace.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey[600], fontSize: 11.5),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-          ],
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _featureItem(IconData icon, String label, Color accent) {
+    return Column(
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: accent.withOpacity(0.4), width: 1.4),
+          ),
+          child: Icon(icon, color: accent, size: 22),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              fontSize: 11.5,
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w500,
+              height: 1.25),
+        ),
+      ],
     );
   }
 }
