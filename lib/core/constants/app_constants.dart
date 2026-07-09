@@ -156,6 +156,17 @@ class AppConstants {
     'பூரட்டாதி', 'உத்திரட்டாதி', 'ரேவதி',
   ];
 
+  // English Nakshatra List — transliterations aligned index-for-index with
+  // [nakshatraList] so a stored Tamil star name can be shown in English.
+  static const List<String> nakshatraEnList = [
+    'Aswini', 'Bharani', 'Karthigai', 'Rohini', 'Mrigashira',
+    'Thiruvathirai', 'Punarpoosam', 'Poosam', 'Ayilyam', 'Magam',
+    'Pooram', 'Uthiram', 'Hastham', 'Chithirai', 'Swathi',
+    'Visakam', 'Anusham', 'Kettai', 'Moolam', 'Pooradam',
+    'Uthiradam', 'Thiruvonam', 'Avittam', 'Sathayam',
+    'Poorattathi', 'Uthirattathi', 'Revathi',
+  ];
+
   // Lagnam List
   static const List<String> lagnamList = [
     'மேஷம்', 'ரிஷபம்', 'மிதுனம்', 'கடகம்',

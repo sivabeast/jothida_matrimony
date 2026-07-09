@@ -106,17 +106,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         // Once both partners confirmed Marriage Fixed, the app opens the
         // Wedding Workspace directly (a "Switch to Matrimony" button lives
         // inside the workspace menu).
+        //
+        // LAUNCH LOCK: the workspace is Coming Soon for non-admin users, so
+        // only admins take the workspace-first shortcut — everyone else goes
+        // to Home as usual instead of landing on a locked page every launch.
         try {
-          final wedding = await ref
-              .read(weddingServiceProvider)
-              .getWeddingForCouple(user.uid);
-          if (!mounted) return;
-          if (wedding != null && wedding.isFixed) {
-            ref.read(entryModeProvider.notifier).state =
-                WeddingEntryMode.matrimony;
-            debugPrint('[Splash] Marriage Fixed → /wedding-workspace');
-            context.go('/wedding-workspace');
-            return;
+          if (userModel.isAdmin) {
+            final wedding = await ref
+                .read(weddingServiceProvider)
+                .getWeddingForCouple(user.uid);
+            if (!mounted) return;
+            if (wedding != null && wedding.isFixed) {
+              ref.read(entryModeProvider.notifier).state =
+                  WeddingEntryMode.matrimony;
+              debugPrint('[Splash] Marriage Fixed → /wedding-workspace');
+              context.go('/wedding-workspace');
+              return;
+            }
           }
         } catch (e) {
           debugPrint('[Splash] couple wedding lookup failed (non-fatal): $e');

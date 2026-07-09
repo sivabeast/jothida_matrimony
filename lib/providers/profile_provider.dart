@@ -11,6 +11,7 @@ import '../models/profile_model.dart';
 import '../services/cloudinary/cloudinary_exception.dart';
 import '../services/firebase/firestore_service.dart' show ProfilePage;
 import 'demo_data_provider.dart';
+import 'matches_prefs_provider.dart';
 import 'service_providers.dart';
 import 'auth_provider.dart';
 
@@ -643,11 +644,9 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
   String _gender = '';
   MatchFilters _filters = const MatchFilters();
 
-  /// Latched true when the mandatory caste/age gate would have BLANKED the feed
-  /// (no strict match in the fetched pool) so we fell back to all eligible
-  /// profiles. While true, [loadMore] also appends eligible profiles (skipping
-  /// the strict gate) so pagination stays consistent with what's on screen.
-  bool _fallbackMode = false;
+  /// The raw fetched (gender-eligible) pool, cached so switching the match
+  /// mode (Compatible ⇄ All) re-filters INSTANTLY without refetching.
+  final List<ProfileModel> _pool = [];
 
   /// When an active filter makes a single fetched page sparse, keep fetching up
   /// to this many extra pages so the feed isn't empty just because the first
@@ -669,6 +668,20 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
   /// Clear all optional filters and reload.
   Future<void> clearFilters() => applyFilters(const MatchFilters());
 
+  /// Re-filters the already-fetched pool for the current [matchModeProvider]
+  /// value — called when the user switches Compatible ⇄ All in the Filter
+  /// menu, so the feed swaps instantly with no page refresh. Falls back to a
+  /// full [load] when nothing has been fetched yet.
+  Future<void> refilter() async {
+    if (_pool.isEmpty) return load();
+    final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
+    final me = ref.read(myProfileProvider).valueOrNull;
+    state = state.copyWith(
+      profiles: _rank(_pool, myUid, me, fetched: _pool.length),
+      isLoading: false,
+    );
+  }
+
   /// Data-integrity excludes only (NOT matching filters): never show the user
   /// themselves, married members, or deactivated / blocked accounts.
   bool _keep(ProfileModel p, String? myUid) {
@@ -679,17 +692,30 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
     return true;
   }
 
+  /// Whether [p] passes the CURRENT match mode's gates for [me]:
+  ///   • All Matches        → partner preferences (age + caste mandatory);
+  ///   • Compatible Matches → partner preferences AND nakshatra compatibility.
+  bool _passesMode(ProfileModel p, ProfileModel? me) {
+    if (!mandatoryPreferenceMatch(p, me)) return false;
+    if (ref.read(matchModeProvider) == MatchMode.compatible) {
+      if (me == null) return false; // can't verify compatibility yet
+      return isNakshatraCompatible(me, p);
+    }
+    return true;
+  }
+
   /// Builds the feed from a fetched [pool]:
   ///   • Data-integrity + the user's explicit filter-sheet choices decide who is
   ///     ELIGIBLE at all.
-  ///   • The MANDATORY caste/age gate is applied on top as the PRIMARY view.
-  ///   • SAFETY: if that gate would BLANK the feed while eligible profiles still
-  ///     exist, we fall back to the eligible set (caste/age then act purely as
-  ///     ranking signals). This guarantees the Matches page never shows empty
-  ///     when matching profiles exist — the user's #1 complaint — while still
-  ///     preferring strict caste/age matches whenever any are available.
+  ///   • The MATCH MODE gate is applied on top: partner preferences (age +
+  ///     caste mandatory) always; plus nakshatra compatibility in Compatible
+  ///     Matches mode. Profiles failing the gate are NOT shown — the page
+  ///     renders its professional empty state instead.
   ///   • OPTIONAL preferences only RANK the result (best first); they never
   ///     remove a profile.
+  ///   • Browsing progress: profiles the user has ALREADY viewed sort to the
+  ///     END, so a new session resumes from the first unseen profile instead
+  ///     of restarting at profile 1.
   List<ProfileModel> _rank(
       List<ProfileModel> pool, String? myUid, ProfileModel? me,
       {required int fetched}) {
@@ -697,25 +723,27 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
         .where((p) => _keep(p, myUid) && _filters.matches(p, me))
         .toList();
 
-    final strict =
-        eligible.where((p) => mandatoryPreferenceMatch(p, me)).toList();
+    final matched = eligible.where((p) => _passesMode(p, me)).toList();
 
-    // Prefer the strict (caste+age) set; fall back to all eligible profiles so
-    // the feed is NEVER blank when profiles are available.
-    _fallbackMode = strict.isEmpty && eligible.isNotEmpty;
-    final base = _fallbackMode ? eligible : strict;
-
-    // Rank by the fraction of the user's OPTIONAL (and, in fallback mode,
-    // caste/age) preferences each candidate satisfies — best first.
-    final scored = base
+    // Rank by the fraction of the user's OPTIONAL preferences each candidate
+    // satisfies — best first — with already-viewed profiles moved to the end
+    // (per-user browsing progress).
+    final viewed = ref.read(viewedProfilesProvider);
+    final scored = matched
         .map((p) => MapEntry(p, partnerPreferenceScore(p, me).ratio))
         .toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+      ..sort((a, b) {
+        final aViewed = viewed.contains(a.key.id);
+        final bViewed = viewed.contains(b.key.id);
+        if (aViewed != bViewed) return aViewed ? 1 : -1; // unseen first
+        return b.value.compareTo(a.value);
+      });
     final result = scored.map((e) => e.key).toList();
 
     debugPrint('[Discover] gender=$_gender myGender=${me?.gender} · '
-        'fetched=$fetched · eligible=${eligible.length} · strict=${strict.length} · '
-        'returned=${result.length} · fallback=$_fallbackMode · '
+        'mode=${ref.read(matchModeProvider).name} · '
+        'fetched=$fetched · eligible=${eligible.length} · '
+        'returned=${result.length} · viewed=${viewed.length} · '
         'casteSet=${_ppSet(me?.partnerPreferences.caste)} · '
         'age=${me?.partnerPreferences.minAge}-${me?.partnerPreferences.maxAge} · '
         'explicitFilters=${_filters.isActive}');
@@ -745,6 +773,9 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
     if (kBypassAuth) {
       final pool =
           ref.read(demoProfilesProvider.notifier).discover(gender: _gender);
+      _pool
+        ..clear()
+        ..addAll(pool);
       state = DiscoverState(
         profiles: _rank(pool, myUid, me, fetched: pool.length),
         isLoading: false,
@@ -756,7 +787,7 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
     try {
       final repo = ref.read(profileRepositoryProvider);
       // Build a pool of gender-eligible profiles to rank over. Page until we
-      // have a reasonable pool (so tiering/fallback has profiles to work with).
+      // have a reasonable pool (so the mode gate has profiles to work with).
       final pool = <ProfileModel>[];
       var hasMore = true;
       for (var i = 0; i < _kMaxAutoPages && hasMore; i++) {
@@ -770,6 +801,9 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
         pool.addAll(page.profiles);
         if (pool.length >= 60) break; // enough to rank over
       }
+      _pool
+        ..clear()
+        ..addAll(pool);
       state = DiscoverState(
         profiles: _rank(pool, myUid, me, fetched: pool.length),
         isLoading: false,
@@ -800,15 +834,20 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
               gender: _gender, limit: _kDiscoverPageSize, startAfter: _lastDoc);
       _lastDoc = page.lastDoc;
 
+      // Cache the raw page too, so a later Compatible ⇄ All switch re-filters
+      // over everything fetched so far.
+      final pooled = _pool.map((p) => p.id).toSet();
+      _pool.addAll(page.profiles.where((p) => !pooled.contains(p.id)));
+
       // Append, de-duplicating by id so a re-fetched boundary doc can't double.
-      // In fallback mode the strict caste/age gate is skipped here too, so newly
-      // paged-in profiles match what's already on screen.
+      // The same match-mode gate used by [_rank] applies, so newly paged-in
+      // profiles always match what's already on screen.
       final existing = state.profiles.map((p) => p.id).toSet();
       final added = page.profiles
           .where((p) =>
               _keep(p, myUid) &&
               _filters.matches(p, me) &&
-              (_fallbackMode || mandatoryPreferenceMatch(p, me)) &&
+              _passesMode(p, me) &&
               !existing.contains(p.id))
           .toList();
       state = state.copyWith(
@@ -933,16 +972,21 @@ final homeMatchesProvider = FutureProvider.autoDispose<HomeMatches>((ref) async 
       veryGood: veryGood, good: good, average: average, all: all);
 });
 
-/// **New Profiles** for the Home page — newly-joined opposite-gender members,
-/// most-recent first. The Home page is only for discovering newly joined
-/// members, so this is sorted purely by join date (no porutham ranking /
-/// partner-preference filtering — that belongs on the Matches page). Basic
-/// eligibility (self / married / inactive / rejected / blocked) is still
-/// applied, and the list is capped to the most recent joiners.
+/// **New Profiles** for the Home page — RECENTLY CREATED opposite-gender
+/// profiles that are genuinely matching, most-recent first.
+///
+/// Every profile shown MUST satisfy ALL of (mandatory — never "preferred if
+/// available"):
+///   • the user's partner preferences, with AGE + CASTE as the hard gates
+///     ([mandatoryPreferenceMatch]);
+///   • nakshatra compatibility with the user ([isNakshatraCompatible]).
+/// Basic eligibility (self / married / inactive / rejected / blocked) is also
+/// applied, and the list is capped to the LATEST 10 matching profiles.
 final newProfilesProvider =
     FutureProvider.autoDispose<List<ProfileModel>>((ref) async {
   final gender = ref.watch(matchGenderProvider);
   final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+  final me = ref.watch(myProfileProvider).valueOrNull;
 
   final List<ProfileModel> pool;
   if (kBypassAuth) {
@@ -959,10 +1003,14 @@ final newProfilesProvider =
     if (p.isMarried) return false;
     if (!p.isActive) return false;
     if (p.status == 'rejected' || p.status == 'blocked') return false;
+    // Mandatory partner-preference gate (age + caste are the hard priorities).
+    if (!mandatoryPreferenceMatch(p, me)) return false;
+    // Mandatory nakshatra-compatibility gate — requires my profile to verify.
+    if (me == null || !isNakshatraCompatible(me, p)) return false;
     return true;
   }).toList()
     // Newest joiners first.
     ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-  return eligible.take(20).toList();
+  return eligible.take(10).toList();
 });

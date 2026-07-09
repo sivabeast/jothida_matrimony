@@ -207,8 +207,8 @@ class _BottomNav extends StatelessWidget {
       l10n.home,
       l10n.matches,
       l10n.interests,
-      'Reports',
-      'Astrology',
+      l10n.reports,
+      l10n.astrology,
     ];
     return Container(
       decoration: BoxDecoration(

@@ -886,4 +886,118 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get unavailable => 'கிடைக்கவில்லை';
+
+  @override
+  String get reports => 'அறிக்கைகள்';
+
+  @override
+  String get astrology => 'ஜோதிடம்';
+
+  @override
+  String get compatibleMatches => 'பொருத்தமான Matches';
+
+  @override
+  String get allMatches => 'அனைத்து Matches';
+
+  @override
+  String get viewMatchingStars => 'பொருந்தும் நட்சத்திரங்கள்';
+
+  @override
+  String get compatibleNakshatras => 'பொருந்தும் நட்சத்திரங்கள்';
+
+  @override
+  String get compatibleNakshatrasHint => 'உங்கள் நட்சத்திரத்துடன் பொருந்தும் நட்சத்திரங்கள் இவை. பொருத்தமான Matches-இல் இந்த நட்சத்திரங்களில் உங்கள் வாழ்க்கைத்துணை விருப்பங்களுக்குப் பொருந்தும் Profiles காட்டப்படும்.';
+
+  @override
+  String get matchingStarsUnavailable => 'பொருந்தும் நட்சத்திரங்களைப் பார்க்க, ஜாதக விவரங்களில் உங்கள் நட்சத்திரத்தை (அல்லது பிறந்த தேதியை) சேர்க்கவும்.';
+
+  @override
+  String get community => 'சமூகம்';
+
+  @override
+  String get verified => 'சரிபார்க்கப்பட்டது';
+
+  @override
+  String get profession => 'தொழில்';
+
+  @override
+  String get refresh => 'புதுப்பிக்கவும்';
+
+  @override
+  String get goBack => 'பின் செல்லவும்';
+
+  @override
+  String get noMatchingProfilesTitle => 'உங்களுக்கான பொருத்தமான Profiles இன்னும் கிடைக்கவில்லை';
+
+  @override
+  String get noMatchingProfilesBody => 'உங்களுக்கான பொருத்தமான Profiles இன்னும் கிடைக்கவில்லை. புதிய உறுப்பினர்கள் தொடர்ந்து இணைந்து கொண்டிருக்கிறார்கள். விரைவில் உங்களுக்கு பொருத்தமான Matches இங்கு தோன்றும்.';
+
+  @override
+  String get couldNotLoadMatches => 'Matches-ஐ ஏற்ற முடியவில்லை';
+
+  @override
+  String get expressInterest => 'விருப்பம் தெரிவிக்கவும்';
+
+  @override
+  String get matchedLabel => 'பொருந்தியது';
+
+  @override
+  String get notInterested => 'விருப்பம் இல்லை';
+
+  @override
+  String get createProfileFirst => 'விருப்பம் அனுப்ப முதலில் உங்கள் Profile-ஐ உருவாக்கவும்';
+
+  @override
+  String interestSentTo(String name) {
+    return '$name-க்கு விருப்பம் அனுப்பப்பட்டது';
+  }
+
+  @override
+  String get couldNotSendInterest => 'விருப்பத்தை அனுப்ப முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String youMatchedWith(String name) {
+    return '$name உடன் நீங்கள் பொருந்தினீர்கள்';
+  }
+
+  @override
+  String get couldNotAcceptInterest => 'விருப்பத்தை ஏற்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get dailyInterestLimitTitle => 'இன்றைய விருப்ப வரம்பு முடிந்தது';
+
+  @override
+  String dailyInterestLimitMessage(int count) {
+    return 'இலவச உறுப்பினர்கள் ஒரு நாளைக்கு $count விருப்பங்கள் மட்டுமே அனுப்ப முடியும். வரம்பில்லா விருப்பங்களுக்கு Basic அல்லது Premium-க்கு மேம்படுத்தவும்.';
+  }
+
+  @override
+  String get newProfiles => 'புதிய Profiles';
+
+  @override
+  String get noNewProfilesYet => 'புதிய பொருத்தமான Profiles இன்னும் இல்லை.';
+
+  @override
+  String get comingSoonBody => 'இந்த வசதி இன்னும் கிடைக்கவில்லை. நாங்கள் இதில் பணியாற்றி வருகிறோம்; விரைவில் வரவிருக்கும் புதுப்பிப்பில் திறக்கப்படும். காத்திருங்கள்!';
+
+  @override
+  String get featureMarriageFixed => 'திருமணம் நிச்சயம்';
+
+  @override
+  String get featureWeddingWorkspace => 'திருமண Workspace';
+
+  @override
+  String get featureFamilyLogin => 'குடும்ப உறுப்பினர் உள்நுழைவு';
+
+  @override
+  String get featureMuhurthamCalendar => 'முகூர்த்த நாள்காட்டி';
+
+  @override
+  String get viewCalendar => 'நாள்காட்டியைப் பார்க்க';
+
+  @override
+  String get adminSignIn => 'நிர்வாகி உள்நுழைவு';
+
+  @override
+  String get signOut => 'வெளியேறு';
 }

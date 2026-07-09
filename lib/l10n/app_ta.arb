@@ -315,5 +315,50 @@
   "availableForAssignment": "நியமனத்திற்கு கிடைக்கும்",
   "onLeave": "விடுப்பில்",
   "available": "கிடைக்கிறது",
-  "unavailable": "கிடைக்கவில்லை"
+  "unavailable": "கிடைக்கவில்லை",
+
+  "reports": "அறிக்கைகள்",
+  "astrology": "ஜோதிடம்",
+
+  "compatibleMatches": "பொருத்தமான Matches",
+  "allMatches": "அனைத்து Matches",
+  "viewMatchingStars": "பொருந்தும் நட்சத்திரங்கள்",
+  "compatibleNakshatras": "பொருந்தும் நட்சத்திரங்கள்",
+  "compatibleNakshatrasHint": "உங்கள் நட்சத்திரத்துடன் பொருந்தும் நட்சத்திரங்கள் இவை. பொருத்தமான Matches-இல் இந்த நட்சத்திரங்களில் உங்கள் வாழ்க்கைத்துணை விருப்பங்களுக்குப் பொருந்தும் Profiles காட்டப்படும்.",
+  "matchingStarsUnavailable": "பொருந்தும் நட்சத்திரங்களைப் பார்க்க, ஜாதக விவரங்களில் உங்கள் நட்சத்திரத்தை (அல்லது பிறந்த தேதியை) சேர்க்கவும்.",
+  "community": "சமூகம்",
+  "verified": "சரிபார்க்கப்பட்டது",
+  "profession": "தொழில்",
+  "refresh": "புதுப்பிக்கவும்",
+  "goBack": "பின் செல்லவும்",
+
+  "noMatchingProfilesTitle": "உங்களுக்கான பொருத்தமான Profiles இன்னும் கிடைக்கவில்லை",
+  "noMatchingProfilesBody": "உங்களுக்கான பொருத்தமான Profiles இன்னும் கிடைக்கவில்லை. புதிய உறுப்பினர்கள் தொடர்ந்து இணைந்து கொண்டிருக்கிறார்கள். விரைவில் உங்களுக்கு பொருத்தமான Matches இங்கு தோன்றும்.",
+  "couldNotLoadMatches": "Matches-ஐ ஏற்ற முடியவில்லை",
+
+  "expressInterest": "விருப்பம் தெரிவிக்கவும்",
+  "matchedLabel": "பொருந்தியது",
+  "notInterested": "விருப்பம் இல்லை",
+  "createProfileFirst": "விருப்பம் அனுப்ப முதலில் உங்கள் Profile-ஐ உருவாக்கவும்",
+  "interestSentTo": "{name}-க்கு விருப்பம் அனுப்பப்பட்டது",
+  "@interestSentTo": { "placeholders": { "name": { "type": "String" } } },
+  "couldNotSendInterest": "விருப்பத்தை அனுப்ப முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
+  "youMatchedWith": "{name} உடன் நீங்கள் பொருந்தினீர்கள்",
+  "@youMatchedWith": { "placeholders": { "name": { "type": "String" } } },
+  "couldNotAcceptInterest": "விருப்பத்தை ஏற்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
+  "dailyInterestLimitTitle": "இன்றைய விருப்ப வரம்பு முடிந்தது",
+  "dailyInterestLimitMessage": "இலவச உறுப்பினர்கள் ஒரு நாளைக்கு {count} விருப்பங்கள் மட்டுமே அனுப்ப முடியும். வரம்பில்லா விருப்பங்களுக்கு Basic அல்லது Premium-க்கு மேம்படுத்தவும்.",
+  "@dailyInterestLimitMessage": { "placeholders": { "count": { "type": "int" } } },
+
+  "newProfiles": "புதிய Profiles",
+  "noNewProfilesYet": "புதிய பொருத்தமான Profiles இன்னும் இல்லை.",
+
+  "comingSoonBody": "இந்த வசதி இன்னும் கிடைக்கவில்லை. நாங்கள் இதில் பணியாற்றி வருகிறோம்; விரைவில் வரவிருக்கும் புதுப்பிப்பில் திறக்கப்படும். காத்திருங்கள்!",
+  "featureMarriageFixed": "திருமணம் நிச்சயம்",
+  "featureWeddingWorkspace": "திருமண Workspace",
+  "featureFamilyLogin": "குடும்ப உறுப்பினர் உள்நுழைவு",
+  "featureMuhurthamCalendar": "முகூர்த்த நாள்காட்டி",
+  "viewCalendar": "நாள்காட்டியைப் பார்க்க",
+  "adminSignIn": "நிர்வாகி உள்நுழைவு",
+  "signOut": "வெளியேறு"
 }

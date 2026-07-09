@@ -1,22 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/data/muhurtham_dates.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../models/muhurtham_model.dart';
+import '../../widgets/common/coming_soon.dart';
 
 /// Marriage Muhurtham Calendar — a month-wise calendar that highlights ONLY
 /// the general auspicious marriage dates (good days). Inauspicious days are
 /// never shown or marked. Tapping a highlighted date shows its full details
 /// (suitable-for, panchang, description) BELOW the calendar on this same page.
-class MuhurthamCalendarScreen extends StatefulWidget {
+///
+/// LAUNCH LOCK: not part of the initial release — non-admin users get the
+/// shared Coming Soon page instead of the calendar. Admins keep full access.
+class MuhurthamCalendarScreen extends ConsumerStatefulWidget {
   const MuhurthamCalendarScreen({super.key});
 
   @override
-  State<MuhurthamCalendarScreen> createState() =>
+  ConsumerState<MuhurthamCalendarScreen> createState() =>
       _MuhurthamCalendarScreenState();
 }
 
-class _MuhurthamCalendarScreenState extends State<MuhurthamCalendarScreen> {
+class _MuhurthamCalendarScreenState
+    extends ConsumerState<MuhurthamCalendarScreen> {
   static const _monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December',
@@ -53,6 +60,11 @@ class _MuhurthamCalendarScreenState extends State<MuhurthamCalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!ref.watch(upcomingFeaturesUnlockedProvider)) {
+      return ComingSoonPage(
+          featureName: context.l10n.featureMuhurthamCalendar);
+    }
+
     final goodDates = _datesInMonth(_visibleMonth);
 
     return Scaffold(

@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../models/wedding_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/wedding_provider.dart';
+import '../../widgets/common/coming_soon.dart';
 import 'wedding_calendar_tab.dart';
 import 'wedding_chat_page.dart';
 import 'wedding_dashboard_tab.dart';
@@ -49,6 +51,27 @@ class _WeddingWorkspaceScreenState
     final weddingAsync = ref.watch(activeWeddingProvider);
     final user = ref.watch(currentUserProvider).valueOrNull;
     final isFamily = user?.isFamily ?? false;
+
+    // ── LAUNCH LOCK: the Marriage/Wedding Workspace is not in the initial
+    // release. Non-admin users never enter the page — they get the shared
+    // Coming Soon page instead (family accounts also get a Sign Out action,
+    // since the workspace is the only screen the router allows them). Admins
+    // keep full access.
+    if (!ref.watch(upcomingFeaturesUnlockedProvider)) {
+      return ComingSoonPage(
+        featureName: context.l10n.featureWeddingWorkspace,
+        extraAction: isFamily
+            ? TextButton.icon(
+                onPressed: () =>
+                    ref.read(authNotifierProvider.notifier).signOut(),
+                icon: const Icon(Icons.logout, size: 18),
+                label: Text(context.l10n.signOut),
+                style:
+                    TextButton.styleFrom(foregroundColor: AppColors.primary),
+              )
+            : null,
+      );
+    }
 
     return weddingAsync.when(
       loading: () => const Scaffold(

@@ -321,5 +321,50 @@
   "availableForAssignment": "Available for Assignment",
   "onLeave": "On Leave",
   "available": "Available",
-  "unavailable": "Unavailable"
+  "unavailable": "Unavailable",
+
+  "reports": "Reports",
+  "astrology": "Astrology",
+
+  "compatibleMatches": "Compatible Matches",
+  "allMatches": "All Matches",
+  "viewMatchingStars": "View Matching Stars",
+  "compatibleNakshatras": "Compatible Nakshatras",
+  "compatibleNakshatrasHint": "Nakshatras compatible with your star. Compatible Matches shows profiles from these stars that also fit your partner preferences.",
+  "matchingStarsUnavailable": "Add your Nakshatra (or date of birth) in Horoscope Details to see your matching stars.",
+  "community": "Community",
+  "verified": "Verified",
+  "profession": "Profession",
+  "refresh": "Refresh",
+  "goBack": "Go Back",
+
+  "noMatchingProfilesTitle": "No Matching Profiles Yet",
+  "noMatchingProfilesBody": "Suitable profiles for you are not available yet. New members are continuously joining. Matching profiles based on your partner preferences and horoscope compatibility will appear here soon.",
+  "couldNotLoadMatches": "Could not load matches",
+
+  "expressInterest": "Express Interest",
+  "matchedLabel": "Matched",
+  "notInterested": "Not Interested",
+  "createProfileFirst": "Create your profile first to send interest",
+  "interestSentTo": "Interest sent to {name}",
+  "@interestSentTo": { "placeholders": { "name": { "type": "String" } } },
+  "couldNotSendInterest": "Could not send interest. Please try again.",
+  "youMatchedWith": "You matched with {name}",
+  "@youMatchedWith": { "placeholders": { "name": { "type": "String" } } },
+  "couldNotAcceptInterest": "Could not accept interest. Please try again.",
+  "dailyInterestLimitTitle": "Daily interest limit reached",
+  "dailyInterestLimitMessage": "Free members can send {count} interests per day. Upgrade to Basic or Premium for unlimited interests.",
+  "@dailyInterestLimitMessage": { "placeholders": { "count": { "type": "int" } } },
+
+  "newProfiles": "New Profiles",
+  "noNewProfilesYet": "No new matching profiles yet.",
+
+  "comingSoonBody": "This feature is not available yet. We are working on it and it will be unlocked in an upcoming update. Stay tuned!",
+  "featureMarriageFixed": "Marriage Fixed",
+  "featureWeddingWorkspace": "Marriage Workspace",
+  "featureFamilyLogin": "Family Member Login",
+  "featureMuhurthamCalendar": "Muhurtham Calendar",
+  "viewCalendar": "View Calendar",
+  "adminSignIn": "Admin sign-in",
+  "signOut": "Sign Out"
 }

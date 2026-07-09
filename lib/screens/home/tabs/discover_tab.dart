@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/l10n_ext.dart';
 import '../../../models/profile_model.dart';
 import '../../../core/services/match_score_service.dart';
+import '../../../core/services/porutham_match.dart';
 import '../../../providers/interest_provider.dart';
+import '../../../providers/matches_prefs_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/subscription_provider.dart';
 import '../../../providers/ui_preferences_provider.dart';
@@ -20,16 +24,17 @@ import '../../../widgets/common/premium_gate.dart';
 /// reach the actions — the two axes never conflict (horizontal → pager,
 /// vertical → the profile's own scroll view).
 ///
-/// The page is a PREVIEW only: a large photo plus the essential summary (name,
-/// age, location, height, education, profession, religion, community/caste and a
-/// verification badge) and two equally-sized actions — "Express Interest" and
-/// "View Profile". Everything else (about, family, horoscope, partner
-/// preferences, lifestyle, photos, …) lives on the full profile, opened by
-/// tapping the photo or "View Profile". No compatibility percentages are shown.
+/// A COMPACT single-line card sits above the feed: the user's Nakshatra, a
+/// "View Matching Stars" action (bottom sheet listing the nakshatras
+/// compatible with theirs) and the Filter menu with exactly two modes:
+///   • Compatible Matches (DEFAULT) — partner preferences (age + caste
+///     mandatory) AND nakshatra compatibility;
+///   • All Matches — partner preferences only (compatibility not required).
+/// Switching the mode re-filters the already-fetched pool instantly.
 ///
-/// Opposite-gender matching is resolved automatically from the signed-in user's
-/// gender (Male → Female, Female → Male). Caste/community and the preferred age
-/// range are MANDATORY filters; every other preference only ranks the results.
+/// Browsing progress is remembered PER USER: profiles already viewed sort to
+/// the end of the feed, so the next session resumes from the first unseen
+/// profile instead of restarting at profile 1.
 class DiscoverTab extends ConsumerStatefulWidget {
   const DiscoverTab({super.key});
 
@@ -44,6 +49,10 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
 
   // Horizontal pager — one profile per page.
   final PageController _pageController = PageController();
+
+  // The list currently shown by the pager (after the hide-interested filter),
+  // so page-change events can record the viewed profile.
+  List<ProfileModel> _visible = const [];
 
   @override
   void initState() {
@@ -65,18 +74,32 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     }
   }
 
-  /// Prefetch the next page as the user nears the end of the pager.
-  void _onPageChanged(int index, int count) {
-    if (index >= count - 2) {
+  /// Switch between Compatible / All matches. The actual re-filter happens in
+  /// the [matchModeProvider] listener in [build], so a mode change from ANY
+  /// source (the Filter menu or the persisted choice restoring at startup)
+  /// updates the feed instantly without a page refresh.
+  Future<void> _setMode(MatchMode mode) =>
+      ref.read(matchModeProvider.notifier).set(mode);
+
+  /// Record the viewed profile (per-user browsing progress) and prefetch the
+  /// next page as the user nears the end of the pager.
+  void _onPageChanged(int index) {
+    if (index >= 0 && index < _visible.length) {
+      ref
+          .read(viewedProfilesProvider.notifier)
+          .markViewed(_visible[index].id);
+    }
+    if (index >= _visible.length - 2) {
       ref.read(discoverProvider.notifier).loadMore();
     }
   }
 
   // ── Actions ─────────────────────────────────────────────────────────────
   Future<void> _sendInterest(ProfileModel profile) async {
+    final l10n = context.l10n;
     final me = ref.read(myProfileProvider).valueOrNull;
     if (me == null) {
-      _snack('Create your profile first to send interest');
+      _snack(l10n.createProfileFirst);
       return;
     }
     // Free-plan daily interest limit (2/day). Paid plans are unlimited.
@@ -85,10 +108,8 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
         ref.read(interestsSentTodayProvider) >= features.interestsPerDay) {
       await showUpgradeDialog(
         context,
-        title: 'Daily interest limit reached',
-        message:
-            'Free members can send ${features.interestsPerDay} interests per day. '
-            'Upgrade to Basic or Premium for unlimited interests.',
+        title: l10n.dailyInterestLimitTitle,
+        message: l10n.dailyInterestLimitMessage(features.interestsPerDay),
       );
       return;
     }
@@ -101,30 +122,34 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
           );
       if (!mounted) return;
       setState(() => _interestSent.add(profile.id));
-      _snack('Interest sent to ${profile.name}');
+      _snack(l10n.interestSentTo(profile.name));
     } catch (_) {
-      _snack('Could not send interest. Please try again.');
+      _snack(l10n.couldNotSendInterest);
     }
   }
 
   /// Accept a pending interest the target sent us — turns the pair into a
   /// match right from the card.
   Future<void> _acceptInterest(ProfileModel profile, String interestId) async {
+    final l10n = context.l10n;
     try {
       await ref
           .read(interestNotifierProvider.notifier)
           .acceptInterest(interestId);
       if (!mounted) return;
-      _snack('You matched with ${profile.name}');
+      _snack(l10n.youMatchedWith(profile.name));
     } catch (_) {
-      _snack('Could not accept interest. Please try again.');
+      _snack(l10n.couldNotAcceptInterest);
     }
   }
 
-  void _snack(String msg) => ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-        SnackBar(content: Text(msg), duration: const Duration(seconds: 2)));
+  void _snack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+          SnackBar(content: Text(msg), duration: const Duration(seconds: 2)));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -139,6 +164,32 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
         profiles = profiles.where((p) => !sentIds.contains(p.id)).toList();
       }
     }
+    _visible = profiles;
+
+    // The profile currently on screen counts as viewed (the pager only fires
+    // onPageChanged for page 2 onwards) — resume-from-here on the next launch.
+    if (profiles.isNotEmpty) {
+      final current = _pageController.hasClients
+          ? (_pageController.page?.round() ?? 0)
+          : 0;
+      final shown = profiles[current.clamp(0, profiles.length - 1)];
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(viewedProfilesProvider.notifier).markViewed(shown.id);
+      });
+    }
+
+    // Re-filter the feed instantly (from the cached pool — no page refresh)
+    // whenever the match mode changes, and snap back to the first profile.
+    ref.listen<MatchMode>(matchModeProvider, (prev, next) {
+      if (prev == next) return;
+      ref.read(discoverProvider.notifier).refilter();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _pageController.hasClients) {
+          _pageController.jumpToPage(0);
+        }
+      });
+    });
 
     // Refresh matches automatically when the profile (incl. partner
     // preferences) changes — e.g. after editing preferences — and snap back to
@@ -158,13 +209,220 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
 
     return Container(
       color: AppColors.scaffoldBg,
-      child: Builder(builder: (_) {
-        if (state.isLoading && profiles.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (profiles.isEmpty) return _emptyState(state.error != null);
-        return _swipeBrowser(profiles);
-      }),
+      child: Column(
+        children: [
+          _topCompactCard(),
+          Expanded(
+            child: Builder(builder: (_) {
+              if (state.isLoading && profiles.isEmpty) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (profiles.isEmpty) return _emptyState(state.error != null);
+              return _swipeBrowser(profiles);
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Top compact card ──────────────────────────────────────────────────────
+
+  /// Whether the app is currently showing Tamil.
+  bool get _isTamil =>
+      Localizations.localeOf(context).languageCode == 'ta';
+
+  /// Display name for a 1-27 star index in the active app language.
+  String _starName(int star) => _isTamil
+      ? AppConstants.nakshatraList[star - 1]
+      : AppConstants.nakshatraEnList[star - 1];
+
+  /// A minimal single-line card — the user's Nakshatra, the "View Matching
+  /// Stars" action and the Filter menu — so profiles start immediately below
+  /// without wasted vertical space.
+  Widget _topCompactCard() {
+    final l10n = context.l10n;
+    final me = ref.watch(myProfileProvider).valueOrNull;
+    final star = me == null ? null : profileStarIndex(me);
+    final mode = ref.watch(matchModeProvider);
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 10, 14, 2),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Text('⭐', style: TextStyle(fontSize: 14)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              '${l10n.nakshatra}: ${star == null ? '—' : _starName(star)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary),
+            ),
+          ),
+          TextButton(
+            onPressed: _showMatchingStars,
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              textStyle: const TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+            child: Text(l10n.viewMatchingStars),
+          ),
+          PopupMenuButton<MatchMode>(
+            tooltip: l10n.filter,
+            position: PopupMenuPosition.under,
+            onSelected: _setMode,
+            itemBuilder: (_) => [
+              CheckedPopupMenuItem(
+                value: MatchMode.compatible,
+                checked: mode == MatchMode.compatible,
+                child: Text(l10n.compatibleMatches,
+                    style: const TextStyle(fontSize: 13.5)),
+              ),
+              CheckedPopupMenuItem(
+                value: MatchMode.all,
+                checked: mode == MatchMode.all,
+                child: Text(l10n.allMatches,
+                    style: const TextStyle(fontSize: 13.5)),
+              ),
+            ],
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.filter_list,
+                  size: 19, color: AppColors.primary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Bottom sheet listing every nakshatra compatible with the user's star —
+  /// exactly the stars whose profiles can appear in Compatible Matches.
+  void _showMatchingStars() {
+    final l10n = context.l10n;
+    final me = ref.read(myProfileProvider).valueOrNull;
+    final star = me == null ? null : profileStarIndex(me);
+    final iAmFemale =
+        (me?.gender ?? '').trim().toLowerCase().startsWith('f');
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (ctx) {
+        final stars = star == null
+            ? const <int>[]
+            : compatibleStarsFor(myStar: star, iAmFemale: iAmFemale);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    const Text('⭐', style: TextStyle(fontSize: 18)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(l10n.compatibleNakshatras,
+                          style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Poppins')),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                if (star == null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Text(l10n.matchingStarsUnavailable,
+                        style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 13.5,
+                            height: 1.4)),
+                  )
+                else ...[
+                  Text('${l10n.nakshatra}: ${_starName(star)}',
+                      style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 14),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: stars
+                            .map((s) => Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 7),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        AppColors.primary.withOpacity(0.07),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                        color: AppColors.primary
+                                            .withOpacity(0.25)),
+                                  ),
+                                  child: Text(
+                                    _starName(s),
+                                    style: const TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.primary),
+                                  ),
+                                ))
+                            .toList(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(l10n.compatibleNakshatrasHint,
+                      style: TextStyle(
+                          color: Colors.grey[500],
+                          fontSize: 11.5,
+                          height: 1.4)),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -177,7 +435,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
       // Snap one profile at a time; horizontal only.
       physics: const PageScrollPhysics(),
       itemCount: count,
-      onPageChanged: (i) => _onPageChanged(i, count),
+      onPageChanged: _onPageChanged,
       itemBuilder: (_, i) {
         final p = profiles[i];
         return _MatchProfilePage(
@@ -194,46 +452,70 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     );
   }
 
-  Widget _emptyState(bool isError) => RefreshIndicator(
-        color: AppColors.primary,
-        onRefresh: _load,
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            const SizedBox(height: 80),
-            Icon(isError ? Icons.cloud_off_outlined : Icons.search_off,
-                size: 80, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Center(
-              child: Text(
-                  isError ? 'Could not load matches' : 'No matches found',
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w600)),
+  /// Professional empty state — shown when no profile passes the current
+  /// match mode's gates (never a blank page), with a Refresh action.
+  Widget _emptyState(bool isError) {
+    final l10n = context.l10n;
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: _load,
+      child: ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
+          const SizedBox(height: 56),
+          Center(
+            child: Container(
+              width: 88,
+              height: 88,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.07),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                  isError ? Icons.cloud_off_outlined : Icons.search_off,
+                  size: 44,
+                  color:
+                      isError ? Colors.grey[400] : AppColors.primary),
             ),
-            const SizedBox(height: 8),
-            Center(
-              child: Text(
-                  isError
-                      ? 'Check your connection and try again'
-                      : 'New members appear here as they join',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.grey)),
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: OutlinedButton.icon(
-                onPressed: _load,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Try Again'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
-                ),
+          ),
+          const SizedBox(height: 18),
+          Center(
+            child: Text(
+                isError
+                    ? l10n.couldNotLoadMatches
+                    : l10n.noMatchingProfilesTitle,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Poppins')),
+          ),
+          const SizedBox(height: 10),
+          Center(
+            child: Text(
+                isError
+                    ? l10n.checkConnectionRetry
+                    : l10n.noMatchingProfilesBody,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: Colors.grey[600], fontSize: 13.5, height: 1.5)),
+          ),
+          const SizedBox(height: 20),
+          Center(
+            child: OutlinedButton.icon(
+              onPressed: _load,
+              icon: const Icon(Icons.refresh),
+              label: Text(isError ? l10n.tryAgain : l10n.refresh),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
               ),
             ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// A single full-screen profile PREVIEW inside the swipe browser.
@@ -400,6 +682,7 @@ class _MatchProfilePage extends ConsumerWidget {
 
   // ── Summary (essential preview info only) ─────────────────────────────────
   Widget _summary(BuildContext context) {
+    final l10n = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -422,35 +705,36 @@ class _MatchProfilePage extends ConsumerWidget {
             ),
             if (profile.isVerified) ...[
               const SizedBox(width: 8),
-              _verifiedChip(),
+              _verifiedChip(context),
             ],
           ],
         ),
         const SizedBox(height: 14),
         // Essential fields — each rendered only when present.
-        _infoRow(Icons.location_on_outlined, 'Location', _location),
-        _infoRow(Icons.straighten, 'Height', profile.height),
-        _infoRow(Icons.school_outlined, 'Education', profile.education),
-        _infoRow(Icons.work_outline_rounded, 'Profession', profile.occupation),
-        _infoRow(Icons.temple_hindu_outlined, 'Religion', profile.religion),
-        _infoRow(Icons.groups_outlined, 'Community', profile.caste ?? ''),
+        _infoRow(Icons.location_on_outlined, l10n.location, _location),
+        _infoRow(Icons.straighten, l10n.height, profile.height),
+        _infoRow(Icons.school_outlined, l10n.education, profile.education),
+        _infoRow(Icons.work_outline_rounded, l10n.profession,
+            profile.occupation),
+        _infoRow(Icons.temple_hindu_outlined, l10n.religion, profile.religion),
+        _infoRow(Icons.groups_outlined, l10n.community, profile.caste ?? ''),
       ],
     );
   }
 
-  Widget _verifiedChip() => Container(
+  Widget _verifiedChip(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: AppColors.success.withOpacity(0.12),
           borderRadius: BorderRadius.circular(20),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.verified, size: 14, color: AppColors.success),
-            SizedBox(width: 4),
-            Text('Verified',
-                style: TextStyle(
+            const Icon(Icons.verified, size: 14, color: AppColors.success),
+            const SizedBox(width: 4),
+            Text(context.l10n.verified,
+                style: const TextStyle(
                     color: AppColors.success,
                     fontSize: 11.5,
                     fontWeight: FontWeight.w700)),
@@ -509,7 +793,7 @@ class _MatchProfilePage extends ConsumerWidget {
         Expanded(
           child: _outlinedButton(
             icon: Icons.person_outline,
-            label: 'View Profile',
+            label: context.l10n.viewProfile,
             onPressed: () => _openProfile(context),
           ),
         ),
@@ -522,23 +806,24 @@ class _MatchProfilePage extends ConsumerWidget {
   /// Interest"). Every variant shares the exact button geometry of
   /// [_outlinedButton] so the two actions always line up.
   Widget _interestButton(BuildContext context, InterestUiStatus status) {
+    final l10n = context.l10n;
     switch (status) {
       case InterestUiStatus.accepted:
         return _filledButton(
             icon: Icons.check_circle,
-            label: 'Matched',
+            label: l10n.matchedLabel,
             onPressed: null,
             background: AppColors.success);
       case InterestUiStatus.sent:
         return _filledButton(
             icon: Icons.check,
-            label: 'Interest Sent',
+            label: l10n.interestSent,
             onPressed: null,
             background: Colors.grey.shade500);
       case InterestUiStatus.rejected:
         return _filledButton(
             icon: Icons.cancel,
-            label: 'Not Interested',
+            label: l10n.notInterested,
             onPressed: null,
             background: Colors.grey.shade600);
       case InterestUiStatus.receivedPending:
@@ -547,7 +832,7 @@ class _MatchProfilePage extends ConsumerWidget {
               .watch(pendingReceivedInterestFromProfileProvider(profile.id));
           return _filledButton(
             icon: Icons.favorite,
-            label: 'Accept',
+            label: l10n.accept,
             onPressed: pending == null ? null : () => onAccept(pending.id),
             background: AppColors.success,
           );
@@ -555,7 +840,7 @@ class _MatchProfilePage extends ConsumerWidget {
       case InterestUiStatus.none:
         return _filledButton(
           icon: Icons.favorite_border,
-          label: 'Express Interest',
+          label: l10n.expressInterest,
           onPressed: onInterest,
           background: AppColors.primary,
         );

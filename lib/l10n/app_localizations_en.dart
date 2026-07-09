@@ -886,4 +886,118 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unavailable => 'Unavailable';
+
+  @override
+  String get reports => 'Reports';
+
+  @override
+  String get astrology => 'Astrology';
+
+  @override
+  String get compatibleMatches => 'Compatible Matches';
+
+  @override
+  String get allMatches => 'All Matches';
+
+  @override
+  String get viewMatchingStars => 'View Matching Stars';
+
+  @override
+  String get compatibleNakshatras => 'Compatible Nakshatras';
+
+  @override
+  String get compatibleNakshatrasHint => 'Nakshatras compatible with your star. Compatible Matches shows profiles from these stars that also fit your partner preferences.';
+
+  @override
+  String get matchingStarsUnavailable => 'Add your Nakshatra (or date of birth) in Horoscope Details to see your matching stars.';
+
+  @override
+  String get community => 'Community';
+
+  @override
+  String get verified => 'Verified';
+
+  @override
+  String get profession => 'Profession';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get goBack => 'Go Back';
+
+  @override
+  String get noMatchingProfilesTitle => 'No Matching Profiles Yet';
+
+  @override
+  String get noMatchingProfilesBody => 'Suitable profiles for you are not available yet. New members are continuously joining. Matching profiles based on your partner preferences and horoscope compatibility will appear here soon.';
+
+  @override
+  String get couldNotLoadMatches => 'Could not load matches';
+
+  @override
+  String get expressInterest => 'Express Interest';
+
+  @override
+  String get matchedLabel => 'Matched';
+
+  @override
+  String get notInterested => 'Not Interested';
+
+  @override
+  String get createProfileFirst => 'Create your profile first to send interest';
+
+  @override
+  String interestSentTo(String name) {
+    return 'Interest sent to $name';
+  }
+
+  @override
+  String get couldNotSendInterest => 'Could not send interest. Please try again.';
+
+  @override
+  String youMatchedWith(String name) {
+    return 'You matched with $name';
+  }
+
+  @override
+  String get couldNotAcceptInterest => 'Could not accept interest. Please try again.';
+
+  @override
+  String get dailyInterestLimitTitle => 'Daily interest limit reached';
+
+  @override
+  String dailyInterestLimitMessage(int count) {
+    return 'Free members can send $count interests per day. Upgrade to Basic or Premium for unlimited interests.';
+  }
+
+  @override
+  String get newProfiles => 'New Profiles';
+
+  @override
+  String get noNewProfilesYet => 'No new matching profiles yet.';
+
+  @override
+  String get comingSoonBody => 'This feature is not available yet. We are working on it and it will be unlocked in an upcoming update. Stay tuned!';
+
+  @override
+  String get featureMarriageFixed => 'Marriage Fixed';
+
+  @override
+  String get featureWeddingWorkspace => 'Marriage Workspace';
+
+  @override
+  String get featureFamilyLogin => 'Family Member Login';
+
+  @override
+  String get featureMuhurthamCalendar => 'Muhurtham Calendar';
+
+  @override
+  String get viewCalendar => 'View Calendar';
+
+  @override
+  String get adminSignIn => 'Admin sign-in';
+
+  @override
+  String get signOut => 'Sign Out';
 }

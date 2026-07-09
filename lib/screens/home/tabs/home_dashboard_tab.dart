@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/services/match_score_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/l10n_ext.dart';
 import '../../../core/utils/profile_completion.dart';
 import '../../../models/banner_model.dart';
 import '../../../models/interest_model.dart';
@@ -19,6 +20,7 @@ import '../../../providers/navigation_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/wedding_provider.dart';
+import '../../../widgets/common/coming_soon.dart';
 import '../../../widgets/common/match_score_badge.dart';
 import '../../../widgets/home/home_banner_slide.dart';
 
@@ -481,7 +483,11 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
 
   /// Home entry for the Marriage Muhurtham Calendar — a "View Calendar"
   /// button that opens the month-wise auspicious-dates page.
+  ///
+  /// LAUNCH LOCK: for non-admin users the button is locked (🔒 + Coming Soon)
+  /// and only shows the shared Coming Soon dialog. Admins keep full access.
   Widget _buildMuhurthamCard(BuildContext context) {
+    final unlocked = ref.watch(upcomingFeaturesUnlockedProvider);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: Container(
@@ -508,22 +514,26 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
               child: const Text('📅', style: TextStyle(fontSize: 20)),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Marriage Muhurtham Calendar',
+                  const Text('Marriage Muhurtham Calendar',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 13.5,
                           fontFamily: 'Poppins')),
-                  SizedBox(height: 2),
-                  Text('Auspicious marriage & engagement dates',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: Colors.black54, fontSize: 11.5)),
+                  const SizedBox(height: 2),
+                  if (unlocked)
+                    const Text('Auspicious marriage & engagement dates',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            TextStyle(color: Colors.black54, fontSize: 11.5))
+                  else
+                    const ComingSoonBadge(compact: true),
                 ],
               ),
             ),
@@ -538,8 +548,20 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
                 textStyle: const TextStyle(
                     fontSize: 12, fontWeight: FontWeight.w700),
               ),
-              onPressed: () => context.push('/muhurtham-calendar'),
-              child: const Text('View Calendar'),
+              onPressed: () => unlocked
+                  ? context.push('/muhurtham-calendar')
+                  : showComingSoonDialog(context,
+                      featureName: context.l10n.featureMuhurthamCalendar),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!unlocked) ...[
+                    const Icon(Icons.lock, size: 13),
+                    const SizedBox(width: 4),
+                  ],
+                  Text(context.l10n.viewCalendar),
+                ],
+              ),
             ),
           ],
         ),
@@ -553,9 +575,14 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   ///   • fixed → opens the shared Wedding Workspace (with countdown teaser);
   ///   • proposed & awaiting MY confirmation → confirm prompt;
   ///   • proposed & awaiting partner → status card.
+  ///
+  /// LAUNCH LOCK: Marriage Fixed and the Wedding Workspace are locked for
+  /// non-admin users — the card stays visible but tapping it only shows the
+  /// shared Coming Soon dialog.
   Widget _buildWeddingCard(BuildContext context) {
     final wedding = ref.watch(myCoupleWeddingProvider).valueOrNull;
     if (wedding == null) return const SizedBox.shrink();
+    final unlocked = ref.watch(upcomingFeaturesUnlockedProvider);
     final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid ?? '';
     final partnerName = wedding.nameOf(wedding.otherUid(myUid));
 
@@ -581,12 +608,22 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          // Fixed → open the workspace; still proposed → jump to the
+          // Locked (non-admin) → Coming Soon dialog only. Unlocked:
+          // fixed → open the workspace; still proposed → jump to the
           // Interests tab (Accepted), where the confirm button lives.
-          onTap: () => wedding.isFixed
-              ? context.push('/wedding-workspace')
-              : ref.read(homeTabIndexProvider.notifier).state =
-                  kInterestsTabIndex,
+          onTap: () {
+            if (!unlocked) {
+              showComingSoonDialog(context,
+                  featureName: wedding.isFixed
+                      ? context.l10n.featureWeddingWorkspace
+                      : context.l10n.featureMarriageFixed);
+              return;
+            }
+            wedding.isFixed
+                ? context.push('/wedding-workspace')
+                : ref.read(homeTabIndexProvider.notifier).state =
+                    kInterestsTabIndex;
+          },
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -610,14 +647,24 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Wedding Workspace',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13.5,
-                              fontFamily: 'Poppins')),
+                      Row(
+                        children: [
+                          const Flexible(
+                            child: Text('Wedding Workspace',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13.5,
+                                    fontFamily: 'Poppins')),
+                          ),
+                          if (!unlocked) ...[
+                            const SizedBox(width: 6),
+                            const ComingSoonBadge(compact: true),
+                          ],
+                        ],
+                      ),
                       const SizedBox(height: 2),
                       Text(subtitle,
                           maxLines: 2,
@@ -628,7 +675,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: Colors.white70),
+                Icon(unlocked ? Icons.chevron_right : Icons.lock,
+                    color: Colors.white70, size: unlocked ? 24 : 18),
               ],
             ),
           ),
@@ -800,17 +848,17 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
       ),
       error: (_, __) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: _emptyBox('No new profiles found.'),
+        child: _emptyBox(context.l10n.noNewProfilesYet),
       ),
       data: (profiles) {
         if (profiles.isEmpty) {
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _emptyBox('No new profiles yet.'),
+            child: _emptyBox(context.l10n.noNewProfilesYet),
           );
         }
         return _horizontalMatchSection(
-            context, '🆕', 'New Profiles', profiles);
+            context, '🆕', context.l10n.newProfiles, profiles);
       },
     );
   }

@@ -1840,6 +1840,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unavailable'**
   String get unavailable;
+
+  /// No description provided for @reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get reports;
+
+  /// No description provided for @astrology.
+  ///
+  /// In en, this message translates to:
+  /// **'Astrology'**
+  String get astrology;
+
+  /// No description provided for @compatibleMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatible Matches'**
+  String get compatibleMatches;
+
+  /// No description provided for @allMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'All Matches'**
+  String get allMatches;
+
+  /// No description provided for @viewMatchingStars.
+  ///
+  /// In en, this message translates to:
+  /// **'View Matching Stars'**
+  String get viewMatchingStars;
+
+  /// No description provided for @compatibleNakshatras.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatible Nakshatras'**
+  String get compatibleNakshatras;
+
+  /// No description provided for @compatibleNakshatrasHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Nakshatras compatible with your star. Compatible Matches shows profiles from these stars that also fit your partner preferences.'**
+  String get compatibleNakshatrasHint;
+
+  /// No description provided for @matchingStarsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your Nakshatra (or date of birth) in Horoscope Details to see your matching stars.'**
+  String get matchingStarsUnavailable;
+
+  /// No description provided for @community.
+  ///
+  /// In en, this message translates to:
+  /// **'Community'**
+  String get community;
+
+  /// No description provided for @verified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get verified;
+
+  /// No description provided for @profession.
+  ///
+  /// In en, this message translates to:
+  /// **'Profession'**
+  String get profession;
+
+  /// No description provided for @refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
+  /// No description provided for @goBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Go Back'**
+  String get goBack;
+
+  /// No description provided for @noMatchingProfilesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No Matching Profiles Yet'**
+  String get noMatchingProfilesTitle;
+
+  /// No description provided for @noMatchingProfilesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Suitable profiles for you are not available yet. New members are continuously joining. Matching profiles based on your partner preferences and horoscope compatibility will appear here soon.'**
+  String get noMatchingProfilesBody;
+
+  /// No description provided for @couldNotLoadMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load matches'**
+  String get couldNotLoadMatches;
+
+  /// No description provided for @expressInterest.
+  ///
+  /// In en, this message translates to:
+  /// **'Express Interest'**
+  String get expressInterest;
+
+  /// No description provided for @matchedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Matched'**
+  String get matchedLabel;
+
+  /// No description provided for @notInterested.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Interested'**
+  String get notInterested;
+
+  /// No description provided for @createProfileFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your profile first to send interest'**
+  String get createProfileFirst;
+
+  /// No description provided for @interestSentTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Interest sent to {name}'**
+  String interestSentTo(String name);
+
+  /// No description provided for @couldNotSendInterest.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send interest. Please try again.'**
+  String get couldNotSendInterest;
+
+  /// No description provided for @youMatchedWith.
+  ///
+  /// In en, this message translates to:
+  /// **'You matched with {name}'**
+  String youMatchedWith(String name);
+
+  /// No description provided for @couldNotAcceptInterest.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not accept interest. Please try again.'**
+  String get couldNotAcceptInterest;
+
+  /// No description provided for @dailyInterestLimitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily interest limit reached'**
+  String get dailyInterestLimitTitle;
+
+  /// No description provided for @dailyInterestLimitMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Free members can send {count} interests per day. Upgrade to Basic or Premium for unlimited interests.'**
+  String dailyInterestLimitMessage(int count);
+
+  /// No description provided for @newProfiles.
+  ///
+  /// In en, this message translates to:
+  /// **'New Profiles'**
+  String get newProfiles;
+
+  /// No description provided for @noNewProfilesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No new matching profiles yet.'**
+  String get noNewProfilesYet;
+
+  /// No description provided for @comingSoonBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This feature is not available yet. We are working on it and it will be unlocked in an upcoming update. Stay tuned!'**
+  String get comingSoonBody;
+
+  /// No description provided for @featureMarriageFixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Marriage Fixed'**
+  String get featureMarriageFixed;
+
+  /// No description provided for @featureWeddingWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Marriage Workspace'**
+  String get featureWeddingWorkspace;
+
+  /// No description provided for @featureFamilyLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Family Member Login'**
+  String get featureFamilyLogin;
+
+  /// No description provided for @featureMuhurthamCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Muhurtham Calendar'**
+  String get featureMuhurthamCalendar;
+
+  /// No description provided for @viewCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'View Calendar'**
+  String get viewCalendar;
+
+  /// No description provided for @adminSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin sign-in'**
+  String get adminSignIn;
+
+  /// No description provided for @signOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign Out'**
+  String get signOut;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

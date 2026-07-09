@@ -3,13 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/interest_model.dart';
 import 'auth_provider.dart';
 import 'chat_provider.dart';
+import 'locale_provider.dart';
 import 'profile_provider.dart';
 import 'service_providers.dart';
 
-/// The one-time opening line dropped into a freshly-created accepted-interest
-/// chat so the conversation immediately appears in both users' Chats list.
-const String kInterestAcceptedChatGreeting =
-    "🎉 You're now connected! You can chat with each other here.";
+/// The automatic FIRST message sent ON BEHALF OF the user who accepts an
+/// interest, the moment they accept it — a normal chat message from them
+/// (never a system notification), in the accepter's app language. Sent only
+/// once: skipped when the thread already has any message.
+const String kInterestAcceptedFirstMessageEn =
+    'Hi! I have accepted your interest. We are now connected. '
+    'Feel free to start the conversation.';
+const String kInterestAcceptedFirstMessageTa =
+    'வணக்கம்! உங்கள் விருப்பத்தை நான் ஏற்றுக்கொண்டேன். '
+    'இப்போது நாம் இணைக்கப்பட்டுள்ளோம். தயங்காமல் உரையாடலைத் தொடங்கலாம்.';
 
 final sentInterestsProvider = StreamProvider.autoDispose<List<InterestModel>>((ref) {
   final userId = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
@@ -160,14 +167,28 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
         otherPhoto: otherPhoto,
       );
 
-      // 4) Seed the opening greeting as the thread's latest status. Accepting
-      // an interest is a one-time pending→accepted transition, so this won't
-      // double-post in practice; if it fails, the thread still exists.
+      // 4) Auto-send the FIRST message on behalf of the accepting user (a
+      // normal message from them, in their app language) — ONLY when the
+      // thread has no message yet, so it can never post twice. Accepting an
+      // interest is a one-time pending→accepted transition; if this send
+      // fails, the thread still exists.
       try {
-        await chat.sendMessage(threadId, kInterestAcceptedChatGreeting);
+        final thread = await ref.read(chatThreadProvider(threadId).future);
+        if ((thread?.lastMessage ?? '').trim().isNotEmpty) {
+          debugPrint('[InterestNotifier] accepted-chat: thread $threadId '
+              'already has messages — first message skipped');
+        } else {
+          final isTamil =
+              ref.read(localeProvider)?.languageCode == 'ta';
+          await chat.sendMessage(
+              threadId,
+              isTamil
+                  ? kInterestAcceptedFirstMessageTa
+                  : kInterestAcceptedFirstMessageEn);
+        }
       } catch (e) {
         debugPrint(
-            '[InterestNotifier] accepted-chat: greeting failed ($e) — '
+            '[InterestNotifier] accepted-chat: first message failed ($e) — '
             'thread $threadId still created');
       }
     } catch (e) {

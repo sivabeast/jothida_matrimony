@@ -122,6 +122,82 @@ PoruthamMatchResult? computePorutham(ProfileModel me, ProfileModel other) {
 }
 
 // ───────────────────────────────────────────────────────────────────────────
+// STAR-ONLY (nakshatra ⇄ nakshatra) compatibility.
+//
+// Used by the Matches "Compatible Matches" mode, the Home "New Profiles"
+// mandatory nakshatra gate and the "View Matching Stars" sheet — all three
+// MUST agree, so they share this single definition. It evaluates only the
+// SEVEN star-based poruthams (dina, gana, mahendra, sthree dheerga, yoni,
+// rajju, vedha); the rasi-based ones need moon-sign data and are excluded so
+// a star shown as "matching" always corresponds to a compatible profile.
+// ───────────────────────────────────────────────────────────────────────────
+
+/// How many of the 7 star-based poruthams match from [brideStar] → [groomStar]
+/// (both 1-27). Directional, like the classical count.
+int matchedStarPoruthams({required int brideStar, required int groomStar}) {
+  final bride = _Chart(brideStar, 1, true);
+  final groom = _Chart(groomStar, 1, false);
+  final checks = [
+    _dina(bride, groom),
+    _gana(bride, groom),
+    _mahendra(bride, groom),
+    _streeDheerga(bride, groom),
+    _yoni(bride, groom),
+    _rajju(bride, groom),
+    _vedha(bride, groom),
+  ];
+  return checks.where((r) => r.matched).length;
+}
+
+/// Whether the star pair is COMPATIBLE: Rajju and Vedha (the two doshams that
+/// can never be waived) must both clear, plus at least 4 of the 7 star
+/// poruthams overall.
+bool isStarPairCompatible({required int brideStar, required int groomStar}) {
+  final bride = _Chart(brideStar, 1, true);
+  final groom = _Chart(groomStar, 1, false);
+  if (!_rajju(bride, groom).matched) return false;
+  if (!_vedha(bride, groom).matched) return false;
+  return matchedStarPoruthams(brideStar: brideStar, groomStar: groomStar) >= 4;
+}
+
+/// All stars (1-27) compatible with [myStar] for a member of the given gender.
+/// The bride side of the directional count is always the female partner.
+List<int> compatibleStarsFor({required int myStar, required bool iAmFemale}) {
+  final result = <int>[];
+  for (var other = 1; other <= 27; other++) {
+    final ok = iAmFemale
+        ? isStarPairCompatible(brideStar: myStar, groomStar: other)
+        : isStarPairCompatible(brideStar: other, groomStar: myStar);
+    if (ok) result.add(other);
+  }
+  return result;
+}
+
+/// Resolves [p]'s nakshatra as a 1-27 index — the stored horoscope star when
+/// present, otherwise derived from the birth date. Null when unresolvable.
+int? profileStarIndex(ProfileModel p) {
+  var idx = AppConstants.nakshatraList.indexOf(p.horoscope.nakshatra.trim());
+  if (idx < 0 && p.horoscope.nakshatra.trim().isEmpty) {
+    idx = AppConstants.nakshatraList
+        .indexOf(HoroscopeUtils.calculateNakshatra(p.dateOfBirth));
+  }
+  return idx < 0 ? null : idx + 1;
+}
+
+/// Whether [other]'s nakshatra is compatible with [me]'s (bride side = the
+/// female partner). Returns false when either star cannot be resolved — an
+/// unverifiable pair must never pass the "Compatible Matches" gate.
+bool isNakshatraCompatible(ProfileModel me, ProfileModel other) {
+  final myStar = profileStarIndex(me);
+  final otherStar = profileStarIndex(other);
+  if (myStar == null || otherStar == null) return false;
+  final iAmFemale = me.gender.trim().toLowerCase().startsWith('f');
+  return iAmFemale
+      ? isStarPairCompatible(brideStar: myStar, groomStar: otherStar)
+      : isStarPairCompatible(brideStar: otherStar, groomStar: myStar);
+}
+
+// ───────────────────────────────────────────────────────────────────────────
 // Internal chart: resolves a member's nakshatra (1-27) and rasi (1-12) from
 // stored horoscope fields, falling back to a derivation from the birth date.
 // ───────────────────────────────────────────────────────────────────────────

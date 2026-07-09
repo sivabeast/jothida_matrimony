@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/config/admin_config.dart';
 import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/auth_routing.dart';
@@ -9,6 +10,7 @@ import '../../core/utils/l10n_ext.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/wedding_provider.dart';
 import '../../widgets/auth/login_illustrations.dart';
+import '../../widgets/common/coming_soon.dart';
 
 /// App entry — ROLE-BASED. Instead of a classic login form, the user first
 /// picks WHO they are with two large cards:
@@ -72,6 +74,64 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   // ── Family Member sign-in ───────────────────────────────────────────────
 
+  /// LAUNCH LOCK: Family Member Login is not part of the initial release.
+  /// Tapping the (visibly locked) card only shows the shared Coming Soon
+  /// dialog. A subtle "Admin sign-in" action lets the ADMIN proceed — since
+  /// nobody is authenticated yet, the admin check itself happens right after
+  /// the Google sign-in in [_signInAsFamily]; any non-admin account is signed
+  /// straight back out.
+  Future<void> _onFamilyCardTapped() async {
+    final proceedAsAdmin = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final l10n = ctx.l10n;
+        return AlertDialog(
+          title: Row(
+            children: [
+              const Icon(Icons.lock, color: AppColors.goldDark, size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(l10n.featureFamilyLogin,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const ComingSoonBadge(),
+              const SizedBox(height: 12),
+              Text(l10n.comingSoonBody,
+                  style: const TextStyle(fontSize: 13.5, height: 1.4)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: TextButton.styleFrom(foregroundColor: Colors.grey),
+              child: Text(l10n.adminSignIn,
+                  style: const TextStyle(fontSize: 12)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white),
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.ok),
+            ),
+          ],
+        );
+      },
+    );
+    if (proceedAsAdmin == true && mounted) {
+      setState(() => _role = _EntryRole.family);
+    }
+  }
+
   /// FAMILY entry. Signs in with Google, then verifies the Gmail is invited
   /// to a Wedding Workspace:
   ///   • invited → opens the Family Workspace (the same Gmail may ALSO be a
@@ -97,6 +157,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       final user = auth.valueOrNull;
       if (user == null) return; // picker dismissed
+
+      // LAUNCH LOCK enforcement: Family Member Login is admin-only for now.
+      // Any non-admin account that reaches this step is signed straight back
+      // out and shown the shared Coming Soon dialog.
+      if (!user.isAdmin && !AdminConfig.isSuperAdminEmail(user.email)) {
+        debugPrint('[LoginScreen] family entry: ${user.email} is not an '
+            'admin — Family Member Login is locked (Coming Soon).');
+        await ref.read(authNotifierProvider.notifier).signOut();
+        if (!mounted) return;
+        await showComingSoonDialog(context,
+            featureName: context.l10n.featureFamilyLogin);
+        return;
+      }
 
       final email = user.email?.toLowerCase() ?? '';
       final wedding = email.isEmpty
@@ -259,6 +332,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             accent: AppColors.goldDark,
                             illustration: const FamilyIllustrationCircle(
                                 size: 76, showFloatingHearts: false),
+                            locked: true, // LAUNCH LOCK — Coming Soon
                           ),
                           const SizedBox(height: 12),
                         ],
@@ -281,13 +355,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     required String description,
     required Color accent,
     required Widget illustration,
+    bool locked = false,
   }) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: Material(
         color: AppColors.background,
         child: InkWell(
-          onTap: () => setState(() => _role = role),
+          // A locked card only shows the shared Coming Soon dialog (with the
+          // admin-only continue path) — it never opens the role's login step.
+          onTap: locked
+              ? _onFamilyCardTapped
+              : () => setState(() => _role = role),
           child: Stack(
             children: [
               Padding(
@@ -309,7 +388,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.favorite, size: 14, color: accent),
+                              Icon(locked ? Icons.lock : Icons.favorite,
+                                  size: 14, color: accent),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
@@ -321,6 +401,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       color: accent),
                                 ),
                               ),
+                              if (locked) const ComingSoonBadge(compact: true),
                             ],
                           ),
                           const SizedBox(height: 8),

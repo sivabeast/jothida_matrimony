@@ -9,6 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/interest_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/wedding_provider.dart';
+import '../../widgets/common/coming_soon.dart';
 
 /// Interest Management Center — replaces the old chat/messages page.
 ///
@@ -486,6 +487,35 @@ class _MarriageFixedButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (otherUserId.isEmpty) return const SizedBox.shrink();
+
+    // ── LAUNCH LOCK: Marriage Fixed (and the workspace it unlocks) is not in
+    // the initial release. Non-admin users see the shared lock state; tapping
+    // it only shows the Coming Soon dialog. Admins keep the full flow below.
+    if (!ref.watch(upcomingFeaturesUnlockedProvider)) {
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: () => showComingSoonDialog(context,
+              featureName: context.l10n.featureMarriageFixed),
+          icon: const Icon(Icons.lock, size: 16),
+          label: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(context.l10n.featureMarriageFixed,
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+              ),
+              const SizedBox(width: 8),
+              const ComingSoonBadge(compact: true),
+            ],
+          ),
+          style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.grey.shade400,
+              foregroundColor: Colors.white),
+        ),
+      );
+    }
+
     final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid ?? '';
     final wedding =
         ref.watch(weddingWithUserProvider(otherUserId)).valueOrNull;
