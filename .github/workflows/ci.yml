@@ -8,10 +8,8 @@ on:
       - feat/**
   pull_request:
     branches:
-      - maincd matrimony_website
-npm install
-cp .env.example .env   # then fill in the two REPLACE_WITH_* values (see step 2)
-npm run dev
+      - main
+
 jobs:
   build:
     runs-on: ubuntu-latest
