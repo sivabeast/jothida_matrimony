@@ -32,11 +32,11 @@ import '../screens/profile/profile_view_screen.dart';
 import '../screens/match/match_details_screen.dart';
 import '../screens/privacy/privacy_settings_screen.dart';
 import '../screens/settings/language_screen.dart';
-import '../screens/subscription/subscription_screen.dart';
 import '../screens/admin/admin_shell.dart';
 import '../screens/admin/astrology_service_settings_screen.dart';
 import '../screens/admin/admin_dashboard.dart';
 import '../screens/admin/admin_users_page.dart';
+import '../screens/admin/admin_edit_user_screen.dart';
 import '../screens/admin/astrologer_accounts_screen.dart';
 import '../screens/admin/astrologer_details_screen.dart';
 import '../screens/admin/user_details_screen.dart';
@@ -371,7 +371,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/wedding-workspace',
         builder: (_, __) => const WeddingWorkspaceScreen(),
       ),
-      GoRoute(path: '/subscription', builder: (_, __) => const SubscriptionScreen()),
       GoRoute(path: '/privacy', builder: (_, __) => const PrivacySettingsScreen()),
       GoRoute(path: '/language', builder: (_, __) => const LanguageScreen()),
       // ── Profile section screens ──────────────────────────────────────────
@@ -477,6 +476,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               path: '/admin/user/:uid',
               builder: (_, state) =>
                   UserDetailsScreen(uid: state.pathParameters['uid'] ?? '')),
+          // Full admin editor for a user's profile — details, horoscope,
+          // contact, location, photo, Aadhaar verification, preferences.
+          GoRoute(
+              path: '/admin/user/:uid/edit',
+              builder: (_, state) => AdminEditUserScreen(
+                  uid: state.pathParameters['uid'] ?? '')),
           // Astrologers page → admin-provisioned account registry (add by
           // Gmail, enable/disable; Google-only login + auto-assignment).
           GoRoute(
@@ -508,7 +513,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               builder: (_, __) => const AdminAppointmentsScreen()),
           GoRoute(path: '/admin/banners', builder: (_, __) => const BannerManagementScreen()),
           GoRoute(path: '/admin/notifications', builder: (_, __) => const AnnouncementManagementScreen()),
-          GoRoute(path: '/admin/premium', builder: (_, __) => const PremiumManagementScreen()),
           GoRoute(path: '/admin/revenue-settings', builder: (_, __) => const RevenueSettingsScreen()),
           GoRoute(
               path: '/admin/astrology-service',

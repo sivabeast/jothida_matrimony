@@ -1264,38 +1264,7 @@ class _CertificateViewer extends StatelessWidget {
 // Firestore-backed system with image + text banners, ordering and publishing).
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 💎 Premium Management
-// ─────────────────────────────────────────────────────────────────────────────
-
-class PremiumManagementScreen extends StatelessWidget {
-  const PremiumManagementScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    debugPrint('[Admin] PremiumManagement build — /admin/premium');
-    return _adminScaffold(
-      title: 'Premium Management',
-      icon: Icons.workspace_premium,
-      subtitle: 'Premium users and subscriptions',
-      children: [
-        _ActionTile(
-          icon: Icons.people_alt_outlined,
-          title: 'View Premium Users',
-          subtitle: 'List members on a paid plan',
-          color: AppColors.gold,
-          onTap: () => _soon(context, 'View Premium Users'),
-        ),
-        _ActionTile(
-          icon: Icons.card_membership_outlined,
-          title: 'Manage Subscriptions',
-          subtitle: 'Extend, refund or cancel subscriptions',
-          onTap: () => _soon(context, 'Manage Subscriptions'),
-        ),
-      ],
-    );
-  }
-}
+// (Premium Management was removed — there is NO user subscription system.)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 📈 Analytics (live stats from adminStatsProvider)
@@ -1482,19 +1451,18 @@ class RevenueSettingsScreen extends StatelessWidget {
     return _adminScaffold(
       title: 'Revenue Settings',
       icon: Icons.payments_outlined,
-      subtitle: 'Current subscription pricing (read-only)',
+      subtitle: 'Current service pricing (read-only)',
       children: [
         const Padding(
           padding: EdgeInsets.only(left: 4, top: 4, bottom: 8),
-          child: Text('User Plans',
+          child: Text('Paid Astrology Services',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
         ),
-        const _PriceRow('Basic Plan', AppConstants.basicPrice,
-            '${AppConstants.basicDurationDays} days'),
-        const _PriceRow('Premium Plan', AppConstants.premiumPrice,
-            '${AppConstants.premiumDurationDays} days'),
-        const _PriceRow(
-            'Porutham Report', AppConstants.poruthamsPrice, 'one-time'),
+        // The ONLY paid features — every matrimony feature is free.
+        const _PriceRow('Horoscope Compatibility Report',
+            AppConstants.horoscopeAnalysisFee, 'per report'),
+        const _PriceRow('Astrologer Appointment',
+            AppConstants.appointmentBookingFee, 'per booking'),
         const SizedBox(height: 12),
         const Padding(
           padding: EdgeInsets.only(left: 4, top: 4, bottom: 8),

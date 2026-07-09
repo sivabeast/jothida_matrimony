@@ -143,7 +143,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
       // ── Body ─────────────────────────────────────────────────────────────
-      body: _tabs[selectedIndex],
+      // Lazily-built IndexedStack: each tab is built on FIRST visit and then
+      // kept alive, so switching tabs never resets a tab's state — the
+      // Matches swipe browser continues exactly where the user left it, and
+      // tabs don't refetch their data on every visit.
+      body: _LazyTabStack(index: selectedIndex, tabs: _tabs),
       // ── Bottom Navigation ─────────────────────────────────────────────────
       bottomNavigationBar: _BottomNav(
         selectedIndex: selectedIndex,
@@ -176,6 +180,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       return;
     }
     SystemNavigator.pop();
+  }
+}
+
+/// An [IndexedStack] that builds each tab only on its FIRST visit and keeps it
+/// alive afterwards. Unvisited tabs stay as empty placeholders, so the home
+/// shell doesn't pay for all five tabs (providers, queries) up front, while a
+/// visited tab's state (scroll/pager position, loaded data) survives tab
+/// switches — the Matches page never restarts from profile 1 just because the
+/// user opened Home / Interests / Chat and came back.
+class _LazyTabStack extends StatefulWidget {
+  final int index;
+  final List<Widget> tabs;
+  const _LazyTabStack({required this.index, required this.tabs});
+
+  @override
+  State<_LazyTabStack> createState() => _LazyTabStackState();
+}
+
+class _LazyTabStackState extends State<_LazyTabStack> {
+  late final List<bool> _built =
+      List<bool>.filled(widget.tabs.length, false);
+
+  @override
+  Widget build(BuildContext context) {
+    _built[widget.index] = true;
+    return IndexedStack(
+      index: widget.index,
+      children: [
+        for (var i = 0; i < widget.tabs.length; i++)
+          _built[i] ? widget.tabs[i] : const SizedBox.shrink(),
+      ],
+    );
   }
 }
 

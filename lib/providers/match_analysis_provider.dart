@@ -13,6 +13,7 @@ import 'auth_provider.dart';
 import 'chat_provider.dart';
 import 'interest_provider.dart';
 import 'locale_provider.dart';
+import 'notification_provider.dart';
 import 'profile_provider.dart';
 import 'service_providers.dart';
 
@@ -174,7 +175,7 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
       final now = DateTime.now();
       // Simulated payment (collected to the admin account). A real gateway
       // would run here and only on success would the booking be created.
-      final paymentId = kSubscriptionTestMode
+      final paymentId = kPaymentTestMode
           ? 'demo_${now.millisecondsSinceEpoch}'
           : 'razorpay_${now.millisecondsSinceEpoch}';
 
@@ -264,7 +265,7 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
       // Use the REAL Razorpay payment id when supplied; otherwise fall back to a
       // simulated id (demo / no-gateway path).
       final txnId = paymentId ??
-          (kSubscriptionTestMode
+          (kPaymentTestMode
               ? 'demo_${now.millisecondsSinceEpoch}'
               : 'razorpay_${now.millisecondsSinceEpoch}');
 
@@ -418,6 +419,16 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         } catch (_) {}
       }
 
+      // In-app "Appointment Confirmed" notification (best-effort).
+      final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
+      if (myUid != null) {
+        await ref.read(notificationNotifierProvider.notifier).notify(
+              toUid: myUid,
+              event: AppNotificationEvent.appointmentConfirmed,
+              route: '/my-appointments',
+            );
+      }
+
       state = const AsyncData(null);
       return id;
     } catch (e, st) {
@@ -523,6 +534,14 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
           debugPrint('[MatchAnalysis] appointment auto-assign failed: $e');
         }
       }
+      // In-app "Appointment Confirmed" notification (best-effort).
+      if (uid.isNotEmpty) {
+        await ref.read(notificationNotifierProvider.notifier).notify(
+              toUid: uid,
+              event: AppNotificationEvent.appointmentConfirmed,
+              route: '/my-appointments',
+            );
+      }
       state = const AsyncData(null);
       return id;
     } catch (e, st) {
@@ -551,7 +570,7 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
   Future<void> pay(AstrologerRequestModel r) async {
     state = const AsyncLoading();
     try {
-      final paymentId = kSubscriptionTestMode
+      final paymentId = kPaymentTestMode
           ? 'demo_${DateTime.now().millisecondsSinceEpoch}'
           : 'razorpay_${DateTime.now().millisecondsSinceEpoch}';
       if (kBypassAuth) {
@@ -750,6 +769,20 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         images: images,
         pdfs: pdfs,
       );
+      // In-app "Horoscope Report Ready" notification for the request owner
+      // (best-effort — the submission must never fail because of it).
+      try {
+        final req = await svc.getRequestById(requestId);
+        if (req != null && req.userId.isNotEmpty) {
+          await ref.read(notificationNotifierProvider.notifier).notify(
+                toUid: req.userId,
+                event: AppNotificationEvent.reportReady,
+                route: '/reports',
+              );
+        }
+      } catch (e) {
+        debugPrint('[MatchAnalysis] report-ready notification failed: $e');
+      }
       // Free up the astrologer's workload counter so auto-assignment rebalances.
       final myEmail = ref.read(currentUserProvider).valueOrNull?.email ?? '';
       if (myEmail.isNotEmpty) {

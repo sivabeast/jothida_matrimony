@@ -41,6 +41,13 @@ class AppDrawer extends ConsumerWidget {
               children: [
                 // ── 👤 PROFILE ───────────────────────────────────────────────
                 _section('👤  PROFILE'),
+                // Edit Profile — the full wizard over the EXISTING profile, so
+                // every field (personal, location, education, occupation,
+                // photo, horoscope, Aadhaar, partner preferences) is editable
+                // after creation.
+                if (profile != null)
+                  _item(context, Icons.edit_outlined, 'Edit Profile',
+                      () => context.push('/profile/${profile.id}/edit')),
                 _item(context, Icons.person_outline, 'Profile Details',
                     () => context.push('/personal-details')),
                 _item(context, Icons.family_restroom_outlined, 'Family Details',
@@ -71,11 +78,8 @@ class AppDrawer extends ConsumerWidget {
                 _item(context, Icons.receipt_long_outlined, 'My Reports',
                     () => _openTab(context, ref, kReportsTabIndex)),
 
-                // ── 💳 MEMBERSHIP ────────────────────────────────────────────
-                _section('💳  MEMBERSHIP'),
-                _item(context, Icons.workspace_premium_outlined,
-                    'Subscription Plans', () => context.push('/subscription')),
-
+                // (The MEMBERSHIP / Subscription section was removed — the app
+                // has no subscription system; all matrimony features are free.)
                 const SizedBox(height: 8),
                 const Divider(height: 1),
                 _item(context, Icons.settings_outlined, 'Settings',

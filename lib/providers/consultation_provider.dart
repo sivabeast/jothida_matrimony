@@ -159,7 +159,7 @@ class ConsultationController extends Notifier<AsyncValue<void>> {
         note: note.trim(),
         createdAt: DateTime.now(),
       );
-      final paymentId = kSubscriptionTestMode
+      final paymentId = kPaymentTestMode
           ? 'test_${DateTime.now().millisecondsSinceEpoch}'
           : 'razorpay_${DateTime.now().millisecondsSinceEpoch}';
       final id = await ref
@@ -180,7 +180,7 @@ class ConsultationController extends Notifier<AsyncValue<void>> {
   /// payment is simulated; otherwise this is where the Razorpay checkout would
   /// be launched before [ConsultationService.markPaid] is called on success.
   Future<void> pay(ConsultationBooking b) => _guard(() async {
-        final paymentId = kSubscriptionTestMode
+        final paymentId = kPaymentTestMode
             ? 'test_${DateTime.now().millisecondsSinceEpoch}'
             : 'razorpay_${DateTime.now().millisecondsSinceEpoch}';
         await ref

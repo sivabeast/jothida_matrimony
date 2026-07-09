@@ -25,4 +25,4 @@ const bool kBypassAuth = false;
 ///
 /// All subscription logic, premium-access checks, expiry calculations and plan
 /// validation stay intact in both modes — only the payment step is skipped.
-const bool kSubscriptionTestMode = true;
+const bool kPaymentTestMode = true;

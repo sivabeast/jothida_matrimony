@@ -429,10 +429,10 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           ),
           Expanded(
             child: _quickAction(
-              icon: Icons.workspace_premium,
-              label: 'Premium',
+              icon: Icons.description_outlined,
+              label: 'Reports',
               color: AppColors.gold,
-              onTap: () => context.push('/subscription'),
+              onTap: () => goTab(kReportsTabIndex),
             ),
           ),
         ],
@@ -702,16 +702,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
       ));
     }
 
-    // 👑 Upgrade To Premium — opens the subscription plans. (Matches now lives
-    // in the Quick Actions row above, so the redundant "Find Your Life Partner"
-    // card was removed to keep the dashboard clean.)
-    cards.add(_notifCard(
-      emoji: '👑',
-      title: 'Upgrade To Premium',
-      subtitle: 'Unlock premium features',
-      accent: AppColors.gold,
-      onTap: () => context.push('/subscription'),
-    ));
+    // (The old "Upgrade To Premium" card was removed — the app has NO
+    // subscription system; every matrimony feature is free.)
 
     // 🎉 Married status — preserves the "mark as married" action in a compact
     // card consistent with the rest of the flow.

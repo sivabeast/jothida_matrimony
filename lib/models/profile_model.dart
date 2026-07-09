@@ -383,6 +383,63 @@ class ProfileModel {
     );
   }
 
+  /// The INVERSE of [fromMap]: flattens this profile into the wizard's
+  /// data-map dialect so Edit Profile can seed the creation steps with the
+  /// user's existing values (every field editable after creation).
+  Map<String, dynamic> toWizardData() => {
+        'id': id,
+        'userId': userId,
+        'profileFor': profileCreatedFor,
+        'name': fullName,
+        'gender': gender,
+        'dateOfBirth': dateOfBirth.toIso8601String(),
+        'age': age,
+        'height': height,
+        'weight': weight,
+        'maritalStatus': maritalStatus,
+        'religion': religion,
+        'religionId': religionId,
+        'caste': caste,
+        'casteId': casteId,
+        'subCaste': subCaste,
+        'subCasteId': subCasteId,
+        'education': education,
+        'occupation': occupation,
+        'annualIncome': annualIncome,
+        'country': country,
+        'state': state,
+        'stateId': stateId,
+        'stateName': state,
+        'district': district,
+        'districtId': districtId,
+        'districtName': district,
+        'city': city,
+        'cityId': cityId,
+        'cityName': city,
+        'latitude': latitude,
+        'longitude': longitude,
+        'motherTongue': motherTongue,
+        'about': aboutMe,
+        'physicalStatus': physicalStatus,
+        'childrenCount': childrenCount,
+        'childrenLivingStatus': childrenLivingStatus,
+        'gothram': gothram,
+        'kuladeivam': kuladeivam,
+        'employmentType': employmentType,
+        'collegeName': collegeName,
+        'companyName': companyName,
+        'workLocation': workLocation,
+        'nativePlace': nativePlace,
+        'citizenship': citizenship,
+        'lifestyle': lifestyle.toMap(),
+        'photos': photos, // existing URLs — kept unless new files are picked
+        'horoscopeDetails': horoscope.toMap(),
+        'familyDetails': family.toMap(),
+        'partnerPreferences': partnerPreferences.toMap(),
+        'contactDetails': contact.toMap(),
+        'status': status,
+      };
+
   ProfileModel copyWith({
     String? fullName,
     String? gender,

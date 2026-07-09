@@ -10,11 +10,9 @@ import '../../providers/chat_provider.dart';
 import '../../providers/interest_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
-import '../../providers/subscription_provider.dart';
 import '../../widgets/common/contact_reveal_card.dart';
 import '../../widgets/common/gradient_button.dart';
 import '../../widgets/common/network_photo.dart';
-import '../../widgets/common/premium_gate.dart';
 
 class ProfileViewScreen extends ConsumerStatefulWidget {
   /// Open by profile-document id — used from Discover / Matches, where the id
@@ -68,21 +66,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       }
       return;
     }
-    // Free-plan daily interest limit (2/day). Paid plans are unlimited.
-    final features = ref.read(planFeaturesProvider);
-    if (!features.hasUnlimitedInterests &&
-        ref.read(interestsSentTodayProvider) >= features.interestsPerDay) {
-      if (mounted) {
-        await showUpgradeDialog(
-          context,
-          title: 'Daily interest limit reached',
-          message:
-              'Free members can send ${features.interestsPerDay} interests per day. '
-              'Upgrade to Basic or Premium for unlimited interests.',
-        );
-      }
-      return;
-    }
+    // Sending interests is FREE and unlimited — no plan gate.
     await ref.read(interestNotifierProvider.notifier).sendInterest(
           senderId: userId,
           receiverId: profile.userId,
@@ -100,18 +84,9 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
   }
 
   void _showContact(ProfileModel profile) {
-    // Contact & WhatsApp viewing is a paid feature (Basic / Premium).
-    final features = ref.read(planFeaturesProvider);
-    if (!features.canViewContact) {
-      showUpgradeDialog(
-        context,
-        title: 'Contact details locked',
-        message:
-            'Viewing contact and WhatsApp details is available on the Basic and '
-            'Premium plans. Upgrade to connect directly.',
-      );
-      return;
-    }
+    // Contact & WhatsApp viewing is FREE — no plan gate. (The privacy gate —
+    // contact unlocks only after a mutually-accepted interest — still lives in
+    // ContactRevealCard / the contacts security rules.)
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,

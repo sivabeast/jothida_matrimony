@@ -7,7 +7,6 @@ class AppConstants {
   static const String usersCollection = 'users';
   static const String profilesCollection = 'profiles';
   static const String interestsCollection = 'interests';
-  static const String subscriptionsCollection = 'subscriptions';
   static const String poruthamsCollection = 'poruthams';
   static const String reportsCollection = 'reports';
   static const String notificationsCollection = 'notifications';
@@ -44,6 +43,8 @@ class AppConstants {
   // mutually-accepted interest (recorded in `connections`).
   static const String contactsCollection = 'contacts';
   static const String connectionsCollection = 'connections';
+  // Aadhaar verification records — SENSITIVE, gated to owner + admin only.
+  static const String aadhaarCollection = 'aadhaar';
 
   // Astrologer specializations
   static const List<String> astrologerSpecializations = [
@@ -64,39 +65,17 @@ class AppConstants {
   static const String horoscopeDocsPath = 'horoscope_docs';
   static const String idProofsPath = 'id_proofs';
 
-  // Subscription Plans — three tiers: Free, Basic, Premium.
-  // `planMedium` is retained ONLY for backward-compatibility with legacy
-  // accounts/analytics; it is no longer offered in the subscription UI and is
-  // treated as Basic-level access by the entitlements layer (PlanFeatures).
-  static const String planFree = 'free';
-  static const String planBasic = 'basic';
-  static const String planMedium = 'medium'; // legacy → mapped to Basic
-  static const String planPremium = 'premium';
-
-  // Plan Prices (INR)
-  static const int basicPrice = 299;
-  static const int mediumPrice = 299; // legacy
-  static const int premiumPrice = 599;
+  // ── Pricing ────────────────────────────────────────────────────────────────
+  // There is NO subscription system: every matrimony feature is FREE.
+  // Only the two astrology services below are paid (per booking).
   static const int poruthamsPrice = 199;
-  // Fee for the ONLINE Horoscope Analysis report (paid, auto-assigned, delivered
-  // to the user's Reports page). Completely separate from the office-visit
-  // appointment fee below. Collected by the platform via Razorpay.
-  static const int horoscopeAnalysisFee = 399;
+  // Fee for the ONLINE Horoscope Compatibility Report (paid, auto-assigned,
+  // delivered to the user's Reports page). Completely separate from the
+  // office-visit appointment fee below. Collected via Razorpay.
+  static const int horoscopeAnalysisFee = 199;
   // Booking charge to confirm a Direct Office-Visit appointment slot. A separate,
   // independent service from the online analysis above.
-  static const int appointmentBookingFee = 50;
-  static const int freePortuthamsPerMedium = 2;
-
-  // Plan Durations (days)
-  static const int basicDurationDays = 30;
-  static const int premiumDurationDays = 60;
-
-  // Free Plan Limits
-  static const int freeInterestsPerDay = 2;
-
-  // Basic Plan Limits (legacy)
-  static const int basicDailyProfileViews = 10;
-  static const int basicMonthlyInterests = 5;
+  static const int appointmentBookingFee = 20;
 
   // Pagination
   static const int profilesPerPage = 20;

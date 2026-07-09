@@ -6,10 +6,10 @@ import '../../models/user_model.dart';
 import '../../providers/admin_provider.dart';
 import '../../widgets/common/data_states.dart';
 
-/// Admin → Users. Manages MATRIMONY USERS only, with plan-wise counts
-/// (Free / Basic / Premium): a total summary card + filter chips with live
-/// count badges. (Horoscope-analysis staff are managed under admin → Employees;
-/// the old Astrologers tab was removed.)
+/// Admin → Users. Manages MATRIMONY USERS only: a total summary card + filter
+/// chips (All / Active / Suspended) with live count badges. (There is no
+/// subscription system — plan-wise buckets were removed. Horoscope-analysis
+/// staff are managed under admin → Employees.)
 class AdminUsersPage extends StatelessWidget {
   const AdminUsersPage({super.key});
 
@@ -153,14 +153,7 @@ Widget _chip(String label, Color color) => Container(
 // ─────────────────────────────────────────────────────────────────────────────
 // Users tab
 // ─────────────────────────────────────────────────────────────────────────────
-enum _UserPlan { all, free, basic, premium }
-
-String userPlanOf(UserModel u) {
-  final m = u.membershipType.toLowerCase();
-  if (m == 'premium') return 'premium';
-  if (m == 'basic' || m == 'medium') return 'basic';
-  return 'free';
-}
+enum _UserFilter { all, active, suspended }
 
 class _UsersTab extends ConsumerStatefulWidget {
   const _UsersTab();
@@ -172,7 +165,7 @@ class _UsersTabState extends ConsumerState<_UsersTab>
     with AutomaticKeepAliveClientMixin {
   final _searchCtrl = TextEditingController();
   String _query = '';
-  _UserPlan _filter = _UserPlan.all;
+  _UserFilter _filter = _UserFilter.all;
 
   @override
   bool get wantKeepAlive => true;
@@ -191,10 +184,9 @@ class _UsersTabState extends ConsumerState<_UsersTab>
       return false;
     }
     return switch (_filter) {
-      _UserPlan.all => true,
-      _UserPlan.free => userPlanOf(u) == 'free',
-      _UserPlan.basic => userPlanOf(u) == 'basic',
-      _UserPlan.premium => userPlanOf(u) == 'premium',
+      _UserFilter.all => true,
+      _UserFilter.active => !u.isBlocked,
+      _UserFilter.suspended => u.isBlocked,
     };
   }
 
@@ -206,9 +198,8 @@ class _UsersTabState extends ConsumerState<_UsersTab>
 
     int n(String k) => (stats?[k] as num?)?.toInt() ?? 0;
     final total = n('totalUsers');
-    final basic = n('basicPlanUsers') + n('mediumPlanUsers');
-    final premium = n('premiumPlanUsers');
-    final free = (total - basic - premium).clamp(0, total);
+    final active = n('activeUsers');
+    final suspended = (total - active).clamp(0, total);
 
     return Column(
       children: [
@@ -226,23 +217,18 @@ class _UsersTabState extends ConsumerState<_UsersTab>
               _CountChip(
                   label: 'All',
                   count: total,
-                  selected: _filter == _UserPlan.all,
-                  onTap: () => setState(() => _filter = _UserPlan.all)),
+                  selected: _filter == _UserFilter.all,
+                  onTap: () => setState(() => _filter = _UserFilter.all)),
               _CountChip(
-                  label: 'Free',
-                  count: free,
-                  selected: _filter == _UserPlan.free,
-                  onTap: () => setState(() => _filter = _UserPlan.free)),
+                  label: 'Active',
+                  count: active,
+                  selected: _filter == _UserFilter.active,
+                  onTap: () => setState(() => _filter = _UserFilter.active)),
               _CountChip(
-                  label: 'Basic',
-                  count: basic,
-                  selected: _filter == _UserPlan.basic,
-                  onTap: () => setState(() => _filter = _UserPlan.basic)),
-              _CountChip(
-                  label: 'Premium',
-                  count: premium,
-                  selected: _filter == _UserPlan.premium,
-                  onTap: () => setState(() => _filter = _UserPlan.premium)),
+                  label: 'Suspended',
+                  count: suspended,
+                  selected: _filter == _UserFilter.suspended,
+                  onTap: () => setState(() => _filter = _UserFilter.suspended)),
             ],
           ),
         ),
@@ -309,12 +295,6 @@ class _UserCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final plan = userPlanOf(user);
-    final planColor = plan == 'premium'
-        ? AppColors.premiumPlan
-        : plan == 'basic'
-            ? AppColors.basicPlan
-            : Colors.grey;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -356,11 +336,8 @@ class _UserCard extends ConsumerWidget {
                 const SizedBox(height: 5),
                 Row(
                   children: [
-                    _chip(plan.toUpperCase(), planColor),
-                    if (user.isBlocked) ...[
-                      const SizedBox(width: 6),
-                      _chip('SUSPENDED', AppColors.error),
-                    ],
+                    _chip(user.isBlocked ? 'SUSPENDED' : 'ACTIVE',
+                        user.isBlocked ? AppColors.error : AppColors.success),
                   ],
                 ),
               ],

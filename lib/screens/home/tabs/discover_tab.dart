@@ -10,11 +10,9 @@ import '../../../core/services/porutham_match.dart';
 import '../../../providers/interest_provider.dart';
 import '../../../providers/matches_prefs_provider.dart';
 import '../../../providers/profile_provider.dart';
-import '../../../providers/subscription_provider.dart';
 import '../../../providers/ui_preferences_provider.dart';
 import '../../../widgets/common/match_score_badge.dart';
 import '../../../widgets/common/network_photo.dart';
-import '../../../widgets/common/premium_gate.dart';
 
 /// The Matches experience — a modern, swipeable profile browser.
 ///
@@ -57,7 +55,17 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(_load);
+    // Load ONLY when the feed is empty — returning to this tab (or rebuilding
+    // it) must never reload from the first profile. The persisted per-user
+    // browsing progress then resumes from the first unseen profile.
+    Future.microtask(() {
+      final st = ref.read(discoverProvider);
+      if (st.profiles.isEmpty && !st.isLoading) {
+        _load();
+      } else {
+        _jumpToResume();
+      }
+    });
   }
 
   @override
@@ -66,8 +74,41 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     super.dispose();
   }
 
-  /// Load (or reload) the matches feed and return to the first profile.
+  /// The index browsing should CONTINUE from: the first profile the user has
+  /// not viewed yet. When every profile has been viewed, the rotation restarts
+  /// from profile 1 (and the history is cleared so progress tracks again).
+  int _resumeIndex(List<ProfileModel> profiles) {
+    if (profiles.isEmpty) return 0;
+    final viewed = ref.read(viewedProfilesProvider);
+    final idx = profiles.indexWhere((p) => !viewed.contains(p.id));
+    if (idx == -1) {
+      // Every profile viewed once → restart the rotation from profile 1.
+      ref.read(viewedProfilesProvider.notifier).resetHistory();
+      return 0;
+    }
+    return idx;
+  }
+
+  /// Snaps the pager to the resume position (post-frame, when attached).
+  void _jumpToResume() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_pageController.hasClients) return;
+      final target = _resumeIndex(_visible);
+      if (target != (_pageController.page?.round() ?? 0)) {
+        _pageController.jumpToPage(target);
+      }
+    });
+  }
+
+  /// Load the matches feed, then continue from the first unseen profile.
   Future<void> _load() async {
+    await ref.read(discoverProvider.notifier).load();
+    if (mounted) _jumpToResume();
+  }
+
+  /// MANUAL refresh (pull-to-refresh / Refresh button) — reloads and
+  /// explicitly resets the browsing position back to the first profile.
+  Future<void> _refresh() async {
     await ref.read(discoverProvider.notifier).load();
     if (mounted && _pageController.hasClients) {
       _pageController.jumpToPage(0);
@@ -102,17 +143,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
       _snack(l10n.createProfileFirst);
       return;
     }
-    // Free-plan daily interest limit (2/day). Paid plans are unlimited.
-    final features = ref.read(planFeaturesProvider);
-    if (!features.hasUnlimitedInterests &&
-        ref.read(interestsSentTodayProvider) >= features.interestsPerDay) {
-      await showUpgradeDialog(
-        context,
-        title: l10n.dailyInterestLimitTitle,
-        message: l10n.dailyInterestLimitMessage(features.interestsPerDay),
-      );
-      return;
-    }
+    // Sending interests is FREE and unlimited — no plan gate.
     try {
       await ref.read(interestNotifierProvider.notifier).sendInterest(
             senderId: me.userId,
@@ -180,31 +211,21 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     }
 
     // Re-filter the feed instantly (from the cached pool — no page refresh)
-    // whenever the match mode changes, and snap back to the first profile.
-    ref.listen<MatchMode>(matchModeProvider, (prev, next) {
+    // whenever the match mode changes, then continue from the first unseen
+    // profile of the re-filtered list.
+    ref.listen<MatchMode>(matchModeProvider, (prev, next) async {
       if (prev == next) return;
-      ref.read(discoverProvider.notifier).refilter();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _pageController.hasClients) {
-          _pageController.jumpToPage(0);
-        }
-      });
+      await ref.read(discoverProvider.notifier).refilter();
+      if (mounted) _jumpToResume();
     });
 
     // Refresh matches automatically when the profile (incl. partner
-    // preferences) changes — e.g. after editing preferences — and snap back to
-    // the first profile.
+    // preferences) changes — e.g. after editing preferences — resuming from
+    // the first unseen profile of the new list.
     ref.listen<AsyncValue<ProfileModel?>>(myProfileProvider, (prev, next) {
       final p = prev?.valueOrNull;
       final n = next.valueOrNull;
-      if (n != null && p != null && !identical(p, n)) {
-        ref.read(discoverProvider.notifier).load();
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && _pageController.hasClients) {
-            _pageController.jumpToPage(0);
-          }
-        });
-      }
+      if (n != null && p != null && !identical(p, n)) _load();
     });
 
     return Container(
@@ -446,7 +467,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
           interestSent: _interestSent.contains(p.id),
           onInterest: () => _sendInterest(p),
           onAccept: (interestId) => _acceptInterest(p, interestId),
-          onRefresh: _load,
+          onRefresh: _refresh,
         );
       },
     );
@@ -458,7 +479,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     final l10n = context.l10n;
     return RefreshIndicator(
       color: AppColors.primary,
-      onRefresh: _load,
+      onRefresh: _refresh,
       child: ListView(
         padding: const EdgeInsets.all(24),
         children: [
@@ -503,7 +524,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
           const SizedBox(height: 20),
           Center(
             child: OutlinedButton.icon(
-              onPressed: _load,
+              onPressed: _refresh,
               icon: const Icon(Icons.refresh),
               label: Text(isError ? l10n.tryAgain : l10n.refresh),
               style: OutlinedButton.styleFrom(

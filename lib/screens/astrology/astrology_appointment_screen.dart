@@ -34,7 +34,7 @@ class AstrologyAppointmentScreen extends ConsumerStatefulWidget {
 
 class _AstrologyAppointmentScreenState
     extends ConsumerState<AstrologyAppointmentScreen> {
-  static const int _fee = AppConstants.appointmentBookingFee; // ₹50
+  static const int _fee = AppConstants.appointmentBookingFee; // ₹20
 
   DateTime? _date;
   String? _session;

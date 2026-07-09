@@ -87,23 +87,7 @@ Future<void> exportRevenueCsv(BuildContext context, DashboardAnalytics a) {
   return _shareCsv(context, 'revenue_report_${_stamp()}.csv', _rows(rows));
 }
 
-Future<void> exportSubscriptionsCsv(
-    BuildContext context, DashboardAnalytics a) {
-  final rows = <List<Object?>>[
-    ['Subscription Report', 'Generated', DateTime.now().toIso8601String()],
-    [],
-    ['Metric', 'Count'],
-    ['Monthly Plan Subscribers', a.monthlySubscribers],
-    ['Yearly Plan Subscribers', a.yearlySubscribers],
-    ['Active Premium Users', a.activePremium],
-    ['Expired Premium Users', a.expiredPremium],
-    ['Cancelled Subscriptions', a.cancelledSubscriptions],
-    ['Premium Subscribers (active)', a.premiumSubscribers],
-    ['Revenue This Month (INR)', a.revenueMonth],
-    ['Revenue This Year (INR)', a.revenueYear],
-  ];
-  return _shareCsv(context, 'subscription_report_${_stamp()}.csv', _rows(rows));
-}
+// (exportSubscriptionsCsv was removed with the subscription system.)
 
 Future<void> exportUsersCsv(BuildContext context, DashboardAnalytics a) {
   final rows = <List<Object?>>[

@@ -124,6 +124,18 @@ class AnnouncementsReadNotifier extends Notifier<Set<String>> {
       await prefs.setStringList(_kReadIdsKey, state.toList());
     } catch (_) {/* best-effort */}
   }
+
+  /// Marks every listed announcement read at once — opening the Notifications
+  /// page clears the whole badge (per the notification-flow spec).
+  Future<void> markAllRead(Iterable<String> ids) async {
+    final unread = ids.where((id) => id.isNotEmpty && !state.contains(id));
+    if (unread.isEmpty) return;
+    state = {...state, ...unread};
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_kReadIdsKey, state.toList());
+    } catch (_) {/* best-effort */}
+  }
 }
 
 final announcementsReadProvider =

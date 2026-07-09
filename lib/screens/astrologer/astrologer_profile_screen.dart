@@ -16,9 +16,7 @@ import '../../models/astrologer_plan.dart';
 import '../../models/astrologer_review_model.dart';
 import '../../providers/astrologer_provider.dart';
 import '../../providers/astrologer_review_provider.dart';
-import '../../providers/subscription_provider.dart';
 import '../../widgets/astrologer/availability_badge.dart';
-import '../../widgets/common/premium_gate.dart';
 
 /// Full astrologer profile (read-only, contact-only).
 ///
@@ -403,22 +401,9 @@ class AstrologerProfileScreen extends ConsumerWidget {
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(
-          onPressed: () {
-            // Astrologer booking is a paid feature (Basic / Premium).
-            final features = ref.read(planFeaturesProvider);
-            if (!features.canBookAstrologer) {
-              showUpgradeDialog(
-                context,
-                title: 'Astrologer booking locked',
-                message:
-                    'Booking an astrologer consultation is available on the '
-                    'Basic and Premium plans. Upgrade to book a detailed '
-                    'horoscope match analysis.',
-              );
-              return;
-            }
-            context.push('/book-analysis/${a.id}');
-          },
+          // No subscription gate — match analysis is paid PER BOOKING on the
+          // booking screen itself, never via a plan.
+          onPressed: () => context.push('/book-analysis/${a.id}'),
           icon: const Icon(Icons.auto_awesome),
           label: const Text('Book Match Analysis'),
           style: ElevatedButton.styleFrom(

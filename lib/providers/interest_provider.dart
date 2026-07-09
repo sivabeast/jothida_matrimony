@@ -4,6 +4,7 @@ import '../models/interest_model.dart';
 import 'auth_provider.dart';
 import 'chat_provider.dart';
 import 'locale_provider.dart';
+import 'notification_provider.dart';
 import 'profile_provider.dart';
 import 'service_providers.dart';
 
@@ -78,6 +79,13 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
         sentAt: DateTime.now(),
       );
       await ref.read(interestRepositoryProvider).sendInterest(interest);
+      // In-app "Interest Received" notification for the receiver (best-effort).
+      await ref.read(notificationNotifierProvider.notifier).notify(
+            toUid: receiverId,
+            event: AppNotificationEvent.interestReceived,
+            name: ref.read(myProfileProvider).valueOrNull?.fullName ?? '',
+            route: '/interests?tab=received',
+          );
     });
   }
 
@@ -93,7 +101,29 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
       // A user↔user chat is created automatically ONLY after an interest is
       // accepted (spec §5). Best-effort — never block/fail the accept.
       await _ensureAcceptedChat(interestId);
+      // In-app "Interest Accepted" notification for the sender (best-effort).
+      await _notifyInterestOutcome(
+          interestId, AppNotificationEvent.interestAccepted);
     });
+  }
+
+  /// Notifies the ORIGINAL SENDER of [interestId] that their interest was
+  /// accepted / rejected. Best-effort — never fails the action.
+  Future<void> _notifyInterestOutcome(
+      String interestId, AppNotificationEvent event) async {
+    try {
+      final interest =
+          await ref.read(interestRepositoryProvider).getInterestById(interestId);
+      if (interest == null) return;
+      await ref.read(notificationNotifierProvider.notifier).notify(
+            toUid: interest.senderId,
+            event: event,
+            name: ref.read(myProfileProvider).valueOrNull?.fullName ?? '',
+            route: '/interests?tab=sent',
+          );
+    } catch (e) {
+      debugPrint('[InterestNotifier] outcome notification failed: $e');
+    }
   }
 
   /// Creates (idempotently) the chat thread between the two now-matched users
@@ -199,9 +229,12 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
 
   Future<void> rejectInterest(String interestId) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => ref.read(interestRepositoryProvider).rejectInterest(interestId),
-    );
+    state = await AsyncValue.guard(() async {
+      await ref.read(interestRepositoryProvider).rejectInterest(interestId);
+      // In-app "Interest Update" notification for the sender (best-effort).
+      await _notifyInterestOutcome(
+          interestId, AppNotificationEvent.interestRejected);
+    });
   }
 
   /// Ensures the contact-unlock connection exists for an accepted interest —

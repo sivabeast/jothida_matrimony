@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../providers/service_providers.dart';
 import 'steps/step_profile_for.dart';
 import 'steps/step_basic_info.dart';
 import 'steps/step_physical.dart';
@@ -17,15 +18,23 @@ import 'steps/step3_horoscope.dart';
 import 'steps/step_education.dart';
 import 'steps/step_location.dart';
 import 'steps/step6_photos.dart';
+import 'steps/step_aadhaar.dart';
 import 'steps/step_about_me.dart';
 import 'steps/step_partner_preference.dart';
 
 /// Multi-step onboarding wizard (12 steps incl. the success screen).
 ///
 /// Each input step is a focused page so the form never feels overwhelming.
-/// Required fields are validated per step; everything else can be completed
-/// later from the Home profile-completion card. Progress is auto-saved as a
-/// draft so "Save & Exit" can resume on the next sign-in.
+/// Required fields are validated per step. Progress is auto-saved as a draft
+/// so a signed-out user can resume on the next sign-in. There is NO
+/// "Save & Exit" — navigation is Next/Continue only, with a Skip action on
+/// the OPTIONAL sections (About Me / Lifestyle, Partner Preference).
+///
+/// EDIT MODE ([editProfileId] non-null, opened via Menu → Profile → Edit
+/// Profile): the wizard is seeded with the EXISTING profile so every field —
+/// personal details, horoscope, location, education, occupation, photo,
+/// Aadhaar, partner preferences — is editable, and submitting UPDATES the
+/// same document in place (never a duplicate).
 class ProfileCreationScreen extends ConsumerStatefulWidget {
   /// When non-null, the wizard was opened to edit an existing profile via
   /// Profile → "Edit Profile" (route `/profile/:id/edit`).
@@ -41,11 +50,16 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   static const String _draftKey = 'profile_draft_v1';
   final PageController _pageController = PageController();
   int _currentStep = 0;
-  bool _ready = false; // draft loaded → safe to build steps that prefill
+  bool _ready = false; // draft/profile loaded → safe to build steps that prefill
 
   bool get _isEditMode => widget.editProfileId != null;
 
-  static const int _totalSteps = 11;
+  static const int _totalSteps = 12;
+
+  /// Steps the user may SKIP — only the optional sections (per spec):
+  /// About Me / Lifestyle (10) and Partner Preference (11). Mandatory steps
+  /// never show Skip.
+  static const Set<int> _skippableSteps = {10, 11};
 
   final List<String> _stepTitles = const [
     'Profile For',
@@ -57,6 +71,7 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
     'Education & Career',
     'Location',
     'Profile Photo',
+    'Aadhaar Verification',
     'About Me',
     'Partner Preference',
   ];
@@ -64,11 +79,30 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   @override
   void initState() {
     super.initState();
-    _restoreDraftThenReady();
+    _prepareThenReady();
   }
 
-  Future<void> _restoreDraftThenReady() async {
-    if (!_isEditMode) {
+  /// CREATE mode → restore the local draft. EDIT mode → seed the wizard with
+  /// the EXISTING profile (flattened via toWizardData) so every step shows
+  /// the current values and saving updates in place.
+  Future<void> _prepareThenReady() async {
+    // Always start from a clean slate — a previous edit/creation session must
+    // never leak values into this one.
+    ref.read(profileCreationProvider.notifier).reset();
+    if (_isEditMode) {
+      try {
+        final profile = await ref
+            .read(profileRepositoryProvider)
+            .getProfile(widget.editProfileId!);
+        if (profile != null) {
+          ref
+              .read(profileCreationProvider.notifier)
+              .updateData(profile.toWizardData());
+        }
+      } catch (e) {
+        debugPrint('[ProfileCreation] edit prefill failed: $e');
+      }
+    } else {
       try {
         final prefs = await SharedPreferences.getInstance();
         final raw = prefs.getString(_draftKey);
@@ -128,37 +162,6 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
     }
   }
 
-  /// Save & Exit — persists every COMPLETED section as a partial profile and
-  /// drops the user on the Home dashboard. The session stays active (NO
-  /// logout); the profile-completion banner then lets them finish anytime.
-  Future<void> _saveAndExit() async {
-    final userId = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
-    if (userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('You must be signed in to save.')));
-      return;
-    }
-    // Persist whatever has been entered so far (missing fields default safely),
-    // which also opens the Home gate — without ever signing the user out.
-    final profileId =
-        await ref.read(profileCreationProvider.notifier).submitProfile(userId);
-    if (!mounted) return;
-    if (profileId != null) {
-      await _clearDraft();
-      ref.invalidate(authNotifierProvider);
-      ref.invalidate(myProfileProvider);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text(
-              'Progress saved. Complete your profile anytime from Home.')));
-      context.go('/home');
-    } else {
-      final error = ref.read(profileCreationProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(error ?? 'Could not save. Please try again.')));
-    }
-  }
-
   Future<void> _confirmLogout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
@@ -195,10 +198,18 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
           content: Text('You must be signed in to create a profile.')));
       return;
     }
-    final profileId =
-        await ref.read(profileCreationProvider.notifier).submitProfile(userId);
+    final profileId = await ref
+        .read(profileCreationProvider.notifier)
+        .submitProfile(userId, editProfileId: widget.editProfileId);
     if (!mounted) return;
     if (profileId != null) {
+      if (_isEditMode) {
+        // Updated in place — the live profile stream refreshes everything.
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile updated successfully.')));
+        context.pop();
+        return;
+      }
       await _clearDraft();
       // Profile is now complete in Firestore; refresh the auth/profile state so
       // the gate opens and the Success screen reads the fresh completion %.
@@ -239,26 +250,26 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
                     tooltip: 'Logout',
                     onPressed: _confirmLogout,
                   ),
+        // No "Save & Exit" (removed per spec) — only a Skip action on the
+        // OPTIONAL sections, plus the submit spinner.
         actions: [
-          if (!_isEditMode)
-            creationState.isLoading
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 18),
-                    child: Center(
-                      child: SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white)),
-                    ),
-                  )
-                : TextButton.icon(
-                    onPressed: _saveAndExit,
-                    icon: const Icon(Icons.save_outlined,
-                        color: Colors.white, size: 18),
-                    label: const Text('Save & Exit',
-                        style: TextStyle(color: Colors.white, fontSize: 13)),
-                  ),
+          if (creationState.isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 18),
+              child: Center(
+                child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white)),
+              ),
+            )
+          else if (_skippableSteps.contains(_currentStep))
+            TextButton(
+              onPressed: _nextStep,
+              child: const Text('Skip',
+                  style: TextStyle(color: Colors.white, fontSize: 14)),
+            ),
         ],
       ),
       body: !_ready
@@ -311,6 +322,7 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
                       StepEducation(onNext: _nextStep),
                       StepLocation(onNext: _nextStep),
                       Step6Photos(onNext: _nextStep),
+                      StepAadhaar(onNext: _nextStep),
                       StepAboutMe(onNext: _nextStep),
                       StepPartnerPreference(
                         onNext: _nextStep,

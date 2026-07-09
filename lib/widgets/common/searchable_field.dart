@@ -13,10 +13,14 @@ enum SearchablePopupMode { menu, modalBottomSheet }
 
 /// A searchable single-select dropdown with a built-in search box.
 ///
-/// Used everywhere structured data is selected (Country, State, City, Religion,
+/// Used everywhere structured data is selected (State, City, Religion,
 /// Caste, Sub-caste, Education, Occupation, Rasi, Nakshatra…) instead of free
 /// text. Supports dependent dropdowns: when the parent value changes, pass a
 /// new [items] list (and reset [selectedItem]).
+///
+/// Pass [onAddNew] to show a "+" button beside the field: it opens an Add
+/// dialog, persists the entered value (permanently, to the master database —
+/// this replaced the old "Others → textbox" flow) and selects it.
 class SearchableField extends StatelessWidget {
   final String label;
   final List<String> items;
@@ -25,6 +29,12 @@ class SearchableField extends StatelessWidget {
   final bool isRequired;
   final bool enabled;
   final IconData? prefixIcon;
+
+  /// When set, a "+" Add button appears beside the field. The callback must
+  /// PERSIST the new value (e.g. via MasterOptionsService) and return the
+  /// canonical stored value — the field then selects it via [onChanged].
+  /// Return null/empty to abort silently.
+  final Future<String?> Function(String value)? onAddNew;
 
   /// Presentation mode for the options popup. Defaults to the anchored [menu].
   /// Pass [SearchablePopupMode.modalBottomSheet] to avoid overlapping
@@ -40,12 +50,13 @@ class SearchableField extends StatelessWidget {
     this.isRequired = false,
     this.enabled = true,
     this.prefixIcon,
+    this.onAddNew,
     this.popupMode = SearchablePopupMode.menu,
   });
 
   @override
   Widget build(BuildContext context) {
-    return DropdownSearch<String>(
+    final field = DropdownSearch<String>(
       items: items,
       selectedItem: selectedItem,
       enabled: enabled,
@@ -72,6 +83,67 @@ class SearchableField extends StatelessWidget {
         ),
       ),
     );
+    if (onAddNew == null) return field;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(child: field),
+        const SizedBox(width: 8),
+        // "+" Add — persists a value missing from the master list.
+        Container(
+          decoration: BoxDecoration(
+            color: enabled
+                ? AppColors.primary.withOpacity(0.09)
+                : Colors.grey[200],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+          ),
+          child: IconButton(
+            tooltip: 'Add $label',
+            icon: const Icon(Icons.add, color: AppColors.primary),
+            onPressed: enabled ? () => _promptAdd(context) : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// The shared Add dialog: type the new value → persist → select it.
+  Future<void> _promptAdd(BuildContext context) async {
+    final controller = TextEditingController();
+    final entered = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Add $label'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: InputDecoration(
+            hintText: 'Enter new $label',
+            prefixIcon: Icon(prefixIcon ?? Icons.edit_outlined),
+          ),
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (entered == null || entered.isEmpty) return;
+    final stored = await onAddNew!(entered);
+    if (stored != null && stored.trim().isNotEmpty) {
+      onChanged(stored.trim());
+    }
   }
 
   PopupProps<String> _buildPopupProps(BuildContext context) {

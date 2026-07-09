@@ -1,7 +1,6 @@
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/constants/razorpay_constants.dart';
-import '../../core/constants/app_constants.dart';
 
 class RazorpayService {
   late Razorpay _razorpay;
@@ -60,38 +59,8 @@ class RazorpayService {
     }
   }
 
-  void openSubscriptionCheckout({
-    required String plan,
-    required int amountPaise, // amount in paise (e.g., 9900 for ₹99)
-    required String userPhone,
-    required String userEmail,
-    required String userName,
-    required String userId,
-  }) {
-    final options = {
-      'key': RazorpayConstants.keyId,
-      'amount': amountPaise,
-      'name': RazorpayConstants.appName,
-      'description': '${_planDisplayName(plan)} Subscription',
-      'prefill': {
-        'contact': userPhone,
-        'email': userEmail,
-        'name': userName,
-      },
-      'notes': {
-        'type': 'subscription',
-        'plan': plan,
-        'userId': userId,
-      },
-      'theme': {'color': RazorpayConstants.themeColor},
-      'currency': 'INR',
-    };
-    try {
-      _razorpay.open(options);
-    } catch (e) {
-      debugPrint('RazorpayService.openSubscriptionCheckout error: $e');
-    }
-  }
+  // (openSubscriptionCheckout was removed — there is NO subscription system;
+  // only per-booking astrology payments remain.)
 
   /// Opens the Razorpay checkout for an in-person Horoscope Compatibility Report
   /// appointment. [amountPaise] is the service charge in paise (₹499 → 49900).
@@ -126,32 +95,6 @@ class RazorpayService {
       _razorpay.open(options);
     } catch (e) {
       debugPrint('RazorpayService.openAppointmentCheckout error: $e');
-    }
-  }
-
-  String _planDisplayName(String plan) {
-    switch (plan) {
-      case AppConstants.planBasic:
-        return 'Basic';
-      case AppConstants.planMedium:
-        return 'Medium';
-      case AppConstants.planPremium:
-        return 'Premium';
-      default:
-        return plan;
-    }
-  }
-
-  static int planAmountPaise(String plan) {
-    switch (plan) {
-      case AppConstants.planBasic:
-        return AppConstants.basicPrice * 100;
-      case AppConstants.planMedium:
-        return AppConstants.mediumPrice * 100;
-      case AppConstants.planPremium:
-        return AppConstants.premiumPrice * 100;
-      default:
-        return 0;
     }
   }
 

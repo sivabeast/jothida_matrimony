@@ -12,16 +12,40 @@ import '../../notifications/notification_detail_screen.dart';
 /// Notification page — admin announcements (platform-wide) plus the user's own
 /// notifications (interests, approvals…), merged newest-first.
 ///
-/// Read/unread contract:
-///  • every NEW notification arrives Unread and shows a dot + highlight;
-///  • tapping a row marks THAT item read and opens its full details page;
-///  • a read item never flips back to Unread. (Nothing is bulk-marked read just
-///    because the list was opened — that was the old, buggy behaviour.)
-class NotificationsTab extends ConsumerWidget {
+/// Read/unread contract (per the notification-flow spec):
+///  • every NEW notification arrives Unread and drives the bell badge;
+///  • OPENING this page automatically marks EVERYTHING read — the badge
+///    disappears and the unread count drops to zero; nothing stays unread
+///    after the user has seen the list. The rows still highlight briefly on
+///    entry (they're marked read as the page settles).
+class NotificationsTab extends ConsumerStatefulWidget {
   const NotificationsTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotificationsTab> createState() => _NotificationsTabState();
+}
+
+class _NotificationsTabState extends ConsumerState<NotificationsTab> {
+  /// Guards the once-per-open bulk mark-read (announcements need the loaded
+  /// list, so it runs on the first frame that has data).
+  bool _markedAllRead = false;
+
+  void _markAllReadOnce(List<AnnouncementModel> announcements) {
+    if (_markedAllRead) return;
+    _markedAllRead = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // Per-user notifications → Firestore batch (badge clears via stream).
+      ref.read(notificationNotifierProvider.notifier).markAllRead();
+      // Announcements → local read-ids set.
+      ref
+          .read(announcementsReadProvider.notifier)
+          .markAllRead(announcements.map((a) => a.id));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final announcements =
         ref.watch(announcementsProvider).valueOrNull ?? const <AnnouncementModel>[];
     final notifsAsync = ref.watch(notificationsProvider);
@@ -30,6 +54,9 @@ class NotificationsTab extends ConsumerWidget {
     if (notifsAsync.isLoading && announcements.isEmpty && notifs.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
+
+    // Everything on screen counts as seen — mark it all read once per open.
+    _markAllReadOnce(announcements);
 
     // Unified, date-sorted feed.
     final items = <_Item>[

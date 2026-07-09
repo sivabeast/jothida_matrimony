@@ -83,7 +83,6 @@ class UserDetailsScreen extends ConsumerWidget {
                   _row('Age', profile == null ? '—' : '${_age(profile.dateOfBirth)}'),
                   _row('Gender', profile?.gender ?? user.gender ?? '—'),
                   _row('Location', _location(profile)),
-                  _row('Membership', user.membershipType.toUpperCase()),
                   _row('Status', user.isBlocked ? 'Suspended' : 'Active'),
                   _row('Registered', _date(user.createdAt)),
                 ]),
@@ -95,6 +94,21 @@ class UserDetailsScreen extends ConsumerWidget {
                   _row('Appointments Booked', '$apptCount'),
                 ]),
                 const SizedBox(height: 18),
+                // Full profile editor — edits flow LIVE to the user app.
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () =>
+                        context.push('/admin/user/${user!.uid}/edit'),
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Edit Profile'),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(48)),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(

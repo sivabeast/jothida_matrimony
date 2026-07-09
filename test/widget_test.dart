@@ -1,48 +1,62 @@
-// Unit tests for the subscription entitlements layer (pure Dart — no Firebase).
+// Unit tests for pure-Dart business rules (no Firebase).
 //
-// Replaces the default Flutter counter-app boilerplate, which referenced a
-// non-existent `MyApp` and never matched this project.
+// The old subscription-entitlements tests were removed along with the whole
+// subscription system: every matrimony feature is free and only the two
+// astrology services are paid (per booking).
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jothida_matrimony/core/config/plan_features.dart';
+import 'package:jothida_matrimony/core/constants/app_constants.dart';
+import 'package:jothida_matrimony/core/services/porutham_match.dart';
 
 void main() {
-  group('PlanFeatures.planFromString', () {
-    test('maps known plans, treats legacy "medium" as Basic', () {
-      expect(PlanFeatures.planFromString('premium'), AppPlan.premium);
-      expect(PlanFeatures.planFromString('basic'), AppPlan.basic);
-      expect(PlanFeatures.planFromString('medium'), AppPlan.basic);
-      expect(PlanFeatures.planFromString('free'), AppPlan.free);
-      expect(PlanFeatures.planFromString(''), AppPlan.free);
-      expect(PlanFeatures.planFromString(null), AppPlan.free);
-      expect(PlanFeatures.planFromString('PREMIUM'), AppPlan.premium);
+  group('Paid-service pricing', () {
+    test('Horoscope Compatibility Report costs ₹199', () {
+      expect(AppConstants.horoscopeAnalysisFee, 199);
+    });
+
+    test('Astrologer appointment booking costs ₹20', () {
+      expect(AppConstants.appointmentBookingFee, 20);
     });
   });
 
-  group('PlanFeatures entitlements', () {
-    test('Free plan is limited to 2 interests/day with features locked', () {
-      const f = PlanFeatures.free;
-      expect(f.interestsPerDay, 2);
-      expect(f.hasUnlimitedInterests, isFalse);
-      expect(f.canViewContact, isFalse);
-      expect(f.canBookAstrologer, isFalse);
-      expect(f.canUseHoroscopeMatchFilter, isFalse);
+  group('Star (nakshatra) compatibility', () {
+    test('star porutham count is within 0..7', () {
+      for (var bride = 1; bride <= 27; bride++) {
+        for (var groom = 1; groom <= 27; groom++) {
+          final n = matchedStarPoruthams(brideStar: bride, groomStar: groom);
+          expect(n, inInclusiveRange(0, 7),
+              reason: 'bride=$bride groom=$groom');
+        }
+      }
     });
 
-    test('Basic unlocks interests/contact/booking but not advanced filters', () {
-      const b = PlanFeatures.basic;
-      expect(b.hasUnlimitedInterests, isTrue);
-      expect(b.canViewContact, isTrue);
-      expect(b.canBookAstrologer, isTrue);
-      expect(b.advancedFilters, isFalse);
+    test('same-rajju pairs are never compatible', () {
+      // Stars 1 and 9 share the Pada rajju group → incompatible by rule.
+      expect(isStarPairCompatible(brideStar: 1, groomStar: 9), isFalse);
     });
 
-    test('Premium unlocks everything', () {
-      const p = PlanFeatures.premium;
-      expect(p.advancedFilters, isTrue);
-      expect(p.featuredBadge, isTrue);
-      expect(p.profileAnalytics, isTrue);
-      expect(p.visibilityBoost, greaterThan(PlanFeatures.basic.visibilityBoost));
+    test('every star has at least one compatible partner star', () {
+      for (var star = 1; star <= 27; star++) {
+        expect(compatibleStarsFor(myStar: star, iAmFemale: true), isNotEmpty,
+            reason: 'bride star $star');
+        expect(compatibleStarsFor(myStar: star, iAmFemale: false), isNotEmpty,
+            reason: 'groom star $star');
+      }
+    });
+
+    test('compatibleStarsFor mirrors isStarPairCompatible', () {
+      const myStar = 4; // Rohini
+      final stars = compatibleStarsFor(myStar: myStar, iAmFemale: true);
+      for (final s in stars) {
+        expect(isStarPairCompatible(brideStar: myStar, groomStar: s), isTrue);
+      }
+    });
+  });
+
+  group('Nakshatra master lists', () {
+    test('Tamil and English lists stay index-aligned (27 stars)', () {
+      expect(AppConstants.nakshatraList.length, 27);
+      expect(AppConstants.nakshatraEnList.length, 27);
     });
   });
 }

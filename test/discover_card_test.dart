@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:jothida_matrimony/core/data/sample_profiles.dart';
+import 'package:jothida_matrimony/l10n/app_localizations.dart';
 import 'package:jothida_matrimony/models/interest_model.dart';
 import 'package:jothida_matrimony/providers/interest_provider.dart';
 import 'package:jothida_matrimony/providers/profile_provider.dart';
@@ -48,7 +49,13 @@ void main() {
           receivedInterestsProvider
               .overrideWith((ref) => Stream.value(const <InterestModel>[])),
         ],
-        child: const MaterialApp(home: Scaffold(body: DiscoverTab())),
+        // The DiscoverTab is fully localized now, so the test app must provide
+        // the l10n delegates (context.l10n asserts otherwise).
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: DiscoverTab()),
+        ),
       ),
     );
 

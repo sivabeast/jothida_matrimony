@@ -274,7 +274,7 @@ class AstrologerRequestModel {
   final DateTime? paidAt;
 
   /// Demo transaction id generated at payment time (real gateway is a future
-  /// extension point — see [kSubscriptionTestMode]).
+  /// extension point — see [kPaymentTestMode]).
   final String paymentId;
 
   // ── Analysis progress (spec §11: Accepted → Analysis In Progress) ──────────

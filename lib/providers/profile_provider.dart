@@ -7,11 +7,13 @@ import '../core/config/dev_config.dart';
 import '../core/constants/app_constants.dart';
 import '../core/services/match_score_service.dart';
 import '../core/services/porutham_match.dart';
+import '../models/aadhaar_details.dart';
 import '../models/profile_model.dart';
 import '../services/cloudinary/cloudinary_exception.dart';
 import '../services/firebase/firestore_service.dart' show ProfilePage;
 import 'demo_data_provider.dart';
 import 'matches_prefs_provider.dart';
+import 'notification_provider.dart';
 import 'service_providers.dart';
 import 'auth_provider.dart';
 
@@ -30,7 +32,10 @@ final myProfileProvider = StreamProvider.autoDispose<ProfileModel?>((ref) {
   final userId = authAsync.valueOrNull?.uid;
   if (userId == null) return Stream.value(null);
 
-  return ref.watch(profileRepositoryProvider).getProfileByUserId(userId).asStream();
+  // LIVE snapshot stream (was a one-shot get() converted to a stream). Admin
+  // edits to the profile document now reach the user app in real time —
+  // no stale cache, no re-login needed.
+  return ref.watch(profileRepositoryProvider).watchProfileByUserId(userId);
 });
 
 // Watch a specific profile by id
@@ -85,6 +90,11 @@ class ProfileCreationState {
   final Map<String, dynamic> data;
   final List<File> photos;
   final File? horoscopePdf;
+
+  /// Aadhaar images picked in the Aadhaar step (uploaded on submit to the
+  /// gated `aadhaar/{userId}` record; the number travels in [data]).
+  final File? aadhaarFront;
+  final File? aadhaarBack;
   final bool isLoading;
   final String? error;
   final bool isComplete;
@@ -101,6 +111,8 @@ class ProfileCreationState {
     this.data = const {},
     this.photos = const [],
     this.horoscopePdf,
+    this.aadhaarFront,
+    this.aadhaarBack,
     this.isLoading = false,
     this.error,
     this.isComplete = false,
@@ -112,6 +124,8 @@ class ProfileCreationState {
     Map<String, dynamic>? data,
     List<File>? photos,
     File? horoscopePdf,
+    File? aadhaarFront,
+    File? aadhaarBack,
     bool? isLoading,
     String? error,
     bool? isComplete,
@@ -122,6 +136,8 @@ class ProfileCreationState {
         data: data ?? this.data,
         photos: photos ?? this.photos,
         horoscopePdf: horoscopePdf ?? this.horoscopePdf,
+        aadhaarFront: aadhaarFront ?? this.aadhaarFront,
+        aadhaarBack: aadhaarBack ?? this.aadhaarBack,
         isLoading: isLoading ?? this.isLoading,
         error: error,
         isComplete: isComplete ?? this.isComplete,
@@ -146,13 +162,21 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
 
   void setHoroscopePdf(File pdf) => state = state.copyWith(horoscopePdf: pdf);
 
-  Future<String?> submitProfile(String userId) async {
+  void setAadhaarImages({File? front, File? back}) =>
+      state = state.copyWith(aadhaarFront: front, aadhaarBack: back);
+
+  /// Saves the wizard's data. CREATE mode (default) writes a brand-new
+  /// profile; EDIT mode ([editProfileId] non-null) UPDATES the existing
+  /// document in place — never a duplicate — keeping photos/PDF that weren't
+  /// re-picked and preserving moderation fields (status, counters, verified).
+  Future<String?> submitProfile(String userId, {String? editProfileId}) async {
     state = state.copyWith(isLoading: true, error: null, uploadProgress: 0, uploadStatus: null);
 
     // ── Demo mode: save the profile to the in-memory store, no backend ──
     if (kBypassAuth) {
       try {
-        final id = 'me_${DateTime.now().millisecondsSinceEpoch}';
+        final id =
+            editProfileId ?? 'me_${DateTime.now().millisecondsSinceEpoch}';
         final gender = (state.data['gender'] ?? 'Male').toString();
         // No upload available offline — use a placeholder portrait.
         final placeholder = gender == 'Female'
@@ -241,10 +265,17 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
         uploadProgress: photoWeight + pdfWeight,
       );
 
+      // In EDIT mode the existing photo URLs (seeded into the wizard data by
+      // toWizardData) are kept when no new photo was picked.
+      final existingPhotos = state.data['photos'] is List
+          ? List<String>.from(
+              (state.data['photos'] as List).map((e) => e.toString()))
+          : const <String>[];
+
       final profileData = {
         ...state.data,
         'userId': userId,
-        'photos': photoUrls,
+        'photos': photoUrls.isNotEmpty ? photoUrls : existingPhotos,
         if (pdfUrl != null) 'horoscopeDetails.horoscopePdfUrl': pdfUrl,
         // Profiles are active immediately on completion — no admin approval
         // step. ('rejected'/'blocked' remain available for moderation only.)
@@ -256,14 +287,52 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
 
       debugPrint('[submitProfile] ▶ building ProfileModel from map keys: ${profileData.keys.toList()}');
       final profile = ProfileModel.fromMap(profileData);
-      debugPrint('[submitProfile] ▶ writing profile to Firestore...');
-      final profileId = await repo.createProfile(profile);
-      debugPrint('[submitProfile] ✅ Firestore profile created (id=$profileId)');
+      final String profileId;
+      if (editProfileId != null) {
+        // ── EDIT: update the existing document IN PLACE — no duplicate. ──
+        // Moderation/engagement fields are preserved (never reset by an edit).
+        final map = profile.toFirestore()
+          ..remove('createdAt')
+          ..remove('status')
+          ..remove('isActive')
+          ..remove('isVerified')
+          ..remove('isFeatured')
+          ..remove('isMarried')
+          ..remove('reportCount')
+          ..remove('viewCount')
+          ..remove('interestCount');
+        debugPrint('[submitProfile] ▶ updating profile $editProfileId...');
+        await repo.updateProfile(editProfileId, map);
+        // Keep the gated contact record in sync with the edited details.
+        try {
+          await ref
+              .read(firestoreServiceProvider)
+              .saveContact(userId, profile.contact);
+        } catch (e) {
+          debugPrint('[submitProfile] contact sync skipped: $e');
+        }
+        profileId = editProfileId;
+        debugPrint('[submitProfile] ✅ profile updated (id=$profileId)');
+      } else {
+        debugPrint('[submitProfile] ▶ writing profile to Firestore...');
+        profileId = await repo.createProfile(profile);
+        debugPrint('[submitProfile] ✅ Firestore profile created (id=$profileId)');
 
-      // Mark the account as profile-completed so the Home gate opens.
-      debugPrint('[submitProfile] ▶ marking profile completed for userId=$userId');
-      await ref.read(firestoreServiceProvider).markProfileCompleted(userId);
-      debugPrint('[submitProfile] ✅ markProfileCompleted done');
+        // Mark the account as profile-completed so the Home gate opens.
+        debugPrint('[submitProfile] ▶ marking profile completed for userId=$userId');
+        await ref.read(firestoreServiceProvider).markProfileCompleted(userId);
+        debugPrint('[submitProfile] ✅ markProfileCompleted done');
+        // In-app "Profile Approved" notification — profiles go live immediately
+        // on completion (best-effort; never fails the save).
+        await ref.read(notificationNotifierProvider.notifier).notify(
+              toUid: userId,
+              event: AppNotificationEvent.profileApproved,
+            );
+      }
+
+      // ── Aadhaar (gated aadhaar/{uid}) — best-effort, never blocks the save.
+      await _saveAadhaar(userId);
+
       ref.invalidate(currentUserProvider); // refresh the gate
       state = state.copyWith(
         isLoading: false,
@@ -281,6 +350,42 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
         uploadStatus: null,
       );
       return null;
+    }
+  }
+
+  /// Persists the Aadhaar number + front/back images to the strictly-gated
+  /// `aadhaar/{userId}` record (NEVER onto the public profile document). A
+  /// user save always lands unverified — the admin re-verifies after review.
+  /// Best-effort: an Aadhaar hiccup never blocks the profile save.
+  Future<void> _saveAadhaar(String userId) async {
+    final number =
+        (state.data['aadhaarNumber'] ?? '').toString().replaceAll(' ', '');
+    final front = state.aadhaarFront, back = state.aadhaarBack;
+    if (number.isEmpty && front == null && back == null) return;
+    try {
+      final storage = ref.read(storageServiceProvider);
+      String frontUrl = '', backUrl = '';
+      if (front != null) {
+        frontUrl = await storage.uploadIdProof(
+            userId: userId, file: front, docType: 'aadhaar_front');
+      }
+      if (back != null) {
+        backUrl = await storage.uploadIdProof(
+            userId: userId, file: back, docType: 'aadhaar_back');
+      }
+      // Keep any previously-saved value/image that wasn't re-entered.
+      final existing =
+          await ref.read(firestoreServiceProvider).getAadhaar(userId);
+      await ref.read(firestoreServiceProvider).saveAadhaar(AadhaarDetails(
+            userId: userId,
+            number: number.isNotEmpty ? number : (existing?.number ?? ''),
+            frontUrl:
+                frontUrl.isNotEmpty ? frontUrl : (existing?.frontUrl ?? ''),
+            backUrl: backUrl.isNotEmpty ? backUrl : (existing?.backUrl ?? ''),
+            verified: false, // any user edit requires admin re-verification
+          ));
+    } catch (e) {
+      debugPrint('[submitProfile] Aadhaar save skipped: $e');
     }
   }
 
@@ -693,57 +798,84 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
   }
 
   /// Whether [p] passes the CURRENT match mode's gates for [me]:
-  ///   • All Matches        → partner preferences (age + caste mandatory);
-  ///   • Compatible Matches → partner preferences AND nakshatra compatibility.
+  ///   • All Matches        → every eligible profile is shown (nothing is
+  ///     hidden unnecessarily — non-matching profiles just rank LOWER);
+  ///   • Compatible Matches → partner preferences (age + caste mandatory)
+  ///     AND nakshatra compatibility.
   bool _passesMode(ProfileModel p, ProfileModel? me) {
-    if (!mandatoryPreferenceMatch(p, me)) return false;
     if (ref.read(matchModeProvider) == MatchMode.compatible) {
+      if (!mandatoryPreferenceMatch(p, me)) return false;
       if (me == null) return false; // can't verify compatibility yet
       return isNakshatraCompatible(me, p);
     }
-    return true;
+    return true; // All Matches — visibility is never gated, only ranked
+  }
+
+  /// How close [p] is to [me] geographically: 3 same city · 2 same district ·
+  /// 1 same state · 0 elsewhere/unknown. Ranking signal only.
+  static int _locationScore(ProfileModel p, ProfileModel? me) {
+    if (me == null) return 0;
+    bool eq(String a, String b) {
+      final na = a.trim().toLowerCase(), nb = b.trim().toLowerCase();
+      return na.isNotEmpty && na == nb;
+    }
+
+    if (eq(p.city, me.city)) return 3;
+    if (eq(p.district, me.district)) return 2;
+    if (eq(p.state, me.state)) return 1;
+    return 0;
   }
 
   /// Builds the feed from a fetched [pool]:
-  ///   • Data-integrity + the user's explicit filter-sheet choices decide who is
-  ///     ELIGIBLE at all.
-  ///   • The MATCH MODE gate is applied on top: partner preferences (age +
-  ///     caste mandatory) always; plus nakshatra compatibility in Compatible
-  ///     Matches mode. Profiles failing the gate are NOT shown — the page
-  ///     renders its professional empty state instead.
-  ///   • OPTIONAL preferences only RANK the result (best first); they never
-  ///     remove a profile.
-  ///   • Browsing progress: profiles the user has ALREADY viewed sort to the
-  ///     END, so a new session resumes from the first unseen profile instead
-  ///     of restarting at profile 1.
+  ///   • Data-integrity + the user's explicit filter-sheet choices decide who
+  ///     is ELIGIBLE at all; the match-mode gate ([_passesMode]) is applied on
+  ///     top (Compatible only — All Matches never hides an eligible profile).
+  ///   • The result is sorted by the spec's priority ladder:
+  ///       1. Horoscope (nakshatra) compatibility
+  ///       2. Partner-preference match (mandatory age+caste, then the ratio)
+  ///       3. Nearby location (city > district > state)
+  ///       4. Recently active (updatedAt) — with the id as the final
+  ///          tie-break so the order is STABLE across loads (the swipe
+  ///          browser's saved position stays meaningful).
   List<ProfileModel> _rank(
       List<ProfileModel> pool, String? myUid, ProfileModel? me,
       {required int fetched}) {
     final eligible = pool
-        .where((p) => _keep(p, myUid) && _filters.matches(p, me))
+        .where((p) =>
+            _keep(p, myUid) && _filters.matches(p, me) && _passesMode(p, me))
         .toList();
 
-    final matched = eligible.where((p) => _passesMode(p, me)).toList();
+    int cmp(ProfileModel a, ProfileModel b) {
+      // 1. Horoscope compatibility first.
+      if (me != null) {
+        final ca = isNakshatraCompatible(me, a) ? 1 : 0;
+        final cb = isNakshatraCompatible(me, b) ? 1 : 0;
+        if (ca != cb) return cb - ca;
+      }
+      // 2. Partner-preference match — hard (age+caste) gate first, then the
+      //    fraction of optional preferences satisfied.
+      final ma = mandatoryPreferenceMatch(a, me) ? 1 : 0;
+      final mb = mandatoryPreferenceMatch(b, me) ? 1 : 0;
+      if (ma != mb) return mb - ma;
+      final pa = partnerPreferenceScore(a, me).ratio;
+      final pb = partnerPreferenceScore(b, me).ratio;
+      if (pa != pb) return pb.compareTo(pa);
+      // 3. Nearby location.
+      final la = _locationScore(a, me), lb = _locationScore(b, me);
+      if (la != lb) return lb - la;
+      // 4. Recently active.
+      final act = b.updatedAt.compareTo(a.updatedAt);
+      if (act != 0) return act;
+      // Stable, deterministic tie-break.
+      return a.id.compareTo(b.id);
+    }
 
-    // Rank by the fraction of the user's OPTIONAL preferences each candidate
-    // satisfies — best first — with already-viewed profiles moved to the end
-    // (per-user browsing progress).
-    final viewed = ref.read(viewedProfilesProvider);
-    final scored = matched
-        .map((p) => MapEntry(p, partnerPreferenceScore(p, me).ratio))
-        .toList()
-      ..sort((a, b) {
-        final aViewed = viewed.contains(a.key.id);
-        final bViewed = viewed.contains(b.key.id);
-        if (aViewed != bViewed) return aViewed ? 1 : -1; // unseen first
-        return b.value.compareTo(a.value);
-      });
-    final result = scored.map((e) => e.key).toList();
+    final result = [...eligible]..sort(cmp);
 
     debugPrint('[Discover] gender=$_gender myGender=${me?.gender} · '
         'mode=${ref.read(matchModeProvider).name} · '
         'fetched=$fetched · eligible=${eligible.length} · '
-        'returned=${result.length} · viewed=${viewed.length} · '
+        'returned=${result.length} · '
         'casteSet=${_ppSet(me?.partnerPreferences.caste)} · '
         'age=${me?.partnerPreferences.minAge}-${me?.partnerPreferences.maxAge} · '
         'explicitFilters=${_filters.isActive}');

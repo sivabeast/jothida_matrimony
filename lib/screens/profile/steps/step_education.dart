@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../providers/master_options_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
@@ -71,6 +72,16 @@ class _StepEducationState extends ConsumerState<StepEducation> {
   void _snack(String m) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
+  /// Base constants + live user-added values (+ the current selection so a
+  /// custom value saved earlier still shows).
+  List<String> _merged(List<String> base, String type, String? selected) {
+    final items = mergeOptions(base, customValues(ref, type));
+    if ((selected ?? '').isNotEmpty && !items.contains(selected)) {
+      items.insert(0, selected!);
+    }
+    return items;
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -83,12 +94,18 @@ class _StepEducationState extends ConsumerState<StepEducation> {
           const Text('Your qualifications and work.',
               style: TextStyle(color: Colors.grey)),
           const SizedBox(height: 24),
+          // Master list + user-added values; "+" saves permanently to the DB
+          // (the old "Others → textbox" flow was removed everywhere).
           SearchableField(
             label: 'Highest Education',
             isRequired: true,
-            items: AppConstants.educations,
+            items: _merged(AppConstants.educations,
+                MasterOptionsService.education, _education),
             selectedItem: _education,
             prefixIcon: Icons.school_outlined,
+            onAddNew: (v) => ref
+                .read(masterOptionsServiceProvider)
+                .add(MasterOptionsService.education, value: v),
             onChanged: (v) => setState(() => _education = v),
           ),
           const SizedBox(height: 16),
@@ -101,9 +118,13 @@ class _StepEducationState extends ConsumerState<StepEducation> {
           SearchableField(
             label: 'Occupation',
             isRequired: true,
-            items: AppConstants.occupations,
+            items: _merged(AppConstants.occupations,
+                MasterOptionsService.occupation, _occupation),
             selectedItem: _occupation,
             prefixIcon: Icons.work_outline,
+            onAddNew: (v) => ref
+                .read(masterOptionsServiceProvider)
+                .add(MasterOptionsService.occupation, value: v),
             onChanged: (v) => setState(() => _occupation = v),
           ),
           const SizedBox(height: 16),
@@ -123,9 +144,13 @@ class _StepEducationState extends ConsumerState<StepEducation> {
           const SizedBox(height: 16),
           SearchableField(
             label: 'Annual Income',
-            items: AppConstants.incomeRanges,
+            items: _merged(AppConstants.incomeRanges,
+                MasterOptionsService.income, _annualIncome),
             selectedItem: _annualIncome,
             prefixIcon: Icons.currency_rupee,
+            onAddNew: (v) => ref
+                .read(masterOptionsServiceProvider)
+                .add(MasterOptionsService.income, value: v),
             onChanged: (v) => setState(() => _annualIncome = v),
           ),
           const SizedBox(height: 16),

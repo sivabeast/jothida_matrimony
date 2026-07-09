@@ -15,15 +15,10 @@ class UserModel {
   final bool isPhoneVerified;
   final bool isBlocked;
   final String? profileId; // Link to profile document
-  final String? subscriptionPlan;
-  final DateTime? subscriptionExpiry;
   final int freePortuthamsUsed;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? lastLoginAt;
-  // 'free' | 'basic' | 'medium' | 'premium'. Mirrors the active plan tier and
-  // is the field requested for the auth/user document.
-  final String membershipType;
   final Map<String, bool> privacySettings;
   final String? fcmToken;
   // Preferred app/report language: 'ta' (Tamil) | 'en' (English). Drives the
@@ -45,13 +40,10 @@ class UserModel {
     this.isPhoneVerified = false,
     this.isBlocked = false,
     this.profileId,
-    this.subscriptionPlan,
-    this.subscriptionExpiry,
     this.freePortuthamsUsed = 0,
     required this.createdAt,
     required this.updatedAt,
     this.lastLoginAt,
-    this.membershipType = 'free',
     this.privacySettings = const {
       'hidePhone': false,
       'hideAddress': false,
@@ -80,10 +72,6 @@ class UserModel {
       isPhoneVerified: data['isPhoneVerified'] ?? false,
       isBlocked: data['isBlocked'] ?? false,
       profileId: data['profileId'],
-      subscriptionPlan: data['subscriptionPlan'],
-      subscriptionExpiry: data['subscriptionExpiry'] != null
-          ? (data['subscriptionExpiry'] as Timestamp).toDate()
-          : null,
       freePortuthamsUsed: data['freePortuthamsUsed'] ?? 0,
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] as Timestamp).toDate()
@@ -94,7 +82,6 @@ class UserModel {
       lastLoginAt: data['lastLoginAt'] != null
           ? (data['lastLoginAt'] as Timestamp).toDate()
           : null,
-      membershipType: data['membershipType'] ?? 'free',
       privacySettings: Map<String, bool>.from(data['privacySettings'] ?? {
         'hidePhone': false,
         'hideAddress': false,
@@ -121,16 +108,11 @@ class UserModel {
         'isPhoneVerified': isPhoneVerified,
         'isBlocked': isBlocked,
         'profileId': profileId,
-        'subscriptionPlan': subscriptionPlan,
-        'subscriptionExpiry': subscriptionExpiry != null
-            ? Timestamp.fromDate(subscriptionExpiry!)
-            : null,
         'freePortuthamsUsed': freePortuthamsUsed,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
         'lastLoginAt':
             lastLoginAt != null ? Timestamp.fromDate(lastLoginAt!) : null,
-        'membershipType': membershipType,
         'privacySettings': privacySettings,
         'fcmToken': fcmToken,
         'preferred_language': preferredLanguage,
@@ -150,13 +132,10 @@ class UserModel {
     bool? isPhoneVerified,
     bool? isBlocked,
     String? profileId,
-    String? subscriptionPlan,
-    DateTime? subscriptionExpiry,
     int? freePortuthamsUsed,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? lastLoginAt,
-    String? membershipType,
     Map<String, bool>? privacySettings,
     String? fcmToken,
     String? preferredLanguage,
@@ -175,23 +154,14 @@ class UserModel {
         isPhoneVerified: isPhoneVerified ?? this.isPhoneVerified,
         isBlocked: isBlocked ?? this.isBlocked,
         profileId: profileId ?? this.profileId,
-        subscriptionPlan: subscriptionPlan ?? this.subscriptionPlan,
-        subscriptionExpiry: subscriptionExpiry ?? this.subscriptionExpiry,
         freePortuthamsUsed: freePortuthamsUsed ?? this.freePortuthamsUsed,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
         lastLoginAt: lastLoginAt ?? this.lastLoginAt,
-        membershipType: membershipType ?? this.membershipType,
         privacySettings: privacySettings ?? this.privacySettings,
         fcmToken: fcmToken ?? this.fcmToken,
         preferredLanguage: preferredLanguage ?? this.preferredLanguage,
       );
-
-  bool get hasActiveSubscription {
-    if (subscriptionPlan == null) return false;
-    if (subscriptionExpiry == null) return false;
-    return subscriptionExpiry!.isAfter(DateTime.now());
-  }
 
   /// `super_admin` accounts also have full admin privileges (route protection
   /// and Admin Dashboard access). Only the email(s) in

@@ -252,7 +252,7 @@ class AstrologerOverviewTab extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (kSubscriptionTestMode) ...[
+          if (kPaymentTestMode) ...[
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -329,13 +329,13 @@ class AstrologerOverviewTab extends ConsumerWidget {
           ],
           const SizedBox(height: 14),
           ElevatedButton.icon(
-            onPressed: () => kSubscriptionTestMode
+            onPressed: () => kPaymentTestMode
                 ? _choosePlan(context, ref)
                 : _renew(context),
-            icon: const Icon(kSubscriptionTestMode
+            icon: const Icon(kPaymentTestMode
                 ? Icons.workspace_premium
                 : Icons.autorenew),
-            label: Text(kSubscriptionTestMode
+            label: Text(kPaymentTestMode
                 ? (hasPlan ? 'Change Plan' : 'Activate Plan')
                 : 'Renew Subscription'),
             style: ElevatedButton.styleFrom(
@@ -402,7 +402,7 @@ class AstrologerOverviewTab extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              kSubscriptionTestMode
+              kPaymentTestMode
                   ? 'Test mode — the plan activates immediately, no payment.'
                   : 'Pick Monthly or Yearly billing.',
               style: TextStyle(fontSize: 12.5, color: Colors.grey[600]),
@@ -433,7 +433,7 @@ class AstrologerOverviewTab extends ConsumerWidget {
             amount: plan.currentPrice);
         messenger.showSnackBar(SnackBar(
             content: Text(
-                '${plan.name} plan activated${kSubscriptionTestMode ? ' (test mode)' : ''}.')));
+                '${plan.name} plan activated${kPaymentTestMode ? ' (test mode)' : ''}.')));
       },
       child: Container(
         padding: const EdgeInsets.all(16),

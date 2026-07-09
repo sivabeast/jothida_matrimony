@@ -82,6 +82,18 @@ class ViewedProfilesNotifier extends Notifier<Set<String>> {
     }
   }
 
+  /// Clears the history — called when the user has viewed EVERY profile once,
+  /// so the rotation restarts from profile 1 and progress tracks again.
+  Future<void> resetHistory() async {
+    state = const {};
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_key);
+    } catch (_) {
+      // Best-effort; in-memory state already cleared.
+    }
+  }
+
   /// Records that the user has seen [profileId]. No-op when already recorded.
   Future<void> markViewed(String profileId) async {
     if (profileId.isEmpty || state.contains(profileId)) return;

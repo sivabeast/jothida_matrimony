@@ -67,20 +67,7 @@ class AdminReportsPage extends ConsumerWidget {
         _RevenueChartCard(analytics: a),
         const SizedBox(height: 24),
 
-        // ── Subscriptions ─────────────────────────────────────────────────
-        Row(children: [
-          Expanded(child: _SectionTitle('Subscriptions')),
-          _ExportChip(onTap: () => exportSubscriptionsCsv(context, a)),
-        ]),
-        const SizedBox(height: 12),
-        _statTiles([
-          ('Monthly Plans', '${a.monthlySubscribers}', AppColors.info),
-          ('Yearly Plans', '${a.yearlySubscribers}', AppColors.primary),
-          ('Active Premium', '${a.activePremium}', AppColors.success),
-          ('Expired', '${a.expiredPremium}', AppColors.warning),
-          ('Cancelled', '${a.cancelledSubscriptions}', AppColors.error),
-        ]),
-        const SizedBox(height: 24),
+        // (The Subscriptions section was removed with the subscription system.)
 
         // ── User growth ───────────────────────────────────────────────────
         Row(children: [

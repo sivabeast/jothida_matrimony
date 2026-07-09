@@ -12,7 +12,6 @@ import '../services/razorpay/razorpay_service.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/profile_repository.dart';
 import '../repositories/interest_repository.dart';
-import '../repositories/subscription_repository.dart';
 import '../repositories/admin_repository.dart';
 
 // ── Services ──────────────────────────────────────────────────────────────────
@@ -49,11 +48,6 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) => ProfileRe
 final interestRepositoryProvider = Provider<InterestRepository>((ref) => InterestRepository(
       ref.watch(firestoreServiceProvider),
     ));
-
-final subscriptionRepositoryProvider =
-    Provider<SubscriptionRepository>((ref) => SubscriptionRepository(
-          ref.watch(firestoreServiceProvider),
-        ));
 
 final adminRepositoryProvider = Provider<AdminRepository>((ref) => AdminRepository(
       ref.watch(firestoreServiceProvider),

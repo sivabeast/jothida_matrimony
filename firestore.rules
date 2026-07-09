@@ -54,6 +54,32 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── Custom master-dropdown values ("+ Add" system) ─────────────────────
+    // One doc per dropdown type (master_options/education, /caste, /city, …)
+    // holding user-added values that the canonical (bundled) master data is
+    // missing. Any signed-in user may append a value; entries stream live to
+    // every user, search, filters and the admin panel. Only admins may delete.
+    match /master_options/{type} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated()
+                            && request.resource.data.entries is list;
+      allow delete: if isAdmin();
+    }
+
+    // ── Aadhaar verification (SENSITIVE — never public) ────────────────────
+    // aadhaar/{userId} = { number, frontUrl, backUrl, verified, updatedAt }.
+    // Readable ONLY by the owner and admins. The owner may create/update their
+    // own document but can never mark it verified themselves — editing resets
+    // verification, and only an admin can set verified = true.
+    match /aadhaar/{userId} {
+      allow read: if isAuthenticated() && userId == request.auth.uid;
+      allow read: if isAdmin();
+      allow create, update: if isAuthenticated()
+                            && userId == request.auth.uid
+                            && request.resource.data.verified == false;
+      allow write: if isAdmin();
+    }
+
     // ── Website settings (marketing site) ──────────────────────────────────
     // Single config doc (website_settings/general) driving the public
     // marketing website: launch status/message, store URLs, hero image,
@@ -247,15 +273,23 @@ service cloud.firestore {
     }
 
     // ── Notifications ─────────────────────────────────────────────────────
-    // BUSINESS RULE: astrologers must not contact users. Notifications are
-    // therefore created only by admins / privileged server logic — never by an
-    // astrologer pushing a message to a user.
+    // Event notifications (interest sent/accepted/rejected, profile approved,
+    // report ready, appointment confirmed, admin update) are created
+    // CLIENT-SIDE by the acting user, so any signed-in account may create a
+    // WELL-FORMED notification document. Reading/updating/deleting stays
+    // strictly owner-only.
     match /notifications/{notifId} {
       allow read: if isAuthenticated()
                   && resource.data.userId == request.auth.uid;
       allow update: if isAuthenticated()
                     && resource.data.userId == request.auth.uid;
       allow create: if isAdmin();
+      allow create: if isAuthenticated()
+                    && request.resource.data.userId is string
+                    && request.resource.data.title is string
+                    && request.resource.data.body is string
+                    && request.resource.data.type is string
+                    && request.resource.data.isRead == false;
       allow delete: if isAuthenticated()
                     && resource.data.userId == request.auth.uid;
     }

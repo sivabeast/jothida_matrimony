@@ -3,9 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:flutter/foundation.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/config/admin_config.dart';
+import '../../models/aadhaar_details.dart';
 import '../../models/profile_model.dart';
 import '../../models/interest_model.dart';
-import '../../models/subscription_model.dart';
 import '../../models/report_model.dart';
 import '../../models/notification_model.dart';
 import '../../models/announcement_model.dart';
@@ -29,7 +29,7 @@ class FirestoreService {
   ///
   /// Stored fields: uid (doc id), email, displayName (name), photoUrl,
   /// loginProvider, createdAt, lastLoginAt, isProfileComplete
-  /// (profileCompleted), membershipType, plus the app's account metadata.
+  /// (profileCompleted), plus the app's account metadata.
   /// Returns the resulting [UserModel].
   ///
   /// [loginProvider] records how the user authenticated this time (e.g.
@@ -62,7 +62,6 @@ class FirestoreService {
             // Auto-assign super_admin to whitelisted accounts; everyone else
             // defaults to 'user'.
             role: AdminConfig.roleForEmail(user.email),
-            membershipType: 'free',
             isProfileComplete: false,
             isEmailVerified: user.emailVerified,
             createdAt: now,
@@ -219,28 +218,8 @@ class FirestoreService {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-  /// Writes the user's subscription status onto `users/{uid}` so premium access
-  /// is reflected instantly. Stores BOTH the explicit status fields and the
-  /// app's existing `membershipType` / `subscriptionPlan` / `subscriptionExpiry`
-  /// fields that the premium-access checks already read.
-  Future<void> updateUserSubscription(
-    String uid, {
-    required String plan, // tier: basic | medium | premium
-    required String type, // 'monthly' | 'yearly'
-    required DateTime activatedAt,
-    required DateTime expiresAt,
-  }) =>
-      _db.collection(AppConstants.usersCollection).doc(uid).set({
-        'subscriptionActive': true,
-        'subscriptionPlan': plan,
-        'subscriptionType': type,
-        'subscriptionStatus': 'active',
-        'membershipType': plan,
-        'subscriptionExpiry': Timestamp.fromDate(expiresAt),
-        'activatedAt': Timestamp.fromDate(activatedAt),
-        'expiresAt': Timestamp.fromDate(expiresAt),
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+  // (updateUserSubscription was removed — the app has NO subscription system;
+  // all matrimony features are free and only per-booking astrology is paid.)
 
   // ── Profiles ──────────────────────────────────────────────────────────────
   Future<String> createProfile(ProfileModel profile) async {
@@ -290,6 +269,18 @@ class FirestoreService {
     if (snap.docs.isEmpty) return null;
     return ProfileModel.fromFirestore(snap.docs.first);
   }
+
+  /// LIVE stream of the signed-in user's OWN profile (query by userId). This
+  /// is the admin↔user sync backbone: any edit the admin makes on the profile
+  /// document (details, horoscope, photos, Aadhaar, preferences…) reaches the
+  /// user app in real time — no re-login, no stale one-shot cache.
+  Stream<ProfileModel?> watchProfileByUserId(String userId) => _db
+      .collection(AppConstants.profilesCollection)
+      .where('userId', isEqualTo: userId)
+      .limit(1)
+      .snapshots()
+      .map((s) =>
+          s.docs.isEmpty ? null : ProfileModel.fromFirestore(s.docs.first));
 
   /// Look up ANOTHER user's public profile by their UID.
   ///
@@ -529,28 +520,49 @@ class FirestoreService {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-  // ── Subscriptions ─────────────────────────────────────────────────────────
-  Future<void> saveSubscription(SubscriptionModel sub) => _db
-      .collection(AppConstants.subscriptionsCollection)
-      .doc(sub.id)
-      .set(sub.toFirestore());
+  // ── Aadhaar verification (gated aadhaar/{userId}) ─────────────────────────
+  /// Saves/updates a user's Aadhaar record. A USER save always resets
+  /// [verified] to false (the security rules enforce this too) — only an admin
+  /// re-verifies after an edit.
+  Future<void> saveAadhaar(AadhaarDetails details) => _db
+      .collection(AppConstants.aadhaarCollection)
+      .doc(details.userId)
+      .set(details.toFirestore(), SetOptions(merge: true));
 
-  Future<SubscriptionModel?> getActiveSubscription(String userId) async {
-    // Single-field query (no composite index needed): fetch the user's
-    // subscriptions and pick the latest that is active AND not expired,
-    // client-side. The previous `where(isActive) + orderBy(createdAt)` combo
-    // required a composite index and silently failed (failed-precondition),
-    // which is why a freshly-activated plan didn't register as premium.
-    final snap = await _db
-        .collection(AppConstants.subscriptionsCollection)
-        .where('userId', isEqualTo: userId)
+  /// Live Aadhaar record for [userId] (owner or admin — rules-gated).
+  Stream<AadhaarDetails?> watchAadhaar(String userId) => _db
+      .collection(AppConstants.aadhaarCollection)
+      .doc(userId)
+      .snapshots()
+      .map((d) => d.exists ? AadhaarDetails.fromFirestore(d) : null);
+
+  /// One-shot Aadhaar fetch (admin review / edit prefill).
+  Future<AadhaarDetails?> getAadhaar(String userId) async {
+    final d = await _db
+        .collection(AppConstants.aadhaarCollection)
+        .doc(userId)
         .get();
-    final active = snap.docs
-        .map(SubscriptionModel.fromFirestore)
-        .where((s) => s.isActive && !s.isExpired)
-        .toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return active.isEmpty ? null : active.first;
+    return d.exists ? AadhaarDetails.fromFirestore(d) : null;
+  }
+
+  /// ADMIN action: marks the Aadhaar record verified/unverified and mirrors
+  /// the outcome onto the profile's public `isVerified` badge.
+  Future<void> setAadhaarVerified({
+    required String userId,
+    required String profileId,
+    required bool verified,
+  }) async {
+    await _db.collection(AppConstants.aadhaarCollection).doc(userId).set({
+      'verified': verified,
+      'verifiedAt': verified ? FieldValue.serverTimestamp() : null,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    if (profileId.isNotEmpty) {
+      await _db
+          .collection(AppConstants.profilesCollection)
+          .doc(profileId)
+          .update({'isVerified': verified});
+    }
   }
 
   // ── Reports ───────────────────────────────────────────────────────────────
@@ -567,6 +579,43 @@ class FirestoreService {
       .collection(AppConstants.notificationsCollection)
       .doc(notification.id)
       .set(notification.toFirestore());
+
+  /// Creates an in-app notification for [userId]. Used by the client-side
+  /// event hooks (interest sent/accepted/rejected, profile approved, report
+  /// ready, appointment confirmed, admin profile update).
+  Future<void> createNotification({
+    required String userId,
+    required String title,
+    required String body,
+    required String type,
+    Map<String, dynamic>? data,
+  }) =>
+      _db.collection(AppConstants.notificationsCollection).add({
+        'userId': userId,
+        'title': title,
+        'body': body,
+        'type': type,
+        if (data != null) 'data': data,
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+  /// Marks EVERY unread notification of [userId] read in one batch — called
+  /// when the user opens the Notifications page, so the badge count drops to
+  /// zero the moment the page is seen.
+  Future<void> markAllNotificationsRead(String userId) async {
+    final snap = await _db
+        .collection(AppConstants.notificationsCollection)
+        .where('userId', isEqualTo: userId)
+        .where('isRead', isEqualTo: false)
+        .get();
+    if (snap.docs.isEmpty) return;
+    final batch = _db.batch();
+    for (final d in snap.docs) {
+      batch.update(d.reference, {'isRead': true});
+    }
+    await batch.commit();
+  }
 
   Stream<List<NotificationModel>> watchNotifications(String userId) => _db
       .collection(AppConstants.notificationsCollection)
@@ -972,12 +1021,6 @@ class FirestoreService {
         await safeCount(usersCol.where('gender', isEqualTo: 'Female'));
     final blockedUsers =
         await safeCount(usersCol.where('isBlocked', isEqualTo: true));
-    final basicPlanUsers =
-        await safeCount(usersCol.where('membershipType', isEqualTo: 'basic'));
-    final mediumPlanUsers =
-        await safeCount(usersCol.where('membershipType', isEqualTo: 'medium'));
-    final premiumPlanUsers =
-        await safeCount(usersCol.where('membershipType', isEqualTo: 'premium'));
     final totalInterests =
         await safeCount(_db.collection(AppConstants.interestsCollection));
     final totalMatches = await safeCount(_db
@@ -999,9 +1042,6 @@ class FirestoreService {
       'maleUsers': maleUsers,
       'femaleUsers': femaleUsers,
       'activeUsers': (totalUsers - blockedUsers).clamp(0, totalUsers),
-      'basicPlanUsers': basicPlanUsers,
-      'mediumPlanUsers': mediumPlanUsers,
-      'premiumPlanUsers': premiumPlanUsers,
       'totalInterests': totalInterests,
       'totalMatches': totalMatches,
     };
@@ -1015,78 +1055,30 @@ class FirestoreService {
     final todayStart = DateTime(now.year, now.month, now.day);
     final weekStart = todayStart.subtract(Duration(days: now.weekday - 1));
     final monthStart = DateTime(now.year, now.month, 1);
-    final yearStart = DateTime(now.year, 1, 1);
 
     int toInt(dynamic v) => v is num ? v.toInt() : 0;
     DateTime? ts(dynamic v) => v is Timestamp ? v.toDate() : null;
 
-    // ── Revenue + subscriptions (from `subscriptions`) ──────────────────────
-    // User subscription revenue.
-    int revToday = 0, revWeek = 0, revMonth = 0, revYear = 0, revTotal = 0;
-    int monthlySubs = 0, yearlySubs = 0;
-    int activePremium = 0, expiredPremium = 0, cancelledSubs = 0;
+    // ── Revenue ──────────────────────────────────────────────────────────────
+    // The USER subscription system was removed — the legacy `subscriptions`
+    // collection is no longer read; user-subscription revenue and premium
+    // counts stay at 0. Only astrologer-plan and per-booking astrology-service
+    // revenue is computed below.
+    const int revToday = 0, revWeek = 0, revMonth = 0, revYear = 0,
+        revTotal = 0;
+    const int monthlySubs = 0, yearlySubs = 0;
+    const int activePremium = 0, expiredPremium = 0, cancelledSubs = 0;
+    const int usersExpiringToday = 0;
     // Astrologer subscription revenue (from `astrologers.subscriptionAmount`).
     int astroRevToday = 0, astroRevMonth = 0, astroRevTotal = 0;
-    // Subscription-expiry alerts.
+    // Subscription-expiry alerts (astrologer plans only now).
     final next7 = todayStart.add(const Duration(days: 7));
-    int usersExpiringToday = 0, astrosExpiringToday = 0, expiring7 = 0;
-    // Combined revenue-trend buckets (user subs + astrologer subs).
+    int astrosExpiringToday = 0, expiring7 = 0;
+    // Combined revenue-trend buckets (astrologer subs + paid services).
     final daily = List<int>.filled(7, 0);
     final weekly = List<int>.filled(6, 0);
     final monthly = List<int>.filled(6, 0);
     final yearly = List<int>.filled(4, 0);
-    try {
-      final subs =
-          await _db.collection(AppConstants.subscriptionsCollection).get();
-      debugPrint('[Analytics] subscriptions: ${subs.docs.length}');
-      for (final d in subs.docs) {
-        final m = d.data();
-        final amount = toInt(m['amountPaid']);
-        revTotal += amount;
-        final created = ts(m['createdAt']);
-        final start = ts(m['startDate']);
-        final end = ts(m['endDate']);
-        final isActive = m['isActive'] ?? true;
-
-        if (created != null) {
-          if (!created.isBefore(todayStart)) revToday += amount;
-          if (!created.isBefore(weekStart)) revWeek += amount;
-          if (!created.isBefore(monthStart)) revMonth += amount;
-          if (!created.isBefore(yearStart)) revYear += amount;
-
-          final createdDay =
-              DateTime(created.year, created.month, created.day);
-          final dayDiff = todayStart.difference(createdDay).inDays;
-          if (dayDiff >= 0 && dayDiff < 7) daily[6 - dayDiff] += amount;
-          final weekDiff = dayDiff ~/ 7;
-          if (weekDiff >= 0 && weekDiff < 6) weekly[5 - weekDiff] += amount;
-          final monthDiff =
-              (now.year - created.year) * 12 + (now.month - created.month);
-          if (monthDiff >= 0 && monthDiff < 6) monthly[5 - monthDiff] += amount;
-          final yearDiff = now.year - created.year;
-          if (yearDiff >= 0 && yearDiff < 4) yearly[3 - yearDiff] += amount;
-        }
-
-        final expired = end != null && end.isBefore(now);
-        if (expired) {
-          expiredPremium++;
-        } else if (isActive == true) {
-          activePremium++;
-        } else {
-          cancelledSubs++;
-        }
-        if (end != null && !expired) {
-          final endDay = DateTime(end.year, end.month, end.day);
-          if (endDay == todayStart) usersExpiringToday++;
-          if (end.isBefore(next7)) expiring7++;
-        }
-        if (start != null && end != null) {
-          (end.difference(start).inDays >= 300 ? () => yearlySubs++ : () => monthlySubs++)();
-        }
-      }
-    } catch (e) {
-      debugPrint('[Analytics] ❌ subscriptions failed: $e');
-    }
 
     // ── Consultations (from `astrologer_requests`) ──────────────────────────
     int cToday = 0, cWeek = 0, cMonth = 0, cCompleted = 0, cCancelled = 0;

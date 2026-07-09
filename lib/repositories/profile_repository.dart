@@ -19,6 +19,11 @@ class ProfileRepository {
 
   Future<ProfileModel?> getProfileByUserId(String userId) => _firestore.getProfileByUserId(userId);
 
+  /// LIVE stream of the user's own profile — see
+  /// [FirestoreService.watchProfileByUserId] (admin↔user sync backbone).
+  Stream<ProfileModel?> watchProfileByUserId(String userId) =>
+      _firestore.watchProfileByUserId(userId);
+
   /// Another user's PUBLIC profile by UID (approved + active only) — safe to
   /// query for non-owners. See [FirestoreService.getApprovedProfileByUserId].
   Future<ProfileModel?> getApprovedProfileByUserId(String userId) =>

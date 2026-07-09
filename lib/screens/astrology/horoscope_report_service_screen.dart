@@ -33,7 +33,7 @@ class HoroscopeReportServiceScreen extends ConsumerStatefulWidget {
 
 class _HoroscopeReportServiceScreenState
     extends ConsumerState<HoroscopeReportServiceScreen> {
-  static const int _fee = AppConstants.horoscopeAnalysisFee; // ₹399
+  static const int _fee = AppConstants.horoscopeAnalysisFee; // ₹199
 
   final RazorpayService _razorpay = RazorpayService();
   bool _busy = false;
@@ -126,10 +126,36 @@ class _HoroscopeReportServiceScreenState
     }
   }
 
-  void _onPaymentFailure(PaymentFailureResponse response) {
-    if (!mounted) return;
-    setState(() => _busy = false);
-    _snack('Payment failed or cancelled. You have not been charged.');
+  /// Payment NOT completed → the request is still created (unpaid) and
+  /// auto-assigned to an employee/admin for MANUAL horoscope verification, so
+  /// the user's request is never lost just because the gateway failed.
+  Future<void> _onPaymentFailure(PaymentFailureResponse response) async {
+    final groom = _groom, bride = _bride;
+    if (!mounted || groom == null || bride == null) {
+      if (mounted) setState(() => _busy = false);
+      return;
+    }
+    try {
+      await ref
+          .read(matchAnalysisControllerProvider.notifier)
+          .requestAndAssignAnalysis(
+            groom: groom,
+            bride: bride,
+            amount: 0, // unpaid — flags the request for manual verification
+            note: 'Payment not completed — assigned for manual '
+                'horoscope verification.',
+          );
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _snack('Payment was not completed — you have not been charged. Your '
+          'request was sent for manual verification; track it on Reports.');
+      ref.read(homeTabIndexProvider.notifier).state = 3; // Reports tab
+      context.go('/home');
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _snack('Payment failed or cancelled. You have not been charged.');
+    }
   }
 
   @override

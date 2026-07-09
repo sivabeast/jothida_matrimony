@@ -4,27 +4,34 @@ import '../../core/services/location_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/master_location_model.dart';
 import '../../providers/master_location_provider.dart';
+import '../../providers/master_options_provider.dart';
 import 'searchable_field.dart';
 
-/// Cascading, searchable **Country → State → District → City** picker backed by
-/// the bundled JSON master data (`assets/master_data/location/*.json`), plus a
+/// Cascading, searchable **State → District → City** picker backed by the
+/// bundled JSON master data (`assets/master_data/location/*.json`) PLUS the
+/// Firestore `master_options` overlay of user-added values, with a
 /// "📍 Use My Location" button that GPS-detects and auto-fills all fields.
 ///
 /// Behaviour:
+///  • There is NO Country dropdown (removed per spec) — the app serves India.
 ///  • Selecting a state loads only that state's districts; selecting a district
 ///    loads only that district's cities (children reset when a parent changes).
-///  • Every field has a search box (provided by [SearchableField]).
-///  • "Use My Location" reverse-geocodes the device position and matches the
-///    detected names against the master data, then selects them. The user can
-///    still override any field manually afterwards.
+///  • Every field has a search box AND a "+" Add button — a missing state /
+///    district / city is saved PERMANENTLY to the master database and becomes
+///    visible to every user immediately (this replaced "Others → textbox").
+///  • "Use My Location" reverse-geocodes the device position and maps it
+///    INTELLIGENTLY to the nearest available master entries: exact → partial
+///    match on state/district/city, district falls back to matching the
+///    detected city name, and an unmatched locality (e.g. a small village)
+///    still fills the City field as a custom value instead of failing.
 ///  • Permission denied / failure never crashes — a friendly message is shown
 ///    and manual selection remains available.
 ///
 /// The host form receives the current selection (names + lat/lng) through
 /// [onChanged] and persists `state` / `district` / `city` / `latitude` /
-/// `longitude`.
+/// `longitude`. `country` is always reported as India.
 class LocationPickerSection extends ConsumerStatefulWidget {
-  final String? initialCountry;
+  final String? initialCountry; // legacy parameter — country was removed
   final String? initialState;
   final String? initialDistrict;
   final String? initialCity;
@@ -55,7 +62,6 @@ class LocationPickerSection extends ConsumerStatefulWidget {
 }
 
 class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
-  String? _country;
   String? _stateId, _stateName;
   String? _districtId, _districtName;
   String? _cityId, _cityName;
@@ -64,16 +70,9 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
   bool _detecting = false;
   String? _locError;
 
-  /// Sentinel option appended to the City dropdown to let users add a city that
-  /// isn't in the master data.
-  static const _kAddCustomCity = '➕ Add a city not listed';
-
   @override
   void initState() {
     super.initState();
-    _country = (widget.initialCountry ?? '').trim().isEmpty
-        ? 'India'
-        : widget.initialCountry!.trim();
     _lat = widget.initialLatitude;
     _lng = widget.initialLongitude;
     // Pre-select any saved location (edit mode) once the master data resolves.
@@ -87,51 +86,52 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
     try {
       final states = await ref.read(statesProvider.future);
       final st = _match(states, widget.initialState ?? '', (s) => s.name);
-      if (st == null || !mounted) return;
-      setState(() {
-        _stateId = st.id;
-        _stateName = st.name;
-      });
-
-      if ((widget.initialDistrict ?? '').trim().isEmpty) {
-        _emit();
-        return;
-      }
-      final districts = await ref.read(districtsProvider(st.id).future);
-      final di = _match(districts, widget.initialDistrict ?? '', (d) => d.name);
-      if (di == null || !mounted) {
-        _emit();
-        return;
-      }
-      setState(() {
-        _districtId = di.id;
-        _districtName = di.name;
-      });
-
-      if ((widget.initialCity ?? '').trim().isEmpty) {
-        _emit();
-        return;
-      }
-      final cities = await ref.read(citiesProvider(di.id).future);
-      final ci = _match(cities, widget.initialCity ?? '', (c) => c.name);
       if (!mounted) return;
       setState(() {
-        if (ci != null) {
-          _cityId = ci.id;
-          _cityName = ci.name;
-        } else if ((widget.initialCity ?? '').trim().isNotEmpty) {
-          // A saved custom city not present in the master data — keep showing it.
-          _cityName = widget.initialCity!.trim();
-          _cityId = null;
+        if (st != null) {
+          _stateId = st.id;
+          _stateName = st.name;
+        } else {
+          // A saved CUSTOM state (user-added) — keep showing it.
+          _stateName = widget.initialState!.trim();
+          _stateId = null;
         }
       });
+
+      final savedDistrict = (widget.initialDistrict ?? '').trim();
+      if (savedDistrict.isNotEmpty) {
+        MasterDistrict? di;
+        if (st != null) {
+          final districts = await ref.read(districtsProvider(st.id).future);
+          di = _match(districts, savedDistrict, (d) => d.name);
+        }
+        if (!mounted) return;
+        setState(() {
+          _districtId = di?.id;
+          _districtName = di?.name ?? savedDistrict;
+        });
+      }
+
+      final savedCity = (widget.initialCity ?? '').trim();
+      if (savedCity.isNotEmpty) {
+        MasterCity? ci;
+        if (_districtId != null) {
+          final cities = await ref.read(citiesProvider(_districtId!).future);
+          ci = _match(cities, savedCity, (c) => c.name);
+        }
+        if (!mounted) return;
+        setState(() {
+          _cityId = ci?.id;
+          _cityName = ci?.name ?? savedCity;
+        });
+      }
       _emit();
     } catch (_) {
       // Master data unavailable — leave fields empty for manual entry.
     }
   }
 
-  // ── Use My Location ───────────────────────────────────────────────────────
+  // ── Use My Location — intelligent nearest-available mapping ───────────────
   Future<void> _useMyLocation() async {
     setState(() {
       _detecting = true;
@@ -142,14 +142,7 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
       _lat = loc.latitude;
       _lng = loc.longitude;
 
-      // Match the detected country against the local country list (default India).
-      if (loc.country.trim().isNotEmpty) {
-        final countries = await ref.read(countriesProvider.future);
-        final matchedCountry = _matchString(countries, loc.country);
-        _country = matchedCountry ?? _country ?? 'India';
-      }
-
-      // Match the reverse-geocoded names against the master data and select.
+      // 1. State — exact/partial match against the master list.
       final states = await ref.read(statesProvider.future);
       final st = _match(states, loc.state, (s) => s.name);
       if (st != null) {
@@ -157,19 +150,36 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
         _stateName = st.name;
         _districtId = _districtName = _cityId = _cityName = null;
 
+        // 2. District — try the detected district, then the detected CITY name
+        //    (GPS often reports city == district for towns).
         final districts = await ref.read(districtsProvider(st.id).future);
-        final di = _match(districts, loc.district, (d) => d.name);
+        final di = _match(districts, loc.district, (d) => d.name) ??
+            _match(districts, loc.city, (d) => d.name);
         if (di != null) {
           _districtId = di.id;
           _districtName = di.name;
 
+          // 3. City — detected city, then sub-locality/district as fallbacks;
+          //    an unmatched locality (e.g. "Pacharpalayam") still fills the
+          //    field as a CUSTOM city so auto-selection never fails.
           final cities = await ref.read(citiesProvider(di.id).future);
-          final ci = _match(cities, loc.city, (c) => c.name);
+          final ci = _match(cities, loc.city, (c) => c.name) ??
+              _match(cities, loc.district, (c) => c.name);
           if (ci != null) {
             _cityId = ci.id;
             _cityName = ci.name;
+          } else if (loc.city.trim().isNotEmpty) {
+            _cityId = null;
+            _cityName = loc.city.trim();
           }
+        } else if (loc.city.trim().isNotEmpty) {
+          // No district match at all — still surface the detected place.
+          _cityId = null;
+          _cityName = loc.city.trim();
         }
+      } else if (loc.city.trim().isNotEmpty || loc.state.trim().isNotEmpty) {
+        _locError = 'Detected "${[loc.city, loc.state].where((s) => s.trim().isNotEmpty).join(', ')}" '
+            '— please pick the closest match below.';
       }
       if (!mounted) return;
       setState(() {}); // reflect matched selections in the dropdowns
@@ -187,22 +197,10 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
   }
 
   // ── Manual selection handlers ─────────────────────────────────────────────
-  void _onCountryPicked(String? c) {
+  void _onStatePicked({String? id, String? name}) {
     setState(() {
-      _country = c;
-      // Changing country invalidates the India-specific cascade below it.
-      _stateId = _stateName = null;
-      _districtId = _districtName = null;
-      _cityId = _cityName = null;
-      _locError = null;
-    });
-    _emit();
-  }
-
-  void _onStatePicked(MasterState? s) {
-    setState(() {
-      _stateId = s?.id;
-      _stateName = s?.name;
+      _stateId = id;
+      _stateName = name;
       _districtId = _districtName = null; // reset children
       _cityId = _cityName = null;
       _locError = null;
@@ -210,25 +208,25 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
     _emit();
   }
 
-  void _onDistrictPicked(MasterDistrict? d) {
+  void _onDistrictPicked({String? id, String? name}) {
     setState(() {
-      _districtId = d?.id;
-      _districtName = d?.name;
+      _districtId = id;
+      _districtName = name;
       _cityId = _cityName = null; // reset child
     });
     _emit();
   }
 
-  void _onCityPicked(MasterCity? c) {
+  void _onCityPicked({String? id, String? name}) {
     setState(() {
-      _cityId = c?.id;
-      _cityName = c?.name;
+      _cityId = id;
+      _cityName = name;
     });
     _emit();
   }
 
   void _emit() => widget.onChanged(LocationSelection(
-        country: _country ?? 'India',
+        country: 'India',
         state: _stateName ?? '',
         stateId: _stateId ?? '',
         district: _districtName ?? '',
@@ -246,12 +244,6 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
       .replaceAll(RegExp(r'[^a-z0-9 ]'), ' ')
       .replaceAll(RegExp(r'\s+'), ' ')
       .trim();
-
-  /// Normalised match against a plain string list (used for Country).
-  String? _matchString(List<String> list, String name) {
-    final hit = _match(list, name, (s) => s);
-    return hit;
-  }
 
   T? _match<T>(List<T> list, String name, String Function(T) nameOf) {
     if (name.trim().isEmpty) return null;
@@ -299,8 +291,7 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
           ),
         const SizedBox(height: 16),
 
-        _countryField(),
-        const SizedBox(height: 16),
+        // NO Country dropdown (removed per spec).
         _stateField(),
         const SizedBox(height: 16),
         _districtField(),
@@ -332,43 +323,43 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
     );
   }
 
-  Widget _countryField() {
-    final async = ref.watch(countriesProvider);
-    return async.when(
-      loading: () => _loadingField('Country', required: true),
-      error: (_, __) =>
-          _errorField('Country', () => ref.invalidate(countriesProvider)),
-      data: (countries) => SearchableField(
-        label: 'Country',
-        isRequired: true,
-        prefixIcon: Icons.public,
-        items: countries,
-        selectedItem: _country,
-        onChanged: _onCountryPicked,
-      ),
-    );
-  }
-
   Widget _stateField() {
     final async = ref.watch(statesProvider);
+    final custom = customValues(ref, MasterOptionsService.state);
     return async.when(
       loading: () => _loadingField('State', required: true),
       error: (_, __) =>
           _errorField('State', () => ref.invalidate(statesProvider)),
-      data: (states) => SearchableField(
-        label: 'State',
-        isRequired: true,
-        prefixIcon: Icons.map_outlined,
-        items: states.map((s) => s.name).toList(),
-        selectedItem: _stateName,
-        onChanged: (name) =>
-            _onStatePicked(_match(states, name ?? '', (s) => s.name)),
-      ),
+      data: (states) {
+        final items =
+            mergeOptions(states.map((s) => s.name).toList(), custom);
+        if ((_stateName ?? '').isNotEmpty && !items.contains(_stateName)) {
+          items.insert(0, _stateName!);
+        }
+        return SearchableField(
+          label: 'State',
+          isRequired: true,
+          prefixIcon: Icons.map_outlined,
+          items: items,
+          selectedItem: _stateName,
+          onAddNew: (v) => ref
+              .read(masterOptionsServiceProvider)
+              .add(MasterOptionsService.state, value: v),
+          onChanged: (name) {
+            final master = _match(states, name ?? '', (s) => s.name);
+            if (master != null) {
+              _onStatePicked(id: master.id, name: master.name);
+            } else if ((name ?? '').trim().isNotEmpty) {
+              _onStatePicked(id: null, name: name!.trim()); // custom state
+            }
+          },
+        );
+      },
     );
   }
 
   Widget _districtField() {
-    if (_stateId == null) {
+    if ((_stateName ?? '').isEmpty) {
       return SearchableField(
         label: 'District',
         items: const [],
@@ -378,25 +369,50 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
         onChanged: (_) {},
       );
     }
+    final custom = customValues(ref, MasterOptionsService.district,
+        parent: _stateName ?? '');
+    // A CUSTOM state has no master districts — only the overlay applies.
+    if (_stateId == null) {
+      return _districtDropdown(const <MasterDistrict>[], custom);
+    }
     final async = ref.watch(districtsProvider(_stateId!));
     return async.when(
       loading: () => _loadingField('District'),
       error: (_, __) => _errorField(
           'District', () => ref.invalidate(districtsProvider(_stateId!))),
-      data: (districts) => SearchableField(
-        label: 'District',
-        isRequired: false, // District is optional (may be absent for a location)
-        prefixIcon: Icons.account_balance_outlined,
-        items: districts.map((d) => d.name).toList(),
-        selectedItem: _districtName,
-        onChanged: (name) =>
-            _onDistrictPicked(_match(districts, name ?? '', (d) => d.name)),
-      ),
+      data: (districts) => _districtDropdown(districts, custom),
+    );
+  }
+
+  Widget _districtDropdown(List<MasterDistrict> districts, List<String> custom) {
+    final items =
+        mergeOptions(districts.map((d) => d.name).toList(), custom);
+    if ((_districtName ?? '').isNotEmpty && !items.contains(_districtName)) {
+      items.insert(0, _districtName!);
+    }
+    return SearchableField(
+      label: 'District',
+      isRequired: false, // District is optional (may be absent for a location)
+      prefixIcon: Icons.account_balance_outlined,
+      items: items,
+      selectedItem: _districtName,
+      onAddNew: (v) => ref.read(masterOptionsServiceProvider).add(
+          MasterOptionsService.district,
+          value: v,
+          parent: _stateName ?? ''),
+      onChanged: (name) {
+        final master = _match(districts, name ?? '', (d) => d.name);
+        if (master != null) {
+          _onDistrictPicked(id: master.id, name: master.name);
+        } else if ((name ?? '').trim().isNotEmpty) {
+          _onDistrictPicked(id: null, name: name!.trim()); // custom district
+        }
+      },
     );
   }
 
   Widget _cityField() {
-    if (_districtId == null) {
+    if ((_districtName ?? '').isEmpty) {
       return SearchableField(
         label: 'City',
         isRequired: widget.isRequired,
@@ -407,96 +423,46 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
         onChanged: (_) {},
       );
     }
+    final custom = customValues(ref, MasterOptionsService.city,
+        parent: _districtName ?? '');
+    if (_districtId == null) {
+      return _cityDropdown(const <MasterCity>[], custom);
+    }
     final async = ref.watch(citiesProvider(_districtId!));
     return async.when(
       loading: () => _loadingField('City', required: widget.isRequired),
       error: (_, __) => _errorField(
           'City', () => ref.invalidate(citiesProvider(_districtId!))),
-      data: (cities) {
-        final names = cities.map((c) => c.name).toList();
-        // Keep a manually-added / saved custom city visible in the list so the
-        // SearchableField can show it as the selected value.
-        if ((_cityName ?? '').trim().isNotEmpty && !names.contains(_cityName)) {
-          names.insert(0, _cityName!);
-        }
-        // "Add custom city" option for cities not in the master list.
-        final items = [...names, _kAddCustomCity];
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SearchableField(
-              label: 'City',
-              isRequired: widget.isRequired,
-              prefixIcon: Icons.location_city,
-              items: items,
-              selectedItem: _cityName,
-              onChanged: (name) {
-                if (name == _kAddCustomCity) {
-                  _promptCustomCity();
-                  return;
-                }
-                final master = _match(cities, name ?? '', (c) => c.name);
-                if (master != null) {
-                  _onCityPicked(master);
-                } else if ((name ?? '').trim().isNotEmpty) {
-                  // A custom (non-master) city already in the list.
-                  setState(() {
-                    _cityName = name!.trim();
-                    _cityId = null;
-                  });
-                  _emit();
-                }
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 4, left: 4),
-              child: Text(
-                'City not listed? Choose "$_kAddCustomCity".',
-                style: TextStyle(fontSize: 11.5, color: Colors.grey[600]),
-              ),
-            ),
-          ],
-        );
-      },
+      data: (cities) => _cityDropdown(cities, custom),
     );
   }
 
-  /// Prompts the user to type a city name not present in the master data, then
-  /// selects it as a custom city (no cityId).
-  Future<void> _promptCustomCity() async {
-    final controller = TextEditingController(
-        text: (_cityName ?? '').trim() == '' ? '' : _cityName);
-    final entered = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add City'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(
-            hintText: 'Enter your city / town name',
-            prefixIcon: Icon(Icons.location_city),
-          ),
-          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('Add'),
-          ),
-        ],
-      ),
-    );
-    if (entered != null && entered.isNotEmpty && mounted) {
-      setState(() {
-        _cityName = entered;
-        _cityId = null; // custom city → no master id
-      });
-      _emit();
+  Widget _cityDropdown(List<MasterCity> cities, List<String> custom) {
+    final items = mergeOptions(cities.map((c) => c.name).toList(), custom);
+    // Keep a GPS-detected / saved custom city visible in the list so the
+    // SearchableField can show it as the selected value.
+    if ((_cityName ?? '').trim().isNotEmpty && !items.contains(_cityName)) {
+      items.insert(0, _cityName!);
     }
+    return SearchableField(
+      label: 'City',
+      isRequired: widget.isRequired,
+      prefixIcon: Icons.location_city,
+      items: items,
+      selectedItem: _cityName,
+      onAddNew: (v) => ref.read(masterOptionsServiceProvider).add(
+          MasterOptionsService.city,
+          value: v,
+          parent: _districtName ?? ''),
+      onChanged: (name) {
+        final master = _match(cities, name ?? '', (c) => c.name);
+        if (master != null) {
+          _onCityPicked(id: master.id, name: master.name);
+        } else if ((name ?? '').trim().isNotEmpty) {
+          _onCityPicked(id: null, name: name!.trim()); // custom city
+        }
+      },
+    );
   }
 
   /// A disabled field showing a spinner while its options load.

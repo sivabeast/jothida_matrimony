@@ -771,6 +771,16 @@ class AstrologerService {
             [BookingHistoryEntry.now('Draft saved').toMap()]),
       });
 
+  /// One-shot fetch of a single request (e.g. to resolve its owner for the
+  /// "report ready" notification). Null when the doc doesn't exist.
+  Future<AstrologerRequestModel?> getRequestById(String requestId) async {
+    final d = await _db
+        .collection(AppConstants.astrologerRequestsCollection)
+        .doc(requestId)
+        .get();
+    return d.exists ? AstrologerRequestModel.fromFirestore(d) : null;
+  }
+
   /// Submits the astrologer's completed analysis for [requestId]: stores the
   /// report text + already-uploaded file URLs and flips the request to
   /// `completed`. The astrologer-update rule on `astrologer_requests` permits

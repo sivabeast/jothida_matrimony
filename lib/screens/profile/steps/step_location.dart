@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../providers/master_location_provider.dart';
+import '../../../providers/master_options_provider.dart';
 import '../../../providers/profile_provider.dart';
-import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
 import '../../../widgets/common/location_picker_section.dart';
 import '../../../widgets/common/searchable_field.dart';
 
-/// Step 8 — Location Details: Country / State / District / City (req), plus
-/// Native Place and Citizenship (optional).
+/// Step 8 — Location Details: State / District / City (req), plus Native
+/// Place and Citizenship. There is NO Country dropdown (removed per spec).
 class StepLocation extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   const StepLocation({super.key, required this.onNext});
@@ -19,7 +20,6 @@ class StepLocation extends ConsumerStatefulWidget {
 }
 
 class _StepLocationState extends ConsumerState<StepLocation> {
-  String? _country = 'India';
   String? _state;
   String? _stateId;
   String? _district;
@@ -29,13 +29,12 @@ class _StepLocationState extends ConsumerState<StepLocation> {
   double? _lat;
   double? _lng;
   String? _citizenship;
-  final _nativePlace = TextEditingController();
+  String? _nativePlace;
 
   @override
   void initState() {
     super.initState();
     final data = ref.read(profileCreationProvider).data;
-    _country = (data['country'] as String?) ?? 'India';
     _state = data['state'] as String?;
     _stateId = data['stateId'] as String?;
     _district = data['district'] as String?;
@@ -45,26 +44,17 @@ class _StepLocationState extends ConsumerState<StepLocation> {
     _lat = (data['latitude'] as num?)?.toDouble();
     _lng = (data['longitude'] as num?)?.toDouble();
     _citizenship = data['citizenship'] as String?;
-    _nativePlace.text = (data['nativePlace'] as String?) ?? '';
-  }
-
-  @override
-  void dispose() {
-    _nativePlace.dispose();
-    super.dispose();
+    final native = (data['nativePlace'] as String?) ?? '';
+    _nativePlace = native.isEmpty ? null : native;
   }
 
   void _saveAndNext() {
-    if (_country == null || _country!.isEmpty) {
-      _snack('Please select your country');
-      return;
-    }
     if (_state == null || _district == null || _city == null) {
       _snack('Please select your state, district and city');
       return;
     }
     ref.read(profileCreationProvider.notifier).updateData({
-      'country': _country,
+      'country': 'India',
       'state': _state ?? '',
       'stateId': _stateId ?? '',
       'stateName': _state ?? '',
@@ -76,7 +66,7 @@ class _StepLocationState extends ConsumerState<StepLocation> {
       'cityName': _city ?? '',
       'latitude': _lat,
       'longitude': _lng,
-      'nativePlace': _nativePlace.text.trim(),
+      'nativePlace': (_nativePlace ?? '').trim(),
       'citizenship': _citizenship ?? '',
     });
     widget.onNext();
@@ -98,14 +88,12 @@ class _StepLocationState extends ConsumerState<StepLocation> {
               style: TextStyle(color: Colors.grey)),
           const SizedBox(height: 24),
           LocationPickerSection(
-            initialCountry: _country,
             initialState: _state,
             initialDistrict: _district,
             initialCity: _city,
             initialLatitude: _lat,
             initialLongitude: _lng,
             onChanged: (loc) => setState(() {
-              _country = loc.country.isEmpty ? 'India' : loc.country;
               _state = loc.state.isEmpty ? null : loc.state;
               _stateId = loc.stateId.isEmpty ? null : loc.stateId;
               _district = loc.district.isEmpty ? null : loc.district;
@@ -117,11 +105,7 @@ class _StepLocationState extends ConsumerState<StepLocation> {
             }),
           ),
           const SizedBox(height: 16),
-          AppTextField(
-            controller: _nativePlace,
-            label: 'Native Place',
-            hint: 'Optional',
-          ),
+          _nativePlaceField(),
           const SizedBox(height: 16),
           SearchableField(
             label: 'Citizenship',
@@ -134,6 +118,28 @@ class _StepLocationState extends ConsumerState<StepLocation> {
           GradientButton(onPressed: _saveAndNext, text: 'Continue'),
         ],
       ),
+    );
+  }
+
+  /// Native Place — searchable master-city list + custom additions with the
+  /// "+" Add button (replaced the old free-text box).
+  Widget _nativePlaceField() {
+    final cityNames =
+        ref.watch(allCityNamesProvider).valueOrNull ?? const <String>[];
+    final custom = customValues(ref, MasterOptionsService.nativePlace);
+    final items = mergeOptions(cityNames, custom);
+    if ((_nativePlace ?? '').isNotEmpty && !items.contains(_nativePlace)) {
+      items.insert(0, _nativePlace!);
+    }
+    return SearchableField(
+      label: 'Native Place',
+      prefixIcon: Icons.home_outlined,
+      items: items,
+      selectedItem: _nativePlace,
+      onAddNew: (v) => ref
+          .read(masterOptionsServiceProvider)
+          .add(MasterOptionsService.nativePlace, value: v),
+      onChanged: (v) => setState(() => _nativePlace = v),
     );
   }
 }
