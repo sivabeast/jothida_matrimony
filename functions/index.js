@@ -1,340 +1,156 @@
-/**
- * Jothida Matrimony — Cloud Functions (spec §8/§9/§12).
- *
- * Two responsibilities:
- *   1. onNotificationCreated — turn every `notifications/{id}` document the app
- *      writes into a real FCM device push. Because the whole app already records
- *      a notification doc for every event (new request, accepted, completed,
- *      reminders, expiry…), this single trigger gives push for ALL of them.
- *   2. matchAnalysisSweep — a scheduled job that, for every PENDING match-
- *      analysis booking, sends the "6 / 3 / 1 hours remaining" reminders and
- *      auto-expires bookings the astrologer didn't accept within 12 WORKING
- *      hours. Working hours exclude 00:00–07:00 IST, exactly like the on-device
- *      countdown (lib/core/utils/working_hours.dart).
- */
-const {
-  onDocumentCreated,
-  onDocumentUpdated,
-} = require("firebase-functions/v2/firestore");
-const {onSchedule} = require("firebase-functions/v2/scheduler");
-const {setGlobalOptions} = require("firebase-functions/v2");
-const logger = require("firebase-functions/logger");
-const admin = require("firebase-admin");
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { defineSecret } = require('firebase-functions/params');
+const { setGlobalOptions } = require('firebase-functions/v2');
+const admin = require('firebase-admin');
 
 admin.initializeApp();
 const db = admin.firestore();
 
-// Run close to the users (Mumbai) and cap concurrency cost.
-setGlobalOptions({region: "asia-south1", maxInstances: 10});
+// Keep the function close to the Firestore data it reads (same region as
+// the rest of the project unless you deployed elsewhere).
+setGlobalOptions({ region: 'us-central1', maxInstances: 10 });
 
-// ── Working-hour helpers (IST) — mirror of working_hours.dart ────────────────
-const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
-const ONE_HOUR = 60 * 60 * 1000;
-const SIX_HOURS = 6 * ONE_HOUR;
-const THREE_HOURS = 3 * ONE_HOUR;
+// Set this once with:
+//   firebase functions:secrets:set ANTHROPIC_API_KEY
+// (prompts securely in your terminal -- the key is never written to any
+// file in this repo or typed anywhere else).
+const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 
-/** IST wall-clock hour (0–23) for an epoch-ms instant. */
-function istHour(ms) {
-  return new Date(ms + IST_OFFSET_MS).getUTCHours();
-}
+const ANTHROPIC_MODEL = 'claude-sonnet-5';
+const MAX_MESSAGE_LENGTH = 1000;
+const MAX_HISTORY_TURNS = 10;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const RATE_LIMIT_MAX_MESSAGES = 30;
 
-/** Epoch ms of 07:00 IST on the IST-day containing [ms]. */
-function istSeven(ms) {
-  const d = new Date(ms + IST_OFFSET_MS);
-  d.setUTCHours(7, 0, 0, 0);
-  return d.getTime() - IST_OFFSET_MS;
-}
+const SYSTEM_PROMPT_BASE = `You are the AI assistant embedded on the Jothida Matrimony website and app.
+Jothida Matrimony is a Tamil matrimony platform that also offers horoscope (jathagam) compatibility
+matching and has exactly ONE official in-house astrologer (not a marketplace of astrologers).
 
-/** Epoch ms of the next IST midnight after [ms]. */
-function istNextMidnight(ms) {
-  const d = new Date(ms + IST_OFFSET_MS);
-  d.setUTCHours(24, 0, 0, 0);
-  return d.getTime() - IST_OFFSET_MS;
-}
+You may help with:
+- Explaining how the website/app works: Google sign-in (there is no separate registration form -- one
+  tap of "Continue with Google" both logs a user in and creates their account), browsing features,
+  how horoscope compatibility matching works in the app, how to reach the astrologer.
+- General, educational explanations of Tamil astrology concepts (rasi, nakshatra, dasa, porutham,
+  dosham types, etc.) at a conceptual level.
+- Sharing the official astrologer's contact details (given to you below, if available) when asked how to
+  reach them.
+- General matrimony-related guidance (what makes a good profile, how horoscope matching factors into
+  Tamil matchmaking, etc.).
 
-/**
- * Amount of WORKING time (ms) between [fromMs] and [toMs], excluding the
- * 00:00–07:00 IST band each day. Zero if [toMs] <= [fromMs].
- */
-function workingMsBetween(fromMs, toMs) {
-  if (toMs <= fromMs) return 0;
-  let cur = fromMs;
-  let total = 0;
-  let guard = 0;
-  while (cur < toMs && guard++ < 2000) {
-    let c = cur;
-    if (istHour(c) < 7) c = istSeven(c); // clamp forward to 07:00 IST
-    if (c >= toMs) break;
-    const segEnd = Math.min(istNextMidnight(c), toMs);
-    if (segEnd > c) total += segEnd - c;
-    cur = istNextMidnight(c);
+You must NOT:
+- Generate a personal horoscope reading, prediction, or compatibility verdict for a specific person's
+  birth details -- that requires the real astrologer or the app's horoscope-matching feature. Politely
+  redirect to the app's Horoscope Compatibility feature or to contacting the astrologer directly.
+- Discuss, offer, or process appointment booking, scheduling, or any payment -- this site and bot are
+  strictly informational. If asked to book something, say the astrologer must be contacted directly via
+  the phone/WhatsApp/email shown on the site, and no booking happens through this chat.
+- Give medical, legal, or financial advice.
+- Answer questions unrelated to Jothida Matrimony, matrimony, or astrology (e.g. general coding help,
+  news, unrelated trivia). Politely decline and steer the conversation back to what you can help with.
+
+Style: reply in the same language/register the user writes in (Tamil, English, or Tanglish are all fine).
+Keep answers concise and warm -- a few sentences, not an essay, unless the user clearly wants more detail.`;
+
+/** Fetches the live astrologer contact details so the bot never gives stale info. */
+async function loadAstrologerContext() {
+  try {
+    const snap = await db.doc('astrology_service/config').get();
+    if (!snap.exists) return '';
+    const d = snap.data() || {};
+    const lines = [
+      d.expertName ? `Astrologer name: ${d.expertName}` : null,
+      d.expertSpecialization ? `Specialization: ${d.expertSpecialization}` : null,
+      d.expertContactPhone || d.officeContactNumber
+        ? `Phone: ${d.expertContactPhone || d.officeContactNumber}`
+        : null,
+      d.whatsappNumber ? `WhatsApp: ${d.whatsappNumber}` : null,
+      d.email ? `Email: ${d.email}` : null,
+      d.officeAddress ? `Office address: ${d.officeAddress}` : null,
+    ].filter(Boolean);
+    if (!lines.length) return '';
+    return `\n\nCurrent official astrologer contact details (share these if asked how to reach the astrologer):\n${lines.join('\n')}`;
+  } catch (err) {
+    console.error('[chatWithAstrologyBot] failed to load astrologer context:', err);
+    return '';
   }
-  return total;
 }
 
-// ── 1. Push delivery: notifications/{id} onCreate → FCM ──────────────────────
-exports.onNotificationCreated = onDocumentCreated(
-    "notifications/{id}",
-    async (event) => {
-      const snap = event.data;
-      if (!snap) return;
-      const n = snap.data() || {};
-      const userId = n.userId;
-      if (!userId) return;
+/** Simple per-user hourly cap so one visitor can't run up the API bill. Best-effort, not perfectly atomic. */
+async function enforceRateLimit(uid) {
+  const ref = db.collection('chat_rate_limits').doc(uid);
+  const now = Date.now();
+  const snap = await ref.get();
+  const data = snap.exists ? snap.data() : null;
 
-      const userSnap = await db.collection("users").doc(userId).get();
-      const token = userSnap.exists ? userSnap.get("fcmToken") : null;
-      if (!token) {
-        logger.info(`No fcmToken for ${userId}; skipping push.`);
-        return;
-      }
-
-      // All data values must be strings for FCM.
-      const data = {type: String(n.type || "")};
-      if (n.data && typeof n.data === "object") {
-        for (const k of Object.keys(n.data)) {
-          data[k] = String(n.data[k]);
-        }
-      }
-
-      try {
-        await admin.messaging().send({
-          token,
-          notification: {title: n.title || "", body: n.body || ""},
-          data,
-          android: {
-            priority: "high",
-            notification: {
-              channelId: "high_importance_channel",
-              sound: "default",
-            },
-          },
-          apns: {payload: {aps: {sound: "default"}}},
-        });
-      } catch (e) {
-        logger.error(`FCM send failed for ${userId}: ${e}`);
-        // Token expired/unregistered → clean it up so we stop retrying.
-        if (
-          e.code === "messaging/registration-token-not-registered" ||
-          e.code === "messaging/invalid-registration-token"
-        ) {
-          await db
-              .collection("users")
-              .doc(userId)
-              .update({fcmToken: admin.firestore.FieldValue.delete()})
-              .catch(() => {});
-        }
-      }
-    },
-);
-
-/** Best-effort: write a notification doc (which the trigger above turns into a
- * push). */
-async function notify(userId, title, body, type, data) {
-  if (!userId) return;
-  await db.collection("notifications").add({
-    userId,
-    title,
-    body,
-    type,
-    data: data || {},
-    isRead: false,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
+  if (!data || now - data.windowStart > RATE_LIMIT_WINDOW_MS) {
+    await ref.set({ count: 1, windowStart: now });
+    return;
+  }
+  if (data.count >= RATE_LIMIT_MAX_MESSAGES) {
+    throw new HttpsError(
+      'resource-exhausted',
+      'You have sent a lot of messages recently. Please try again in a bit, or contact us directly.'
+    );
+  }
+  await ref.update({ count: admin.firestore.FieldValue.increment(1) });
 }
 
-/** "Groom × Bride" label from a raw request doc. */
-function pairLabel(r) {
-  const g = r.groomProfileName || r.profileAName || "Groom";
-  const b = r.brideProfileName || r.profileBName || "Bride";
-  return `${g} × ${b}`;
-}
+exports.chatWithAstrologyBot = onCall({ secrets: [ANTHROPIC_API_KEY] }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Sign-in required.');
+  }
 
-// ── 1b. Booking events → notifications (authored server-side) ────────────────
-// Clients cannot create notification docs (rules: admin-only), so the booking
-// notifications are authored here, where the admin SDK bypasses rules. Each doc
-// then fans out to a device push via onNotificationCreated above.
+  const message = typeof request.data?.message === 'string' ? request.data.message.trim() : '';
+  if (!message) {
+    throw new HttpsError('invalid-argument', 'message is required.');
+  }
+  if (message.length > MAX_MESSAGE_LENGTH) {
+    throw new HttpsError('invalid-argument', `message must be under ${MAX_MESSAGE_LENGTH} characters.`);
+  }
 
-exports.onMatchRequestCreated = onDocumentCreated(
-    "astrologer_requests/{id}",
-    async (event) => {
-      const snap = event.data;
-      if (!snap) return;
-      const r = snap.data() || {};
-      if (r.type !== "matching") return;
-      const id = event.params.id;
-      const pair = pairLabel(r);
-      const route = `/match-workspace/${id}`;
-      await notify(
-          r.astrologerId,
-          "New Match Analysis Request",
-          `${r.userName || "A user"} paid for a match analysis (${pair}). ` +
-        "Accept within 12 working hours.",
-          "new_match_analysis",
-          {requestId: id, route},
-      );
-      await notify(
-          r.userId,
-          "Payment Successful",
-          "Your payment was received and your match-analysis booking was sent " +
-        `to ${r.astrologerName || "the astrologer"}.`,
-          "payment_success",
-          {requestId: id, route: "/my-analysis"},
-      );
-    },
-);
+  const rawHistory = Array.isArray(request.data?.history) ? request.data.history : [];
+  const history = rawHistory
+    .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+    .slice(-MAX_HISTORY_TURNS)
+    .map((m) => ({ role: m.role, content: m.content.slice(0, 2000) }));
 
-exports.onMatchRequestUpdated = onDocumentUpdated(
-    "astrologer_requests/{id}",
-    async (event) => {
-      const before = event.data.before.data() || {};
-      const after = event.data.after.data() || {};
-      if (after.type !== "matching") return;
-      const id = event.params.id;
-      const userRoute = "/my-analysis";
-      const who = after.astrologerName || "The astrologer";
+  await enforceRateLimit(request.auth.uid);
 
-      if (before.status !== after.status) {
-        if (after.status === "accepted") {
-          await notify(after.userId, "Booking Accepted",
-              `${who} accepted your match-analysis request.`,
-              "booking_accepted", {requestId: id, route: userRoute});
-        } else if (after.status === "rejected") {
-          await notify(after.userId, "Booking Declined",
-              `${who} is unable to take your request right now.`,
-              "booking_rejected", {requestId: id, route: userRoute});
-        } else if (after.status === "completed") {
-          await notify(after.userId, "Report Ready",
-              `Your analysis report from ${who} is ready to view.`,
-              "porutham_ready", {requestId: id, route: userRoute});
-        }
-      }
-      // Accepted → Analysis In Progress (spec §11).
-      if (before.inProgress !== true && after.inProgress === true) {
-        await notify(after.userId, "Analysis In Progress",
-            `${who} has started your match analysis.`,
-            "analysis_started", {requestId: id, route: userRoute});
-      }
-    },
-);
+  const astrologerContext = await loadAstrologerContext();
+  const systemPrompt = `${SYSTEM_PROMPT_BASE}${astrologerContext}`;
 
-// ── 1c. Direct-visit booking events → notifications ──────────────────────────
-exports.onConsultationCreated = onDocumentCreated(
-    "consultations/{id}",
-    async (event) => {
-      const snap = event.data;
-      if (!snap) return;
-      const c = snap.data() || {};
-      if (c.mode !== "directVisit") return; // only Direct Visit remains
-      const id = event.params.id;
-      await notify(
-          c.astrologerId,
-          "New Direct Visit Booking",
-          `${c.userName || "A user"} requested a direct visit. ` +
-        "Accept or decline the appointment.",
-          "new_direct_visit",
-          {consultationId: id, route: "/astrologer-requests?tab=visit"},
-      );
-    },
-);
+  const messages = [...history, { role: 'user', content: message }];
 
-exports.onConsultationUpdated = onDocumentUpdated(
-    "consultations/{id}",
-    async (event) => {
-      const before = event.data.before.data() || {};
-      const after = event.data.after.data() || {};
-      if (after.mode !== "directVisit") return;
-      if (before.status === after.status) return;
-      const who = after.astrologerName || "The astrologer";
-      if (after.status === "accepted") {
-        await notify(after.userId, "Visit Confirmed",
-            `${who} confirmed your direct-visit appointment.`,
-            "consultation_accepted", {route: "/my-consultations"});
-      } else if (after.status === "rejected" || after.status === "cancelled") {
-        await notify(after.userId, "Appointment Cancelled",
-            `Your direct-visit appointment with ${who} was cancelled.`,
-            "consultation_cancelled", {route: "/my-consultations"});
-      } else if (after.status === "completed") {
-        await notify(after.userId, "Visit Completed",
-            `Your direct visit with ${who} is marked completed.`,
-            "consultation_completed", {route: "/my-consultations"});
-      }
-    },
-);
+  let response;
+  try {
+    response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY.value(),
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: ANTHROPIC_MODEL,
+        max_tokens: 512,
+        system: systemPrompt,
+        messages,
+      }),
+    });
+  } catch (err) {
+    console.error('[chatWithAstrologyBot] network error calling Anthropic:', err);
+    throw new HttpsError('unavailable', 'The assistant is temporarily unavailable. Please try again shortly.');
+  }
 
-// ── 2. Scheduled match-analysis reminders + auto-expiry (spec §6/§7/§9) ──────
-exports.matchAnalysisSweep = onSchedule(
-    {schedule: "every 30 minutes", timeZone: "Asia/Kolkata"},
-    async () => {
-      const now = Date.now();
-      const qs = await db
-          .collection("astrologer_requests")
-          .where("type", "==", "matching")
-          .where("status", "==", "pending")
-          .get();
+  if (!response.ok) {
+    const errText = await response.text().catch(() => '');
+    console.error('[chatWithAstrologyBot] Anthropic API error:', response.status, errText);
+    throw new HttpsError('internal', 'The assistant is temporarily unavailable. Please try again shortly.');
+  }
 
-      for (const doc of qs.docs) {
-        const r = doc.data();
-        if (r.expired === true) continue;
-        const expiresAt = r.expiresAt;
-        if (!expiresAt || typeof expiresAt.toMillis !== "function") continue;
-        const expiresMs = expiresAt.toMillis();
-        const pair =
-          `${r.groomProfileName || r.profileAName || "Groom"} × ` +
-          `${r.brideProfileName || r.profileBName || "Bride"}`;
-        const route = `/match-workspace/${doc.id}`;
+  const data = await response.json();
+  const reply = data?.content?.find((block) => block.type === 'text')?.text
+    || "Sorry, I couldn't come up with a reply just now. Please try again.";
 
-        if (now >= expiresMs) {
-          // ── Auto-expire (spec §6) ──
-          await doc.ref.update({
-            expired: true,
-            expiredAt: admin.firestore.FieldValue.serverTimestamp(),
-            history: admin.firestore.FieldValue.arrayUnion(
-                {at: admin.firestore.Timestamp.now(), label: "No response"},
-                {at: admin.firestore.Timestamp.now(), label: "Expired"},
-            ),
-          });
-          await notify(
-              r.astrologerId,
-              "Booking Expired",
-              `You did not accept the match analysis for ${pair} in time. ` +
-            "It can no longer be accepted.",
-              "booking_expired",
-              {requestId: doc.id, route},
-          );
-          await notify(
-              r.userId,
-              "Astrologer did not respond",
-              "The astrologer did not respond within the required time. " +
-            "You can choose another astrologer.",
-              "booking_expired",
-              {requestId: doc.id, route: "/my-analysis"},
-          );
-          continue;
-        }
-
-        // ── Reminders (spec §9) — never ping during 00:00–07:00 IST ──
-        if (istHour(now) < 7) continue;
-        const remaining = workingMsBetween(now, expiresMs);
-        let stage = null;
-        if (remaining <= ONE_HOUR && r.remind1Sent !== true) {
-          stage = {flag: "remind1Sent", label: "1 Hour Remaining"};
-        } else if (remaining <= THREE_HOURS && r.remind3Sent !== true) {
-          stage = {flag: "remind3Sent", label: "3 Hours Remaining"};
-        } else if (remaining <= SIX_HOURS && r.remind6Sent !== true) {
-          stage = {flag: "remind6Sent", label: "6 Hours Remaining"};
-        }
-        if (!stage) continue;
-
-        await doc.ref.update({[stage.flag]: true});
-        await notify(
-            r.astrologerId,
-            stage.label,
-            `${stage.label} to accept the match analysis for ${pair}. ` +
-          "Working hours exclude 12 AM – 7 AM.",
-            "reminder",
-            {requestId: doc.id, route},
-        );
-      }
-    },
-);
+  return { reply };
+});

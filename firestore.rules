@@ -54,6 +54,28 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── Website settings (marketing site) ──────────────────────────────────
+    // Single config doc (website_settings/general) driving the public
+    // marketing website: launch status/message, store URLs, hero image,
+    // app screenshots, contact info and social links. Content here is
+    // non-sensitive and meant to be publicly visible on the site before a
+    // visitor has even signed in (anonymously or otherwise), so read is
+    // fully public. Only admins may edit it.
+    match /website_settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── Contact messages (marketing-site contact form) ────────────────────
+    // Any signed-in visitor (including the anonymous public session) may
+    // SUBMIT a message; only admins may read them or change read/unread
+    // status. Deploy with: firebase deploy --only firestore:rules
+    match /contact_messages/{messageId} {
+      allow create: if isAuthenticated()
+                    && request.resource.data.status == 'unread';
+      allow read, update, delete: if isAdmin();
+    }
+
     // ── Users ─────────────────────────────────────────────────────────────
     // A user can only read/write their OWN account document. Admins may read
     // any user (for moderation); only admins may delete.
