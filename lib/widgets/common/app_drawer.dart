@@ -41,17 +41,14 @@ class AppDrawer extends ConsumerWidget {
               children: [
                 // ── 👤 PROFILE ───────────────────────────────────────────────
                 _section('👤  PROFILE'),
-                // Edit Profile — the full wizard over the EXISTING profile, so
-                // every field (personal, location, education, occupation,
-                // photo, horoscope, Aadhaar, partner preferences) is editable
-                // after creation.
+                // Edit Profile — the full wizard over the EXISTING profile,
+                // mirroring the website's 10-step creation flow, so every
+                // section (Basic, Location, Career, Community, Horoscope,
+                // Preferences, Photos, Upload, Contact) is editable after
+                // creation. There are no separate per-section editors.
                 if (profile != null)
                   _item(context, Icons.edit_outlined, 'Edit Profile',
                       () => context.push('/profile/${profile.id}/edit')),
-                _item(context, Icons.person_outline, 'Profile Details',
-                    () => context.push('/personal-details')),
-                _item(context, Icons.family_restroom_outlined, 'Family Details',
-                    () => context.push('/family-details')),
                 _item(context, Icons.auto_awesome_outlined, 'Horoscope Details',
                     () => context.push('/horoscope')),
                 _item(context, Icons.tune, 'Partner Preferences',

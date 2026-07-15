@@ -5,14 +5,11 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/dev_config.dart';
 import '../core/constants/app_constants.dart';
-import '../core/services/match_score_service.dart';
 import '../core/services/porutham_match.dart';
-import '../models/aadhaar_details.dart';
 import '../models/profile_model.dart';
 import '../services/cloudinary/cloudinary_exception.dart';
 import '../services/firebase/firestore_service.dart' show ProfilePage;
 import 'demo_data_provider.dart';
-import 'matches_prefs_provider.dart';
 import 'notification_provider.dart';
 import 'service_providers.dart';
 import 'auth_provider.dart';
@@ -90,11 +87,6 @@ class ProfileCreationState {
   final Map<String, dynamic> data;
   final List<File> photos;
   final File? horoscopePdf;
-
-  /// Aadhaar images picked in the Aadhaar step (uploaded on submit to the
-  /// gated `aadhaar/{userId}` record; the number travels in [data]).
-  final File? aadhaarFront;
-  final File? aadhaarBack;
   final bool isLoading;
   final String? error;
   final bool isComplete;
@@ -111,8 +103,6 @@ class ProfileCreationState {
     this.data = const {},
     this.photos = const [],
     this.horoscopePdf,
-    this.aadhaarFront,
-    this.aadhaarBack,
     this.isLoading = false,
     this.error,
     this.isComplete = false,
@@ -124,8 +114,6 @@ class ProfileCreationState {
     Map<String, dynamic>? data,
     List<File>? photos,
     File? horoscopePdf,
-    File? aadhaarFront,
-    File? aadhaarBack,
     bool? isLoading,
     String? error,
     bool? isComplete,
@@ -136,8 +124,6 @@ class ProfileCreationState {
         data: data ?? this.data,
         photos: photos ?? this.photos,
         horoscopePdf: horoscopePdf ?? this.horoscopePdf,
-        aadhaarFront: aadhaarFront ?? this.aadhaarFront,
-        aadhaarBack: aadhaarBack ?? this.aadhaarBack,
         isLoading: isLoading ?? this.isLoading,
         error: error,
         isComplete: isComplete ?? this.isComplete,
@@ -161,9 +147,6 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
       state = state.copyWith(photos: List.unmodifiable(photos));
 
   void setHoroscopePdf(File pdf) => state = state.copyWith(horoscopePdf: pdf);
-
-  void setAadhaarImages({File? front, File? back}) =>
-      state = state.copyWith(aadhaarFront: front, aadhaarBack: back);
 
   /// Saves the wizard's data. CREATE mode (default) writes a brand-new
   /// profile; EDIT mode ([editProfileId] non-null) UPDATES the existing
@@ -330,9 +313,6 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
             );
       }
 
-      // ── Aadhaar (gated aadhaar/{uid}) — best-effort, never blocks the save.
-      await _saveAadhaar(userId);
-
       ref.invalidate(currentUserProvider); // refresh the gate
       state = state.copyWith(
         isLoading: false,
@@ -350,42 +330,6 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
         uploadStatus: null,
       );
       return null;
-    }
-  }
-
-  /// Persists the Aadhaar number + front/back images to the strictly-gated
-  /// `aadhaar/{userId}` record (NEVER onto the public profile document). A
-  /// user save always lands unverified — the admin re-verifies after review.
-  /// Best-effort: an Aadhaar hiccup never blocks the profile save.
-  Future<void> _saveAadhaar(String userId) async {
-    final number =
-        (state.data['aadhaarNumber'] ?? '').toString().replaceAll(' ', '');
-    final front = state.aadhaarFront, back = state.aadhaarBack;
-    if (number.isEmpty && front == null && back == null) return;
-    try {
-      final storage = ref.read(storageServiceProvider);
-      String frontUrl = '', backUrl = '';
-      if (front != null) {
-        frontUrl = await storage.uploadIdProof(
-            userId: userId, file: front, docType: 'aadhaar_front');
-      }
-      if (back != null) {
-        backUrl = await storage.uploadIdProof(
-            userId: userId, file: back, docType: 'aadhaar_back');
-      }
-      // Keep any previously-saved value/image that wasn't re-entered.
-      final existing =
-          await ref.read(firestoreServiceProvider).getAadhaar(userId);
-      await ref.read(firestoreServiceProvider).saveAadhaar(AadhaarDetails(
-            userId: userId,
-            number: number.isNotEmpty ? number : (existing?.number ?? ''),
-            frontUrl:
-                frontUrl.isNotEmpty ? frontUrl : (existing?.frontUrl ?? ''),
-            backUrl: backUrl.isNotEmpty ? backUrl : (existing?.backUrl ?? ''),
-            verified: false, // any user edit requires admin re-verification
-          ));
-    } catch (e) {
-      debugPrint('[submitProfile] Aadhaar save skipped: $e');
     }
   }
 
@@ -449,19 +393,6 @@ final matchGenderProvider = Provider.autoDispose<String>((ref) {
   return myGender == 'Female' ? 'Male' : 'Female';
 });
 
-/// Returns a function that computes the displayed compatibility ("85% Match")
-/// for any candidate against the signed-in user's profile — or `null` while the
-/// user's own profile is still loading. Used by the discover cards, home feed
-/// sections and match details to show a percentage. Synchronous & cheap, so it
-/// can be called directly inside `build`.
-final matchScorerProvider =
-    Provider.autoDispose<MatchScore Function(ProfileModel)?>((ref) {
-  final me = ref.watch(myProfileProvider).valueOrNull;
-  if (me == null) return null;
-  return (candidate) =>
-      MatchScoreService.compute(viewer: me, candidate: candidate);
-});
-
 // ── Discover / Matches feed ────────────────────────────────────────────────
 //
 // MATCHING RULE: gender (opposite gender) is always applied first. On top of
@@ -487,8 +418,6 @@ class MatchFilters {
   final String? maritalStatus;
   final String? rasi;
   final String? nakshatra;
-  // 'Excellent Match' | 'Good Match' | 'Average Match'
-  final String? matchQuality;
 
   const MatchFilters({
     this.minAge,
@@ -503,7 +432,6 @@ class MatchFilters {
     this.maritalStatus,
     this.rasi,
     this.nakshatra,
-    this.matchQuality,
   });
 
   bool get isActive =>
@@ -518,15 +446,15 @@ class MatchFilters {
       _has(occupation) ||
       _has(maritalStatus) ||
       _has(rasi) ||
-      _has(nakshatra) ||
-      _has(matchQuality);
+      _has(nakshatra);
 
   static bool _has(String? s) => s != null && s.trim().isNotEmpty;
   static bool _eq(String a, String? b) =>
       b == null || b.trim().isEmpty || a.trim().toLowerCase() == b.trim().toLowerCase();
 
-  /// Whether [p] passes every SET filter. [me] is only needed to evaluate the
-  /// optional match-quality (porutham) filter.
+  /// Whether [p] passes every SET filter. [me] is accepted for signature
+  /// compatibility with callers but no longer needed (the porutham-grade
+  /// filter was removed with the rating system).
   bool matches(ProfileModel p, ProfileModel? me) {
     if (minAge != null && p.age < minAge!) return false;
     if (maxAge != null && p.age > maxAge!) return false;
@@ -540,26 +468,6 @@ class MatchFilters {
     if (!_eq(p.maritalStatus, maritalStatus)) return false;
     if (!_eq(p.horoscope.rasi, rasi)) return false;
     if (!_eq(p.horoscope.nakshatra, nakshatra)) return false;
-    if (_has(matchQuality)) {
-      if (me == null) return false; // can't evaluate without my horoscope
-      final result = computePorutham(me, p);
-      if (result == null) return false;
-      final c = result.category;
-      switch (matchQuality) {
-        case 'Excellent Match':
-          if (c != MatchCategory.excellent) return false;
-          break;
-        case 'Good Match':
-          if (c != MatchCategory.good) return false;
-          break;
-        case 'Average Match':
-          if (c != MatchCategory.average) return false;
-          break;
-        case 'Poor Match':
-          if (c != MatchCategory.poor) return false;
-          break;
-      }
-    }
     return true;
   }
 }
@@ -713,6 +621,29 @@ bool _casteMatches(ProfileModel candidate, PartnerPreferences pp) {
   return a == b || a.contains(b) || b.contains(a);
 }
 
+/// Relevance highlight for a browse card. Deliberately NOT a score, percentage
+/// or grade — just a simple flag driving the ⭐ badge:
+///   • [nakshatra] — the candidate's star is compatible with the user's
+///     ([isNakshatraCompatible]) → "⭐ Nakshatra Match";
+///   • [matching]  — the user has set meaningful partner preferences and the
+///     candidate satisfies the hard age + caste gate
+///     ([mandatoryPreferenceMatch]) → "⭐ Matching Profile";
+///   • [none]      — neither, so the card shows no badge.
+enum ProfileHighlight { nakshatra, matching, none }
+
+/// Computes the [ProfileHighlight] for [candidate] against the signed-in user
+/// [me]. Nakshatra compatibility takes precedence over a plain preference
+/// match. Returns [ProfileHighlight.none] until the user's own profile loads.
+ProfileHighlight profileHighlight(ProfileModel? me, ProfileModel candidate) {
+  if (me == null) return ProfileHighlight.none;
+  if (isNakshatraCompatible(me, candidate)) return ProfileHighlight.nakshatra;
+  if (partnerPreferencesComplete(me) &&
+      mandatoryPreferenceMatch(candidate, me)) {
+    return ProfileHighlight.matching;
+  }
+  return ProfileHighlight.none;
+}
+
 class DiscoverState {
   final List<ProfileModel> profiles;
   final bool isLoading; // initial page
@@ -773,20 +704,6 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
   /// Clear all optional filters and reload.
   Future<void> clearFilters() => applyFilters(const MatchFilters());
 
-  /// Re-filters the already-fetched pool for the current [matchModeProvider]
-  /// value — called when the user switches Compatible ⇄ All in the Filter
-  /// menu, so the feed swaps instantly with no page refresh. Falls back to a
-  /// full [load] when nothing has been fetched yet.
-  Future<void> refilter() async {
-    if (_pool.isEmpty) return load();
-    final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
-    final me = ref.read(myProfileProvider).valueOrNull;
-    state = state.copyWith(
-      profiles: _rank(_pool, myUid, me, fetched: _pool.length),
-      isLoading: false,
-    );
-  }
-
   /// Data-integrity excludes only (NOT matching filters): never show the user
   /// themselves, married members, or deactivated / blocked accounts.
   bool _keep(ProfileModel p, String? myUid) {
@@ -797,19 +714,11 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
     return true;
   }
 
-  /// Whether [p] passes the CURRENT match mode's gates for [me]:
-  ///   • All Matches        → every eligible profile is shown (nothing is
-  ///     hidden unnecessarily — non-matching profiles just rank LOWER);
-  ///   • Compatible Matches → partner preferences (age + caste mandatory)
-  ///     AND nakshatra compatibility.
-  bool _passesMode(ProfileModel p, ProfileModel? me) {
-    if (ref.read(matchModeProvider) == MatchMode.compatible) {
-      if (!mandatoryPreferenceMatch(p, me)) return false;
-      if (me == null) return false; // can't verify compatibility yet
-      return isNakshatraCompatible(me, p);
-    }
-    return true; // All Matches — visibility is never gated, only ranked
-  }
+  /// The Matches feed shows EVERY eligible opposite-gender profile — it is
+  /// never restricted to "matched" profiles. Partner preferences (age + caste)
+  /// and nakshatra compatibility are used ONLY to prioritise the order in
+  /// [_rank]; nothing here removes a profile the user can still browse to.
+  bool _passesMode(ProfileModel p, ProfileModel? me) => true;
 
   /// How close [p] is to [me] geographically: 3 same city · 2 same district ·
   /// 1 same state · 0 elsewhere/unknown. Ranking signal only.
@@ -873,7 +782,6 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
     final result = [...eligible]..sort(cmp);
 
     debugPrint('[Discover] gender=$_gender myGender=${me?.gender} · '
-        'mode=${ref.read(matchModeProvider).name} · '
         'fetched=$fetched · eligible=${eligible.length} · '
         'returned=${result.length} · '
         'casteSet=${_ppSet(me?.partnerPreferences.caste)} · '
@@ -997,124 +905,14 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
 final discoverProvider =
     NotifierProvider<DiscoverNotifier, DiscoverState>(() => DiscoverNotifier());
 
-/// Home-page matches bucketed by porutham compatibility category. Every list is
-/// drawn from the SAME opposite-gender + age-filtered pool: [all] is the full
-/// pool; [veryGood] / [good] / [average] are category subsets of it.
-class HomeMatches {
-  final List<ProfileModel> veryGood; // excellent + very good
-  final List<ProfileModel> good;
-  final List<ProfileModel> average;
-  final List<ProfileModel> all;
-
-  const HomeMatches({
-    this.veryGood = const [],
-    this.good = const [],
-    this.average = const [],
-    this.all = const [],
-  });
-
-  bool get isEmpty => all.isEmpty;
-}
-
-/// Home "Recommended Matches", refactored into compatibility-categorized
-/// buckets. Pipeline (per the product spec):
+/// Home "Recommended for You" — EVERY eligible opposite-gender profile, ranked
+/// by relevance and capped to a small Home-carousel preview.
 ///
-///  1. **Opposite gender** — enforced by [matchGenderProvider] / the query, so a
-///     same-gender profile can NEVER appear.
-///  2. **Age rule** — a MALE user sees only YOUNGER females (age < my age); a
-///     FEMALE user sees only OLDER males (age > my age). Equal age is excluded.
-///  3. **Compatibility category** via [computePorutham] — NO percentage.
-///  4. **Bucket** into Very Good (excellent/very good) · Good · Average.
-///  5. **[all]** = every profile that passed gender + age (any category, plus
-///     profiles whose horoscope can't be scored yet).
-final homeMatchesProvider = FutureProvider.autoDispose<HomeMatches>((ref) async {
-  final gender = ref.watch(matchGenderProvider);
-  final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
-  final me = ref.watch(myProfileProvider).valueOrNull;
-
-  final iAmFemale = (me?.gender ?? '').trim().toLowerCase().startsWith('f');
-  final myAge = me?.age ?? 0;
-
-  // Step 1 — opposite-gender pool (the query already filters by gender).
-  final List<ProfileModel> pool;
-  if (kBypassAuth) {
-    pool = ref.read(demoProfilesProvider.notifier).discover(gender: gender);
-  } else {
-    final page = await ref
-        .read(profileRepositoryProvider)
-        .searchProfilesPage(gender: gender, limit: 60);
-    pool = page.profiles;
-  }
-
-  // Step 2 — data-integrity excludes + the age rule. When my age is unknown
-  // (no profile yet) the age rule is skipped rather than hiding everyone.
-  bool passesAge(ProfileModel p) {
-    if (myAge <= 0 || p.age <= 0) return true;
-    return iAmFemale ? p.age > myAge : p.age < myAge;
-  }
-
-  final eligible = pool.where((p) {
-    if (p.userId == myUid) return false;
-    if (p.isMarried) return false;
-    if (!p.isActive) return false;
-    if (p.status == 'rejected' || p.status == 'blocked') return false;
-    return passesAge(p);
-  }).toList();
-
-  // Partner-preference fallback: prefer exact matches when preferences are
-  // configured, but NEVER hide everyone — fall back to all eligible profiles.
-  final List<ProfileModel> all;
-  if (partnerPreferencesComplete(me)) {
-    final exact =
-        eligible.where((p) => partnerPreferenceMatch(p, me)).toList();
-    all = exact.isNotEmpty ? exact : eligible;
-  } else {
-    all = eligible;
-  }
-  debugPrint('[HomeMatches] gender=$gender · fetched=${pool.length} · '
-      'eligible=${eligible.length} · returned=${all.length} · '
-      'prefsConfigured=${partnerPreferencesComplete(me)}');
-
-  // Steps 3-4 — categorize. Needs my horoscope; unscored profiles remain in
-  // [all] only.
-  final veryGood = <ProfileModel>[];
-  final good = <ProfileModel>[];
-  final average = <ProfileModel>[];
-  if (me != null) {
-    for (final p in all) {
-      final result = computePorutham(me, p);
-      if (result == null) continue;
-      switch (result.category) {
-        case MatchCategory.excellent:
-          veryGood.add(p);
-          break;
-        case MatchCategory.good:
-          good.add(p);
-          break;
-        case MatchCategory.average:
-          average.add(p);
-          break;
-        case MatchCategory.poor:
-          break;
-      }
-    }
-  }
-
-  return HomeMatches(
-      veryGood: veryGood, good: good, average: average, all: all);
-});
-
-/// **New Profiles** for the Home page — RECENTLY CREATED opposite-gender
-/// profiles that are genuinely matching, most-recent first.
-///
-/// Every profile shown MUST satisfy ALL of (mandatory — never "preferred if
-/// available"):
-///   • the user's partner preferences, with AGE + CASTE as the hard gates
-///     ([mandatoryPreferenceMatch]);
-///   • nakshatra compatibility with the user ([isNakshatraCompatible]).
-/// Basic eligibility (self / married / inactive / rejected / blocked) is also
-/// applied, and the list is capped to the LATEST 10 matching profiles.
-final newProfilesProvider =
+/// It is NOT restricted to "matched" profiles: partner preferences (age +
+/// caste) and nakshatra compatibility only decide the ORDER (relevant profiles
+/// float to the top), mirroring the Matches feed's priority ladder:
+///   nakshatra compatibility → partner-preference match → recency.
+final homeRecommendedProvider =
     FutureProvider.autoDispose<List<ProfileModel>>((ref) async {
   final gender = ref.watch(matchGenderProvider);
   final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
@@ -1135,10 +933,62 @@ final newProfilesProvider =
     if (p.isMarried) return false;
     if (!p.isActive) return false;
     if (p.status == 'rejected' || p.status == 'blocked') return false;
-    // Mandatory partner-preference gate (age + caste are the hard priorities).
-    if (!mandatoryPreferenceMatch(p, me)) return false;
-    // Mandatory nakshatra-compatibility gate — requires my profile to verify.
-    if (me == null || !isNakshatraCompatible(me, p)) return false;
+    return true;
+  }).toList();
+
+  // Priority ladder (ranking only — nothing is hidden):
+  //   1. nakshatra compatibility, 2. partner-preference (age+caste gate then
+  //   ratio), 3. recently active, 4. stable id tie-break.
+  int cmp(ProfileModel a, ProfileModel b) {
+    if (me != null) {
+      final ca = isNakshatraCompatible(me, a) ? 1 : 0;
+      final cb = isNakshatraCompatible(me, b) ? 1 : 0;
+      if (ca != cb) return cb - ca;
+    }
+    final ma = mandatoryPreferenceMatch(a, me) ? 1 : 0;
+    final mb = mandatoryPreferenceMatch(b, me) ? 1 : 0;
+    if (ma != mb) return mb - ma;
+    final pa = partnerPreferenceScore(a, me).ratio;
+    final pb = partnerPreferenceScore(b, me).ratio;
+    if (pa != pb) return pb.compareTo(pa);
+    final act = b.updatedAt.compareTo(a.updatedAt);
+    if (act != 0) return act;
+    return a.id.compareTo(b.id);
+  }
+
+  eligible.sort(cmp);
+  debugPrint('[HomeRecommended] gender=$gender · fetched=${pool.length} · '
+      'eligible=${eligible.length}');
+  return eligible.take(12).toList();
+});
+
+/// **New Profiles** for the Home page — the LATEST registered opposite-gender
+/// profiles, newest first, capped to 10.
+///
+/// This section is intentionally NOT gated by partner preferences or nakshatra
+/// compatibility: it always surfaces the newest members so the list refreshes
+/// as people register. Only basic eligibility applies (never self / married /
+/// inactive / rejected / blocked).
+final newProfilesProvider =
+    FutureProvider.autoDispose<List<ProfileModel>>((ref) async {
+  final gender = ref.watch(matchGenderProvider);
+  final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+
+  final List<ProfileModel> pool;
+  if (kBypassAuth) {
+    pool = ref.read(demoProfilesProvider.notifier).discover(gender: gender);
+  } else {
+    final page = await ref
+        .read(profileRepositoryProvider)
+        .searchProfilesPage(gender: gender, limit: 60);
+    pool = page.profiles;
+  }
+
+  final eligible = pool.where((p) {
+    if (p.userId == myUid) return false;
+    if (p.isMarried) return false;
+    if (!p.isActive) return false;
+    if (p.status == 'rejected' || p.status == 'blocked') return false;
     return true;
   }).toList()
     // Newest joiners first.

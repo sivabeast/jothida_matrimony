@@ -6,23 +6,15 @@ import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
 
+/// Contact step — Contact Person Name (req), Relationship (req), Mobile Number
+/// (req) and an optional WhatsApp number with a "same as mobile" toggle.
+/// Mirrors the website's "Contact" step. Contact details are stored in the
+/// access-gated `contacts/{userId}` record and only revealed after a mutual
+/// interest — never on the public profile. Advancing goes to the Review step.
 class Step7Contact extends ConsumerStatefulWidget {
   final VoidCallback onNext;
-  final bool isLoading;
 
-  /// Overall upload progress (0..1) while [isLoading] is true.
-  final double uploadProgress;
-
-  /// Status text shown under the progress bar, e.g. "Uploading photo...".
-  final String? uploadStatus;
-
-  const Step7Contact({
-    super.key,
-    required this.onNext,
-    this.isLoading = false,
-    this.uploadProgress = 0,
-    this.uploadStatus,
-  });
+  const Step7Contact({super.key, required this.onNext});
 
   @override
   ConsumerState<Step7Contact> createState() => _Step7State();
@@ -35,6 +27,29 @@ class _Step7State extends ConsumerState<Step7Contact> {
   final _formKey = GlobalKey<FormState>();
   String _relationship = 'Self';
   bool _sameAsAbove = false;
+
+  // Matches the website RELATIONSHIP list.
+  static const _relationships = [
+    'Self', 'Father', 'Mother', 'Brother', 'Sister', 'Guardian',
+    'Relative', 'Friend',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    final c = ref.read(profileCreationProvider).data['contactDetails'];
+    if (c is Map) {
+      _nameController.text = (c['contactPersonName'] as String?) ?? '';
+      _relationship = (c['relationship'] as String?) ?? 'Self';
+      _mobileController.text = (c['mobileNumber'] as String?) ?? '';
+      final wa = (c['whatsappNumber'] as String?) ?? '';
+      if (wa.isNotEmpty && wa == _mobileController.text) {
+        _sameAsAbove = true;
+      } else {
+        _whatsappController.text = wa;
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -68,7 +83,8 @@ class _Step7State extends ConsumerState<Step7Contact> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Contact Details', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text('Contact Details',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             const Text(
               'Contact details are only shared after interest is mutually accepted.',
@@ -81,18 +97,21 @@ class _Step7State extends ConsumerState<Step7Contact> {
               validator: Validators.name,
             ),
             const SizedBox(height: 16),
-            const Text('Relationship', style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text('Relationship',
+                style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
-              children: ['Self', 'Father', 'Mother', 'Brother', 'Sister', 'Guardian']
+              children: _relationships
                   .map((r) => ChoiceChip(
                         label: Text(r),
                         selected: _relationship == r,
                         onSelected: (_) => setState(() => _relationship = r),
                         selectedColor: const Color(0xFF800020),
                         labelStyle: TextStyle(
-                            color: _relationship == r ? Colors.white : Colors.black87),
+                            color: _relationship == r
+                                ? Colors.white
+                                : Colors.black87),
                       ))
                   .toList(),
             ),
@@ -132,7 +151,6 @@ class _Step7State extends ConsumerState<Step7Contact> {
                   FilteringTextInputFormatter.digitsOnly,
                   LengthLimitingTextInputFormatter(10),
                 ],
-                validator: Validators.phone,
               ),
             ],
             const SizedBox(height: 24),
@@ -158,31 +176,7 @@ class _Step7State extends ConsumerState<Step7Contact> {
               ),
             ),
             const SizedBox(height: 32),
-            if (widget.isLoading) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: widget.uploadProgress > 0 ? widget.uploadProgress : null,
-                  minHeight: 6,
-                  backgroundColor: Colors.grey[200],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                widget.uploadStatus ??
-                    (widget.uploadProgress > 0
-                        ? '${(widget.uploadProgress * 100).round()}%'
-                        : 'Submitting...'),
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-            ],
-            GradientButton(
-              onPressed: widget.isLoading ? null : _saveAndNext,
-              isLoading: widget.isLoading,
-              text: 'Submit Profile',
-            ),
+            GradientButton(onPressed: _saveAndNext, text: 'Continue'),
           ],
         ),
       ),

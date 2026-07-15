@@ -2006,8 +2006,26 @@ abstract class AppLocalizations {
   /// No description provided for @noNewProfilesYet.
   ///
   /// In en, this message translates to:
-  /// **'No new matching profiles yet.'**
+  /// **'No new profiles yet.'**
   String get noNewProfilesYet;
+
+  /// No description provided for @recommendedForYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended for You'**
+  String get recommendedForYou;
+
+  /// No description provided for @nakshatraMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Nakshatra Match'**
+  String get nakshatraMatch;
+
+  /// No description provided for @matchingProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching Profile'**
+  String get matchingProfile;
 
   /// No description provided for @comingSoonBody.
   ///

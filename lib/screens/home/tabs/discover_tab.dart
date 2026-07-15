@@ -5,14 +5,13 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../models/profile_model.dart';
-import '../../../core/services/match_score_service.dart';
 import '../../../core/services/porutham_match.dart';
 import '../../../providers/interest_provider.dart';
 import '../../../providers/matches_prefs_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/ui_preferences_provider.dart';
-import '../../../widgets/common/match_score_badge.dart';
 import '../../../widgets/common/network_photo.dart';
+import '../../../widgets/common/profile_highlight_badge.dart';
 
 /// The Matches experience — a modern, swipeable profile browser.
 ///
@@ -115,13 +114,6 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     }
   }
 
-  /// Switch between Compatible / All matches. The actual re-filter happens in
-  /// the [matchModeProvider] listener in [build], so a mode change from ANY
-  /// source (the Filter menu or the persisted choice restoring at startup)
-  /// updates the feed instantly without a page refresh.
-  Future<void> _setMode(MatchMode mode) =>
-      ref.read(matchModeProvider.notifier).set(mode);
-
   /// Record the viewed profile (per-user browsing progress) and prefetch the
   /// next page as the user nears the end of the pager.
   void _onPageChanged(int index) {
@@ -210,15 +202,6 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
       });
     }
 
-    // Re-filter the feed instantly (from the cached pool — no page refresh)
-    // whenever the match mode changes, then continue from the first unseen
-    // profile of the re-filtered list.
-    ref.listen<MatchMode>(matchModeProvider, (prev, next) async {
-      if (prev == next) return;
-      await ref.read(discoverProvider.notifier).refilter();
-      if (mounted) _jumpToResume();
-    });
-
     // Refresh matches automatically when the profile (incl. partner
     // preferences) changes — e.g. after editing preferences — resuming from
     // the first unseen profile of the new list.
@@ -265,7 +248,6 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     final l10n = context.l10n;
     final me = ref.watch(myProfileProvider).valueOrNull;
     final star = me == null ? null : profileStarIndex(me);
-    final mode = ref.watch(matchModeProvider);
 
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 10, 14, 2),
@@ -303,35 +285,6 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
                   fontSize: 12, fontWeight: FontWeight.w700),
             ),
             child: Text(l10n.viewMatchingStars),
-          ),
-          PopupMenuButton<MatchMode>(
-            tooltip: l10n.filter,
-            position: PopupMenuPosition.under,
-            onSelected: _setMode,
-            itemBuilder: (_) => [
-              CheckedPopupMenuItem(
-                value: MatchMode.compatible,
-                checked: mode == MatchMode.compatible,
-                child: Text(l10n.compatibleMatches,
-                    style: const TextStyle(fontSize: 13.5)),
-              ),
-              CheckedPopupMenuItem(
-                value: MatchMode.all,
-                checked: mode == MatchMode.all,
-                child: Text(l10n.allMatches,
-                    style: const TextStyle(fontSize: 13.5)),
-              ),
-            ],
-            child: Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.filter_list,
-                  size: 19, color: AppColors.primary),
-            ),
           ),
         ],
       ),
@@ -591,7 +544,6 @@ class _MatchProfilePage extends ConsumerWidget {
     if (status == InterestUiStatus.none && interestSent) {
       status = InterestUiStatus.sent;
     }
-    final MatchScore? score = ref.watch(matchScorerProvider)?.call(profile);
 
     return RefreshIndicator(
       color: AppColors.primary,
@@ -612,7 +564,7 @@ class _MatchProfilePage extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _photo(context, score, imageHeight),
+                  _photo(context, imageHeight),
                   const SizedBox(height: 16),
                   _summary(context),
                   const SizedBox(height: 18),
@@ -627,7 +579,7 @@ class _MatchProfilePage extends ConsumerWidget {
   }
 
   // ── Photo ────────────────────────────────────────────────────────────────
-  Widget _photo(BuildContext context, MatchScore? score, double height) {
+  Widget _photo(BuildContext context, double height) {
     return GestureDetector(
       onTap: () => _openProfile(context),
       child: ClipRRect(
@@ -669,9 +621,10 @@ class _MatchProfilePage extends ConsumerWidget {
                   ),
                 ),
               ),
-              if (score != null)
-                Positioned(
-                    top: 14, left: 14, child: MatchScoreBadge(score: score)),
+              Positioned(
+                  top: 14,
+                  left: 14,
+                  child: ProfileHighlightBadge(profile: profile)),
               // Pager position pill — orients the user in the swipe stack.
               Positioned(top: 14, right: 14, child: _pagerPill()),
             ],

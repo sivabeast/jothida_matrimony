@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
 import '../../../widgets/common/religion_caste_fields.dart';
+import '../../../widgets/common/searchable_field.dart';
 
-/// Step 5 — Religious Information: Religion (req), Caste (req), Sub Caste,
-/// Gothram and Kuladeivam (all optional).
+/// Community step — Religion (req), Caste (req), Sub Caste (opt),
+/// Mother Tongue (req), Gothram and Kuladeivam (opt). Mirrors the website
+/// "Community" step.
 class StepReligious extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   const StepReligious({super.key, required this.onNext});
@@ -23,6 +26,7 @@ class _StepReligiousState extends ConsumerState<StepReligious> {
   String? _casteId;
   String? _subCaste;
   String? _subCasteId;
+  String? _motherTongue;
   final _gothramController = TextEditingController();
   final _kuladeivamController = TextEditingController();
 
@@ -36,6 +40,7 @@ class _StepReligiousState extends ConsumerState<StepReligious> {
     _casteId = data['casteId'] as String?;
     _subCaste = data['subCaste'] as String?;
     _subCasteId = data['subCasteId'] as String?;
+    _motherTongue = data['motherTongue'] as String?;
     _gothramController.text = (data['gothram'] as String?) ?? '';
     _kuladeivamController.text = (data['kuladeivam'] as String?) ?? '';
   }
@@ -56,6 +61,10 @@ class _StepReligiousState extends ConsumerState<StepReligious> {
       _snack('Please select your caste');
       return;
     }
+    if (_motherTongue == null || _motherTongue!.isEmpty) {
+      _snack('Please select your mother tongue');
+      return;
+    }
     ref.read(profileCreationProvider.notifier).updateData({
       'religion': _religion,
       'religionId': _religionId,
@@ -63,6 +72,7 @@ class _StepReligiousState extends ConsumerState<StepReligious> {
       'casteId': _casteId,
       'subCaste': _subCaste ?? '',
       'subCasteId': _subCasteId,
+      'motherTongue': _motherTongue,
       'gothram': _gothramController.text.trim(),
       'kuladeivam': _kuladeivamController.text.trim(),
     });
@@ -109,6 +119,15 @@ class _StepReligiousState extends ConsumerState<StepReligious> {
               _subCasteId = id;
               _subCaste = name;
             }),
+          ),
+          const SizedBox(height: 16),
+          SearchableField(
+            label: 'Mother Tongue',
+            isRequired: true,
+            items: AppConstants.motherTongueList,
+            selectedItem: _motherTongue,
+            prefixIcon: Icons.translate,
+            onChanged: (v) => setState(() => _motherTongue = v),
           ),
           const SizedBox(height: 16),
           AppTextField(

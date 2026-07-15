@@ -5,53 +5,6 @@ import '../core/config/dev_config.dart';
 import 'auth_provider.dart';
 import 'demo_data_provider.dart';
 
-/// The two Matches feed modes (Filter menu on the top compact card).
-///  • [compatible] — partner preferences (age + caste mandatory) AND
-///    nakshatra compatibility. The DEFAULT on first open.
-///  • [all] — partner preferences only; horoscope compatibility is not
-///    required (compatible and non-compatible profiles both appear).
-enum MatchMode { compatible, all }
-
-/// Persisted Matches mode. Defaults to Compatible Matches (per spec) and
-/// remembers the user's last Filter choice across launches.
-class MatchModeNotifier extends Notifier<MatchMode> {
-  static const _key = 'matches_match_mode';
-
-  @override
-  MatchMode build() {
-    _restore();
-    return MatchMode.compatible; // spec default
-  }
-
-  Future<void> _restore() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final v = prefs.getString(_key);
-      if (v == 'all') {
-        state = MatchMode.all;
-      } else if (v == 'compatible') {
-        state = MatchMode.compatible;
-      }
-    } catch (_) {
-      // Ignore — keep the default.
-    }
-  }
-
-  Future<void> set(MatchMode mode) async {
-    state = mode;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-          _key, mode == MatchMode.all ? 'all' : 'compatible');
-    } catch (_) {
-      // Best-effort; in-memory state already updated.
-    }
-  }
-}
-
-final matchModeProvider =
-    NotifierProvider<MatchModeNotifier, MatchMode>(MatchModeNotifier.new);
-
 /// PER-USER browsing progress for the Matches feed.
 ///
 /// Every profile the user swipes past is recorded (persisted per uid), so the

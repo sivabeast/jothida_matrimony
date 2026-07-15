@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/services/match_score_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../core/utils/profile_completion.dart';
@@ -21,7 +20,7 @@ import '../../../providers/notification_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/wedding_provider.dart';
 import '../../../widgets/common/coming_soon.dart';
-import '../../../widgets/common/match_score_badge.dart';
+import '../../../widgets/common/profile_highlight_badge.dart';
 import '../../../widgets/home/home_banner_slide.dart';
 
 /// Home dashboard tab. Clean, modern flow:
@@ -94,6 +93,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     // Home is ONLY for discovering newly-joined members (spec). The full
     // matching directory lives on the Matches tab.
     final newProfilesAsync = ref.watch(newProfilesProvider);
+    final recommendedAsync = ref.watch(homeRecommendedProvider);
     final myProfile = ref.watch(myProfileProvider).valueOrNull;
 
     // Automatic "Married" status: once the wedding date passes, the couple
@@ -109,7 +109,10 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
 
     return RefreshIndicator(
       color: AppColors.primary,
-      onRefresh: () async => ref.invalidate(newProfilesProvider),
+      onRefresh: () async {
+        ref.invalidate(newProfilesProvider);
+        ref.invalidate(homeRecommendedProvider);
+      },
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -135,6 +138,9 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           // ── New Profiles (newly joined members) ───────────────────────────
           _buildNewProfiles(context, newProfilesAsync),
           const SizedBox(height: 22),
+
+          // ── Recommended for You (all profiles, preference-prioritised) ────
+          _buildRecommended(context, recommendedAsync),
 
           // ── Recent Interests ──────────────────────────────────────────────
           _buildRecentInterests(context),
@@ -855,6 +861,24 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     );
   }
 
+  // ── Recommended for You (all profiles, preference-prioritised) ──────────────
+
+  /// Shows every eligible profile ranked by relevance (see
+  /// [homeRecommendedProvider]) — never restricted to "matches". Rendered only
+  /// when non-empty so the Home page never shows an extra empty box.
+  Widget _buildRecommended(
+      BuildContext context, AsyncValue<List<ProfileModel>> async) {
+    final profiles = async.valueOrNull ?? const [];
+    if (profiles.isEmpty) return const SizedBox.shrink();
+    return Column(
+      children: [
+        _horizontalMatchSection(
+            context, '💫', context.l10n.recommendedForYou, profiles),
+        const SizedBox(height: 22),
+      ],
+    );
+  }
+
   Widget _horizontalMatchSection(BuildContext context, String emoji,
       String title, List<ProfileModel> profiles) {
     final preview = profiles.take(10).toList();
@@ -1126,7 +1150,6 @@ class _MatchCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final MatchScore? score = ref.watch(matchScorerProvider)?.call(profile);
     return GestureDetector(
       onTap: () => context.push('/profile/${profile.id}'),
       child: Container(
@@ -1141,8 +1164,8 @@ class _MatchCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Photo expands to fill the remaining height. A single match-quality
-            // badge (top-left), derived from the final calculated match %.
+            // Photo expands to fill the remaining height. A simple ⭐ highlight
+            // badge (top-left) marks suitable/relevant profiles — no rating.
             Expanded(
               child: Stack(
                 fit: StackFit.expand,
@@ -1154,12 +1177,11 @@ class _MatchCard extends ConsumerWidget {
                           errorBuilder: (_, __, ___) => _placeholder(),
                         )
                       : _placeholder(),
-                  if (score != null)
-                    Positioned(
-                      top: 6,
-                      left: 6,
-                      child: MatchScoreBadge(score: score, compact: true),
-                    ),
+                  Positioned(
+                    top: 6,
+                    left: 6,
+                    child: ProfileHighlightBadge(profile: profile, compact: true),
+                  ),
                 ],
               ),
             ),

@@ -975,7 +975,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newProfiles => 'New Profiles';
 
   @override
-  String get noNewProfilesYet => 'No new matching profiles yet.';
+  String get noNewProfilesYet => 'No new profiles yet.';
+
+  @override
+  String get recommendedForYou => 'Recommended for You';
+
+  @override
+  String get nakshatraMatch => 'Nakshatra Match';
+
+  @override
+  String get matchingProfile => 'Matching Profile';
 
   @override
   String get comingSoonBody => 'This feature is not available yet. We are working on it and it will be unlocked in an upcoming update. Stay tuned!';

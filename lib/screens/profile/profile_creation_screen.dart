@@ -9,18 +9,16 @@ import '../../core/theme/app_text_styles.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
-import 'steps/step_profile_for.dart';
-import 'steps/step_basic_info.dart';
-import 'steps/step_physical.dart';
-import 'steps/step_marital.dart';
+import 'steps/step_basic.dart';
+import 'steps/step_location.dart';
+import 'steps/step_education.dart';
 import 'steps/step_religious.dart';
 import 'steps/step3_horoscope.dart';
-import 'steps/step_education.dart';
-import 'steps/step_location.dart';
-import 'steps/step6_photos.dart';
-import 'steps/step_aadhaar.dart';
-import 'steps/step_about_me.dart';
 import 'steps/step_partner_preference.dart';
+import 'steps/step6_photos.dart';
+import 'steps/step_horoscope_upload.dart';
+import 'steps/step7_contact.dart';
+import 'steps/step_review.dart';
 
 /// Multi-step onboarding wizard (12 steps incl. the success screen).
 ///
@@ -54,26 +52,25 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
 
   bool get _isEditMode => widget.editProfileId != null;
 
-  static const int _totalSteps = 12;
+  static const int _totalSteps = 10;
 
-  /// Steps the user may SKIP — only the optional sections (per spec):
-  /// About Me / Lifestyle (10) and Partner Preference (11). Mandatory steps
-  /// never show Skip.
-  static const Set<int> _skippableSteps = {10, 11};
+  /// Steps the user may SKIP — only the optional sections, matching the website
+  /// (Partner Preferences, Photos, Upload Horoscope). Mandatory steps never
+  /// show Skip.
+  static const Set<int> _skippableSteps = {5, 6, 7};
 
+  /// The 10 website profile-creation steps, in the same order as the website.
   final List<String> _stepTitles = const [
-    'Profile For',
-    'Basic Info',
-    'Physical Details',
-    'Marital Info',
-    'Religious Info',
-    'Astrology',
-    'Education & Career',
+    'Basic Details',
     'Location',
-    'Profile Photo',
-    'Aadhaar Verification',
-    'About Me',
-    'Partner Preference',
+    'Career',
+    'Community',
+    'Horoscope',
+    'Partner Preferences',
+    'Photos',
+    'Upload Horoscope',
+    'Contact',
+    'Review',
   ];
 
   @override
@@ -160,6 +157,14 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
       _pageController.previousPage(
           duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     }
+  }
+
+  /// Jump directly to [step] — used by the Review step's "Edit" actions.
+  void _goToStep(int step) {
+    if (step < 0 || step >= _totalSteps) return;
+    setState(() => _currentStep = step);
+    _pageController.animateToPage(step,
+        duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
   }
 
   Future<void> _confirmLogout() async {
@@ -313,20 +318,19 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
                     controller: _pageController,
                     physics: const NeverScrollableScrollPhysics(),
                     children: [
-                      ProfileForStep(onNext: _nextStep),
-                      StepBasicInfo(onNext: _nextStep),
-                      StepPhysical(onNext: _nextStep),
-                      StepMarital(onNext: _nextStep),
+                      StepBasic(onNext: _nextStep),
+                      StepLocation(onNext: _nextStep),
+                      StepEducation(onNext: _nextStep),
                       StepReligious(onNext: _nextStep),
                       Step3Horoscope(onNext: _nextStep),
-                      StepEducation(onNext: _nextStep),
-                      StepLocation(onNext: _nextStep),
+                      StepPartnerPreference(onNext: _nextStep),
                       Step6Photos(onNext: _nextStep),
-                      StepAadhaar(onNext: _nextStep),
-                      StepAboutMe(onNext: _nextStep),
-                      StepPartnerPreference(
-                        onNext: _nextStep,
-                        isLoading: creationState.isLoading,
+                      StepHoroscopeUpload(onNext: _nextStep),
+                      Step7Contact(onNext: _nextStep),
+                      StepReview(
+                        onSubmit: _nextStep,
+                        onEditStep: _goToStep,
+                        isEditMode: _isEditMode,
                       ),
                     ],
                   ),

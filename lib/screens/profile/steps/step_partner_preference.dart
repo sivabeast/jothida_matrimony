@@ -8,16 +8,14 @@ import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
 import '../../../widgets/common/searchable_field.dart';
 
-/// Step 11 — Partner Preference. Every field is OPTIONAL. Tapping the button
-/// triggers profile submission (the wizard treats this as the final step).
+/// Partner Preference step. Every field is OPTIONAL. The field set mirrors the
+/// website's "Partner Preferences" step exactly: age & height range, preferred
+/// education / occupation, religion / caste / sub-caste, income, marital
+/// status, mother tongue, physical status, chevvai dosham and the
+/// "horoscope match required" toggle. Tapping the button advances to Review.
 class StepPartnerPreference extends ConsumerStatefulWidget {
   final VoidCallback onNext;
-  final bool isLoading;
-  const StepPartnerPreference({
-    super.key,
-    required this.onNext,
-    this.isLoading = false,
-  });
+  const StepPartnerPreference({super.key, required this.onNext});
 
   @override
   ConsumerState<StepPartnerPreference> createState() =>
@@ -29,90 +27,75 @@ class _StepPartnerPreferenceState
   RangeValues _age = const RangeValues(21, 35);
   String? _minHeight;
   String? _maxHeight;
-  String? _maritalStatus;
-  String? _physicalStatus;
-  String? _religion;
-  String? _caste;
-  String? _star;
-  String? _raasi;
-  String? _chevvai;
   String? _education;
   String? _occupation;
-  String? _employmentType;
+  String? _religion;
+  String? _caste;
   String? _income;
-  String? _country;
-  String? _state;
-  String? _eating;
-  String? _smoking;
-  String? _drinking;
+  String? _maritalStatus;
+  String? _motherTongue;
+  String? _physicalStatus;
+  String? _chevvai;
+  bool _horoscopeMatchRequired = true;
   final _subCaste = TextEditingController();
-  final _city = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    final pref =
-        ref.read(profileCreationProvider).data['partnerPreferences'];
+    final pref = ref.read(profileCreationProvider).data['partnerPreferences'];
     if (pref is Map) {
       final minA = (pref['minAge'] as num?)?.toDouble() ?? 21;
       final maxA = (pref['maxAge'] as num?)?.toDouble() ?? 35;
       _age = RangeValues(minA.clamp(18, 60), maxA.clamp(18, 60));
       _minHeight = pref['minHeight'] as String?;
       _maxHeight = pref['maxHeight'] as String?;
-      _maritalStatus = pref['maritalStatus'] as String?;
-      _physicalStatus = pref['physicalStatus'] as String?;
+      final edu = pref['education'];
+      if (edu is List && edu.isNotEmpty) _education = edu.first.toString();
+      final occ = pref['occupation'];
+      if (occ is List && occ.isNotEmpty) _occupation = occ.first.toString();
       _religion = pref['religion'] as String?;
       _caste = pref['caste'] as String?;
-      _star = pref['nakshatra'] as String?;
-      _raasi = pref['rasi'] as String?;
-      _chevvai = pref['chevvaiDosham'] as String?;
-      _employmentType = pref['employmentType'] as String?;
       _income = pref['income'] as String?;
-      _country = pref['country'] as String?;
-      _state = pref['state'] as String?;
-      _eating = pref['eatingHabit'] as String?;
-      _smoking = pref['smokingHabit'] as String?;
-      _drinking = pref['drinkingHabit'] as String?;
+      _maritalStatus = pref['maritalStatus'] as String?;
+      _motherTongue = pref['motherTongue'] as String?;
+      _physicalStatus = pref['physicalStatus'] as String?;
+      _chevvai = pref['chevvaiDosham'] as String?;
+      _horoscopeMatchRequired = pref['horoscopeMatchRequired'] as bool? ?? true;
       _subCaste.text = (pref['subCaste'] as String?) ?? '';
-      _city.text = (pref['city'] as String?) ?? '';
     }
   }
 
   @override
   void dispose() {
     _subCaste.dispose();
-    _city.dispose();
     super.dispose();
   }
 
-  /// 'Any' / null / empty → omit (no preference).
+  /// 'Any' / null / empty → 'Any' (no preference).
   String _orAny(String? v) => (v == null || v.isEmpty) ? 'Any' : v;
 
-  void _saveAndFinish() {
+  /// A single selection → a 1-element list, or [] for "Any"/unset.
+  List<String> _asList(String? v) =>
+      (v == null || v.isEmpty || v == 'Any') ? const [] : [v];
+
+  void _saveAndNext() {
     ref.read(profileCreationProvider.notifier).updateData({
       'partnerPreferences': {
         'minAge': _age.start.round(),
         'maxAge': _age.end.round(),
         'minHeight': _minHeight ?? "5'0\"",
         'maxHeight': _maxHeight ?? "6'0\"",
-        'maritalStatus': _orAny(_maritalStatus),
-        'physicalStatus': _orAny(_physicalStatus),
+        'education': _asList(_education),
+        'occupation': _asList(_occupation),
         'religion': _orAny(_religion),
         'caste': _orAny(_caste),
         'subCaste': _subCaste.text.trim(),
-        'nakshatra': _orAny(_star),
-        'rasi': _orAny(_raasi),
-        'chevvaiDosham': _orAny(_chevvai),
-        'education': _orAny(_education),
-        'occupation': _orAny(_occupation),
-        'employmentType': _orAny(_employmentType),
         'income': _orAny(_income),
-        'country': _orAny(_country),
-        'state': _orAny(_state),
-        'city': _city.text.trim(),
-        'eatingHabit': _orAny(_eating),
-        'smokingHabit': _orAny(_smoking),
-        'drinkingHabit': _orAny(_drinking),
+        'maritalStatus': _orAny(_maritalStatus),
+        'motherTongue': _orAny(_motherTongue),
+        'physicalStatus': _orAny(_physicalStatus),
+        'chevvaiDosham': _orAny(_chevvai),
+        'horoscopeMatchRequired': _horoscopeMatchRequired,
       },
     });
     widget.onNext();
@@ -155,49 +138,38 @@ class _StepPartnerPreferenceState
           _pref('Physical Status', AppConstants.physicalStatusList,
               _physicalStatus, (v) => _physicalStatus = v),
 
-          _sectionTitle('Religious Preference'),
+          _sectionTitle('Community Preference'),
           _pref('Religion', AppConstants.religionList, _religion,
               (v) => _religion = v),
           _pref('Caste', AppConstants.castList, _caste, (v) => _caste = v),
           AppTextField(
               controller: _subCaste, label: 'Sub Caste', hint: 'Optional'),
           const SizedBox(height: 16),
-          _pref('Star (Nakshatra)', AppConstants.nakshatraList, _star,
-              (v) => _star = v),
-          _pref('Raasi', AppConstants.rasiEnList, _raasi, (v) => _raasi = v),
+          _pref('Mother Tongue', AppConstants.motherTongueList, _motherTongue,
+              (v) => _motherTongue = v),
           _pref('Chevvai Dosham', const ['Yes', 'No', 'Doesn\'t Matter'],
               _chevvai, (v) => _chevvai = v),
 
-          _sectionTitle('Education Preference'),
+          _sectionTitle('Education & Income Preference'),
           _pref('Education', AppConstants.educations, _education,
               (v) => _education = v),
           _pref('Occupation', AppConstants.occupations, _occupation,
               (v) => _occupation = v),
-          _pref('Employment Type', AppConstants.employmentTypeList,
-              _employmentType, (v) => _employmentType = v),
           _pref('Annual Income', AppConstants.incomeRanges, _income,
               (v) => _income = v),
 
-          _sectionTitle('Location Preference'),
-          _pref('Country', AppConstants.countryList, _country,
-              (v) => _country = v),
-          _pref('State', AppConstants.indianStates, _state, (v) => _state = v),
-          AppTextField(controller: _city, label: 'City', hint: 'Optional'),
-          const SizedBox(height: 16),
-
-          _sectionTitle('Lifestyle Preference'),
-          _pref('Eating Habit', AppConstants.eatingHabitList, _eating,
-              (v) => _eating = v),
-          _pref('Smoking Habit', AppConstants.smokingHabitList, _smoking,
-              (v) => _smoking = v),
-          _pref('Drinking Habit', AppConstants.drinkingHabitList, _drinking,
-              (v) => _drinking = v),
-
-          const SizedBox(height: 28),
-          GradientButton(
-            onPressed: widget.isLoading ? null : _saveAndFinish,
-            text: widget.isLoading ? 'Creating Profile…' : 'Create Profile',
+          const SizedBox(height: 8),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            value: _horoscopeMatchRequired,
+            activeColor: AppColors.primary,
+            onChanged: (v) => setState(() => _horoscopeMatchRequired = v),
+            title: const Text('Horoscope match required',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
           ),
+
+          const SizedBox(height: 20),
+          GradientButton(onPressed: _saveAndNext, text: 'Continue'),
         ],
       ),
     );

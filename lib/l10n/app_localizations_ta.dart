@@ -975,7 +975,16 @@ class AppLocalizationsTa extends AppLocalizations {
   String get newProfiles => 'புதிய Profiles';
 
   @override
-  String get noNewProfilesYet => 'புதிய பொருத்தமான Profiles இன்னும் இல்லை.';
+  String get noNewProfilesYet => 'புதிய Profiles இன்னும் இல்லை.';
+
+  @override
+  String get recommendedForYou => 'உங்களுக்கான பரிந்துரைகள்';
+
+  @override
+  String get nakshatraMatch => 'நட்சத்திரப் பொருத்தம்';
+
+  @override
+  String get matchingProfile => 'பொருந்தும் சுயவிவரம்';
 
   @override
   String get comingSoonBody => 'இந்த வசதி இன்னும் கிடைக்கவில்லை. நாங்கள் இதில் பணியாற்றி வருகிறோம்; விரைவில் வரவிருக்கும் புதுப்பிப்பில் திறக்கப்படும். காத்திருங்கள்!';

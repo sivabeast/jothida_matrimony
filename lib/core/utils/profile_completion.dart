@@ -37,17 +37,7 @@ bool _ne(String? s) => (s ?? '').trim().isNotEmpty;
 /// from how many are complete, so editing a section updates the percent live.
 List<ProfileSectionStatus> profileSections(ProfileModel? p) {
   final h = p?.horoscope;
-  final f = p?.family;
-  final l = p?.lifestyle;
   final pp = p?.partnerPreferences;
-
-  final lifestyleFilled = l != null &&
-      (_ne(l.eatingHabit) ||
-          _ne(l.smokingHabit) ||
-          _ne(l.drinkingHabit) ||
-          _ne(l.hobbies) ||
-          _ne(l.interests) ||
-          l.languagesKnown.isNotEmpty);
 
   final partnerFilled = pp != null &&
       (pp.education.isNotEmpty ||
@@ -57,14 +47,12 @@ List<ProfileSectionStatus> profileSections(ProfileModel? p) {
           _ne(pp.city) ||
           (pp.eatingHabit.isNotEmpty && pp.eatingHabit != 'Any'));
 
+  // Only the sections that exist in the website's profile-creation flow are
+  // surfaced as editable sections (Career, Location, Community, Horoscope,
+  // Photos, Partner Preference). Website-absent sections (About Me, Family,
+  // Lifestyle) are intentionally NOT listed — every field is edited through
+  // the Edit Profile wizard, which mirrors the creation steps.
   return [
-    ProfileSectionStatus(
-      id: 'about',
-      title: 'About Me',
-      icon: Icons.notes_outlined,
-      route: '/edit/about',
-      isComplete: _ne(p?.aboutMe),
-    ),
     ProfileSectionStatus(
       id: 'education',
       title: 'Education & Career',
@@ -92,20 +80,6 @@ List<ProfileSectionStatus> profileSections(ProfileModel? p) {
       icon: Icons.auto_awesome_outlined,
       route: '/horoscope',
       isComplete: _ne(h?.rasi) && _ne(h?.nakshatra),
-    ),
-    ProfileSectionStatus(
-      id: 'family',
-      title: 'Family Details',
-      icon: Icons.diversity_3_outlined,
-      route: '/edit/family',
-      isComplete: _ne(f?.fatherName) || _ne(f?.motherName),
-    ),
-    ProfileSectionStatus(
-      id: 'lifestyle',
-      title: 'Lifestyle & Habits',
-      icon: Icons.spa_outlined,
-      route: '/edit/lifestyle',
-      isComplete: lifestyleFilled,
     ),
     ProfileSectionStatus(
       id: 'photos',

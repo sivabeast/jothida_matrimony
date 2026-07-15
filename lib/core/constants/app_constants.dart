@@ -234,7 +234,7 @@ class AppConstants {
     'Software Engineer', 'Doctor', 'Engineer', 'Teacher', 'Professor',
     'Lawyer', 'Chartered Accountant', 'Government Employee', 'Business',
     'Self Employed', 'Army / Police', 'Nurse', 'Pharmacist', 'Architect',
-    'Banker', 'Journalist', 'Actor / Artist', 'Not Working', 'Other',
+    'Banker', 'Journalist', 'Actor / Artist', 'Student', 'Not Working', 'Other',
   ];
 
   // Family Type

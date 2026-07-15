@@ -68,6 +68,9 @@ class ProfileModel {
   final String? collegeName;
   final String? companyName;
   final String? workLocation;
+  /// Course / degree name — shown & required only for Student occupation
+  /// (mirrors the website Career step). Optional otherwise.
+  final String? courseDegree;
 
   // Location extras
   final String? nativePlace;
@@ -145,6 +148,7 @@ class ProfileModel {
     this.collegeName,
     this.companyName,
     this.workLocation,
+    this.courseDegree,
     this.nativePlace,
     this.citizenship,
     this.lifestyle = const LifestyleDetails(),
@@ -211,6 +215,7 @@ class ProfileModel {
       collegeName: d['collegeName'],
       companyName: d['companyName'],
       workLocation: d['workLocation'],
+      courseDegree: d['courseDegree'],
       nativePlace: d['nativePlace'],
       citizenship: d['citizenship'],
       lifestyle: LifestyleDetails.fromMap(d['lifestyle'] ?? {}),
@@ -281,6 +286,7 @@ class ProfileModel {
         'collegeName': collegeName,
         'companyName': companyName,
         'workLocation': workLocation,
+        'courseDegree': courseDegree,
         'nativePlace': nativePlace,
         'citizenship': citizenship,
         'lifestyle': lifestyle.toMap(),
@@ -368,6 +374,7 @@ class ProfileModel {
       collegeName: d['collegeName'],
       companyName: d['companyName'],
       workLocation: d['workLocation'],
+      courseDegree: d['courseDegree'],
       nativePlace: d['nativePlace'],
       citizenship: d['citizenship'],
       lifestyle: LifestyleDetails.fromMap(lifeMap),
@@ -429,6 +436,7 @@ class ProfileModel {
         'collegeName': collegeName,
         'companyName': companyName,
         'workLocation': workLocation,
+        'courseDegree': courseDegree,
         'nativePlace': nativePlace,
         'citizenship': citizenship,
         'lifestyle': lifestyle.toMap(),
@@ -477,6 +485,7 @@ class ProfileModel {
     String? collegeName,
     String? companyName,
     String? workLocation,
+    String? courseDegree,
     String? nativePlace,
     String? citizenship,
     LifestyleDetails? lifestyle,
@@ -537,6 +546,7 @@ class ProfileModel {
         collegeName: collegeName ?? this.collegeName,
         companyName: companyName ?? this.companyName,
         workLocation: workLocation ?? this.workLocation,
+        courseDegree: courseDegree ?? this.courseDegree,
         nativePlace: nativePlace ?? this.nativePlace,
         citizenship: citizenship ?? this.citizenship,
         lifestyle: lifestyle ?? this.lifestyle,
@@ -599,6 +609,7 @@ class ProfileModel {
         collegeName: collegeName,
         companyName: companyName,
         workLocation: workLocation,
+        courseDegree: courseDegree,
         nativePlace: nativePlace,
         citizenship: citizenship,
         lifestyle: lifestyle,
