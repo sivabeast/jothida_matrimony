@@ -26,6 +26,7 @@ import '../screens/chat/chat_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/home/home_screen.dart';
+import '../screens/profile/my_profile_screen.dart';
 import '../screens/profile/profile_creation_screen.dart';
 import '../screens/profile/profile_success_screen.dart';
 import '../screens/profile/profile_view_screen.dart';
@@ -292,12 +293,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) =>
             ProfileViewScreen(userId: state.pathParameters['uid']!),
       ),
-      // Edit an existing profile (Profile → "Edit Profile"). 3 path segments so
-      // it never collides with the 2-segment '/profile/:id' view route above.
+      // My Profile — the member's own profile organised into categories, each
+      // with its own Edit action (Menu → "My Profile").
+      GoRoute(path: '/my-profile', builder: (_, __) => const MyProfileScreen()),
+      // Edit an existing profile (full wizard). 3 path segments so it never
+      // collides with the 2-segment '/profile/:id' view route above.
       GoRoute(
         path: '/profile/:id/edit',
         builder: (_, state) =>
             ProfileCreationScreen(editProfileId: state.pathParameters['id']),
+      ),
+      // Edit ONE profile category (from My Profile) — opens just that step of
+      // the wizard; saving updates only that section and returns.
+      GoRoute(
+        path: '/profile/:id/edit-section/:step',
+        builder: (_, state) => ProfileCreationScreen(
+          editProfileId: state.pathParameters['id'],
+          sectionStep: int.tryParse(state.pathParameters['step'] ?? ''),
+        ),
       ),
       GoRoute(
         path: '/match/:id',

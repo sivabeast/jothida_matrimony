@@ -36,6 +36,14 @@ class ChatListView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final threadsAsync = ref.watch(myChatThreadsProvider);
     final myUid = ref.watch(myUidProvider) ?? '';
+    // Stamp MY delivery receipt for any newly arrived incoming messages while
+    // the Chats list is open (see ChatController.markDelivered).
+    ref.listen(myChatThreadsProvider, (_, next) {
+      final threads = next.valueOrNull;
+      if (threads != null && threads.isNotEmpty) {
+        ref.read(chatControllerProvider).markDelivered(threads);
+      }
+    });
     // Chat access control (spec §5/§8): only conversations with users the signed
     // in member has a mutually-accepted interest with are listed here.
     final acceptedUids = ref.watch(acceptedChatUserIdsProvider);

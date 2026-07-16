@@ -37,7 +37,15 @@ class ProfileCreationScreen extends ConsumerStatefulWidget {
   /// When non-null, the wizard was opened to edit an existing profile via
   /// Profile → "Edit Profile" (route `/profile/:id/edit`).
   final String? editProfileId;
-  const ProfileCreationScreen({super.key, this.editProfileId});
+
+  /// SECTION-EDIT mode (My Profile → a category's Edit action, route
+  /// `/profile/:id/edit-section/:step`): shows ONLY this one step — no
+  /// progress bar, no step list — and the step's Continue button saves the
+  /// whole profile in place (only that section's values changed) and pops.
+  /// Requires [editProfileId].
+  final int? sectionStep;
+
+  const ProfileCreationScreen({super.key, this.editProfileId, this.sectionStep});
 
   @override
   ConsumerState<ProfileCreationScreen> createState() =>
@@ -46,11 +54,15 @@ class ProfileCreationScreen extends ConsumerStatefulWidget {
 
 class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   static const String _draftKey = 'profile_draft_v1';
-  final PageController _pageController = PageController();
-  int _currentStep = 0;
+  late final PageController _pageController =
+      PageController(initialPage: _currentStep);
+  late int _currentStep = widget.sectionStep?.clamp(0, _totalSteps - 1) ?? 0;
   bool _ready = false; // draft/profile loaded → safe to build steps that prefill
 
   bool get _isEditMode => widget.editProfileId != null;
+
+  /// Single-section editing (from My Profile). Implies [_isEditMode].
+  bool get _isSectionMode => _isEditMode && widget.sectionStep != null;
 
   static const int _totalSteps = 10;
 
@@ -99,6 +111,21 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
             ref
                 .read(profileCreationProvider.notifier)
                 .updateData(profile.toWizardData());
+            // Contact lives in the access-gated `contacts/{uid}` record, NOT
+            // on the public profile doc — seed it separately so the Contact
+            // step shows the saved values (and a save can never blank them).
+            try {
+              final contact = await ref
+                  .read(firestoreServiceProvider)
+                  .getContact(profile.userId);
+              if (contact != null) {
+                ref.read(profileCreationProvider.notifier).updateData({
+                  'contactDetails': contact.toMap(),
+                });
+              }
+            } catch (e) {
+              debugPrint('[ProfileCreation] contact prefill skipped: $e');
+            }
           }
         } catch (e) {
           debugPrint('[ProfileCreation] edit prefill failed: $e');
@@ -147,6 +174,12 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   }
 
   void _nextStep() {
+    // Section mode: the one step's Continue saves the profile immediately —
+    // there is no next page.
+    if (_isSectionMode) {
+      _submitProfile();
+      return;
+    }
     _saveDraft();
     if (_currentStep < _totalSteps - 1) {
       setState(() => _currentStep++);
@@ -239,30 +272,53 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   Widget build(BuildContext context) {
     final creationState = ref.watch(profileCreationProvider);
 
+    final steps = <Widget>[
+      StepBasic(onNext: _nextStep),
+      StepLocation(onNext: _nextStep),
+      StepEducation(onNext: _nextStep),
+      StepReligious(onNext: _nextStep),
+      Step3Horoscope(onNext: _nextStep),
+      StepPartnerPreference(onNext: _nextStep),
+      Step6Photos(onNext: _nextStep),
+      StepHoroscopeUpload(onNext: _nextStep),
+      Step7Contact(onNext: _nextStep),
+      StepReview(
+        onSubmit: _nextStep,
+        onEditStep: _goToStep,
+        isEditMode: _isEditMode,
+      ),
+    ];
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditMode
-            ? 'Edit Profile · ${_stepTitles[_currentStep]}'
-            : _stepTitles[_currentStep]),
+        title: Text(_isSectionMode
+            ? 'Edit ${_stepTitles[_currentStep]}'
+            : _isEditMode
+                ? 'Edit Profile · ${_stepTitles[_currentStep]}'
+                : _stepTitles[_currentStep]),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
-        // Back button once past the first step; otherwise Logout (registration)
-        // or Close (edit mode).
-        leading: _currentStep > 0
+        // Section mode: always a Close action. Otherwise: Back once past the
+        // first step, else Logout (registration) or Close (edit mode).
+        leading: _isSectionMode
             ? IconButton(
-                icon: const Icon(Icons.arrow_back), onPressed: _prevStep)
-            : _isEditMode
+                icon: const Icon(Icons.close), onPressed: () => context.pop())
+            : _currentStep > 0
                 ? IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => context.pop())
-                : IconButton(
-                    icon: const Icon(Icons.logout),
-                    tooltip: 'Logout',
-                    onPressed: _confirmLogout,
-                  ),
+                    icon: const Icon(Icons.arrow_back), onPressed: _prevStep)
+                : _isEditMode
+                    ? IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => context.pop())
+                    : IconButton(
+                        icon: const Icon(Icons.logout),
+                        tooltip: 'Logout',
+                        onPressed: _confirmLogout,
+                      ),
         // No "Save & Exit" (removed per spec) — only a Skip action on the
-        // OPTIONAL sections, plus the submit spinner.
+        // OPTIONAL sections, plus the submit spinner. Section mode never
+        // shows Skip (closing already discards).
         actions: [
           if (creationState.isLoading)
             const Padding(
@@ -275,7 +331,7 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
                         strokeWidth: 2, color: Colors.white)),
               ),
             )
-          else if (_skippableSteps.contains(_currentStep))
+          else if (!_isSectionMode && _skippableSteps.contains(_currentStep))
             TextButton(
               onPressed: _nextStep,
               child: const Text('Skip',
@@ -286,63 +342,51 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
       body: !_ready
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary))
-          : Column(
-              children: [
-                // Progress bar
-                Container(
-                  color: AppColors.primary.withOpacity(0.1),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 12),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          : _isSectionMode
+              // Single-section editor: just the one step, no progress chrome.
+              ? steps[_currentStep]
+              : Column(
+                  children: [
+                    // Progress bar
+                    Container(
+                      color: AppColors.primary.withOpacity(0.1),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
+                      child: Column(
                         children: [
-                          Text('Step ${_currentStep + 1} of $_totalSteps',
-                              style: AppTextStyles.bodySmall),
-                          Text(
-                              '${((_currentStep + 1) / _totalSteps * 100).round()}% Complete',
-                              style: AppTextStyles.bodySmall
-                                  .copyWith(color: AppColors.primary)),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Step ${_currentStep + 1} of $_totalSteps',
+                                  style: AppTextStyles.bodySmall),
+                              Text(
+                                  '${((_currentStep + 1) / _totalSteps * 100).round()}% Complete',
+                                  style: AppTextStyles.bodySmall
+                                      .copyWith(color: AppColors.primary)),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          LinearProgressIndicator(
+                            value: (_currentStep + 1) / _totalSteps,
+                            backgroundColor: Colors.grey[200],
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                                AppColors.primary),
+                            minHeight: 6,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      LinearProgressIndicator(
-                        value: (_currentStep + 1) / _totalSteps,
-                        backgroundColor: Colors.grey[200],
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                            AppColors.primary),
-                        minHeight: 6,
-                        borderRadius: BorderRadius.circular(3),
+                    ),
+                    // Steps
+                    Expanded(
+                      child: PageView(
+                        controller: _pageController,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: steps,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                // Steps
-                Expanded(
-                  child: PageView(
-                    controller: _pageController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: [
-                      StepBasic(onNext: _nextStep),
-                      StepLocation(onNext: _nextStep),
-                      StepEducation(onNext: _nextStep),
-                      StepReligious(onNext: _nextStep),
-                      Step3Horoscope(onNext: _nextStep),
-                      StepPartnerPreference(onNext: _nextStep),
-                      Step6Photos(onNext: _nextStep),
-                      StepHoroscopeUpload(onNext: _nextStep),
-                      Step7Contact(onNext: _nextStep),
-                      StepReview(
-                        onSubmit: _nextStep,
-                        onEditStep: _goToStep,
-                        isEditMode: _isEditMode,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
     );
   }
 }

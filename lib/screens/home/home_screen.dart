@@ -42,6 +42,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final selectedIndex = ref.watch(homeTabIndexProvider);
     final unread = ref.watch(unreadNotificationCountProvider) +
         ref.watch(unreadAnnouncementsCountProvider);
+    // Delivery receipts: whenever the (already-watched) threads stream emits a
+    // thread with a newer incoming message, stamp MY deliveredAt so the
+    // sender's tick flips to "Delivered" in near-realtime.
+    ref.listen(myChatThreadsProvider, (_, next) {
+      final threads = next.valueOrNull;
+      if (threads != null && threads.isNotEmpty) {
+        ref.read(chatControllerProvider).markDelivered(threads);
+      }
+    });
     // Admin icon visibility — only true for whitelisted Super Admin accounts.
     final isSuperAdmin =
         ref.watch(currentUserProvider).valueOrNull?.isSuperAdmin ?? false;

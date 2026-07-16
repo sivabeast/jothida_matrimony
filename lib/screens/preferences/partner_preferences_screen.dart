@@ -5,10 +5,11 @@ import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
 import '../../providers/demo_data_provider.dart';
-import '../../providers/master_location_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/common/location_picker_section.dart';
 import '../../widgets/common/religion_caste_fields.dart';
+import '../../widgets/common/searchable_multi_select_field.dart';
 
 /// Partner Preferences — lets the user configure preferred match criteria.
 /// Registered at `/partner-preferences`. Reached from the Home dashboard
@@ -32,9 +33,15 @@ class _PartnerPreferencesScreenState
   RangeValues _age = const RangeValues(18, 40);
   String _minHeight = "5'0\"";
   String _maxHeight = "5'10\"";
-  final TextEditingController _cityCtrl = TextEditingController();
-  String _state = _any;
-  String _country = _any;
+  // Location preference — State → District → City, always chosen from the
+  // master datasets via [LocationPickerSection] (city is never typed).
+  // Tamil Nadu is the default state when nothing is saved yet.
+  static const String _defaultState = 'Tamil Nadu';
+  String? _state = _defaultState;
+  String? _district;
+  String? _city;
+  // Bumped on Reset so the (stateful) location picker rebuilds with defaults.
+  int _locationEpoch = 0;
   final Set<String> _education = {};
   final Set<String> _occupation = {};
   String _income = _any;
@@ -49,27 +56,11 @@ class _PartnerPreferencesScreenState
   String? _casteId;
 
   // Option lists
-  // States come from the bundled JSON master data (no hardcoded list). The
-  // "Any" filter option is prepended; the current value is kept selectable even
-  // while the data is still loading.
-  List<String> get _stateOpts {
-    final states = ref.watch(statesProvider).valueOrNull ?? const [];
-    final opts = [_any, ...states.map((s) => s.name)];
-    if (_state != _any && !opts.contains(_state)) opts.add(_state);
-    return opts;
-  }
-  List<String> get _countryOpts => [_any, ...AppConstants.countryList];
   List<String> get _incomeOpts => [_any, ...AppConstants.incomeList];
   List<String> get _maritalOpts => [_any, ...AppConstants.maritalStatusList];
   List<String> get _rasiOpts => [_any, ...AppConstants.rasiEnList];
   List<String> get _nakshatraOpts => [_any, ...AppConstants.nakshatraList];
   List<String> get _languageOpts => [_any, ...AppConstants.motherTongueList];
-
-  @override
-  void dispose() {
-    _cityCtrl.dispose();
-    super.dispose();
-  }
 
   void _populate(PartnerPreferences p) {
     var lo = p.minAge.clamp(18, 60).toDouble();
@@ -84,9 +75,9 @@ class _PartnerPreferencesScreenState
         AppConstants.heightList.contains(p.minHeight) ? p.minHeight : "5'0\"";
     _maxHeight =
         AppConstants.heightList.contains(p.maxHeight) ? p.maxHeight : "5'10\"";
-    _cityCtrl.text = p.city ?? '';
-    _state = _safe(p.state, _stateOpts);
-    _country = _safe(p.country, _countryOpts);
+    _state = (p.state ?? '').trim().isNotEmpty ? p.state : _defaultState;
+    _district = (p.district ?? '').trim().isNotEmpty ? p.district : null;
+    _city = (p.city ?? '').trim().isNotEmpty ? p.city : null;
     _education
       ..clear()
       ..addAll(p.education);
@@ -120,9 +111,9 @@ class _PartnerPreferencesScreenState
         religionId: _religionId,
         caste: _caste == _any ? null : _caste,
         casteId: _casteId,
-        city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
-        state: _state == _any ? null : _state,
-        country: _country == _any ? null : _country,
+        city: (_city ?? '').trim().isEmpty ? null : _city!.trim(),
+        state: (_state ?? '').trim().isEmpty ? null : _state!.trim(),
+        district: (_district ?? '').trim().isEmpty ? null : _district!.trim(),
         rasi: _rasi == _any ? null : _rasi,
         nakshatra: _nakshatra == _any ? null : _nakshatra,
         maritalStatus: _maritalStatus,
@@ -163,6 +154,7 @@ class _PartnerPreferencesScreenState
     setState(() {
       _populate(const PartnerPreferences());
       _loaded = true;
+      _locationEpoch++; // recreate the location picker with the defaults
     });
     _toast('Preferences reset to defaults');
   }
@@ -178,10 +170,12 @@ class _PartnerPreferencesScreenState
   Widget build(BuildContext context) {
     debugPrint('[PartnerPreferencesScreen] build — route /partner-preferences opened');
     final profileAsync = ref.watch(myProfileProvider);
-    // Prefill once from the saved profile preferences.
+    // Prefill once from the saved profile preferences. The body is held back
+    // until then so [LocationPickerSection] (stateful) seeds with the SAVED
+    // state/district/city instead of the defaults.
     profileAsync.whenData((p) {
-      if (!_loaded && p != null) {
-        _populate(p.partnerPreferences);
+      if (!_loaded) {
+        _populate(p?.partnerPreferences ?? const PartnerPreferences());
         _loaded = true;
       }
     });
@@ -193,7 +187,15 @@ class _PartnerPreferencesScreenState
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
-      body: ListView(
+      body: !_loaded
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary))
+          : _body(context),
+    );
+  }
+
+  Widget _body(BuildContext context) {
+    return ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
           _card(
@@ -236,32 +238,51 @@ class _PartnerPreferencesScreenState
           _card(
             icon: Icons.location_on_outlined,
             title: 'Location Preference',
-            child: Column(
-              children: [
-                TextField(
-                  controller: _cityCtrl,
-                  decoration: _inputDecoration('City'),
-                ),
-                const SizedBox(height: 12),
-                _dropdown('State', _state, _stateOpts,
-                    (v) => setState(() => _state = v!)),
-                const SizedBox(height: 12),
-                _dropdown('Country', _country, _countryOpts,
-                    (v) => setState(() => _country = v!)),
-              ],
+            subtitle: 'State → District → City, from the master data',
+            child: LocationPickerSection(
+              key: ValueKey('pref-location-$_locationEpoch'),
+              // Tamil Nadu is pre-selected for a fresh preference; a saved
+              // selection is restored as-is. City is never typed by hand.
+              initialState: _state,
+              initialDistrict: _district,
+              initialCity: _city,
+              isRequired: false,
+              onChanged: (loc) => setState(() {
+                _state = loc.state.isEmpty ? null : loc.state;
+                _district = loc.district.isEmpty ? null : loc.district;
+                _city = loc.city.isEmpty ? null : loc.city;
+              }),
             ),
           ),
           _card(
             icon: Icons.school_outlined,
             title: 'Education Preference',
-            subtitle: 'Select preferred qualifications',
-            child: _chips(AppConstants.educationList, _education),
+            subtitle: 'Search and select any number of qualifications',
+            child: SearchableMultiSelectField(
+              label: 'Education',
+              items: AppConstants.educationList,
+              selected: _education.toList(),
+              onChanged: (v) => setState(() {
+                _education
+                  ..clear()
+                  ..addAll(v);
+              }),
+            ),
           ),
           _card(
             icon: Icons.work_outline,
             title: 'Profession Preference',
-            subtitle: 'Select preferred professions',
-            child: _chips(AppConstants.occupationList, _occupation),
+            subtitle: 'Search and select any number of professions',
+            child: SearchableMultiSelectField(
+              label: 'Profession',
+              items: AppConstants.occupationList,
+              selected: _occupation.toList(),
+              onChanged: (v) => setState(() {
+                _occupation
+                  ..clear()
+                  ..addAll(v);
+              }),
+            ),
           ),
           _card(
             icon: Icons.currency_rupee,
@@ -369,9 +390,7 @@ class _PartnerPreferencesScreenState
               ),
             ),
           ),
-        ],
-      ),
-    );
+        ]);
   }
 
   // ── UI helpers ─────────────────────────────────────────────────────────────
@@ -456,35 +475,4 @@ class _PartnerPreferencesScreenState
     );
   }
 
-  Widget _chips(List<String> options, Set<String> selected) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 4,
-      children: options.map((o) {
-        final on = selected.contains(o);
-        return FilterChip(
-          label: Text(o),
-          selected: on,
-          showCheckmark: true,
-          checkmarkColor: AppColors.primary,
-          selectedColor: AppColors.primary.withOpacity(0.12),
-          backgroundColor: Colors.grey[100],
-          side: BorderSide(
-              color: on ? AppColors.primary : Colors.grey[300]!),
-          labelStyle: TextStyle(
-            fontSize: 12.5,
-            color: on ? AppColors.primary : Colors.black87,
-            fontWeight: on ? FontWeight.w600 : FontWeight.normal,
-          ),
-          onSelected: (v) => setState(() {
-            if (v) {
-              selected.add(o);
-            } else {
-              selected.remove(o);
-            }
-          }),
-        );
-      }).toList(),
-    );
-  }
 }

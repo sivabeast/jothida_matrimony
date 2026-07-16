@@ -978,9 +978,6 @@ class AppLocalizationsTa extends AppLocalizations {
   String get noNewProfilesYet => 'புதிய Profiles இன்னும் இல்லை.';
 
   @override
-  String get recommendedForYou => 'உங்களுக்கான பரிந்துரைகள்';
-
-  @override
   String get nakshatraMatch => 'நட்சத்திரப் பொருத்தம்';
 
   @override

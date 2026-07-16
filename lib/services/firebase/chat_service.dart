@@ -115,13 +115,16 @@ class ChatService {
       .snapshots()
       .map((d) => d.exists ? ChatThread.fromFirestore(d) : null);
 
+  /// Messages newest-first. `includeMetadataChanges` so an optimistic local
+  /// write emits immediately with `hasPendingWrites` (→ "Sending…") and again
+  /// once the server acknowledges it (→ "Sent").
   Stream<List<ChatMessage>> watchMessages(String threadId, {int limit = 100}) =>
       _chats
           .doc(threadId)
           .collection(AppConstants.messagesSubcollection)
           .orderBy('sentAt', descending: true)
           .limit(limit)
-          .snapshots()
+          .snapshots(includeMetadataChanges: true)
           .map((s) => s.docs.map(ChatMessage.fromFirestore).toList());
 
   /// Sends a message into [threadId]. A plain text message passes just [text];
@@ -166,6 +169,21 @@ class ChatService {
     });
   }
 
+  /// Clears [uid]'s unread count AND stamps their read receipt — a message of
+  /// the other participant is "Seen" once `readAt.$uid` is at/after its sentAt.
   Future<void> markThreadRead(String threadId, String uid) =>
-      _chats.doc(threadId).update({'unread.$uid': 0});
+      _chats.doc(threadId).update({
+        'unread.$uid': 0,
+        'readAt.$uid': FieldValue.serverTimestamp(),
+        // Anything read has necessarily been delivered.
+        'deliveredAt.$uid': FieldValue.serverTimestamp(),
+      });
+
+  /// Stamps [uid]'s delivery receipt — called from the RECIPIENT's device the
+  /// moment its thread stream sees a newer incoming message, so the sender's
+  /// tick flips to "Delivered" without the chat being opened.
+  Future<void> markThreadDelivered(String threadId, String uid) =>
+      _chats.doc(threadId).update({
+        'deliveredAt.$uid': FieldValue.serverTimestamp(),
+      });
 }

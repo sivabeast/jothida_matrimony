@@ -940,6 +940,7 @@ class PartnerPreferences {
   // Extended preference fields (Partner Preferences screen).
   final String maritalStatus; // 'Any' or a specific status
   final String? state;
+  final String? district;
   final String? country;
   final String motherTongue; // language preference; 'Any' or a language
   final bool horoscopeMatchRequired;
@@ -969,6 +970,7 @@ class PartnerPreferences {
     this.nakshatra,
     this.maritalStatus = 'Any',
     this.state,
+    this.district,
     this.country,
     this.motherTongue = 'Any',
     this.horoscopeMatchRequired = true,
@@ -998,6 +1000,7 @@ class PartnerPreferences {
         nakshatra: map['nakshatra'],
         maritalStatus: map['maritalStatus'] ?? 'Any',
         state: map['state'],
+        district: map['district'],
         country: map['country'],
         motherTongue: map['motherTongue'] ?? 'Any',
         horoscopeMatchRequired: map['horoscopeMatchRequired'] ?? true,
@@ -1027,6 +1030,7 @@ class PartnerPreferences {
         'nakshatra': nakshatra,
         'maritalStatus': maritalStatus,
         'state': state,
+        'district': district,
         'country': country,
         'motherTongue': motherTongue,
         'horoscopeMatchRequired': horoscopeMatchRequired,
@@ -1056,6 +1060,7 @@ class PartnerPreferences {
     String? nakshatra,
     String? maritalStatus,
     String? state,
+    String? district,
     String? country,
     String? motherTongue,
     bool? horoscopeMatchRequired,
@@ -1084,6 +1089,7 @@ class PartnerPreferences {
         nakshatra: nakshatra ?? this.nakshatra,
         maritalStatus: maritalStatus ?? this.maritalStatus,
         state: state ?? this.state,
+        district: district ?? this.district,
         country: country ?? this.country,
         motherTongue: motherTongue ?? this.motherTongue,
         horoscopeMatchRequired:

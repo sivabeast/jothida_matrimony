@@ -2009,12 +2009,6 @@ abstract class AppLocalizations {
   /// **'No new profiles yet.'**
   String get noNewProfilesYet;
 
-  /// No description provided for @recommendedForYou.
-  ///
-  /// In en, this message translates to:
-  /// **'Recommended for You'**
-  String get recommendedForYou;
-
   /// No description provided for @nakshatraMatch.
   ///
   /// In en, this message translates to:

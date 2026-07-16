@@ -318,6 +318,28 @@ class ChatController {
     if (myUid == null || kBypassAuth) return;
     await _ref.read(chatServiceProvider).markThreadRead(threadId, myUid);
   }
+
+  /// Stamps MY delivery receipt on every thread that carries an incoming
+  /// message newer than my last stamp. Called wherever the threads stream is
+  /// already being watched (Home header badge, Chats list), so the sender's
+  /// "Delivered" tick updates in near-realtime while my app is open.
+  /// Best-effort and write-bounded: threads already stamped are skipped.
+  Future<void> markDelivered(List<ChatThread> threads) async {
+    final myUid = _ref.read(myUidProvider);
+    if (myUid == null || kBypassAuth) return;
+    for (final t in threads) {
+      final last = t.lastMessageAt;
+      if (last == null) continue;
+      if (t.lastSenderId.isEmpty || t.lastSenderId == myUid) continue;
+      final mine = t.deliveredAt[myUid];
+      if (mine != null && !mine.isBefore(last)) continue; // already stamped
+      try {
+        await _ref.read(chatServiceProvider).markThreadDelivered(t.id, myUid);
+      } catch (_) {
+        // Receipts are cosmetic — never let them surface an error.
+      }
+    }
+  }
 }
 
 final chatControllerProvider = Provider<ChatController>(ChatController.new);

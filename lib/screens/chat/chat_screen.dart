@@ -29,6 +29,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _controller = TextEditingController();
   bool _sending = false;
 
+  /// The newest incoming message already marked read — so messages arriving
+  /// WHILE the chat is open are marked read exactly once each (the badge
+  /// clears instantly, and the sender's tick flips to "Seen").
+  String? _lastReadMsgId;
+
   @override
   void initState() {
     super.initState();
@@ -230,6 +235,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final threadAsync = ref.watch(chatThreadProvider(widget.threadId));
     final messagesAsync = ref.watch(chatMessagesProvider(widget.threadId));
 
+    // A message arriving WHILE this chat is open is marked read immediately
+    // (once per message) — the unread badge everywhere clears in realtime and
+    // the sender sees "Seen" without waiting for the chat to be reopened.
+    ref.listen(chatMessagesProvider(widget.threadId), (_, next) {
+      final msgs = next.valueOrNull;
+      if (msgs == null || msgs.isEmpty) return;
+      final newest = msgs.first;
+      if (newest.senderId != myUid && newest.id != _lastReadMsgId) {
+        _lastReadMsgId = newest.id;
+        ref.read(chatControllerProvider).markRead(widget.threadId);
+      }
+    });
+
     final thread = threadAsync.valueOrNull;
     final name =
         thread?.otherName(myUid) ?? widget.extra?['name'] as String? ?? 'Chat';
@@ -302,6 +320,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   itemCount: messages.length,
                   itemBuilder: (_, i) {
                     final msg = messages[i];
+                    final isMine = msg.senderId == myUid;
                     // Messages are newest-first; the next index is the
                     // chronologically OLDER message. A date separator is shown
                     // above the oldest message of each day (WhatsApp-style §14).
@@ -309,10 +328,36 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         i + 1 < messages.length ? messages[i + 1] : null;
                     final showHeader = older == null ||
                         !_sameDay(older.sentAt, msg.sentAt);
+                    // "Seen just now / 5 minutes ago / yesterday" — only under
+                    // the NEWEST of my messages, and only once actually seen.
+                    final otherReadAt = thread == null
+                        ? null
+                        : thread.readAt[thread.otherId(myUid)];
+                    final showSeenAgo = isMine &&
+                        i == 0 &&
+                        otherReadAt != null &&
+                        !otherReadAt.isBefore(msg.sentAt);
                     return Column(
                       children: [
                         if (showHeader) _DateSeparator(date: msg.sentAt),
-                        _Bubble(message: msg, isMine: msg.senderId == myUid),
+                        _Bubble(
+                          message: msg,
+                          isMine: isMine,
+                          thread: thread,
+                          myUid: myUid,
+                        ),
+                        if (showSeenAgo)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 2, right: 4),
+                              child: Text(
+                                seenAgoLabel(otherReadAt),
+                                style: TextStyle(
+                                    fontSize: 10.5, color: Colors.grey[500]),
+                              ),
+                            ),
+                          ),
                       ],
                     );
                   },
@@ -402,6 +447,30 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 bool _sameDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
 
+/// "Seen just now" / "Seen 5 minutes ago" / "Seen 3 hours ago" /
+/// "Seen yesterday" / "Seen on 12 Jun" — for the receipt label under the
+/// newest own message.
+String seenAgoLabel(DateTime seenAt) {
+  final now = DateTime.now();
+  final diff = now.difference(seenAt);
+  if (diff.inMinutes < 1) return 'Seen just now';
+  if (diff.inHours < 1) {
+    final m = diff.inMinutes;
+    return 'Seen $m minute${m == 1 ? '' : 's'} ago';
+  }
+  final today = DateTime(now.year, now.month, now.day);
+  final day = DateTime(seenAt.year, seenAt.month, seenAt.day);
+  if (day == today) {
+    final h = diff.inHours;
+    return 'Seen $h hour${h == 1 ? '' : 's'} ago';
+  }
+  if (today.difference(day).inDays == 1) return 'Seen yesterday';
+  return 'Seen on ${DateFormat('d MMM').format(seenAt)}';
+}
+
+/// Delivery state of an outgoing message (WhatsApp-style receipts).
+enum _Receipt { sending, sent, delivered, seen }
+
 /// A centered "Today / Yesterday / 12 Jun 2026" pill between message groups.
 class _DateSeparator extends StatelessWidget {
   final DateTime date;
@@ -442,7 +511,45 @@ class _DateSeparator extends StatelessWidget {
 class _Bubble extends StatelessWidget {
   final ChatMessage message;
   final bool isMine;
-  const _Bubble({required this.message, required this.isMine});
+  final ChatThread? thread;
+  final String myUid;
+  const _Bubble({
+    required this.message,
+    required this.isMine,
+    this.thread,
+    this.myUid = '',
+  });
+
+  /// Receipt for MY messages, from the OTHER participant's thread stamps:
+  /// pending write → Sending; their readAt covers sentAt → Seen; their
+  /// deliveredAt covers sentAt → Delivered; otherwise → Sent.
+  _Receipt get _receipt {
+    if (message.isPending) return _Receipt.sending;
+    final t = thread;
+    if (t == null) return _Receipt.sent;
+    final other = t.otherId(myUid);
+    final readAt = t.readAt[other];
+    if (readAt != null && !readAt.isBefore(message.sentAt)) {
+      return _Receipt.seen;
+    }
+    final deliveredAt = t.deliveredAt[other];
+    if (deliveredAt != null && !deliveredAt.isBefore(message.sentAt)) {
+      return _Receipt.delivered;
+    }
+    return _Receipt.sent;
+  }
+
+  /// The tick / clock beside the time on MY bubbles. Seen = blue double tick.
+  Widget _receiptIcon(bool onDark) {
+    final base = onDark ? Colors.white70 : Colors.grey[500];
+    return switch (_receipt) {
+      _Receipt.sending => Icon(Icons.access_time, size: 12, color: base),
+      _Receipt.sent => Icon(Icons.check, size: 13, color: base),
+      _Receipt.delivered => Icon(Icons.done_all, size: 13, color: base),
+      _Receipt.seen => const Icon(Icons.done_all,
+          size: 13, color: Color(0xFF6BC5F8)), // light blue — Seen
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -480,14 +587,27 @@ class _Bubble extends StatelessWidget {
               padding: isImage
                   ? const EdgeInsets.only(right: 6, bottom: 2)
                   : EdgeInsets.zero,
-              child: Text(
-                // 12-hour AM/PM time for every message (spec §14).
-                DateFormat('h:mm a').format(message.sentAt),
-                style: TextStyle(
-                    fontSize: 10,
-                    color: isMine && !isImage
-                        ? Colors.white70
-                        : Colors.grey[500]),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    // 12-hour AM/PM time for every message (spec §14). A
+                    // pending write shows "Sending…" instead of a fake time.
+                    message.isPending
+                        ? 'Sending…'
+                        : DateFormat('h:mm a').format(message.sentAt),
+                    style: TextStyle(
+                        fontSize: 10,
+                        color: isMine && !isImage
+                            ? Colors.white70
+                            : Colors.grey[500]),
+                  ),
+                  // Receipt tick — my messages only (Sent → Delivered → Seen).
+                  if (isMine) ...[
+                    const SizedBox(width: 4),
+                    _receiptIcon(!isImage),
+                  ],
+                ],
               ),
             ),
           ],

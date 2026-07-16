@@ -13,8 +13,8 @@ import 'app_logo.dart';
 ///
 /// A single, categorised menu — grouped under PROFILE · MATCHES · ASTROLOGY ·
 /// MEMBERSHIP · SETTINGS, with Logout at the very bottom (it lives ONLY here).
-/// There is intentionally no "My Profile" / "Edit Profile" item — profile
-/// management is reached through the PROFILE group's dedicated pages.
+/// "My Profile" opens the sectioned profile page where every category has its
+/// own Edit action (the full-wizard "Edit Profile" entry was replaced by it).
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
 
@@ -41,14 +41,12 @@ class AppDrawer extends ConsumerWidget {
               children: [
                 // ── 👤 PROFILE ───────────────────────────────────────────────
                 _section('👤  PROFILE'),
-                // Edit Profile — the full wizard over the EXISTING profile,
-                // mirroring the website's 10-step creation flow, so every
-                // section (Basic, Location, Career, Community, Horoscope,
-                // Preferences, Photos, Upload, Contact) is editable after
-                // creation. There are no separate per-section editors.
-                if (profile != null)
-                  _item(context, Icons.edit_outlined, 'Edit Profile',
-                      () => context.push('/profile/${profile.id}/edit')),
+                // My Profile — the complete profile organised into the same
+                // categories as profile creation (Basic, Location, Career,
+                // Community, Horoscope, Preferences, Photos, Upload, Contact),
+                // each with its OWN Edit action that opens only that section.
+                _item(context, Icons.person_outline, 'My Profile',
+                    () => context.push('/my-profile')),
                 _item(context, Icons.auto_awesome_outlined, 'Horoscope Details',
                     () => context.push('/horoscope')),
                 _item(context, Icons.tune, 'Partner Preferences',

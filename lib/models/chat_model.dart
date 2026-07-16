@@ -17,6 +17,14 @@ class ChatThread {
   final DateTime? lastMessageAt;
   final Map<String, int> unread;
 
+  /// Read receipts (WhatsApp-style): when each participant's device last
+  /// RECEIVED the thread ([deliveredAt]) and when they last OPENED it
+  /// ([readAt]). A message of mine is Delivered/Seen when the OTHER
+  /// participant's timestamp is at/after its sentAt. Absent for legacy
+  /// threads (messages simply show as Sent until the maps appear).
+  final Map<String, DateTime> deliveredAt;
+  final Map<String, DateTime> readAt;
+
   const ChatThread({
     required this.id,
     required this.participantIds,
@@ -26,6 +34,8 @@ class ChatThread {
     this.lastSenderId = '',
     this.lastMessageAt,
     this.unread = const {},
+    this.deliveredAt = const {},
+    this.readAt = const {},
   });
 
   /// Deterministic thread id for a pair of uids.
@@ -43,6 +53,16 @@ class ChatThread {
 
   int unreadFor(String myUid) => unread[myUid] ?? 0;
 
+  /// Parses a `{uid: Timestamp}` receipt map, tolerating absent/odd values.
+  static Map<String, DateTime> _timesFrom(dynamic raw) {
+    if (raw is! Map) return const {};
+    final out = <String, DateTime>{};
+    raw.forEach((k, v) {
+      if (v is Timestamp) out['$k'] = v.toDate();
+    });
+    return out;
+  }
+
   factory ChatThread.fromFirestore(DocumentSnapshot doc) {
     final d = doc.data() as Map<String, dynamic>;
     return ChatThread(
@@ -58,6 +78,8 @@ class ChatThread {
           ? (d['lastMessageAt'] as Timestamp).toDate()
           : null,
       unread: Map<String, int>.from(d['unread'] ?? const {}),
+      deliveredAt: _timesFrom(d['deliveredAt']),
+      readAt: _timesFrom(d['readAt']),
     );
   }
 
@@ -70,6 +92,9 @@ class ChatThread {
         'lastMessageAt':
             lastMessageAt != null ? Timestamp.fromDate(lastMessageAt!) : null,
         'unread': unread,
+        'deliveredAt': deliveredAt
+            .map((k, v) => MapEntry(k, Timestamp.fromDate(v))),
+        'readAt': readAt.map((k, v) => MapEntry(k, Timestamp.fromDate(v))),
       };
 }
 
@@ -121,6 +146,11 @@ class ChatMessage {
   final String fileName;
   final String fileType;
 
+  /// True while the write hasn't been acknowledged by the server yet
+  /// (`snapshot.metadata.hasPendingWrites`) — renders as "Sending…". Local
+  /// only, never persisted.
+  final bool isPending;
+
   const ChatMessage({
     required this.id,
     required this.senderId,
@@ -130,6 +160,7 @@ class ChatMessage {
     this.attachmentUrl = '',
     this.fileName = '',
     this.fileType = '',
+    this.isPending = false,
   });
 
   bool get isAttachment => type != ChatMessageType.text;
@@ -148,6 +179,7 @@ class ChatMessage {
       attachmentUrl: d['attachmentUrl'] ?? '',
       fileName: d['fileName'] ?? '',
       fileType: d['fileType'] ?? '',
+      isPending: doc.metadata.hasPendingWrites,
     );
   }
 

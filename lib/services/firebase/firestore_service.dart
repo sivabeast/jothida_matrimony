@@ -1342,12 +1342,26 @@ class FirestoreService {
 
   // ── Marriage ───────────────────────────────────────────────────────────────
   /// Marks a profile as married → leaves active matchmaking (isActive false)
-  /// while keeping the record and existing chats intact.
-  Future<void> markProfileMarried(String profileId) =>
+  /// while keeping the record and existing chats intact. [via] records how the
+  /// partner was found ('app' | 'other') from the confirmation flow.
+  Future<void> markProfileMarried(String profileId, {String? via}) =>
       _db.collection(AppConstants.profilesCollection).doc(profileId).update({
         'isMarried': true,
         'isActive': false,
+        if (via != null && via.isNotEmpty) 'marriedVia': via,
         'marriedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+  /// UNDO for [markProfileMarried]: returns the profile to matchmaking (an
+  /// accidental confirmation, or the plans changed). Clears the married
+  /// stamps so the profile is exactly as before.
+  Future<void> unmarkProfileMarried(String profileId) =>
+      _db.collection(AppConstants.profilesCollection).doc(profileId).update({
+        'isMarried': false,
+        'isActive': true,
+        'marriedVia': FieldValue.delete(),
+        'marriedAt': FieldValue.delete(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
 

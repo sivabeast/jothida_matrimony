@@ -28,7 +28,9 @@ class AccountController extends Notifier<AsyncValue<void>> {
   @override
   AsyncValue<void> build() => const AsyncData(null);
 
-  Future<void> markMarried(ProfileModel profile) async {
+  /// Marks the profile married (leaves matchmaking). [via] records how the
+  /// partner was found ('app' | 'other') from the confirmation flow.
+  Future<void> markMarried(ProfileModel profile, {String? via}) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       if (kBypassAuth) {
@@ -36,7 +38,28 @@ class AccountController extends Notifier<AsyncValue<void>> {
             .read(demoProfilesProvider.notifier)
             .upsert(profile.copyWith(isMarried: true, isActive: false));
       } else {
-        await ref.read(firestoreServiceProvider).markProfileMarried(profile.id);
+        await ref
+            .read(firestoreServiceProvider)
+            .markProfileMarried(profile.id, via: via);
+        ref.invalidate(myProfileProvider);
+      }
+    });
+  }
+
+  /// UNDO for [markMarried]: returns the profile to normal matchmaking — for
+  /// an accidental confirmation or changed marriage plans. Fully reversible
+  /// by the user at any time.
+  Future<void> unmarkMarried(ProfileModel profile) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      if (kBypassAuth) {
+        ref
+            .read(demoProfilesProvider.notifier)
+            .upsert(profile.copyWith(isMarried: false, isActive: true));
+      } else {
+        await ref
+            .read(firestoreServiceProvider)
+            .unmarkProfileMarried(profile.id);
         ref.invalidate(myProfileProvider);
       }
     });

@@ -978,9 +978,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noNewProfilesYet => 'No new profiles yet.';
 
   @override
-  String get recommendedForYou => 'Recommended for You';
-
-  @override
   String get nakshatraMatch => 'Nakshatra Match';
 
   @override

@@ -93,7 +93,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     // Home is ONLY for discovering newly-joined members (spec). The full
     // matching directory lives on the Matches tab.
     final newProfilesAsync = ref.watch(newProfilesProvider);
-    final recommendedAsync = ref.watch(homeRecommendedProvider);
     final myProfile = ref.watch(myProfileProvider).valueOrNull;
 
     // Automatic "Married" status: once the wedding date passes, the couple
@@ -109,10 +108,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
 
     return RefreshIndicator(
       color: AppColors.primary,
-      onRefresh: () async {
-        ref.invalidate(newProfilesProvider);
-        ref.invalidate(homeRecommendedProvider);
-      },
+      onRefresh: () async => ref.invalidate(newProfilesProvider),
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -138,9 +134,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           // ── New Profiles (newly joined members) ───────────────────────────
           _buildNewProfiles(context, newProfilesAsync),
           const SizedBox(height: 22),
-
-          // ── Recommended for You (all profiles, preference-prioritised) ────
-          _buildRecommended(context, recommendedAsync),
 
           // ── Recent Interests ──────────────────────────────────────────────
           _buildRecentInterests(context),
@@ -711,23 +704,25 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     // (The old "Upgrade To Premium" card was removed — the app has NO
     // subscription system; every matrimony feature is free.)
 
-    // 🎉 Married status — preserves the "mark as married" action in a compact
-    // card consistent with the rest of the flow.
+    // 🎉 Married status — the "found your life partner" flow. Fully
+    // user-manageable: confirming asks the source + a final confirmation, and
+    // the married state can always be UNDONE (tap the card) to return the
+    // profile to normal matchmaking.
     if (profile != null) {
       cards.add(profile.isMarried
           ? _notifCard(
               emoji: '🎉',
               title: 'Married',
-              subtitle: 'Your profile has left the matchmaking pool',
+              subtitle: 'Profile left matchmaking · Tap to undo',
               accent: AppColors.success,
-              onTap: () {},
+              onTap: () => _confirmUndoMarried(context, profile),
             )
           : _notifCard(
               emoji: '💍',
               title: 'Found Your Life Partner?',
               subtitle: 'Mark your profile as married',
               accent: AppColors.success,
-              onTap: () => _confirmMarried(context, profile),
+              onTap: () => _startMarriedFlow(context, profile),
             ));
     }
 
@@ -803,13 +798,73 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     );
   }
 
-  Future<void> _confirmMarried(
+  /// STAGE 1 of the "Found Your Life Partner" flow: ask HOW the partner was
+  /// found (through this app / another source) with a Skip escape, then hand
+  /// the answer to the final confirmation. Nothing is saved until the user
+  /// explicitly confirms in stage 2.
+  Future<void> _startMarriedFlow(
       BuildContext context, ProfileModel profile) async {
+    final via = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('💍 Found your life partner?',
+                  style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Poppins')),
+              const SizedBox(height: 6),
+              Text('Congratulations! Tell us how you found them.',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+              const SizedBox(height: 16),
+              _marriedSourceTile(
+                ctx,
+                emoji: '❤️',
+                title: 'Yes — through this app',
+                subtitle: 'We matched on Jothida Matrimony',
+                value: 'app',
+              ),
+              const SizedBox(height: 10),
+              _marriedSourceTile(
+                ctx,
+                emoji: '🌸',
+                title: 'Yes — through another source',
+                subtitle: 'Found outside the app',
+                value: 'other',
+              ),
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Skip — not yet',
+                      style: TextStyle(color: Colors.grey)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (via == null || !context.mounted) return; // skipped
+
+    // STAGE 2 — final confirmation before anything is saved.
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Congratulations! 🎉'),
-        content: const Text('Would you like to mark your profile as Married?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Confirm — Mark as Married?'),
+        content: const Text(
+            'Your profile will be marked as Married and will leave the '
+            'matchmaking pool (it will no longer appear in Matches).\n\n'
+            'You can undo this anytime from the Home page if plans change.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -819,19 +874,113 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Mark as Married'),
+            child: const Text('Confirm'),
           ),
         ],
       ),
     );
-    if (confirmed != true) return;
+    if (confirmed != true || !context.mounted) return;
+
     final messenger = ScaffoldMessenger.of(context);
-    await ref.read(accountControllerProvider.notifier).markMarried(profile);
+    await ref
+        .read(accountControllerProvider.notifier)
+        .markMarried(profile, via: via);
+    ref.invalidate(newProfilesProvider);
+    if (!mounted) return;
+    messenger.showSnackBar(SnackBar(
+      duration: const Duration(seconds: 6),
+      content: const Text(
+          '🎉 Congratulations! Your profile is now marked as Married.'),
+      // One-tap UNDO right from the confirmation — accidental confirms are
+      // reversed instantly (the card's "Tap to undo" stays available after).
+      action: SnackBarAction(
+        label: 'UNDO',
+        onPressed: () async {
+          await ref
+              .read(accountControllerProvider.notifier)
+              .unmarkMarried(profile);
+          ref.invalidate(newProfilesProvider);
+        },
+      ),
+    ));
+  }
+
+  /// A tappable option row in the married-source sheet.
+  Widget _marriedSourceTile(
+    BuildContext sheetCtx, {
+    required String emoji,
+    required String title,
+    required String subtitle,
+    required String value,
+  }) {
+    return InkWell(
+      onTap: () => Navigator.pop(sheetCtx, value),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.primary.withOpacity(0.25)),
+        ),
+        child: Row(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 14)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style:
+                          TextStyle(color: Colors.grey[600], fontSize: 12)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.primary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// UNDO — returns a married profile to normal matchmaking (accidental
+  /// confirmation or changed plans). Confirmed with its own dialog.
+  Future<void> _confirmUndoMarried(
+      BuildContext context, ProfileModel profile) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Undo married status?'),
+        content: const Text(
+            'Your profile will return to normal and appear in matchmaking '
+            'again, exactly as before.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep as Married')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Undo'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    await ref.read(accountControllerProvider.notifier).unmarkMarried(profile);
     ref.invalidate(newProfilesProvider);
     if (!mounted) return;
     messenger.showSnackBar(const SnackBar(
-        content:
-            Text('🎉 Congratulations! Your profile is now marked as Married.')));
+        content: Text('Your profile is back in matchmaking.')));
   }
 
   // ── New Profiles (newly joined members) ─────────────────────────────────────
@@ -858,24 +1007,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         return _horizontalMatchSection(
             context, '🆕', context.l10n.newProfiles, profiles);
       },
-    );
-  }
-
-  // ── Recommended for You (all profiles, preference-prioritised) ──────────────
-
-  /// Shows every eligible profile ranked by relevance (see
-  /// [homeRecommendedProvider]) — never restricted to "matches". Rendered only
-  /// when non-empty so the Home page never shows an extra empty box.
-  Widget _buildRecommended(
-      BuildContext context, AsyncValue<List<ProfileModel>> async) {
-    final profiles = async.valueOrNull ?? const [];
-    if (profiles.isEmpty) return const SizedBox.shrink();
-    return Column(
-      children: [
-        _horizontalMatchSection(
-            context, '💫', context.l10n.recommendedForYou, profiles),
-        const SizedBox(height: 22),
-      ],
     );
   }
 

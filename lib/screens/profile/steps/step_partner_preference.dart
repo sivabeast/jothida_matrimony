@@ -7,6 +7,7 @@ import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
 import '../../../widgets/common/searchable_field.dart';
+import '../../../widgets/common/searchable_multi_select_field.dart';
 
 /// Partner Preference step. Every field is OPTIONAL. The field set mirrors the
 /// website's "Partner Preferences" step exactly: age & height range, preferred
@@ -27,8 +28,8 @@ class _StepPartnerPreferenceState
   RangeValues _age = const RangeValues(21, 35);
   String? _minHeight;
   String? _maxHeight;
-  String? _education;
-  String? _occupation;
+  List<String> _education = [];
+  List<String> _occupation = [];
   String? _religion;
   String? _caste;
   String? _income;
@@ -50,9 +51,9 @@ class _StepPartnerPreferenceState
       _minHeight = pref['minHeight'] as String?;
       _maxHeight = pref['maxHeight'] as String?;
       final edu = pref['education'];
-      if (edu is List && edu.isNotEmpty) _education = edu.first.toString();
+      if (edu is List) _education = edu.map((e) => e.toString()).toList();
       final occ = pref['occupation'];
-      if (occ is List && occ.isNotEmpty) _occupation = occ.first.toString();
+      if (occ is List) _occupation = occ.map((e) => e.toString()).toList();
       _religion = pref['religion'] as String?;
       _caste = pref['caste'] as String?;
       _income = pref['income'] as String?;
@@ -74,10 +75,6 @@ class _StepPartnerPreferenceState
   /// 'Any' / null / empty → 'Any' (no preference).
   String _orAny(String? v) => (v == null || v.isEmpty) ? 'Any' : v;
 
-  /// A single selection → a 1-element list, or [] for "Any"/unset.
-  List<String> _asList(String? v) =>
-      (v == null || v.isEmpty || v == 'Any') ? const [] : [v];
-
   void _saveAndNext() {
     ref.read(profileCreationProvider.notifier).updateData({
       'partnerPreferences': {
@@ -85,8 +82,8 @@ class _StepPartnerPreferenceState
         'maxAge': _age.end.round(),
         'minHeight': _minHeight ?? "5'0\"",
         'maxHeight': _maxHeight ?? "6'0\"",
-        'education': _asList(_education),
-        'occupation': _asList(_occupation),
+        'education': _education,
+        'occupation': _occupation,
         'religion': _orAny(_religion),
         'caste': _orAny(_caste),
         'subCaste': _subCaste.text.trim(),
@@ -151,10 +148,24 @@ class _StepPartnerPreferenceState
               _chevvai, (v) => _chevvai = v),
 
           _sectionTitle('Education & Income Preference'),
-          _pref('Education', AppConstants.educations, _education,
-              (v) => _education = v),
-          _pref('Occupation', AppConstants.occupations, _occupation,
-              (v) => _occupation = v),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: SearchableMultiSelectField(
+              label: 'Education',
+              items: AppConstants.educations,
+              selected: _education,
+              onChanged: (v) => setState(() => _education = v),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: SearchableMultiSelectField(
+              label: 'Occupation',
+              items: AppConstants.occupations,
+              selected: _occupation,
+              onChanged: (v) => setState(() => _occupation = v),
+            ),
+          ),
           _pref('Annual Income', AppConstants.incomeRanges, _income,
               (v) => _income = v),
 
