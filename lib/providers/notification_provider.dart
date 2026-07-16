@@ -25,6 +25,9 @@ enum AppNotificationEvent {
   reportReady,
   appointmentConfirmed,
   adminProfileUpdate,
+  /// A horoscope-analysis request was auto-assigned to an EMPLOYEE — sent to
+  /// the employee's account so they see the new work immediately.
+  reportAssigned,
 }
 
 class NotificationNotifier extends Notifier<void> {
@@ -90,6 +93,7 @@ class NotificationNotifier extends Notifier<void> {
         AppNotificationEvent.reportReady => 'porutham_ready',
         AppNotificationEvent.appointmentConfirmed => 'appointment',
         AppNotificationEvent.adminProfileUpdate => 'admin_update',
+        AppNotificationEvent.reportAssigned => 'report_assigned',
       };
 
   static ({String title, String body}) _template(
@@ -174,6 +178,18 @@ class NotificationNotifier extends Notifier<void> {
                 title: 'Profile Updated by Admin',
                 body: 'Your profile was updated by the admin. '
                     'Please review the changes.'
+              );
+      case AppNotificationEvent.reportAssigned:
+        return ta
+            ? (
+                title: 'புதிய Horoscope Report 📋',
+                body: 'உங்களுக்கு ஒரு புதிய ஜாதக பொருத்த அறிக்கை '
+                    'ஒதுக்கப்பட்டுள்ளது. Dashboard-இல் பார்க்கவும்.'
+              )
+            : (
+                title: 'New Horoscope Report Assigned 📋',
+                body: 'A new horoscope analysis report has been assigned to '
+                    'you. Open your dashboard to start working on it.'
               );
     }
   }

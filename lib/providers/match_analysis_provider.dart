@@ -138,6 +138,53 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
   @override
   AsyncValue<void> build() => const AsyncData(null);
 
+  /// Runs the smart auto-assignment for [requestId] with ONE retry on a
+  /// transient failure, then notifies the assigned employee's account
+  /// (best-effort, when their uid is linked). Failures are logged LOUDLY —
+  /// never swallowed silently — but never thrown: an already-paid booking
+  /// must never fail because of an assignment hiccup (the admin's manual
+  /// assignment and the Reports-tab self-heal both cover it).
+  /// Returns true when the request ended up assigned.
+  Future<bool> _tryAssign(String requestId, {bool resetStatus = true}) async {
+    for (var attempt = 1; attempt <= 2; attempt++) {
+      try {
+        final chosen = await ref
+            .read(astrologyTeamServiceProvider)
+            .assignRequest(requestId, resetStatus: resetStatus);
+        if (chosen == null) {
+          debugPrint('[MatchAnalysis] assign($requestId): no active+available '
+              'employee — left unassigned for the admin.');
+          return false;
+        }
+        debugPrint(
+            '[MatchAnalysis] assign($requestId) → ${chosen.email} (ok).');
+        // In-app notification to the employee so the new report shows up on
+        // their account immediately (best-effort).
+        if (chosen.uid.isNotEmpty) {
+          await ref.read(notificationNotifierProvider.notifier).notify(
+                toUid: chosen.uid,
+                event: AppNotificationEvent.reportAssigned,
+                route: '/astrologer-dashboard',
+              );
+        }
+        return true;
+      } catch (e, st) {
+        debugPrint('[MatchAnalysis] assign($requestId) attempt $attempt '
+            'FAILED: $e\n$st');
+        if (attempt == 1) {
+          await Future<void>.delayed(const Duration(seconds: 1));
+        }
+      }
+    }
+    return false;
+  }
+
+  /// Self-healing hook (used by the Reports tab): re-runs the auto-assignment
+  /// for a request that is still without an assignee. Safe to call repeatedly —
+  /// [AstrologyTeamService.assignRequest] is idempotent (its transaction skips
+  /// a request that already has an astrologerEmail).
+  Future<void> retryAssignment(String requestId) => _tryAssign(requestId);
+
   /// Pays online FIRST, then creates the match-analysis booking (spec §3/§4:
   /// online payment is mandatory and the booking reaches the astrologer only
   /// after successful payment). The booking is created already `paid` and
@@ -305,13 +352,11 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
       } else {
         // Create the paid request, then immediately auto-assign it to the
         // employee with the fewest pending reports — no admin action needed.
+        // _tryAssign logs failures, retries once and notifies the employee;
+        // an unassigned request stays visible to the admin and self-heals
+        // from the user's Reports tab.
         id = await ref.read(astrologerServiceProvider).createRequest(request);
-        try {
-          await ref.read(astrologyTeamServiceProvider).assignRequest(id);
-        } catch (e) {
-          // If no employee is available the request stays unassigned; the admin
-          // can assign it later. Never fail the (already-paid) booking for this.
-        }
+        await _tryAssign(id);
       }
       state = const AsyncData(null);
       return id;
@@ -524,15 +569,9 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
             capacity: config.capacityForSession(session));
         // Auto-assign the confirmed appointment to the employee with the
         // fewest open requests — that employee contacts the user personally
-        // with the exact timing (no fixed time slots). Best-effort: an
-        // unassigned booking stays visible to the admin either way.
-        try {
-          await ref
-              .read(astrologyTeamServiceProvider)
-              .assignRequest(id, resetStatus: false);
-        } catch (e) {
-          debugPrint('[MatchAnalysis] appointment auto-assign failed: $e');
-        }
+        // with the exact timing (no fixed time slots). Best-effort (logged +
+        // retried): an unassigned booking stays visible to the admin either way.
+        await _tryAssign(id, resetStatus: false);
       }
       // In-app "Appointment Confirmed" notification (best-effort).
       if (uid.isNotEmpty) {

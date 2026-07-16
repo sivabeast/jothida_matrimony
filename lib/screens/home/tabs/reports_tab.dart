@@ -7,6 +7,11 @@ import '../../../models/astrologer_request_model.dart';
 import '../../../providers/match_analysis_provider.dart';
 import '../../../providers/profile_provider.dart';
 
+/// Requests the self-heal has already retried this app session, so a stuck
+/// request is re-assigned at most once per launch (assignRequest itself is
+/// also idempotent).
+final Set<String> _assignRetryAttempted = <String>{};
+
 /// Reports tab (bottom-nav item 4) — every Horoscope Compatibility Report the
 /// user has requested, split into two tabs:
 ///   • Under Analysis — requests still being prepared (not completed).
@@ -19,6 +24,23 @@ class ReportsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(myMatchAnalysisRequestsProvider);
     final all = async.valueOrNull ?? const <AstrologerRequestModel>[];
+
+    // Self-healing assignment: a horoscope request stuck with NO assignee
+    // (its booking-time auto-assignment failed) is re-assigned the moment the
+    // user opens Reports. Internal office appointments (astrologerId set) are
+    // never touched, and each request is retried at most once per session.
+    ref.listen(myMatchAnalysisRequestsProvider, (_, next) {
+      final list = next.valueOrNull;
+      if (list == null) return;
+      for (final r in list) {
+        if (r.status == AstrologerRequestStatus.completed) continue;
+        if (r.astrologerEmail.isNotEmpty || r.astrologerId.isNotEmpty) continue;
+        if (!_assignRetryAttempted.add(r.id)) continue;
+        ref
+            .read(matchAnalysisControllerProvider.notifier)
+            .retryAssignment(r.id);
+      }
+    });
     final myName = ref.watch(myProfileProvider).valueOrNull?.fullName ?? '';
 
     final sorted = [...all]

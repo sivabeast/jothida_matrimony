@@ -157,7 +157,10 @@ service cloud.firestore {
                   || isAdmin()
                   || (isAuthenticated()
                       && exists(/databases/$(database)/documents/connections/$(pairId(ownerId, request.auth.uid))));
-      allow create, update: if isOwner(ownerId);
+      // Admins may edit a member's contact details too — the Admin panel's
+      // "Edit User Profile" saves contact fields here; without this the save
+      // fails with permission-denied after the profile update succeeded.
+      allow create, update: if isOwner(ownerId) || isAdmin();
       allow delete: if isOwner(ownerId) || isAdmin();
     }
 

@@ -12,11 +12,22 @@ final allAstrologerTeamProvider =
   return ref.read(astrologyTeamServiceProvider).watchAll();
 });
 
+/// The signed-in account's email — taken from the AUTH TOKEN first (always
+/// present for Google sign-in, and exactly what the security rules compare
+/// against), with the `users/{uid}` document as the fallback. Using the token
+/// removes a whole failure mode: the employee portal no longer hangs when the
+/// users-doc read is slow or fails.
+final myAuthEmailProvider = Provider.autoDispose<String?>((ref) {
+  final tokenEmail = ref.watch(firebaseAuthStreamProvider).valueOrNull?.email;
+  if (tokenEmail != null && tokenEmail.trim().isNotEmpty) return tokenEmail;
+  return ref.watch(currentUserProvider).valueOrNull?.email;
+});
+
 /// The signed-in astrologer's own registry entry (live), looked up by email so
 /// an admin enable/disable reflects immediately. Null for non-astrologers.
 final myAstrologerTeamMemberProvider =
     StreamProvider.autoDispose<AstrologerTeamMember?>((ref) {
-  final email = ref.watch(currentUserProvider).valueOrNull?.email;
+  final email = ref.watch(myAuthEmailProvider);
   if (email == null || email.trim().isEmpty) {
     return Stream.value(null);
   }
@@ -30,7 +41,7 @@ final myAstrologerTeamMemberProvider =
 /// they were assigned before this astrologer's first sign-in.
 final myAssignedRequestsProvider =
     StreamProvider.autoDispose<List<AstrologerRequestModel>>((ref) {
-  final rawEmail = ref.watch(currentUserProvider).valueOrNull?.email;
+  final rawEmail = ref.watch(myAuthEmailProvider);
   if (rawEmail == null || rawEmail.trim().isEmpty) return Stream.value(const []);
   // Match the LOWERCASED email that assignment stores, so the query never
   // misses on a case difference between the token email and the registry key.
