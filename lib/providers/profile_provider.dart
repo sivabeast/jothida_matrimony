@@ -626,28 +626,17 @@ bool _casteMatches(ProfileModel candidate, PartnerPreferences pp) {
   return a == b || a.contains(b) || b.contains(a);
 }
 
-/// The ONE hard partner-preference gate (per spec): **caste**.
-///
-/// When the user has selected a caste preference, only profiles of that
-/// caste/community may appear anywhere profiles are listed (Matches feed,
-/// Home New Profiles). 'Any' / unset caste applies no filtering at all.
-/// Every other preference (age, education, income, location, …) only
-/// PRIORITIZES the order — it never hides a profile.
-bool casteGate(ProfileModel candidate, ProfileModel? me) {
-  if (me == null) return true; // can't evaluate before my profile loads
-  final pp = me.partnerPreferences;
-  if (!_ppSet(pp.caste)) return true; // 'Any' / empty → no caste constraint
-  return _casteMatches(candidate, pp);
-}
-
 /// Relevance highlight for a browse card. Deliberately NOT a score, percentage
 /// or grade — just a simple flag driving the ⭐ badge:
 ///   • [nakshatra] — the candidate's star is compatible with the user's
 ///     ([isNakshatraCompatible]) → "⭐ Nakshatra Match";
 ///   • [matching]  — the user has set meaningful partner preferences and the
-///     candidate satisfies the hard age + caste gate
-///     ([mandatoryPreferenceMatch]) → "⭐ Matching Profile";
+///     candidate satisfies EVERY set preference
+///     ([PartnerPrefScore.isExact]) → "⭐ Best Match";
 ///   • [none]      — neither, so the card shows no badge.
+///
+/// Per the matching spec, NO preference ever hides a profile — every available
+/// profile stays visible and the badge only highlights the best matches.
 enum ProfileHighlight { nakshatra, matching, none }
 
 /// Computes the [ProfileHighlight] for [candidate] against the signed-in user
@@ -657,7 +646,7 @@ ProfileHighlight profileHighlight(ProfileModel? me, ProfileModel candidate) {
   if (me == null) return ProfileHighlight.none;
   if (isNakshatraCompatible(me, candidate)) return ProfileHighlight.nakshatra;
   if (partnerPreferencesComplete(me) &&
-      mandatoryPreferenceMatch(candidate, me)) {
+      partnerPreferenceScore(candidate, me).isExact) {
     return ProfileHighlight.matching;
   }
   return ProfileHighlight.none;
@@ -699,8 +688,8 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
   String _gender = '';
   MatchFilters _filters = const MatchFilters();
 
-  /// The raw fetched (gender-eligible) pool, cached so switching the match
-  /// mode (Compatible ⇄ All) re-filters INSTANTLY without refetching.
+  /// The raw fetched (gender-eligible) pool, cached so changing the
+  /// filter-sheet choices re-filters INSTANTLY without refetching.
   final List<ProfileModel> _pool = [];
 
   /// When an active filter makes a single fetched page sparse, keep fetching up
@@ -735,12 +724,11 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
 
   /// Visibility gate for the Matches feed.
   ///
-  /// CASTE is the single hard filter (highest priority, per spec): when the
-  /// user set a caste preference, only matching-caste profiles appear; 'Any'
-  /// applies no filtering. Every OTHER preference (age, education, income, …)
-  /// and nakshatra compatibility only prioritise the order in [_rank] — they
-  /// never remove a profile from browsing.
-  bool _passesMode(ProfileModel p, ProfileModel? me) => casteGate(p, me);
+  /// Per the matching spec, EVERY available profile is visible — partner
+  /// preferences (caste, age, education, income, …) and nakshatra
+  /// compatibility only prioritise the order in [_rank] and drive the
+  /// "Best Match" badge; they never remove a profile from browsing.
+  bool _passesMode(ProfileModel p, ProfileModel? me) => true;
 
   /// How close [p] is to [me] geographically: 3 same city · 2 same district ·
   /// 1 same state · 0 elsewhere/unknown. Ranking signal only.
@@ -759,8 +747,8 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
 
   /// Builds the feed from a fetched [pool]:
   ///   • Data-integrity + the user's explicit filter-sheet choices decide who
-  ///     is ELIGIBLE at all; the match-mode gate ([_passesMode]) is applied on
-  ///     top (Compatible only — All Matches never hides an eligible profile).
+  ///     is ELIGIBLE at all — partner preferences NEVER hide a profile (they
+  ///     only rank the order and drive the "Best Match" badge).
   ///   • The result is sorted by the spec's priority ladder:
   ///       1. Horoscope (nakshatra) compatibility
   ///       2. Partner-preference match (mandatory age+caste, then the ratio)
@@ -896,13 +884,13 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
               gender: _gender, limit: _kDiscoverPageSize, startAfter: _lastDoc);
       _lastDoc = page.lastDoc;
 
-      // Cache the raw page too, so a later Compatible ⇄ All switch re-filters
-      // over everything fetched so far.
+      // Cache the raw page too, so a later filter change re-filters over
+      // everything fetched so far.
       final pooled = _pool.map((p) => p.id).toSet();
       _pool.addAll(page.profiles.where((p) => !pooled.contains(p.id)));
 
       // Append, de-duplicating by id so a re-fetched boundary doc can't double.
-      // The same match-mode gate used by [_rank] applies, so newly paged-in
+      // The same eligibility rules used by [_rank] apply, so newly paged-in
       // profiles always match what's already on screen.
       final existing = state.profiles.map((p) => p.id).toSet();
       final added = page.profiles
@@ -930,16 +918,13 @@ final discoverProvider =
 /// **New Profiles** for the Home page — the LATEST registered opposite-gender
 /// profiles, newest first, capped to 10.
 ///
-/// CASTE is the one hard gate (same rule as the Matches feed, per spec): with
-/// a caste preference set, only matching-caste profiles appear; 'Any' shows the
-/// newest 10 without filtering. No other preference or nakshatra gating —
-/// besides basic eligibility (never self / married / inactive / rejected /
-/// blocked), the list simply surfaces the newest members as people register.
+/// No preference gating (same rule as the Matches feed, per spec) — besides
+/// basic eligibility (never self / married / inactive / rejected / blocked),
+/// the list simply surfaces the newest members as people register.
 final newProfilesProvider =
     FutureProvider.autoDispose<List<ProfileModel>>((ref) async {
   final gender = ref.watch(matchGenderProvider);
   final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
-  final me = ref.watch(myProfileProvider).valueOrNull;
 
   final List<ProfileModel> pool;
   if (kBypassAuth) {
@@ -956,7 +941,7 @@ final newProfilesProvider =
     if (p.isMarried) return false;
     if (!p.isActive) return false;
     if (p.status == 'rejected' || p.status == 'blocked') return false;
-    return casteGate(p, me);
+    return true;
   }).toList()
     // Newest joiners first.
     ..sort((a, b) => b.createdAt.compareTo(a.createdAt));

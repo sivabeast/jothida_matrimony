@@ -1928,7 +1928,7 @@ abstract class AppLocalizations {
   /// No description provided for @noMatchingProfilesBody.
   ///
   /// In en, this message translates to:
-  /// **'Suitable profiles for you are not available yet. New members are continuously joining. Matching profiles based on your partner preferences and horoscope compatibility will appear here soon.'**
+  /// **'No profiles are available right now. New members are continuously joining — every available profile will appear here, and the ones that satisfy your partner preferences are highlighted with a Best Match badge.'**
   String get noMatchingProfilesBody;
 
   /// No description provided for @couldNotLoadMatches.
@@ -2018,7 +2018,7 @@ abstract class AppLocalizations {
   /// No description provided for @matchingProfile.
   ///
   /// In en, this message translates to:
-  /// **'Matching Profile'**
+  /// **'Best Match'**
   String get matchingProfile;
 
   /// No description provided for @comingSoonBody.

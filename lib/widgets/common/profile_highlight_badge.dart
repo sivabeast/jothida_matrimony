@@ -11,8 +11,8 @@ import '../../providers/profile_provider.dart';
 ///
 /// It shows ONE of two labels and NEVER a score, percentage or grade:
 ///   • "⭐ Nakshatra Match" — the profile's star is compatible with the user's;
-///   • "⭐ Matching Profile" — the profile satisfies the user's partner
-///     preferences (age + caste priorities).
+///   • "⭐ Best Match" — the profile satisfies every partner preference the
+///     user has set.
 ///
 /// Renders nothing ([SizedBox.shrink]) when the profile is neither, or while the
 /// signed-in user's own profile is still loading, so callers can drop it

@@ -46,8 +46,8 @@ class _NotificationsTabState extends ConsumerState<NotificationsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final announcements =
-        ref.watch(announcementsProvider).valueOrNull ?? const <AnnouncementModel>[];
+    // USER-audience announcements only — employee broadcasts never appear here.
+    final announcements = ref.watch(userAnnouncementsProvider);
     final notifsAsync = ref.watch(notificationsProvider);
     final notifs = notifsAsync.valueOrNull ?? const <NotificationModel>[];
 

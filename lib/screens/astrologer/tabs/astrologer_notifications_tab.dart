@@ -26,8 +26,8 @@ class _AstrologerNotificationsTabState
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(notificationsProvider);
-    final announcements = ref.watch(announcementsProvider).valueOrNull ??
-        const <AnnouncementModel>[];
+    // EMPLOYEE-audience announcements only — user broadcasts never appear here.
+    final announcements = ref.watch(employeeAnnouncementsProvider);
     final notifs = async.valueOrNull ?? const <NotificationModel>[];
 
     if (async.isLoading && announcements.isEmpty && notifs.isEmpty) {

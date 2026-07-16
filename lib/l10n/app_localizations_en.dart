@@ -930,7 +930,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noMatchingProfilesTitle => 'No Matching Profiles Yet';
 
   @override
-  String get noMatchingProfilesBody => 'Suitable profiles for you are not available yet. New members are continuously joining. Matching profiles based on your partner preferences and horoscope compatibility will appear here soon.';
+  String get noMatchingProfilesBody => 'No profiles are available right now. New members are continuously joining — every available profile will appear here, and the ones that satisfy your partner preferences are highlighted with a Best Match badge.';
 
   @override
   String get couldNotLoadMatches => 'Could not load matches';
@@ -981,7 +981,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nakshatraMatch => 'Nakshatra Match';
 
   @override
-  String get matchingProfile => 'Matching Profile';
+  String get matchingProfile => 'Best Match';
 
   @override
   String get comingSoonBody => 'This feature is not available yet. We are working on it and it will be unlocked in an upcoming update. Stay tuned!';

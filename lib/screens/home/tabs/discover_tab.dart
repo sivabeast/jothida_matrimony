@@ -23,11 +23,9 @@ import '../../../widgets/common/profile_highlight_badge.dart';
 ///
 /// A COMPACT single-line card sits above the feed: the user's Nakshatra, a
 /// "View Matching Stars" action (bottom sheet listing the nakshatras
-/// compatible with theirs) and the Filter menu with exactly two modes:
-///   • Compatible Matches (DEFAULT) — partner preferences (age + caste
-///     mandatory) AND nakshatra compatibility;
-///   • All Matches — partner preferences only (compatibility not required).
-/// Switching the mode re-filters the already-fetched pool instantly.
+/// compatible with theirs) and the Filter menu. EVERY available profile is
+/// visible (per spec, partner preferences never hide anyone) — preference and
+/// nakshatra matches are ranked first and highlighted with a badge.
 ///
 /// Browsing progress is remembered PER USER: profiles already viewed sort to
 /// the end of the feed, so the next session resumes from the first unseen

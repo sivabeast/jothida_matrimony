@@ -32,7 +32,14 @@ class AstrologerStats {
   final int completed;
   final int todayAssigned;
   final int todayCompleted;
+
+  /// Assigned today and still not completed.
+  final int todayPending;
+  final int monthAssigned;
   final int monthCompleted;
+
+  /// Assigned this calendar month and still not completed.
+  final int monthPending;
 
   final WeeklyStat thisWeek;
   final WeeklyStat lastWeek;
@@ -58,13 +65,20 @@ class AstrologerStats {
     this.completed = 0,
     this.todayAssigned = 0,
     this.todayCompleted = 0,
+    this.todayPending = 0,
+    this.monthAssigned = 0,
     this.monthCompleted = 0,
+    this.monthPending = 0,
     this.thisWeek = const WeeklyStat(),
     this.lastWeek = const WeeklyStat(),
     this.revenue = 0,
     this.commissionPerReport = 0,
     this.cycleCompleted = 0,
   });
+
+  /// All-time completion rate as a whole-number percentage.
+  int get completionRate =>
+      totalAssigned == 0 ? 0 : ((completed / totalAssigned) * 100).round();
 
   /// Commission earned this calendar week = completed-this-week × rate.
   int get weeklyCommission => thisWeek.completed * commissionPerReport;
@@ -138,12 +152,23 @@ AstrologerStats computeAstrologerStats(
       if (cycleStart == null || c.isAfter(cycleStart)) cycleCompleted++;
     }
   }
-  final todayAssigned = mine
-      .where((r) => r.assignedAt != null && sameDay(r.assignedAt!, now))
-      .length;
-
   bool notCompleted(AstrologerRequestModel r) =>
       r.status != AstrologerRequestStatus.completed;
+
+  final assignedToday = mine
+      .where((r) => r.assignedAt != null && sameDay(r.assignedAt!, now))
+      .toList();
+  final todayAssigned = assignedToday.length;
+  final todayPending = assignedToday.where(notCompleted).length;
+
+  final assignedThisMonth = mine
+      .where((r) =>
+          r.assignedAt != null &&
+          r.assignedAt!.year == now.year &&
+          r.assignedAt!.month == now.month)
+      .toList();
+  final monthAssigned = assignedThisMonth.length;
+  final monthPending = assignedThisMonth.where(notCompleted).length;
 
   WeeklyStat weekly(DateTime start, DateTime end) {
     final assigned = mine
@@ -171,7 +196,10 @@ AstrologerStats computeAstrologerStats(
     completed: completedList.length,
     todayAssigned: todayAssigned,
     todayCompleted: todayCompleted,
+    todayPending: todayPending,
+    monthAssigned: monthAssigned,
     monthCompleted: monthCompleted,
+    monthPending: monthPending,
     thisWeek: weekly(thisWeekStart, now.add(const Duration(days: 1))),
     lastWeek: weekly(lastWeekStart, thisWeekStart),
     revenue: revenue,

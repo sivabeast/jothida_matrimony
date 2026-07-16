@@ -3,10 +3,28 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/announcement_model.dart';
 import 'service_providers.dart';
 
-/// Live, active announcements (newest first) — shown to every user & astrologer.
+/// Live, active announcements of EVERY audience (newest first). Prefer the
+/// audience-scoped [userAnnouncementsProvider] / [employeeAnnouncementsProvider]
+/// — User and Employee notifications are completely separate systems.
 final announcementsProvider =
     StreamProvider.autoDispose<List<AnnouncementModel>>((ref) {
   return ref.watch(firestoreServiceProvider).watchAnnouncements();
+});
+
+/// Active announcements broadcast to USERS — the only ones the user app shows.
+final userAnnouncementsProvider =
+    Provider.autoDispose<List<AnnouncementModel>>((ref) {
+  final all =
+      ref.watch(announcementsProvider).valueOrNull ?? const <AnnouncementModel>[];
+  return [for (final a in all) if (a.isForUsers) a];
+});
+
+/// Active announcements broadcast to EMPLOYEES — Employee Portal only.
+final employeeAnnouncementsProvider =
+    Provider.autoDispose<List<AnnouncementModel>>((ref) {
+  final all =
+      ref.watch(announcementsProvider).valueOrNull ?? const <AnnouncementModel>[];
+  return [for (final a in all) if (a.isForEmployees) a];
 });
 
 /// All announcements (any status) for the admin management screen.
@@ -23,6 +41,7 @@ class AnnouncementController extends Notifier<AsyncValue<void>> {
   Future<void> create({
     required String title,
     required String message,
+    String audience = 'users',
     String type = 'general',
     String actionUrl = '',
     String actionLabel = '',
@@ -32,9 +51,25 @@ class AnnouncementController extends Notifier<AsyncValue<void>> {
         ref.read(firestoreServiceProvider).createAnnouncement(
             title: title,
             message: message,
+            audience: audience,
             type: type,
             actionUrl: actionUrl,
             actionLabel: actionLabel));
+  }
+
+  /// Direct per-account notification to the SELECTED [uids] (users or
+  /// employees) — stored in the per-user `notifications` collection, so only
+  /// those accounts ever see it.
+  Future<void> sendToSelected({
+    required List<String> uids,
+    required String title,
+    required String body,
+    required String type,
+  }) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() =>
+        ref.read(firestoreServiceProvider).createNotificationsBatch(
+            uids: uids, title: title, body: body, type: type));
   }
 
   Future<void> update(
@@ -150,11 +185,19 @@ bool isAnnouncementUnread(
   return a.createdAt.millisecondsSinceEpoch > legacyLastSeenMs;
 }
 
-/// Number of unopened announcements — drives the bell badges.
+/// Number of unopened USER announcements — drives the user app's bell badges.
 final unreadAnnouncementsCountProvider = Provider.autoDispose<int>((ref) {
   final lastSeen = ref.watch(announcementsLastSeenProvider);
   final readIds = ref.watch(announcementsReadProvider);
-  final list =
-      ref.watch(announcementsProvider).valueOrNull ?? const <AnnouncementModel>[];
+  final list = ref.watch(userAnnouncementsProvider);
+  return list.where((a) => isAnnouncementUnread(a, readIds, lastSeen)).length;
+});
+
+/// Number of unopened EMPLOYEE announcements — drives the Employee Portal bell.
+final unreadEmployeeAnnouncementsCountProvider =
+    Provider.autoDispose<int>((ref) {
+  final lastSeen = ref.watch(announcementsLastSeenProvider);
+  final readIds = ref.watch(announcementsReadProvider);
+  final list = ref.watch(employeeAnnouncementsProvider);
   return list.where((a) => isAnnouncementUnread(a, readIds, lastSeen)).length;
 });

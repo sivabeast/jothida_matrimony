@@ -41,6 +41,8 @@ class _StepBasicState extends ConsumerState<StepBasic> {
   String? _maritalStatus;
   String? _physicalStatus;
   String? _childrenLivingStatus;
+  String? _familyType;
+  String? _familyStatus;
 
   bool get _showChildren =>
       _maritalStatus != null &&
@@ -67,6 +69,15 @@ class _StepBasicState extends ConsumerState<StepBasic> {
     _childrenLivingStatus = data['childrenLivingStatus'] as String?;
     final count = data['childrenCount'];
     if (count is int && count > 0) _childrenController.text = '$count';
+    // Family Type / Family Status live inside the familyDetails map (kept in
+    // sync with the Edit Profile → Family section).
+    final fam = data['familyDetails'];
+    if (fam is Map) {
+      final t = (fam['familyType'] as String?)?.trim() ?? '';
+      final s = (fam['familyStatus'] as String?)?.trim() ?? '';
+      if (t.isNotEmpty) _familyType = t;
+      if (s.isNotEmpty) _familyStatus = s;
+    }
   }
 
   @override
@@ -126,8 +137,24 @@ class _StepBasicState extends ConsumerState<StepBasic> {
         (_childrenLivingStatus == null || _childrenLivingStatus!.isEmpty)) {
       return _snack('Please select the children living status');
     }
+    if (_familyType == null || _familyType!.isEmpty) {
+      return _snack('Please select your family type');
+    }
+    if (_familyStatus == null || _familyStatus!.isEmpty) {
+      return _snack('Please select your family status');
+    }
+
+    // Merge into the existing familyDetails map so an edit never wipes the
+    // other family fields (father/mother details, siblings…).
+    final existingFam = ref.read(profileCreationProvider).data['familyDetails'];
+    final fam = existingFam is Map
+        ? Map<String, dynamic>.from(existingFam)
+        : <String, dynamic>{};
+    fam['familyType'] = _familyType;
+    fam['familyStatus'] = _familyStatus;
 
     ref.read(profileCreationProvider.notifier).updateData({
+      'familyDetails': fam,
       'profileFor': _profileFor,
       'name': _nameController.text.trim(),
       'gender': _gender,
@@ -255,6 +282,24 @@ class _StepBasicState extends ConsumerState<StepBasic> {
               selectedItem: _physicalStatus,
               prefixIcon: Icons.accessibility_new,
               onChanged: (v) => setState(() => _physicalStatus = v),
+            ),
+            const SizedBox(height: 16),
+            SearchableField(
+              label: 'Family Type',
+              isRequired: true,
+              items: AppConstants.familyTypeList,
+              selectedItem: _familyType,
+              prefixIcon: Icons.family_restroom,
+              onChanged: (v) => setState(() => _familyType = v),
+            ),
+            const SizedBox(height: 16),
+            SearchableField(
+              label: 'Family Status',
+              isRequired: true,
+              items: AppConstants.familyStatusList,
+              selectedItem: _familyStatus,
+              prefixIcon: Icons.diamond_outlined,
+              onChanged: (v) => setState(() => _familyStatus = v),
             ),
             if (_showChildren) ...[
               const SizedBox(height: 16),

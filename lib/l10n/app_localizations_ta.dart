@@ -930,7 +930,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get noMatchingProfilesTitle => 'உங்களுக்கான பொருத்தமான Profiles இன்னும் கிடைக்கவில்லை';
 
   @override
-  String get noMatchingProfilesBody => 'உங்களுக்கான பொருத்தமான Profiles இன்னும் கிடைக்கவில்லை. புதிய உறுப்பினர்கள் தொடர்ந்து இணைந்து கொண்டிருக்கிறார்கள். விரைவில் உங்களுக்கு பொருத்தமான Matches இங்கு தோன்றும்.';
+  String get noMatchingProfilesBody => 'தற்போது Profiles எதுவும் கிடைக்கவில்லை. புதிய உறுப்பினர்கள் தொடர்ந்து இணைந்து கொண்டிருக்கிறார்கள் — கிடைக்கும் அனைத்து Profiles-ும் இங்கு தோன்றும்; உங்கள் வாழ்க்கைத்துணை விருப்பங்களுக்கு பொருந்துபவை சிறந்த பொருத்தம் அடையாளத்துடன் காட்டப்படும்.';
 
   @override
   String get couldNotLoadMatches => 'Matches-ஐ ஏற்ற முடியவில்லை';
@@ -981,7 +981,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get nakshatraMatch => 'நட்சத்திரப் பொருத்தம்';
 
   @override
-  String get matchingProfile => 'பொருந்தும் சுயவிவரம்';
+  String get matchingProfile => 'சிறந்த பொருத்தம்';
 
   @override
   String get comingSoonBody => 'இந்த வசதி இன்னும் கிடைக்கவில்லை. நாங்கள் இதில் பணியாற்றி வருகிறோம்; விரைவில் வரவிருக்கும் புதுப்பிப்பில் திறக்கப்படும். காத்திருங்கள்!';

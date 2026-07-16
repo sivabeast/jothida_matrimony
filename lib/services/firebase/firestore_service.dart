@@ -658,6 +658,7 @@ class FirestoreService {
   Future<void> createAnnouncement({
     required String title,
     required String message,
+    String audience = 'users',
     String type = 'general',
     String actionUrl = '',
     String actionLabel = '',
@@ -667,6 +668,7 @@ class FirestoreService {
         'message': message,
         'createdBy': 'admin',
         'isActive': true,
+        'audience': audience,
         'type': type,
         'actionUrl': actionUrl,
         'actionLabel': actionLabel,
@@ -691,6 +693,32 @@ class FirestoreService {
         'actionLabel': actionLabel,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+  /// Sends one per-user notification to EVERY uid in [uids] in a single batch —
+  /// the admin "Send to Selected Users / Employees" flow.
+  Future<void> createNotificationsBatch({
+    required List<String> uids,
+    required String title,
+    required String body,
+    required String type,
+    Map<String, dynamic>? data,
+  }) async {
+    final batch = _db.batch();
+    for (final uid in uids) {
+      if (uid.trim().isEmpty) continue;
+      batch.set(
+          _db.collection(AppConstants.notificationsCollection).doc(), {
+        'userId': uid,
+        'title': title,
+        'body': body,
+        'type': type,
+        if (data != null) 'data': data,
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
+  }
 
   Future<void> deleteAnnouncement(String id) => _db
       .collection(AppConstants.announcementsCollection)

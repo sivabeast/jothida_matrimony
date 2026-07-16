@@ -1400,8 +1400,8 @@ class AdminSettingsScreen extends StatelessWidget {
         ),
         _ActionTile(
           icon: Icons.notifications_outlined,
-          title: 'Notification Settings',
-          subtitle: 'Announcements & push notifications',
+          title: 'Notification Management',
+          subtitle: 'User & Employee notifications — send to all or selected',
           onTap: () => context.go('/admin/notifications'),
         ),
         _ActionTile(

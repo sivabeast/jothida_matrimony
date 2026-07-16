@@ -18,6 +18,7 @@ import '../screens/astrologer/match_workspace_screen.dart';
 // through the SAME common login as everyone else — there is no separate
 // employee/astrologer login).
 import '../screens/astrologer/portal/astrologer_shell.dart';
+import '../screens/astrologer/portal/astrologer_notifications_page.dart';
 import '../screens/astrologer/portal/astrologer_request_detail_page.dart';
 import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -163,6 +164,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // out of the whole matrimony experience for strict isolation.
       if (user != null && user.isAstrologer) {
         final allowed = loc == '/astrologer-dashboard' ||
+            loc == '/astrologer-notifications' ||
             loc.startsWith('/astrologer-request');
         if (!allowed) {
           debugPrint('[Router] employee account → /astrologer-dashboard');
@@ -173,6 +175,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // The Employee Portal routes are off-limits to everyone else.
       final onAstrologerPortal = loc == '/astrologer-dashboard' ||
+          loc == '/astrologer-notifications' ||
           loc.startsWith('/astrologer-request');
       if (onAstrologerPortal && !(user?.isAstrologer ?? false)) {
         debugPrint('[Router] ⛔ non-employee blocked from "$loc" → /home');
@@ -255,6 +258,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/astrologer-dashboard',
           builder: (_, __) => const AstrologerShell()),
+      GoRoute(
+          path: '/astrologer-notifications',
+          builder: (_, __) => const AstrologerNotificationsPage()),
       GoRoute(
         path: '/astrologer-request/:id',
         builder: (_, state) => AstrologerRequestDetailPage(
