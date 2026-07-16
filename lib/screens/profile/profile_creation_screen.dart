@@ -83,37 +83,43 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   /// the EXISTING profile (flattened via toWizardData) so every step shows
   /// the current values and saving updates in place.
   Future<void> _prepareThenReady() async {
-    // Always start from a clean slate — a previous edit/creation session must
-    // never leak values into this one.
-    ref.read(profileCreationProvider.notifier).reset();
-    if (_isEditMode) {
-      try {
-        final profile = await ref
-            .read(profileRepositoryProvider)
-            .getProfile(widget.editProfileId!);
-        if (profile != null) {
-          ref
-              .read(profileCreationProvider.notifier)
-              .updateData(profile.toWizardData());
-        }
-      } catch (e) {
-        debugPrint('[ProfileCreation] edit prefill failed: $e');
-      }
-    } else {
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final raw = prefs.getString(_draftKey);
-        if (raw != null) {
-          final map = jsonDecode(raw) as Map<String, dynamic>;
-          if (map.isNotEmpty) {
-            ref.read(profileCreationProvider.notifier).updateData(map);
+    // The loading indicator (`_ready == false`) MUST always be dismissed once
+    // initialization finishes — every path clears it in `finally`, so the
+    // wizard can never get stuck in an infinite loading state.
+    try {
+      // Always start from a clean slate — a previous edit/creation session must
+      // never leak values into this one.
+      ref.read(profileCreationProvider.notifier).reset();
+      if (_isEditMode) {
+        try {
+          final profile = await ref
+              .read(profileRepositoryProvider)
+              .getProfile(widget.editProfileId!);
+          if (profile != null) {
+            ref
+                .read(profileCreationProvider.notifier)
+                .updateData(profile.toWizardData());
           }
+        } catch (e) {
+          debugPrint('[ProfileCreation] edit prefill failed: $e');
         }
-      } catch (e) {
-        debugPrint('[ProfileCreation] draft restore failed: $e');
+      } else {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final raw = prefs.getString(_draftKey);
+          if (raw != null) {
+            final map = jsonDecode(raw) as Map<String, dynamic>;
+            if (map.isNotEmpty) {
+              ref.read(profileCreationProvider.notifier).updateData(map);
+            }
+          }
+        } catch (e) {
+          debugPrint('[ProfileCreation] draft restore failed: $e');
+        }
       }
+    } finally {
+      if (mounted) setState(() => _ready = true);
     }
-    if (mounted) setState(() => _ready = true);
   }
 
   Future<void> _saveDraft() async {
