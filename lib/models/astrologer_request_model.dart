@@ -234,6 +234,10 @@ class AstrologerRequestModel {
   final List<String> analysisImages;
   final List<String> analysisPdfs;
 
+  /// The structured Marriage Compatibility Report the employee filled (see
+  /// `CompatibilityReport`). Null until a draft is first saved.
+  final Map<String, dynamic>? compatReport;
+
   final DateTime createdAt;
   final DateTime? respondedAt;
   final DateTime? completedAt;
@@ -335,6 +339,7 @@ class AstrologerRequestModel {
     this.analysisText = '',
     this.analysisImages = const [],
     this.analysisPdfs = const [],
+    this.compatReport,
     required this.createdAt,
     this.respondedAt,
     this.completedAt,
@@ -541,6 +546,9 @@ class AstrologerRequestModel {
       analysisText: d['analysisText'] ?? '',
       analysisImages: _toStringList(d['analysisImages']),
       analysisPdfs: _toStringList(d['analysisPdfs']),
+      compatReport: d['compatReport'] is Map
+          ? Map<String, dynamic>.from(d['compatReport'] as Map)
+          : null,
       createdAt: _toDate(d['createdAt']) ?? DateTime.now(),
       respondedAt: _toDate(d['respondedAt']),
       completedAt: _toDate(d['completedAt']),
@@ -597,6 +605,7 @@ class AstrologerRequestModel {
         'analysisText': analysisText,
         'analysisImages': analysisImages,
         'analysisPdfs': analysisPdfs,
+        'compatReport': compatReport,
         'createdAt': Timestamp.fromDate(createdAt),
         'respondedAt':
             respondedAt != null ? Timestamp.fromDate(respondedAt!) : null,
@@ -683,6 +692,7 @@ class AstrologerRequestModel {
         analysisText: analysisText ?? this.analysisText,
         analysisImages: analysisImages ?? this.analysisImages,
         analysisPdfs: analysisPdfs ?? this.analysisPdfs,
+        compatReport: compatReport,
         createdAt: createdAt,
         respondedAt: respondedAt ??
             (status != null && status != AstrologerRequestStatus.pending

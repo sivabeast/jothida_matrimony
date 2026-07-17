@@ -8,11 +8,13 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/file_actions.dart';
 import '../../../models/astrologer_request_model.dart';
+import '../../../models/compatibility_report_model.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/astrology_team_provider.dart';
 import '../../../providers/match_analysis_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/network_photo.dart';
+import '../../report/compatibility_report_screen.dart';
 
 /// Request details + report submission for the assigned astrologer (spec §9–§11).
 ///
@@ -192,6 +194,8 @@ class _AstrologerRequestDetailPageState
                 nameFallback: r.brideName ?? ''),
           ],
           const SizedBox(height: 18),
+          _compatReportCard(r),
+          const SizedBox(height: 14),
           if (completed)
             _completedNote()
           else
@@ -226,6 +230,94 @@ class _AstrologerRequestDetailPageState
           ],
         ),
       );
+
+  /// Entry card for the structured Professional Marriage Compatibility Report
+  /// (A4 certificate form). Fill / continue while pending; view once submitted.
+  Widget _compatReportCard(AstrologerRequestModel r) {
+    final saved = CompatibilityReport.tryFrom(r.compatReport);
+    final completed = r.status == AstrologerRequestStatus.completed;
+    final submitted = (saved?.isSubmitted ?? false) || (completed && saved != null);
+    final String statusLabel;
+    final Color statusColor;
+    if (submitted) {
+      statusLabel = 'Submitted';
+      statusColor = Colors.green;
+    } else if (saved != null) {
+      statusLabel = 'Draft in progress';
+      statusColor = Colors.orange;
+    } else {
+      statusLabel = 'Not started';
+      statusColor = Colors.grey;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.primary.withOpacity(0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.workspace_premium_outlined,
+                  color: AppColors.primary, size: 22),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Marriage Compatibility Report',
+                    style:
+                        TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(statusLabel,
+                    style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                        color: statusColor)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'திருமண பொருத்தம் அறிக்கை — the official A4 certificate the user '
+            'receives (porutham table, தோஷம், விளக்கம், இறுதி முடிவு).',
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => CompatibilityReportScreen(
+                requestId: r.id,
+                request: r,
+                employee: true,
+              ),
+            )),
+            icon: Icon(
+                submitted ? Icons.visibility_outlined : Icons.edit_outlined,
+                size: 18),
+            label: Text(submitted
+                ? 'View Report'
+                : (saved != null ? 'Continue Report' : 'Fill Report')),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(44),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _completedNote() => Container(
         padding: const EdgeInsets.all(16),

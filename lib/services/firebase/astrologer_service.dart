@@ -771,6 +771,41 @@ class AstrologerService {
             [BookingHistoryEntry.now('Draft saved').toMap()]),
       });
 
+  /// Saves the structured Marriage Compatibility Report as a DRAFT — the
+  /// request stays `pending`, so it never reaches the user's Reports page.
+  Future<void> saveCompatReport({
+    required String requestId,
+    required Map<String, dynamic> data,
+  }) =>
+      _db
+          .collection(AppConstants.astrologerRequestsCollection)
+          .doc(requestId)
+          .update({
+        'compatReport': data,
+        'draftSavedAt': FieldValue.serverTimestamp(),
+        'history': FieldValue.arrayUnion(
+            [BookingHistoryEntry.now('Compatibility report draft saved').toMap()]),
+      });
+
+  /// Stores the finished structured Marriage Compatibility Report and flips the
+  /// request to `completed` (same completion stamps as [submitAnalysis]).
+  Future<void> submitCompatReport({
+    required String requestId,
+    required Map<String, dynamic> data,
+  }) =>
+      _db
+          .collection(AppConstants.astrologerRequestsCollection)
+          .doc(requestId)
+          .update({
+        'compatReport': data,
+        'status': AstrologerRequestStatus.completed.name,
+        'workflowStatus': 'completed',
+        'completedAt': FieldValue.serverTimestamp(),
+        'respondedAt': FieldValue.serverTimestamp(),
+        'history': FieldValue.arrayUnion(
+            [BookingHistoryEntry.now('Compatibility report submitted').toMap()]),
+      });
+
   /// One-shot fetch of a single request (e.g. to resolve its owner for the
   /// "report ready" notification). Null when the doc doesn't exist.
   Future<AstrologerRequestModel?> getRequestById(String requestId) async {

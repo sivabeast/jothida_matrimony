@@ -767,6 +767,77 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     }
   }
 
+  /// Saves the structured Marriage Compatibility Report as a draft — the
+  /// request stays `pending` and the employee can continue editing later.
+  Future<void> saveCompatReportDraft({
+    required String requestId,
+    required Map<String, dynamic> data,
+  }) async {
+    state = const AsyncLoading();
+    try {
+      if (!kBypassAuth) {
+        await ref
+            .read(astrologerServiceProvider)
+            .saveCompatReport(requestId: requestId, data: data);
+      }
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
+  /// Submits the finished structured Marriage Compatibility Report: stores it,
+  /// marks the request completed, notifies the owner and releases the
+  /// employee's workload counter (mirrors [submitAnalysis]).
+  Future<void> submitCompatReport({
+    required String requestId,
+    required Map<String, dynamic> data,
+    String explanation = '',
+  }) async {
+    state = const AsyncLoading();
+    try {
+      if (kBypassAuth) {
+        ref.read(demoAstrologerRequestsProvider.notifier).submitAnalysis(
+              requestId,
+              text: explanation.trim(),
+              images: const [],
+              pdfs: const [],
+            );
+        state = const AsyncData(null);
+        return;
+      }
+
+      final svc = ref.read(astrologerServiceProvider);
+      await svc.submitCompatReport(requestId: requestId, data: data);
+      // In-app "Horoscope Report Ready" notification for the request owner
+      // (best-effort — the submission must never fail because of it).
+      try {
+        final req = await svc.getRequestById(requestId);
+        if (req != null && req.userId.isNotEmpty) {
+          await ref.read(notificationNotifierProvider.notifier).notify(
+                toUid: req.userId,
+                event: AppNotificationEvent.reportReady,
+                route: '/reports',
+              );
+        }
+      } catch (e) {
+        debugPrint('[MatchAnalysis] report-ready notification failed: $e');
+      }
+      // Free up the astrologer's workload counter so auto-assignment rebalances.
+      final myEmail = ref.read(currentUserProvider).valueOrNull?.email ?? '';
+      if (myEmail.isNotEmpty) {
+        await ref
+            .read(astrologyTeamServiceProvider)
+            .markReportSubmitted(myEmail);
+      }
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
   /// Uploads any newly-picked files, then stores the report and marks the
   /// request completed. [existingImages]/[existingPdfs] are kept (already
   /// uploaded URLs) so re-submitting an edit doesn't re-upload everything.

@@ -6,8 +6,10 @@ import '../../../core/utils/file_actions.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../core/utils/report_pdf.dart';
 import '../../../models/astrologer_request_model.dart';
+import '../../../models/compatibility_report_model.dart';
 import '../../../providers/match_analysis_provider.dart';
 import '../../../providers/profile_provider.dart';
+import '../../report/compatibility_report_screen.dart';
 
 /// Requests the self-heal has already retried this app session, so a stuck
 /// request is re-assigned at most once per launch (assignRequest itself is
@@ -312,6 +314,15 @@ class _ReportCard extends ConsumerWidget {
 
   /// Opens the right in-app viewer for the report's content type.
   void _viewReport(BuildContext context) {
+    // Structured Marriage Compatibility Report → the read-only A4-style page.
+    final compat = CompatibilityReport.tryFrom(report.compatReport);
+    if (compat != null && compat.isSubmitted) {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) =>
+            CompatibilityReportScreen(requestId: report.id, request: report),
+      ));
+      return;
+    }
     final hasText = report.analysisText.trim().isNotEmpty;
     final hasImages = report.analysisImages.isNotEmpty;
     final hasPdfs = report.analysisPdfs.isNotEmpty;
@@ -353,6 +364,16 @@ class _DownloadReportButtonState extends State<_DownloadReportButton> {
 
   Future<void> _download() async {
     final r = widget.report;
+    // Structured Marriage Compatibility Report → open the report page with the
+    // PDF/Image download sheet already presented (A4 rasterised export).
+    final compat = CompatibilityReport.tryFrom(r.compatReport);
+    if (compat != null && compat.isSubmitted) {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => CompatibilityReportScreen(
+            requestId: r.id, request: r, autoDownload: true),
+      ));
+      return;
+    }
     final l10n = context.l10n;
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _busy = true);
