@@ -8,8 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/navigation/root_navigator.dart';
 import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
+import 'providers/app_update_provider.dart';
 import 'providers/locale_provider.dart';
 import 'router/app_router.dart';
+import 'screens/common/update_required_screen.dart';
 import 'screens/settings/language_screen.dart';
 import 'services/firebase/fcm_service.dart';
 
@@ -72,6 +74,21 @@ class JothidaMatrimonyApp extends ConsumerWidget {
         localizationsDelegates: _localizationsDelegates,
         supportedLocales: supportedLocales,
         home: const LanguageScreen(),
+      );
+    }
+
+    // Force-update gate: when the admin has force update ON and this build is
+    // below the minimum supported version, the ONLY screen is "Update Now" —
+    // no router, no skip. A missing/unreadable config never blocks the app.
+    final updateRequired = ref.watch(forceUpdateRequiredProvider);
+    if (updateRequired != null) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        locale: locale,
+        localizationsDelegates: _localizationsDelegates,
+        supportedLocales: supportedLocales,
+        home: UpdateRequiredScreen(config: updateRequired),
       );
     }
 

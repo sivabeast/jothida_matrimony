@@ -1006,4 +1006,277 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get signOut => 'வெளியேறு';
+
+  @override
+  String get bookYourAppointment => 'சந்திப்பை முன்பதிவு செய்யுங்கள்';
+
+  @override
+  String get bookingCurrentlyClosed => 'முன்பதிவு தற்போது மூடப்பட்டுள்ளது';
+
+  @override
+  String get selectConsultationCategory => 'ஆலோசனை வகையைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get chooseConsultationReason => 'உங்கள் ஆலோசனை காரணத்தைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get noCategoriesAvailable => 'தற்போது ஆலோசனை வகைகள் எதுவும் இல்லை. பின்னர் மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get selectDate => 'தேதியைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get selectSession => 'அமர்வைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get selectSessionMorningEvening => 'அமர்வைத் தேர்ந்தெடுக்கவும் — காலை அல்லது மாலை';
+
+  @override
+  String get noExactSlotsNote => 'நிலையான நேர இடைவெளிகள் இல்லை — உங்கள் முன்பதிவு உறுதியானதும், சரியான நேரத்தை எங்கள் ஊழியர் நேரடியாகத் தொடர்பு கொண்டு தெரிவிப்பார்.';
+
+  @override
+  String get morning => 'காலை';
+
+  @override
+  String get evening => 'மாலை';
+
+  @override
+  String get sessionFull => 'அமர்வு நிரம்பியது';
+
+  @override
+  String get closedLabel => 'மூடப்பட்டது';
+
+  @override
+  String get leftLabel => 'மீதம்';
+
+  @override
+  String get serviceCharge => 'சேவைக் கட்டணம்';
+
+  @override
+  String get processing => 'செயலாக்கப்படுகிறது…';
+
+  @override
+  String payAndConfirmAppointment(int amount) {
+    return '₹$amount செலுத்தி சந்திப்பை உறுதிப்படுத்தவும்';
+  }
+
+  @override
+  String payAndConfirm(int amount) {
+    return '₹$amount செலுத்தி உறுதிப்படுத்தவும்';
+  }
+
+  @override
+  String get inPersonVisitNote => 'இது நேரடி அலுவலக வருகை. உங்களுக்கு விருப்பமான தேதியும் அமர்வும் கீழே தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get bookingClosedMessage => 'சந்திப்பு முன்பதிவு தற்போது மூடப்பட்டுள்ளது. பின்னர் மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get noWorkingDaysThisWeek => 'இந்த வாரம் வேலை நாட்கள் எதுவும் இல்லை.';
+
+  @override
+  String get pleaseSelectCategory => 'தயவுசெய்து ஒரு ஆலோசனை வகையைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get pleaseSelectDateSession => 'தயவுசெய்து தேதியும் அமர்வும் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get sessionJustFilled => 'அந்த அமர்வு இப்போது நிரம்பிவிட்டது. வேறு ஒன்றைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get sessionJustFilledNotCharged => 'அந்த அமர்வு இப்போது நிரம்பிவிட்டது (உங்களிடம் கட்டணம் வசூலிக்கப்படவில்லை). வேறு ஒன்றைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get bookingFailed => 'உங்கள் முன்பதிவை முடிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get paymentFailedNotCharged => 'கட்டணம் தோல்வியடைந்தது அல்லது ரத்து செய்யப்பட்டது. உங்களிடம் கட்டணம் வசூலிக்கப்படவில்லை.';
+
+  @override
+  String get paymentOkBookingFailed => 'கட்டணம் வெற்றிகரமாக முடிந்தது, ஆனால் முன்பதிவைச் சேமிக்க முடியவில்லை. ஆதரவைத் தொடர்பு கொள்ளவும்.';
+
+  @override
+  String get completeOwnProfileFirst => 'சந்திப்பு முன்பதிவு செய்யும் முன் உங்கள் சுயவிவரத்தை முடிக்கவும்.';
+
+  @override
+  String get morningSessionWindow => 'காலை அமர்வு (காலை 9:00 – மதியம் 1:00)';
+
+  @override
+  String get eveningSessionWindow => 'மாலை அமர்வு (மதியம் 2:00 – மாலை 5:00)';
+
+  @override
+  String get appointmentConfirmed => 'சந்திப்பு உறுதிப்படுத்தப்பட்டது';
+
+  @override
+  String get appointmentBookedTitle => 'உங்கள் சந்திப்பு முன்பதிவு செய்யப்பட்டது!';
+
+  @override
+  String get visitOfficeAtScheduled => 'குறிப்பிட்ட தேதி மற்றும் நேரத்தில் எங்கள் அலுவலகத்திற்கு வருகை தரவும்.';
+
+  @override
+  String get bookingIdLabel => 'முன்பதிவு எண்';
+
+  @override
+  String get appointmentDate => 'சந்திப்பு தேதி';
+
+  @override
+  String get sessionLabel => 'அமர்வு';
+
+  @override
+  String get exactTiming => 'சரியான நேரம்';
+
+  @override
+  String get exactTimingNote => 'உங்கள் அமர்வுக்குள் சரியான நேரத்தை நிர்ணயிக்க எங்கள் ஊழியர் உங்களை நேரடியாகத் தொடர்பு கொள்வார்.';
+
+  @override
+  String get officeAddress => 'அலுவலக முகவரி';
+
+  @override
+  String get contactNumber => 'தொடர்பு எண்';
+
+  @override
+  String get viewMyBookings => 'என் முன்பதிவுகளைப் பார்க்கவும்';
+
+  @override
+  String get backToHome => 'முகப்புக்குத் திரும்பு';
+
+  @override
+  String get myBookings => 'என் முன்பதிவுகள்';
+
+  @override
+  String get viewReport => 'அறிக்கையைப் பார்க்கவும்';
+
+  @override
+  String get downloadReport => 'அறிக்கையைப் பதிவிறக்கவும்';
+
+  @override
+  String underAnalysisTab(int count) {
+    return 'பகுப்பாய்வில் ($count)';
+  }
+
+  @override
+  String completedTab(int count) {
+    return 'முடிந்தவை ($count)';
+  }
+
+  @override
+  String get reportReadyMsg => 'உங்கள் அறிக்கை தயாராக உள்ளது.';
+
+  @override
+  String get reportPreparingMsg => 'உங்கள் அறிக்கை எங்கள் ஜோதிடரால் தயாரிக்கப்படுகிறது.';
+
+  @override
+  String get requestDate => 'கோரிக்கை தேதி';
+
+  @override
+  String get completedDate => 'முடிந்த தேதி';
+
+  @override
+  String get noReportsUnderAnalysis => 'பகுப்பாய்வில் அறிக்கைகள் எதுவும் இல்லை.\nஏற்றுக்கொள்ளப்பட்ட பொருத்தத்திலிருந்து ஜாதகப் பொருத்த அறிக்கையைக் கோரவும்.';
+
+  @override
+  String get noCompletedReports => 'முடிந்த அறிக்கைகள் இன்னும் இல்லை.';
+
+  @override
+  String get couldNotLoadYourReports => 'உங்கள் அறிக்கைகளை ஏற்ற முடியவில்லை';
+
+  @override
+  String get preparingReport => 'உங்கள் அறிக்கை தயாராகிறது…';
+
+  @override
+  String get reportDownloadFailed => 'அறிக்கையைப் பதிவிறக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get imagesLabel => 'படங்கள்';
+
+  @override
+  String get pdfReportsLabel => 'PDF அறிக்கைகள்';
+
+  @override
+  String get horoscopeAnalysisReport => 'ஜாதக பகுப்பாய்வு அறிக்கை';
+
+  @override
+  String reportFor(String name) {
+    return '$name க்கான அறிக்கை';
+  }
+
+  @override
+  String get preparedBy => 'தயாரித்தவர்';
+
+  @override
+  String get reportDate => 'அறிக்கை தேதி';
+
+  @override
+  String get descriptionLabel => 'விளக்கம்';
+
+  @override
+  String get attachedAsFile => 'ஜோதிடர் பகுப்பாய்வை கீழே கோப்பாக இணைத்துள்ளார்.';
+
+  @override
+  String get partnerPreferenceMatch => 'வாழ்க்கைத் துணை விருப்பப் பொருத்தம்';
+
+  @override
+  String get overallPreferenceMatch => 'மொத்த விருப்பப் பொருத்தம்';
+
+  @override
+  String get chat => 'அரட்டை';
+
+  @override
+  String get horoscopeAvailable => 'ஜாதகம் உள்ளது';
+
+  @override
+  String get horoscopeNotProvided => 'ஜாதகம் வழங்கப்படவில்லை';
+
+  @override
+  String get consultAstrologer => 'ஜோதிடரை அணுகவும்';
+
+  @override
+  String get basicDetails => 'அடிப்படை விவரங்கள்';
+
+  @override
+  String get lifestyleDetails => 'வாழ்க்கைமுறை விவரங்கள்';
+
+  @override
+  String get preferenceHeader => 'விருப்பம்';
+
+  @override
+  String get myPrefHeader => 'என் விருப்பம்';
+
+  @override
+  String get thisProfileHeader => 'இந்த சுயவிவரம்';
+
+  @override
+  String get statusHeader => 'நிலை';
+
+  @override
+  String matchedCount(int matched, int total) {
+    return '$total இல் $matched பொருந்தியது';
+  }
+
+  @override
+  String get matchWord => 'பொருத்தம்';
+
+  @override
+  String get noMatchWord => 'இல்லை';
+
+  @override
+  String get horoscopePrivateNote => 'முழு ஜாதகம் தனிப்பட்டது. விரிவான ஜாதகப் பொருத்தத்திற்கு, சரிபார்க்கப்பட்ட ஜோதிடரை அணுகவும்.';
+
+  @override
+  String get profileNotFound => 'சுயவிவரம் கிடைக்கவில்லை';
+
+  @override
+  String get couldNotLoadProfile => 'இந்த சுயவிவரத்தை இப்போது ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get reportLabel => 'புகார்';
+
+  @override
+  String get updateAvailableTitle => 'புதிய புதுப்பிப்பு உள்ளது';
+
+  @override
+  String get updateRequiredMessage => 'தொடர உங்கள் பயன்பாட்டைப் புதுப்பிக்கவும்.';
+
+  @override
+  String get updateNow => 'இப்போது புதுப்பிக்கவும்';
 }

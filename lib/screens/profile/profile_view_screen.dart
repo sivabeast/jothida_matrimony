@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/l10n_ext.dart';
+import '../../core/utils/value_l10n.dart';
 import '../../models/profile_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
@@ -128,7 +130,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
         child: ElevatedButton.icon(
           onPressed: null,
           icon: const Icon(Icons.cancel),
-          label: const Text('Interest Rejected'),
+          label: Text(context.l10n.interestRejected),
           style: ElevatedButton.styleFrom(
             disabledBackgroundColor: Colors.grey.shade400,
             disabledForegroundColor: Colors.white,
@@ -148,7 +150,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
         child: ElevatedButton.icon(
           onPressed: pending == null ? null : () => _acceptInterest(pending.id),
           icon: const Icon(Icons.favorite),
-          label: const Text('Accept Interest'),
+          label: Text(context.l10n.acceptInterest),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.success,
             foregroundColor: Colors.white,
@@ -170,13 +172,13 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
               color: Colors.green.withOpacity(0.10),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.check_circle, color: Colors.green, size: 18),
-                SizedBox(width: 8),
-                Text('Interest accepted',
-                    style: TextStyle(
+                const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                const SizedBox(width: 8),
+                Text(context.l10n.interestAccepted,
+                    style: const TextStyle(
                         color: Colors.green, fontWeight: FontWeight.w600)),
               ],
             ),
@@ -189,7 +191,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
               // from the (readable) profile document — no connection/gated read.
               onPressed: () => _showContact(profile),
               icon: const Icon(Icons.call),
-              label: const Text('View Contact'),
+              label: Text(context.l10n.viewContact),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -200,41 +202,30 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          // 💬 Chat — opens the conversation with this matched user. Shown ONLY
+          // Chat — opens the conversation with this matched user. Shown ONLY
           // when the interest is accepted (this branch); the auto-created thread
           // is idempotent so this always opens the SAME conversation as the
-          // Chats tab (spec §4/§7).
+          // Chats tab (spec §4/§7). Single leading icon, Material styling.
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
+            child: FilledButton.icon(
               onPressed: () => _openChat(profile),
-              icon: const Icon(Icons.chat_bubble_outline),
-              label: const Text('💬 Chat'),
-              style: ElevatedButton.styleFrom(
+              icon: const Icon(Icons.chat_bubble_outline, size: 20),
+              label: Text(context.l10n.chat,
+                  style: const TextStyle(
+                      fontSize: 15,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2)),
+              style: FilledButton.styleFrom(
                 backgroundColor: AppColors.gold,
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(52),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                elevation: 1.5,
+                shadowColor: AppColors.gold.withOpacity(0.4),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Family Tree of the matched member — available ONLY once the interest
-          // is accepted (this branch). Random users never see this button.
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () =>
-                  context.push('/family-tree-user/${profile.userId}'),
-              icon: const Icon(Icons.account_tree_outlined),
-              label: const Text('🌳 Family Details'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
-                minimumSize: const Size.fromHeight(52),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(14)),
               ),
             ),
           ),
@@ -248,7 +239,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
         child: ElevatedButton.icon(
           onPressed: null,
           icon: const Icon(Icons.hourglass_top),
-          label: const Text('Interest Sent'),
+          label: Text(context.l10n.interestSent),
           style: ElevatedButton.styleFrom(
             disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
             disabledForegroundColor: Colors.white,
@@ -264,7 +255,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       width: double.infinity,
       child: GradientButton(
         onPressed: () => _sendInterest(profile),
-        text: 'Send Interest',
+        text: context.l10n.sendInterest,
       ),
     );
   }
@@ -403,34 +394,40 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                   style: TextStyle(color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 16),
-                // ── Basic Details ──
-                _buildInfoSection('Basic Details', [
-                  _InfoItem(Icons.cake_outlined, 'Age', '${profile.age} years'),
-                  _InfoItem(Icons.height, 'Height', profile.height),
-                  _InfoItem(
-                      Icons.monitor_weight_outlined, 'Weight', profile.weight),
-                  _InfoItem(Icons.wc, 'Marital Status', profile.maritalStatus),
-                  _InfoItem(
-                      Icons.school_outlined, 'Education', profile.education),
-                  _InfoItem(Icons.work_outline, 'Profession', profile.occupation),
-                  _InfoItem(
-                      Icons.payments_outlined, 'Income', profile.annualIncome),
-                  _InfoItem(Icons.place_outlined, 'Location',
+                // ── Basic Details — labels via l10n, stored values via the
+                // EN→TA value map so everything switches with the language. ──
+                _buildInfoSection(context.l10n.basicDetails, [
+                  _InfoItem(Icons.cake_outlined, context.l10n.age,
+                      '${profile.age} ${context.l10n.years}'),
+                  _InfoItem(Icons.height, context.l10n.height, profile.height),
+                  _InfoItem(Icons.monitor_weight_outlined, context.l10n.weight,
+                      profile.weight),
+                  _InfoItem(Icons.wc, context.l10n.maritalStatus,
+                      context.localizeValue(profile.maritalStatus)),
+                  _InfoItem(Icons.school_outlined, context.l10n.education,
+                      context.localizeValue(profile.education)),
+                  _InfoItem(Icons.work_outline, context.l10n.profession,
+                      context.localizeValue(profile.occupation)),
+                  _InfoItem(Icons.payments_outlined, context.l10n.annualIncome,
+                      profile.annualIncome),
+                  _InfoItem(Icons.place_outlined, context.l10n.location,
                       [profile.city, profile.state].where((s) => s.trim().isNotEmpty).join(', ')),
-                  _InfoItem(Icons.translate, 'Mother Tongue',
-                      profile.motherTongue),
+                  _InfoItem(Icons.translate, context.l10n.motherTongue,
+                      context.localizeValue(profile.motherTongue)),
                   _InfoItem(Icons.accessibility_new, 'Physical Status',
-                      profile.physicalStatus),
-                  _InfoItem(Icons.church_outlined, 'Religion', profile.religion),
-                  _InfoItem(Icons.people_outline, 'Caste', profile.caste ?? ''),
-                  _InfoItem(Icons.groups_2_outlined, 'Sub-caste',
+                      context.localizeValue(profile.physicalStatus)),
+                  _InfoItem(Icons.church_outlined, context.l10n.religion,
+                      context.localizeValue(profile.religion)),
+                  _InfoItem(Icons.people_outline, context.l10n.caste,
+                      profile.caste ?? ''),
+                  _InfoItem(Icons.groups_2_outlined, context.l10n.subCaste,
                       profile.subCaste ?? ''),
                   _InfoItem(Icons.account_balance_outlined, 'Gothram',
                       profile.gothram),
                   _InfoItem(Icons.auto_awesome_outlined, 'Kuladeivam',
                       profile.kuladeivam),
                   _InfoItem(Icons.badge_outlined, 'Employment Type',
-                      profile.employmentType),
+                      context.localizeValue(profile.employmentType)),
                   _InfoItem(
                       Icons.business_outlined, 'Company', profile.companyName ?? ''),
                   _InfoItem(Icons.account_balance, 'College',
@@ -440,7 +437,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                 ]),
                 if (profile.about.trim().isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  Text('About Me', style: AppTextStyles.heading3),
+                  Text(context.l10n.aboutMe, style: AppTextStyles.heading3),
                   const SizedBox(height: 8),
                   Text(profile.about, style: AppTextStyles.bodyMedium),
                 ],
@@ -471,16 +468,20 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
   /// Lifestyle section — rendered only when at least one habit/field is set.
   List<Widget> _lifestyleSection(LifestyleDetails l) {
     final items = <_InfoItem>[
-      _InfoItem(Icons.restaurant_outlined, 'Eating Habit', l.eatingHabit),
-      _InfoItem(Icons.smoke_free, 'Smoking', l.smokingHabit),
-      _InfoItem(Icons.no_drinks_outlined, 'Drinking', l.drinkingHabit),
+      _InfoItem(Icons.restaurant_outlined, 'Eating Habit',
+          context.localizeValue(l.eatingHabit)),
+      _InfoItem(Icons.smoke_free, 'Smoking',
+          context.localizeValue(l.smokingHabit)),
+      _InfoItem(Icons.no_drinks_outlined, 'Drinking',
+          context.localizeValue(l.drinkingHabit)),
       _InfoItem(Icons.sports_esports_outlined, 'Hobbies', l.hobbies),
       _InfoItem(Icons.interests_outlined, 'Interests', l.interests),
-      _InfoItem(Icons.translate, 'Languages Known', l.languagesKnown.join(', ')),
+      _InfoItem(Icons.translate, 'Languages Known',
+          l.languagesKnown.map(context.localizeValue).join(', ')),
     ];
     if (items.every((i) => i.value.trim().isEmpty)) return const [];
     return [
-      _buildInfoSection('Lifestyle Details', items),
+      _buildInfoSection(context.l10n.lifestyleDetails, items),
       const SizedBox(height: 20),
     ];
   }
@@ -488,25 +489,27 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
   /// Family Details section — rendered only when at least one field is set.
   List<Widget> _familySection(FamilyDetails f) {
     final items = <_InfoItem>[
-      _InfoItem(Icons.man_outlined, 'Father', f.fatherName),
+      _InfoItem(Icons.man_outlined, context.l10n.father, f.fatherName),
       _InfoItem(
           Icons.work_history_outlined, "Father's Occupation", f.fatherOccupation),
-      _InfoItem(Icons.woman_outlined, 'Mother', f.motherName),
+      _InfoItem(Icons.woman_outlined, context.l10n.mother, f.motherName),
       _InfoItem(
           Icons.work_history_outlined, "Mother's Occupation", f.motherOccupation),
-      _InfoItem(Icons.group_outlined, 'Brothers',
+      _InfoItem(Icons.group_outlined, context.l10n.brothers,
           f.brothersCount > 0 ? '${f.brothersCount}' : ''),
-      _InfoItem(Icons.group_outlined, 'Sisters',
+      _InfoItem(Icons.group_outlined, context.l10n.sisters,
           f.sistersCount > 0 ? '${f.sistersCount}' : ''),
-      _InfoItem(Icons.family_restroom, 'Family Type', f.familyType),
-      _InfoItem(Icons.diamond_outlined, 'Family Status', f.familyStatus),
+      _InfoItem(Icons.family_restroom, context.l10n.familyType,
+          context.localizeValue(f.familyType)),
+      _InfoItem(Icons.diamond_outlined, context.l10n.familyStatus,
+          context.localizeValue(f.familyStatus)),
     ];
     if (items.every((i) => i.value.trim().isEmpty) &&
         f.aboutFamily.trim().isEmpty) {
       return const [];
     }
     return [
-      _buildInfoSection('Family Details', items),
+      _buildInfoSection(context.l10n.familyDetails, items),
       if (f.aboutFamily.trim().isNotEmpty) ...[
         const SizedBox(height: 12),
         Text('About Family', style: AppTextStyles.heading3),
@@ -531,7 +534,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     final matched = rows.where((r) => r.matched).length;
 
     return [
-      Text('Partner Preference Match', style: AppTextStyles.heading3),
+      Text(context.l10n.partnerPreferenceMatch, style: AppTextStyles.heading3),
       const SizedBox(height: 12),
       Container(
         decoration: BoxDecoration(
@@ -548,14 +551,21 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(12)),
               ),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 child: Row(
                   children: [
-                    Expanded(flex: 5, child: _HeaderText('Preference')),
-                    Expanded(flex: 6, child: _HeaderText('My Pref.')),
-                    Expanded(flex: 6, child: _HeaderText('This Profile')),
-                    Expanded(flex: 5, child: _HeaderText('Status')),
+                    Expanded(
+                        flex: 5,
+                        child: _HeaderText(context.l10n.preferenceHeader)),
+                    Expanded(
+                        flex: 6, child: _HeaderText(context.l10n.myPrefHeader)),
+                    Expanded(
+                        flex: 6,
+                        child: _HeaderText(context.l10n.thisProfileHeader)),
+                    Expanded(
+                        flex: 5, child: _HeaderText(context.l10n.statusHeader)),
                   ],
                 ),
               ),
@@ -580,14 +590,14 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
           children: [
             const Icon(Icons.favorite, color: Colors.white, size: 20),
             const SizedBox(width: 10),
-            const Expanded(
-              child: Text('Overall Preference Match',
-                  style: TextStyle(
+            Expanded(
+              child: Text(context.l10n.overallPreferenceMatch,
+                  style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                       fontSize: 14)),
             ),
-            Text('$matched of ${rows.length} Matched',
+            Text(context.l10n.matchedCount(matched, rows.length),
                 style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -629,7 +639,10 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                       color: r.matched ? AppColors.success : AppColors.error),
                   const SizedBox(width: 3),
                   Flexible(
-                    child: Text(r.matched ? 'Match' : "Doesn't",
+                    child: Text(
+                        r.matched
+                            ? context.l10n.matchWord
+                            : context.l10n.noMatchWord,
                         style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -741,12 +754,12 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     final h = profile.horoscopeDetails;
 
     if (isOwner) {
-      return _buildInfoSection('Horoscope Details', [
-        _InfoItem(Icons.stars, 'Rasi', h.rasi),
-        _InfoItem(Icons.star_border, 'Nakshatra', h.nakshatra),
-        _InfoItem(Icons.wb_twilight, 'Lagnam', h.lagnam),
-        _InfoItem(Icons.place_outlined, 'Birth City', h.birthPlace),
-        _InfoItem(Icons.access_time, 'Birth Time', h.birthTime),
+      return _buildInfoSection(context.l10n.horoscopeDetails, [
+        _InfoItem(Icons.stars, context.l10n.rasi, h.rasi),
+        _InfoItem(Icons.star_border, context.l10n.nakshatra, h.nakshatra),
+        _InfoItem(Icons.wb_twilight, context.l10n.lagnam, h.lagnam),
+        _InfoItem(Icons.place_outlined, context.l10n.birthPlace, h.birthPlace),
+        _InfoItem(Icons.access_time, context.l10n.birthTime, h.birthTime),
         _InfoItem(Icons.brightness_5_outlined, 'Chevvai Dosham', h.dosham),
         _InfoItem(Icons.brightness_5_outlined, 'Rahu / Kethu Dosham',
             h.rahuKethuDosham),
@@ -765,9 +778,9 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildInfoSection('Horoscope', [
-          _InfoItem(Icons.stars, 'Rasi', h.rasi),
-          _InfoItem(Icons.star_border, 'Nakshatra', h.nakshatra),
+        _buildInfoSection(context.l10n.horoscope, [
+          _InfoItem(Icons.stars, context.l10n.rasi, h.rasi),
+          _InfoItem(Icons.star_border, context.l10n.nakshatra, h.nakshatra),
         ]),
         const SizedBox(height: 10),
         Container(
@@ -792,8 +805,8 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                   const SizedBox(width: 8),
                   Text(
                     hasHoroscope
-                        ? 'Horoscope Available'
-                        : 'Horoscope not provided',
+                        ? context.l10n.horoscopeAvailable
+                        : context.l10n.horoscopeNotProvided,
                     style: const TextStyle(
                         fontWeight: FontWeight.w600, fontSize: 13.5),
                   ),
@@ -801,8 +814,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'The full horoscope is private. For detailed horoscope matching, '
-                'consult a verified astrologer.',
+                context.l10n.horoscopePrivateNote,
                 style: TextStyle(color: Colors.grey[700], fontSize: 12.5),
               ),
               if (hasHoroscope) ...[
@@ -812,7 +824,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () => _consultAstrologer(profile),
                     icon: const Icon(Icons.auto_awesome, size: 18),
-                    label: const Text('Consult Astrologer'),
+                    label: Text(context.l10n.consultAstrologer),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
                       side: const BorderSide(color: AppColors.primary),

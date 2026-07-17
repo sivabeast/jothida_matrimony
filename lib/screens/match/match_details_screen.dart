@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/services/porutham_match.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../models/profile_model.dart';
 import '../../providers/interest_provider.dart';
 import '../../providers/profile_provider.dart';
@@ -34,7 +35,7 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen> {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Match Details'),
+        title: Text(context.l10n.matchDetails),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -84,26 +85,6 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen> {
                       contact: other.contact,
                     ),
                     const SizedBox(height: 16),
-                    // Family Tree of the matched member — this whole view is
-                    // already gated behind `isMatched`, so it's only reachable
-                    // for an accepted match.
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () =>
-                            context.push('/family-tree-user/${other.userId}'),
-                        icon: const Icon(Icons.account_tree_outlined),
-                        label: const Text('🌳 Family Details'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          side: const BorderSide(color: AppColors.primary),
-                          minimumSize: const Size.fromHeight(50),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
                     _connectAstrologerCard(),
                     const SizedBox(height: 24),
                   ],
@@ -135,8 +116,9 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen> {
                   size: 54, color: AppColors.primary),
             ),
             const SizedBox(height: 20),
-            const Text('Compatibility is locked',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(context.l10n.compatibilityLocked,
+                style: const TextStyle(
+                    fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
             Text(
               'Porutham results and horoscope compatibility unlock only after '
@@ -151,7 +133,9 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen> {
                 onPressed: alreadySent ? null : () => _sendInterest(other),
                 icon: Icon(alreadySent ? Icons.check_circle : Icons.favorite,
                     size: 18),
-                label: Text(alreadySent ? 'Interest Sent' : 'Send Interest'),
+                label: Text(alreadySent
+                    ? context.l10n.interestSent
+                    : context.l10n.sendInterest),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -390,7 +374,7 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen> {
             child: ElevatedButton.icon(
               onPressed: () => showConnectAstrologerSheet(context),
               icon: const Icon(Icons.person_search),
-              label: const Text('Connect Astrologer'),
+              label: Text(context.l10n.connectAstrologer),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,

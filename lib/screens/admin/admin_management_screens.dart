@@ -1393,10 +1393,10 @@ class AdminSettingsScreen extends StatelessWidget {
           onTap: () => context.go('/admin/commission'),
         ),
         _ActionTile(
-          icon: Icons.app_settings_alt_outlined,
-          title: 'App Settings',
-          subtitle: 'Maintenance mode, feature flags, versions',
-          onTap: () => _soon(context, 'App Settings'),
+          icon: Icons.system_update_alt_outlined,
+          title: 'App Update Settings',
+          subtitle: 'Force update, minimum version & Play Store link',
+          onTap: () => context.go('/admin/app-update'),
         ),
         _ActionTile(
           icon: Icons.notifications_outlined,

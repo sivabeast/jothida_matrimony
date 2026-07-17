@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/slot_generator.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../models/astrology_service_config.dart';
@@ -47,7 +48,7 @@ class _AppointmentBookingScreenState
   Future<void> _startPayment(
       AstrologyServiceConfig cfg, ProfileModel me, ProfileModel other) async {
     if (_date == null || _session == null) {
-      _snack('Please select a date and session.');
+      _snack(context.l10n.pleaseSelectDateSession);
       return;
     }
     setState(() => _busy = true);
@@ -89,11 +90,11 @@ class _AppointmentBookingScreenState
         _busy = false;
         _session = null;
       });
-      _snack('That session just filled up. Please choose another.');
+      _snack(context.l10n.sessionJustFilled);
     } catch (_) {
       if (!mounted) return;
       setState(() => _busy = false);
-      _snack('Could not complete your booking. Please try again.');
+      _snack(context.l10n.bookingFailed);
     }
   }
 
@@ -107,7 +108,7 @@ class _AppointmentBookingScreenState
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Book Your Appointment'),
+        title: Text(context.l10n.bookYourAppointment),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -124,11 +125,11 @@ class _AppointmentBookingScreenState
   Widget _content(
       AstrologyServiceConfig cfg, ProfileModel? me, ProfileModel? other) {
     if (me == null) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(32),
+          padding: const EdgeInsets.all(32),
           child: Text(
-            'Complete your own profile before booking an appointment.',
+            context.l10n.completeOwnProfileFirst,
             textAlign: TextAlign.center,
           ),
         ),
@@ -141,12 +142,12 @@ class _AppointmentBookingScreenState
       children: [
         _visitBanner(),
         const SizedBox(height: 16),
-        _label('Select Date'),
+        _label(context.l10n.selectDate),
         const SizedBox(height: 8),
         _dateStrip(dates),
         if (_date != null) ...[
           const SizedBox(height: 18),
-          _label('Select Session'),
+          _label(context.l10n.selectSession),
           const SizedBox(height: 8),
           _sessionCards(cfg),
         ],
@@ -167,8 +168,8 @@ class _AppointmentBookingScreenState
                         strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.lock_outline, size: 18),
             label: Text(_busy
-                ? 'Processing…'
-                : 'Pay ₹${cfg.serviceCharge} & Confirm'),
+                ? context.l10n.processing
+                : context.l10n.payAndConfirm(cfg.serviceCharge)),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
@@ -197,8 +198,7 @@ class _AppointmentBookingScreenState
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'This is an in-person office visit. Choose your preferred date '
-                'and session below.',
+                context.l10n.inPersonVisitNote,
                 style: TextStyle(fontSize: 12.5, color: Colors.grey[800]),
               ),
             ),
@@ -237,17 +237,23 @@ class _AppointmentBookingScreenState
     final nowMinutes = now.hour * 60 + now.minute;
 
     Widget card(String session, String window, int capacity, int endMinutes) {
+      final l10n = context.l10n;
       final booked = dayCounts[session] ?? 0;
       final full = booked >= capacity;
       final past = isToday && nowMinutes >= endMinutes;
       final disabled = full || past || capacity <= 0;
       final remaining = (capacity - booked).clamp(0, capacity);
+      final isMorning = session == AppointmentSession.morning;
       return _SessionCard(
-        title: AppointmentSession.shortLabel(session),
+        title: isMorning ? l10n.morning : l10n.evening,
+        isMorning: isMorning,
         window: window,
         remaining: remaining,
+        remainingLabel: l10n.leftLabel,
         disabled: disabled,
-        disabledLabel: past ? 'Closed' : (full ? 'Session Full' : 'Unavailable'),
+        disabledLabel: past
+            ? l10n.closedLabel
+            : (full ? l10n.sessionFull : l10n.unavailable),
         selected: _session == session,
         onTap: disabled ? null : () => setState(() => _session = session),
       );
@@ -278,9 +284,9 @@ class _AppointmentBookingScreenState
             const Icon(Icons.payments_outlined,
                 size: 18, color: AppColors.primary),
             const SizedBox(width: 10),
-            const Expanded(
-                child: Text('Service Charge',
-                    style: TextStyle(
+            Expanded(
+                child: Text(context.l10n.serviceCharge,
+                    style: const TextStyle(
                         fontSize: 14, fontWeight: FontWeight.w600))),
             Text('₹${cfg.serviceCharge}',
                 style: const TextStyle(
@@ -343,19 +349,23 @@ class _DateCard extends StatelessWidget {
   }
 }
 
-/// A selectable Morning / Afternoon session card showing remaining capacity.
+/// A selectable Morning / Evening session card showing remaining capacity.
 class _SessionCard extends StatelessWidget {
   final String title;
+  final bool isMorning;
   final String window;
   final int remaining;
+  final String remainingLabel;
   final bool disabled;
   final String disabledLabel;
   final bool selected;
   final VoidCallback? onTap;
   const _SessionCard({
     required this.title,
+    required this.isMorning,
     required this.window,
     required this.remaining,
+    required this.remainingLabel,
     required this.disabled,
     required this.disabledLabel,
     required this.selected,
@@ -385,10 +395,7 @@ class _SessionCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(
-                title == 'Morning'
-                    ? Icons.wb_twilight
-                    : Icons.wb_sunny_outlined,
+            Icon(isMorning ? Icons.wb_twilight : Icons.wb_sunny_outlined,
                 color: disabled ? Colors.grey : AppColors.primary,
                 size: 26),
             const SizedBox(width: 14),
@@ -429,7 +436,7 @@ class _SessionCard extends StatelessWidget {
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
                           color: AppColors.primary)),
-                  Text('left',
+                  Text(remainingLabel,
                       style: TextStyle(fontSize: 11, color: Colors.grey[600])),
                 ],
               ),

@@ -5,7 +5,9 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/slot_generator.dart';
+import '../../core/utils/value_l10n.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../models/astrology_service_config.dart';
 import '../../providers/astrology_config_provider.dart';
@@ -63,11 +65,11 @@ class _AstrologyAppointmentScreenState
   /// reserved once payment succeeds (handled in [_onPaymentSuccess]).
   Future<void> _confirm(AstrologyServiceConfig cfg) async {
     if (_category == null || _category!.trim().isEmpty) {
-      _snack('Please select a consultation category.');
+      _snack(context.l10n.pleaseSelectCategory);
       return;
     }
     if (_date == null || _session == null) {
-      _snack('Please select a date and session.');
+      _snack(context.l10n.pleaseSelectDateSession);
       return;
     }
     setState(() => _busy = true);
@@ -116,20 +118,18 @@ class _AstrologyAppointmentScreenState
         _busy = false;
         _session = null;
       });
-      _snack('That session just filled up (you were not charged for it). '
-          'Please choose another.');
+      _snack(context.l10n.sessionJustFilledNotCharged);
     } catch (_) {
       if (!mounted) return;
       setState(() => _busy = false);
-      _snack('Payment succeeded but the booking could not be saved. Please '
-          'contact support.');
+      _snack(context.l10n.paymentOkBookingFailed);
     }
   }
 
   void _onPaymentFailure(PaymentFailureResponse response) {
     if (!mounted) return;
     setState(() => _busy = false);
-    _snack('Payment failed or cancelled. You have not been charged.');
+    _snack(context.l10n.paymentFailedNotCharged);
   }
 
   @override
@@ -138,7 +138,7 @@ class _AstrologyAppointmentScreenState
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Book Your Appointment'),
+        title: Text(context.l10n.bookYourAppointment),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -159,7 +159,7 @@ class _AstrologyAppointmentScreenState
       holidayDates: cfg.holidayDates,
     );
     if (dates.isEmpty) {
-      return _closed(message: 'No working days available this week.');
+      return _closed(message: context.l10n.noWorkingDaysThisWeek);
     }
 
     return ListView(
@@ -167,20 +167,19 @@ class _AstrologyAppointmentScreenState
       children: [
         _banner(cfg),
         const SizedBox(height: 16),
-        _stepLabel(1, 'Select Consultation Category'),
+        _stepLabel(1, context.l10n.selectConsultationCategory),
         const SizedBox(height: 8),
         _categoryDropdown(cfg),
         const SizedBox(height: 18),
-        _stepLabel(2, 'Select Date'),
+        _stepLabel(2, context.l10n.selectDate),
         const SizedBox(height: 8),
         _dateStrip(dates),
         if (_date != null) ...[
           const SizedBox(height: 18),
-          _stepLabel(3, 'Select Session — Morning or Evening'),
+          _stepLabel(3, context.l10n.selectSessionMorningEvening),
           const SizedBox(height: 4),
           Text(
-            'No fixed time slots — after your booking is confirmed, our '
-            'employee will contact you personally with the exact timing.',
+            context.l10n.noExactSlotsNote,
             style: TextStyle(fontSize: 12, color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
@@ -204,7 +203,9 @@ class _AstrologyAppointmentScreenState
                         strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.check_circle_outline, size: 20),
             label: Text(
-                _busy ? 'Processing…' : 'Pay ₹$_fee & Confirm Appointment',
+                _busy
+                    ? context.l10n.processing
+                    : context.l10n.payAndConfirmAppointment(_fee),
                 style: const TextStyle(
                     fontSize: 15.5, fontWeight: FontWeight.w700)),
             style: ElevatedButton.styleFrom(
@@ -232,9 +233,7 @@ class _AstrologyAppointmentScreenState
                   size: 64, color: AppColors.primary),
               const SizedBox(height: 16),
               Text(
-                message ??
-                    'Appointment booking is currently closed. Please check '
-                        'back later.',
+                message ?? context.l10n.bookingClosedMessage,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 14.5, height: 1.5),
               ),
@@ -258,10 +257,7 @@ class _AstrologyAppointmentScreenState
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              rules.isEmpty
-                  ? 'This is an in-person office visit. Choose your preferred '
-                      'date and session below.'
-                  : rules,
+              rules.isEmpty ? context.l10n.inPersonVisitNote : rules,
               style:
                   TextStyle(fontSize: 12.5, color: Colors.grey[800], height: 1.4),
             ),
@@ -293,10 +289,12 @@ class _AstrologyAppointmentScreenState
     // If a previously-selected category was disabled meanwhile, clear it.
     final names = categories.map((c) => c.name).toList();
     final value = names.contains(_category) ? _category : null;
+    // The STORED value stays the canonical English name; only the visible
+    // label switches to Tamil (value_l10n), so bookings keep a stable schema.
     return DropdownButtonFormField<String>(
       value: value,
       isExpanded: true,
-      hint: const Text('Choose your consultation reason'),
+      hint: Text(context.l10n.chooseConsultationReason),
       decoration: InputDecoration(
         filled: true,
         fillColor: Colors.white,
@@ -308,7 +306,8 @@ class _AstrologyAppointmentScreenState
       ),
       items: [
         for (final c in categories)
-          DropdownMenuItem(value: c.name, child: Text(c.name)),
+          DropdownMenuItem(
+              value: c.name, child: Text(context.localizeValue(c.name))),
       ],
       onChanged: (v) => setState(() => _category = v),
     );
@@ -366,17 +365,23 @@ class _AstrologyAppointmentScreenState
     final nowMinutes = now.hour * 60 + now.minute;
 
     Widget card(String session, String window, int capacity, int endMinutes) {
+      final l10n = context.l10n;
       final booked = dayCounts[session] ?? 0;
       final full = booked >= capacity;
       final past = isToday && nowMinutes >= endMinutes;
       final disabled = full || past || capacity <= 0;
       final remaining = (capacity - booked).clamp(0, capacity);
+      final isMorning = session == AppointmentSession.morning;
       return _SessionCard(
-        title: AppointmentSession.shortLabel(session),
+        title: isMorning ? l10n.morning : l10n.evening,
+        isMorning: isMorning,
         window: window,
         remaining: remaining,
+        remainingLabel: l10n.leftLabel,
         disabled: disabled,
-        disabledLabel: past ? 'Closed' : (full ? 'Session Full' : 'Unavailable'),
+        disabledLabel: past
+            ? l10n.closedLabel
+            : (full ? l10n.sessionFull : l10n.unavailable),
         selected: _session == session,
         onTap: disabled ? null : () => setState(() => _session = session),
       );
@@ -442,19 +447,23 @@ class _DateCard extends StatelessWidget {
   }
 }
 
-/// A selectable Morning / Afternoon session card showing remaining capacity.
+/// A selectable Morning / Evening session card showing remaining capacity.
 class _SessionCard extends StatelessWidget {
   final String title;
+  final bool isMorning;
   final String window;
   final int remaining;
+  final String remainingLabel;
   final bool disabled;
   final String disabledLabel;
   final bool selected;
   final VoidCallback? onTap;
   const _SessionCard({
     required this.title,
+    required this.isMorning,
     required this.window,
     required this.remaining,
+    required this.remainingLabel,
     required this.disabled,
     required this.disabledLabel,
     required this.selected,
@@ -482,10 +491,7 @@ class _SessionCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(
-                title == 'Morning'
-                    ? Icons.wb_twilight
-                    : Icons.wb_sunny_outlined,
+            Icon(isMorning ? Icons.wb_twilight : Icons.wb_sunny_outlined,
                 color: disabled ? Colors.grey : AppColors.primary,
                 size: 26),
             const SizedBox(width: 14),
@@ -526,7 +532,7 @@ class _SessionCard extends StatelessWidget {
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
                           color: AppColors.primary)),
-                  Text('left',
+                  Text(remainingLabel,
                       style: TextStyle(fontSize: 11, color: Colors.grey[600])),
                 ],
               ),

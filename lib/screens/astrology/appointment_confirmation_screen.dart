@@ -4,14 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../models/astrologer_request_model.dart';
-import '../../providers/chat_provider.dart';
-import '../../providers/navigation_provider.dart';
 
 /// Appointment confirmation (spec §11). Shown after a successful payment, it
-/// displays the Booking ID, appointment date & time, office address and contact
-/// number, and offers a shortcut to the auto-created Astrology Analysis Chat and
-/// the Reports page.
+/// displays the Booking ID, appointment date & session, office address and
+/// contact number. Actions: **View My Bookings** (→ My Bookings page) and
+/// **Back to Home**. Fully localized (EN/TA).
 class AppointmentConfirmationScreen extends ConsumerWidget {
   final String bookingId;
 
@@ -29,42 +28,21 @@ class AppointmentConfirmationScreen extends ConsumerWidget {
   String get _session => (extra?['session'] as String?) ?? '';
   String get _address => (extra?['address'] as String?) ?? '';
   String get _contact => (extra?['contact'] as String?) ?? '';
-  String get _internalUid => (extra?['internalUid'] as String?) ?? '';
-  String get _expertName => (extra?['expertName'] as String?) ?? 'Astrology Service';
-  String get _expertPhoto => (extra?['expertPhoto'] as String?) ?? '';
 
-  Future<void> _openChat(BuildContext context, WidgetRef ref) async {
-    final messenger = ScaffoldMessenger.of(context);
-    if (_internalUid.isEmpty) {
-      messenger.showSnackBar(const SnackBar(
-          content: Text(
-              'Your analysis chat will open once our team begins your report.')));
-      return;
-    }
-    try {
-      final id = await ref.read(chatControllerProvider).openChatWith(
-            otherUid: _internalUid,
-            otherName: _expertName,
-            otherPhoto: _expertPhoto,
-          );
-      if (!context.mounted) return;
-      context.push('/chat/$id', extra: {
-        'name': _expertName,
-        'photo': _expertPhoto,
-        'isAstrologer': true,
-      });
-    } catch (_) {
-      messenger.showSnackBar(const SnackBar(
-          content: Text('Could not open chat. Please try again.')));
-    }
+  String _sessionLabel(BuildContext context) {
+    if (_session.isEmpty) return '—';
+    return _session == AppointmentSession.morning
+        ? context.l10n.morningSessionWindow
+        : context.l10n.eveningSessionWindow;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Appointment Confirmed'),
+        title: Text(l10n.appointmentConfirmed),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
@@ -86,13 +64,13 @@ class AppointmentConfirmationScreen extends ConsumerWidget {
                       color: AppColors.success, size: 56),
                 ),
                 const SizedBox(height: 14),
-                const Text('Your appointment is booked!',
-                    style: TextStyle(
+                Text(l10n.appointmentBookedTitle,
+                    style: const TextStyle(
                         fontSize: 18,
                         fontFamily: 'Poppins',
                         fontWeight: FontWeight.w700)),
                 const SizedBox(height: 6),
-                Text('Please visit our office at the scheduled date and time.',
+                Text(l10n.visitOfficeAtScheduled,
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 13, color: Colors.grey[600])),
               ],
@@ -110,62 +88,47 @@ class AppointmentConfirmationScreen extends ConsumerWidget {
             ),
             child: Column(
               children: [
-                _row(Icons.confirmation_number_outlined, 'Booking ID',
+                _row(Icons.confirmation_number_outlined, l10n.bookingIdLabel,
                     bookingId),
                 const Divider(height: 20),
                 _row(
                     Icons.event_outlined,
-                    'Appointment Date',
+                    l10n.appointmentDate,
                     _date == null
                         ? '—'
-                        : DateFormat('EEEE, d MMM yyyy').format(_date!)),
+                        : DateFormat('EEEE, d MMM yyyy',
+                                Localizations.localeOf(context).languageCode)
+                            .format(_date!)),
                 const Divider(height: 20),
-                _row(Icons.schedule_outlined, 'Session',
-                    _session.isEmpty ? '—' : AppointmentSession.label(_session)),
+                _row(Icons.schedule_outlined, l10n.sessionLabel,
+                    _sessionLabel(context)),
                 const Divider(height: 20),
-                _row(
-                    Icons.support_agent_outlined,
-                    'Exact Timing',
-                    'Our employee will contact you personally to fix the '
-                        'exact time within your session.'),
+                _row(Icons.support_agent_outlined, l10n.exactTiming,
+                    l10n.exactTimingNote),
                 const Divider(height: 20),
-                _row(Icons.location_on_outlined, 'Office Address',
+                _row(Icons.location_on_outlined, l10n.officeAddress,
                     _address.isEmpty ? '—' : _address),
                 const Divider(height: 20),
-                _row(Icons.call_outlined, 'Contact Number',
+                _row(Icons.call_outlined, l10n.contactNumber,
                     _contact.isEmpty ? '—' : _contact),
               ],
             ),
           ),
           const SizedBox(height: 20),
+          // View My Bookings — replaces the old "Open Analysis Chat" and
+          // "View My Reports" actions (spec: booking confirmation §6).
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => _openChat(context, ref),
-              icon: const Icon(Icons.chat_outlined, size: 18),
-              label: const Text('Open Analysis Chat'),
+              onPressed: () => context.push('/my-appointments'),
+              icon: const Icon(Icons.receipt_long_outlined, size: 18),
+              label: Text(l10n.viewMyBookings),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(50),
-                shape:
-                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => goToReportsTab(context, ref),
-              icon: const Icon(Icons.receipt_long_outlined, size: 18),
-              label: const Text('View My Reports'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
-                minimumSize: const Size.fromHeight(50),
-                shape:
-                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),
@@ -173,7 +136,7 @@ class AppointmentConfirmationScreen extends ConsumerWidget {
           Center(
             child: TextButton(
               onPressed: () => context.go('/home'),
-              child: const Text('Back to Home'),
+              child: Text(l10n.backToHome),
             ),
           ),
         ],

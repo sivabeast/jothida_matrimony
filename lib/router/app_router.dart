@@ -52,6 +52,7 @@ import '../screens/admin/admin_reports_page.dart';
 import '../screens/admin/employee_commission_screen.dart';
 import '../screens/admin/account_admin_screens.dart';
 import '../screens/admin/announcement_management_screen.dart';
+import '../screens/admin/app_update_settings_screen.dart';
 import '../screens/admin/banner_management_screen.dart';
 import '../screens/horoscope/horoscope_details_screen.dart';
 import '../screens/horoscope/horoscope_files_screen.dart';
@@ -64,7 +65,6 @@ import '../screens/notifications/notifications_screen.dart';
 import '../screens/profile/profile_section_edit_screens.dart';
 import '../screens/profile/photos_edit_screen.dart';
 import '../screens/family/family_tree_screen.dart';
-import '../screens/family/family_details_screen.dart';
 import '../screens/interests/interests_center_screen.dart';
 import '../screens/preferences/partner_preferences_screen.dart';
 import '../screens/settings/settings_screen.dart';
@@ -395,8 +395,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // ── Profile section screens ──────────────────────────────────────────
       // Profile Details (PROFILE group) — photo, name & all personal info.
       GoRoute(path: '/personal-details', builder: (_, __) => const PersonalDetailsScreen()),
-      // Family Details (PROFILE group) — father/mother/siblings/type/status.
-      GoRoute(path: '/family-details', builder: (_, __) => const FamilyDetailsScreen()),
       // Interests as a standalone page (side menu's Interests Sent / Received).
       // ?tab=sent|received|accepted|rejected selects the opening tab.
       GoRoute(
@@ -538,6 +536,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               builder: (_, __) => const AstrologyServiceSettingsScreen()),
           GoRoute(path: '/admin/analytics', builder: (_, __) => const AdminReportsPage()),
           GoRoute(path: '/admin/settings', builder: (_, __) => const AdminSettingsScreen()),
+          // Force App Update configuration (version gate + Play Store link).
+          GoRoute(
+              path: '/admin/app-update',
+              builder: (_, __) => const AppUpdateSettingsScreen()),
           GoRoute(path: '/admin/commission', builder: (_, __) => const EmployeeCommissionScreen()),
           GoRoute(path: '/admin/married', builder: (_, __) => const MarriedUsersScreen()),
         ],

@@ -2068,6 +2068,528 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign Out'**
   String get signOut;
+
+  /// No description provided for @bookYourAppointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Book Your Appointment'**
+  String get bookYourAppointment;
+
+  /// No description provided for @bookingCurrentlyClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking Currently Closed'**
+  String get bookingCurrentlyClosed;
+
+  /// No description provided for @selectConsultationCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Consultation Category'**
+  String get selectConsultationCategory;
+
+  /// No description provided for @chooseConsultationReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your consultation reason'**
+  String get chooseConsultationReason;
+
+  /// No description provided for @noCategoriesAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No consultation categories are available right now. Please try again later.'**
+  String get noCategoriesAvailable;
+
+  /// No description provided for @selectDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Date'**
+  String get selectDate;
+
+  /// No description provided for @selectSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Session'**
+  String get selectSession;
+
+  /// No description provided for @selectSessionMorningEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Session — Morning or Evening'**
+  String get selectSessionMorningEvening;
+
+  /// No description provided for @noExactSlotsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'No fixed time slots — after your booking is confirmed, our employee will contact you personally with the exact timing.'**
+  String get noExactSlotsNote;
+
+  /// No description provided for @morning.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning'**
+  String get morning;
+
+  /// No description provided for @evening.
+  ///
+  /// In en, this message translates to:
+  /// **'Evening'**
+  String get evening;
+
+  /// No description provided for @sessionFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Session Full'**
+  String get sessionFull;
+
+  /// No description provided for @closedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get closedLabel;
+
+  /// No description provided for @leftLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'left'**
+  String get leftLabel;
+
+  /// No description provided for @serviceCharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Charge'**
+  String get serviceCharge;
+
+  /// No description provided for @processing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing…'**
+  String get processing;
+
+  /// No description provided for @payAndConfirmAppointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay ₹{amount} & Confirm Appointment'**
+  String payAndConfirmAppointment(int amount);
+
+  /// No description provided for @payAndConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay ₹{amount} & Confirm'**
+  String payAndConfirm(int amount);
+
+  /// No description provided for @inPersonVisitNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This is an in-person office visit. Choose your preferred date and session below.'**
+  String get inPersonVisitNote;
+
+  /// No description provided for @bookingClosedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment booking is currently closed. Please check back later.'**
+  String get bookingClosedMessage;
+
+  /// No description provided for @noWorkingDaysThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'No working days available this week.'**
+  String get noWorkingDaysThisWeek;
+
+  /// No description provided for @pleaseSelectCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a consultation category.'**
+  String get pleaseSelectCategory;
+
+  /// No description provided for @pleaseSelectDateSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a date and session.'**
+  String get pleaseSelectDateSession;
+
+  /// No description provided for @sessionJustFilled.
+  ///
+  /// In en, this message translates to:
+  /// **'That session just filled up. Please choose another.'**
+  String get sessionJustFilled;
+
+  /// No description provided for @sessionJustFilledNotCharged.
+  ///
+  /// In en, this message translates to:
+  /// **'That session just filled up (you were not charged for it). Please choose another.'**
+  String get sessionJustFilledNotCharged;
+
+  /// No description provided for @bookingFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not complete your booking. Please try again.'**
+  String get bookingFailed;
+
+  /// No description provided for @paymentFailedNotCharged.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment failed or cancelled. You have not been charged.'**
+  String get paymentFailedNotCharged;
+
+  /// No description provided for @paymentOkBookingFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment succeeded but the booking could not be saved. Please contact support.'**
+  String get paymentOkBookingFailed;
+
+  /// No description provided for @completeOwnProfileFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete your own profile before booking an appointment.'**
+  String get completeOwnProfileFirst;
+
+  /// No description provided for @morningSessionWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning Session (9:00 AM – 1:00 PM)'**
+  String get morningSessionWindow;
+
+  /// No description provided for @eveningSessionWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Evening Session (2:00 PM – 5:00 PM)'**
+  String get eveningSessionWindow;
+
+  /// No description provided for @appointmentConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment Confirmed'**
+  String get appointmentConfirmed;
+
+  /// No description provided for @appointmentBookedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your appointment is booked!'**
+  String get appointmentBookedTitle;
+
+  /// No description provided for @visitOfficeAtScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Please visit our office at the scheduled date and time.'**
+  String get visitOfficeAtScheduled;
+
+  /// No description provided for @bookingIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking ID'**
+  String get bookingIdLabel;
+
+  /// No description provided for @appointmentDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment Date'**
+  String get appointmentDate;
+
+  /// No description provided for @sessionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Session'**
+  String get sessionLabel;
+
+  /// No description provided for @exactTiming.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact Timing'**
+  String get exactTiming;
+
+  /// No description provided for @exactTimingNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Our employee will contact you personally to fix the exact time within your session.'**
+  String get exactTimingNote;
+
+  /// No description provided for @officeAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Office Address'**
+  String get officeAddress;
+
+  /// No description provided for @contactNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Number'**
+  String get contactNumber;
+
+  /// No description provided for @viewMyBookings.
+  ///
+  /// In en, this message translates to:
+  /// **'View My Bookings'**
+  String get viewMyBookings;
+
+  /// No description provided for @backToHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Home'**
+  String get backToHome;
+
+  /// No description provided for @myBookings.
+  ///
+  /// In en, this message translates to:
+  /// **'My Bookings'**
+  String get myBookings;
+
+  /// No description provided for @viewReport.
+  ///
+  /// In en, this message translates to:
+  /// **'View Report'**
+  String get viewReport;
+
+  /// No description provided for @downloadReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Download Report'**
+  String get downloadReport;
+
+  /// No description provided for @underAnalysisTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Under Analysis ({count})'**
+  String underAnalysisTab(int count);
+
+  /// No description provided for @completedTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed ({count})'**
+  String completedTab(int count);
+
+  /// No description provided for @reportReadyMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Your report is ready.'**
+  String get reportReadyMsg;
+
+  /// No description provided for @reportPreparingMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Your report is being prepared by our astrologer.'**
+  String get reportPreparingMsg;
+
+  /// No description provided for @requestDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Date'**
+  String get requestDate;
+
+  /// No description provided for @completedDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed Date'**
+  String get completedDate;
+
+  /// No description provided for @noReportsUnderAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'No reports under analysis.\nRequest a Horoscope Compatibility Report from an accepted match.'**
+  String get noReportsUnderAnalysis;
+
+  /// No description provided for @noCompletedReports.
+  ///
+  /// In en, this message translates to:
+  /// **'No completed reports yet.'**
+  String get noCompletedReports;
+
+  /// No description provided for @couldNotLoadYourReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your reports'**
+  String get couldNotLoadYourReports;
+
+  /// No description provided for @preparingReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing your report…'**
+  String get preparingReport;
+
+  /// No description provided for @reportDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not download the report. Please try again.'**
+  String get reportDownloadFailed;
+
+  /// No description provided for @imagesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Images'**
+  String get imagesLabel;
+
+  /// No description provided for @pdfReportsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF Reports'**
+  String get pdfReportsLabel;
+
+  /// No description provided for @horoscopeAnalysisReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope Analysis Report'**
+  String get horoscopeAnalysisReport;
+
+  /// No description provided for @reportFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Report for {name}'**
+  String reportFor(String name);
+
+  /// No description provided for @preparedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepared by'**
+  String get preparedBy;
+
+  /// No description provided for @reportDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Date'**
+  String get reportDate;
+
+  /// No description provided for @descriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get descriptionLabel;
+
+  /// No description provided for @attachedAsFile.
+  ///
+  /// In en, this message translates to:
+  /// **'The astrologer attached the analysis as a file below.'**
+  String get attachedAsFile;
+
+  /// No description provided for @partnerPreferenceMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Partner Preference Match'**
+  String get partnerPreferenceMatch;
+
+  /// No description provided for @overallPreferenceMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall Preference Match'**
+  String get overallPreferenceMatch;
+
+  /// No description provided for @chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get chat;
+
+  /// No description provided for @horoscopeAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope Available'**
+  String get horoscopeAvailable;
+
+  /// No description provided for @horoscopeNotProvided.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope not provided'**
+  String get horoscopeNotProvided;
+
+  /// No description provided for @consultAstrologer.
+  ///
+  /// In en, this message translates to:
+  /// **'Consult Astrologer'**
+  String get consultAstrologer;
+
+  /// No description provided for @basicDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic Details'**
+  String get basicDetails;
+
+  /// No description provided for @lifestyleDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifestyle Details'**
+  String get lifestyleDetails;
+
+  /// No description provided for @preferenceHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Preference'**
+  String get preferenceHeader;
+
+  /// No description provided for @myPrefHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'My Pref.'**
+  String get myPrefHeader;
+
+  /// No description provided for @thisProfileHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'This Profile'**
+  String get thisProfileHeader;
+
+  /// No description provided for @statusHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get statusHeader;
+
+  /// No description provided for @matchedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{matched} of {total} Matched'**
+  String matchedCount(int matched, int total);
+
+  /// No description provided for @matchWord.
+  ///
+  /// In en, this message translates to:
+  /// **'Match'**
+  String get matchWord;
+
+  /// No description provided for @noMatchWord.
+  ///
+  /// In en, this message translates to:
+  /// **'Doesn\'t'**
+  String get noMatchWord;
+
+  /// No description provided for @horoscopePrivateNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The full horoscope is private. For detailed horoscope matching, consult a verified astrologer.'**
+  String get horoscopePrivateNote;
+
+  /// No description provided for @profileNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile not found'**
+  String get profileNotFound;
+
+  /// No description provided for @couldNotLoadProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this profile right now. Please try again.'**
+  String get couldNotLoadProfile;
+
+  /// No description provided for @reportLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get reportLabel;
+
+  /// No description provided for @updateAvailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New Update Available'**
+  String get updateAvailableTitle;
+
+  /// No description provided for @updateRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Update your application to continue.'**
+  String get updateRequiredMessage;
+
+  /// No description provided for @updateNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Now'**
+  String get updateNow;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

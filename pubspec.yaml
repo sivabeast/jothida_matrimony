@@ -58,6 +58,12 @@ dependencies:
   readmore: ^3.0.0
   url_launcher: ^6.3.1
   share_plus: ^10.1.2
+  # ── Reports: professional PDF generation (text/image reports) + in-app
+  # PDF viewing (no dependency on an external PDF viewer app) ──
+  pdf: ^3.11.1
+  printing: ^5.13.4
+  # ── Force-update gate: read the running app version ──
+  package_info_plus: ^8.1.2
   file_picker: ^8.1.7
   open_file: ^3.5.10
   path_provider: ^2.1.5

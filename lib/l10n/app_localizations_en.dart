@@ -1006,4 +1006,277 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get signOut => 'Sign Out';
+
+  @override
+  String get bookYourAppointment => 'Book Your Appointment';
+
+  @override
+  String get bookingCurrentlyClosed => 'Booking Currently Closed';
+
+  @override
+  String get selectConsultationCategory => 'Select Consultation Category';
+
+  @override
+  String get chooseConsultationReason => 'Choose your consultation reason';
+
+  @override
+  String get noCategoriesAvailable => 'No consultation categories are available right now. Please try again later.';
+
+  @override
+  String get selectDate => 'Select Date';
+
+  @override
+  String get selectSession => 'Select Session';
+
+  @override
+  String get selectSessionMorningEvening => 'Select Session — Morning or Evening';
+
+  @override
+  String get noExactSlotsNote => 'No fixed time slots — after your booking is confirmed, our employee will contact you personally with the exact timing.';
+
+  @override
+  String get morning => 'Morning';
+
+  @override
+  String get evening => 'Evening';
+
+  @override
+  String get sessionFull => 'Session Full';
+
+  @override
+  String get closedLabel => 'Closed';
+
+  @override
+  String get leftLabel => 'left';
+
+  @override
+  String get serviceCharge => 'Service Charge';
+
+  @override
+  String get processing => 'Processing…';
+
+  @override
+  String payAndConfirmAppointment(int amount) {
+    return 'Pay ₹$amount & Confirm Appointment';
+  }
+
+  @override
+  String payAndConfirm(int amount) {
+    return 'Pay ₹$amount & Confirm';
+  }
+
+  @override
+  String get inPersonVisitNote => 'This is an in-person office visit. Choose your preferred date and session below.';
+
+  @override
+  String get bookingClosedMessage => 'Appointment booking is currently closed. Please check back later.';
+
+  @override
+  String get noWorkingDaysThisWeek => 'No working days available this week.';
+
+  @override
+  String get pleaseSelectCategory => 'Please select a consultation category.';
+
+  @override
+  String get pleaseSelectDateSession => 'Please select a date and session.';
+
+  @override
+  String get sessionJustFilled => 'That session just filled up. Please choose another.';
+
+  @override
+  String get sessionJustFilledNotCharged => 'That session just filled up (you were not charged for it). Please choose another.';
+
+  @override
+  String get bookingFailed => 'Could not complete your booking. Please try again.';
+
+  @override
+  String get paymentFailedNotCharged => 'Payment failed or cancelled. You have not been charged.';
+
+  @override
+  String get paymentOkBookingFailed => 'Payment succeeded but the booking could not be saved. Please contact support.';
+
+  @override
+  String get completeOwnProfileFirst => 'Complete your own profile before booking an appointment.';
+
+  @override
+  String get morningSessionWindow => 'Morning Session (9:00 AM – 1:00 PM)';
+
+  @override
+  String get eveningSessionWindow => 'Evening Session (2:00 PM – 5:00 PM)';
+
+  @override
+  String get appointmentConfirmed => 'Appointment Confirmed';
+
+  @override
+  String get appointmentBookedTitle => 'Your appointment is booked!';
+
+  @override
+  String get visitOfficeAtScheduled => 'Please visit our office at the scheduled date and time.';
+
+  @override
+  String get bookingIdLabel => 'Booking ID';
+
+  @override
+  String get appointmentDate => 'Appointment Date';
+
+  @override
+  String get sessionLabel => 'Session';
+
+  @override
+  String get exactTiming => 'Exact Timing';
+
+  @override
+  String get exactTimingNote => 'Our employee will contact you personally to fix the exact time within your session.';
+
+  @override
+  String get officeAddress => 'Office Address';
+
+  @override
+  String get contactNumber => 'Contact Number';
+
+  @override
+  String get viewMyBookings => 'View My Bookings';
+
+  @override
+  String get backToHome => 'Back to Home';
+
+  @override
+  String get myBookings => 'My Bookings';
+
+  @override
+  String get viewReport => 'View Report';
+
+  @override
+  String get downloadReport => 'Download Report';
+
+  @override
+  String underAnalysisTab(int count) {
+    return 'Under Analysis ($count)';
+  }
+
+  @override
+  String completedTab(int count) {
+    return 'Completed ($count)';
+  }
+
+  @override
+  String get reportReadyMsg => 'Your report is ready.';
+
+  @override
+  String get reportPreparingMsg => 'Your report is being prepared by our astrologer.';
+
+  @override
+  String get requestDate => 'Request Date';
+
+  @override
+  String get completedDate => 'Completed Date';
+
+  @override
+  String get noReportsUnderAnalysis => 'No reports under analysis.\nRequest a Horoscope Compatibility Report from an accepted match.';
+
+  @override
+  String get noCompletedReports => 'No completed reports yet.';
+
+  @override
+  String get couldNotLoadYourReports => 'Could not load your reports';
+
+  @override
+  String get preparingReport => 'Preparing your report…';
+
+  @override
+  String get reportDownloadFailed => 'Could not download the report. Please try again.';
+
+  @override
+  String get imagesLabel => 'Images';
+
+  @override
+  String get pdfReportsLabel => 'PDF Reports';
+
+  @override
+  String get horoscopeAnalysisReport => 'Horoscope Analysis Report';
+
+  @override
+  String reportFor(String name) {
+    return 'Report for $name';
+  }
+
+  @override
+  String get preparedBy => 'Prepared by';
+
+  @override
+  String get reportDate => 'Report Date';
+
+  @override
+  String get descriptionLabel => 'Description';
+
+  @override
+  String get attachedAsFile => 'The astrologer attached the analysis as a file below.';
+
+  @override
+  String get partnerPreferenceMatch => 'Partner Preference Match';
+
+  @override
+  String get overallPreferenceMatch => 'Overall Preference Match';
+
+  @override
+  String get chat => 'Chat';
+
+  @override
+  String get horoscopeAvailable => 'Horoscope Available';
+
+  @override
+  String get horoscopeNotProvided => 'Horoscope not provided';
+
+  @override
+  String get consultAstrologer => 'Consult Astrologer';
+
+  @override
+  String get basicDetails => 'Basic Details';
+
+  @override
+  String get lifestyleDetails => 'Lifestyle Details';
+
+  @override
+  String get preferenceHeader => 'Preference';
+
+  @override
+  String get myPrefHeader => 'My Pref.';
+
+  @override
+  String get thisProfileHeader => 'This Profile';
+
+  @override
+  String get statusHeader => 'Status';
+
+  @override
+  String matchedCount(int matched, int total) {
+    return '$matched of $total Matched';
+  }
+
+  @override
+  String get matchWord => 'Match';
+
+  @override
+  String get noMatchWord => 'Doesn\'t';
+
+  @override
+  String get horoscopePrivateNote => 'The full horoscope is private. For detailed horoscope matching, consult a verified astrologer.';
+
+  @override
+  String get profileNotFound => 'Profile not found';
+
+  @override
+  String get couldNotLoadProfile => 'Couldn\'t load this profile right now. Please try again.';
+
+  @override
+  String get reportLabel => 'Report';
+
+  @override
+  String get updateAvailableTitle => 'New Update Available';
+
+  @override
+  String get updateRequiredMessage => 'Update your application to continue.';
+
+  @override
+  String get updateNow => 'Update Now';
 }

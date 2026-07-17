@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/appointment_status.dart';
+import '../../../core/utils/file_actions.dart';
+import '../../../core/utils/l10n_ext.dart';
 import '../../../core/utils/slot_generator.dart';
 import '../../../models/astrology_service_config.dart';
 import '../../../providers/appointment_provider.dart';
@@ -226,17 +228,23 @@ class _Body extends StatelessWidget {
           style: TextStyle(fontSize: 13.5, color: Colors.grey[600])),
     ));
 
+    // Certificates — name-only chips in a horizontal scroll (no thumbnails).
+    // Tapping a name opens the full certificate: image → in-app image viewer,
+    // PDF → in-app PDF viewer.
     if (cfg.certificates.isNotEmpty) {
       out.add(_section(
-        'Certificates',
+        context.l10n.certificates,
         Icons.verified_outlined,
-        Column(
-          children: [
-            for (var i = 0; i < cfg.certificates.length; i++) ...[
-              if (i > 0) const SizedBox(height: 20),
-              _CertificateRow(cert: cfg.certificates[i], onOpen: _launch),
-            ],
-          ],
+        SizedBox(
+          height: 46,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.zero,
+            itemCount: cfg.certificates.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, i) =>
+                _CertificateChip(cert: cfg.certificates[i]),
+          ),
         ),
       ));
     }
@@ -381,7 +389,9 @@ class _Body extends StatelessWidget {
             icon: Icon(open ? Icons.event_available : Icons.event_busy,
                 size: 20),
             label: Text(
-              open ? 'Book Your Appointment' : 'Booking Currently Closed',
+              open
+                  ? context.l10n.bookYourAppointment
+                  : context.l10n.bookingCurrentlyClosed,
               style:
                   const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700),
             ),
@@ -518,7 +528,7 @@ class _AppointmentStatusCard extends ConsumerWidget {
             child: TextButton.icon(
               onPressed: () => context.push('/my-appointments'),
               icon: const Icon(Icons.receipt_long_outlined, size: 16),
-              label: const Text('View all my bookings'),
+              label: Text(context.l10n.viewMyBookings),
               style: TextButton.styleFrom(foregroundColor: AppColors.primary),
             ),
           ),
@@ -590,103 +600,54 @@ class _ImageViewerScreen extends StatelessWidget {
   }
 }
 
-// ── Certificate row — one certificate per full-width row ─────────────────────
-// The image spans the section's full width and keeps its natural aspect ratio
-// (capped so one certificate never fills more than most of a screen), so the
-// uploaded document stays clearly readable. The name/description sit BELOW the
-// image as their own block, not overlaid or squeezed beside it.
+// ── Certificate chip — name only, horizontal scroll (spec: no thumbnails) ────
+// Tap → open the FULL certificate: image → in-app zoomable viewer, PDF →
+// in-app PDF viewer.
 
-class _CertificateRow extends StatelessWidget {
+class _CertificateChip extends StatelessWidget {
   final AstrologyCertificate cert;
-  final Future<void> Function(BuildContext, Uri, String) onOpen;
-  const _CertificateRow({required this.cert, required this.onOpen});
+  const _CertificateChip({required this.cert});
 
   void _open(BuildContext context) {
     if (cert.url.isEmpty) return;
     if (cert.isPdf) {
-      onOpen(context, Uri.parse(cert.url), cert.title); // open PDF externally
+      openPdfInApp(context, cert.url, title: cert.title);
     } else {
-      _showFullScreenImage(context, cert.url, cert.title); // in-app viewer
+      _showFullScreenImage(context, cert.url, cert.title);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final maxImageHeight = MediaQuery.of(context).size.height * 0.6;
-
-    return InkWell(
-      onTap: () => _open(context),
-      borderRadius: BorderRadius.circular(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              width: double.infinity,
-              constraints:
-                  BoxConstraints(minHeight: 160, maxHeight: maxImageHeight),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                border: Border.all(color: Colors.grey.shade200),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: cert.isPdf
-                  ? Container(
-                      height: 180,
-                      alignment: Alignment.center,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.picture_as_pdf,
-                              color: AppColors.error, size: 56),
-                          const SizedBox(height: 8),
-                          Text('Tap to open PDF',
-                              style: TextStyle(
-                                  fontSize: 12, color: Colors.grey[600])),
-                        ],
-                      ),
-                    )
-                  : NetworkPhoto(
-                      url: cert.url,
-                      width: double.infinity,
-                      fit: BoxFit.contain,
-                      fallbackIcon: Icons.verified,
-                      fallbackIconSize: 56,
-                      showLoadingSpinner: true,
-                    ),
-            ),
+    return Material(
+      color: AppColors.primary.withOpacity(0.06),
+      borderRadius: BorderRadius.circular(23),
+      child: InkWell(
+        onTap: () => _open(context),
+        borderRadius: BorderRadius.circular(23),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(23),
+            border: Border.all(color: AppColors.primary.withOpacity(0.35)),
           ),
-          const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.workspace_premium,
-                  size: 18, color: AppColors.gold),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(cert.title,
-                        style: const TextStyle(
-                            fontSize: 14.5,
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w700)),
-                    if (cert.description.trim().isNotEmpty) ...[
-                      const SizedBox(height: 3),
-                      Text(cert.description,
-                          style: TextStyle(
-                              fontSize: 12.5,
-                              height: 1.4,
-                              color: Colors.grey[700])),
-                    ],
-                  ],
-                ),
+                  size: 16, color: AppColors.gold),
+              const SizedBox(width: 6),
+              Text(
+                cert.title.trim().isEmpty ? 'Certificate' : cert.title.trim(),
+                style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary),
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

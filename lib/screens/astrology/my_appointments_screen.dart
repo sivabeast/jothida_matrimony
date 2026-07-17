@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/appointment_status.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/slot_generator.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../providers/appointment_provider.dart';
@@ -20,7 +21,7 @@ class MyAppointmentsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('My Appointments'),
+        title: Text(context.l10n.myBookings),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),

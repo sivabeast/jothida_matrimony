@@ -399,6 +399,16 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── App settings (force-update gate etc.) ─────────────────────────────
+    // app_settings/app_update holds the force-update configuration (versions,
+    // ON/OFF, title/message, Play Store URL). It is read BEFORE sign-in (the
+    // gate wraps the whole app incl. the login screen) and contains nothing
+    // sensitive, so reads are public; only admins may write.
+    match /app_settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // ── Astrology team (admin-provisioned astrologer accounts) ────────────
     // Doc id = the member's lowercased Gmail. Admins provision/enable/disable
     // members. Any signed-in user may READ (the smart auto-assigner picks the
