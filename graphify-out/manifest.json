@@ -470,7 +470,7 @@
     "semantic_hash": ""
   },
   "android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java": {
-    "mtime": 1784309958.2869532,
+    "mtime": 1784342852.4142904,
     "ast_hash": "3cb7f6dd907dbf0f123de4a470df46bc",
     "semantic_hash": ""
   },
@@ -620,8 +620,8 @@
     "semantic_hash": ""
   },
   ".claude/settings.local.json": {
-    "mtime": 1784309955.8600175,
-    "ast_hash": "beb00ff7e2e419a7f3933ff8ecde554c",
+    "mtime": 1784342492.6677,
+    "ast_hash": "d18a80da45a31dac17ee21aa00af9284",
     "semantic_hash": ""
   },
   "assets/master_data/location/master_cities.json": {
@@ -1095,17 +1095,17 @@
     "semantic_hash": ""
   },
   "lib/l10n/app_localizations.dart": {
-    "mtime": 1784285071.3059978,
+    "mtime": 1784310814.6916387,
     "ast_hash": "7cfa31f3a891a441cc552b12293de76e",
     "semantic_hash": ""
   },
   "lib/l10n/app_localizations_en.dart": {
-    "mtime": 1784285071.300004,
+    "mtime": 1784310814.6876435,
     "ast_hash": "b82a031db8f399980654cb294e04f051",
     "semantic_hash": ""
   },
   "lib/l10n/app_localizations_ta.dart": {
-    "mtime": 1784285071.3020005,
+    "mtime": 1784310814.689641,
     "ast_hash": "31f765faf7298b9b451da4e54f886d9c",
     "semantic_hash": ""
   },
@@ -1790,13 +1790,18 @@
     "semantic_hash": ""
   },
   "lib/screens/report/compatibility_report_print.dart": {
-    "mtime": 1784309360.7515647,
-    "ast_hash": "bf31101ac8314b8187a8838d105d5223",
+    "mtime": 1784342621.115054,
+    "ast_hash": "0a2a99235d2c7ea1f858a1bb9efb3599",
     "semantic_hash": ""
   },
   "lib/screens/report/compatibility_report_screen.dart": {
-    "mtime": 1784309784.723195,
-    "ast_hash": "b311beee3d009cd2328db0b6ec26855d",
+    "mtime": 1784342736.6028967,
+    "ast_hash": "ff764f494c544437626b0e3263f8012b",
+    "semantic_hash": ""
+  },
+  "assets/images/report_logo.png": {
+    "mtime": 1784342493.057018,
+    "ast_hash": "6fdaab7e2e12d8d0d40a7b83cb659fd8",
     "semantic_hash": ""
   }
 }

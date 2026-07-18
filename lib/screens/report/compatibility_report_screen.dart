@@ -363,14 +363,18 @@ class _CompatibilityReportScreenState
     final number = CompatibilityReport.reportNumber(widget.requestId);
     final date =
         _fmtDate(saved.submittedAt ?? r.completedAt ?? DateTime.now());
-    final pages = buildCompatPrintPages(
-        report: saved, reportNumber: number, reportDate: date);
     final bool ok;
     if (pdf) {
-      ok = await exportCompatReportPdf(context, pages,
+      ok = await exportCompatReportPdf(context,
+          report: saved,
+          reportNumber: number,
+          reportDate: date,
           fileName: 'jothida_compatibility_${widget.requestId}.pdf');
     } else {
-      ok = await exportCompatReportImages(context, pages,
+      ok = await exportCompatReportImages(context,
+          report: saved,
+          reportNumber: number,
+          reportDate: date,
           baseName: 'jothida_compatibility_${widget.requestId}');
     }
     if (!ok && mounted) {
@@ -528,8 +532,6 @@ class _CompatibilityReportScreenState
             child: _finalResultSection(editable),
           ),
           if (submitted && saved != null) ...[
-            const SizedBox(height: 12),
-            _preparedByCard(saved, date),
             if (saved.isSubmitted) ...[
               const SizedBox(height: 14),
               ElevatedButton.icon(
@@ -565,39 +567,33 @@ class _CompatibilityReportScreenState
         padding: const EdgeInsets.all(14),
         child: Column(
           children: [
-            Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image.asset(
-                    'assets/images/app_logo.png',
-                    width: 46,
-                    height: 46,
-                    errorBuilder: (_, __, ___) => const Icon(
-                        Icons.auto_awesome,
-                        color: _maroon,
-                        size: 40),
-                  ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                'assets/images/report_logo.png',
+                width: 54,
+                height: 54,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Image.asset(
+                  'assets/images/app_logo.png',
+                  width: 54,
+                  height: 54,
+                  errorBuilder: (_, __, ___) => const Icon(Icons.auto_awesome,
+                      color: _maroon, size: 44),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text('Jothida Matrimony',
-                          style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                              color: _maroon)),
-                      Text('Professional Marriage Compatibility Report',
-                          textAlign: TextAlign.end,
-                          style: TextStyle(
-                              fontSize: 10.5, color: Colors.grey[700])),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
+            const SizedBox(height: 8),
+            const Text('Jothida Matrimony',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: _maroon)),
+            const SizedBox(height: 2),
+            Text('Professional Marriage Compatibility Report',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 10.5, color: Colors.grey[700])),
             const SizedBox(height: 10),
             Container(height: 2.2, color: _maroon),
             const SizedBox(height: 2),
@@ -1056,33 +1052,4 @@ class _CompatibilityReportScreenState
     );
   }
 
-  Widget _preparedByCard(CompatibilityReport saved, String date) => Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _maroon.withOpacity(0.25)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.verified_outlined, color: _maroon, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Prepared by ${saved.employeeName.trim().isEmpty ? 'Jothida Matrimony' : saved.employeeName}',
-                    style: const TextStyle(
-                        fontSize: 12.5, fontWeight: FontWeight.w700),
-                  ),
-                  Text('Report Date: $date',
-                      style:
-                          TextStyle(fontSize: 11, color: Colors.grey[600])),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
 }

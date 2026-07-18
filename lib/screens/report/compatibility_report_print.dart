@@ -19,21 +19,34 @@ import '../../models/compatibility_report_model.dart';
 /// size and rasterised with [RepaintBoundary.toImage] — Flutter's text engine
 /// shapes Tamil correctly, which the `pdf` package's own TTF renderer does not
 /// guarantee. The captured PNG pages are then embedded 1:1 into an A4 PDF (or
-/// shared directly as images), so the download looks exactly like an official
-/// printed certificate.
+/// shared directly as images).
+///
+/// Pagination is measurement-driven (no fixed page plan): every section is
+/// first laid out offscreen at the real content width to get its true height,
+/// then sections FLOW onto pages one after another so no page is left with a
+/// big empty gap. A table (with its title) is atomic — if it does not fit in
+/// the space left on the current page, the whole table starts on a fresh page.
+/// Only the explanation text may split across pages (at line boundaries).
 
 // A4 @ 96dpi logical pixels.
 const double kA4PageW = 794;
 const double kA4PageH = 1123;
 
-// Conservative height available for body content inside the framed page
-// (below the branding header, above the footer). Used to auto-split a long
-// explanation across pages.
-const double _kBodyH = 880;
-// Width available to the explanation text (page frame + block padding).
-const double _kExplW = 680;
-// Height reserved for the final-result band + signature block.
-const double _kTailH = 230;
+// Width available to page content inside the framed page:
+// 794 − 2×16 (page pad) − 2×1.4 (outer border) − 2×3 (frame pad)
+//     − 2×0.8 (inner border) − 2×22 (inner pad) ≈ 707.
+const double kContentW = 707;
+
+// Vertical chrome around the body: 2×16 page pad + borders/frame pad (≈8.4)
+// + inner pad (18 top + 12 bottom) + 14 gap under the header.
+const double _kPageVChrome = 32 + 8.4 + 30 + 14;
+
+// Explanation text width inside its bordered block (padding 12×2 + borders).
+const double _kExplTextW = kContentW - 26;
+// Vertical chrome of the explanation block (padding + borders).
+const double _kExplChrome = 26;
+// Gap inserted between two sections on the same page.
+const double _kSectionGap = 16;
 
 const TextStyle _kExplStyle =
     TextStyle(fontSize: 10.5, height: 1.55, color: Color(0xFF262626));
@@ -45,95 +58,12 @@ const Color _paper = Color(0xFFFDF8F1);
 String _dash(String v) => v.trim().isEmpty ? '—' : v.trim();
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Page building
+// Print widgets
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Builds the full list of A4 page widgets for [report]. The explanation is
-/// automatically split so the report spans as many pages as it needs, each with
-/// the same branding header and footer.
-List<Widget> buildCompatPrintPages({
-  required CompatibilityReport report,
-  required String reportNumber,
-  required String reportDate,
-}) {
-  final bodies = <List<Widget>>[];
-
-  // Page 1 — couple details + திருமண பொருத்தம் table.
-  bodies.add([
-    _coupleRow(report),
-    const SizedBox(height: 16),
-    _sectionTitle('திருமண பொருத்தம்'),
-    const SizedBox(height: 8),
-    _poruthamTable(report),
-  ]);
-
-  // Page 2 — the three dosham / dasa tables.
-  final page2 = <Widget>[
-    _sectionTitle('செவ்வாய் தோஷம்'),
-    const SizedBox(height: 8),
-    _doshamTable(CompatibilityReport.sevvaiNames,
-        [for (var i = 0; i < 3; i++) report.sevvaiAt(i)]),
-    const SizedBox(height: 18),
-    _sectionTitle('பிற தோஷங்கள்'),
-    const SizedBox(height: 8),
-    _doshamTable(CompatibilityReport.otherDoshamNames,
-        [for (var i = 0; i < 2; i++) report.otherDoshamAt(i)]),
-    const SizedBox(height: 18),
-    _sectionTitle('திசா சந்தி'),
-    const SizedBox(height: 8),
-    _dasaTable(report),
-  ];
-
-  final tail = <Widget>[
-    const SizedBox(height: 20),
-    _sectionTitle('இறுதி முடிவு'),
-    const SizedBox(height: 10),
-    _finalResultBand(report.finalResult),
-    const SizedBox(height: 26),
-    _signatureRow(report, reportDate),
-  ];
-
-  final expl = report.explanation.trim();
-  if (expl.isEmpty) {
-    bodies.add([...page2, ...tail]);
-  } else {
-    bodies.add(page2);
-    // Explanation gets its own page(s); split by measured line heights.
-    final chunks =
-        _splitTextForPages(expl, _kExplStyle, _kExplW, _kBodyH - 90, _kBodyH - 40);
-    for (var i = 0; i < chunks.length; i++) {
-      bodies.add([
-        if (i == 0) ...[
-          _sectionTitle('பொருத்தம் குறிப்பு / விளக்கம்'),
-          const SizedBox(height: 8),
-        ],
-        _explanationBlock(chunks[i]),
-      ]);
-    }
-    final lastChunkH = _textHeight(chunks.last, _kExplStyle, _kExplW) +
-        (chunks.length == 1 ? 90 : 40);
-    if (lastChunkH + _kTailH <= _kBodyH) {
-      bodies.last.addAll(tail);
-    } else {
-      bodies.add(tail);
-    }
-  }
-
-  return [
-    for (var i = 0; i < bodies.length; i++)
-      _a4Page(
-        body: bodies[i],
-        pageNo: i + 1,
-        pageCount: bodies.length,
-        reportNumber: reportNumber,
-        reportDate: reportDate,
-      ),
-  ];
-}
-
-/// One framed A4 page: double certificate border, branding header, body,
-/// footer with page numbers. Body overflow is clipped as a last-resort guard —
-/// the explanation splitter keeps real content inside the page.
+/// One framed A4 page: double certificate border, centered branding header,
+/// body, footer with page numbers. Body overflow is clipped as a last-resort
+/// guard — the measured pagination keeps real content inside the page.
 Widget _a4Page({
   required List<Widget> body,
   required int pageNo,
@@ -177,44 +107,53 @@ Widget _a4Page({
   );
 }
 
+/// The report logo — the rounded-square brand mark, clipped so its rounded
+/// corners stay clean on the white page. Falls back to the app logo / icon.
+Widget _reportLogo(double size) => ClipRRect(
+      borderRadius: BorderRadius.circular(size * 0.22),
+      child: Image.asset(
+        'assets/images/report_logo.png',
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Image.asset(
+          'assets/images/app_logo.png',
+          width: size,
+          height: size,
+          errorBuilder: (_, __, ___) =>
+              Icon(Icons.auto_awesome, color: _maroon, size: size * 0.8),
+        ),
+      ),
+    );
+
+/// Centered branding header — logo on top, name + subtitle + report meta
+/// beneath, then the maroon/gold rules.
 Widget _printHeader(String reportNumber, String reportDate) => Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.asset(
-                'assets/images/app_logo.png',
-                width: 58,
-                height: 58,
-                errorBuilder: (_, __, ___) => const Icon(Icons.auto_awesome,
-                    color: _maroon, size: 48),
-              ),
-            ),
-            const Spacer(),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                const Text('Jothida Matrimony',
-                    style: TextStyle(
-                        fontSize: 21,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.3,
-                        color: _maroon)),
-                const SizedBox(height: 2),
-                Text('Professional Marriage Compatibility Report',
-                    style: TextStyle(fontSize: 10.5, color: Colors.grey[800])),
-                const SizedBox(height: 5),
-                Text('Report No: $reportNumber    |    Report Date: $reportDate',
-                    style: TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[700])),
-              ],
-            ),
-          ],
+        Center(child: _reportLogo(62)),
+        const SizedBox(height: 8),
+        const Center(
+          child: Text('Jothida Matrimony',
+              style: TextStyle(
+                  fontSize: 21,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.3,
+                  color: _maroon)),
+        ),
+        const SizedBox(height: 2),
+        Center(
+          child: Text('Professional Marriage Compatibility Report',
+              style: TextStyle(fontSize: 10.5, color: Colors.grey[800])),
+        ),
+        const SizedBox(height: 5),
+        Center(
+          child: Text(
+              'Report No: $reportNumber    |    Report Date: $reportDate',
+              style: TextStyle(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700])),
         ),
         const SizedBox(height: 10),
         Container(height: 2.6, color: _maroon),
@@ -254,6 +193,14 @@ Widget _sectionTitle(String title) => Row(
         ),
         const Expanded(child: Divider(color: _gold, thickness: 0.9)),
       ],
+    );
+
+/// A section title glued to its table so the pair paginates as ONE unit —
+/// a table never starts at the bottom of a page without its heading.
+Widget _titledGroup(String title, Widget child) => Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [_sectionTitle(title), const SizedBox(height: 8), child],
     );
 
 Widget _coupleRow(CompatibilityReport r) => Row(
@@ -369,11 +316,11 @@ Widget _answerCell(String answer) {
 }
 
 TableRow _zebra(int i, List<Widget> cells) => TableRow(
-      decoration:
-          BoxDecoration(color: i.isOdd ? _paper : Colors.white),
+      decoration: BoxDecoration(color: i.isOdd ? _paper : Colors.white),
       children: [
         for (final c in cells)
-          TableCell(verticalAlignment: TableCellVerticalAlignment.middle, child: c),
+          TableCell(
+              verticalAlignment: TableCellVerticalAlignment.middle, child: c),
       ],
     );
 
@@ -494,45 +441,8 @@ Widget _finalResultBand(String answer) {
   );
 }
 
-Widget _signatureRow(CompatibilityReport r, String reportDate) => Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('தயாரித்தவர் / Prepared By',
-                  style: TextStyle(fontSize: 9, color: Colors.grey[700])),
-              const SizedBox(height: 3),
-              Text(_dash(r.employeeName),
-                  style: const TextStyle(
-                      fontSize: 11, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 3),
-              Text('Date: $reportDate',
-                  style: TextStyle(fontSize: 9, color: Colors.grey[700])),
-            ],
-          ),
-        ),
-        Column(
-          children: [
-            Container(
-              width: 160,
-              height: 64,
-              decoration: BoxDecoration(
-                border: Border.all(color: _maroon.withOpacity(0.4), width: 0.8),
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text('முத்திரை / கையொப்பம்',
-                style: TextStyle(fontSize: 9, color: Colors.grey[700])),
-          ],
-        ),
-      ],
-    );
-
 // ─────────────────────────────────────────────────────────────────────────────
-// Explanation page-splitting
+// Explanation text splitting
 // ─────────────────────────────────────────────────────────────────────────────
 
 double _textHeight(String text, TextStyle style, double maxWidth) {
@@ -596,21 +506,39 @@ List<String> _splitTextForPages(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Capture + export
+// Measure → paginate → capture
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Full-screen route that paints each A4 page at its real logical size behind
-/// an opaque "preparing" overlay, captures every page as a PNG, then pops with
-/// the page images (null on failure).
+/// Full-screen route that (1) lays the report sections out offscreen at the
+/// real A4 content width to measure their true heights, (2) flows them onto
+/// pages — tables are atomic, only the explanation text splits — and (3)
+/// paints each page behind an opaque "preparing" overlay, capturing every page
+/// as a PNG. Pops with the page images (null on failure).
 class CompatReportCaptureScreen extends StatefulWidget {
-  final List<Widget> pages;
-  const CompatReportCaptureScreen({super.key, required this.pages});
+  final CompatibilityReport report;
+  final String reportNumber;
+  final String reportDate;
+
+  const CompatReportCaptureScreen({
+    super.key,
+    required this.report,
+    required this.reportNumber,
+    required this.reportDate,
+  });
 
   static Future<List<Uint8List>?> capture(
-          BuildContext context, List<Widget> pages) =>
+    BuildContext context, {
+    required CompatibilityReport report,
+    required String reportNumber,
+    required String reportDate,
+  }) =>
       Navigator.of(context).push<List<Uint8List>>(MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (_) => CompatReportCaptureScreen(pages: pages),
+        builder: (_) => CompatReportCaptureScreen(
+          report: report,
+          reportNumber: reportNumber,
+          reportDate: reportDate,
+        ),
       ));
 
   @override
@@ -620,24 +548,77 @@ class CompatReportCaptureScreen extends StatefulWidget {
 
 class _CompatReportCaptureScreenState extends State<CompatReportCaptureScreen> {
   final GlobalKey _boundaryKey = GlobalKey();
-  int _index = 0;
+  final GlobalKey _headerKey = GlobalKey();
+  final GlobalKey _footerKey = GlobalKey();
+  final GlobalKey _explTitleKey = GlobalKey();
+  late final List<Widget> _sections; // atomic sections, in report order
+  late final List<GlobalKey> _sectionKeys;
+
+  List<Widget> _pages = const [];
+  bool _measuring = true;
+  int _pageIndex = 0;
   bool _started = false;
 
   @override
   void initState() {
     super.initState();
+    final r = widget.report;
+    _sections = [
+      _coupleRow(r),
+      _titledGroup('திருமண பொருத்தம்', _poruthamTable(r)),
+      _titledGroup(
+          'செவ்வாய் தோஷம்',
+          _doshamTable(CompatibilityReport.sevvaiNames,
+              [for (var i = 0; i < 3; i++) r.sevvaiAt(i)])),
+      _titledGroup(
+          'பிற தோஷங்கள்',
+          _doshamTable(CompatibilityReport.otherDoshamNames,
+              [for (var i = 0; i < 2; i++) r.otherDoshamAt(i)])),
+      _titledGroup('திசா சந்தி', _dasaTable(r)),
+      // Explanation is handled separately (splittable); final result is atomic.
+      _titledGroup('இறுதி முடிவு', _finalResultBand(r.finalResult)),
+    ];
+    _sectionKeys = [for (final _ in _sections) GlobalKey()];
     WidgetsBinding.instance.addPostFrameCallback((_) => _run());
   }
 
   Future<void> _run() async {
     if (_started) return;
     _started = true;
-    final out = <Uint8List>[];
     try {
-      for (var i = 0; i < widget.pages.length; i++) {
-        setState(() => _index = i);
-        // Two frames + a short pause so the asset logo and Tamil glyph shaping
-        // are fully painted before rasterising.
+      // Let the measuring pass (and the logo asset) settle, then read sizes.
+      await _pumpFrame();
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      await _pumpFrame();
+
+      double h(GlobalKey k) => k.currentContext?.size?.height ?? 0;
+      final headerH = h(_headerKey);
+      final footerH = h(_footerKey);
+      final explTitleH = h(_explTitleKey);
+      final sectionHs = [for (final k in _sectionKeys) h(k)];
+      if (headerH <= 0) throw StateError('measuring pass failed');
+
+      final bodyH = kA4PageH - _kPageVChrome - headerH - footerH - 4;
+      final bodies =
+          _paginate(sectionHs, bodyH: bodyH, explTitleH: explTitleH);
+      _pages = [
+        for (var i = 0; i < bodies.length; i++)
+          _a4Page(
+            body: bodies[i],
+            pageNo: i + 1,
+            pageCount: bodies.length,
+            reportNumber: widget.reportNumber,
+            reportDate: widget.reportDate,
+          ),
+      ];
+
+      // Capture every page.
+      final out = <Uint8List>[];
+      for (var i = 0; i < _pages.length; i++) {
+        setState(() {
+          _measuring = false;
+          _pageIndex = i;
+        });
         await _pumpFrame();
         await Future<void>.delayed(const Duration(milliseconds: 80));
         await _pumpFrame();
@@ -657,6 +638,79 @@ class _CompatReportCaptureScreenState extends State<CompatReportCaptureScreen> {
     }
   }
 
+  /// Flows the measured sections onto pages. Every atomic section that does not
+  /// fit in the current page's remaining space starts a fresh page; the
+  /// explanation text fills whatever space is left and continues across pages.
+  List<List<Widget>> _paginate(
+    List<double> sectionHs, {
+    required double bodyH,
+    required double explTitleH,
+  }) {
+    final pages = <List<Widget>>[];
+    var cur = <Widget>[];
+    var remaining = bodyH;
+
+    void closePage() {
+      if (cur.isNotEmpty) {
+        pages.add(cur);
+        cur = <Widget>[];
+        remaining = bodyH;
+      }
+    }
+
+    void addGap() {
+      if (cur.isNotEmpty) {
+        cur.add(const SizedBox(height: _kSectionGap));
+        remaining -= _kSectionGap;
+      }
+    }
+
+    void addAtomic(Widget w, double h) {
+      final need = (cur.isEmpty ? 0 : _kSectionGap) + h;
+      if (need > remaining && cur.isNotEmpty) closePage();
+      addGap();
+      cur.add(w);
+      remaining -= h;
+    }
+
+    // All sections up to (but excluding) the final-result group, then the
+    // explanation, then the final result — matching the on-screen order.
+    final finalIdx = _sections.length - 1;
+    for (var i = 0; i < finalIdx; i++) {
+      addAtomic(_sections[i], sectionHs[i]);
+    }
+
+    final expl = widget.report.explanation.trim();
+    if (expl.isNotEmpty) {
+      // Move to a fresh page only when not even the title + a few lines fit.
+      final gap = cur.isEmpty ? 0 : _kSectionGap;
+      if (remaining - gap - explTitleH - 8 - _kExplChrome < 50) closePage();
+      addGap();
+      final firstAvail =
+          remaining - explTitleH - 8 - _kExplChrome;
+      final otherAvail = bodyH - _kExplChrome;
+      final chunks = _splitTextForPages(
+          expl, _kExplStyle, _kExplTextW, firstAvail, otherAvail);
+      cur.add(_sectionTitle('பொருத்தம் குறிப்பு / விளக்கம்'));
+      cur.add(const SizedBox(height: 8));
+      cur.add(_explanationBlock(chunks.first));
+      remaining -= explTitleH +
+          8 +
+          _kExplChrome +
+          _textHeight(chunks.first, _kExplStyle, _kExplTextW);
+      for (final chunk in chunks.skip(1)) {
+        closePage();
+        cur.add(_explanationBlock(chunk));
+        remaining -=
+            _kExplChrome + _textHeight(chunk, _kExplStyle, _kExplTextW);
+      }
+    }
+
+    addAtomic(_sections[finalIdx], sectionHs[finalIdx]);
+    closePage();
+    return pages;
+  }
+
   Future<void> _pumpFrame() {
     WidgetsBinding.instance.scheduleFrame();
     return WidgetsBinding.instance.endOfFrame;
@@ -668,20 +722,54 @@ class _CompatReportCaptureScreenState extends State<CompatReportCaptureScreen> {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // The page being captured — painted at full A4 logical size (the
-          // opaque overlay hides it; clipping never affects toImage).
-          Positioned(
-            left: 0,
-            top: 0,
-            child: RepaintBoundary(
-              key: _boundaryKey,
-              child: SizedBox(
-                width: kA4PageW,
-                height: kA4PageH,
-                child: widget.pages[_index],
+          if (_measuring)
+            // Offscreen measuring pass: lay every piece out at the REAL A4
+            // content width (nested scroll views give unbounded room, so the
+            // sections take their true intrinsic heights).
+            Positioned(
+              left: 0,
+              top: 0,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: kContentW,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        KeyedSubtree(
+                            key: _headerKey,
+                            child: _printHeader(
+                                widget.reportNumber, widget.reportDate)),
+                        KeyedSubtree(
+                            key: _footerKey, child: _printFooter(1, 1)),
+                        KeyedSubtree(
+                            key: _explTitleKey,
+                            child: _sectionTitle('பொருத்தம் குறிப்பு / விளக்கம்')),
+                        for (var i = 0; i < _sections.length; i++)
+                          KeyedSubtree(
+                              key: _sectionKeys[i], child: _sections[i]),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else
+            // The page being captured — painted at full A4 logical size (the
+            // opaque overlay hides it; clipping never affects toImage).
+            Positioned(
+              left: 0,
+              top: 0,
+              child: RepaintBoundary(
+                key: _boundaryKey,
+                child: SizedBox(
+                  width: kA4PageW,
+                  height: kA4PageH,
+                  child: _pages[_pageIndex],
+                ),
               ),
             ),
-          ),
           Positioned.fill(
             child: Container(
               color: Colors.white,
@@ -692,7 +780,9 @@ class _CompatReportCaptureScreenState extends State<CompatReportCaptureScreen> {
                     const CircularProgressIndicator(color: _maroon),
                     const SizedBox(height: 16),
                     Text(
-                      'அறிக்கை தயாராகிறது… (${_index + 1}/${widget.pages.length})',
+                      _measuring
+                          ? 'அறிக்கை தயாராகிறது…'
+                          : 'அறிக்கை தயாராகிறது… (${_pageIndex + 1}/${_pages.length})',
                       style: const TextStyle(
                           fontSize: 14, fontWeight: FontWeight.w600),
                     ),
@@ -707,14 +797,21 @@ class _CompatReportCaptureScreenState extends State<CompatReportCaptureScreen> {
   }
 }
 
-/// Captures [pages] and shares them as ONE A4 PDF via the system sheet.
+// ─────────────────────────────────────────────────────────────────────────────
+// Export entry points
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Captures the report and shares it as ONE A4 PDF via the system sheet.
 /// Returns true on success.
 Future<bool> exportCompatReportPdf(
-  BuildContext context,
-  List<Widget> pages, {
+  BuildContext context, {
+  required CompatibilityReport report,
+  required String reportNumber,
+  required String reportDate,
   required String fileName,
 }) async {
-  final pngs = await CompatReportCaptureScreen.capture(context, pages);
+  final pngs = await CompatReportCaptureScreen.capture(context,
+      report: report, reportNumber: reportNumber, reportDate: reportDate);
   if (pngs == null || pngs.isEmpty) return false;
   final doc = pw.Document();
   for (final png in pngs) {
@@ -728,14 +825,17 @@ Future<bool> exportCompatReportPdf(
   return true;
 }
 
-/// Captures [pages] and shares them as PNG image(s) via the system sheet.
+/// Captures the report and shares it as PNG image(s) via the system sheet.
 /// Returns true on success.
 Future<bool> exportCompatReportImages(
-  BuildContext context,
-  List<Widget> pages, {
+  BuildContext context, {
+  required CompatibilityReport report,
+  required String reportNumber,
+  required String reportDate,
   required String baseName,
 }) async {
-  final pngs = await CompatReportCaptureScreen.capture(context, pages);
+  final pngs = await CompatReportCaptureScreen.capture(context,
+      report: report, reportNumber: reportNumber, reportDate: reportDate);
   if (pngs == null || pngs.isEmpty) return false;
   final dir = await getTemporaryDirectory();
   final files = <XFile>[];
