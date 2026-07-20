@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/horoscope_calculation_service.dart';
 import '../../../core/services/master_astrology_data.dart';
-import '../../../providers/master_location_provider.dart';
+import '../../../providers/location_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';

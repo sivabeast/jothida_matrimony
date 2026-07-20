@@ -1,0 +1,5277 @@
+[
+  {
+    "id": 1,
+    "districtId": 1,
+    "name": "அரியலூர்"
+  },
+  {
+    "id": 2,
+    "districtId": 1,
+    "name": "கங்கைகொண்ட சோழபுரம்"
+  },
+  {
+    "id": 3,
+    "districtId": 1,
+    "name": "ஜெயங்கொண்டசோழபுரம்"
+  },
+  {
+    "id": 4,
+    "districtId": 1,
+    "name": "ஜெயங்கொண்டம்"
+  },
+  {
+    "id": 5,
+    "districtId": 1,
+    "name": "காட்டுமன்னார்கோயில்"
+  },
+  {
+    "id": 6,
+    "districtId": 1,
+    "name": "லால்குடி"
+  },
+  {
+    "id": 7,
+    "districtId": 1,
+    "name": "நல்லாம்பாளையம்"
+  },
+  {
+    "id": 8,
+    "districtId": 1,
+    "name": "செந்துறை"
+  },
+  {
+    "id": 9,
+    "districtId": 1,
+    "name": "உடையார்பாளையம்"
+  },
+  {
+    "id": 10,
+    "districtId": 1,
+    "name": "வரதராஜன்பேட்டை"
+  },
+  {
+    "id": 11,
+    "districtId": 2,
+    "name": "அச்சரப்பாக்கம்"
+  },
+  {
+    "id": 12,
+    "districtId": 2,
+    "name": "ஆலப்பாக்கம்"
+  },
+  {
+    "id": 13,
+    "districtId": 2,
+    "name": "ஆப்பூர்"
+  },
+  {
+    "id": 14,
+    "districtId": 2,
+    "name": "பொல்லினேனி மலைப்பகுதி"
+  },
+  {
+    "id": 15,
+    "districtId": 2,
+    "name": "செம்மஞ்சேரி"
+  },
+  {
+    "id": 16,
+    "districtId": 2,
+    "name": "செங்கல்பட்டு"
+  },
+  {
+    "id": 17,
+    "districtId": 2,
+    "name": "செய்யூர்"
+  },
+  {
+    "id": 18,
+    "districtId": 2,
+    "name": "இடக்கழிநாடு"
+  },
+  {
+    "id": 19,
+    "districtId": 2,
+    "name": "ஏகாட்டூர் (செங்கல்பட்டு மாவட்டம்)"
+  },
+  {
+    "id": 20,
+    "districtId": 2,
+    "name": "குடுவாஞ்சேரி"
+  },
+  {
+    "id": 21,
+    "districtId": 2,
+    "name": "கல்பாக்கம்"
+  },
+  {
+    "id": 22,
+    "districtId": 2,
+    "name": "கருங்குழி"
+  },
+  {
+    "id": 23,
+    "districtId": 2,
+    "name": "கேளம்பாக்கம்"
+  },
+  {
+    "id": 24,
+    "districtId": 2,
+    "name": "கோவிலாம்பாக்கம்"
+  },
+  {
+    "id": 25,
+    "districtId": 2,
+    "name": "மதுராந்தகம்"
+  },
+  {
+    "id": 26,
+    "districtId": 2,
+    "name": "மண்ணிவாக்கம்"
+  },
+  {
+    "id": 27,
+    "districtId": 2,
+    "name": "மறைமலைநகர்"
+  },
+  {
+    "id": 28,
+    "districtId": 2,
+    "name": "மேலமையூர்"
+  },
+  {
+    "id": 29,
+    "districtId": 2,
+    "name": "மேல்மருவத்தூர்"
+  },
+  {
+    "id": 30,
+    "districtId": 2,
+    "name": "மூவரசம்பட்டு"
+  },
+  {
+    "id": 31,
+    "districtId": 2,
+    "name": "நந்திவரம் - கூடுவாஞ்சேரி"
+  },
+  {
+    "id": 32,
+    "districtId": 2,
+    "name": "பல்லாவரம்"
+  },
+  {
+    "id": 33,
+    "districtId": 2,
+    "name": "பையனூர் (தமிழ்நாடு)"
+  },
+  {
+    "id": 34,
+    "districtId": 2,
+    "name": "பொழிச்சலூர்"
+  },
+  {
+    "id": 35,
+    "districtId": 2,
+    "name": "புதுப்பட்டினம்"
+  },
+  {
+    "id": 36,
+    "districtId": 2,
+    "name": "சதுரங்கப்பட்டினம்"
+  },
+  {
+    "id": 37,
+    "districtId": 2,
+    "name": "சிங்கபெருமாள்கோவில்"
+  },
+  {
+    "id": 38,
+    "districtId": 2,
+    "name": "பரங்கிமலை மற்றும் பல்லாவரம்"
+  },
+  {
+    "id": 39,
+    "districtId": 2,
+    "name": "தாம்பரம்"
+  },
+  {
+    "id": 40,
+    "districtId": 2,
+    "name": "திருப்போரூர்"
+  },
+  {
+    "id": 41,
+    "districtId": 2,
+    "name": "திருக்கழுக்குன்றம்"
+  },
+  {
+    "id": 42,
+    "districtId": 2,
+    "name": "திரிசூலம் (சென்னை)"
+  },
+  {
+    "id": 43,
+    "districtId": 2,
+    "name": "தொழுப்பேடு"
+  },
+  {
+    "id": 44,
+    "districtId": 2,
+    "name": "ஊரப்பாக்கம்"
+  },
+  {
+    "id": 45,
+    "districtId": 2,
+    "name": "வண்டலூர்"
+  },
+  {
+    "id": 46,
+    "districtId": 3,
+    "name": "அடையாறு"
+  },
+  {
+    "id": 47,
+    "districtId": 3,
+    "name": "ஆலந்தூர்"
+  },
+  {
+    "id": 48,
+    "districtId": 3,
+    "name": "அம்பத்தூர்"
+  },
+  {
+    "id": 49,
+    "districtId": 3,
+    "name": "அமைந்தகரை"
+  },
+  {
+    "id": 50,
+    "districtId": 3,
+    "name": "அண்ணா நகர்"
+  },
+  {
+    "id": 51,
+    "districtId": 3,
+    "name": "சென்னை"
+  },
+  {
+    "id": 52,
+    "districtId": 3,
+    "name": "எழும்பூர்"
+  },
+  {
+    "id": 53,
+    "districtId": 3,
+    "name": "கிண்டி"
+  },
+  {
+    "id": 54,
+    "districtId": 3,
+    "name": "கோடம்பாக்கம்"
+  },
+  {
+    "id": 55,
+    "districtId": 3,
+    "name": "மாதவரம்"
+  },
+  {
+    "id": 56,
+    "districtId": 3,
+    "name": "மதுரவாயல்"
+  },
+  {
+    "id": 57,
+    "districtId": 3,
+    "name": "மாம்பலம்"
+  },
+  {
+    "id": 58,
+    "districtId": 3,
+    "name": "மயிலாப்பூர்"
+  },
+  {
+    "id": 59,
+    "districtId": 3,
+    "name": "நுங்கம்பாக்கம்"
+  },
+  {
+    "id": 60,
+    "districtId": 3,
+    "name": "பெரம்பூர்"
+  },
+  {
+    "id": 61,
+    "districtId": 3,
+    "name": "புரசைவாக்கம்"
+  },
+  {
+    "id": 62,
+    "districtId": 3,
+    "name": "இராயபுரம்"
+  },
+  {
+    "id": 63,
+    "districtId": 3,
+    "name": "சைதாப்பேட்டை"
+  },
+  {
+    "id": 64,
+    "districtId": 3,
+    "name": "சோழிங்கநல்லூர்"
+  },
+  {
+    "id": 65,
+    "districtId": 3,
+    "name": "தியாகராய நகர்"
+  },
+  {
+    "id": 66,
+    "districtId": 3,
+    "name": "திருவொற்றியூர்"
+  },
+  {
+    "id": 67,
+    "districtId": 3,
+    "name": "தண்டையார்பேட்டை"
+  },
+  {
+    "id": 68,
+    "districtId": 3,
+    "name": "திருவல்லிக்கேணி"
+  },
+  {
+    "id": 69,
+    "districtId": 3,
+    "name": "வடபழனி"
+  },
+  {
+    "id": 70,
+    "districtId": 3,
+    "name": "வேளச்சேரி"
+  },
+  {
+    "id": 71,
+    "districtId": 4,
+    "name": "ஆலந்துறை"
+  },
+  {
+    "id": 72,
+    "districtId": 4,
+    "name": "ஆனைமலை"
+  },
+  {
+    "id": 73,
+    "districtId": 4,
+    "name": "அன்னூர்"
+  },
+  {
+    "id": 74,
+    "districtId": 4,
+    "name": "அரசூர்"
+  },
+  {
+    "id": 75,
+    "districtId": 4,
+    "name": "அவிநாசி"
+  },
+  {
+    "id": 76,
+    "districtId": 4,
+    "name": "செட்டிபாளையம்"
+  },
+  {
+    "id": 77,
+    "districtId": 4,
+    "name": "சின்னவேடம்பட்டி"
+  },
+  {
+    "id": 78,
+    "districtId": 4,
+    "name": "கோயம்புத்தூர்"
+  },
+  {
+    "id": 79,
+    "districtId": 4,
+    "name": "தாளியூர்"
+  },
+  {
+    "id": 80,
+    "districtId": 4,
+    "name": "ஈச்சனாரி"
+  },
+  {
+    "id": 81,
+    "districtId": 4,
+    "name": "எட்டிமடை"
+  },
+  {
+    "id": 82,
+    "districtId": 4,
+    "name": "கவுண்டம்பாளையம்"
+  },
+  {
+    "id": 83,
+    "districtId": 4,
+    "name": "கூடலூர்"
+  },
+  {
+    "id": 84,
+    "districtId": 4,
+    "name": "இடிகரை"
+  },
+  {
+    "id": 85,
+    "districtId": 4,
+    "name": "இருகூர்"
+  },
+  {
+    "id": 86,
+    "districtId": 4,
+    "name": "கள்ளிப்பாளையம்"
+  },
+  {
+    "id": 87,
+    "districtId": 4,
+    "name": "காங்கேயம்பாளையம்"
+  },
+  {
+    "id": 88,
+    "districtId": 4,
+    "name": "கணியூர்"
+  },
+  {
+    "id": 89,
+    "districtId": 4,
+    "name": "கண்ணம்பாளையம்"
+  },
+  {
+    "id": 90,
+    "districtId": 4,
+    "name": "காரமடை"
+  },
+  {
+    "id": 91,
+    "districtId": 4,
+    "name": "கருமத்தம்பட்டி"
+  },
+  {
+    "id": 92,
+    "districtId": 4,
+    "name": "கிணத்துக்கடவு"
+  },
+  {
+    "id": 93,
+    "districtId": 4,
+    "name": "கோட்டூர்"
+  },
+  {
+    "id": 94,
+    "districtId": 4,
+    "name": "கோவைபுதூர்"
+  },
+  {
+    "id": 95,
+    "districtId": 4,
+    "name": "குனியமுத்தூர்"
+  },
+  {
+    "id": 96,
+    "districtId": 4,
+    "name": "குரும்பபாளையம்"
+  },
+  {
+    "id": 97,
+    "districtId": 4,
+    "name": "மதுக்கரை"
+  },
+  {
+    "id": 98,
+    "districtId": 4,
+    "name": "மலுமிச்சம்பட்டி"
+  },
+  {
+    "id": 99,
+    "districtId": 4,
+    "name": "மருதமலை"
+  },
+  {
+    "id": 100,
+    "districtId": 4,
+    "name": "மேட்டுப்பாளையம்"
+  },
+  {
+    "id": 101,
+    "districtId": 4,
+    "name": "மூப்பேரிபாளையம்"
+  },
+  {
+    "id": 102,
+    "districtId": 4,
+    "name": "முத்துகவுண்டன்புதூர்"
+  },
+  {
+    "id": 103,
+    "districtId": 4,
+    "name": "மயிலம்பட்டி ஊராட்சி"
+  },
+  {
+    "id": 104,
+    "districtId": 4,
+    "name": "நரசிம்மநாயக்கன்பாளையம்"
+  },
+  {
+    "id": 105,
+    "districtId": 4,
+    "name": "நீலாம்பூர்"
+  },
+  {
+    "id": 106,
+    "districtId": 4,
+    "name": "உடையகுளம்"
+  },
+  {
+    "id": 107,
+    "districtId": 4,
+    "name": "ஒத்தக்கால்மண்டபம்"
+  },
+  {
+    "id": 108,
+    "districtId": 4,
+    "name": "பல்லடம்"
+  },
+  {
+    "id": 109,
+    "districtId": 4,
+    "name": "பள்ளப்பாளையம்"
+  },
+  {
+    "id": 110,
+    "districtId": 4,
+    "name": "பட்டணம் (கேரள ஊர்)"
+  },
+  {
+    "id": 111,
+    "districtId": 4,
+    "name": "பெரிய நெகமம்"
+  },
+  {
+    "id": 112,
+    "districtId": 4,
+    "name": "பெரியநாயக்கன்பாளையம்"
+  },
+  {
+    "id": 113,
+    "districtId": 4,
+    "name": "பொள்ளாச்சி"
+  },
+  {
+    "id": 114,
+    "districtId": 4,
+    "name": "பூலுவபட்டி"
+  },
+  {
+    "id": 115,
+    "districtId": 4,
+    "name": "சமத்தூர்"
+  },
+  {
+    "id": 116,
+    "districtId": 4,
+    "name": "சரவணம்பட்டி"
+  },
+  {
+    "id": 117,
+    "districtId": 4,
+    "name": "சர்க்கார் சாமக்குளம்"
+  },
+  {
+    "id": 118,
+    "districtId": 4,
+    "name": "சிறுமுகை"
+  },
+  {
+    "id": 119,
+    "districtId": 4,
+    "name": "சோமையம்பாளையம்"
+  },
+  {
+    "id": 120,
+    "districtId": 4,
+    "name": "சூளீஸ்வரன்பட்டி"
+  },
+  {
+    "id": 121,
+    "districtId": 4,
+    "name": "சுல்தான்பேட்டை"
+  },
+  {
+    "id": 122,
+    "districtId": 4,
+    "name": "சூலூர்"
+  },
+  {
+    "id": 123,
+    "districtId": 4,
+    "name": "தேக்குப்பாளையம்"
+  },
+  {
+    "id": 124,
+    "districtId": 4,
+    "name": "தென்கரை"
+  },
+  {
+    "id": 125,
+    "districtId": 4,
+    "name": "திருமலையம்பாளையம்"
+  },
+  {
+    "id": 126,
+    "districtId": 4,
+    "name": "தொண்டாமுத்தூர்"
+  },
+  {
+    "id": 127,
+    "districtId": 4,
+    "name": "துடியலூர்"
+  },
+  {
+    "id": 128,
+    "districtId": 4,
+    "name": "உளியம்பாளையம்"
+  },
+  {
+    "id": 129,
+    "districtId": 4,
+    "name": "வால்பாறை"
+  },
+  {
+    "id": 130,
+    "districtId": 4,
+    "name": "வேடப்பட்டி"
+  },
+  {
+    "id": 131,
+    "districtId": 4,
+    "name": "வீரகேரளம்"
+  },
+  {
+    "id": 132,
+    "districtId": 4,
+    "name": "வீரபாண்டி"
+  },
+  {
+    "id": 133,
+    "districtId": 4,
+    "name": "வெள்ளக்கிணறு"
+  },
+  {
+    "id": 134,
+    "districtId": 4,
+    "name": "வேட்டைக்காரன்புதூர்"
+  },
+  {
+    "id": 135,
+    "districtId": 4,
+    "name": "விளாங்குறிச்சி"
+  },
+  {
+    "id": 136,
+    "districtId": 4,
+    "name": "ஜமீன் ஊத்துக்குளி"
+  },
+  {
+    "id": 137,
+    "districtId": 5,
+    "name": "அண்ணாமலை"
+  },
+  {
+    "id": 138,
+    "districtId": 5,
+    "name": "அவியனூர்"
+  },
+  {
+    "id": 139,
+    "districtId": 5,
+    "name": "புவனகிரி"
+  },
+  {
+    "id": 140,
+    "districtId": 5,
+    "name": "சிதம்பரம்"
+  },
+  {
+    "id": 141,
+    "districtId": 5,
+    "name": "கடலூர்"
+  },
+  {
+    "id": 142,
+    "districtId": 5,
+    "name": "கங்கைகொண்டான் (திருநெல்வேலி)"
+  },
+  {
+    "id": 143,
+    "districtId": 5,
+    "name": "கிள்ளை"
+  },
+  {
+    "id": 144,
+    "districtId": 5,
+    "name": "கோவிலாம்பூண்டி ஊராட்சி"
+  },
+  {
+    "id": 145,
+    "districtId": 5,
+    "name": "குறிஞ்சிப்பாடி"
+  },
+  {
+    "id": 146,
+    "districtId": 5,
+    "name": "இலால்பேட்டை"
+  },
+  {
+    "id": 147,
+    "districtId": 5,
+    "name": "மங்கலம்பேட்டை"
+  },
+  {
+    "id": 148,
+    "districtId": 5,
+    "name": "நெல்லிக்குப்பம்"
+  },
+  {
+    "id": 149,
+    "districtId": 5,
+    "name": "நெய்வேலி"
+  },
+  {
+    "id": 150,
+    "districtId": 5,
+    "name": "பண்ருட்டி"
+  },
+  {
+    "id": 151,
+    "districtId": 5,
+    "name": "பரங்கிப்பேட்டை"
+  },
+  {
+    "id": 152,
+    "districtId": 5,
+    "name": "பெண்ணாடம்"
+  },
+  {
+    "id": 153,
+    "districtId": 5,
+    "name": "சேத்தியாத்தோப்பு"
+  },
+  {
+    "id": 154,
+    "districtId": 5,
+    "name": "ஸ்ரீமுஷ்ணம்"
+  },
+  {
+    "id": 155,
+    "districtId": 5,
+    "name": "திருப்பாதிரிப்புலியூர்"
+  },
+  {
+    "id": 156,
+    "districtId": 5,
+    "name": "திட்டக்குடி"
+  },
+  {
+    "id": 157,
+    "districtId": 5,
+    "name": "வடலூர்"
+  },
+  {
+    "id": 158,
+    "districtId": 5,
+    "name": "வெய்யலூர் ஊராட்சி"
+  },
+  {
+    "id": 159,
+    "districtId": 5,
+    "name": "விருத்தாச்சலம்"
+  },
+  {
+    "id": 160,
+    "districtId": 5,
+    "name": "விருத்தாசலம்"
+  },
+  {
+    "id": 161,
+    "districtId": 6,
+    "name": "பி. மல்லாபுரம்"
+  },
+  {
+    "id": 162,
+    "districtId": 6,
+    "name": "தர்மபுரி"
+  },
+  {
+    "id": 163,
+    "districtId": 6,
+    "name": "அரூர்"
+  },
+  {
+    "id": 164,
+    "districtId": 6,
+    "name": "கடத்தூர் (தருமபுரி)"
+  },
+  {
+    "id": 165,
+    "districtId": 6,
+    "name": "கம்பைநல்லூர்"
+  },
+  {
+    "id": 166,
+    "districtId": 6,
+    "name": "காரிமங்கலம்"
+  },
+  {
+    "id": 167,
+    "districtId": 6,
+    "name": "கூத்தப்பாடி"
+  },
+  {
+    "id": 168,
+    "districtId": 6,
+    "name": "மாரண்டஅள்ளி"
+  },
+  {
+    "id": 169,
+    "districtId": 6,
+    "name": "நல்லம்பள்ளி"
+  },
+  {
+    "id": 170,
+    "districtId": 6,
+    "name": "பாலக்கோடு"
+  },
+  {
+    "id": 171,
+    "districtId": 6,
+    "name": "பாலக்கோடு"
+  },
+  {
+    "id": 172,
+    "districtId": 6,
+    "name": "பாப்பாரப்பட்டி"
+  },
+  {
+    "id": 173,
+    "districtId": 6,
+    "name": "பாப்பிரெட்டிப்பட்டி"
+  },
+  {
+    "id": 174,
+    "districtId": 6,
+    "name": "பென்னாகரம்"
+  },
+  {
+    "id": 175,
+    "districtId": 7,
+    "name": "அகரம் (பேரூராட்சி)"
+  },
+  {
+    "id": 176,
+    "districtId": 7,
+    "name": "அம்மைநாயக்கனூர்"
+  },
+  {
+    "id": 177,
+    "districtId": 7,
+    "name": "ஆயக்குடி"
+  },
+  {
+    "id": 178,
+    "districtId": 7,
+    "name": "அய்யலூர்"
+  },
+  {
+    "id": 179,
+    "districtId": 7,
+    "name": "அய்யம்பாளையம்"
+  },
+  {
+    "id": 180,
+    "districtId": 7,
+    "name": "பாலசமுத்திரம்"
+  },
+  {
+    "id": 181,
+    "districtId": 7,
+    "name": "வத்தலக்குண்டு"
+  },
+  {
+    "id": 182,
+    "districtId": 7,
+    "name": "சின்னாளப்பட்டி"
+  },
+  {
+    "id": 183,
+    "districtId": 7,
+    "name": "திண்டுக்கல்"
+  },
+  {
+    "id": 184,
+    "districtId": 7,
+    "name": "எரியோடு"
+  },
+  {
+    "id": 185,
+    "districtId": 7,
+    "name": "கன்னிவாடி"
+  },
+  {
+    "id": 186,
+    "districtId": 7,
+    "name": "கீரனூர்"
+  },
+  {
+    "id": 187,
+    "districtId": 7,
+    "name": "கொடைக்கானல்"
+  },
+  {
+    "id": 188,
+    "districtId": 7,
+    "name": "நத்தம்"
+  },
+  {
+    "id": 189,
+    "districtId": 7,
+    "name": "நெய்க்காரப்பட்டி"
+  },
+  {
+    "id": 190,
+    "districtId": 7,
+    "name": "நிலக்கோட்டை"
+  },
+  {
+    "id": 191,
+    "districtId": 7,
+    "name": "ஒட்டன்சத்திரம்"
+  },
+  {
+    "id": 192,
+    "districtId": 7,
+    "name": "பழனி"
+  },
+  {
+    "id": 193,
+    "districtId": 7,
+    "name": "பாளையம்"
+  },
+  {
+    "id": 194,
+    "districtId": 7,
+    "name": "பண்ணைக்காடு"
+  },
+  {
+    "id": 195,
+    "districtId": 7,
+    "name": "பட்டிவீரன்பட்டி"
+  },
+  {
+    "id": 196,
+    "districtId": 7,
+    "name": "பெரிய கலயம்புத்தூர்"
+  },
+  {
+    "id": 197,
+    "districtId": 7,
+    "name": "சேவுகம்பட்டி"
+  },
+  {
+    "id": 198,
+    "districtId": 7,
+    "name": "சித்தையன்கோட்டை"
+  },
+  {
+    "id": 199,
+    "districtId": 7,
+    "name": "ஸ்ரீராமபுரம்"
+  },
+  {
+    "id": 200,
+    "districtId": 7,
+    "name": "தாடிக்கொம்பு"
+  },
+  {
+    "id": 201,
+    "districtId": 7,
+    "name": "வி.எஸ்.கே.வலசை"
+  },
+  {
+    "id": 202,
+    "districtId": 7,
+    "name": "வடமதுரை"
+  },
+  {
+    "id": 203,
+    "districtId": 7,
+    "name": "வேடசந்தூர்"
+  },
+  {
+    "id": 204,
+    "districtId": 8,
+    "name": "அம்மாபேட்டை"
+  },
+  {
+    "id": 205,
+    "districtId": 8,
+    "name": "அந்தியூர்"
+  },
+  {
+    "id": 206,
+    "districtId": 8,
+    "name": "ஆப்பக்கூடல்"
+  },
+  {
+    "id": 207,
+    "districtId": 8,
+    "name": "அறச்சலூர்"
+  },
+  {
+    "id": 208,
+    "districtId": 8,
+    "name": "அரியப்பம்பாளையம்"
+  },
+  {
+    "id": 209,
+    "districtId": 8,
+    "name": "அத்தாணி"
+  },
+  {
+    "id": 210,
+    "districtId": 8,
+    "name": "அவல்பூந்துறை"
+  },
+  {
+    "id": 211,
+    "districtId": 8,
+    "name": "பவானி"
+  },
+  {
+    "id": 212,
+    "districtId": 8,
+    "name": "பவானிசாகர்"
+  },
+  {
+    "id": 213,
+    "districtId": 8,
+    "name": "சென்னசமுத்திரம்"
+  },
+  {
+    "id": 214,
+    "districtId": 8,
+    "name": "சென்னிமலை"
+  },
+  {
+    "id": 215,
+    "districtId": 8,
+    "name": "சித்தோடு"
+  },
+  {
+    "id": 216,
+    "districtId": 8,
+    "name": "தாராபுரம்"
+  },
+  {
+    "id": 217,
+    "districtId": 8,
+    "name": "எலத்தூர்"
+  },
+  {
+    "id": 218,
+    "districtId": 8,
+    "name": "எழுமாத்தூர்"
+  },
+  {
+    "id": 219,
+    "districtId": 8,
+    "name": "ஈரோடு"
+  },
+  {
+    "id": 220,
+    "districtId": 8,
+    "name": "கோபிசெட்டிபாளையம்"
+  },
+  {
+    "id": 221,
+    "districtId": 8,
+    "name": "ஜெம்பை"
+  },
+  {
+    "id": 222,
+    "districtId": 8,
+    "name": "காங்கேயம்"
+  },
+  {
+    "id": 223,
+    "districtId": 8,
+    "name": "காஞ்சிக்கோயில்"
+  },
+  {
+    "id": 224,
+    "districtId": 8,
+    "name": "கருமாண்டி செல்லிபாளையம்"
+  },
+  {
+    "id": 225,
+    "districtId": 8,
+    "name": "காசிப்பாளையம் (கோபி)"
+  },
+  {
+    "id": 226,
+    "districtId": 8,
+    "name": "கெம்பநாயக்கன்பாளையம்"
+  },
+  {
+    "id": 227,
+    "districtId": 8,
+    "name": "கீழம்பாடி"
+  },
+  {
+    "id": 228,
+    "districtId": 8,
+    "name": "கொடுமுடி"
+  },
+  {
+    "id": 229,
+    "districtId": 8,
+    "name": "கொளப்பலூர்"
+  },
+  {
+    "id": 230,
+    "districtId": 8,
+    "name": "கொல்லன்கோயில்"
+  },
+  {
+    "id": 231,
+    "districtId": 8,
+    "name": "கூகலூர்"
+  },
+  {
+    "id": 232,
+    "districtId": 8,
+    "name": "லக்கம்பட்டி"
+  },
+  {
+    "id": 233,
+    "districtId": 8,
+    "name": "மேட்டுநசுவன்பாளையம்"
+  },
+  {
+    "id": 234,
+    "districtId": 8,
+    "name": "மொடக்குறிச்சி"
+  },
+  {
+    "id": 235,
+    "districtId": 8,
+    "name": "முகாசிபிடாரியூர்"
+  },
+  {
+    "id": 236,
+    "districtId": 8,
+    "name": "நல்லாம்பட்டி"
+  },
+  {
+    "id": 237,
+    "districtId": 8,
+    "name": "நம்பியூர்"
+  },
+  {
+    "id": 238,
+    "districtId": 8,
+    "name": "நசியனூர்"
+  },
+  {
+    "id": 239,
+    "districtId": 8,
+    "name": "நெருஞ்சிப்பேட்டை"
+  },
+  {
+    "id": 240,
+    "districtId": 8,
+    "name": "ஒலகடம்"
+  },
+  {
+    "id": 241,
+    "districtId": 8,
+    "name": "பி. மேட்டுப்பாளையம்"
+  },
+  {
+    "id": 242,
+    "districtId": 8,
+    "name": "பல்லடம்"
+  },
+  {
+    "id": 243,
+    "districtId": 8,
+    "name": "பள்ளப்பாளையம்"
+  },
+  {
+    "id": 244,
+    "districtId": 8,
+    "name": "பாசூர்"
+  },
+  {
+    "id": 245,
+    "districtId": 8,
+    "name": "பெரியகோடி ஏரி"
+  },
+  {
+    "id": 246,
+    "districtId": 8,
+    "name": "பெருந்துறை"
+  },
+  {
+    "id": 247,
+    "districtId": 8,
+    "name": "பெத்தாம்பாளையம்"
+  },
+  {
+    "id": 248,
+    "districtId": 8,
+    "name": "புஞ்சைப் புளியம்பட்டி"
+  },
+  {
+    "id": 249,
+    "districtId": 8,
+    "name": "சலங்கப்பாளையம்"
+  },
+  {
+    "id": 250,
+    "districtId": 8,
+    "name": "சத்தியமங்கலம்"
+  },
+  {
+    "id": 251,
+    "districtId": 8,
+    "name": "சத்தியமங்கலம்"
+  },
+  {
+    "id": 252,
+    "districtId": 8,
+    "name": "சிவகிரி"
+  },
+  {
+    "id": 253,
+    "districtId": 8,
+    "name": "தாளவாடி"
+  },
+  {
+    "id": 254,
+    "districtId": 8,
+    "name": "திருப்பூர்"
+  },
+  {
+    "id": 255,
+    "districtId": 8,
+    "name": "ஊஞ்சலூர்"
+  },
+  {
+    "id": 256,
+    "districtId": 8,
+    "name": "வடுகப்பட்டி"
+  },
+  {
+    "id": 257,
+    "districtId": 8,
+    "name": "வாணிப்புத்தூர்"
+  },
+  {
+    "id": 258,
+    "districtId": 8,
+    "name": "வெள்ளக்கோயில்"
+  },
+  {
+    "id": 259,
+    "districtId": 8,
+    "name": "வெள்ளோட்டம்பரப்பு"
+  },
+  {
+    "id": 260,
+    "districtId": 8,
+    "name": "வெங்கம்பூர்"
+  },
+  {
+    "id": 261,
+    "districtId": 9,
+    "name": "சின்னசேலம்"
+  },
+  {
+    "id": 262,
+    "districtId": 9,
+    "name": "கள்ளக்குறிச்சி"
+  },
+  {
+    "id": 263,
+    "districtId": 9,
+    "name": "மணலூர்ப்பேட்டை"
+  },
+  {
+    "id": 264,
+    "districtId": 9,
+    "name": "மூங்கில்துறைப்பட்டு"
+  },
+  {
+    "id": 265,
+    "districtId": 9,
+    "name": "ரிஷிவந்தியம்"
+  },
+  {
+    "id": 266,
+    "districtId": 9,
+    "name": "சங்கராபுரம்"
+  },
+  {
+    "id": 267,
+    "districtId": 9,
+    "name": "தியாகதுருகம்"
+  },
+  {
+    "id": 268,
+    "districtId": 9,
+    "name": "திருக்கோயிலூர்"
+  },
+  {
+    "id": 269,
+    "districtId": 9,
+    "name": "உளுந்தூர்பேட்டை"
+  },
+  {
+    "id": 270,
+    "districtId": 9,
+    "name": "வடக்கனந்தல்"
+  },
+  {
+    "id": 271,
+    "districtId": 10,
+    "name": "அய்யம்பேட்டை"
+  },
+  {
+    "id": 272,
+    "districtId": 10,
+    "name": "காஞ்சிபுரம்"
+  },
+  {
+    "id": 273,
+    "districtId": 10,
+    "name": "குன்றத்தூர்"
+  },
+  {
+    "id": 274,
+    "districtId": 10,
+    "name": "மலைப்பட்டு"
+  },
+  {
+    "id": 275,
+    "districtId": 10,
+    "name": "மாங்காடு (காஞ்சிபுரம்)"
+  },
+  {
+    "id": 276,
+    "districtId": 10,
+    "name": "மொளசூர்"
+  },
+  {
+    "id": 277,
+    "districtId": 10,
+    "name": "நெட்டப்பேட்டை"
+  },
+  {
+    "id": 278,
+    "districtId": 10,
+    "name": "ஒரகடம்"
+  },
+  {
+    "id": 279,
+    "districtId": 10,
+    "name": "படப்பை"
+  },
+  {
+    "id": 280,
+    "districtId": 10,
+    "name": "செவிலிமேடு"
+  },
+  {
+    "id": 281,
+    "districtId": 10,
+    "name": "சிக்கராயபுரம்"
+  },
+  {
+    "id": 282,
+    "districtId": 10,
+    "name": "சோமங்கலம்"
+  },
+  {
+    "id": 283,
+    "districtId": 10,
+    "name": "ஸ்ரீபெரும்புதூர்"
+  },
+  {
+    "id": 284,
+    "districtId": 10,
+    "name": "சுங்குவார்சத்திரம்"
+  },
+  {
+    "id": 285,
+    "districtId": 10,
+    "name": "தேனம்பாக்கம்"
+  },
+  {
+    "id": 286,
+    "districtId": 10,
+    "name": "உத்திரமேரூர்"
+  },
+  {
+    "id": 287,
+    "districtId": 10,
+    "name": "வல்லக்கோட்டை"
+  },
+  {
+    "id": 288,
+    "districtId": 10,
+    "name": "வாலாஜாபாத்"
+  },
+  {
+    "id": 289,
+    "districtId": 11,
+    "name": "ஆசாரிப்பள்ளம்"
+  },
+  {
+    "id": 290,
+    "districtId": 11,
+    "name": "அகத்தீஸ்வரம்"
+  },
+  {
+    "id": 291,
+    "districtId": 11,
+    "name": "ஆலத்தங்கரை"
+  },
+  {
+    "id": 292,
+    "districtId": 11,
+    "name": "ஆலூர்"
+  },
+  {
+    "id": 293,
+    "districtId": 11,
+    "name": "அஞ்சுகிராமம்"
+  },
+  {
+    "id": 294,
+    "districtId": 11,
+    "name": "ஆரல்வாய்மொழி"
+  },
+  {
+    "id": 295,
+    "districtId": 11,
+    "name": "அருமனை"
+  },
+  {
+    "id": 296,
+    "districtId": 11,
+    "name": "ஆற்றூர் (கன்னியாகுமரி)"
+  },
+  {
+    "id": 297,
+    "districtId": 11,
+    "name": "அழகப்பபுரம்"
+  },
+  {
+    "id": 298,
+    "districtId": 11,
+    "name": "அழகியபாண்டியபுரம்"
+  },
+  {
+    "id": 299,
+    "districtId": 11,
+    "name": "பூதப்பாண்டி"
+  },
+  {
+    "id": 300,
+    "districtId": 11,
+    "name": "குளச்சல்"
+  },
+  {
+    "id": 301,
+    "districtId": 11,
+    "name": "இடைக்கோடு"
+  },
+  {
+    "id": 302,
+    "districtId": 11,
+    "name": "இடலாக்குடி"
+  },
+  {
+    "id": 303,
+    "districtId": 11,
+    "name": "இளங்கடை"
+  },
+  {
+    "id": 304,
+    "districtId": 11,
+    "name": "இறச்சகுளம்"
+  },
+  {
+    "id": 305,
+    "districtId": 11,
+    "name": "இரணியல்"
+  },
+  {
+    "id": 306,
+    "districtId": 11,
+    "name": "ஏழுதேசம்"
+  },
+  {
+    "id": 307,
+    "districtId": 11,
+    "name": "கணபதிபுரம்"
+  },
+  {
+    "id": 308,
+    "districtId": 11,
+    "name": "கடையல்"
+  },
+  {
+    "id": 309,
+    "districtId": 11,
+    "name": "காளிகேசம்"
+  },
+  {
+    "id": 310,
+    "districtId": 11,
+    "name": "களியக்காவிளை"
+  },
+  {
+    "id": 311,
+    "districtId": 11,
+    "name": "கல்குளம்"
+  },
+  {
+    "id": 312,
+    "districtId": 11,
+    "name": "கல்லுக்கூட்டம்"
+  },
+  {
+    "id": 313,
+    "districtId": 11,
+    "name": "கன்னியாகுமரி"
+  },
+  {
+    "id": 314,
+    "districtId": 11,
+    "name": "கப்பியறை"
+  },
+  {
+    "id": 315,
+    "districtId": 11,
+    "name": "காரவிளை"
+  },
+  {
+    "id": 316,
+    "districtId": 11,
+    "name": "கருங்கல் (ஊர்)"
+  },
+  {
+    "id": 317,
+    "districtId": 11,
+    "name": "கீரிப்பாறை"
+  },
+  {
+    "id": 318,
+    "districtId": 11,
+    "name": "கிள்ளியூர்"
+  },
+  {
+    "id": 319,
+    "districtId": 11,
+    "name": "கோணம்"
+  },
+  {
+    "id": 320,
+    "districtId": 11,
+    "name": "கோதநல்லூர்"
+  },
+  {
+    "id": 321,
+    "districtId": 11,
+    "name": "கோட்டாறு"
+  },
+  {
+    "id": 322,
+    "districtId": 11,
+    "name": "கொட்டாரம்"
+  },
+  {
+    "id": 323,
+    "districtId": 11,
+    "name": "கொற்றிகோடு"
+  },
+  {
+    "id": 324,
+    "districtId": 11,
+    "name": "குலசேகரம்"
+  },
+  {
+    "id": 325,
+    "districtId": 11,
+    "name": "குமாரபுரம்"
+  },
+  {
+    "id": 326,
+    "districtId": 11,
+    "name": "குருந்தன்கோடு"
+  },
+  {
+    "id": 327,
+    "districtId": 11,
+    "name": "குழித்துறை"
+  },
+  {
+    "id": 328,
+    "districtId": 11,
+    "name": "மணவாளக்குறிச்சி"
+  },
+  {
+    "id": 329,
+    "districtId": 11,
+    "name": "மண்டைக்காடு"
+  },
+  {
+    "id": 330,
+    "districtId": 11,
+    "name": "மஞ்சாலுமூடு"
+  },
+  {
+    "id": 331,
+    "districtId": 11,
+    "name": "மார்த்தாண்டம்"
+  },
+  {
+    "id": 332,
+    "districtId": 11,
+    "name": "மருங்கூர்"
+  },
+  {
+    "id": 333,
+    "districtId": 11,
+    "name": "மீனாட்சிபுரம்"
+  },
+  {
+    "id": 334,
+    "districtId": 11,
+    "name": "மிடாலக்காடு"
+  },
+  {
+    "id": 335,
+    "districtId": 11,
+    "name": "முளகுமூடு"
+  },
+  {
+    "id": 336,
+    "districtId": 11,
+    "name": "முஞ்சிறை"
+  },
+  {
+    "id": 337,
+    "districtId": 11,
+    "name": "மயிலாடி"
+  },
+  {
+    "id": 338,
+    "districtId": 11,
+    "name": "நாகர்கோவில்"
+  },
+  {
+    "id": 339,
+    "districtId": 11,
+    "name": "நல்லூர்"
+  },
+  {
+    "id": 340,
+    "districtId": 11,
+    "name": "நெய்யூர்"
+  },
+  {
+    "id": 341,
+    "districtId": 11,
+    "name": "ஒழுகினசேரி"
+  },
+  {
+    "id": 342,
+    "districtId": 11,
+    "name": "பாகோடு"
+  },
+  {
+    "id": 343,
+    "districtId": 11,
+    "name": "பத்மநாபபுரம்"
+  },
+  {
+    "id": 344,
+    "districtId": 11,
+    "name": "பாலபள்ளம்"
+  },
+  {
+    "id": 345,
+    "districtId": 11,
+    "name": "பாளையம்"
+  },
+  {
+    "id": 346,
+    "districtId": 11,
+    "name": "பள்ளியாடி"
+  },
+  {
+    "id": 347,
+    "districtId": 11,
+    "name": "பார்வதிபுரம்"
+  },
+  {
+    "id": 348,
+    "districtId": 11,
+    "name": "பழுகல்"
+  },
+  {
+    "id": 349,
+    "districtId": 11,
+    "name": "பேயோடு"
+  },
+  {
+    "id": 350,
+    "districtId": 11,
+    "name": "பினாந்தோடு"
+  },
+  {
+    "id": 351,
+    "districtId": 11,
+    "name": "பொன்மனை"
+  },
+  {
+    "id": 352,
+    "districtId": 11,
+    "name": "புதுக்கடை (தமிழ்நாடு)"
+  },
+  {
+    "id": 353,
+    "districtId": 11,
+    "name": "புலிப்புனம்"
+  },
+  {
+    "id": 354,
+    "districtId": 11,
+    "name": "புன்னைநகர்"
+  },
+  {
+    "id": 355,
+    "districtId": 11,
+    "name": "புத்தளம்"
+  },
+  {
+    "id": 356,
+    "districtId": 11,
+    "name": "இராஜாக்கமங்கலம்"
+  },
+  {
+    "id": 357,
+    "districtId": 11,
+    "name": "இராஜாக்கமங்கலம் துறை"
+  },
+  {
+    "id": 358,
+    "districtId": 11,
+    "name": "இராமன்புதூர்"
+  },
+  {
+    "id": 359,
+    "districtId": 11,
+    "name": "ரீத்தாபுரம்"
+  },
+  {
+    "id": 360,
+    "districtId": 11,
+    "name": "தெற்கு தாமரைக்குளம்"
+  },
+  {
+    "id": 361,
+    "districtId": 11,
+    "name": "சுசீந்திரம்"
+  },
+  {
+    "id": 362,
+    "districtId": 11,
+    "name": "சுருளகோடு ஊராட்சி"
+  },
+  {
+    "id": 363,
+    "districtId": 11,
+    "name": "சுவாமி தோப்பு"
+  },
+  {
+    "id": 364,
+    "districtId": 11,
+    "name": "தாழக்குடி"
+  },
+  {
+    "id": 365,
+    "districtId": 11,
+    "name": "தளக்குளம்"
+  },
+  {
+    "id": 366,
+    "districtId": 11,
+    "name": "தெங்கம்புதூர்"
+  },
+  {
+    "id": 367,
+    "districtId": 11,
+    "name": "தேங்காப்பட்டணம்"
+  },
+  {
+    "id": 368,
+    "districtId": 11,
+    "name": "தென்தாமரைக்குளம்"
+  },
+  {
+    "id": 369,
+    "districtId": 11,
+    "name": "தேரூர்"
+  },
+  {
+    "id": 370,
+    "districtId": 11,
+    "name": "திங்கள்நகர்"
+  },
+  {
+    "id": 371,
+    "districtId": 11,
+    "name": "திற்பரப்பு"
+  },
+  {
+    "id": 372,
+    "districtId": 11,
+    "name": "திருநட்டாலம்"
+  },
+  {
+    "id": 373,
+    "districtId": 11,
+    "name": "திருவரம்பு"
+  },
+  {
+    "id": 374,
+    "districtId": 11,
+    "name": "திருவட்டாறு"
+  },
+  {
+    "id": 375,
+    "districtId": 11,
+    "name": "திருவிதாங்கோடு"
+  },
+  {
+    "id": 376,
+    "districtId": 11,
+    "name": "திட்டுவிளை"
+  },
+  {
+    "id": 377,
+    "districtId": 11,
+    "name": "தோவாளை"
+  },
+  {
+    "id": 378,
+    "districtId": 11,
+    "name": "தக்கலை"
+  },
+  {
+    "id": 379,
+    "districtId": 11,
+    "name": "உண்ணாமலைக் கடை"
+  },
+  {
+    "id": 380,
+    "districtId": 11,
+    "name": "வடசேரி"
+  },
+  {
+    "id": 381,
+    "districtId": 11,
+    "name": "வடிவீஸ்வரம்"
+  },
+  {
+    "id": 382,
+    "districtId": 11,
+    "name": "வாள்வைத்தான்கோட்டம்"
+  },
+  {
+    "id": 383,
+    "districtId": 11,
+    "name": "வெள்ளிமலை"
+  },
+  {
+    "id": 384,
+    "districtId": 11,
+    "name": "வேர்க்கிளம்பி"
+  },
+  {
+    "id": 385,
+    "districtId": 11,
+    "name": "வெட்டூர்ணிமடம்"
+  },
+  {
+    "id": 386,
+    "districtId": 11,
+    "name": "விளவங்கோடு"
+  },
+  {
+    "id": 387,
+    "districtId": 11,
+    "name": "விளவூர்"
+  },
+  {
+    "id": 388,
+    "districtId": 11,
+    "name": "வில்லுக்குறி"
+  },
+  {
+    "id": 389,
+    "districtId": 12,
+    "name": "அரவக்குறிச்சி"
+  },
+  {
+    "id": 390,
+    "districtId": 12,
+    "name": "இனாம்கரூர்"
+  },
+  {
+    "id": 391,
+    "districtId": 12,
+    "name": "கரூர்"
+  },
+  {
+    "id": 392,
+    "districtId": 12,
+    "name": "கிருஷ்ணராயபுரம்"
+  },
+  {
+    "id": 393,
+    "districtId": 12,
+    "name": "குளித்தலை"
+  },
+  {
+    "id": 394,
+    "districtId": 12,
+    "name": "மருதூர்"
+  },
+  {
+    "id": 395,
+    "districtId": 12,
+    "name": "மூலிமங்கலம்"
+  },
+  {
+    "id": 396,
+    "districtId": 12,
+    "name": "நங்கவரம்"
+  },
+  {
+    "id": 397,
+    "districtId": 12,
+    "name": "பழைய ஜெயங்கொண்ட சோழபுரம்"
+  },
+  {
+    "id": 398,
+    "districtId": 12,
+    "name": "பள்ளப்பட்டி"
+  },
+  {
+    "id": 399,
+    "districtId": 12,
+    "name": "புகழூர்"
+  },
+  {
+    "id": 400,
+    "districtId": 12,
+    "name": "புலியூர்"
+  },
+  {
+    "id": 401,
+    "districtId": 12,
+    "name": "புஞ்சை தோட்டகுறிச்சி"
+  },
+  {
+    "id": 402,
+    "districtId": 12,
+    "name": "புஞ்சை புகலூர்"
+  },
+  {
+    "id": 403,
+    "districtId": 12,
+    "name": "தாந்தோணி"
+  },
+  {
+    "id": 404,
+    "districtId": 12,
+    "name": "தொட்டி"
+  },
+  {
+    "id": 405,
+    "districtId": 12,
+    "name": "புகழூர் (காகித ஆலை)"
+  },
+  {
+    "id": 406,
+    "districtId": 12,
+    "name": "உப்பிடமங்கலம்"
+  },
+  {
+    "id": 407,
+    "districtId": 12,
+    "name": "வேலாயுதம்பாளையம்"
+  },
+  {
+    "id": 408,
+    "districtId": 13,
+    "name": "பருகூர்"
+  },
+  {
+    "id": 409,
+    "districtId": 13,
+    "name": "தேன்கனிக்கோட்டை"
+  },
+  {
+    "id": 410,
+    "districtId": 13,
+    "name": "அரூர்"
+  },
+  {
+    "id": 411,
+    "districtId": 13,
+    "name": "ஓசூர்"
+  },
+  {
+    "id": 412,
+    "districtId": 13,
+    "name": "காவிரிப்பூம்பட்டினம்"
+  },
+  {
+    "id": 413,
+    "districtId": 13,
+    "name": "கெலமங்கலம்"
+  },
+  {
+    "id": 414,
+    "districtId": 13,
+    "name": "கிருஷ்ணகிரி"
+  },
+  {
+    "id": 415,
+    "districtId": 13,
+    "name": "மத்திகிரி"
+  },
+  {
+    "id": 416,
+    "districtId": 13,
+    "name": "மத்தூர்"
+  },
+  {
+    "id": 417,
+    "districtId": 13,
+    "name": "நாகரசம்பட்டி"
+  },
+  {
+    "id": 418,
+    "districtId": 13,
+    "name": "பாலக்கோடு"
+  },
+  {
+    "id": 419,
+    "districtId": 13,
+    "name": "போச்சம்பள்ளி"
+  },
+  {
+    "id": 420,
+    "districtId": 13,
+    "name": "இராயக்கோட்டை"
+  },
+  {
+    "id": 421,
+    "districtId": 13,
+    "name": "சாமந்தமலை"
+  },
+  {
+    "id": 422,
+    "districtId": 13,
+    "name": "சூளகிரி"
+  },
+  {
+    "id": 423,
+    "districtId": 13,
+    "name": "சிங்காரப்பேட்டை"
+  },
+  {
+    "id": 424,
+    "districtId": 13,
+    "name": "தளி (கிருட்டிணகிரி)"
+  },
+  {
+    "id": 425,
+    "districtId": 13,
+    "name": "ஊத்தங்கரை"
+  },
+  {
+    "id": 426,
+    "districtId": 14,
+    "name": "அலங்காநல்லூர்"
+  },
+  {
+    "id": 427,
+    "districtId": 14,
+    "name": "ஆழ்வார்புரம்"
+  },
+  {
+    "id": 428,
+    "districtId": 14,
+    "name": "அரும்பனூர்"
+  },
+  {
+    "id": 429,
+    "districtId": 14,
+    "name": "சின்ன அனுப்பானடி"
+  },
+  {
+    "id": 430,
+    "districtId": 14,
+    "name": "எழுமலை"
+  },
+  {
+    "id": 431,
+    "districtId": 14,
+    "name": "ஹார்விப்பட்டி"
+  },
+  {
+    "id": 432,
+    "districtId": 14,
+    "name": "கள்ளிக்குடி"
+  },
+  {
+    "id": 433,
+    "districtId": 14,
+    "name": "கண்ணனேந்தல்"
+  },
+  {
+    "id": 434,
+    "districtId": 14,
+    "name": "கரையிப்பட்டி"
+  },
+  {
+    "id": 435,
+    "districtId": 14,
+    "name": "குருவித்துறை"
+  },
+  {
+    "id": 436,
+    "districtId": 14,
+    "name": "மதுரை"
+  },
+  {
+    "id": 437,
+    "districtId": 14,
+    "name": "மேலூர்"
+  },
+  {
+    "id": 438,
+    "districtId": 14,
+    "name": "நாகவக்குளம்"
+  },
+  {
+    "id": 439,
+    "districtId": 14,
+    "name": "யா. ஒத்தக்கடை"
+  },
+  {
+    "id": 440,
+    "districtId": 14,
+    "name": "பாலமேடு"
+  },
+  {
+    "id": 441,
+    "districtId": 14,
+    "name": "பரவை"
+  },
+  {
+    "id": 442,
+    "districtId": 14,
+    "name": "பேரையூர்"
+  },
+  {
+    "id": 443,
+    "districtId": 14,
+    "name": "சமயநல்லூர்"
+  },
+  {
+    "id": 444,
+    "districtId": 14,
+    "name": "சோழவந்தான்"
+  },
+  {
+    "id": 445,
+    "districtId": 14,
+    "name": "தே. கல்லுப்பட்டி"
+  },
+  {
+    "id": 446,
+    "districtId": 14,
+    "name": "திருமங்கலம்"
+  },
+  {
+    "id": 447,
+    "districtId": 14,
+    "name": "உசிலம்பட்டி"
+  },
+  {
+    "id": 448,
+    "districtId": 14,
+    "name": "வடிபட்டி"
+  },
+  {
+    "id": 449,
+    "districtId": 14,
+    "name": "வண்டியூர்"
+  },
+  {
+    "id": 450,
+    "districtId": 14,
+    "name": "ஏ. வெள்ளாளப்பட்டி"
+  },
+  {
+    "id": 451,
+    "districtId": 14,
+    "name": "விளாங்குடி"
+  },
+  {
+    "id": 452,
+    "districtId": 15,
+    "name": "கொள்ளிடம்"
+  },
+  {
+    "id": 453,
+    "districtId": 15,
+    "name": "குத்தாலம்"
+  },
+  {
+    "id": 454,
+    "districtId": 15,
+    "name": "மணல்மேடு"
+  },
+  {
+    "id": 455,
+    "districtId": 15,
+    "name": "மயிலாடுதுறை"
+  },
+  {
+    "id": 456,
+    "districtId": 15,
+    "name": "பாலையூர்"
+  },
+  {
+    "id": 457,
+    "districtId": 15,
+    "name": "காவிரிப்பூம்பட்டினம்"
+  },
+  {
+    "id": 458,
+    "districtId": 15,
+    "name": "செம்பனார்கோயில்"
+  },
+  {
+    "id": 459,
+    "districtId": 15,
+    "name": "சீர்காழி"
+  },
+  {
+    "id": 460,
+    "districtId": 15,
+    "name": "தரங்கம்பாடி"
+  },
+  {
+    "id": 461,
+    "districtId": 15,
+    "name": "திருமணஞ்சேரி"
+  },
+  {
+    "id": 462,
+    "districtId": 15,
+    "name": "திருவாவடுதுறை"
+  },
+  {
+    "id": 463,
+    "districtId": 15,
+    "name": "திருவாலங்காடு (திருவள்ளூர்)"
+  },
+  {
+    "id": 464,
+    "districtId": 15,
+    "name": "திருவிளந்தூர்"
+  },
+  {
+    "id": 465,
+    "districtId": 15,
+    "name": "வைத்தீஸ்வரன்கோயில்"
+  },
+  {
+    "id": 466,
+    "districtId": 16,
+    "name": "கீழ்வேளூர்"
+  },
+  {
+    "id": 467,
+    "districtId": 16,
+    "name": "நாகப்பட்டினம்"
+  },
+  {
+    "id": 468,
+    "districtId": 16,
+    "name": "நாகூர்"
+  },
+  {
+    "id": 469,
+    "districtId": 16,
+    "name": "நன்னிலம்"
+  },
+  {
+    "id": 470,
+    "districtId": 16,
+    "name": "தலைஞாயிறு"
+  },
+  {
+    "id": 471,
+    "districtId": 16,
+    "name": "திருக்குவளை"
+  },
+  {
+    "id": 472,
+    "districtId": 16,
+    "name": "திருமருகல்"
+  },
+  {
+    "id": 473,
+    "districtId": 16,
+    "name": "திட்டச்சேரி"
+  },
+  {
+    "id": 474,
+    "districtId": 16,
+    "name": "வேதாரண்யம்"
+  },
+  {
+    "id": 475,
+    "districtId": 16,
+    "name": "வேளாங்கண்ணி"
+  },
+  {
+    "id": 476,
+    "districtId": 17,
+    "name": "ஆலம்பாளையம்"
+  },
+  {
+    "id": 477,
+    "districtId": 17,
+    "name": "அத்தனூர்"
+  },
+  {
+    "id": 478,
+    "districtId": 17,
+    "name": "தேவனாங்குறிச்சி"
+  },
+  {
+    "id": 479,
+    "districtId": 17,
+    "name": "எருமைப்பட்டி"
+  },
+  {
+    "id": 480,
+    "districtId": 17,
+    "name": "காளப்பநாயக்கன்பட்டி"
+  },
+  {
+    "id": 481,
+    "districtId": 17,
+    "name": "கலியனூர்"
+  },
+  {
+    "id": 482,
+    "districtId": 17,
+    "name": "கண்டம்பாளையம்"
+  },
+  {
+    "id": 483,
+    "districtId": 17,
+    "name": "கீழ்சாத்தம்பூர்"
+  },
+  {
+    "id": 484,
+    "districtId": 17,
+    "name": "கொக்கராயன்பேட்டை"
+  },
+  {
+    "id": 485,
+    "districtId": 17,
+    "name": "குமாரபாளையம்"
+  },
+  {
+    "id": 486,
+    "districtId": 17,
+    "name": "மல்லசமுத்திரம்"
+  },
+  {
+    "id": 487,
+    "districtId": 17,
+    "name": "மோகனூர்"
+  },
+  {
+    "id": 488,
+    "districtId": 17,
+    "name": "நாமகிரிப்பேட்டை"
+  },
+  {
+    "id": 489,
+    "districtId": 17,
+    "name": "நாமக்கல்"
+  },
+  {
+    "id": 490,
+    "districtId": 17,
+    "name": "ஓடப்பள்ளி"
+  },
+  {
+    "id": 491,
+    "districtId": 17,
+    "name": "படைவீடு"
+  },
+  {
+    "id": 492,
+    "districtId": 17,
+    "name": "பள்ளிபாளையம்"
+  },
+  {
+    "id": 493,
+    "districtId": 17,
+    "name": "பள்ளிபாளையம் அக்கிரஹாரம்"
+  },
+  {
+    "id": 494,
+    "districtId": 17,
+    "name": "பாண்டமங்கலம்"
+  },
+  {
+    "id": 495,
+    "districtId": 17,
+    "name": "பரமத்தி"
+  },
+  {
+    "id": 496,
+    "districtId": 17,
+    "name": "பரமத்தி-வேலூர்"
+  },
+  {
+    "id": 497,
+    "districtId": 17,
+    "name": "பட்டணம்"
+  },
+  {
+    "id": 498,
+    "districtId": 17,
+    "name": "பிள்ளாநல்லூர்"
+  },
+  {
+    "id": 499,
+    "districtId": 17,
+    "name": "பொத்தனூர்"
+  },
+  {
+    "id": 500,
+    "districtId": 17,
+    "name": "இரா. புதுப்பட்டி"
+  },
+  {
+    "id": 501,
+    "districtId": 17,
+    "name": "ராசிபுரம்"
+  },
+  {
+    "id": 502,
+    "districtId": 17,
+    "name": "சமயசங்கிலி"
+  },
+  {
+    "id": 503,
+    "districtId": 17,
+    "name": "சங்கரி"
+  },
+  {
+    "id": 504,
+    "districtId": 17,
+    "name": "சட்டையம்புதூர்"
+  },
+  {
+    "id": 505,
+    "districtId": 17,
+    "name": "சீராப்பள்ளி"
+  },
+  {
+    "id": 506,
+    "districtId": 17,
+    "name": "சேந்தமங்கலம்"
+  },
+  {
+    "id": 507,
+    "districtId": 17,
+    "name": "திருச்செங்கோடு"
+  },
+  {
+    "id": 508,
+    "districtId": 17,
+    "name": "வடுகம்"
+  },
+  {
+    "id": 509,
+    "districtId": 17,
+    "name": "வரகூர் ஊராட்சி (தஞ்சாவூர்)"
+  },
+  {
+    "id": 510,
+    "districtId": 17,
+    "name": "வெங்கரை"
+  },
+  {
+    "id": 511,
+    "districtId": 17,
+    "name": "வெண்ணந்தூர்"
+  },
+  {
+    "id": 512,
+    "districtId": 18,
+    "name": "அதிகரட்டி"
+  },
+  {
+    "id": 513,
+    "districtId": 18,
+    "name": "அருவங்காடு"
+  },
+  {
+    "id": 514,
+    "districtId": 18,
+    "name": "பிக்கெட்டி"
+  },
+  {
+    "id": 515,
+    "districtId": 18,
+    "name": "குன்னூர்"
+  },
+  {
+    "id": 516,
+    "districtId": 18,
+    "name": "தேவலர்"
+  },
+  {
+    "id": 517,
+    "districtId": 18,
+    "name": "தேவர்சோலா"
+  },
+  {
+    "id": 518,
+    "districtId": 18,
+    "name": "கூடலூர்"
+  },
+  {
+    "id": 519,
+    "districtId": 18,
+    "name": "ஹப்பத்தாலா"
+  },
+  {
+    "id": 520,
+    "districtId": 18,
+    "name": "ஹுலிகல்"
+  },
+  {
+    "id": 521,
+    "districtId": 18,
+    "name": "ஜகத்தாலா"
+  },
+  {
+    "id": 522,
+    "districtId": 18,
+    "name": "கீழ் குந்தா"
+  },
+  {
+    "id": 523,
+    "districtId": 18,
+    "name": "கோத்தகிரி"
+  },
+  {
+    "id": 524,
+    "districtId": 18,
+    "name": "குந்தா"
+  },
+  {
+    "id": 525,
+    "districtId": 18,
+    "name": "நடுவட்டம்"
+  },
+  {
+    "id": 526,
+    "districtId": 18,
+    "name": "நெல்லியாளம்"
+  },
+  {
+    "id": 527,
+    "districtId": 18,
+    "name": "ஓ வேலி"
+  },
+  {
+    "id": 528,
+    "districtId": 18,
+    "name": "உதகமண்டலம் (ஊட்டி)"
+  },
+  {
+    "id": 529,
+    "districtId": 18,
+    "name": "பந்தலூர்"
+  },
+  {
+    "id": 530,
+    "districtId": 18,
+    "name": "சோளூர்"
+  },
+  {
+    "id": 531,
+    "districtId": 18,
+    "name": "வெலிங்டன்"
+  },
+  {
+    "id": 532,
+    "districtId": 19,
+    "name": "ஆலத்தூர்"
+  },
+  {
+    "id": 533,
+    "districtId": 19,
+    "name": "அரும்பாவூர்"
+  },
+  {
+    "id": 534,
+    "districtId": 19,
+    "name": "இளம்பலூர்"
+  },
+  {
+    "id": 535,
+    "districtId": 19,
+    "name": "எழுமூர்"
+  },
+  {
+    "id": 536,
+    "districtId": 19,
+    "name": "ஈசானை"
+  },
+  {
+    "id": 537,
+    "districtId": 19,
+    "name": "கீழப்புலியூர்"
+  },
+  {
+    "id": 538,
+    "districtId": 19,
+    "name": "குன்னம் வட்டம்"
+  },
+  {
+    "id": 539,
+    "districtId": 19,
+    "name": "குரும்பலூர்"
+  },
+  {
+    "id": 540,
+    "districtId": 19,
+    "name": "இலப்பைகுடிக்காடு"
+  },
+  {
+    "id": 541,
+    "districtId": 19,
+    "name": "பெரம்பலூர்"
+  },
+  {
+    "id": 542,
+    "districtId": 19,
+    "name": "பூலாம்பாடி"
+  },
+  {
+    "id": 543,
+    "districtId": 19,
+    "name": "சிறுகுடல்"
+  },
+  {
+    "id": 544,
+    "districtId": 19,
+    "name": "வெப்பந்தட்டை"
+  },
+  {
+    "id": 545,
+    "districtId": 20,
+    "name": "ஆலங்குடி"
+  },
+  {
+    "id": 546,
+    "districtId": 20,
+    "name": "அன்னவாசல்"
+  },
+  {
+    "id": 547,
+    "districtId": 20,
+    "name": "அறந்தாங்கி"
+  },
+  {
+    "id": 548,
+    "districtId": 20,
+    "name": "அரிமளம்"
+  },
+  {
+    "id": 549,
+    "districtId": 20,
+    "name": "ஆவுடையார்கோயில்"
+  },
+  {
+    "id": 550,
+    "districtId": 20,
+    "name": "கந்தர்வக்கோட்டை"
+  },
+  {
+    "id": 551,
+    "districtId": 20,
+    "name": "இலுப்பூர்"
+  },
+  {
+    "id": 552,
+    "districtId": 20,
+    "name": "கறம்பக்குடி"
+  },
+  {
+    "id": 553,
+    "districtId": 20,
+    "name": "கீரமங்கலம்"
+  },
+  {
+    "id": 554,
+    "districtId": 20,
+    "name": "கீரனூர்"
+  },
+  {
+    "id": 555,
+    "districtId": 20,
+    "name": "கோட்டைப்பட்டினம்"
+  },
+  {
+    "id": 556,
+    "districtId": 20,
+    "name": "குளத்தூர்"
+  },
+  {
+    "id": 557,
+    "districtId": 20,
+    "name": "மணமேல்குடி"
+  },
+  {
+    "id": 558,
+    "districtId": 20,
+    "name": "மாங்குடி-புதுக்கோட்டை"
+  },
+  {
+    "id": 559,
+    "districtId": 20,
+    "name": "நத்தம்பண்ணை"
+  },
+  {
+    "id": 560,
+    "districtId": 20,
+    "name": "பொன்னமராவதி"
+  },
+  {
+    "id": 561,
+    "districtId": 20,
+    "name": "புதுக்கோட்டை"
+  },
+  {
+    "id": 562,
+    "districtId": 20,
+    "name": "ஏழடிப்பட்டம் சமணர் படுக்கைகள் கல்வெட்டுகள்"
+  },
+  {
+    "id": 563,
+    "districtId": 20,
+    "name": "திருமயம்"
+  },
+  {
+    "id": 564,
+    "districtId": 20,
+    "name": "விராலிமலை"
+  },
+  {
+    "id": 565,
+    "districtId": 21,
+    "name": "அபிராமம்"
+  },
+  {
+    "id": 566,
+    "districtId": 21,
+    "name": "சித்தார்கோட்டை"
+  },
+  {
+    "id": 567,
+    "districtId": 21,
+    "name": "தேவகோட்டை"
+  },
+  {
+    "id": 568,
+    "districtId": 21,
+    "name": "ஏனாதி"
+  },
+  {
+    "id": 569,
+    "districtId": 21,
+    "name": "கடலாடி (இராமநாதபுரம்)"
+  },
+  {
+    "id": 570,
+    "districtId": 21,
+    "name": "கமுதி"
+  },
+  {
+    "id": 571,
+    "districtId": 21,
+    "name": "கமுதக்குடி"
+  },
+  {
+    "id": 572,
+    "districtId": 21,
+    "name": "கார்க்கத்தகுடி"
+  },
+  {
+    "id": 573,
+    "districtId": 21,
+    "name": "கீழக்கரை"
+  },
+  {
+    "id": 574,
+    "districtId": 21,
+    "name": "குருவடி"
+  },
+  {
+    "id": 575,
+    "districtId": 21,
+    "name": "மண்டபம் பேரூராட்சி"
+  },
+  {
+    "id": 576,
+    "districtId": 21,
+    "name": "மறைக்காயர் பட்டினம்"
+  },
+  {
+    "id": 577,
+    "districtId": 21,
+    "name": "முதுகுளத்தூர்"
+  },
+  {
+    "id": 578,
+    "districtId": 21,
+    "name": "பாம்பன்"
+  },
+  {
+    "id": 579,
+    "districtId": 21,
+    "name": "பனைக்குளம் கிராம ஊராட்சி"
+  },
+  {
+    "id": 580,
+    "districtId": 21,
+    "name": "பரமக்குடி"
+  },
+  {
+    "id": 581,
+    "districtId": 21,
+    "name": "பார்த்திபனூர்"
+  },
+  {
+    "id": 582,
+    "districtId": 21,
+    "name": "இராஜசிங்கமங்கலம்"
+  },
+  {
+    "id": 583,
+    "districtId": 21,
+    "name": "ராமநாதபுரம்"
+  },
+  {
+    "id": 584,
+    "districtId": 21,
+    "name": "இராமேசுவரம்"
+  },
+  {
+    "id": 585,
+    "districtId": 21,
+    "name": "சாயல்குடி"
+  },
+  {
+    "id": 586,
+    "districtId": 21,
+    "name": "திருவெற்றியூர்"
+  },
+  {
+    "id": 587,
+    "districtId": 21,
+    "name": "தொண்டி (பேரூராட்சி)"
+  },
+  {
+    "id": 588,
+    "districtId": 21,
+    "name": "திருவாடானை"
+  },
+  {
+    "id": 589,
+    "districtId": 21,
+    "name": "உச்சிப்புளி"
+  },
+  {
+    "id": 590,
+    "districtId": 22,
+    "name": "அரக்கோணம்"
+  },
+  {
+    "id": 591,
+    "districtId": 22,
+    "name": "ஆற்காடு"
+  },
+  {
+    "id": 592,
+    "districtId": 22,
+    "name": "களவை"
+  },
+  {
+    "id": 593,
+    "districtId": 22,
+    "name": "மேல்விஷாரம்"
+  },
+  {
+    "id": 594,
+    "districtId": 22,
+    "name": "நெமிலி"
+  },
+  {
+    "id": 595,
+    "districtId": 22,
+    "name": "இராணிப்பேட்டை"
+  },
+  {
+    "id": 596,
+    "districtId": 22,
+    "name": "சோளிங்கர்"
+  },
+  {
+    "id": 597,
+    "districtId": 22,
+    "name": "வாலாஜாபேட்டை"
+  },
+  {
+    "id": 598,
+    "districtId": 23,
+    "name": "அம்மாபேட்டை"
+  },
+  {
+    "id": 599,
+    "districtId": 23,
+    "name": "அரசிரமணி"
+  },
+  {
+    "id": 600,
+    "districtId": 23,
+    "name": "ஆட்டையாம்பட்டி"
+  },
+  {
+    "id": 601,
+    "districtId": 23,
+    "name": "ஆத்தூர்"
+  },
+  {
+    "id": 602,
+    "districtId": 23,
+    "name": "அவடத்தூர்"
+  },
+  {
+    "id": 603,
+    "districtId": 23,
+    "name": "அயோத்தியாப்பட்டினம்"
+  },
+  {
+    "id": 604,
+    "districtId": 23,
+    "name": "பேலூர்"
+  },
+  {
+    "id": 605,
+    "districtId": 23,
+    "name": "தளவாய்பட்டி"
+  },
+  {
+    "id": 606,
+    "districtId": 23,
+    "name": "தொரமங்கலம்"
+  },
+  {
+    "id": 607,
+    "districtId": 23,
+    "name": "எடப்பாடி"
+  },
+  {
+    "id": 608,
+    "districtId": 23,
+    "name": "இளம்பிள்ளை"
+  },
+  {
+    "id": 609,
+    "districtId": 23,
+    "name": "ஏத்தாப்பூர்"
+  },
+  {
+    "id": 610,
+    "districtId": 23,
+    "name": "கெங்கவல்லி"
+  },
+  {
+    "id": 611,
+    "districtId": 23,
+    "name": "ஜலகண்டாபுரம்"
+  },
+  {
+    "id": 612,
+    "districtId": 23,
+    "name": "கடையாம்பட்டி"
+  },
+  {
+    "id": 613,
+    "districtId": 23,
+    "name": "கன்னங்குறிச்சி"
+  },
+  {
+    "id": 614,
+    "districtId": 23,
+    "name": "கருப்பூர்"
+  },
+  {
+    "id": 615,
+    "districtId": 23,
+    "name": "கீரிப்பட்டி"
+  },
+  {
+    "id": 616,
+    "districtId": 23,
+    "name": "கொளத்தூர்"
+  },
+  {
+    "id": 617,
+    "districtId": 23,
+    "name": "கொங்கணாபுரம்"
+  },
+  {
+    "id": 618,
+    "districtId": 23,
+    "name": "மல்லமூப்பம்பட்டி"
+  },
+  {
+    "id": 619,
+    "districtId": 23,
+    "name": "மரமங்கலத்துப்பட்டி"
+  },
+  {
+    "id": 620,
+    "districtId": 23,
+    "name": "மாசிநாயக்கன்பட்டி"
+  },
+  {
+    "id": 621,
+    "districtId": 23,
+    "name": "மேச்சேரி"
+  },
+  {
+    "id": 622,
+    "districtId": 23,
+    "name": "மேட்டூர்"
+  },
+  {
+    "id": 623,
+    "districtId": 23,
+    "name": "நரசிங்கபுரம்"
+  },
+  {
+    "id": 624,
+    "districtId": 23,
+    "name": "நெய்க்காரப்பட்டி"
+  },
+  {
+    "id": 625,
+    "districtId": 23,
+    "name": "ஓமலூர்"
+  },
+  {
+    "id": 626,
+    "districtId": 23,
+    "name": "பி. என். பட்டி"
+  },
+  {
+    "id": 627,
+    "districtId": 23,
+    "name": "பனைமரத்துப்பட்டி"
+  },
+  {
+    "id": 628,
+    "districtId": 23,
+    "name": "பாப்பாரப்பட்டி"
+  },
+  {
+    "id": 629,
+    "districtId": 23,
+    "name": "பெத்தநாயக்கன்பாளையம்"
+  },
+  {
+    "id": 630,
+    "districtId": 23,
+    "name": "பூலாம்பட்டி"
+  },
+  {
+    "id": 631,
+    "districtId": 23,
+    "name": "ராசிபுரம்"
+  },
+  {
+    "id": 632,
+    "districtId": 23,
+    "name": "சேலம்"
+  },
+  {
+    "id": 633,
+    "districtId": 23,
+    "name": "சங்ககிரி"
+  },
+  {
+    "id": 634,
+    "districtId": 23,
+    "name": "சங்கரி"
+  },
+  {
+    "id": 635,
+    "districtId": 23,
+    "name": "செந்தரப்பட்டி"
+  },
+  {
+    "id": 636,
+    "districtId": 23,
+    "name": "தம்மம்பட்டி"
+  },
+  {
+    "id": 637,
+    "districtId": 23,
+    "name": "தாரமங்கலம்"
+  },
+  {
+    "id": 638,
+    "districtId": 23,
+    "name": "தேடவூர்"
+  },
+  {
+    "id": 639,
+    "districtId": 23,
+    "name": "தேவூர்"
+  },
+  {
+    "id": 640,
+    "districtId": 23,
+    "name": "திருச்செங்கோடு"
+  },
+  {
+    "id": 641,
+    "districtId": 23,
+    "name": "வாழப்பாடி"
+  },
+  {
+    "id": 642,
+    "districtId": 23,
+    "name": "வனவாசி"
+  },
+  {
+    "id": 643,
+    "districtId": 23,
+    "name": "வாழப்பாடி"
+  },
+  {
+    "id": 644,
+    "districtId": 23,
+    "name": "வீரகனூர்"
+  },
+  {
+    "id": 645,
+    "districtId": 23,
+    "name": "வீரக்கல்புதூர்"
+  },
+  {
+    "id": 646,
+    "districtId": 23,
+    "name": "ஏற்காடு"
+  },
+  {
+    "id": 647,
+    "districtId": 24,
+    "name": "ஆலங்குடி"
+  },
+  {
+    "id": 648,
+    "districtId": 24,
+    "name": "அரணையூர்"
+  },
+  {
+    "id": 649,
+    "districtId": 24,
+    "name": "தேவகோட்டை"
+  },
+  {
+    "id": 650,
+    "districtId": 24,
+    "name": "ஏரியூர்"
+  },
+  {
+    "id": 651,
+    "districtId": 24,
+    "name": "இடைக்காட்டூர்"
+  },
+  {
+    "id": 652,
+    "districtId": 24,
+    "name": "இளையான்குடி"
+  },
+  {
+    "id": 653,
+    "districtId": 24,
+    "name": "கானாடுகாத்தான்"
+  },
+  {
+    "id": 654,
+    "districtId": 24,
+    "name": "கண்டனூர்"
+  },
+  {
+    "id": 655,
+    "districtId": 24,
+    "name": "கண்டரமாணிக்கம்"
+  },
+  {
+    "id": 656,
+    "districtId": 24,
+    "name": "காரைக்குடி"
+  },
+  {
+    "id": 657,
+    "districtId": 24,
+    "name": "கோதமங்கலம்"
+  },
+  {
+    "id": 658,
+    "districtId": 24,
+    "name": "கோட்டையூர்"
+  },
+  {
+    "id": 659,
+    "districtId": 24,
+    "name": "மல்லக்கோட்டை"
+  },
+  {
+    "id": 660,
+    "districtId": 24,
+    "name": "மாம்பட்டி"
+  },
+  {
+    "id": 661,
+    "districtId": 24,
+    "name": "மானாமதுரை"
+  },
+  {
+    "id": 662,
+    "districtId": 24,
+    "name": "நாட்டரசன் கோட்டை"
+  },
+  {
+    "id": 663,
+    "districtId": 24,
+    "name": "நெற்குப்பை"
+  },
+  {
+    "id": 664,
+    "districtId": 24,
+    "name": "புதுக்குளம்"
+  },
+  {
+    "id": 665,
+    "districtId": 24,
+    "name": "புதுவயல்"
+  },
+  {
+    "id": 666,
+    "districtId": 24,
+    "name": "சங்கராபுரம்"
+  },
+  {
+    "id": 667,
+    "districtId": 24,
+    "name": "சிங்கம்புணரி"
+  },
+  {
+    "id": 668,
+    "districtId": 24,
+    "name": "சிவகங்கை"
+  },
+  {
+    "id": 669,
+    "districtId": 24,
+    "name": "தாயமங்கலம்"
+  },
+  {
+    "id": 670,
+    "districtId": 24,
+    "name": "திருப்புவனம்"
+  },
+  {
+    "id": 671,
+    "districtId": 24,
+    "name": "திருப்பத்தூர்"
+  },
+  {
+    "id": 672,
+    "districtId": 24,
+    "name": "திருவாடானை"
+  },
+  {
+    "id": 673,
+    "districtId": 24,
+    "name": "வெற்றியூர்"
+  },
+  {
+    "id": 674,
+    "districtId": 25,
+    "name": "ஆலங்குளம்"
+  },
+  {
+    "id": 675,
+    "districtId": 25,
+    "name": "குற்றாலம்"
+  },
+  {
+    "id": 676,
+    "districtId": 25,
+    "name": "கடையநல்லூர்"
+  },
+  {
+    "id": 677,
+    "districtId": 25,
+    "name": "புளியங்குடி"
+  },
+  {
+    "id": 678,
+    "districtId": 25,
+    "name": "சங்கரன்கோவில்"
+  },
+  {
+    "id": 679,
+    "districtId": 25,
+    "name": "செங்கோட்டை"
+  },
+  {
+    "id": 680,
+    "districtId": 25,
+    "name": "சிவகிரி"
+  },
+  {
+    "id": 681,
+    "districtId": 25,
+    "name": "சுரண்டை"
+  },
+  {
+    "id": 682,
+    "districtId": 25,
+    "name": "தென்காசி"
+  },
+  {
+    "id": 683,
+    "districtId": 25,
+    "name": "திருவேங்கடம்"
+  },
+  {
+    "id": 684,
+    "districtId": 25,
+    "name": "வாசுதேவநல்லூர்"
+  },
+  {
+    "id": 685,
+    "districtId": 25,
+    "name": "வீரகேரளம்புதூர்"
+  },
+  {
+    "id": 686,
+    "districtId": 26,
+    "name": "அதிராம்பட்டினம்"
+  },
+  {
+    "id": 687,
+    "districtId": 26,
+    "name": "அம்மாபேட்டை"
+  },
+  {
+    "id": 688,
+    "districtId": 26,
+    "name": "அய்யம்பேட்டை"
+  },
+  {
+    "id": 689,
+    "districtId": 26,
+    "name": "சோழபுரம்"
+  },
+  {
+    "id": 690,
+    "districtId": 26,
+    "name": "கண்டியூர்"
+  },
+  {
+    "id": 691,
+    "districtId": 26,
+    "name": "குடவாசல்"
+  },
+  {
+    "id": 692,
+    "districtId": 26,
+    "name": "கோவிலடி அப்பால ரெங்கநாதர் கோயில்"
+  },
+  {
+    "id": 693,
+    "districtId": 26,
+    "name": "கும்பகோணம்"
+  },
+  {
+    "id": 694,
+    "districtId": 26,
+    "name": "குத்தாலம்"
+  },
+  {
+    "id": 695,
+    "districtId": 26,
+    "name": "ஆடுதுறை"
+  },
+  {
+    "id": 696,
+    "districtId": 26,
+    "name": "மேலத்திருப்பந்துருத்தி"
+  },
+  {
+    "id": 697,
+    "districtId": 26,
+    "name": "மேலட்டூர்"
+  },
+  {
+    "id": 698,
+    "districtId": 26,
+    "name": "நாஞ்சிக்கோட்டை"
+  },
+  {
+    "id": 699,
+    "districtId": 26,
+    "name": "நாச்சியார்கோயில்"
+  },
+  {
+    "id": 700,
+    "districtId": 26,
+    "name": "நீலகிரி தெற்குத் தோட்டம்"
+  },
+  {
+    "id": 701,
+    "districtId": 26,
+    "name": "ஒரத்தநாடு"
+  },
+  {
+    "id": 702,
+    "districtId": 26,
+    "name": "பாபநாசம்"
+  },
+  {
+    "id": 703,
+    "districtId": 26,
+    "name": "பட்டுக்கோட்டை"
+  },
+  {
+    "id": 704,
+    "districtId": 26,
+    "name": "பேராவூரணி"
+  },
+  {
+    "id": 705,
+    "districtId": 26,
+    "name": "பெருமகளூர்"
+  },
+  {
+    "id": 706,
+    "districtId": 26,
+    "name": "பூக்கொல்லை"
+  },
+  {
+    "id": 707,
+    "districtId": 26,
+    "name": "சூலமங்கலம்"
+  },
+  {
+    "id": 708,
+    "districtId": 26,
+    "name": "சுவாமிமலை"
+  },
+  {
+    "id": 709,
+    "districtId": 26,
+    "name": "தஞ்சாவூர்"
+  },
+  {
+    "id": 710,
+    "districtId": 26,
+    "name": "திங்களுர்"
+  },
+  {
+    "id": 711,
+    "districtId": 26,
+    "name": "திருபுவனம்"
+  },
+  {
+    "id": 712,
+    "districtId": 26,
+    "name": "திருக்காட்டுப்பள்ளி"
+  },
+  {
+    "id": 713,
+    "districtId": 26,
+    "name": "திருநாகேஸ்வரம்"
+  },
+  {
+    "id": 714,
+    "districtId": 26,
+    "name": "திருப்பனந்தாள்"
+  },
+  {
+    "id": 715,
+    "districtId": 26,
+    "name": "திருவையாறு"
+  },
+  {
+    "id": 716,
+    "districtId": 26,
+    "name": "திருவிடைமருதூர்"
+  },
+  {
+    "id": 717,
+    "districtId": 26,
+    "name": "திருவிடைமருதூர்"
+  },
+  {
+    "id": 718,
+    "districtId": 26,
+    "name": "திருவோணம் தாலுகா"
+  },
+  {
+    "id": 719,
+    "districtId": 26,
+    "name": "உள்ளூர்"
+  },
+  {
+    "id": 720,
+    "districtId": 26,
+    "name": "வலங்கைமான்"
+  },
+  {
+    "id": 721,
+    "districtId": 26,
+    "name": "வல்லம்"
+  },
+  {
+    "id": 722,
+    "districtId": 26,
+    "name": "வேப்பத்தூர்"
+  },
+  {
+    "id": 723,
+    "districtId": 27,
+    "name": "ஆண்டிபட்டி"
+  },
+  {
+    "id": 724,
+    "districtId": 27,
+    "name": "ஆண்டிப்பட்டி ஜக்கம்பட்டி"
+  },
+  {
+    "id": 725,
+    "districtId": 27,
+    "name": "போ. மீனாட்சிபுரம்"
+  },
+  {
+    "id": 726,
+    "districtId": 27,
+    "name": "போடிநாயக்கனூர்"
+  },
+  {
+    "id": 727,
+    "districtId": 27,
+    "name": "பூதிப்புரம்"
+  },
+  {
+    "id": 728,
+    "districtId": 27,
+    "name": "சி. புதுப்பட்டி"
+  },
+  {
+    "id": 729,
+    "districtId": 27,
+    "name": "சின்னமனூர்"
+  },
+  {
+    "id": 730,
+    "districtId": 27,
+    "name": "கம்பம்"
+  },
+  {
+    "id": 731,
+    "districtId": 27,
+    "name": "தேவதானப்பட்டி"
+  },
+  {
+    "id": 732,
+    "districtId": 27,
+    "name": "கூடலூர்"
+  },
+  {
+    "id": 733,
+    "districtId": 27,
+    "name": "அனுமந்தன்பட்டி"
+  },
+  {
+    "id": 734,
+    "districtId": 27,
+    "name": "ஹைவேவிஸ்"
+  },
+  {
+    "id": 735,
+    "districtId": 27,
+    "name": "காமயக்கவுண்டன்பட்டி"
+  },
+  {
+    "id": 736,
+    "districtId": 27,
+    "name": "கொம்பை"
+  },
+  {
+    "id": 737,
+    "districtId": 27,
+    "name": "குச்சனூர்"
+  },
+  {
+    "id": 738,
+    "districtId": 27,
+    "name": "மார்க்கையன்கோட்டை"
+  },
+  {
+    "id": 739,
+    "districtId": 27,
+    "name": "மேலச்சொக்கநாதபுரம்"
+  },
+  {
+    "id": 740,
+    "districtId": 27,
+    "name": "ஓடைப்பட்டி"
+  },
+  {
+    "id": 741,
+    "districtId": 27,
+    "name": "பழனிசெட்டிபட்டி"
+  },
+  {
+    "id": 742,
+    "districtId": 27,
+    "name": "பண்ணைப்புரம்"
+  },
+  {
+    "id": 743,
+    "districtId": 27,
+    "name": "பேரையூர்"
+  },
+  {
+    "id": 744,
+    "districtId": 27,
+    "name": "பெரியகுளம்"
+  },
+  {
+    "id": 745,
+    "districtId": 27,
+    "name": "சுக்கங்கல்பட்டி"
+  },
+  {
+    "id": 746,
+    "districtId": 27,
+    "name": "தாமரைக்குளம்"
+  },
+  {
+    "id": 747,
+    "districtId": 27,
+    "name": "தேனி"
+  },
+  {
+    "id": 748,
+    "districtId": 27,
+    "name": "தேனி அல்லிநகரம்"
+  },
+  {
+    "id": 749,
+    "districtId": 27,
+    "name": "தென்கரை"
+  },
+  {
+    "id": 750,
+    "districtId": 27,
+    "name": "தேவாரம் (தேனி)"
+  },
+  {
+    "id": 751,
+    "districtId": 27,
+    "name": "உத்தமபாளையம்"
+  },
+  {
+    "id": 752,
+    "districtId": 27,
+    "name": "வீரபாண்டி"
+  },
+  {
+    "id": 753,
+    "districtId": 28,
+    "name": "எட்டயபுரம்"
+  },
+  {
+    "id": 754,
+    "districtId": 28,
+    "name": "கோவில்பட்டி"
+  },
+  {
+    "id": 755,
+    "districtId": 28,
+    "name": "ஒட்டப்பிடாரம்"
+  },
+  {
+    "id": 756,
+    "districtId": 28,
+    "name": "சாத்தான்குளம்"
+  },
+  {
+    "id": 757,
+    "districtId": 28,
+    "name": "ஸ்ரீவைகுண்டம்"
+  },
+  {
+    "id": 758,
+    "districtId": 28,
+    "name": "தூத்துக்குடி"
+  },
+  {
+    "id": 759,
+    "districtId": 28,
+    "name": "திருச்செந்தூர்"
+  },
+  {
+    "id": 760,
+    "districtId": 28,
+    "name": "தூத்துக்குடி"
+  },
+  {
+    "id": 761,
+    "districtId": 28,
+    "name": "விளாத்திகுளம்"
+  },
+  {
+    "id": 762,
+    "districtId": 29,
+    "name": "எறகுடி"
+  },
+  {
+    "id": 763,
+    "districtId": 29,
+    "name": "கைலாசபுரம்"
+  },
+  {
+    "id": 764,
+    "districtId": 29,
+    "name": "கூத்தப்பார்"
+  },
+  {
+    "id": 765,
+    "districtId": 29,
+    "name": "கிருஷ்ணசமுத்திரம்"
+  },
+  {
+    "id": 766,
+    "districtId": 29,
+    "name": "லால்குடி"
+  },
+  {
+    "id": 767,
+    "districtId": 29,
+    "name": "மணச்சநல்லூர்"
+  },
+  {
+    "id": 768,
+    "districtId": 29,
+    "name": "மணப்பாறை"
+  },
+  {
+    "id": 769,
+    "districtId": 29,
+    "name": "முசிறி"
+  },
+  {
+    "id": 770,
+    "districtId": 29,
+    "name": "பாப்பங்குறிச்சி"
+  },
+  {
+    "id": 771,
+    "districtId": 29,
+    "name": "பெட்டவாய்த்தலை"
+  },
+  {
+    "id": 772,
+    "districtId": 29,
+    "name": "தெற்கு கண்ணனூர்"
+  },
+  {
+    "id": 773,
+    "districtId": 29,
+    "name": "திருவரங்கம்"
+  },
+  {
+    "id": 774,
+    "districtId": 29,
+    "name": "தாத்தையங்கார்ப்பேட்டை"
+  },
+  {
+    "id": 775,
+    "districtId": 29,
+    "name": "தொட்டியம் சட்டமன்றத் தொகுதி"
+  },
+  {
+    "id": 776,
+    "districtId": 29,
+    "name": "துறையூர்"
+  },
+  {
+    "id": 777,
+    "districtId": 29,
+    "name": "துவாக்குடி"
+  },
+  {
+    "id": 778,
+    "districtId": 29,
+    "name": "துவரங்குறிச்சி (திருச்சிராப்பள்ளி மாவட்டம்)"
+  },
+  {
+    "id": 779,
+    "districtId": 29,
+    "name": "திருச்சிராப்பள்ளி"
+  },
+  {
+    "id": 780,
+    "districtId": 29,
+    "name": "திருச்சிராப்பள்ளி"
+  },
+  {
+    "id": 781,
+    "districtId": 30,
+    "name": "அம்பாசமுத்திரம்"
+  },
+  {
+    "id": 782,
+    "districtId": 30,
+    "name": "சேரன்மகாதேவி"
+  },
+  {
+    "id": 783,
+    "districtId": 30,
+    "name": "செட்டிகுளம்"
+  },
+  {
+    "id": 784,
+    "districtId": 30,
+    "name": "ஏர்வாடி (திருநெல்வேலி மாவட்டம்)"
+  },
+  {
+    "id": 785,
+    "districtId": 30,
+    "name": "கங்கைகொண்டான் (திருநெல்வேலி)"
+  },
+  {
+    "id": 786,
+    "districtId": 30,
+    "name": "கோபாலசமுத்திரம்"
+  },
+  {
+    "id": 787,
+    "districtId": 30,
+    "name": "இடையன்குடி (திருநெல்வேலி மாவட்டம்)"
+  },
+  {
+    "id": 788,
+    "districtId": 30,
+    "name": "இலத்தூர்"
+  },
+  {
+    "id": 789,
+    "districtId": 30,
+    "name": "களக்காடு"
+  },
+  {
+    "id": 790,
+    "districtId": 30,
+    "name": "கல்லிடைக்குறிச்சி"
+  },
+  {
+    "id": 791,
+    "districtId": 30,
+    "name": "கரும்பனூர்"
+  },
+  {
+    "id": 792,
+    "districtId": 30,
+    "name": "காவல்கிணறு"
+  },
+  {
+    "id": 793,
+    "districtId": 30,
+    "name": "கிடாரகுளம்"
+  },
+  {
+    "id": 794,
+    "districtId": 30,
+    "name": "கிழவனேரி"
+  },
+  {
+    "id": 795,
+    "districtId": 30,
+    "name": "கொட்டாக்குளம்"
+  },
+  {
+    "id": 796,
+    "districtId": 30,
+    "name": "கூடங்குளம்"
+  },
+  {
+    "id": 797,
+    "districtId": 30,
+    "name": "மணிமுத்தாறு (ஊர்)"
+  },
+  {
+    "id": 798,
+    "districtId": 30,
+    "name": "மேலச்செவல்"
+  },
+  {
+    "id": 799,
+    "districtId": 30,
+    "name": "மூலக்கரைப்பட்டி"
+  },
+  {
+    "id": 800,
+    "districtId": 30,
+    "name": "முக்கூடல்"
+  },
+  {
+    "id": 801,
+    "districtId": 30,
+    "name": "நல்லாங்குளம்"
+  },
+  {
+    "id": 802,
+    "districtId": 30,
+    "name": "நல்லூர்"
+  },
+  {
+    "id": 803,
+    "districtId": 30,
+    "name": "நாங்குநேரி"
+  },
+  {
+    "id": 804,
+    "districtId": 30,
+    "name": "நாரணம்மாள்புரம்"
+  },
+  {
+    "id": 805,
+    "districtId": 30,
+    "name": "பாளையங்கோட்டை"
+  },
+  {
+    "id": 806,
+    "districtId": 30,
+    "name": "பணகுடி"
+  },
+  {
+    "id": 807,
+    "districtId": 30,
+    "name": "பாபநாசம் (தஞ்சாவூர் மாவட்டம்)"
+  },
+  {
+    "id": 808,
+    "districtId": 30,
+    "name": "பத்தமடை"
+  },
+  {
+    "id": 809,
+    "districtId": 30,
+    "name": "பேட்டை"
+  },
+  {
+    "id": 810,
+    "districtId": 30,
+    "name": "பிரானூர்"
+  },
+  {
+    "id": 811,
+    "districtId": 30,
+    "name": "இராதாபுரம்"
+  },
+  {
+    "id": 812,
+    "districtId": 30,
+    "name": "சங்கர்"
+  },
+  {
+    "id": 813,
+    "districtId": 30,
+    "name": "சிவந்திபுரம்"
+  },
+  {
+    "id": 814,
+    "districtId": 30,
+    "name": "சங்கர்"
+  },
+  {
+    "id": 815,
+    "districtId": 30,
+    "name": "திருக்குறுங்குடி"
+  },
+  {
+    "id": 816,
+    "districtId": 30,
+    "name": "திசையன்விளை"
+  },
+  {
+    "id": 817,
+    "districtId": 30,
+    "name": "உவரி"
+  },
+  {
+    "id": 818,
+    "districtId": 30,
+    "name": "வடக்கன்குளம்"
+  },
+  {
+    "id": 819,
+    "districtId": 30,
+    "name": "வடக்கு வள்ளியூர்"
+  },
+  {
+    "id": 820,
+    "districtId": 30,
+    "name": "வைரவிகிணறு"
+  },
+  {
+    "id": 821,
+    "districtId": 30,
+    "name": "வள்ளியூா்"
+  },
+  {
+    "id": 822,
+    "districtId": 30,
+    "name": "வீரவநல்லூர்"
+  },
+  {
+    "id": 823,
+    "districtId": 30,
+    "name": "விஜயநாராயணம்"
+  },
+  {
+    "id": 824,
+    "districtId": 30,
+    "name": "விக்கிரமசிங்கபுரம்"
+  },
+  {
+    "id": 825,
+    "districtId": 31,
+    "name": "ஆலங்காயம்"
+  },
+  {
+    "id": 826,
+    "districtId": 31,
+    "name": "ஆம்பூர்"
+  },
+  {
+    "id": 827,
+    "districtId": 31,
+    "name": "ஜோலார்பேட்டை"
+  },
+  {
+    "id": 828,
+    "districtId": 31,
+    "name": "நாட்றாம்பள்ளி"
+  },
+  {
+    "id": 829,
+    "districtId": 31,
+    "name": "திருப்பத்தூர்"
+  },
+  {
+    "id": 830,
+    "districtId": 31,
+    "name": "உதயேந்திரம்"
+  },
+  {
+    "id": 831,
+    "districtId": 31,
+    "name": "வாணியம்பாடி"
+  },
+  {
+    "id": 832,
+    "districtId": 31,
+    "name": "ஏலகிரி மலை"
+  },
+  {
+    "id": 833,
+    "districtId": 32,
+    "name": "ஆண்டிப்பாளையம் (திருப்பூர்)"
+  },
+  {
+    "id": 834,
+    "districtId": 32,
+    "name": "அனுப்பர்பாளையம் புதூர்"
+  },
+  {
+    "id": 835,
+    "districtId": 32,
+    "name": "அவிநாசிபாளையம்"
+  },
+  {
+    "id": 836,
+    "districtId": 32,
+    "name": "சின்னக்கம்பாளையம்"
+  },
+  {
+    "id": 837,
+    "districtId": 32,
+    "name": "தாளி"
+  },
+  {
+    "id": 838,
+    "districtId": 32,
+    "name": "தாராபுரம்"
+  },
+  {
+    "id": 839,
+    "districtId": 32,
+    "name": "கடத்தூர் (தருமபுரி)"
+  },
+  {
+    "id": 840,
+    "districtId": 32,
+    "name": "காமநாயக்கன்பாளையம்"
+  },
+  {
+    "id": 841,
+    "districtId": 32,
+    "name": "கணக்கம்பாளையம்"
+  },
+  {
+    "id": 842,
+    "districtId": 32,
+    "name": "காங்கேயம்"
+  },
+  {
+    "id": 843,
+    "districtId": 32,
+    "name": "கணியூர்"
+  },
+  {
+    "id": 844,
+    "districtId": 32,
+    "name": "கன்னிவாடி"
+  },
+  {
+    "id": 845,
+    "districtId": 32,
+    "name": "காரணம்பேட்டை"
+  },
+  {
+    "id": 846,
+    "districtId": 32,
+    "name": "குளத்துப்பாளையம்"
+  },
+  {
+    "id": 847,
+    "districtId": 32,
+    "name": "கொமாரலிங்கம்"
+  },
+  {
+    "id": 848,
+    "districtId": 32,
+    "name": "குண்டடம்"
+  },
+  {
+    "id": 849,
+    "districtId": 32,
+    "name": "குன்னத்தூர்"
+  },
+  {
+    "id": 850,
+    "districtId": 32,
+    "name": "மடத்துக்குளம்"
+  },
+  {
+    "id": 851,
+    "districtId": 32,
+    "name": "மாணிக்கபுரம்"
+  },
+  {
+    "id": 852,
+    "districtId": 32,
+    "name": "மூலனூர்"
+  },
+  {
+    "id": 853,
+    "districtId": 32,
+    "name": "முத்தூர்"
+  },
+  {
+    "id": 854,
+    "districtId": 32,
+    "name": "பல்லடம்"
+  },
+  {
+    "id": 855,
+    "districtId": 32,
+    "name": "பெரியப்பட்டி"
+  },
+  {
+    "id": 856,
+    "districtId": 32,
+    "name": "பெருமாநல்லூர்"
+  },
+  {
+    "id": 857,
+    "districtId": 32,
+    "name": "பொங்கலூர்"
+  },
+  {
+    "id": 858,
+    "districtId": 32,
+    "name": "ருத்திராவதி"
+  },
+  {
+    "id": 859,
+    "districtId": 32,
+    "name": "சாமளாபுரம்"
+  },
+  {
+    "id": 860,
+    "districtId": 32,
+    "name": "சங்கரமநல்லூர்"
+  },
+  {
+    "id": 861,
+    "districtId": 32,
+    "name": "செம்மிபாளையம்"
+  },
+  {
+    "id": 862,
+    "districtId": 32,
+    "name": "சுக்கம்பாளையம்"
+  },
+  {
+    "id": 863,
+    "districtId": 32,
+    "name": "தொட்டிபாளையம்"
+  },
+  {
+    "id": 864,
+    "districtId": 32,
+    "name": "திருப்பூர்"
+  },
+  {
+    "id": 865,
+    "districtId": 32,
+    "name": "உடுமலைப்பேட்டை"
+  },
+  {
+    "id": 866,
+    "districtId": 32,
+    "name": "ஊதியூர்"
+  },
+  {
+    "id": 867,
+    "districtId": 32,
+    "name": "ஊத்துக்குளி"
+  },
+  {
+    "id": 868,
+    "districtId": 33,
+    "name": "அம்மாவாரிக்குப்பம்"
+  },
+  {
+    "id": 869,
+    "districtId": 33,
+    "name": "அத்திப்பட்டு"
+  },
+  {
+    "id": 870,
+    "districtId": 33,
+    "name": "அத்திப்பட்டு புதுநகர்"
+  },
+  {
+    "id": 871,
+    "districtId": 33,
+    "name": "ஆவடி"
+  },
+  {
+    "id": 872,
+    "districtId": 33,
+    "name": "அயப்பாக்கம்"
+  },
+  {
+    "id": 873,
+    "districtId": 33,
+    "name": "சின்ன நாகப்பூண்டி"
+  },
+  {
+    "id": 874,
+    "districtId": 33,
+    "name": "சின்னசேக்காடு"
+  },
+  {
+    "id": 875,
+    "districtId": 33,
+    "name": "கும்மிடிப்பூண்டி"
+  },
+  {
+    "id": 876,
+    "districtId": 33,
+    "name": "கடம்பத்தூர்"
+  },
+  {
+    "id": 877,
+    "districtId": 33,
+    "name": "காரம்பாக்கம்"
+  },
+  {
+    "id": 878,
+    "districtId": 33,
+    "name": "காரனோடை"
+  },
+  {
+    "id": 879,
+    "districtId": 33,
+    "name": "கார்த்திகேயபுரம்"
+  },
+  {
+    "id": 880,
+    "districtId": 33,
+    "name": "கவரைப்பேட்டை"
+  },
+  {
+    "id": 881,
+    "districtId": 33,
+    "name": "மேல்பாக்கம்"
+  },
+  {
+    "id": 882,
+    "districtId": 33,
+    "name": "நாரவாரிக்குப்பம்"
+  },
+  {
+    "id": 883,
+    "districtId": 33,
+    "name": "நெற்குன்றம்"
+  },
+  {
+    "id": 884,
+    "districtId": 33,
+    "name": "பாடியநல்லூர்"
+  },
+  {
+    "id": 885,
+    "districtId": 33,
+    "name": "பள்ளிப்பட்டு"
+  },
+  {
+    "id": 886,
+    "districtId": 33,
+    "name": "பனம்பாக்கம்"
+  },
+  {
+    "id": 887,
+    "districtId": 33,
+    "name": "பட்டாபிராம்"
+  },
+  {
+    "id": 888,
+    "districtId": 33,
+    "name": "பேரம்பாக்கம்"
+  },
+  {
+    "id": 889,
+    "districtId": 33,
+    "name": "பெரியபாளையம்"
+  },
+  {
+    "id": 890,
+    "districtId": 33,
+    "name": "பெரிய நாகப்பூண்டி"
+  },
+  {
+    "id": 891,
+    "districtId": 33,
+    "name": "பெரியசெக்காடு"
+  },
+  {
+    "id": 892,
+    "districtId": 33,
+    "name": "பெருமாள்பட்டு ஊராட்சி"
+  },
+  {
+    "id": 893,
+    "districtId": 33,
+    "name": "பொதட்டூர்பேட்டை"
+  },
+  {
+    "id": 894,
+    "districtId": 33,
+    "name": "பொன்னேரி"
+  },
+  {
+    "id": 895,
+    "districtId": 33,
+    "name": "பூந்தமல்லி"
+  },
+  {
+    "id": 896,
+    "districtId": 33,
+    "name": "பழவேற்காடு"
+  },
+  {
+    "id": 897,
+    "districtId": 33,
+    "name": "புத்தகரம்"
+  },
+  {
+    "id": 898,
+    "districtId": 33,
+    "name": "புழல்"
+  },
+  {
+    "id": 899,
+    "districtId": 33,
+    "name": "ஸ்ரீபெரும்புதூர்"
+  },
+  {
+    "id": 900,
+    "districtId": 33,
+    "name": "திருமழிசை"
+  },
+  {
+    "id": 901,
+    "districtId": 33,
+    "name": "திருத்தணி"
+  },
+  {
+    "id": 902,
+    "districtId": 33,
+    "name": "திருவள்ளூர்"
+  },
+  {
+    "id": 903,
+    "districtId": 33,
+    "name": "திருவிற்கோலம்"
+  },
+  {
+    "id": 904,
+    "districtId": 33,
+    "name": "ஊத்துக்கோட்டை"
+  },
+  {
+    "id": 905,
+    "districtId": 33,
+    "name": "வெங்காத்தூர்"
+  },
+  {
+    "id": 906,
+    "districtId": 33,
+    "name": "வேப்பம்பட்டு"
+  },
+  {
+    "id": 907,
+    "districtId": 33,
+    "name": "விநாயகபுரம்"
+  },
+  {
+    "id": 908,
+    "districtId": 34,
+    "name": "அடையூர்"
+  },
+  {
+    "id": 909,
+    "districtId": 34,
+    "name": "ஆதமங்கலம் புதூர்"
+  },
+  {
+    "id": 910,
+    "districtId": 34,
+    "name": "அடி அண்ணாமலை"
+  },
+  {
+    "id": 911,
+    "districtId": 34,
+    "name": "அக்கூர்"
+  },
+  {
+    "id": 912,
+    "districtId": 34,
+    "name": "அன்னியூர்"
+  },
+  {
+    "id": 913,
+    "districtId": 34,
+    "name": "ஆரணி"
+  },
+  {
+    "id": 914,
+    "districtId": 34,
+    "name": "அத்தியந்தல்"
+  },
+  {
+    "id": 915,
+    "districtId": 34,
+    "name": "ஆவூர்"
+  },
+  {
+    "id": 916,
+    "districtId": 34,
+    "name": "பிரம்மதேசம்"
+  },
+  {
+    "id": 917,
+    "districtId": 34,
+    "name": "செங்கம்"
+  },
+  {
+    "id": 918,
+    "districtId": 34,
+    "name": "சேத்துப்பட்டு"
+  },
+  {
+    "id": 919,
+    "districtId": 34,
+    "name": "செய்யாறு"
+  },
+  {
+    "id": 920,
+    "districtId": 34,
+    "name": "தேசூர்"
+  },
+  {
+    "id": 921,
+    "districtId": 34,
+    "name": "தேவனம்பட்டு"
+  },
+  {
+    "id": 922,
+    "districtId": 34,
+    "name": "தேவிகாபுரம்"
+  },
+  {
+    "id": 923,
+    "districtId": 34,
+    "name": "துசி"
+  },
+  {
+    "id": 924,
+    "districtId": 34,
+    "name": "காந்திநகர்"
+  },
+  {
+    "id": 925,
+    "districtId": 34,
+    "name": "இஞ்சிமேடு"
+  },
+  {
+    "id": 926,
+    "districtId": 34,
+    "name": "சமுனாமரத்தூர்"
+  },
+  {
+    "id": 927,
+    "districtId": 34,
+    "name": "களம்பூர்"
+  },
+  {
+    "id": 928,
+    "districtId": 34,
+    "name": "கலசப்பாக்கம்"
+  },
+  {
+    "id": 929,
+    "districtId": 34,
+    "name": "கல்லாயி ஊராட்சி"
+  },
+  {
+    "id": 930,
+    "districtId": 34,
+    "name": "காஞ்சி (எழுத்து)"
+  },
+  {
+    "id": 931,
+    "districtId": 34,
+    "name": "கண்ணமங்கலம்"
+  },
+  {
+    "id": 932,
+    "districtId": 34,
+    "name": "கீழ்நாத்தூர்"
+  },
+  {
+    "id": 933,
+    "districtId": 34,
+    "name": "கீழ்பெண்ணாத்தூர்"
+  },
+  {
+    "id": 934,
+    "districtId": 34,
+    "name": "கோவிலூர்"
+  },
+  {
+    "id": 935,
+    "districtId": 34,
+    "name": "மாம்பழப்பட்டு"
+  },
+  {
+    "id": 936,
+    "districtId": 34,
+    "name": "மேல் செங்கம்"
+  },
+  {
+    "id": 937,
+    "districtId": 34,
+    "name": "மேலதிக்கான்"
+  },
+  {
+    "id": 938,
+    "districtId": 34,
+    "name": "முகையூர் (விழுப்புரம் மாவட்டம்)"
+  },
+  {
+    "id": 939,
+    "districtId": 34,
+    "name": "நாயுடுமங்கலம்"
+  },
+  {
+    "id": 940,
+    "districtId": 34,
+    "name": "நல்லவன்பாளையம்"
+  },
+  {
+    "id": 941,
+    "districtId": 34,
+    "name": "நல்லூர்"
+  },
+  {
+    "id": 942,
+    "districtId": 34,
+    "name": "நொச்சிமலை"
+  },
+  {
+    "id": 943,
+    "districtId": 34,
+    "name": "பள்ளிகொண்டாபட்டு"
+  },
+  {
+    "id": 944,
+    "districtId": 34,
+    "name": "பாஞ்சரை ஊராட்சி"
+  },
+  {
+    "id": 945,
+    "districtId": 34,
+    "name": "பரமனந்தல்"
+  },
+  {
+    "id": 946,
+    "districtId": 34,
+    "name": "பெரணமல்லூர்"
+  },
+  {
+    "id": 947,
+    "districtId": 34,
+    "name": "பெருங்கட்டூர்"
+  },
+  {
+    "id": 948,
+    "districtId": 34,
+    "name": "போளூர்"
+  },
+  {
+    "id": 949,
+    "districtId": 34,
+    "name": "பூசிமலைக்குப்பம் ஊராட்சி"
+  },
+  {
+    "id": 950,
+    "districtId": 34,
+    "name": "பொரிக்கல்"
+  },
+  {
+    "id": 951,
+    "districtId": 34,
+    "name": "புதுப்பாளையம்"
+  },
+  {
+    "id": 952,
+    "districtId": 34,
+    "name": "புல்லவாக்கம் ஊராட்சி"
+  },
+  {
+    "id": 953,
+    "districtId": 34,
+    "name": "புரிசை"
+  },
+  {
+    "id": 954,
+    "districtId": 34,
+    "name": "சத்தியவிஜயநகரம்"
+  },
+  {
+    "id": 955,
+    "districtId": 34,
+    "name": "தண்டரை"
+  },
+  {
+    "id": 956,
+    "districtId": 34,
+    "name": "தாமரைக்குளம்"
+  },
+  {
+    "id": 957,
+    "districtId": 34,
+    "name": "தண்டராம்பட்டு"
+  },
+  {
+    "id": 958,
+    "districtId": 34,
+    "name": "தானிப்பாடி"
+  },
+  {
+    "id": 959,
+    "districtId": 34,
+    "name": "தேனிமலை"
+  },
+  {
+    "id": 960,
+    "districtId": 34,
+    "name": "தென்மாத்தூர்"
+  },
+  {
+    "id": 961,
+    "districtId": 34,
+    "name": "தென்னாங்கூர்"
+  },
+  {
+    "id": 962,
+    "districtId": 34,
+    "name": "தென்றல்"
+  },
+  {
+    "id": 963,
+    "districtId": 34,
+    "name": "துரிஞ்சாபுரம்"
+  },
+  {
+    "id": 964,
+    "districtId": 34,
+    "name": "துரிஞ்சிகுப்பம்"
+  },
+  {
+    "id": 965,
+    "districtId": 34,
+    "name": "திருவண்ணாமலை"
+  },
+  {
+    "id": 966,
+    "districtId": 34,
+    "name": "வடமணப்பாக்கம்"
+  },
+  {
+    "id": 967,
+    "districtId": 34,
+    "name": "வடுகப்பட்டு"
+  },
+  {
+    "id": 968,
+    "districtId": 34,
+    "name": "வாணாபுரம்"
+  },
+  {
+    "id": 969,
+    "districtId": 34,
+    "name": "வந்தவாசி"
+  },
+  {
+    "id": 970,
+    "districtId": 34,
+    "name": "வெம்பாக்கம் பேரூராட்சி"
+  },
+  {
+    "id": 971,
+    "districtId": 34,
+    "name": "வேங்கிக்கால்"
+  },
+  {
+    "id": 972,
+    "districtId": 34,
+    "name": "வெறையூர்"
+  },
+  {
+    "id": 973,
+    "districtId": 34,
+    "name": "வேட்டவலம்"
+  },
+  {
+    "id": 974,
+    "districtId": 34,
+    "name": "வில்வராணி"
+  },
+  {
+    "id": 975,
+    "districtId": 35,
+    "name": "குடவாசல்"
+  },
+  {
+    "id": 976,
+    "districtId": 35,
+    "name": "கூத்தாநல்லூர்"
+  },
+  {
+    "id": 977,
+    "districtId": 35,
+    "name": "கொரடாச்சேரி"
+  },
+  {
+    "id": 978,
+    "districtId": 35,
+    "name": "கோவில்வெண்ணி"
+  },
+  {
+    "id": 979,
+    "districtId": 35,
+    "name": "மன்னார்குடி"
+  },
+  {
+    "id": 980,
+    "districtId": 35,
+    "name": "முத்துப்பேட்டை (திருவாரூர் மாவட்டம்)"
+  },
+  {
+    "id": 981,
+    "districtId": 35,
+    "name": "நாகங்குடி"
+  },
+  {
+    "id": 982,
+    "districtId": 35,
+    "name": "நன்னிலம்"
+  },
+  {
+    "id": 983,
+    "districtId": 35,
+    "name": "நீடாமங்கலம்"
+  },
+  {
+    "id": 984,
+    "districtId": 35,
+    "name": "பட்டுக்கோட்டை"
+  },
+  {
+    "id": 985,
+    "districtId": 35,
+    "name": "பேரளம்"
+  },
+  {
+    "id": 986,
+    "districtId": 35,
+    "name": "திருத்துறைப்பூண்டி"
+  },
+  {
+    "id": 987,
+    "districtId": 35,
+    "name": "திருவாரூர்"
+  },
+  {
+    "id": 988,
+    "districtId": 35,
+    "name": "வலங்கைமான்"
+  },
+  {
+    "id": 989,
+    "districtId": 36,
+    "name": "அடுக்கம்பாறை"
+  },
+  {
+    "id": 990,
+    "districtId": 36,
+    "name": "அல்லாபுரம்"
+  },
+  {
+    "id": 991,
+    "districtId": 36,
+    "name": "அணைக்கட்டு (ஊர்)"
+  },
+  {
+    "id": 992,
+    "districtId": 36,
+    "name": "செட்டித்தாங்கல்"
+  },
+  {
+    "id": 993,
+    "districtId": 36,
+    "name": "குடியாத்தம்"
+  },
+  {
+    "id": 994,
+    "districtId": 36,
+    "name": "குருவராஜபேட்டை"
+  },
+  {
+    "id": 995,
+    "districtId": 36,
+    "name": "கழிஞ்சூர்"
+  },
+  {
+    "id": 996,
+    "districtId": 36,
+    "name": "காங்கேயநல்லூர்"
+  },
+  {
+    "id": 997,
+    "districtId": 36,
+    "name": "கருகம்பத்தூர்"
+  },
+  {
+    "id": 998,
+    "districtId": 36,
+    "name": "காட்பாடி"
+  },
+  {
+    "id": 999,
+    "districtId": 36,
+    "name": "காட்டுப்பாக்கம்"
+  },
+  {
+    "id": 1000,
+    "districtId": 36,
+    "name": "மேல்பாடி"
+  },
+  {
+    "id": 1001,
+    "districtId": 36,
+    "name": "ஒடுகத்தூர்"
+  },
+  {
+    "id": 1002,
+    "districtId": 36,
+    "name": "பழவன்சாது"
+  },
+  {
+    "id": 1003,
+    "districtId": 36,
+    "name": "பள்ளிகொண்டா"
+  },
+  {
+    "id": 1004,
+    "districtId": 36,
+    "name": "பெண்ணாத்தூர்"
+  },
+  {
+    "id": 1005,
+    "districtId": 36,
+    "name": "பேர்ணாம்பட்டு"
+  },
+  {
+    "id": 1006,
+    "districtId": 36,
+    "name": "பெருமுச்சி"
+  },
+  {
+    "id": 1007,
+    "districtId": 36,
+    "name": "பொன்னை"
+  },
+  {
+    "id": 1008,
+    "districtId": 36,
+    "name": "சேனூர்"
+  },
+  {
+    "id": 1009,
+    "districtId": 36,
+    "name": "திருவலம்"
+  },
+  {
+    "id": 1010,
+    "districtId": 36,
+    "name": "துத்திப்பட்டு"
+  },
+  {
+    "id": 1011,
+    "districtId": 36,
+    "name": "வேலூர்"
+  },
+  {
+    "id": 1012,
+    "districtId": 36,
+    "name": "விருப்பாட்சிபுரம்"
+  },
+  {
+    "id": 1013,
+    "districtId": 36,
+    "name": "விருதம்பட்டு"
+  },
+  {
+    "id": 1014,
+    "districtId": 37,
+    "name": "செஞ்சி"
+  },
+  {
+    "id": 1015,
+    "districtId": 37,
+    "name": "கண்டாச்சிபுரம்"
+  },
+  {
+    "id": 1016,
+    "districtId": 37,
+    "name": "மரக்காணம்"
+  },
+  {
+    "id": 1017,
+    "districtId": 37,
+    "name": "மேல்மலையனூர்"
+  },
+  {
+    "id": 1018,
+    "districtId": 37,
+    "name": "பண்ருட்டி"
+  },
+  {
+    "id": 1019,
+    "districtId": 37,
+    "name": "திண்டிவனம்"
+  },
+  {
+    "id": 1020,
+    "districtId": 37,
+    "name": "திருவெண்ணெய்நல்லூர்"
+  },
+  {
+    "id": 1021,
+    "districtId": 37,
+    "name": "வானூர்"
+  },
+  {
+    "id": 1022,
+    "districtId": 37,
+    "name": "விக்கிரவாண்டி"
+  },
+  {
+    "id": 1023,
+    "districtId": 37,
+    "name": "விழுப்புரம்"
+  },
+  {
+    "id": 1024,
+    "districtId": 38,
+    "name": "ஆலங்குளம்"
+  },
+  {
+    "id": 1025,
+    "districtId": 38,
+    "name": "அனையூர்"
+  },
+  {
+    "id": 1026,
+    "districtId": 38,
+    "name": "அருப்புக்கோட்டை"
+  },
+  {
+    "id": 1027,
+    "districtId": 38,
+    "name": "செட்டியார்பட்டி"
+  },
+  {
+    "id": 1028,
+    "districtId": 38,
+    "name": "தேவதானம்"
+  },
+  {
+    "id": 1029,
+    "districtId": 38,
+    "name": "தளவாய்புரம்"
+  },
+  {
+    "id": 1030,
+    "districtId": 38,
+    "name": "ஏழாயிரம்பண்ணை"
+  },
+  {
+    "id": 1031,
+    "districtId": 38,
+    "name": "கான்சாபுரம்"
+  },
+  {
+    "id": 1032,
+    "districtId": 38,
+    "name": "காரியாபட்டி"
+  },
+  {
+    "id": 1033,
+    "districtId": 38,
+    "name": "கூரைக்குண்டு"
+  },
+  {
+    "id": 1034,
+    "districtId": 38,
+    "name": "மல்லாங்கிணறு"
+  },
+  {
+    "id": 1035,
+    "districtId": 38,
+    "name": "மம்சாபுரம்"
+  },
+  {
+    "id": 1036,
+    "districtId": 38,
+    "name": "நாரணாபுரம்"
+  },
+  {
+    "id": 1037,
+    "districtId": 38,
+    "name": "பி. ராமசந்திரபுரம்"
+  },
+  {
+    "id": 1038,
+    "districtId": 38,
+    "name": "பள்ளப்பட்டி"
+  },
+  {
+    "id": 1039,
+    "districtId": 38,
+    "name": "புதுப்பட்டி"
+  },
+  {
+    "id": 1040,
+    "districtId": 38,
+    "name": "ராஜபாளையம்"
+  },
+  {
+    "id": 1041,
+    "districtId": 38,
+    "name": "இரோசல்பட்டி"
+  },
+  {
+    "id": 1042,
+    "districtId": 38,
+    "name": "சங்கரலிங்கபுரம்"
+  },
+  {
+    "id": 1043,
+    "districtId": 38,
+    "name": "சாத்தூர்"
+  },
+  {
+    "id": 1044,
+    "districtId": 38,
+    "name": "சேத்தூர்"
+  },
+  {
+    "id": 1045,
+    "districtId": 38,
+    "name": "சித்துராசபுரம்"
+  },
+  {
+    "id": 1046,
+    "districtId": 38,
+    "name": "சிவகாசி"
+  },
+  {
+    "id": 1047,
+    "districtId": 38,
+    "name": "தென் கோடிக்குளம்"
+  },
+  {
+    "id": 1048,
+    "districtId": 38,
+    "name": "ஸ்ரீவில்லிபுத்தூர்"
+  },
+  {
+    "id": 1049,
+    "districtId": 38,
+    "name": "சுந்தரபாண்டியம் பேரூராட்சி"
+  },
+  {
+    "id": 1050,
+    "districtId": 38,
+    "name": "தாயிலுப்பட்டி"
+  },
+  {
+    "id": 1051,
+    "districtId": 38,
+    "name": "திருத்தங்கல்"
+  },
+  {
+    "id": 1052,
+    "districtId": 38,
+    "name": "திருச்சுழி"
+  },
+  {
+    "id": 1053,
+    "districtId": 38,
+    "name": "வெம்பக்கோட்டை"
+  },
+  {
+    "id": 1054,
+    "districtId": 38,
+    "name": "விருதுநகர்"
+  },
+  {
+    "id": 1055,
+    "districtId": 38,
+    "name": "விஸ்வநாதம்"
+  }
+]

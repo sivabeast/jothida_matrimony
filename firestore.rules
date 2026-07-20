@@ -36,22 +36,22 @@ service cloud.firestore {
       return a < b ? a + '_' + b : b + '_' + a;
     }
 
-    // ── Master location data (states / districts / cities) ────────────────
-    // Read-only REFERENCE data that powers the cascading State → District →
-    // City pickers. Any signed-in user may read it; only admins maintain it.
-    // App queries: master_states (all) · master_districts where stateId == X ·
-    // master_cities where districtId == X — all allowed by the open read.
-    match /master_states/{stateId} {
+    // ── Master data (seeded reference datasets) ───────────────────────────
+    // master_data/{key} documents hold every lookup dataset the app and the
+    // website read: the Tamil Nadu location data (districts_en / districts_ta
+    // / cities_en / cities_ta — powers the State → District → City pickers),
+    // astrology tables, religion / caste lists and the profile option lists.
+    // Seeded by matrimony_website/scripts/seed-master-data.mjs. Any signed-in
+    // user (including the website's anonymous session) may read; only admins
+    // maintain it. Oversized datasets are split into a `chunks` subcollection
+    // (Firestore documents max out at 1 MB).
+    match /master_data/{docId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
-    }
-    match /master_districts/{districtId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-    match /master_cities/{cityId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      match /chunks/{chunkId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
+      }
     }
 
     // ── Custom master-dropdown values ("+ Add" system) ─────────────────────

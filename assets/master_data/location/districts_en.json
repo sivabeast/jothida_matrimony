@@ -1,0 +1,154 @@
+[
+  {
+    "id": 1,
+    "name": "Ariyalur"
+  },
+  {
+    "id": 2,
+    "name": "Chengalpattu"
+  },
+  {
+    "id": 3,
+    "name": "Chennai"
+  },
+  {
+    "id": 4,
+    "name": "Coimbatore"
+  },
+  {
+    "id": 5,
+    "name": "Cuddalore"
+  },
+  {
+    "id": 6,
+    "name": "Dharmapuri"
+  },
+  {
+    "id": 7,
+    "name": "Dindigul"
+  },
+  {
+    "id": 8,
+    "name": "Erode"
+  },
+  {
+    "id": 9,
+    "name": "Kallakurichi"
+  },
+  {
+    "id": 10,
+    "name": "Kancheepuram"
+  },
+  {
+    "id": 11,
+    "name": "Kanniyakumari"
+  },
+  {
+    "id": 12,
+    "name": "Karur"
+  },
+  {
+    "id": 13,
+    "name": "Krishnagiri"
+  },
+  {
+    "id": 14,
+    "name": "Madurai"
+  },
+  {
+    "id": 15,
+    "name": "Mayiladuthurai"
+  },
+  {
+    "id": 16,
+    "name": "Nagapattinam"
+  },
+  {
+    "id": 17,
+    "name": "Namakkal"
+  },
+  {
+    "id": 18,
+    "name": "Nilgiris"
+  },
+  {
+    "id": 19,
+    "name": "Perambalur"
+  },
+  {
+    "id": 20,
+    "name": "Pudukkottai"
+  },
+  {
+    "id": 21,
+    "name": "Ramanathapuram"
+  },
+  {
+    "id": 22,
+    "name": "Ranipet"
+  },
+  {
+    "id": 23,
+    "name": "Salem"
+  },
+  {
+    "id": 24,
+    "name": "Sivaganga"
+  },
+  {
+    "id": 25,
+    "name": "Tenkasi"
+  },
+  {
+    "id": 26,
+    "name": "Thanjavur"
+  },
+  {
+    "id": 27,
+    "name": "Theni"
+  },
+  {
+    "id": 28,
+    "name": "Thoothukudi"
+  },
+  {
+    "id": 29,
+    "name": "Tiruchirappalli"
+  },
+  {
+    "id": 30,
+    "name": "Tirunelveli"
+  },
+  {
+    "id": 31,
+    "name": "Tirupathur"
+  },
+  {
+    "id": 32,
+    "name": "Tiruppur"
+  },
+  {
+    "id": 33,
+    "name": "Tiruvallur"
+  },
+  {
+    "id": 34,
+    "name": "Tiruvannamalai"
+  },
+  {
+    "id": 35,
+    "name": "Tiruvarur"
+  },
+  {
+    "id": 36,
+    "name": "Vellore"
+  },
+  {
+    "id": 37,
+    "name": "Viluppuram"
+  },
+  {
+    "id": 38,
+    "name": "Virudhunagar"
+  }
+]

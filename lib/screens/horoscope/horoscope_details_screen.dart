@@ -10,7 +10,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/file_actions.dart';
 import '../../models/profile_model.dart';
 import '../../providers/demo_data_provider.dart';
-import '../../providers/master_location_provider.dart';
+import '../../providers/location_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/app_text_field.dart';

@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 
 /// One user-added master-dropdown value. [parent] scopes dependent dropdowns
-/// (caste → religionId, subcaste → casteId, district → state name, city →
-/// district name); flat lists (education, occupation, income…) use ''.
+/// (caste → religionId, subcaste → casteId); flat lists (education,
+/// occupation, income…) use ''.
 typedef MasterOption = ({String value, String parent});
 
 /// Firestore-backed CUSTOM master-dropdown values — the "+ Add" system that
@@ -27,9 +27,9 @@ class MasterOptionsService {
   static const religion = 'religion';
   static const caste = 'caste';
   static const subcaste = 'subcaste';
-  static const state = 'state';
-  static const district = 'district';
-  static const city = 'city';
+  // NOTE: state / district / city are NOT custom-addable — the Tamil Nadu
+  // location master data (master_data/districts_* + cities_*) is curated and
+  // read-only; the picker offers no "+ Add" for location fields.
   static const nativePlace = 'native_place';
 
   DocumentReference<Map<String, dynamic>> _doc(String type) =>
