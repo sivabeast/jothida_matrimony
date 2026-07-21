@@ -487,6 +487,30 @@ bool _ppSet(String? s) =>
 bool _ppEq(String a, String? b) =>
     !_ppSet(b) || a.trim().toLowerCase() == b!.trim().toLowerCase();
 
+/// Effective partner age range for [me].
+///
+/// Age preference is mandatory, but when the user left it at the model default
+/// (18–40) we apply a gender-based range derived from their OWN age — identical
+/// to the website's rule, so both platforms behave the same:
+///   • Female member (sees male profiles):  own age        → own age + 9
+///   • Male member   (sees female profiles): max(18, own age − 10) → own age
+/// A range the user actually chose (anything other than the 18–40 default) is
+/// used unchanged, so once they set an age preference it wins everywhere.
+({int minAge, int maxAge}) resolveAgeRange(ProfileModel? me) {
+  final pp = me?.partnerPreferences;
+  if (pp == null) return (minAge: 18, maxAge: 60);
+  final isModelDefault = pp.minAge == 18 && pp.maxAge == 40;
+  final age = me?.age ?? 0;
+  if (!isModelDefault || age <= 0) {
+    return (minAge: pp.minAge, maxAge: pp.maxAge);
+  }
+  if (me?.gender == 'Female') return (minAge: age, maxAge: age + 9);
+  if (me?.gender == 'Male') {
+    return (minAge: age - 10 < 18 ? 18 : age - 10, maxAge: age);
+  }
+  return (minAge: pp.minAge, maxAge: pp.maxAge);
+}
+
 /// How many of the user's ACTIVE partner-preference constraints a candidate
 /// satisfies. `total` is the number of active constraints; `satisfied` is how
 /// many the candidate meets. A constraint is "active" only when it is actually
@@ -517,7 +541,8 @@ PartnerPrefScore partnerPreferenceScore(
     }
   }
 
-  check(c.age > 0, c.age >= pp.minAge && c.age <= pp.maxAge);
+  final ageRange = resolveAgeRange(me);
+  check(c.age > 0, c.age >= ageRange.minAge && c.age <= ageRange.maxAge);
   check(_ppSet(pp.maritalStatus), _ppEq(c.maritalStatus, pp.maritalStatus));
   check(_ppSet(pp.religion), _ppEq(c.religion, pp.religion));
   check(_ppSet(pp.caste), _ppEq(c.caste ?? '', pp.caste));
@@ -584,10 +609,12 @@ bool mandatoryPreferenceMatch(ProfileModel candidate, ProfileModel? me) {
   if (me == null) return true;
   final pp = me.partnerPreferences;
 
-  // Age range — mandatory. Only skipped when the candidate's age is unknown (0),
-  // so a data gap can't hide an otherwise-eligible profile.
+  // Age range — mandatory. Uses the resolved range (the user's choice, or the
+  // gender-based default when they left it at 18–40). Only skipped when the
+  // candidate's age is unknown (0), so a data gap can't hide an eligible profile.
+  final ageRange = resolveAgeRange(me);
   if (candidate.age > 0 &&
-      (candidate.age < pp.minAge || candidate.age > pp.maxAge)) {
+      (candidate.age < ageRange.minAge || candidate.age > ageRange.maxAge)) {
     return false;
   }
 

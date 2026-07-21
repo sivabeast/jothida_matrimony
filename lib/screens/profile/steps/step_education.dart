@@ -115,9 +115,10 @@ class _StepEducationState extends ConsumerState<StepEducation> {
                 MasterOptionsService.education, _education),
             selectedItem: _education,
             prefixIcon: Icons.school_outlined,
-            onAddNew: (v) => ref
-                .read(masterOptionsServiceProvider)
-                .add(MasterOptionsService.education, value: v),
+            // A typed ("Other") value is kept ONLY on this profile — it is
+            // never written back to the shared master data (parity with the
+            // website's Education rule).
+            onAddNew: (v) async => v.trim(),
             onChanged: (v) => setState(() => _education = v),
           ),
           const SizedBox(height: 16),
@@ -128,9 +129,9 @@ class _StepEducationState extends ConsumerState<StepEducation> {
                 MasterOptionsService.occupation, _occupation),
             selectedItem: _occupation,
             prefixIcon: Icons.work_outline,
-            onAddNew: (v) => ref
-                .read(masterOptionsServiceProvider)
-                .add(MasterOptionsService.occupation, value: v),
+            // Typed occupation stays on this profile only — never written to
+            // the shared master data (parity with the website's Occupation rule).
+            onAddNew: (v) async => v.trim(),
             onChanged: (v) => setState(() => _occupation = v),
           ),
           // Student → Course / Degree.
@@ -160,9 +161,9 @@ class _StepEducationState extends ConsumerState<StepEducation> {
                   MasterOptionsService.income, _annualIncome),
               selectedItem: _annualIncome,
               prefixIcon: Icons.currency_rupee,
-              onAddNew: (v) => ref
-                  .read(masterOptionsServiceProvider)
-                  .add(MasterOptionsService.income, value: v),
+              // Typed income stays on this profile only — never written to the
+              // shared master data.
+              onAddNew: (v) async => v.trim(),
               onChanged: (v) => setState(() => _annualIncome = v),
             ),
           ],
