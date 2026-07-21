@@ -222,19 +222,70 @@ class AppConstants {
   // Languages known (reuses the mother-tongue catalogue).
   static const List<String> languagesKnownList = motherTongueList;
 
-  // Education List
+  // Education List — consolidated from UNESCO ISCED, UGC, AICTE and NSQF
+  // (schooling, ITI/Diploma/Polytechnic, UG, PG, professional, doctorate &
+  // research across every stream). Sorted + deduplicated, mirrored VERBATIM
+  // from the website (src/constants/profileOptions.js) so both platforms store
+  // identical values. The single "Other → please specify" entry is added by the
+  // UI, never stored in this shared list.
   static const List<String> educationList = [
-    'SSLC', 'HSC', 'Diploma', 'B.E / B.Tech', 'B.Sc', 'B.Com', 'B.A',
-    'BCA', 'BBA', 'M.E / M.Tech', 'M.Sc', 'M.Com', 'M.A', 'MBA', 'MCA',
-    'MBBS', 'MD', 'B.Pharm', 'LLB', 'Ph.D', 'Other',
+    'ANM', 'B.A', 'B.Arch', 'B.Com', 'B.Com LLB', 'B.Des', 'B.E', 'B.Ed',
+    'B.El.Ed', 'B.Lib.Sc', 'B.Pharm', 'B.Plan', 'B.Sc', 'B.Sc Agriculture',
+    'B.Sc Computer Science', 'B.Sc Fashion Design', 'B.Sc IT', 'B.Sc Nursing',
+    'B.Tech', 'B.V.Sc', 'BA LLB', 'BAMS', 'BBA', 'BBA LLB', 'BCA', 'BDS',
+    'Below SSLC', 'BFA', 'BHM', 'BHMS', 'BJMC', 'BMS', 'BNYS', 'BPT', 'BSMS',
+    'BSW', 'BUMS', 'CA', 'Certificate Course', 'CFA', 'CMA', 'CS', 'D.El.Ed',
+    'D.Litt', 'D.Pharm', 'Diploma', 'DM', 'DMLT', 'GNM', 'HSC',
+    'Integrated M.Sc', 'ITI', 'LLB', 'LLM', 'M.A', 'M.Arch', 'M.Ch', 'M.Com',
+    'M.Des', 'M.E', 'M.Ed', 'M.Lib.Sc', 'M.Pharm', 'M.Phil', 'M.Sc',
+    'M.Sc Agriculture', 'M.Sc Computer Science', 'M.Sc IT', 'M.Sc Nursing',
+    'M.Tech', 'MBA', 'MBBS', 'MCA', 'MD', 'MDS', 'MFA', 'MPT', 'MS', 'MSW',
+    'No Formal Education', 'PG Diploma', 'Ph.D', 'Pharm.D', 'Polytechnic',
+    'Post Doctorate', 'SSLC', 'TTC', 'Vocational Training',
   ];
 
-  // Occupation List
+  // Occupation List — consolidated from NCO (India), ISCO-08 and ANZSCO across
+  // government, private, self-employed, business, IT, healthcare, engineering,
+  // education, agriculture, skilled trades, defence, police, legal, finance,
+  // arts, media, hospitality, transport and construction. Sorted +
+  // deduplicated, mirrored VERBATIM from the website. 'Student' and
+  // 'Not Working' are load-bearing (drive the career-form branching).
   static const List<String> occupationList = [
-    'Software Engineer', 'Doctor', 'Engineer', 'Teacher', 'Professor',
-    'Lawyer', 'Chartered Accountant', 'Government Employee', 'Business',
-    'Self Employed', 'Army / Police', 'Nurse', 'Pharmacist', 'Architect',
-    'Banker', 'Journalist', 'Actor / Artist', 'Student', 'Not Working', 'Other',
+    'Accountant', 'Actor', 'Administrative Officer', 'Advocate',
+    'Aeronautical Engineer', 'Agriculturist', 'Air Force Personnel', 'Animator',
+    'Architect', 'Army Personnel', 'Artist', 'Assistant Professor', 'Auditor',
+    'Automobile Engineer', 'Ayurvedic Doctor', 'Bank Employee', 'Bank Officer',
+    'Beautician', 'Business Analyst', 'Business Owner', 'Carpenter',
+    'Chartered Accountant', 'Chef', 'Chemical Engineer', 'Civil Contractor',
+    'Civil Engineer', 'Civil Servant (IAS / IPS / IFS)', 'Clerk',
+    'Cloud Architect', 'Company Secretary', 'Consultant', 'Content Creator',
+    'Contractor', 'Cost Accountant', 'Cybersecurity Analyst', 'Dairy Farmer',
+    'Dancer', 'Data Analyst', 'Data Entry Operator', 'Data Scientist',
+    'Database Administrator', 'Delivery Executive', 'Dentist', 'DevOps Engineer',
+    'Doctor', 'Driver', 'Editor', 'Electrical Engineer', 'Electrician',
+    'Electronics Engineer', 'Entrepreneur', 'Event Manager', 'Farmer',
+    'Fashion Designer', 'Film Director', 'Financial Analyst',
+    'Fire & Rescue Officer', 'Fisherman', 'Flight Attendant', 'Freelancer',
+    'Goldsmith', 'Government Employee', 'Graphic Designer', 'Homemaker',
+    'Horticulturist', 'Hotel Manager', 'HR Manager', 'Insurance Agent',
+    'Interior Designer', 'Investment Banker', 'IT Consultant',
+    'IT Support Engineer', 'Journalist', 'Judge', 'Lab Technician', 'Lawyer',
+    'Lecturer', 'Legal Advisor', 'Librarian', 'Logistics Manager',
+    'Marine Engineer', 'Marketing Executive', 'Mechanic', 'Mechanical Engineer',
+    'Medical Officer', 'Mobile App Developer', 'Musician', 'Navy Personnel',
+    'Network Engineer', 'News Anchor', 'Not Working', 'Nurse', 'Nutritionist',
+    'Optometrist', 'Pharmacist', 'Photographer', 'Physiotherapist', 'Pilot',
+    'Plumber', 'Police Officer', 'Postal Employee', 'Poultry Farmer',
+    'Product Manager', 'Professor', 'Project Manager', 'Psychologist',
+    'QA / Test Engineer', 'Radiologist', 'Railway Employee', 'Real Estate Agent',
+    'Receptionist', 'Research Scholar', 'Retired', 'Sales Executive',
+    'School Principal', 'Scientist', 'Self Employed', 'Ship Captain',
+    'Shop Owner', 'Singer', 'Site Engineer', 'Social Worker',
+    'Software Developer', 'Software Engineer', 'Startup Founder', 'Stock Broker',
+    'Student', 'Surgeon', 'System Administrator', 'Tailor', 'Tax Consultant',
+    'Teacher', 'Technician', 'Trader', 'Travel Agent', 'Tutor',
+    'UI / UX Designer', 'Veterinary Doctor', 'Video Editor', 'Web Developer',
+    'Welder', 'Writer',
   ];
 
   // Family Type

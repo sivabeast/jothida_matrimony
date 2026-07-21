@@ -487,12 +487,33 @@ bool _ppSet(String? s) =>
 bool _ppEq(String a, String? b) =>
     !_ppSet(b) || a.trim().toLowerCase() == b!.trim().toLowerCase();
 
+/// Lenient single-value gate for a HARD preference filter (spec §8): keep the
+/// candidate unless the member SET this preference AND the candidate records a
+/// DIFFERENT value. A blank candidate value gets the benefit of the doubt, so a
+/// data gap never hides an otherwise-eligible profile. Mirrors the website's
+/// `gate()` in src/utils/matching.js.
+bool _ppGate(String candidate, String? pref) {
+  if (!_ppSet(pref)) return true; // no preference set
+  final c = candidate.trim();
+  if (c.isEmpty) return true; // candidate unknown → don't filter out
+  return c.toLowerCase() == pref!.trim().toLowerCase();
+}
+
+/// Lenient multi-select gate — the candidate must be ONE of the chosen values
+/// (or the member chose none, or the candidate's value is unknown).
+bool _ppListGate(List<String> prefs, String candidate) {
+  if (prefs.isEmpty) return true;
+  final c = candidate.trim().toLowerCase();
+  if (c.isEmpty) return true;
+  return prefs.any((e) => e.trim().toLowerCase() == c);
+}
+
 /// Effective partner age range for [me].
 ///
 /// Age preference is mandatory, but when the user left it at the model default
 /// (18–40) we apply a gender-based range derived from their OWN age — identical
 /// to the website's rule, so both platforms behave the same:
-///   • Female member (sees male profiles):  own age        → own age + 9
+///   • Female member (sees male profiles):  own age        → own age + 10
 ///   • Male member   (sees female profiles): max(18, own age − 10) → own age
 /// A range the user actually chose (anything other than the 18–40 default) is
 /// used unchanged, so once they set an age preference it wins everywhere.
@@ -504,7 +525,7 @@ bool _ppEq(String a, String? b) =>
   if (!isModelDefault || age <= 0) {
     return (minAge: pp.minAge, maxAge: pp.maxAge);
   }
-  if (me?.gender == 'Female') return (minAge: age, maxAge: age + 9);
+  if (me?.gender == 'Female') return (minAge: age, maxAge: age + 10);
   if (me?.gender == 'Male') {
     return (minAge: age - 10 < 18 ? 18 : age - 10, maxAge: age);
   }
@@ -593,18 +614,22 @@ bool partnerPreferencesComplete(ProfileModel? me) {
 // ── MANDATORY vs OPTIONAL matching ──────────────────────────────────────────
 //
 // Product rule for the Matches feed:
-//   MANDATORY (a failing profile is NEVER shown):
-//     1. Community / Caste — when the user has selected a caste preference, only
-//        candidates of that caste/community appear.
-//     2. Age — the candidate's age MUST fall inside the user's preferred age
-//        range [minAge, maxAge].
-//   OPTIONAL (used for RANKING only, never removes a profile):
-//     religion, education, occupation, height, income, location, marital
-//     status, mother tongue, rasi/nakshatra, … — see [partnerPreferenceScore].
+//   MANDATORY (a failing profile is NEVER shown) — spec §8, every preference
+//   the member actually SET is a hard filter:
+//     • Age — candidate's age MUST fall inside [minAge, maxAge] (the member's
+//       range, or the gender-based default when unset).
+//     • Community / Caste, Religion, Sub-caste, Education, Occupation, Marital
+//       status, Mother tongue, Physical status, Income, Country/State/District/
+//       City — filtered when set, lenient when the candidate is missing the
+//       value.
+//   RANKING ONLY (never removes a profile): height, rasi/nakshatra and the
+//   overall satisfied-ratio — see [partnerPreferenceScore]; nakshatra also
+//   drives the "Best Match"/"Nakshatra Match" badge.
 
-/// Whether [candidate] passes BOTH mandatory gates (caste + age) for [me].
-/// Returns true when [me] is null (we can't evaluate preferences yet) so the
-/// feed isn't silently emptied before the user's own profile has loaded.
+/// Whether [candidate] passes ALL of [me]'s set partner preferences (hard
+/// filter, lenient on missing candidate data). Returns true when [me] is null
+/// (we can't evaluate preferences yet) so the feed isn't silently emptied
+/// before the user's own profile has loaded.
 bool mandatoryPreferenceMatch(ProfileModel candidate, ProfileModel? me) {
   if (me == null) return true;
   final pp = me.partnerPreferences;
@@ -621,6 +646,23 @@ bool mandatoryPreferenceMatch(ProfileModel candidate, ProfileModel? me) {
   // Community / Caste — mandatory ONLY when the user actually set a caste
   // preference ('Any'/empty means "no caste constraint").
   if (_ppSet(pp.caste) && !_casteMatches(candidate, pp)) return false;
+
+  // Every OTHER preference the member set is ALSO a hard filter (spec §8):
+  // applied only when set, and lenient when the candidate is missing the value,
+  // so a single blank field never hides an otherwise-good match. Kept in sync
+  // with the website's matchesPartnerPreference().
+  if (!_ppGate(candidate.religion, pp.religion)) return false;
+  if (!_ppGate(candidate.subCaste ?? '', pp.subCaste)) return false;
+  if (!_ppGate(candidate.maritalStatus, pp.maritalStatus)) return false;
+  if (!_ppGate(candidate.motherTongue, pp.motherTongue)) return false;
+  if (!_ppGate(candidate.physicalStatus, pp.physicalStatus)) return false;
+  if (!_ppGate(candidate.annualIncome, pp.income)) return false;
+  if (!_ppGate(candidate.country, pp.country)) return false;
+  if (!_ppGate(candidate.state, pp.state)) return false;
+  if (!_ppGate(candidate.district, pp.district)) return false;
+  if (!_ppGate(candidate.city, pp.city)) return false;
+  if (!_ppListGate(pp.education, candidate.education)) return false;
+  if (!_ppListGate(pp.occupation, candidate.occupation)) return false;
 
   return true;
 }
@@ -662,8 +704,9 @@ bool _casteMatches(ProfileModel candidate, PartnerPreferences pp) {
 ///     ([PartnerPrefScore.isExact]) → "⭐ Best Match";
 ///   • [none]      — neither, so the card shows no badge.
 ///
-/// Per the matching spec, NO preference ever hides a profile — every available
-/// profile stays visible and the badge only highlights the best matches.
+/// Profiles that fail a SET partner preference are already filtered out of the
+/// feed (see [mandatoryPreferenceMatch]); this badge only highlights the best
+/// of the profiles that remain.
 enum ProfileHighlight { nakshatra, matching, none }
 
 /// Computes the [ProfileHighlight] for [candidate] against the signed-in user
@@ -751,11 +794,16 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
 
   /// Visibility gate for the Matches feed.
   ///
-  /// Per the matching spec, EVERY available profile is visible — partner
-  /// preferences (caste, age, education, income, …) and nakshatra
-  /// compatibility only prioritise the order in [_rank] and drive the
-  /// "Best Match" badge; they never remove a profile from browsing.
-  bool _passesMode(ProfileModel p, ProfileModel? me) => true;
+  /// Partner preference is a HARD filter (spec §8): a profile that fails any
+  /// preference the member actually SET is hidden — age (with the gender-based
+  /// default when unset), caste, religion, education, occupation, location,
+  /// marital status, income, mother tongue, physical status. Unset / 'Any'
+  /// fields impose nothing and a blank candidate value is never filtered out,
+  /// so an unconfigured member still sees the full (gender-eligible) pool.
+  /// Nakshatra compatibility remains badge-only (never hides). Kept in sync
+  /// with the website.
+  bool _passesMode(ProfileModel p, ProfileModel? me) =>
+      mandatoryPreferenceMatch(p, me);
 
   /// How close [p] is to [me] geographically: 3 same city · 2 same district ·
   /// 1 same state · 0 elsewhere/unknown. Ranking signal only.
@@ -773,9 +821,9 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
   }
 
   /// Builds the feed from a fetched [pool]:
-  ///   • Data-integrity + the user's explicit filter-sheet choices decide who
-  ///     is ELIGIBLE at all — partner preferences NEVER hide a profile (they
-  ///     only rank the order and drive the "Best Match" badge).
+  ///   • Data-integrity + the user's explicit filter-sheet choices + every SET
+  ///     partner preference ([_passesMode] → [mandatoryPreferenceMatch]) decide
+  ///     who is ELIGIBLE at all; the rest only rank the order + drive badges.
   ///   • The result is sorted by the spec's priority ladder:
   ///       1. Horoscope (nakshatra) compatibility
   ///       2. Partner-preference match (mandatory age+caste, then the ratio)

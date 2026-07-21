@@ -7,6 +7,7 @@ import '../../models/profile_model.dart';
 import '../../providers/demo_data_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/common/age_range_wheel.dart';
 import '../../widgets/common/location_picker_section.dart';
 import '../../widgets/common/religion_caste_fields.dart';
 import '../../widgets/common/searchable_multi_select_field.dart';
@@ -30,7 +31,8 @@ class _PartnerPreferencesScreenState
   bool _saving = false;
 
   // Form state
-  RangeValues _age = const RangeValues(18, 40);
+  int _minAge = 18;
+  int _maxAge = 40;
   String _minHeight = "5'0\"";
   String _maxHeight = "5'10\"";
   // Location preference — State → District → City, always chosen from the
@@ -63,14 +65,15 @@ class _PartnerPreferencesScreenState
   List<String> get _languageOpts => [_any, ...AppConstants.motherTongueList];
 
   void _populate(PartnerPreferences p) {
-    var lo = p.minAge.clamp(18, 60).toDouble();
-    var hi = p.maxAge.clamp(18, 60).toDouble();
+    var lo = p.minAge.clamp(18, 60);
+    var hi = p.maxAge.clamp(18, 60);
     if (lo > hi) {
       final t = lo;
       lo = hi;
       hi = t;
     }
-    _age = RangeValues(lo, hi);
+    _minAge = lo;
+    _maxAge = hi;
     _minHeight =
         AppConstants.heightList.contains(p.minHeight) ? p.minHeight : "5'0\"";
     _maxHeight =
@@ -100,8 +103,8 @@ class _PartnerPreferencesScreenState
       (value != null && value.isNotEmpty && opts.contains(value)) ? value : _any;
 
   PartnerPreferences _buildPrefs() => PartnerPreferences(
-        minAge: _age.start.round(),
-        maxAge: _age.end.round(),
+        minAge: _minAge,
+        maxAge: _maxAge,
         minHeight: _minHeight,
         maxHeight: _maxHeight,
         education: _education.toList(),
@@ -201,23 +204,13 @@ class _PartnerPreferencesScreenState
           _card(
             icon: Icons.cake_outlined,
             title: 'Age Range',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('${_age.start.round()} - ${_age.end.round()} years',
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                RangeSlider(
-                  values: _age,
-                  min: 18,
-                  max: 60,
-                  divisions: 42,
-                  activeColor: AppColors.primary,
-                  inactiveColor: AppColors.primary.withOpacity(0.15),
-                  labels: RangeLabels(
-                      '${_age.start.round()}', '${_age.end.round()}'),
-                  onChanged: (v) => setState(() => _age = v),
-                ),
-              ],
+            child: AgeRangeWheel(
+              minAge: _minAge,
+              maxAge: _maxAge,
+              onChanged: (lo, hi) => setState(() {
+                _minAge = lo;
+                _maxAge = hi;
+              }),
             ),
           ),
           _card(

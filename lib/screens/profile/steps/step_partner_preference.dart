@@ -4,6 +4,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../providers/profile_provider.dart';
+import '../../../widgets/common/age_range_wheel.dart';
 import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
 import '../../../widgets/common/searchable_field.dart';
@@ -25,7 +26,8 @@ class StepPartnerPreference extends ConsumerStatefulWidget {
 
 class _StepPartnerPreferenceState
     extends ConsumerState<StepPartnerPreference> {
-  RangeValues _age = const RangeValues(21, 35);
+  int _minAge = 21;
+  int _maxAge = 35;
   String? _minHeight;
   String? _maxHeight;
   List<String> _education = [];
@@ -45,9 +47,11 @@ class _StepPartnerPreferenceState
     super.initState();
     final pref = ref.read(profileCreationProvider).data['partnerPreferences'];
     if (pref is Map) {
-      final minA = (pref['minAge'] as num?)?.toDouble() ?? 21;
-      final maxA = (pref['maxAge'] as num?)?.toDouble() ?? 35;
-      _age = RangeValues(minA.clamp(18, 60), maxA.clamp(18, 60));
+      final minA = (pref['minAge'] as num?)?.toInt() ?? 21;
+      final maxA = (pref['maxAge'] as num?)?.toInt() ?? 35;
+      _minAge = minA.clamp(18, 60);
+      _maxAge = maxA.clamp(18, 60);
+      if (_minAge > _maxAge) _maxAge = _minAge;
       _minHeight = pref['minHeight'] as String?;
       _maxHeight = pref['maxHeight'] as String?;
       final edu = pref['education'];
@@ -78,8 +82,8 @@ class _StepPartnerPreferenceState
   void _saveAndNext() {
     ref.read(profileCreationProvider.notifier).updateData({
       'partnerPreferences': {
-        'minAge': _age.start.round(),
-        'maxAge': _age.end.round(),
+        'minAge': _minAge,
+        'maxAge': _maxAge,
         'minHeight': _minHeight ?? "5'0\"",
         'maxHeight': _maxHeight ?? "6'0\"",
         'education': _education,
@@ -114,18 +118,17 @@ class _StepPartnerPreferenceState
           const SizedBox(height: 20),
 
           _sectionTitle('Basic Preference'),
-          Text('Age: ${_age.start.round()} – ${_age.end.round()} yrs',
-              style: const TextStyle(fontWeight: FontWeight.w600)),
-          RangeSlider(
-            values: _age,
-            min: 18,
-            max: 60,
-            divisions: 42,
-            activeColor: AppColors.primary,
-            labels: RangeLabels(
-                '${_age.start.round()}', '${_age.end.round()}'),
-            onChanged: (v) => setState(() => _age = v),
+          const Text('Age', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          AgeRangeWheel(
+            minAge: _minAge,
+            maxAge: _maxAge,
+            onChanged: (lo, hi) => setState(() {
+              _minAge = lo;
+              _maxAge = hi;
+            }),
           ),
+          const SizedBox(height: 8),
           _pref('Min Height', AppConstants.heightList, _minHeight,
               (v) => _minHeight = v),
           _pref('Max Height', AppConstants.heightList, _maxHeight,
