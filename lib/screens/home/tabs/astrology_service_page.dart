@@ -164,25 +164,25 @@ class _Body extends StatelessWidget {
         if (cfg.expertIntro.trim().isNotEmpty) cfg.expertIntro.trim(),
         if (cfg.serviceIntro.trim().isNotEmpty) cfg.serviceIntro.trim(),
       ].join('\n\n');
-      out.add(_section('About', Icons.info_outline,
+      out.add(_section(context.l10n.about, Icons.info_outline,
           Text(about, style: const TextStyle(fontSize: 13.5, height: 1.5))));
     }
 
     if (cfg.expertExperience.trim().isNotEmpty) {
-      out.add(_section('Experience', Icons.workspace_premium_outlined,
+      out.add(_section(context.l10n.experience, Icons.workspace_premium_outlined,
           Text(cfg.expertExperience,
               style: const TextStyle(fontSize: 13.5, height: 1.5))));
     }
 
     if (cfg.expertSpecialization.trim().isNotEmpty) {
-      out.add(_section('Specialization', Icons.star_outline,
+      out.add(_section(context.l10n.specialization, Icons.star_outline,
           Text(cfg.expertSpecialization,
               style: const TextStyle(fontSize: 13.5, height: 1.5))));
     }
 
     if (cfg.services.isNotEmpty) {
       out.add(_section(
-        'Services',
+        context.l10n.servicesLabel,
         Icons.auto_awesome_outlined,
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,9 +222,9 @@ class _Body extends StatelessWidget {
 
     // Ratings — future-ready placeholder (spec §11).
     out.add(_section(
-      'Ratings',
+      context.l10n.ratings,
       Icons.star_outline,
-      Text('Ratings & reviews are coming soon.',
+      Text(context.l10n.ratingsComingSoon,
           style: TextStyle(fontSize: 13.5, color: Colors.grey[600])),
     ));
 
@@ -479,9 +479,9 @@ class _AppointmentStatusCard extends ConsumerWidget {
             children: [
               const Icon(Icons.event_available, size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
-              const Expanded(
-                child: Text('Your Appointment',
-                    style: TextStyle(
+              Expanded(
+                child: Text(context.l10n.yourAppointment,
+                    style: const TextStyle(
                         fontSize: 15,
                         fontFamily: 'Poppins',
                         fontWeight: FontWeight.bold,

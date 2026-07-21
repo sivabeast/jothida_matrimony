@@ -1279,4 +1279,192 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get updateNow => 'இப்போது புதுப்பிக்கவும்';
+
+  @override
+  String get welcomeExclaim => 'வரவேற்கிறோம்!';
+
+  @override
+  String get howContinue => 'நீங்கள் எப்படித் தொடர விரும்புகிறீர்கள்?';
+
+  @override
+  String get roleMatrimonyTitle => 'திருமணப் பயனர்';
+
+  @override
+  String get roleMatrimonyDesc => 'வாழ்க்கைத் துணையைத் தேடுகிறீர்களா? திருமணப் பயனராகத் தொடரவும்.';
+
+  @override
+  String get roleFamilyTitle => 'குடும்ப உறுப்பினர்';
+
+  @override
+  String get roleFamilyDesc => 'அழைக்கப்பட்ட உங்கள் Google கணக்கைப் பயன்படுத்தி, ஏற்கனவே உள்ள திருமணப் பணியிடத்தில் இணையவும்.';
+
+  @override
+  String get signInMatrimonyPrompt => 'உங்கள் வாழ்க்கைத் துணையைக் கண்டறிய Google கணக்கில் உள்நுழையவும்.';
+
+  @override
+  String get signInFamilyPrompt => 'உங்கள் திருமணப் பணியிடத்தில் இணைய Google கணக்கில் உள்நுழையவும்.';
+
+  @override
+  String get notInvitedTitle => 'இன்னும் அழைக்கப்படவில்லை';
+
+  @override
+  String get notInvitedBody => 'நீங்கள் இதுவரை எந்தத் திருமணப் பணியிடத்திற்கும் அழைக்கப்படவில்லை. மணமகன் அல்லது மணமகளைத் தொடர்பு கொள்ளவும்.';
+
+  @override
+  String get featureSecurePrivate => 'பாதுகாப்பு & தனியுரிமை';
+
+  @override
+  String get featureVerifiedInvite => 'சரிபார்க்கப்பட்ட அழைப்பு';
+
+  @override
+  String get featureFamilyWorkspace => 'குடும்பப் பணியிடம்';
+
+  @override
+  String get featureVerifiedProfiles => 'சரிபார்க்கப்பட்ட சுயவிவரங்கள்';
+
+  @override
+  String get featurePerfectMatch => 'சரியான ஜோடியைக் கண்டறியுங்கள்';
+
+  @override
+  String get agreeToTermsPrefix => 'தொடர்வதன் மூலம், நீங்கள் எங்கள்';
+
+  @override
+  String get termsAndPrivacy => 'விதிமுறைகள் & தனியுரிமைக் கொள்கையை ஏற்கிறீர்கள்';
+
+  @override
+  String get familyInviteOnlyNote => 'மணமகன் அல்லது மணமகளால் அழைக்கப்பட்ட Gmail முகவரிகள் மட்டுமே திருமணப் பணியிடத்தைத் திறக்க முடியும்.';
+
+  @override
+  String get guest => 'விருந்தினர்';
+
+  @override
+  String get muhurthamCalendarTitle => 'திருமண முகூர்த்த நாட்காட்டி';
+
+  @override
+  String get muhurthamSubtitle => 'சுபமான திருமண & நிச்சயதார்த்த நாட்கள்';
+
+  @override
+  String get weddingWorkspaceTitle => 'திருமணப் பணியிடம்';
+
+  @override
+  String get weddingPlanTogether => 'இரு குடும்பங்களுடன் இணைந்து திருமணத்தைத் திட்டமிடுங்கள்';
+
+  @override
+  String weddingDaysToGo(int days) {
+    return 'இன்னும் $days நாட்கள் — ஏற்பாடுகளைத் தொடருங்கள்!';
+  }
+
+  @override
+  String get weddingToday => 'இன்று திருமணம்! 🎊';
+
+  @override
+  String get weddingCongrats => 'உங்கள் திருமணத்திற்கு வாழ்த்துகள்! 🎉';
+
+  @override
+  String weddingWaitingConfirm(String name) {
+    return 'திருமணம் நிச்சயம் என்பதை $name உறுதிப்படுத்த காத்திருக்கிறது';
+  }
+
+  @override
+  String weddingPartnerConfirmed(String name) {
+    return '$name உறுதிப்படுத்தினார் — திருமண நிச்சயத்தை உறுதிப்படுத்தத் தட்டவும்';
+  }
+
+  @override
+  String get profileCompletionTitle => 'சுயவிவர நிறைவு';
+
+  @override
+  String profileCompletionSubtitle(int percent) {
+    return '$percent% நிறைவு · உங்கள் சுயவிவரத்தை முடிக்கவும்';
+  }
+
+  @override
+  String get marriedLeftMatchmaking => 'சுயவிவரம் பொருத்தத்திலிருந்து விலகியது · மாற்ற தட்டவும்';
+
+  @override
+  String get foundLifePartnerQ => 'உங்கள் வாழ்க்கைத் துணையைக் கண்டீர்களா?';
+
+  @override
+  String get markProfileMarried => 'உங்கள் சுயவிவரத்தைத் திருமணமானதாகக் குறிக்கவும்';
+
+  @override
+  String get foundLifePartnerSheetTitle => '💍 உங்கள் வாழ்க்கைத் துணையைக் கண்டீர்களா?';
+
+  @override
+  String get foundLifePartnerSheetBody => 'வாழ்த்துகள்! அவரை எப்படிக் கண்டறிந்தீர்கள் எனச் சொல்லுங்கள்.';
+
+  @override
+  String get marriedViaAppTitle => 'ஆம் — இந்த ஆப் மூலம்';
+
+  @override
+  String get marriedViaAppSubtitle => 'நாங்கள் ஜோதிடா மேட்ரிமோனியில் இணைந்தோம்';
+
+  @override
+  String get marriedViaOtherTitle => 'ஆம் — வேறு வழியில்';
+
+  @override
+  String get marriedViaOtherSubtitle => 'ஆப்-க்கு வெளியே கண்டறிந்தோம்';
+
+  @override
+  String get skipNotYet => 'தவிர் — இன்னும் இல்லை';
+
+  @override
+  String get confirmMarkMarriedTitle => 'உறுதி — திருமணமானதாகக் குறிக்கவா?';
+
+  @override
+  String get confirmMarkMarriedBody => 'உங்கள் சுயவிவரம் திருமணமானதாகக் குறிக்கப்பட்டு, பொருத்தப் பட்டியலிலிருந்து விலகும் (இனி Matches-இல் தோன்றாது).\n\nதிட்டங்கள் மாறினால், முகப்புப் பக்கத்திலிருந்து எப்போது வேண்டுமானாலும் இதை மாற்றலாம்.';
+
+  @override
+  String get marriedSuccessSnack => '🎉 வாழ்த்துகள்! உங்கள் சுயவிவரம் இப்போது திருமணமானதாகக் குறிக்கப்பட்டது.';
+
+  @override
+  String get undoUpper => 'மாற்று';
+
+  @override
+  String get undoMarriedTitle => 'திருமண நிலையை மாற்றவா?';
+
+  @override
+  String get undoMarriedBody => 'உங்கள் சுயவிவரம் இயல்பு நிலைக்குத் திரும்பி, முன்பு போலவே மீண்டும் பொருத்தத்தில் தோன்றும்.';
+
+  @override
+  String get keepAsMarried => 'திருமணமானதாகவே வை';
+
+  @override
+  String get undo => 'மாற்று';
+
+  @override
+  String get backInMatchmaking => 'உங்கள் சுயவிவரம் மீண்டும் பொருத்தத்தில் உள்ளது.';
+
+  @override
+  String get recentInterests => 'சமீபத்திய ஆர்வங்கள்';
+
+  @override
+  String get noInterestsReceivedYet => 'இதுவரை ஆர்வங்கள் எதுவும் வரவில்லை.';
+
+  @override
+  String get newInterestLabel => 'புதிய ஆர்வம்';
+
+  @override
+  String get matchedBadge => 'பொருந்தியது';
+
+  @override
+  String get interestedBadge => 'ஆர்வம்';
+
+  @override
+  String get noRequestsYet => 'இதுவரை கோரிக்கைகள் இல்லை';
+
+  @override
+  String get yourAppointment => 'உங்கள் சந்திப்பு';
+
+  @override
+  String get ratingsComingSoon => 'மதிப்பீடுகள் & விமர்சனங்கள் விரைவில் வரும்.';
+
+  @override
+  String get specialization => 'நிபுணத்துவம்';
+
+  @override
+  String get ratings => 'மதிப்பீடுகள்';
+
+  @override
+  String get servicesLabel => 'சேவைகள்';
 }

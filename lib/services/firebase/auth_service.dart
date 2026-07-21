@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -125,7 +127,23 @@ class AuthService {
       debugPrint('[AuthService] Google account selected: ${googleUser.email}');
 
       // 2. Obtain the OAuth tokens for the chosen account.
-      final googleAuth = await googleUser.authentication;
+      //
+      // After the account is picked, token retrieval is a Play-Services call
+      // that normally returns in well under a second. On a misconfigured
+      // signing key (SHA-1 not registered in Firebase), a stale Play-Services
+      // cache, or a flaky network it can *hang indefinitely* — neither
+      // returning nor throwing — which freezes the login spinner forever
+      // ("selected the account, then stuck loading"). Bound it so a hang turns
+      // into a real, actionable error instead of an eternal spinner.
+      final googleAuth = await googleUser.authentication.timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw const AuthException(
+          'Google Sign-In timed out while verifying your account. This usually '
+          "means this build's SHA-1 fingerprint is not registered in Firebase, "
+          'or the network is unstable. Please try again.',
+          code: 'google-auth-timeout',
+        ),
+      );
       debugPrint('[AuthService] Got Google tokens '
           '(idToken=${googleAuth.idToken != null}, '
           'accessToken=${googleAuth.accessToken != null})');
@@ -147,7 +165,14 @@ class AuthService {
         idToken: googleAuth.idToken,
       );
       debugPrint('[AuthService] Exchanging Google credential with Firebase...');
-      final userCred = await _auth.signInWithCredential(credential);
+      final userCred = await _auth.signInWithCredential(credential).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw const AuthException(
+          'Signing in took too long. Please check your internet connection and '
+          'try again.',
+          code: 'firebase-credential-timeout',
+        ),
+      );
       debugPrint('[AuthService] Firebase sign-in succeeded. '
           'uid=${userCred.user?.uid}, '
           'isNewUser=${userCred.additionalUserInfo?.isNewUser}');

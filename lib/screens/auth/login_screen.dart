@@ -187,17 +187,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await showDialog<void>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Not Invited Yet'),
-            content: const Text(
-                'You have not been invited to any Wedding Workspace yet. '
-                'Please contact the Bride or Groom.'),
+            title: Text(ctx.l10n.notInvitedTitle),
+            content: Text(ctx.l10n.notInvitedBody),
             actions: [
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white),
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('OK'),
+                child: Text(ctx.l10n.ok),
               ),
             ],
           ),
@@ -291,9 +289,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         children: [
                           const ZodiacCoupleLogo(size: 126),
                           const SizedBox(height: 18),
-                          const Text(
-                            'Welcome!',
-                            style: TextStyle(
+                          Text(
+                            context.l10n.welcomeExclaim,
+                            style: const TextStyle(
                                 fontFamily: 'serif',
                                 fontSize: 30,
                                 fontWeight: _serifWeight,
@@ -305,10 +303,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               height: 1,
                               color: AppColors.gold.withOpacity(0.5)),
                           const SizedBox(height: 12),
-                          const Text(
-                            'How would you like to continue?',
+                          Text(
+                            context.l10n.howContinue,
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 15.5,
                                 fontWeight: FontWeight.w500),
@@ -316,9 +314,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           const SizedBox(height: 26),
                           _roleCard(
                             role: _EntryRole.matrimony,
-                            title: 'Matrimony User',
-                            description: 'Looking for a life partner? '
-                                'Continue as a Matrimony User.',
+                            title: context.l10n.roleMatrimonyTitle,
+                            description: context.l10n.roleMatrimonyDesc,
                             accent: const Color(0xFFD6336C),
                             illustration: const CoupleIllustrationCircle(
                                 size: 76, showFloatingHearts: false),
@@ -326,9 +323,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           const SizedBox(height: 18),
                           _roleCard(
                             role: _EntryRole.family,
-                            title: 'Family Member',
-                            description: 'Join an existing Wedding Workspace '
-                                'using your invited Google account.',
+                            title: context.l10n.roleFamilyTitle,
+                            description: context.l10n.roleFamilyDesc,
                             accent: AppColors.goldDark,
                             illustration: const FamilyIllustrationCircle(
                                 size: 76, showFloatingHearts: false),
@@ -495,7 +491,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     child: Column(
                       children: [
                         Text(
-                          isFamily ? 'Family Member' : 'Matrimony User',
+                          isFamily
+                              ? context.l10n.roleFamilyTitle
+                              : context.l10n.roleMatrimonyTitle,
                           style: const TextStyle(
                               fontFamily: 'serif',
                               fontSize: 27,
@@ -527,10 +525,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text(
                             isFamily
-                                ? 'Sign in with your Google account to join '
-                                    'your Wedding Workspace.'
-                                : 'Sign in with your Google account to find '
-                                    'your life partner.',
+                                ? context.l10n.signInFamilyPrompt
+                                : context.l10n.signInMatrimonyPrompt,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                                 fontSize: 14.5,
@@ -587,7 +583,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       Expanded(child: Divider(color: Colors.grey.shade300)),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text('or',
+                        child: Text(context.l10n.orLabel,
                             style: TextStyle(color: Colors.grey.shade500)),
                       ),
                       Expanded(child: Divider(color: Colors.grey.shade300)),
@@ -598,31 +594,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: isFamily
                         ? [
-                            _featureItem(
-                                Icons.verified_user, 'Secure &\nPrivate', accent),
-                            _featureItem(
-                                Icons.email_outlined, 'Verified\nInvite', accent),
+                            _featureItem(Icons.verified_user,
+                                context.l10n.featureSecurePrivate, accent),
+                            _featureItem(Icons.email_outlined,
+                                context.l10n.featureVerifiedInvite, accent),
                             _featureItem(Icons.groups_outlined,
-                                'Family\nWorkspace', accent),
+                                context.l10n.featureFamilyWorkspace, accent),
                           ]
                         : [
-                            _featureItem(
-                                Icons.verified_user, 'Secure &\nPrivate', accent),
+                            _featureItem(Icons.verified_user,
+                                context.l10n.featureSecurePrivate, accent),
                             _featureItem(Icons.badge_outlined,
-                                'Verified\nProfiles', accent),
+                                context.l10n.featureVerifiedProfiles, accent),
                             _featureItem(Icons.favorite_border,
-                                'Find Your\nPerfect Match', accent),
+                                context.l10n.featurePerfectMatch, accent),
                           ],
                   ),
                   const SizedBox(height: 22),
                   Center(
                     child: Column(
                       children: [
-                        Text('By continuing, you agree to our',
+                        Text(context.l10n.agreeToTermsPrefix,
+                            textAlign: TextAlign.center,
                             style: TextStyle(
                                 color: Colors.grey.shade600, fontSize: 12.5)),
                         const SizedBox(height: 2),
-                        Text('Terms & Privacy Policy',
+                        Text(context.l10n.termsAndPrivacy,
+                            textAlign: TextAlign.center,
                             style: TextStyle(
                                 color: accent,
                                 fontWeight: FontWeight.w700,
@@ -634,8 +632,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 12),
                     Center(
                       child: Text(
-                        'Only Gmail addresses invited by the Bride or Groom '
-                        'can open the Wedding Workspace.',
+                        context.l10n.familyInviteOnlyNote,
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.grey[600], fontSize: 11.5),
                       ),
@@ -663,14 +660,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Icon(icon, color: accent, size: 22),
         ),
         const SizedBox(height: 8),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-              fontSize: 11.5,
-              color: Colors.grey[700],
-              fontWeight: FontWeight.w500,
-              height: 1.25),
+        // Fixed width so longer (e.g. Tamil) labels wrap to multiple lines
+        // instead of overflowing the horizontal feature row.
+        SizedBox(
+          width: 96,
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 11.5,
+                color: Colors.grey[700],
+                fontWeight: FontWeight.w500,
+                height: 1.25),
+          ),
         ),
       ],
     );

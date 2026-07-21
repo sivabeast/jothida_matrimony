@@ -6,6 +6,14 @@ plugins {
     id "com.google.gms.google-services"
 }
 
+// Load release signing credentials from android/key.properties (git-ignored).
+// See https://flutter.dev/to/reference-keystore
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.jothida.jothida_matrimony"
     compileSdk = flutter.compileSdkVersion
@@ -39,6 +47,16 @@ android {
             keyAlias "androiddebugkey"
             keyPassword "android"
         }
+        // Release (upload) key used for Play Store bundles. Credentials come
+        // from android/key.properties, which is git-ignored — never committed.
+        release {
+            if (keystorePropertiesFile.exists()) {
+                keyAlias = keystoreProperties["keyAlias"]
+                keyPassword = keystoreProperties["keyPassword"]
+                storeFile = keystoreProperties["storeFile"] ? file(keystoreProperties["storeFile"]) : null
+                storePassword = keystoreProperties["storePassword"]
+            }
+        }
     }
 
     buildTypes {
@@ -46,10 +64,10 @@ android {
             signingConfig = signingConfigs.debug
         }
         release {
-            // TODO(step 8): replace with a dedicated release keystore before
-            // publishing to the Play Store. Using the pinned debug keystore for
-            // now so `flutter run --release` works with Google Sign-In.
-            signingConfig = signingConfigs.debug
+            // Use the dedicated release keystore when key.properties is present
+            // (Play Store builds); fall back to debug signing otherwise so local
+            // `flutter run --release` still works without the release key.
+            signingConfig = keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
         }
     }
 }

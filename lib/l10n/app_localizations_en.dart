@@ -219,7 +219,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get astrologerPortal => 'Astrologer Portal';
 
   @override
-  String get orLabel => 'OR';
+  String get orLabel => 'or';
 
   @override
   String get chooseAccountType => 'Choose Account Type';
@@ -1279,4 +1279,192 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updateNow => 'Update Now';
+
+  @override
+  String get welcomeExclaim => 'Welcome!';
+
+  @override
+  String get howContinue => 'How would you like to continue?';
+
+  @override
+  String get roleMatrimonyTitle => 'Matrimony User';
+
+  @override
+  String get roleMatrimonyDesc => 'Looking for a life partner? Continue as a Matrimony User.';
+
+  @override
+  String get roleFamilyTitle => 'Family Member';
+
+  @override
+  String get roleFamilyDesc => 'Join an existing Wedding Workspace using your invited Google account.';
+
+  @override
+  String get signInMatrimonyPrompt => 'Sign in with your Google account to find your life partner.';
+
+  @override
+  String get signInFamilyPrompt => 'Sign in with your Google account to join your Wedding Workspace.';
+
+  @override
+  String get notInvitedTitle => 'Not Invited Yet';
+
+  @override
+  String get notInvitedBody => 'You have not been invited to any Wedding Workspace yet. Please contact the Bride or Groom.';
+
+  @override
+  String get featureSecurePrivate => 'Secure & Private';
+
+  @override
+  String get featureVerifiedInvite => 'Verified Invite';
+
+  @override
+  String get featureFamilyWorkspace => 'Family Workspace';
+
+  @override
+  String get featureVerifiedProfiles => 'Verified Profiles';
+
+  @override
+  String get featurePerfectMatch => 'Find Your Perfect Match';
+
+  @override
+  String get agreeToTermsPrefix => 'By continuing, you agree to our';
+
+  @override
+  String get termsAndPrivacy => 'Terms & Privacy Policy';
+
+  @override
+  String get familyInviteOnlyNote => 'Only Gmail addresses invited by the Bride or Groom can open the Wedding Workspace.';
+
+  @override
+  String get guest => 'Guest';
+
+  @override
+  String get muhurthamCalendarTitle => 'Marriage Muhurtham Calendar';
+
+  @override
+  String get muhurthamSubtitle => 'Auspicious marriage & engagement dates';
+
+  @override
+  String get weddingWorkspaceTitle => 'Wedding Workspace';
+
+  @override
+  String get weddingPlanTogether => 'Plan the wedding together with both families';
+
+  @override
+  String weddingDaysToGo(int days) {
+    return '$days days to go — keep the preparation moving!';
+  }
+
+  @override
+  String get weddingToday => 'The wedding is today! 🎊';
+
+  @override
+  String get weddingCongrats => 'Congratulations on your wedding! 🎉';
+
+  @override
+  String weddingWaitingConfirm(String name) {
+    return 'Waiting for $name to confirm Marriage Fixed';
+  }
+
+  @override
+  String weddingPartnerConfirmed(String name) {
+    return '$name confirmed — tap to confirm Marriage Fixed';
+  }
+
+  @override
+  String get profileCompletionTitle => 'Profile Completion';
+
+  @override
+  String profileCompletionSubtitle(int percent) {
+    return '$percent% complete · Complete your profile';
+  }
+
+  @override
+  String get marriedLeftMatchmaking => 'Profile left matchmaking · Tap to undo';
+
+  @override
+  String get foundLifePartnerQ => 'Found Your Life Partner?';
+
+  @override
+  String get markProfileMarried => 'Mark your profile as married';
+
+  @override
+  String get foundLifePartnerSheetTitle => '💍 Found your life partner?';
+
+  @override
+  String get foundLifePartnerSheetBody => 'Congratulations! Tell us how you found them.';
+
+  @override
+  String get marriedViaAppTitle => 'Yes — through this app';
+
+  @override
+  String get marriedViaAppSubtitle => 'We matched on Jothida Matrimony';
+
+  @override
+  String get marriedViaOtherTitle => 'Yes — through another source';
+
+  @override
+  String get marriedViaOtherSubtitle => 'Found outside the app';
+
+  @override
+  String get skipNotYet => 'Skip — not yet';
+
+  @override
+  String get confirmMarkMarriedTitle => 'Confirm — Mark as Married?';
+
+  @override
+  String get confirmMarkMarriedBody => 'Your profile will be marked as Married and will leave the matchmaking pool (it will no longer appear in Matches).\n\nYou can undo this anytime from the Home page if plans change.';
+
+  @override
+  String get marriedSuccessSnack => '🎉 Congratulations! Your profile is now marked as Married.';
+
+  @override
+  String get undoUpper => 'UNDO';
+
+  @override
+  String get undoMarriedTitle => 'Undo married status?';
+
+  @override
+  String get undoMarriedBody => 'Your profile will return to normal and appear in matchmaking again, exactly as before.';
+
+  @override
+  String get keepAsMarried => 'Keep as Married';
+
+  @override
+  String get undo => 'Undo';
+
+  @override
+  String get backInMatchmaking => 'Your profile is back in matchmaking.';
+
+  @override
+  String get recentInterests => 'Recent Interests';
+
+  @override
+  String get noInterestsReceivedYet => 'No interests received yet.';
+
+  @override
+  String get newInterestLabel => 'New interest';
+
+  @override
+  String get matchedBadge => 'Matched';
+
+  @override
+  String get interestedBadge => 'Interested';
+
+  @override
+  String get noRequestsYet => 'No requests yet';
+
+  @override
+  String get yourAppointment => 'Your Appointment';
+
+  @override
+  String get ratingsComingSoon => 'Ratings & reviews are coming soon.';
+
+  @override
+  String get specialization => 'Specialization';
+
+  @override
+  String get ratings => 'Ratings';
+
+  @override
+  String get servicesLabel => 'Services';
 }

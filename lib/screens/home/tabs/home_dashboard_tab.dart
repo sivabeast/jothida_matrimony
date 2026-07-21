@@ -211,7 +211,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         ? myProfile!.fullName.trim()
         : (user?.displayName?.trim().isNotEmpty ?? false)
             ? user!.displayName!.trim()
-            : 'Guest';
+            : context.l10n.guest;
     final firstName = fullName.split(' ').first;
     final photo = (myProfile?.profilePhotoUrl?.isNotEmpty ?? false)
         ? myProfile!.profilePhotoUrl!
@@ -253,7 +253,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Welcome back,',
+              Text(context.l10n.welcomeBack,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -405,7 +405,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           Expanded(
             child: _quickAction(
               icon: Icons.favorite,
-              label: 'Matches',
+              label: context.l10n.matches,
               color: AppColors.primary,
               onTap: () => goTab(kMatchesTabIndex),
             ),
@@ -413,7 +413,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           Expanded(
             child: _quickAction(
               icon: Icons.people_alt_rounded,
-              label: 'Interests',
+              label: context.l10n.interests,
               color: const Color(0xFF2F80ED),
               onTap: () => goTab(kInterestsTabIndex),
             ),
@@ -421,7 +421,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           Expanded(
             child: _quickAction(
               icon: Icons.auto_awesome,
-              label: 'Astrology',
+              label: context.l10n.astrology,
               color: AppColors.goldDark,
               onTap: () => goTab(kAstrologyTabIndex),
             ),
@@ -429,7 +429,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           Expanded(
             child: _quickAction(
               icon: Icons.description_outlined,
-              label: 'Reports',
+              label: context.l10n.reports,
               color: AppColors.gold,
               onTap: () => goTab(kReportsTabIndex),
             ),
@@ -517,20 +517,20 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Marriage Muhurtham Calendar',
+                  Text(context.l10n.muhurthamCalendarTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 13.5,
                           fontFamily: 'Poppins')),
                   const SizedBox(height: 2),
                   if (unlocked)
-                    const Text('Auspicious marriage & engagement dates',
+                    Text(context.l10n.muhurthamSubtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style:
-                            TextStyle(color: Colors.black54, fontSize: 11.5))
+                        style: const TextStyle(
+                            color: Colors.black54, fontSize: 11.5))
                   else
                     const ComingSoonBadge(compact: true),
                 ],
@@ -585,20 +585,21 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid ?? '';
     final partnerName = wedding.nameOf(wedding.otherUid(myUid));
 
+    final l10n = context.l10n;
     final String subtitle;
     if (wedding.isFixed) {
       final days = wedding.daysRemaining;
       subtitle = days == null
-          ? 'Plan the wedding together with both families'
+          ? l10n.weddingPlanTogether
           : days > 0
-              ? '$days days to go — keep the preparation moving!'
+              ? l10n.weddingDaysToGo(days)
               : days == 0
-                  ? 'The wedding is today! 🎊'
-                  : 'Congratulations on your wedding! 🎉';
+                  ? l10n.weddingToday
+                  : l10n.weddingCongrats;
     } else if (wedding.confirmedBy(myUid)) {
-      subtitle = 'Waiting for $partnerName to confirm Marriage Fixed';
+      subtitle = l10n.weddingWaitingConfirm(partnerName);
     } else {
-      subtitle = '$partnerName confirmed — tap to confirm Marriage Fixed';
+      subtitle = l10n.weddingPartnerConfirmed(partnerName);
     }
 
     return Padding(
@@ -648,11 +649,11 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
                     children: [
                       Row(
                         children: [
-                          const Flexible(
-                            child: Text('Wedding Workspace',
+                          Flexible(
+                            child: Text(context.l10n.weddingWorkspaceTitle,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
+                                style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 13.5,
@@ -694,8 +695,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     if (completion.percent < 100) {
       cards.add(_notifCard(
         emoji: '💖',
-        title: 'Profile Completion',
-        subtitle: '${completion.percent}% complete · Complete your profile',
+        title: context.l10n.profileCompletionTitle,
+        subtitle: context.l10n.profileCompletionSubtitle(completion.percent),
         accent: AppColors.primary,
         onTap: () => context.push('/complete-profile'),
       ));
@@ -712,15 +713,15 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
       cards.add(profile.isMarried
           ? _notifCard(
               emoji: '🎉',
-              title: 'Married',
-              subtitle: 'Profile left matchmaking · Tap to undo',
+              title: context.l10n.married,
+              subtitle: context.l10n.marriedLeftMatchmaking,
               accent: AppColors.success,
               onTap: () => _confirmUndoMarried(context, profile),
             )
           : _notifCard(
               emoji: '💍',
-              title: 'Found Your Life Partner?',
-              subtitle: 'Mark your profile as married',
+              title: context.l10n.foundLifePartnerQ,
+              subtitle: context.l10n.markProfileMarried,
               accent: AppColors.success,
               onTap: () => _startMarriedFlow(context, profile),
             ));
@@ -816,36 +817,36 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('💍 Found your life partner?',
-                  style: TextStyle(
+              Text(context.l10n.foundLifePartnerSheetTitle,
+                  style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
                       fontFamily: 'Poppins')),
               const SizedBox(height: 6),
-              Text('Congratulations! Tell us how you found them.',
+              Text(context.l10n.foundLifePartnerSheetBody,
                   style: TextStyle(color: Colors.grey[600], fontSize: 13)),
               const SizedBox(height: 16),
               _marriedSourceTile(
                 ctx,
                 emoji: '❤️',
-                title: 'Yes — through this app',
-                subtitle: 'We matched on Jothida Matrimony',
+                title: context.l10n.marriedViaAppTitle,
+                subtitle: context.l10n.marriedViaAppSubtitle,
                 value: 'app',
               ),
               const SizedBox(height: 10),
               _marriedSourceTile(
                 ctx,
                 emoji: '🌸',
-                title: 'Yes — through another source',
-                subtitle: 'Found outside the app',
+                title: context.l10n.marriedViaOtherTitle,
+                subtitle: context.l10n.marriedViaOtherSubtitle,
                 value: 'other',
               ),
               const SizedBox(height: 12),
               Center(
                 child: TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Skip — not yet',
-                      style: TextStyle(color: Colors.grey)),
+                  child: Text(context.l10n.skipNotYet,
+                      style: const TextStyle(color: Colors.grey)),
                 ),
               ),
             ],
@@ -860,21 +861,18 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Confirm — Mark as Married?'),
-        content: const Text(
-            'Your profile will be marked as Married and will leave the '
-            'matchmaking pool (it will no longer appear in Matches).\n\n'
-            'You can undo this anytime from the Home page if plans change.'),
+        title: Text(context.l10n.confirmMarkMarriedTitle),
+        content: Text(context.l10n.confirmMarkMarriedBody),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: Text(context.l10n.cancel)),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Confirm'),
+            child: Text(context.l10n.confirm),
           ),
         ],
       ),
@@ -882,6 +880,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     if (confirmed != true || !context.mounted) return;
 
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n; // capture before the async gap
     await ref
         .read(accountControllerProvider.notifier)
         .markMarried(profile, via: via);
@@ -889,12 +888,11 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     if (!mounted) return;
     messenger.showSnackBar(SnackBar(
       duration: const Duration(seconds: 6),
-      content: const Text(
-          '🎉 Congratulations! Your profile is now marked as Married.'),
+      content: Text(l10n.marriedSuccessSnack),
       // One-tap UNDO right from the confirmation — accidental confirms are
       // reversed instantly (the card's "Tap to undo" stays available after).
       action: SnackBarAction(
-        label: 'UNDO',
+        label: l10n.undoUpper,
         onPressed: () async {
           await ref
               .read(accountControllerProvider.notifier)
@@ -956,31 +954,29 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Undo married status?'),
-        content: const Text(
-            'Your profile will return to normal and appear in matchmaking '
-            'again, exactly as before.'),
+        title: Text(context.l10n.undoMarriedTitle),
+        content: Text(context.l10n.undoMarriedBody),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Keep as Married')),
+              child: Text(context.l10n.keepAsMarried)),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Undo'),
+            child: Text(context.l10n.undo),
           ),
         ],
       ),
     );
     if (confirmed != true || !context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n; // capture before the async gap
     await ref.read(accountControllerProvider.notifier).unmarkMarried(profile);
     ref.invalidate(newProfilesProvider);
     if (!mounted) return;
-    messenger.showSnackBar(const SnackBar(
-        content: Text('Your profile is back in matchmaking.')));
+    messenger.showSnackBar(SnackBar(content: Text(l10n.backInMatchmaking)));
   }
 
   // ── New Profiles (newly joined members) ─────────────────────────────────────
@@ -1045,7 +1041,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader(context, '💌', 'Recent Interests',
+        _sectionHeader(context, '💌', context.l10n.recentInterests,
             onViewAll: recent.isEmpty
                 ? null
                 : () => ref.read(homeTabIndexProvider.notifier).state =
@@ -1054,7 +1050,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         if (recent.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _emptyBox('No interests received yet.'),
+            child: _emptyBox(context.l10n.noInterestsReceivedYet),
           )
         else
           SizedBox(
@@ -1093,15 +1089,15 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           if (onViewAll != null)
             GestureDetector(
               onTap: onViewAll,
-              child: const Row(
+              child: Row(
                 children: [
-                  Text('View All',
-                      style: TextStyle(
+                  Text(context.l10n.viewAll,
+                      style: const TextStyle(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w600,
                           fontSize: 13)),
-                  SizedBox(width: 2),
-                  Icon(Icons.arrow_forward_ios,
+                  const SizedBox(width: 2),
+                  const Icon(Icons.arrow_forward_ios,
                       size: 12, color: AppColors.primary),
                 ],
               ),
@@ -1384,7 +1380,7 @@ class _RecentInterestCard extends ConsumerWidget {
     final p = senderAsync.valueOrNull;
     final photo = (p?.photos.isNotEmpty ?? false) ? p!.photos.first : null;
     final name = p == null
-        ? 'New interest'
+        ? context.l10n.newInterestLabel
         : '${p.name}${p.age > 0 ? ', ${p.age}' : ''}';
 
     return GestureDetector(
@@ -1424,7 +1420,9 @@ class _RecentInterestCard extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        interest.isAccepted ? 'Matched' : 'Interested',
+                        interest.isAccepted
+                            ? context.l10n.matchedBadge
+                            : context.l10n.interestedBadge,
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 9.5,

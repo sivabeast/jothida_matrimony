@@ -518,7 +518,7 @@ abstract class AppLocalizations {
   /// No description provided for @orLabel.
   ///
   /// In en, this message translates to:
-  /// **'OR'**
+  /// **'or'**
   String get orLabel;
 
   /// No description provided for @chooseAccountType.
@@ -2590,6 +2590,366 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Update Now'**
   String get updateNow;
+
+  /// No description provided for @welcomeExclaim.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome!'**
+  String get welcomeExclaim;
+
+  /// No description provided for @howContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'How would you like to continue?'**
+  String get howContinue;
+
+  /// No description provided for @roleMatrimonyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Matrimony User'**
+  String get roleMatrimonyTitle;
+
+  /// No description provided for @roleMatrimonyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking for a life partner? Continue as a Matrimony User.'**
+  String get roleMatrimonyDesc;
+
+  /// No description provided for @roleFamilyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Family Member'**
+  String get roleFamilyTitle;
+
+  /// No description provided for @roleFamilyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Join an existing Wedding Workspace using your invited Google account.'**
+  String get roleFamilyDesc;
+
+  /// No description provided for @signInMatrimonyPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with your Google account to find your life partner.'**
+  String get signInMatrimonyPrompt;
+
+  /// No description provided for @signInFamilyPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with your Google account to join your Wedding Workspace.'**
+  String get signInFamilyPrompt;
+
+  /// No description provided for @notInvitedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Invited Yet'**
+  String get notInvitedTitle;
+
+  /// No description provided for @notInvitedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You have not been invited to any Wedding Workspace yet. Please contact the Bride or Groom.'**
+  String get notInvitedBody;
+
+  /// No description provided for @featureSecurePrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Secure & Private'**
+  String get featureSecurePrivate;
+
+  /// No description provided for @featureVerifiedInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified Invite'**
+  String get featureVerifiedInvite;
+
+  /// No description provided for @featureFamilyWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Family Workspace'**
+  String get featureFamilyWorkspace;
+
+  /// No description provided for @featureVerifiedProfiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified Profiles'**
+  String get featureVerifiedProfiles;
+
+  /// No description provided for @featurePerfectMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Your Perfect Match'**
+  String get featurePerfectMatch;
+
+  /// No description provided for @agreeToTermsPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'By continuing, you agree to our'**
+  String get agreeToTermsPrefix;
+
+  /// No description provided for @termsAndPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms & Privacy Policy'**
+  String get termsAndPrivacy;
+
+  /// No description provided for @familyInviteOnlyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Only Gmail addresses invited by the Bride or Groom can open the Wedding Workspace.'**
+  String get familyInviteOnlyNote;
+
+  /// No description provided for @guest.
+  ///
+  /// In en, this message translates to:
+  /// **'Guest'**
+  String get guest;
+
+  /// No description provided for @muhurthamCalendarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Marriage Muhurtham Calendar'**
+  String get muhurthamCalendarTitle;
+
+  /// No description provided for @muhurthamSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Auspicious marriage & engagement dates'**
+  String get muhurthamSubtitle;
+
+  /// No description provided for @weddingWorkspaceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wedding Workspace'**
+  String get weddingWorkspaceTitle;
+
+  /// No description provided for @weddingPlanTogether.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan the wedding together with both families'**
+  String get weddingPlanTogether;
+
+  /// No description provided for @weddingDaysToGo.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days to go — keep the preparation moving!'**
+  String weddingDaysToGo(int days);
+
+  /// No description provided for @weddingToday.
+  ///
+  /// In en, this message translates to:
+  /// **'The wedding is today! 🎊'**
+  String get weddingToday;
+
+  /// No description provided for @weddingCongrats.
+  ///
+  /// In en, this message translates to:
+  /// **'Congratulations on your wedding! 🎉'**
+  String get weddingCongrats;
+
+  /// No description provided for @weddingWaitingConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for {name} to confirm Marriage Fixed'**
+  String weddingWaitingConfirm(String name);
+
+  /// No description provided for @weddingPartnerConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} confirmed — tap to confirm Marriage Fixed'**
+  String weddingPartnerConfirmed(String name);
+
+  /// No description provided for @profileCompletionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Completion'**
+  String get profileCompletionTitle;
+
+  /// No description provided for @profileCompletionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% complete · Complete your profile'**
+  String profileCompletionSubtitle(int percent);
+
+  /// No description provided for @marriedLeftMatchmaking.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile left matchmaking · Tap to undo'**
+  String get marriedLeftMatchmaking;
+
+  /// No description provided for @foundLifePartnerQ.
+  ///
+  /// In en, this message translates to:
+  /// **'Found Your Life Partner?'**
+  String get foundLifePartnerQ;
+
+  /// No description provided for @markProfileMarried.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark your profile as married'**
+  String get markProfileMarried;
+
+  /// No description provided for @foundLifePartnerSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'💍 Found your life partner?'**
+  String get foundLifePartnerSheetTitle;
+
+  /// No description provided for @foundLifePartnerSheetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Congratulations! Tell us how you found them.'**
+  String get foundLifePartnerSheetBody;
+
+  /// No description provided for @marriedViaAppTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes — through this app'**
+  String get marriedViaAppTitle;
+
+  /// No description provided for @marriedViaAppSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We matched on Jothida Matrimony'**
+  String get marriedViaAppSubtitle;
+
+  /// No description provided for @marriedViaOtherTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes — through another source'**
+  String get marriedViaOtherTitle;
+
+  /// No description provided for @marriedViaOtherSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Found outside the app'**
+  String get marriedViaOtherSubtitle;
+
+  /// No description provided for @skipNotYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip — not yet'**
+  String get skipNotYet;
+
+  /// No description provided for @confirmMarkMarriedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm — Mark as Married?'**
+  String get confirmMarkMarriedTitle;
+
+  /// No description provided for @confirmMarkMarriedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile will be marked as Married and will leave the matchmaking pool (it will no longer appear in Matches).\n\nYou can undo this anytime from the Home page if plans change.'**
+  String get confirmMarkMarriedBody;
+
+  /// No description provided for @marriedSuccessSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'🎉 Congratulations! Your profile is now marked as Married.'**
+  String get marriedSuccessSnack;
+
+  /// No description provided for @undoUpper.
+  ///
+  /// In en, this message translates to:
+  /// **'UNDO'**
+  String get undoUpper;
+
+  /// No description provided for @undoMarriedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo married status?'**
+  String get undoMarriedTitle;
+
+  /// No description provided for @undoMarriedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile will return to normal and appear in matchmaking again, exactly as before.'**
+  String get undoMarriedBody;
+
+  /// No description provided for @keepAsMarried.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep as Married'**
+  String get keepAsMarried;
+
+  /// No description provided for @undo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get undo;
+
+  /// No description provided for @backInMatchmaking.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile is back in matchmaking.'**
+  String get backInMatchmaking;
+
+  /// No description provided for @recentInterests.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Interests'**
+  String get recentInterests;
+
+  /// No description provided for @noInterestsReceivedYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No interests received yet.'**
+  String get noInterestsReceivedYet;
+
+  /// No description provided for @newInterestLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New interest'**
+  String get newInterestLabel;
+
+  /// No description provided for @matchedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Matched'**
+  String get matchedBadge;
+
+  /// No description provided for @interestedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Interested'**
+  String get interestedBadge;
+
+  /// No description provided for @noRequestsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No requests yet'**
+  String get noRequestsYet;
+
+  /// No description provided for @yourAppointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Appointment'**
+  String get yourAppointment;
+
+  /// No description provided for @ratingsComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Ratings & reviews are coming soon.'**
+  String get ratingsComingSoon;
+
+  /// No description provided for @specialization.
+  ///
+  /// In en, this message translates to:
+  /// **'Specialization'**
+  String get specialization;
+
+  /// No description provided for @ratings.
+  ///
+  /// In en, this message translates to:
+  /// **'Ratings'**
+  String get ratings;
+
+  /// No description provided for @servicesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get servicesLabel;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
