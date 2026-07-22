@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/l10n_ext.dart';
+import '../../../core/utils/value_l10n.dart';
 import '../../../core/utils/validators.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
@@ -117,31 +119,32 @@ class _StepBasicState extends ConsumerState<StepBasic> {
 
   void _saveAndNext() {
     if (!_formKey.currentState!.validate()) return;
+    final l10n = context.l10n;
     if (_profileFor == null || _profileFor!.isEmpty) {
-      return _snack('Please select who this profile is for');
+      return _snack(l10n.pleaseSelect(l10n.profileCreatedFor));
     }
-    if (_gender == null) return _snack('Please select a gender');
-    if (_dob == null) return _snack('Please select your date of birth');
+    if (_gender == null) return _snack(l10n.pleaseSelect(l10n.gender));
+    if (_dob == null) return _snack(l10n.pleaseSelect(l10n.dateOfBirth));
     if (_height == null || _height!.isEmpty) {
-      return _snack('Please select your height');
+      return _snack(l10n.pleaseSelect(l10n.height));
     }
     if (_maritalStatus == null || _maritalStatus!.isEmpty) {
-      return _snack('Please select your marital status');
+      return _snack(l10n.pleaseSelect(l10n.maritalStatus));
     }
     if (_physicalStatus == null || _physicalStatus!.isEmpty) {
-      return _snack('Please select your physical status');
+      return _snack(l10n.pleaseSelect(l10n.physicalStatus));
     }
     // Living status is required only when there actually are children.
     if (_showChildren &&
         _childrenCount > 0 &&
         (_childrenLivingStatus == null || _childrenLivingStatus!.isEmpty)) {
-      return _snack('Please select the children living status');
+      return _snack(l10n.pleaseSelect(l10n.childrenLivingStatus));
     }
     if (_familyType == null || _familyType!.isEmpty) {
-      return _snack('Please select your family type');
+      return _snack(l10n.pleaseSelect(l10n.familyType));
     }
     if (_familyStatus == null || _familyStatus!.isEmpty) {
-      return _snack('Please select your family status');
+      return _snack(l10n.pleaseSelect(l10n.familyStatus));
     }
 
     // Merge into the existing familyDetails map so an edit never wipes the
@@ -183,13 +186,13 @@ class _StepBasicState extends ConsumerState<StepBasic> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Basic Details', style: AppTextStyles.heading2),
+            Text(context.l10n.basicDetails, style: AppTextStyles.heading2),
             const SizedBox(height: 8),
-            const Text('Let’s start with the essentials.',
-                style: TextStyle(color: Colors.grey)),
+            Text(context.l10n.letsStartEssentials,
+                style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 24),
             SearchableField(
-              label: 'Profile Created For',
+              label: context.l10n.profileCreatedFor,
               isRequired: true,
               items: _profileForOptions,
               selectedItem: _profileFor,
@@ -199,12 +202,12 @@ class _StepBasicState extends ConsumerState<StepBasic> {
             const SizedBox(height: 16),
             AppTextField(
               controller: _nameController,
-              label: 'Full Name *',
+              label: '${context.l10n.fullName} *',
               validator: Validators.name,
             ),
             const SizedBox(height: 20),
-            const Text('Gender *',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+            Text('${context.l10n.gender} *',
+                style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -216,12 +219,13 @@ class _StepBasicState extends ConsumerState<StepBasic> {
             const SizedBox(height: 20),
             AppTextField(
               controller: _dobController,
-              label: 'Date of Birth *',
+              label: '${context.l10n.dateOfBirth} *',
               hint: 'DD-MM-YYYY',
               readOnly: true,
               onTap: _pickDate,
               suffixIcon: const Icon(Icons.calendar_today),
-              validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+              validator: (v) =>
+                  v == null || v.isEmpty ? context.l10n.required : null,
             ),
             if (_age != null) ...[
               const SizedBox(height: 12),
@@ -237,7 +241,7 @@ class _StepBasicState extends ConsumerState<StepBasic> {
                     const Icon(Icons.cake_outlined,
                         size: 18, color: AppColors.primary),
                     const SizedBox(width: 8),
-                    Text('Age: $_age years',
+                    Text(context.l10n.ageYears(_age!),
                         style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             color: AppColors.primary)),
@@ -247,7 +251,7 @@ class _StepBasicState extends ConsumerState<StepBasic> {
             ],
             const SizedBox(height: 20),
             SearchableField(
-              label: 'Height',
+              label: context.l10n.height,
               isRequired: true,
               items: AppConstants.heightList,
               selectedItem: _height,
@@ -257,8 +261,8 @@ class _StepBasicState extends ConsumerState<StepBasic> {
             const SizedBox(height: 16),
             AppTextField(
               controller: _weightController,
-              label: 'Weight (kg)',
-              hint: 'Optional',
+              label: context.l10n.weightKg,
+              hint: context.l10n.optional,
               keyboardType: TextInputType.number,
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
@@ -267,7 +271,7 @@ class _StepBasicState extends ConsumerState<StepBasic> {
             ),
             const SizedBox(height: 16),
             SearchableField(
-              label: 'Marital Status',
+              label: context.l10n.maritalStatus,
               isRequired: true,
               items: AppConstants.maritalStatusOptions,
               selectedItem: _maritalStatus,
@@ -276,7 +280,7 @@ class _StepBasicState extends ConsumerState<StepBasic> {
             ),
             const SizedBox(height: 16),
             SearchableField(
-              label: 'Physical Status',
+              label: context.l10n.physicalStatus,
               isRequired: true,
               items: AppConstants.physicalStatusList,
               selectedItem: _physicalStatus,
@@ -285,7 +289,7 @@ class _StepBasicState extends ConsumerState<StepBasic> {
             ),
             const SizedBox(height: 16),
             SearchableField(
-              label: 'Family Type',
+              label: context.l10n.familyType,
               isRequired: true,
               items: AppConstants.familyTypeList,
               selectedItem: _familyType,
@@ -294,7 +298,7 @@ class _StepBasicState extends ConsumerState<StepBasic> {
             ),
             const SizedBox(height: 16),
             SearchableField(
-              label: 'Family Status',
+              label: context.l10n.familyStatus,
               isRequired: true,
               items: AppConstants.familyStatusList,
               selectedItem: _familyStatus,
@@ -305,7 +309,7 @@ class _StepBasicState extends ConsumerState<StepBasic> {
               const SizedBox(height: 16),
               AppTextField(
                 controller: _childrenController,
-                label: 'Number of Children',
+                label: context.l10n.numberOfChildren,
                 hint: '0',
                 keyboardType: TextInputType.number,
                 inputFormatters: [
@@ -317,7 +321,7 @@ class _StepBasicState extends ConsumerState<StepBasic> {
               if (_childrenCount > 0) ...[
                 const SizedBox(height: 16),
                 SearchableField(
-                  label: 'Children Living Status',
+                  label: context.l10n.childrenLivingStatus,
                   isRequired: true,
                   items: AppConstants.childrenLivingStatusList,
                   selectedItem: _childrenLivingStatus,
@@ -327,7 +331,8 @@ class _StepBasicState extends ConsumerState<StepBasic> {
               ],
             ],
             const SizedBox(height: 36),
-            GradientButton(onPressed: _saveAndNext, text: 'Continue'),
+            GradientButton(
+                onPressed: _saveAndNext, text: context.l10n.continueLabel),
           ],
         ),
       ),
@@ -354,7 +359,7 @@ class _StepBasicState extends ConsumerState<StepBasic> {
             Icon(icon,
                 size: 42, color: selected ? Colors.white : Colors.grey[600]),
             const SizedBox(height: 6),
-            Text(gender,
+            Text(context.localizeValue(gender),
                 style: TextStyle(
                   color: selected ? Colors.white : Colors.black87,
                   fontWeight: selected ? FontWeight.bold : FontWeight.normal,

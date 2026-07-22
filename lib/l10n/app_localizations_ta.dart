@@ -121,7 +121,9 @@ class AppLocalizationsTa extends AppLocalizations {
   String get notAvailable => 'கிடைக்கவில்லை';
 
   @override
-  String get fieldRequired => 'இந்த புலம் அவசியம்';
+  String fieldRequired(String label) {
+    return '$label தேவை';
+  }
 
   @override
   String get invalidEmail => 'சரியான மின்னஞ்சல் முகவரியை உள்ளிடவும்';
@@ -972,10 +974,10 @@ class AppLocalizationsTa extends AppLocalizations {
   }
 
   @override
-  String get newProfiles => 'புதிய Profiles';
+  String get newProfiles => 'புதிய சுயவிவரங்கள்';
 
   @override
-  String get noNewProfilesYet => 'புதிய Profiles இன்னும் இல்லை.';
+  String get noNewProfilesYet => 'புதிய சுயவிவரங்கள் இன்னும் இல்லை.';
 
   @override
   String get nakshatraMatch => 'நட்சத்திரப் பொருத்தம்';
@@ -999,7 +1001,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get featureMuhurthamCalendar => 'முகூர்த்த நாள்காட்டி';
 
   @override
-  String get viewCalendar => 'நாள்காட்டியைப் பார்க்க';
+  String get viewCalendar => 'பார்க்க';
 
   @override
   String get adminSignIn => 'நிர்வாகி உள்நுழைவு';
@@ -1467,4 +1469,123 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get servicesLabel => 'சேவைகள்';
+
+  @override
+  String get menuSectionProfile => 'சுயவிவரம்';
+
+  @override
+  String get menuSectionMatches => 'பொருத்தங்கள்';
+
+  @override
+  String get menuSectionAstrology => 'ஜோதிடம்';
+
+  @override
+  String get myMatches => 'எனது பொருத்தங்கள்';
+
+  @override
+  String get interestsSent => 'அனுப்பிய விருப்பங்கள்';
+
+  @override
+  String get interestsReceived => 'பெற்ற விருப்பங்கள்';
+
+  @override
+  String get messages => 'செய்திகள்';
+
+  @override
+  String get horoscopeMatching => 'ஜாதகப் பொருத்தம்';
+
+  @override
+  String get myReports => 'எனது அறிக்கைகள்';
+
+  @override
+  String get career => 'தொழில்';
+
+  @override
+  String get photos => 'புகைப்படங்கள்';
+
+  @override
+  String get contact => 'தொடர்பு';
+
+  @override
+  String get review => 'மறுபார்வை';
+
+  @override
+  String get uploadHoroscope => 'ஜாதகத்தைப் பதிவேற்று';
+
+  @override
+  String get skip => 'தவிர்';
+
+  @override
+  String stepXofY(int current, int total) {
+    return 'படி $current / $total';
+  }
+
+  @override
+  String percentComplete(int percent) {
+    return '$percent% நிறைவு';
+  }
+
+  @override
+  String editSection(String title) {
+    return '$title திருத்து';
+  }
+
+  @override
+  String editProfileSection(String title) {
+    return 'சுயவிவரம் திருத்து · $title';
+  }
+
+  @override
+  String get physicalStatus => 'உடல் நிலை';
+
+  @override
+  String get profileCreatedFor => 'யாருக்காக சுயவிவரம்';
+
+  @override
+  String get letsStartEssentials => 'அடிப்படை விவரங்களுடன் தொடங்குவோம்.';
+
+  @override
+  String get required => 'தேவை';
+
+  @override
+  String ageYears(int age) {
+    return 'வயது: $age';
+  }
+
+  @override
+  String get numberOfChildren => 'குழந்தைகளின் எண்ணிக்கை';
+
+  @override
+  String get weightKg => 'எடை (கிலோ)';
+
+  @override
+  String get childrenLivingStatus => 'குழந்தைகள் வசிக்கும் நிலை';
+
+  @override
+  String get noOptionsFound => 'விருப்பங்கள் எதுவும் இல்லை';
+
+  @override
+  String searchFieldHint(String label) {
+    return '$label தேடு…';
+  }
+
+  @override
+  String selectFieldTitle(String label) {
+    return '$label தேர்ந்தெடுக்கவும்';
+  }
+
+  @override
+  String addFieldTitle(String label) {
+    return '$label சேர்';
+  }
+
+  @override
+  String enterNewField(String label) {
+    return 'புதிய $label உள்ளிடவும்';
+  }
+
+  @override
+  String pleaseSelect(String field) {
+    return '$field தேர்ந்தெடுக்கவும்';
+  }
 }

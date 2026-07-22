@@ -1,6 +1,8 @@
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
+import '../../core/utils/value_l10n.dart';
 
 /// How the searchable popup is presented.
 ///
@@ -61,8 +63,22 @@ class SearchableField extends StatelessWidget {
       selectedItem: selectedItem,
       enabled: enabled,
       onChanged: onChanged,
+      // Storage stays English; only the DISPLAYED text is localized (Tamil
+      // mode). Unmapped values (cities, castes not in the map) pass through
+      // unchanged, so this is safe for every field.
+      itemAsString: (item) => context.localizeValue(item),
+      // Keep search working in Tamil mode: match the user's query against BOTH
+      // the stored English value and its localized display text.
+      filterFn: (item, query) {
+        final q = query.trim().toLowerCase();
+        if (q.isEmpty) return true;
+        return item.toLowerCase().contains(q) ||
+            context.localizeValue(item).toLowerCase().contains(q);
+      },
       validator: isRequired
-          ? (v) => (v == null || v.isEmpty) ? '$label is required' : null
+          ? (v) => (v == null || v.isEmpty)
+              ? context.l10n.fieldRequired(label)
+              : null
           : null,
       popupProps: _buildPopupProps(context),
       dropdownDecoratorProps: DropDownDecoratorProps(
@@ -99,7 +115,7 @@ class SearchableField extends StatelessWidget {
             border: Border.all(color: AppColors.primary.withOpacity(0.3)),
           ),
           child: IconButton(
-            tooltip: 'Add $label',
+            tooltip: context.l10n.addFieldTitle(label),
             icon: const Icon(Icons.add, color: AppColors.primary),
             onPressed: enabled ? () => _promptAdd(context) : null,
           ),
@@ -115,26 +131,27 @@ class SearchableField extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Add $label'),
+        title: Text(context.l10n.addFieldTitle(label)),
         content: TextField(
           controller: controller,
           autofocus: true,
           textCapitalization: TextCapitalization.words,
           decoration: InputDecoration(
-            hintText: 'Enter new $label',
+            hintText: context.l10n.enterNewField(label),
             prefixIcon: Icon(prefixIcon ?? Icons.edit_outlined),
           ),
           onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(context.l10n.cancel)),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('Save'),
+            child: Text(context.l10n.save),
           ),
         ],
       ),
@@ -150,14 +167,14 @@ class SearchableField extends StatelessWidget {
     final searchField = TextFieldProps(
       autofocus: true,
       decoration: InputDecoration(
-        hintText: 'Search $label…',
+        hintText: context.l10n.searchFieldHint(label),
         prefixIcon: const Icon(Icons.search),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
-    Widget empty(_, __) => const Padding(
-          padding: EdgeInsets.all(24),
-          child: Center(child: Text('No options found')),
+    Widget empty(_, __) => Padding(
+          padding: const EdgeInsets.all(24),
+          child: Center(child: Text(context.l10n.noOptionsFound)),
         );
 
     switch (popupMode) {
@@ -207,7 +224,7 @@ class _SheetTitle extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              'Select $label',
+              context.l10n.selectFieldTitle(label),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,

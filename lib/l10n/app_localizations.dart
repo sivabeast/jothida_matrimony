@@ -326,8 +326,8 @@ abstract class AppLocalizations {
   /// No description provided for @fieldRequired.
   ///
   /// In en, this message translates to:
-  /// **'This field is required'**
-  String get fieldRequired;
+  /// **'{label} is required'**
+  String fieldRequired(String label);
 
   /// No description provided for @invalidEmail.
   ///
@@ -2950,6 +2950,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Services'**
   String get servicesLabel;
+
+  /// No description provided for @menuSectionProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'PROFILE'**
+  String get menuSectionProfile;
+
+  /// No description provided for @menuSectionMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'MATCHES'**
+  String get menuSectionMatches;
+
+  /// No description provided for @menuSectionAstrology.
+  ///
+  /// In en, this message translates to:
+  /// **'ASTROLOGY'**
+  String get menuSectionAstrology;
+
+  /// No description provided for @myMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'My Matches'**
+  String get myMatches;
+
+  /// No description provided for @interestsSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Interests Sent'**
+  String get interestsSent;
+
+  /// No description provided for @interestsReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Interests Received'**
+  String get interestsReceived;
+
+  /// No description provided for @messages.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get messages;
+
+  /// No description provided for @horoscopeMatching.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope Matching'**
+  String get horoscopeMatching;
+
+  /// No description provided for @myReports.
+  ///
+  /// In en, this message translates to:
+  /// **'My Reports'**
+  String get myReports;
+
+  /// No description provided for @career.
+  ///
+  /// In en, this message translates to:
+  /// **'Career'**
+  String get career;
+
+  /// No description provided for @photos.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get photos;
+
+  /// No description provided for @contact.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get contact;
+
+  /// No description provided for @review.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get review;
+
+  /// No description provided for @uploadHoroscope.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Horoscope'**
+  String get uploadHoroscope;
+
+  /// No description provided for @skip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get skip;
+
+  /// No description provided for @stepXofY.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String stepXofY(int current, int total);
+
+  /// No description provided for @percentComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% Complete'**
+  String percentComplete(int percent);
+
+  /// No description provided for @editSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {title}'**
+  String editSection(String title);
+
+  /// No description provided for @editProfileSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Profile · {title}'**
+  String editProfileSection(String title);
+
+  /// No description provided for @physicalStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Physical Status'**
+  String get physicalStatus;
+
+  /// No description provided for @profileCreatedFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Created For'**
+  String get profileCreatedFor;
+
+  /// No description provided for @letsStartEssentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Let’s start with the essentials.'**
+  String get letsStartEssentials;
+
+  /// No description provided for @required.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get required;
+
+  /// No description provided for @ageYears.
+  ///
+  /// In en, this message translates to:
+  /// **'Age: {age} years'**
+  String ageYears(int age);
+
+  /// No description provided for @numberOfChildren.
+  ///
+  /// In en, this message translates to:
+  /// **'Number of Children'**
+  String get numberOfChildren;
+
+  /// No description provided for @weightKg.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight (kg)'**
+  String get weightKg;
+
+  /// No description provided for @childrenLivingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Children Living Status'**
+  String get childrenLivingStatus;
+
+  /// No description provided for @noOptionsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No options found'**
+  String get noOptionsFound;
+
+  /// No description provided for @searchFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search {label}…'**
+  String searchFieldHint(String label);
+
+  /// No description provided for @selectFieldTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select {label}'**
+  String selectFieldTitle(String label);
+
+  /// No description provided for @addFieldTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add {label}'**
+  String addFieldTitle(String label);
+
+  /// No description provided for @enterNewField.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter new {label}'**
+  String enterNewField(String label);
+
+  /// No description provided for @pleaseSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select {field}'**
+  String pleaseSelect(String field);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

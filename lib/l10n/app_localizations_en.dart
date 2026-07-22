@@ -121,7 +121,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notAvailable => 'Not Available';
 
   @override
-  String get fieldRequired => 'This field is required';
+  String fieldRequired(String label) {
+    return '$label is required';
+  }
 
   @override
   String get invalidEmail => 'Enter a valid email address';
@@ -1467,4 +1469,123 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get servicesLabel => 'Services';
+
+  @override
+  String get menuSectionProfile => 'PROFILE';
+
+  @override
+  String get menuSectionMatches => 'MATCHES';
+
+  @override
+  String get menuSectionAstrology => 'ASTROLOGY';
+
+  @override
+  String get myMatches => 'My Matches';
+
+  @override
+  String get interestsSent => 'Interests Sent';
+
+  @override
+  String get interestsReceived => 'Interests Received';
+
+  @override
+  String get messages => 'Messages';
+
+  @override
+  String get horoscopeMatching => 'Horoscope Matching';
+
+  @override
+  String get myReports => 'My Reports';
+
+  @override
+  String get career => 'Career';
+
+  @override
+  String get photos => 'Photos';
+
+  @override
+  String get contact => 'Contact';
+
+  @override
+  String get review => 'Review';
+
+  @override
+  String get uploadHoroscope => 'Upload Horoscope';
+
+  @override
+  String get skip => 'Skip';
+
+  @override
+  String stepXofY(int current, int total) {
+    return 'Step $current of $total';
+  }
+
+  @override
+  String percentComplete(int percent) {
+    return '$percent% Complete';
+  }
+
+  @override
+  String editSection(String title) {
+    return 'Edit $title';
+  }
+
+  @override
+  String editProfileSection(String title) {
+    return 'Edit Profile · $title';
+  }
+
+  @override
+  String get physicalStatus => 'Physical Status';
+
+  @override
+  String get profileCreatedFor => 'Profile Created For';
+
+  @override
+  String get letsStartEssentials => 'Let’s start with the essentials.';
+
+  @override
+  String get required => 'Required';
+
+  @override
+  String ageYears(int age) {
+    return 'Age: $age years';
+  }
+
+  @override
+  String get numberOfChildren => 'Number of Children';
+
+  @override
+  String get weightKg => 'Weight (kg)';
+
+  @override
+  String get childrenLivingStatus => 'Children Living Status';
+
+  @override
+  String get noOptionsFound => 'No options found';
+
+  @override
+  String searchFieldHint(String label) {
+    return 'Search $label…';
+  }
+
+  @override
+  String selectFieldTitle(String label) {
+    return 'Select $label';
+  }
+
+  @override
+  String addFieldTitle(String label) {
+    return 'Add $label';
+  }
+
+  @override
+  String enterNewField(String label) {
+    return 'Enter new $label';
+  }
+
+  @override
+  String pleaseSelect(String field) {
+    return 'Please select $field';
+  }
 }

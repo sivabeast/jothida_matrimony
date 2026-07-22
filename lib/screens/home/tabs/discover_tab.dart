@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/l10n_ext.dart';
+import '../../../core/utils/value_l10n.dart';
 import '../../../models/profile_model.dart';
 import '../../../core/services/porutham_match.dart';
 import '../../../providers/interest_provider.dart';
@@ -683,13 +684,18 @@ class _MatchProfilePage extends ConsumerWidget {
         ),
         const SizedBox(height: 14),
         // Essential fields — each rendered only when present.
+        // Free-text (city) / numeric (height) stay as entered; the controlled-
+        // vocabulary fields are localized for display via context.localizeValue.
         _infoRow(Icons.location_on_outlined, l10n.location, _location),
         _infoRow(Icons.straighten, l10n.height, profile.height),
-        _infoRow(Icons.school_outlined, l10n.education, profile.education),
+        _infoRow(Icons.school_outlined, l10n.education,
+            context.localizeValue(profile.education)),
         _infoRow(Icons.work_outline_rounded, l10n.profession,
-            profile.occupation),
-        _infoRow(Icons.temple_hindu_outlined, l10n.religion, profile.religion),
-        _infoRow(Icons.groups_outlined, l10n.community, profile.caste ?? ''),
+            context.localizeValue(profile.occupation)),
+        _infoRow(Icons.temple_hindu_outlined, l10n.religion,
+            context.localizeValue(profile.religion)),
+        _infoRow(Icons.groups_outlined, l10n.community,
+            context.localizeValue(profile.caste ?? '')),
       ],
     );
   }

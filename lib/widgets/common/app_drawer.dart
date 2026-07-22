@@ -26,7 +26,7 @@ class AppDrawer extends ConsumerWidget {
         ? profile!.fullName.trim()
         : (user?.displayName?.trim().isNotEmpty ?? false)
             ? user!.displayName!.trim()
-            : 'Guest';
+            : context.l10n.guest;
     final photo = (profile?.profilePhotoUrl?.isNotEmpty ?? false)
         ? profile!.profilePhotoUrl!
         : (user?.photoUrl ?? '');
@@ -40,44 +40,46 @@ class AppDrawer extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
                 // ── 👤 PROFILE ───────────────────────────────────────────────
-                _section('👤  PROFILE'),
+                _section('👤  ${context.l10n.menuSectionProfile}'),
                 // My Profile — the complete profile organised into the same
                 // categories as profile creation (Basic, Location, Career,
                 // Community, Horoscope, Preferences, Photos, Upload, Contact),
                 // each with its OWN Edit action that opens only that section.
-                _item(context, Icons.person_outline, 'My Profile',
+                _item(context, Icons.person_outline, context.l10n.myProfile,
                     () => context.push('/my-profile')),
-                _item(context, Icons.auto_awesome_outlined, 'Horoscope Details',
+                _item(context, Icons.auto_awesome_outlined,
+                    context.l10n.horoscopeDetails,
                     () => context.push('/horoscope')),
-                _item(context, Icons.tune, 'Partner Preferences',
+                _item(context, Icons.tune, context.l10n.partnerPreferences,
                     () => context.push('/partner-preferences')),
 
                 // ── 💖 MATCHES ───────────────────────────────────────────────
-                _section('💖  MATCHES'),
-                _item(context, Icons.favorite_border, 'My Matches',
+                _section('💖  ${context.l10n.menuSectionMatches}'),
+                _item(context, Icons.favorite_border, context.l10n.myMatches,
                     () => _openTab(context, ref, 1)),
-                _item(context, Icons.send_outlined, 'Interests Sent',
+                _item(context, Icons.send_outlined, context.l10n.interestsSent,
                     () => context.push('/interests?tab=sent')),
                 _item(context, Icons.mark_email_unread_outlined,
-                    'Interests Received',
+                    context.l10n.interestsReceived,
                     () => context.push('/interests?tab=received')),
-                _item(context, Icons.chat_bubble_outline, 'Messages',
+                _item(context, Icons.chat_bubble_outline, context.l10n.messages,
                     () => context.push('/chats')),
 
                 // ── 🧿 ASTROLOGY ─────────────────────────────────────────────
-                _section('🧿  ASTROLOGY'),
-                _item(context, Icons.favorite_outline, 'Horoscope Matching',
+                _section('🧿  ${context.l10n.menuSectionAstrology}'),
+                _item(context, Icons.favorite_outline,
+                    context.l10n.horoscopeMatching,
                     () => context.push('/horoscope-matching')),
                 // Reports live ONLY on the bottom-nav Reports tab (the old
                 // standalone "My Reports" page was removed).
-                _item(context, Icons.receipt_long_outlined, 'My Reports',
+                _item(context, Icons.receipt_long_outlined, context.l10n.myReports,
                     () => _openTab(context, ref, kReportsTabIndex)),
 
                 // (The MEMBERSHIP / Subscription section was removed — the app
                 // has no subscription system; all matrimony features are free.)
                 const SizedBox(height: 8),
                 const Divider(height: 1),
-                _item(context, Icons.settings_outlined, 'Settings',
+                _item(context, Icons.settings_outlined, context.l10n.settings,
                     () => context.push('/settings')),
               ],
             ),
@@ -92,8 +94,8 @@ class AppDrawer extends ConsumerWidget {
             dense: true,
             visualDensity: const VisualDensity(vertical: -1),
             leading: const Icon(Icons.logout, size: 22, color: AppColors.error),
-            title: const Text('Logout',
-                style: TextStyle(
+            title: Text(context.l10n.logout,
+                style: const TextStyle(
                     color: AppColors.error,
                     fontWeight: FontWeight.w500,
                     fontSize: 14.5)),

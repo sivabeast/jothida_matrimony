@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
@@ -72,7 +73,9 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   static const Set<int> _skippableSteps = {5, 6, 7};
 
   /// The 10 website profile-creation steps, in the same order as the website.
-  final List<String> _stepTitles = const [
+  /// English canonical titles (kept for any non-UI use); the DISPLAYED titles
+  /// come from [_stepTitles] so they follow the selected language.
+  static const List<String> _stepTitlesEn = [
     'Basic Details',
     'Location',
     'Career',
@@ -84,6 +87,23 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
     'Contact',
     'Review',
   ];
+
+  /// Localized step titles (same order as [_stepTitlesEn]).
+  List<String> _stepTitles(BuildContext context) {
+    final l = context.l10n;
+    return [
+      l.basicDetails,
+      l.location,
+      l.career,
+      l.community,
+      l.horoscope,
+      l.partnerPreferences,
+      l.photos,
+      l.uploadHoroscope,
+      l.contact,
+      l.review,
+    ];
+  }
 
   @override
   void initState() {
@@ -292,10 +312,11 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isSectionMode
-            ? 'Edit ${_stepTitles[_currentStep]}'
+            ? context.l10n.editSection(_stepTitles(context)[_currentStep])
             : _isEditMode
-                ? 'Edit Profile · ${_stepTitles[_currentStep]}'
-                : _stepTitles[_currentStep]),
+                ? context.l10n
+                    .editProfileSection(_stepTitles(context)[_currentStep])
+                : _stepTitles(context)[_currentStep]),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
@@ -313,7 +334,7 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
                         onPressed: () => context.pop())
                     : IconButton(
                         icon: const Icon(Icons.logout),
-                        tooltip: 'Logout',
+                        tooltip: context.l10n.logout,
                         onPressed: _confirmLogout,
                       ),
         // No "Save & Exit" (removed per spec) — only a Skip action on the
@@ -334,8 +355,8 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
           else if (!_isSectionMode && _skippableSteps.contains(_currentStep))
             TextButton(
               onPressed: _nextStep,
-              child: const Text('Skip',
-                  style: TextStyle(color: Colors.white, fontSize: 14)),
+              child: Text(context.l10n.skip,
+                  style: const TextStyle(color: Colors.white, fontSize: 14)),
             ),
         ],
       ),
@@ -357,10 +378,14 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Step ${_currentStep + 1} of $_totalSteps',
+                              Text(
+                                  context.l10n.stepXofY(
+                                      _currentStep + 1, _totalSteps),
                                   style: AppTextStyles.bodySmall),
                               Text(
-                                  '${((_currentStep + 1) / _totalSteps * 100).round()}% Complete',
+                                  context.l10n.percentComplete(
+                                      ((_currentStep + 1) / _totalSteps * 100)
+                                          .round()),
                                   style: AppTextStyles.bodySmall
                                       .copyWith(color: AppColors.primary)),
                             ],
