@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/l10n_ext.dart';
+import '../../../core/utils/value_l10n.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/gradient_button.dart';
 
@@ -25,9 +27,12 @@ class StepReview extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(profileCreationProvider);
+    final l10n = context.l10n;
     final d = state.data;
 
-    String s(dynamic v) => (v == null) ? '' : v.toString();
+    // Stored values stay English; the review renders them in the app language.
+    String s(dynamic v) =>
+        (v == null) ? '' : context.localizeValue(v.toString());
     Map<String, dynamic> group(String key) {
       final g = d[key];
       return g is Map ? Map<String, dynamic>.from(g) : const {};
@@ -46,53 +51,53 @@ class StepReview extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Review & Submit', style: AppTextStyles.heading2),
+          Text(l10n.reviewSubmit, style: AppTextStyles.heading2),
           const SizedBox(height: 8),
-          const Text('Please review your details before submitting.',
-              style: TextStyle(color: Colors.grey)),
+          Text(l10n.reviewSubtitle,
+              style: const TextStyle(color: Colors.grey)),
           const SizedBox(height: 20),
 
-          _section('Basic Details', 0, [
-            ['Name', s(d['name'])],
-            ['Gender', s(d['gender'])],
-            ['Age', s(d['age'])],
-            ['Height', s(d['height'])],
-            ['Marital Status', s(d['maritalStatus'])],
-            ['Physical Status', s(d['physicalStatus'])],
+          _section(context, l10n.basicDetails, 0, [
+            [l10n.name, s(d['name'])],
+            [l10n.gender, s(d['gender'])],
+            [l10n.age, s(d['age'])],
+            [l10n.height, s(d['height'])],
+            [l10n.maritalStatus, s(d['maritalStatus'])],
+            [l10n.physicalStatus, s(d['physicalStatus'])],
           ]),
-          _section('Location', 1, [
-            ['Location', location],
-            ['Native Place', s(d['nativePlace'])],
-            ['Citizenship', s(d['citizenship'])],
+          _section(context, l10n.location, 1, [
+            [l10n.location, location],
+            [l10n.nativePlace, s(d['nativePlace'])],
+            [l10n.citizenship, s(d['citizenship'])],
           ]),
-          _section('Career', 2, [
-            ['Education', s(d['education'])],
-            ['Occupation', s(d['occupation'])],
+          _section(context, l10n.career, 2, [
+            [l10n.education, s(d['education'])],
+            [l10n.occupation, s(d['occupation'])],
             if (s(d['courseDegree']).isNotEmpty)
-              ['Course / Degree', s(d['courseDegree'])],
+              [l10n.courseDegree, s(d['courseDegree'])],
             if (s(d['employmentType']).isNotEmpty)
-              ['Employment', s(d['employmentType'])],
+              [l10n.employmentLabel, s(d['employmentType'])],
             if (s(d['annualIncome']).isNotEmpty)
-              ['Annual Income', s(d['annualIncome'])],
+              [l10n.annualIncome, s(d['annualIncome'])],
           ]),
-          _section('Community', 3, [
-            ['Religion', s(d['religion'])],
-            ['Caste', s(d['caste'])],
-            ['Sub Caste', s(d['subCaste'])],
-            ['Mother Tongue', s(d['motherTongue'])],
+          _section(context, l10n.community, 3, [
+            [l10n.religion, s(d['religion'])],
+            [l10n.caste, s(d['caste'])],
+            [l10n.subCaste, s(d['subCaste'])],
+            [l10n.motherTongue, s(d['motherTongue'])],
           ]),
-          _section('Horoscope', 4, [
-            ['Rasi', s(horo['rasi'])],
-            ['Nakshatra', s(horo['nakshatra'])],
-            ['Lagnam', s(horo['lagnam'])],
-            ['Birth Time', s(horo['birthTime'])],
-            ['Birth Place', s(horo['birthPlace'])],
+          _section(context, l10n.horoscope, 4, [
+            [l10n.rasi, s(horo['rasi'])],
+            [l10n.nakshatra, s(horo['nakshatra'])],
+            [l10n.lagnam, s(horo['lagnam'])],
+            [l10n.birthTime, s(horo['birthTime'])],
+            [l10n.birthPlace, s(horo['birthPlace'])],
           ]),
-          _section('Contact', 8, [
-            ['Contact Person', s(contact['contactPersonName'])],
-            ['Relationship', s(contact['relationship'])],
-            ['Mobile', s(contact['mobileNumber'])],
-            ['WhatsApp', s(contact['whatsappNumber'])],
+          _section(context, l10n.contact, 8, [
+            [l10n.contactPerson, s(contact['contactPersonName'])],
+            [l10n.relationship, s(contact['relationship'])],
+            [l10n.mobileLabel, s(contact['mobileNumber'])],
+            [l10n.whatsapp, s(contact['whatsappNumber'])],
           ]),
 
           if (state.isLoading) ...[
@@ -110,7 +115,7 @@ class StepReview extends ConsumerWidget {
               state.uploadStatus ??
                   (state.uploadProgress > 0
                       ? '${(state.uploadProgress * 100).round()}%'
-                      : 'Submitting…'),
+                      : l10n.submittingLabel),
               style: const TextStyle(color: Colors.grey, fontSize: 12),
               textAlign: TextAlign.center,
             ),
@@ -120,14 +125,15 @@ class StepReview extends ConsumerWidget {
           GradientButton(
             onPressed: state.isLoading ? null : onSubmit,
             isLoading: state.isLoading,
-            text: isEditMode ? 'Save Changes' : 'Submit Profile',
+            text: isEditMode ? l10n.saveChanges : l10n.submitProfile,
           ),
         ],
       ),
     );
   }
 
-  Widget _section(String title, int step, List<List<String>> rows) {
+  Widget _section(
+      BuildContext context, String title, int step, List<List<String>> rows) {
     final visible = rows.where((r) => r[1].trim().isNotEmpty).toList();
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -154,7 +160,7 @@ class StepReview extends ConsumerWidget {
                   visualDensity: VisualDensity.compact,
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                 ),
-                child: const Text('Edit'),
+                child: Text(context.l10n.edit),
               ),
             ],
           ),

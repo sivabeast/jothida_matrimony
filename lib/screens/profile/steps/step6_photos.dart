@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/l10n_ext.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/gradient_button.dart';
 import '../../../widgets/common/network_photo.dart';
@@ -53,18 +54,19 @@ class _Step6State extends ConsumerState<Step6Photos> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final hasExisting = _existingUrl.isNotEmpty;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Profile Photo',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(l10n.profilePhoto,
+              style: const TextStyle(
+                  fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const Text('Add ONE clear photo of yourself — it becomes your '
-              'profile picture.',
-              style: TextStyle(color: Colors.grey)),
+          Text(l10n.profilePhotoSubtitle,
+              style: const TextStyle(color: Colors.grey)),
           const SizedBox(height: 24),
           Center(
             child: GestureDetector(
@@ -82,14 +84,14 @@ class _Step6State extends ConsumerState<Step6Photos> {
                     ? Image.file(_photo!, fit: BoxFit.cover)
                     : hasExisting
                         ? NetworkPhoto(url: _existingUrl, fit: BoxFit.cover)
-                        : const Column(
+                        : Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.add_a_photo_outlined,
+                              const Icon(Icons.add_a_photo_outlined,
                                   size: 44, color: Colors.grey),
-                              SizedBox(height: 10),
-                              Text('Add Photo',
-                                  style: TextStyle(color: Colors.grey)),
+                              const SizedBox(height: 10),
+                              Text(l10n.addPhoto,
+                                  style: const TextStyle(color: Colors.grey)),
                             ],
                           ),
               ),
@@ -101,7 +103,7 @@ class _Step6State extends ConsumerState<Step6Photos> {
               child: TextButton.icon(
                 onPressed: _pickPhoto,
                 icon: const Icon(Icons.edit_outlined, size: 16),
-                label: const Text('Change Photo'),
+                label: Text(l10n.changePhoto),
                 style:
                     TextButton.styleFrom(foregroundColor: AppColors.primary),
               ),
@@ -115,21 +117,21 @@ class _Step6State extends ConsumerState<Step6Photos> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.orange[200]!),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.orange),
-                  SizedBox(width: 8),
+                  const Icon(Icons.info_outline, color: Colors.orange),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Adding a photo increases your profile visibility by 3x.',
-                      style: TextStyle(fontSize: 13),
+                      l10n.photoVisibilityTip,
+                      style: const TextStyle(fontSize: 13),
                     ),
                   ),
                 ],
               ),
             ),
           const SizedBox(height: 32),
-          GradientButton(onPressed: _saveAndNext, text: 'Next'),
+          GradientButton(onPressed: _saveAndNext, text: l10n.continueLabel),
         ],
       ),
     );

@@ -20,9 +20,9 @@ enum SearchablePopupMode { menu, modalBottomSheet }
 /// text. Supports dependent dropdowns: when the parent value changes, pass a
 /// new [items] list (and reset [selectedItem]).
 ///
-/// Pass [onAddNew] to show a "+" button beside the field: it opens an Add
-/// dialog, persists the entered value (permanently, to the master database —
-/// this replaced the old "Others → textbox" flow) and selects it.
+/// There is NO "+" Add button any more: a value missing from the list is
+/// entered through the "Others" option — see [SearchableWithOthersField],
+/// which wraps this field and reveals a custom textbox below it.
 class SearchableField extends StatelessWidget {
   final String label;
   final List<String> items;
@@ -32,16 +32,15 @@ class SearchableField extends StatelessWidget {
   final bool enabled;
   final IconData? prefixIcon;
 
-  /// When set, a "+" Add button appears beside the field. The callback must
-  /// PERSIST the new value (e.g. via MasterOptionsService) and return the
-  /// canonical stored value — the field then selects it via [onChanged].
-  /// Return null/empty to abort silently.
-  final Future<String?> Function(String value)? onAddNew;
-
   /// Presentation mode for the options popup. Defaults to the anchored [menu].
   /// Pass [SearchablePopupMode.modalBottomSheet] to avoid overlapping
   /// surrounding widgets.
   final SearchablePopupMode popupMode;
+
+  /// Optional display-text override for an item, applied BEFORE the standard
+  /// value localization. Used by [SearchableWithOthersField] to render its
+  /// "Others" sentinel with the localized label.
+  final String Function(String item)? itemLabel;
 
   const SearchableField({
     super.key,
@@ -52,13 +51,13 @@ class SearchableField extends StatelessWidget {
     this.isRequired = false,
     this.enabled = true,
     this.prefixIcon,
-    this.onAddNew,
     this.popupMode = SearchablePopupMode.menu,
+    this.itemLabel,
   });
 
   @override
   Widget build(BuildContext context) {
-    final field = DropdownSearch<String>(
+    return DropdownSearch<String>(
       items: items,
       selectedItem: selectedItem,
       enabled: enabled,
@@ -66,14 +65,14 @@ class SearchableField extends StatelessWidget {
       // Storage stays English; only the DISPLAYED text is localized (Tamil
       // mode). Unmapped values (cities, castes not in the map) pass through
       // unchanged, so this is safe for every field.
-      itemAsString: (item) => context.localizeValue(item),
+      itemAsString: (item) => _display(context, item),
       // Keep search working in Tamil mode: match the user's query against BOTH
       // the stored English value and its localized display text.
       filterFn: (item, query) {
         final q = query.trim().toLowerCase();
         if (q.isEmpty) return true;
         return item.toLowerCase().contains(q) ||
-            context.localizeValue(item).toLowerCase().contains(q);
+            _display(context, item).toLowerCase().contains(q);
       },
       validator: isRequired
           ? (v) => (v == null || v.isEmpty)
@@ -99,69 +98,12 @@ class SearchableField extends StatelessWidget {
         ),
       ),
     );
-    if (onAddNew == null) return field;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(child: field),
-        const SizedBox(width: 8),
-        // "+" Add — persists a value missing from the master list.
-        Container(
-          decoration: BoxDecoration(
-            color: enabled
-                ? AppColors.primary.withOpacity(0.09)
-                : Colors.grey[200],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-          ),
-          child: IconButton(
-            tooltip: context.l10n.addFieldTitle(label),
-            icon: const Icon(Icons.add, color: AppColors.primary),
-            onPressed: enabled ? () => _promptAdd(context) : null,
-          ),
-        ),
-      ],
-    );
   }
 
-  /// The shared Add dialog: type the new value → persist → select it.
-  Future<void> _promptAdd(BuildContext context) async {
-    final controller = TextEditingController();
-    final entered = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(context.l10n.addFieldTitle(label)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          decoration: InputDecoration(
-            hintText: context.l10n.enterNewField(label),
-            prefixIcon: Icon(prefixIcon ?? Icons.edit_outlined),
-          ),
-          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(context.l10n.cancel)),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: Text(context.l10n.save),
-          ),
-        ],
-      ),
-    );
-    if (entered == null || entered.isEmpty) return;
-    final stored = await onAddNew!(entered);
-    if (stored != null && stored.trim().isNotEmpty) {
-      onChanged(stored.trim());
-    }
-  }
+  /// Display text for [item]: the [itemLabel] override first, then the standard
+  /// English-value → Tamil display mapping.
+  String _display(BuildContext context, String item) =>
+      itemLabel != null ? itemLabel!(item) : context.localizeValue(item);
 
   PopupProps<String> _buildPopupProps(BuildContext context) {
     final searchField = TextFieldProps(

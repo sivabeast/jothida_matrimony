@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/horoscope_calculation_service.dart';
 import '../../../core/services/master_astrology_data.dart';
+import '../../../core/utils/l10n_ext.dart';
 import '../../../providers/location_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
@@ -255,27 +256,27 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
 
   void _saveAndNext() {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     if (_dob == null) {
       messenger.showSnackBar(
-          const SnackBar(content: Text('Please select your date of birth')));
+          SnackBar(content: Text(l10n.pleaseSelect(l10n.dateOfBirth))));
       return;
     }
     if (_birthTime == null) {
-      messenger.showSnackBar(
-          const SnackBar(content: Text('Please select your time of birth')));
+      messenger
+          .showSnackBar(SnackBar(content: Text(l10n.pleaseSelectTimeOfBirth)));
       return;
     }
     if (_effectivePlace == null || _effectivePlace!.isEmpty) {
-      messenger.showSnackBar(
-          const SnackBar(content: Text('Please select your birth place')));
+      messenger
+          .showSnackBar(SnackBar(content: Text(l10n.pleaseSelectBirthPlace)));
       return;
     }
     if ((_effRasi ?? '').isEmpty ||
         (_effNakshatra ?? '').isEmpty ||
         (_effLagnam ?? '').isEmpty) {
-      messenger.showSnackBar(const SnackBar(content: Text(
-          'Unable to generate horoscope details. Please verify date, time and '
-          'birth place.')));
+      messenger.showSnackBar(
+          SnackBar(content: Text(l10n.unableToGenerateHoroscope)));
       return;
     }
 
@@ -307,6 +308,7 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final citiesAsync = ref.watch(allCityNamesProvider);
     final cityItems = <String>[
       ...(citiesAsync.valueOrNull ?? const <String>[]),
@@ -318,21 +320,19 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Horoscope Details',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(l10n.horoscopeDetails,
+              style: const TextStyle(
+                  fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const Text(
-            'Rasi, Nakshatra and Lagnam are calculated automatically from your '
-            'birth date, time and place. Enable override to set them manually.',
-            style: TextStyle(color: Colors.grey),
-          ),
+          Text(l10n.horoscopeStepSubtitle,
+              style: const TextStyle(color: Colors.grey)),
           const SizedBox(height: 24),
 
           // ── Inputs ──────────────────────────────────────────────────────
           AppTextField(
             controller: _dobController,
-            label: 'Date of Birth',
-            hint: 'Select date',
+            label: l10n.dateOfBirth,
+            hint: l10n.selectDateHint,
             readOnly: true,
             onTap: _pickDob,
             suffixIcon: const Icon(Icons.calendar_today_outlined),
@@ -340,41 +340,43 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
           const SizedBox(height: 16),
           AppTextField(
             controller: _birthTimeController,
-            label: 'Time of Birth',
-            hint: 'Select time',
+            label: l10n.timeOfBirth,
+            hint: l10n.selectTimeHint,
             readOnly: true,
             onTap: _pickTime,
             suffixIcon: const Icon(Icons.access_time),
           ),
           const SizedBox(height: 16),
           if (citiesAsync.isLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(children: [
-                SizedBox(
+                const SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2)),
-                SizedBox(width: 10),
-                Text('Loading cities…'),
+                const SizedBox(width: 10),
+                Text(l10n.loadingCities),
               ]),
             )
           else
             SearchableField(
-              label: 'Birth City',
+              label: l10n.birthCity,
               isRequired: true,
               items: cityItems,
               selectedItem: _isOthers ? _kOthers : _selectedCity,
               prefixIcon: Icons.location_on_outlined,
               popupMode: SearchablePopupMode.modalBottomSheet,
+              itemLabel: (item) =>
+                  item == _kOthers ? l10n.othersOption : item,
               onChanged: _onPlaceChanged,
             ),
           if (_isOthers) ...[
             const SizedBox(height: 12),
             AppTextField(
               controller: _customPlaceController,
-              label: 'Custom Birth Place',
-              hint: 'Village, town or city name',
+              label: '${l10n.customBirthPlace} *',
+              hint: l10n.customBirthPlaceHint,
               prefixIcon: const Icon(Icons.edit_location_alt_outlined),
               onChanged: _onCustomPlaceChanged,
             ),
@@ -383,15 +385,15 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
 
           // ── Status / generated results ───────────────────────────────────
           if (_calculating)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
               child: Row(children: [
-                SizedBox(
+                const SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2)),
-                SizedBox(width: 12),
-                Text('Calculating horoscope…'),
+                const SizedBox(width: 12),
+                Text(l10n.calculatingHoroscope),
               ]),
             )
           else if (_error != null)
@@ -401,7 +403,7 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
                 rasi: _genRasi!, nakshatra: _genNakshatra!, lagnam: _genLagnam!)
           else if (!_hasGenerated)
             Text(
-              'Select date, time and place to calculate your horoscope.',
+              l10n.selectDateTimePlaceHint,
               style: TextStyle(color: Colors.grey[600], fontSize: 13),
             ),
 
@@ -412,17 +414,20 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
               contentPadding: EdgeInsets.zero,
               value: _overrideEnabled,
               onChanged: _onOverrideToggled,
-              title: const Text('Override automatically calculated horoscope',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-              subtitle: const Text(
-                  'Choose Rasi, Nakshatra and Lagnam manually.',
-                  style: TextStyle(fontSize: 12)),
+              title: Text(l10n.overrideHoroscope,
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w500)),
+              subtitle: Text(l10n.overrideHoroscopeSubtitle,
+                  style: const TextStyle(fontSize: 12)),
             ),
           ],
           if (_overrideEnabled) ...[
             const SizedBox(height: 8),
+            // Rasi / Nakshatra / Lagnam come from the fixed Vedic master data —
+            // they intentionally have NO "Others" entry, because a free-text
+            // value would break porutham (star compatibility) matching.
             SearchableField(
-              label: 'Rasi',
+              label: l10n.rasi,
               isRequired: true,
               items: _rasiOptions,
               selectedItem: _ovrRasi,
@@ -432,7 +437,7 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
             ),
             const SizedBox(height: 16),
             SearchableField(
-              label: 'Nakshatra',
+              label: l10n.nakshatra,
               isRequired: true,
               items: _nakOptions,
               selectedItem: _ovrNakshatra,
@@ -442,7 +447,7 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
             ),
             const SizedBox(height: 16),
             SearchableField(
-              label: 'Lagnam',
+              label: l10n.lagnam,
               isRequired: true,
               items: _lagnamOptions,
               selectedItem: _ovrLagnam,
@@ -453,7 +458,7 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
           ],
 
           const SizedBox(height: 32),
-          GradientButton(onPressed: _saveAndNext, text: 'Next'),
+          GradientButton(onPressed: _saveAndNext, text: l10n.continueLabel),
         ],
       ),
     );
@@ -481,6 +486,7 @@ class _ResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -496,19 +502,19 @@ class _ResultCard extends StatelessWidget {
             children: [
               const Icon(Icons.auto_awesome, size: 18, color: Colors.amber),
               const SizedBox(width: 8),
-              const Text('Calculated Horoscope',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(l10n.calculatedHoroscope,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               const Spacer(),
               Icon(Icons.lock_outline, size: 14, color: Colors.grey[500]),
               const SizedBox(width: 4),
-              Text('Read-only',
+              Text(l10n.readOnlyLabel,
                   style: TextStyle(fontSize: 11, color: Colors.grey[600])),
             ],
           ),
           const Divider(height: 18),
-          _row('Rasi (Moon Sign)', rasi),
-          _row('Nakshatra (Star)', nakshatra),
-          _row('Lagnam (Ascendant)', lagnam),
+          _row(l10n.rasiMoonSign, rasi),
+          _row(l10n.nakshatraStar, nakshatra),
+          _row(l10n.lagnamAscendant, lagnam),
         ],
       ),
     );

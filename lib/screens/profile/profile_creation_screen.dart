@@ -73,22 +73,8 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   static const Set<int> _skippableSteps = {5, 6, 7};
 
   /// The 10 website profile-creation steps, in the same order as the website.
-  /// English canonical titles (kept for any non-UI use); the DISPLAYED titles
-  /// come from [_stepTitles] so they follow the selected language.
-  static const List<String> _stepTitlesEn = [
-    'Basic Details',
-    'Location',
-    'Career',
-    'Community',
-    'Horoscope',
-    'Partner Preferences',
-    'Photos',
-    'Upload Horoscope',
-    'Contact',
-    'Review',
-  ];
-
-  /// Localized step titles (same order as [_stepTitlesEn]).
+  /// Titles are ALWAYS read from the l10n dictionary so they follow the
+  /// selected language — there is no English fallback list.
   List<String> _stepTitles(BuildContext context) {
     final l = context.l10n;
     return [
@@ -231,18 +217,16 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Logout'),
-        content: const Text(
-            'Are you sure you want to logout? Unsaved progress will be kept as '
-            'a draft.'),
+        title: Text(context.l10n.logout),
+        content: Text(context.l10n.logoutDraftMessage),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: Text(context.l10n.cancel)),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-            child: const Text('Logout'),
+            child: Text(context.l10n.logout),
           ),
         ],
       ),
@@ -258,8 +242,8 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   Future<void> _submitProfile() async {
     final userId = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
     if (userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('You must be signed in to create a profile.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.l10n.mustBeSignedInToCreateProfile)));
       return;
     }
     final profileId = await ref
@@ -270,7 +254,7 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
       if (_isEditMode) {
         // Updated in place — the live profile stream refreshes everything.
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profile updated successfully.')));
+            SnackBar(content: Text(context.l10n.profileUpdatedSuccess)));
         context.pop();
         return;
       }
@@ -283,8 +267,8 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
       context.go('/profile/success');
     } else {
       final error = ref.read(profileCreationProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error ?? 'Failed to create profile')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(error ?? context.l10n.failedToCreateProfile)));
     }
   }
 

@@ -1588,4 +1588,284 @@ class AppLocalizationsEn extends AppLocalizations {
   String pleaseSelect(String field) {
     return 'Please select $field';
   }
+
+  @override
+  String pleaseEnterField(String field) {
+    return 'Please enter your $field';
+  }
+
+  @override
+  String get othersOption => 'Others';
+
+  @override
+  String customField(String label) {
+    return 'Custom $label';
+  }
+
+  @override
+  String get typeHere => 'Type here';
+
+  @override
+  String get anyOption => 'Any';
+
+  @override
+  String loadingField(String label) {
+    return 'Loading $label…';
+  }
+
+  @override
+  String couldNotLoadField(String label) {
+    return 'Couldn\'t load $label';
+  }
+
+  @override
+  String get district => 'District';
+
+  @override
+  String get useMyLocation => 'Use My Location';
+
+  @override
+  String get detectingLocation => 'Detecting…';
+
+  @override
+  String onlyTamilNaduSupported(String state) {
+    return 'Detected \"$state\" — only Tamil Nadu is supported right now. Please pick below.';
+  }
+
+  @override
+  String cityNotInListPickNearest(String city) {
+    return '\"$city\" isn\'t in the list — please pick the nearest city.';
+  }
+
+  @override
+  String get couldNotMatchLocation => 'Couldn\'t match your location — please pick below.';
+
+  @override
+  String get locationAccessDenied => 'Location access denied. Please select your location manually.';
+
+  @override
+  String get locationDetails => 'Location Details';
+
+  @override
+  String get locationStepSubtitle => 'Where are you located?';
+
+  @override
+  String get nativePlace => 'Native Place';
+
+  @override
+  String get citizenship => 'Citizenship';
+
+  @override
+  String get selectStateDistrictCity => 'Please select your state, district and city';
+
+  @override
+  String get educationCareerSubtitle => 'Your qualifications and work.';
+
+  @override
+  String get highestEducation => 'Highest Education';
+
+  @override
+  String get employmentType => 'Employment Type';
+
+  @override
+  String get courseDegree => 'Course / Degree';
+
+  @override
+  String get courseDegreeHint => 'e.g. B.E Computer Science';
+
+  @override
+  String get religiousInformation => 'Religious Information';
+
+  @override
+  String get religiousInfoSubtitle => 'Helps find matches within your community.';
+
+  @override
+  String get horoscopeStepSubtitle => 'Rasi, Nakshatra and Lagnam are calculated automatically from your birth date, time and place. Enable override to set them manually.';
+
+  @override
+  String get timeOfBirth => 'Time of Birth';
+
+  @override
+  String get selectDateHint => 'Select date';
+
+  @override
+  String get selectTimeHint => 'Select time';
+
+  @override
+  String get birthCity => 'Birth City';
+
+  @override
+  String get customBirthPlace => 'Custom Birth Place';
+
+  @override
+  String get customBirthPlaceHint => 'Village, town or city name';
+
+  @override
+  String get loadingCities => 'Loading cities…';
+
+  @override
+  String get calculatingHoroscope => 'Calculating horoscope…';
+
+  @override
+  String get selectDateTimePlaceHint => 'Select date, time and place to calculate your horoscope.';
+
+  @override
+  String get calculatedHoroscope => 'Calculated Horoscope';
+
+  @override
+  String get readOnlyLabel => 'Read-only';
+
+  @override
+  String get overrideHoroscope => 'Override automatically calculated horoscope';
+
+  @override
+  String get overrideHoroscopeSubtitle => 'Choose Rasi, Nakshatra and Lagnam manually.';
+
+  @override
+  String get rasiMoonSign => 'Rasi (Moon Sign)';
+
+  @override
+  String get nakshatraStar => 'Nakshatra (Star)';
+
+  @override
+  String get lagnamAscendant => 'Lagnam (Ascendant)';
+
+  @override
+  String get pleaseSelectTimeOfBirth => 'Please select your time of birth';
+
+  @override
+  String get pleaseSelectBirthPlace => 'Please select your birth place';
+
+  @override
+  String get unableToGenerateHoroscope => 'Unable to generate horoscope details. Please verify date, time and birth place.';
+
+  @override
+  String get partnerPreferenceTitle => 'Partner Preference';
+
+  @override
+  String get partnerPrefSubtitle => 'All optional — set what matters, skip the rest. You can refine these anytime.';
+
+  @override
+  String get basicPreference => 'Basic Preference';
+
+  @override
+  String get communityPreference => 'Community Preference';
+
+  @override
+  String get educationIncomePreference => 'Education & Income Preference';
+
+  @override
+  String get ageRangeLabel => 'Age Range';
+
+  @override
+  String get heightRangeLabel => 'Height Range';
+
+  @override
+  String ageRangeValue(int min, int max) {
+    return '$min – $max Years';
+  }
+
+  @override
+  String rangeValue(String min, String max) {
+    return '$min – $max';
+  }
+
+  @override
+  String get minimumAge => 'Minimum Age';
+
+  @override
+  String get maximumAge => 'Maximum Age';
+
+  @override
+  String get minimumHeight => 'Minimum Height';
+
+  @override
+  String get maximumHeight => 'Maximum Height';
+
+  @override
+  String get chevvaiDosham => 'Chevvai Dosham';
+
+  @override
+  String get doesntMatter => 'Doesn\'t Matter';
+
+  @override
+  String get horoscopeMatchRequired => 'Horoscope match required';
+
+  @override
+  String get profilePhoto => 'Profile Photo';
+
+  @override
+  String get profilePhotoSubtitle => 'Add ONE clear photo of yourself — it becomes your profile picture.';
+
+  @override
+  String get addPhoto => 'Add Photo';
+
+  @override
+  String get photoVisibilityTip => 'Adding a photo increases your profile visibility by 3x.';
+
+  @override
+  String get uploadHoroscopeSubtitle => 'Optionally attach your horoscope as a PDF. You can also skip this and add it later from your profile.';
+
+  @override
+  String get tapToSelectPdf => 'Tap to select a PDF';
+
+  @override
+  String get horoscopePdfAttached => 'Horoscope PDF attached';
+
+  @override
+  String get changePdf => 'Change PDF';
+
+  @override
+  String get contactStepSubtitle => 'Contact details are only shared after interest is mutually accepted.';
+
+  @override
+  String get contactPersonName => 'Contact Person Name';
+
+  @override
+  String get relationship => 'Relationship';
+
+  @override
+  String get whatsappNumber => 'WhatsApp Number';
+
+  @override
+  String get whatsappSameAsMobile => 'WhatsApp same as mobile';
+
+  @override
+  String get contactPrivacyNote => 'Your phone number and address are hidden by default. They are only revealed when both parties accept each other\'s interest.';
+
+  @override
+  String get reviewSubmit => 'Review & Submit';
+
+  @override
+  String get reviewSubtitle => 'Please review your details before submitting.';
+
+  @override
+  String get submitProfile => 'Submit Profile';
+
+  @override
+  String get saveChanges => 'Save Changes';
+
+  @override
+  String get submittingLabel => 'Submitting…';
+
+  @override
+  String get employmentLabel => 'Employment';
+
+  @override
+  String get contactPerson => 'Contact Person';
+
+  @override
+  String get mobileLabel => 'Mobile';
+
+  @override
+  String get logoutDraftMessage => 'Are you sure you want to logout? Unsaved progress will be kept as a draft.';
+
+  @override
+  String get mustBeSignedInToCreateProfile => 'You must be signed in to create a profile.';
+
+  @override
+  String get profileUpdatedSuccess => 'Profile updated successfully.';
+
+  @override
+  String get failedToCreateProfile => 'Failed to create profile';
 }

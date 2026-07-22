@@ -2,17 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../providers/master_options_provider.dart';
+import '../../../core/utils/l10n_ext.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
-import '../../../widgets/common/searchable_field.dart';
+import '../../../widgets/common/searchable_with_others_field.dart';
 
 /// Career step — Education (req) and Occupation (req). The occupation then
 /// drives the rest, mirroring the website's Career step exactly:
 ///   • Student     → Course / Degree (req)
 ///   • Working     → Employment Type (opt) + Annual Income (req)
 ///   • Not Working → nothing further
+///
+/// Every dropdown ends with **"Others"**, which reveals a custom textbox below
+/// it — there is no "+" Add button (spec §2–§5). A typed value is kept ONLY on
+/// this profile and is never written back to the shared master data.
 class StepEducation extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   const StepEducation({super.key, required this.onNext});
@@ -56,18 +60,19 @@ class _StepEducationState extends ConsumerState<StepEducation> {
   }
 
   void _saveAndNext() {
+    final l10n = context.l10n;
     if (_education == null || _education!.isEmpty) {
-      return _snack('Please select your education');
+      return _snack(l10n.pleaseEnterField(l10n.education));
     }
     if (_occupation == null || _occupation!.isEmpty) {
-      return _snack('Please select your occupation');
+      return _snack(l10n.pleaseEnterField(l10n.occupation));
     }
     if (_occCase == 'student' && _courseDegree.text.trim().isEmpty) {
-      return _snack('Please enter your course / degree');
+      return _snack(l10n.pleaseEnterField(l10n.courseDegree));
     }
     if (_occCase == 'working' &&
         (_annualIncome == null || _annualIncome!.isEmpty)) {
-      return _snack('Please select your annual income');
+      return _snack(l10n.pleaseEnterField(l10n.annualIncome));
     }
 
     // Persist only the fields the current occupation case actually shows, so
@@ -86,52 +91,34 @@ class _StepEducationState extends ConsumerState<StepEducation> {
   void _snack(String m) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
-  /// Base constants + live user-added values (+ the current selection so a
-  /// custom value saved earlier still shows).
-  List<String> _merged(List<String> base, String type, String? selected) {
-    final items = mergeOptions(base, customValues(ref, type));
-    if ((selected ?? '').isNotEmpty && !items.contains(selected)) {
-      items.insert(0, selected!);
-    }
-    return items;
-  }
-
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Education & Career', style: AppTextStyles.heading2),
+          Text(l10n.educationCareer, style: AppTextStyles.heading2),
           const SizedBox(height: 8),
-          const Text('Your qualifications and work.',
-              style: TextStyle(color: Colors.grey)),
+          Text(l10n.educationCareerSubtitle,
+              style: const TextStyle(color: Colors.grey)),
           const SizedBox(height: 24),
-          SearchableField(
-            label: 'Highest Education',
+          SearchableWithOthersField(
+            label: l10n.highestEducation,
             isRequired: true,
-            items: _merged(AppConstants.educations,
-                MasterOptionsService.education, _education),
-            selectedItem: _education,
+            items: AppConstants.educations,
+            value: _education,
             prefixIcon: Icons.school_outlined,
-            // A typed ("Other") value is kept ONLY on this profile — it is
-            // never written back to the shared master data (parity with the
-            // website's Education rule).
-            onAddNew: (v) async => v.trim(),
             onChanged: (v) => setState(() => _education = v),
           ),
           const SizedBox(height: 16),
-          SearchableField(
-            label: 'Occupation',
+          SearchableWithOthersField(
+            label: l10n.occupation,
             isRequired: true,
-            items: _merged(AppConstants.occupations,
-                MasterOptionsService.occupation, _occupation),
-            selectedItem: _occupation,
+            items: AppConstants.occupations,
+            value: _occupation,
             prefixIcon: Icons.work_outline,
-            // Typed occupation stays on this profile only — never written to
-            // the shared master data (parity with the website's Occupation rule).
-            onAddNew: (v) async => v.trim(),
             onChanged: (v) => setState(() => _occupation = v),
           ),
           // Student → Course / Degree.
@@ -139,36 +126,32 @@ class _StepEducationState extends ConsumerState<StepEducation> {
             const SizedBox(height: 16),
             AppTextField(
               controller: _courseDegree,
-              label: 'Course / Degree *',
-              hint: 'e.g. B.E Computer Science',
+              label: '${l10n.courseDegree} *',
+              hint: l10n.courseDegreeHint,
             ),
           ],
           // Working → Employment Type (optional) + Annual Income (required).
           if (_occCase == 'working') ...[
             const SizedBox(height: 16),
-            SearchableField(
-              label: 'Employment Type',
+            SearchableWithOthersField(
+              label: l10n.employmentType,
               items: AppConstants.employmentTypeList,
-              selectedItem: _employmentType,
+              value: _employmentType,
               prefixIcon: Icons.badge_outlined,
               onChanged: (v) => setState(() => _employmentType = v),
             ),
             const SizedBox(height: 16),
-            SearchableField(
-              label: 'Annual Income',
+            SearchableWithOthersField(
+              label: l10n.annualIncome,
               isRequired: true,
-              items: _merged(AppConstants.incomeRanges,
-                  MasterOptionsService.income, _annualIncome),
-              selectedItem: _annualIncome,
+              items: AppConstants.incomeRanges,
+              value: _annualIncome,
               prefixIcon: Icons.currency_rupee,
-              // Typed income stays on this profile only — never written to the
-              // shared master data.
-              onAddNew: (v) async => v.trim(),
               onChanged: (v) => setState(() => _annualIncome = v),
             ),
           ],
           const SizedBox(height: 36),
-          GradientButton(onPressed: _saveAndNext, text: 'Continue'),
+          GradientButton(onPressed: _saveAndNext, text: l10n.continueLabel),
         ],
       ),
     );

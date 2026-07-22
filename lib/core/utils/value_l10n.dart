@@ -144,6 +144,45 @@ const Map<String, String> kTamilValueMap = {
   'General Horoscope Consultation': 'பொது ஜாதக ஆலோசனை',
   'Health': 'உடல்நலம்',
 
+  // ── Contact relationship (Contact step) ──
+  'Self': 'நானே',
+  'Father': 'தந்தை',
+  'Mother': 'தாய்',
+  'Guardian': 'பாதுகாவலர்',
+  'Friend': 'நண்பர்',
+
+  // ── Citizenship ──
+  'Indian': 'இந்தியர்',
+  'NRI': 'வெளிநாடு வாழ் இந்தியர்',
+  'Foreign National': 'வெளிநாட்டவர்',
+
+  // ── Children living status ──
+  'Living with me': 'என்னுடன் வசிக்கிறார்கள்',
+  'Not living with me': 'என்னுடன் வசிக்கவில்லை',
+  'No children': 'குழந்தைகள் இல்லை',
+
+  // ── Annual income ranges ──
+  'Below ₹1 Lakh': '₹1 லட்சத்திற்குக் கீழ்',
+  '₹1-2 Lakhs': '₹1-2 லட்சம்',
+  '₹2-3 Lakhs': '₹2-3 லட்சம்',
+  '₹3-5 Lakhs': '₹3-5 லட்சம்',
+  '₹5-7 Lakhs': '₹5-7 லட்சம்',
+  '₹7-10 Lakhs': '₹7-10 லட்சம்',
+  '₹10-15 Lakhs': '₹10-15 லட்சம்',
+  '₹15-20 Lakhs': '₹15-20 லட்சம்',
+  '₹20-30 Lakhs': '₹20-30 லட்சம்',
+  '₹30-50 Lakhs': '₹30-50 லட்சம்',
+  'Above ₹50 Lakhs': '₹50 லட்சத்திற்கு மேல்',
+
+  // ── Misc option values ──
+  'Any Caste': 'எந்த சாதியும்',
+  "Doesn't Matter": 'பரவாயில்லை',
+  'Marathi': 'மராத்தி',
+  'Bengali': 'வங்காளம்',
+  'Gujarati': 'குஜராத்தி',
+  'Punjabi': 'பஞ்சாபி',
+  'Urdu': 'உருது',
+
   // ── Misc statuses ──
   'Pending': 'நிலுவையில்',
   'Accepted': 'ஏற்கப்பட்டது',

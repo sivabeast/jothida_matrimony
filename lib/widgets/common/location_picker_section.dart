@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/services/location_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../models/location_model.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/location_provider.dart';
@@ -64,13 +65,15 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
   bool _detecting = false;
   String? _locError;
 
-  static const _labels = {
-    'en': {'state': 'State', 'district': 'District', 'city': 'City'},
-    'ta': {'state': 'மாநிலம்', 'district': 'மாவட்டம்', 'city': 'நகரம்'},
-  };
-
   String get _lang => ref.watch(localeProvider)?.languageCode ?? 'en';
-  String _label(String key) => _labels[_lang]?[key] ?? _labels['en']![key]!;
+
+  /// Field labels come from the shared l10n dictionary, so they follow the
+  /// selected language exactly like every other label in the wizard.
+  String _label(String key) => switch (key) {
+        'state' => context.l10n.state,
+        'district' => context.l10n.district,
+        _ => context.l10n.city,
+      };
 
   @override
   void initState() {
@@ -130,9 +133,8 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
           loc.state.toLowerCase().contains('tamil') ||
           loc.state.contains('தமிழ');
       if (!inTn) {
-        setState(() => _locError = _lang == 'ta'
-            ? '"${loc.state}" கண்டறியப்பட்டது — தற்போது தமிழ்நாடு மட்டுமே. கீழே தேர்ந்தெடுக்கவும்.'
-            : 'Detected "${loc.state}" — only Tamil Nadu is supported right now. Please pick below.');
+        setState(() =>
+            _locError = context.l10n.onlyTamilNaduSupported(loc.state));
         return;
       }
 
@@ -157,14 +159,10 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
           _city = city;
           _legacyCity = null;
           if (city == null && loc.city.trim().isNotEmpty) {
-            _locError = _lang == 'ta'
-                ? '"${loc.city}" பட்டியலில் இல்லை — அருகிலுள்ள நகரத்தைத் தேர்ந்தெடுக்கவும்.'
-                : '"${loc.city}" isn\'t in the list — please pick the nearest city.';
+            _locError = context.l10n.cityNotInListPickNearest(loc.city);
           }
         } else {
-          _locError = _lang == 'ta'
-              ? 'இடத்தைப் பொருத்த முடியவில்லை — கீழே தேர்ந்தெடுக்கவும்.'
-              : 'Couldn\'t match your location — please pick below.';
+          _locError = context.l10n.couldNotMatchLocation;
         }
       });
       _emit();
@@ -172,8 +170,7 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
       if (mounted) setState(() => _locError = e.message);
     } catch (_) {
       if (mounted) {
-        setState(() => _locError =
-            'Location access denied. Please select your location manually.');
+        setState(() => _locError = context.l10n.locationAccessDenied);
       }
     } finally {
       if (mounted) setState(() => _detecting = false);
@@ -207,8 +204,8 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
                   child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.my_location, size: 18),
           label: Text(_detecting
-              ? (_lang == 'ta' ? 'கண்டறிகிறது…' : 'Detecting…')
-              : (_lang == 'ta' ? '📍 என் இடத்தைப் பயன்படுத்து' : '📍 Use My Location')),
+              ? context.l10n.detectingLocation
+              : '📍 ${context.l10n.useMyLocation}'),
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.primary,
             side: const BorderSide(color: AppColors.primary),
@@ -377,7 +374,7 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
                 width: 16,
                 child: CircularProgressIndicator(strokeWidth: 2)),
             const SizedBox(width: 10),
-            Text('Loading $label…',
+            Text(context.l10n.loadingField(label),
                 style: TextStyle(color: Colors.grey[600], fontSize: 13)),
           ],
         ),
@@ -393,10 +390,11 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
         child: Row(
           children: [
             Expanded(
-              child: Text('Couldn\'t load $label',
+              child: Text(context.l10n.couldNotLoadField(label),
                   style: const TextStyle(color: AppColors.error, fontSize: 13)),
             ),
-            TextButton(onPressed: onRetry, child: const Text('Retry')),
+            TextButton(
+                onPressed: onRetry, child: Text(context.l10n.retry)),
           ],
         ),
       );

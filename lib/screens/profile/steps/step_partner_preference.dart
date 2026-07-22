@@ -3,18 +3,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/l10n_ext.dart';
 import '../../../providers/profile_provider.dart';
-import '../../../widgets/common/age_range_wheel.dart';
 import '../../../widgets/common/app_text_field.dart';
+import '../../../widgets/common/dual_range_slider_field.dart';
 import '../../../widgets/common/gradient_button.dart';
-import '../../../widgets/common/searchable_field.dart';
 import '../../../widgets/common/searchable_multi_select_field.dart';
+import '../../../widgets/common/searchable_with_others_field.dart';
 
 /// Partner Preference step. Every field is OPTIONAL. The field set mirrors the
 /// website's "Partner Preferences" step exactly: age & height range, preferred
 /// education / occupation, religion / caste / sub-caste, income, marital
 /// status, mother tongue, physical status, chevvai dosham and the
 /// "horoscope match required" toggle. Tapping the button advances to Review.
+///
+/// Age and Height are **dual range sliders** (spec §9–§11) — there is no wheel
+/// picker and no separate Minimum/Maximum dropdown pair any more.
 class StepPartnerPreference extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   const StepPartnerPreference({super.key, required this.onNext});
@@ -26,21 +30,30 @@ class StepPartnerPreference extends ConsumerStatefulWidget {
 
 class _StepPartnerPreferenceState
     extends ConsumerState<StepPartnerPreference> {
+  static const int _minAgeBound = 18;
+  static const int _maxAgeBound = 60;
+
   int _minAge = 21;
   int _maxAge = 35;
-  String? _minHeight;
-  String? _maxHeight;
+
+  /// Height is kept as an INDEX into [AppConstants.heightList] so the same
+  /// range slider can drive it; it is converted back to `5'6"` on save.
+  int _minHeightIdx = 0;
+  int _maxHeightIdx = AppConstants.heightList.length - 1;
+
   List<String> _education = [];
   List<String> _occupation = [];
   String? _religion;
   String? _caste;
+  final _subCasteController = TextEditingController();
   String? _income;
   String? _maritalStatus;
   String? _motherTongue;
   String? _physicalStatus;
   String? _chevvai;
   bool _horoscopeMatchRequired = true;
-  final _subCaste = TextEditingController();
+
+  List<String> get _heights => AppConstants.heightList;
 
   @override
   void initState() {
@@ -49,48 +62,59 @@ class _StepPartnerPreferenceState
     if (pref is Map) {
       final minA = (pref['minAge'] as num?)?.toInt() ?? 21;
       final maxA = (pref['maxAge'] as num?)?.toInt() ?? 35;
-      _minAge = minA.clamp(18, 60);
-      _maxAge = maxA.clamp(18, 60);
+      _minAge = minA.clamp(_minAgeBound, _maxAgeBound);
+      _maxAge = maxA.clamp(_minAgeBound, _maxAgeBound);
       if (_minAge > _maxAge) _maxAge = _minAge;
-      _minHeight = pref['minHeight'] as String?;
-      _maxHeight = pref['maxHeight'] as String?;
+      _minHeightIdx = _heightIndex(pref['minHeight'] as String?, 0);
+      _maxHeightIdx =
+          _heightIndex(pref['maxHeight'] as String?, _heights.length - 1);
+      if (_minHeightIdx > _maxHeightIdx) _maxHeightIdx = _minHeightIdx;
       final edu = pref['education'];
       if (edu is List) _education = edu.map((e) => e.toString()).toList();
       final occ = pref['occupation'];
       if (occ is List) _occupation = occ.map((e) => e.toString()).toList();
-      _religion = pref['religion'] as String?;
-      _caste = pref['caste'] as String?;
-      _income = pref['income'] as String?;
-      _maritalStatus = pref['maritalStatus'] as String?;
-      _motherTongue = pref['motherTongue'] as String?;
-      _physicalStatus = pref['physicalStatus'] as String?;
-      _chevvai = pref['chevvaiDosham'] as String?;
+      _religion = _orNull(pref['religion'] as String?);
+      _caste = _orNull(pref['caste'] as String?);
+      _subCasteController.text = _orNull(pref['subCaste'] as String?) ?? '';
+      _income = _orNull(pref['income'] as String?);
+      _maritalStatus = _orNull(pref['maritalStatus'] as String?);
+      _motherTongue = _orNull(pref['motherTongue'] as String?);
+      _physicalStatus = _orNull(pref['physicalStatus'] as String?);
+      _chevvai = _orNull(pref['chevvaiDosham'] as String?);
       _horoscopeMatchRequired = pref['horoscopeMatchRequired'] as bool? ?? true;
-      _subCaste.text = (pref['subCaste'] as String?) ?? '';
     }
   }
 
   @override
   void dispose() {
-    _subCaste.dispose();
+    _subCasteController.dispose();
     super.dispose();
   }
 
+  /// Stored 'Any' (or empty) means "no preference" → nothing selected.
+  String? _orNull(String? v) =>
+      (v == null || v.isEmpty || v == 'Any') ? null : v;
+
   /// 'Any' / null / empty → 'Any' (no preference).
-  String _orAny(String? v) => (v == null || v.isEmpty) ? 'Any' : v;
+  String _orAny(String? v) => (v == null || v.trim().isEmpty) ? 'Any' : v.trim();
+
+  int _heightIndex(String? value, int fallback) {
+    final i = _heights.indexOf(value ?? '');
+    return i >= 0 ? i : fallback;
+  }
 
   void _saveAndNext() {
     ref.read(profileCreationProvider.notifier).updateData({
       'partnerPreferences': {
         'minAge': _minAge,
         'maxAge': _maxAge,
-        'minHeight': _minHeight ?? "5'0\"",
-        'maxHeight': _maxHeight ?? "6'0\"",
+        'minHeight': _heights[_minHeightIdx],
+        'maxHeight': _heights[_maxHeightIdx],
         'education': _education,
         'occupation': _occupation,
         'religion': _orAny(_religion),
         'caste': _orAny(_caste),
-        'subCaste': _subCaste.text.trim(),
+        'subCaste': _subCasteController.text.trim(),
         'income': _orAny(_income),
         'maritalStatus': _orAny(_maritalStatus),
         'motherTongue': _orAny(_motherTongue),
@@ -104,57 +128,82 @@ class _StepPartnerPreferenceState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Partner Preference', style: AppTextStyles.heading2),
+          Text(l10n.partnerPreferenceTitle, style: AppTextStyles.heading2),
           const SizedBox(height: 8),
-          const Text(
-              'All optional — set what matters, skip the rest. You can refine '
-              'these anytime.',
-              style: TextStyle(color: Colors.grey)),
+          Text(l10n.partnerPrefSubtitle,
+              style: const TextStyle(color: Colors.grey)),
           const SizedBox(height: 20),
 
-          _sectionTitle('Basic Preference'),
-          const Text('Age', style: TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          AgeRangeWheel(
-            minAge: _minAge,
-            maxAge: _maxAge,
+          _sectionTitle(l10n.basicPreference),
+          // ── Age — dual range slider ──
+          DualRangeSliderField(
+            label: l10n.ageRangeLabel,
+            min: _minAgeBound,
+            max: _maxAgeBound,
+            startValue: _minAge,
+            endValue: _maxAge,
+            startCaption: l10n.minimumAge,
+            endCaption: l10n.maximumAge,
+            formatRange: (lo, hi) => l10n.ageRangeValue(lo, hi),
             onChanged: (lo, hi) => setState(() {
               _minAge = lo;
               _maxAge = hi;
             }),
           ),
-          const SizedBox(height: 8),
-          _pref('Min Height', AppConstants.heightList, _minHeight,
-              (v) => _minHeight = v),
-          _pref('Max Height', AppConstants.heightList, _maxHeight,
-              (v) => _maxHeight = v),
-          _pref('Marital Status', AppConstants.maritalStatusOptions,
+          const SizedBox(height: 16),
+          // ── Height — dual range slider over the height list ──
+          DualRangeSliderField(
+            label: l10n.heightRangeLabel,
+            min: 0,
+            max: _heights.length - 1,
+            startValue: _minHeightIdx,
+            endValue: _maxHeightIdx,
+            startCaption: l10n.minimumHeight,
+            endCaption: l10n.maximumHeight,
+            formatValue: (i) => _heights[i.clamp(0, _heights.length - 1)],
+            formatRange: (lo, hi) => l10n.rangeValue(_heights[lo], _heights[hi]),
+            onChanged: (lo, hi) => setState(() {
+              _minHeightIdx = lo;
+              _maxHeightIdx = hi;
+            }),
+          ),
+          const SizedBox(height: 16),
+          _pref(l10n.maritalStatus, AppConstants.maritalStatusOptions,
               _maritalStatus, (v) => _maritalStatus = v),
-          _pref('Physical Status', AppConstants.physicalStatusList,
+          _pref(l10n.physicalStatus, AppConstants.physicalStatusList,
               _physicalStatus, (v) => _physicalStatus = v),
 
-          _sectionTitle('Community Preference'),
-          _pref('Religion', AppConstants.religionList, _religion,
+          _sectionTitle(l10n.communityPreference),
+          _pref(l10n.religion, AppConstants.religionList, _religion,
               (v) => _religion = v),
-          _pref('Caste', AppConstants.castList, _caste, (v) => _caste = v),
-          AppTextField(
-              controller: _subCaste, label: 'Sub Caste', hint: 'Optional'),
-          const SizedBox(height: 16),
-          _pref('Mother Tongue', AppConstants.motherTongueList, _motherTongue,
+          _pref(l10n.caste, AppConstants.castList, _caste, (v) => _caste = v),
+          // Sub Caste stays free text here — there is no cascaded master list
+          // at preference level.
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: AppTextField(
+              controller: _subCasteController,
+              label: l10n.subCaste,
+              hint: l10n.optional,
+            ),
+          ),
+          _pref(l10n.motherTongue, AppConstants.motherTongueList, _motherTongue,
               (v) => _motherTongue = v),
-          _pref('Chevvai Dosham', const ['Yes', 'No', 'Doesn\'t Matter'],
+          // Items stay canonical English — only the DISPLAY is localized.
+          _pref(l10n.chevvaiDosham, const ['Yes', 'No', "Doesn't Matter"],
               _chevvai, (v) => _chevvai = v),
 
-          _sectionTitle('Education & Income Preference'),
+          _sectionTitle(l10n.educationIncomePreference),
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: SearchableMultiSelectField(
-              label: 'Education',
+              label: l10n.education,
               items: AppConstants.educations,
               selected: _education,
               onChanged: (v) => setState(() => _education = v),
@@ -163,13 +212,13 @@ class _StepPartnerPreferenceState
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: SearchableMultiSelectField(
-              label: 'Occupation',
+              label: l10n.occupation,
               items: AppConstants.occupations,
               selected: _occupation,
               onChanged: (v) => setState(() => _occupation = v),
             ),
           ),
-          _pref('Annual Income', AppConstants.incomeRanges, _income,
+          _pref(l10n.annualIncome, AppConstants.incomeRanges, _income,
               (v) => _income = v),
 
           const SizedBox(height: 8),
@@ -178,12 +227,13 @@ class _StepPartnerPreferenceState
             value: _horoscopeMatchRequired,
             activeColor: AppColors.primary,
             onChanged: (v) => setState(() => _horoscopeMatchRequired = v),
-            title: const Text('Horoscope match required',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            title: Text(l10n.horoscopeMatchRequired,
+                style: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w600)),
           ),
 
           const SizedBox(height: 20),
-          GradientButton(onPressed: _saveAndNext, text: 'Continue'),
+          GradientButton(onPressed: _saveAndNext, text: l10n.continueLabel),
         ],
       ),
     );
@@ -198,14 +248,16 @@ class _StepPartnerPreferenceState
                 color: AppColors.primary)),
       );
 
+  /// Every preference dropdown offers "Others" → custom textbox, exactly like
+  /// the mandatory profile fields.
   Widget _pref(String label, List<String> items, String? value,
       ValueChanged<String?> onChanged) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: SearchableField(
+      child: SearchableWithOthersField(
         label: label,
         items: items,
-        selectedItem: value,
+        value: value,
         onChanged: (v) => setState(() => onChanged(v)),
       ),
     );

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/l10n_ext.dart';
 import '../../../providers/location_provider.dart';
-import '../../../providers/master_options_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/gradient_button.dart';
 import '../../../widgets/common/location_picker_section.dart';
-import '../../../widgets/common/searchable_field.dart';
+import '../../../widgets/common/searchable_with_others_field.dart';
 
 /// Step 8 — Location Details: State / District / City (req), plus Native
 /// Place and Citizenship. There is NO Country dropdown (removed per spec).
@@ -50,7 +50,7 @@ class _StepLocationState extends ConsumerState<StepLocation> {
 
   void _saveAndNext() {
     if (_state == null || _district == null || _city == null) {
-      _snack('Please select your state, district and city');
+      _snack(context.l10n.selectStateDistrictCity);
       return;
     }
     ref.read(profileCreationProvider.notifier).updateData({
@@ -82,10 +82,10 @@ class _StepLocationState extends ConsumerState<StepLocation> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Location Details', style: AppTextStyles.heading2),
+          Text(context.l10n.locationDetails, style: AppTextStyles.heading2),
           const SizedBox(height: 8),
-          const Text('Where are you located?',
-              style: TextStyle(color: Colors.grey)),
+          Text(context.l10n.locationStepSubtitle,
+              style: const TextStyle(color: Colors.grey)),
           const SizedBox(height: 24),
           LocationPickerSection(
             initialState: _state,
@@ -107,38 +107,32 @@ class _StepLocationState extends ConsumerState<StepLocation> {
           const SizedBox(height: 16),
           _nativePlaceField(),
           const SizedBox(height: 16),
-          SearchableField(
-            label: 'Citizenship',
+          SearchableWithOthersField(
+            label: context.l10n.citizenship,
             items: AppConstants.citizenshipList,
-            selectedItem: _citizenship,
+            value: _citizenship,
             prefixIcon: Icons.flag_outlined,
             onChanged: (v) => setState(() => _citizenship = v),
           ),
           const SizedBox(height: 36),
-          GradientButton(onPressed: _saveAndNext, text: 'Continue'),
+          GradientButton(
+              onPressed: _saveAndNext, text: context.l10n.continueLabel),
         ],
       ),
     );
   }
 
-  /// Native Place — searchable master-city list + custom additions with the
-  /// "+" Add button (replaced the old free-text box).
+  /// Native Place — searchable master-city list, with "Others" → custom
+  /// textbox for a village/town that isn't in the list.
   Widget _nativePlaceField() {
-    final cityNames =
+    final items =
         ref.watch(allCityNamesProvider).valueOrNull ?? const <String>[];
-    final custom = customValues(ref, MasterOptionsService.nativePlace);
-    final items = mergeOptions(cityNames, custom);
-    if ((_nativePlace ?? '').isNotEmpty && !items.contains(_nativePlace)) {
-      items.insert(0, _nativePlace!);
-    }
-    return SearchableField(
-      label: 'Native Place',
+    return SearchableWithOthersField(
+      label: context.l10n.nativePlace,
       prefixIcon: Icons.home_outlined,
       items: items,
-      selectedItem: _nativePlace,
-      onAddNew: (v) => ref
-          .read(masterOptionsServiceProvider)
-          .add(MasterOptionsService.nativePlace, value: v),
+      value: _nativePlace,
+      popupMode: SearchablePopupMode.modalBottomSheet,
       onChanged: (v) => setState(() => _nativePlace = v),
     );
   }

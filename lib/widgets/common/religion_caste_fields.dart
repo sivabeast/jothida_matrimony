@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../models/master_data.dart';
 import '../../providers/master_data_provider.dart';
 import '../../providers/master_options_provider.dart';
-import 'searchable_field.dart';
+import 'searchable_with_others_field.dart';
 
 /// Sentinel id stored for a user-added (custom) religion/caste/subcaste, so
 /// the value round-trips: a non-empty name with this id means "custom".
@@ -19,10 +20,10 @@ const String kOtherMasterId = 'other';
 /// enforces the dependency rules (changing Religion clears Caste & Sub-caste;
 /// changing Caste clears Sub-caste) and reports the selected **id + name**.
 ///
-/// There is NO "Other → textbox" any more: each level has a **"+" Add**
-/// button that saves the new value PERMANENTLY to the master database
-/// (scoped to its parent), making it instantly available to every user,
-/// the admin panel, search and filters.
+/// There is NO "+" Add button any more: each level ends with an **"Others"**
+/// entry that reveals a custom textbox below the dropdown. The typed value is
+/// kept ONLY on this profile (stored with [kOtherMasterId] as its id) and is
+/// never written back to the shared master data.
 class ReligionCasteFields extends ConsumerStatefulWidget {
   final String? religionId;
   final String? religionName;
@@ -95,39 +96,31 @@ class _ReligionCasteFieldsState extends ConsumerState<ReligionCasteFields> {
     final castes = castesAsync.valueOrNull ?? const <Caste>[];
     final subcastes = subcastesAsync.valueOrNull ?? const <Subcaste>[];
 
-    // Master names + user-added values (custom children are scoped by the
-    // PARENT NAME, which works for both master and custom parents).
-    final religionItems = _withSelected(
-        mergeOptions(religions.map((r) => r.name).toList(),
-            customValues(ref, MasterOptionsService.religion)),
-        widget.religionName);
-    final casteItems = _withSelected(
-        mergeOptions(
-            castes.map((c) => c.name).toList(),
-            customValues(ref, MasterOptionsService.caste,
-                parent: widget.religionName ?? '')),
-        widget.casteName);
-    final subcasteItems = _withSelected(
-        mergeOptions(
-            subcastes.map((s) => s.name).toList(),
-            customValues(ref, MasterOptionsService.subcaste,
-                parent: widget.casteName ?? '')),
-        widget.subCasteName);
+    // Master names + previously-saved user values (custom children are scoped
+    // by the PARENT NAME, which works for both master and custom parents).
+    final religionItems = mergeOptions(religions.map((r) => r.name).toList(),
+        customValues(ref, MasterOptionsService.religion));
+    final casteItems = mergeOptions(
+        castes.map((c) => c.name).toList(),
+        customValues(ref, MasterOptionsService.caste,
+            parent: widget.religionName ?? ''));
+    final subcasteItems = mergeOptions(
+        subcastes.map((s) => s.name).toList(),
+        customValues(ref, MasterOptionsService.subcaste,
+            parent: widget.casteName ?? ''));
 
-    final options = ref.read(masterOptionsServiceProvider);
+    final l10n = context.l10n;
 
     return Column(
       children: [
         // ── Religion ──
-        SearchableField(
-          label: 'Religion',
+        SearchableWithOthersField(
+          label: l10n.religion,
           prefixIcon: Icons.spa_outlined,
           isRequired: widget.religionRequired,
           enabled: !religionsAsync.isLoading,
           items: religionItems,
-          selectedItem: _inList(widget.religionName, religionItems),
-          onAddNew: (v) =>
-              options.add(MasterOptionsService.religion, value: v),
+          value: widget.religionName,
           onChanged: (name) {
             final r = _byName(religions, name, (x) => x.name);
             if (r != null) {
@@ -146,15 +139,13 @@ class _ReligionCasteFieldsState extends ConsumerState<ReligionCasteFields> {
         SizedBox(height: widget.gap),
 
         // ── Caste ──
-        SearchableField(
-          label: 'Caste',
+        SearchableWithOthersField(
+          label: l10n.caste,
           prefixIcon: Icons.groups_outlined,
           isRequired: widget.casteRequired,
           enabled: _hasReligion && !castesAsync.isLoading,
           items: casteItems,
-          selectedItem: _inList(widget.casteName, casteItems),
-          onAddNew: (v) => options.add(MasterOptionsService.caste,
-              value: v, parent: widget.religionName ?? ''),
+          value: widget.casteName,
           onChanged: (name) {
             final c = _byName(castes, name, (x) => x.name);
             if (c != null) {
@@ -172,15 +163,13 @@ class _ReligionCasteFieldsState extends ConsumerState<ReligionCasteFields> {
         if (widget.showSubcaste) ...[
           SizedBox(height: widget.gap),
           // ── Sub Caste ──
-          SearchableField(
-            label: 'Sub Caste',
+          SearchableWithOthersField(
+            label: l10n.subCaste,
             prefixIcon: Icons.account_tree_outlined,
             isRequired: widget.subcasteRequired,
             enabled: _hasCaste && !subcastesAsync.isLoading,
             items: subcasteItems,
-            selectedItem: _inList(widget.subCasteName, subcasteItems),
-            onAddNew: (v) => options.add(MasterOptionsService.subcaste,
-                value: v, parent: widget.casteName ?? ''),
+            value: widget.subCasteName,
             onChanged: (name) {
               final s = _byName(subcastes, name, (x) => x.name);
               if (s != null) {
@@ -197,19 +186,6 @@ class _ReligionCasteFieldsState extends ConsumerState<ReligionCasteFields> {
       ],
     );
   }
-
-  /// Keeps the currently-selected (possibly custom/legacy) value visible.
-  static List<String> _withSelected(List<String> items, String? selected) {
-    if ((selected ?? '').trim().isNotEmpty && !items.contains(selected)) {
-      return [selected!, ...items];
-    }
-    return items;
-  }
-
-  /// dropdown_search requires the selected value to be present in [items];
-  /// otherwise show nothing (e.g. while the list is still loading).
-  static String? _inList(String? name, List<String> items) =>
-      (name != null && name.isNotEmpty && items.contains(name)) ? name : null;
 
   static T? _byName<T>(List<T> list, String? name, String Function(T) nameOf) {
     if (name == null) return null;

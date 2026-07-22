@@ -7,7 +7,8 @@ import '../../models/profile_model.dart';
 import '../../providers/demo_data_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
-import '../../widgets/common/age_range_wheel.dart';
+import '../../core/utils/l10n_ext.dart';
+import '../../widgets/common/dual_range_slider_field.dart';
 import '../../widgets/common/location_picker_section.dart';
 import '../../widgets/common/religion_caste_fields.dart';
 import '../../widgets/common/searchable_multi_select_field.dart';
@@ -201,12 +202,20 @@ class _PartnerPreferencesScreenState
     return ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
+          // Age & Height are dual range sliders — no wheel/scroll pickers and
+          // no Minimum/Maximum dropdown pairs anywhere (spec §9–§11).
           _card(
             icon: Icons.cake_outlined,
-            title: 'Age Range',
-            child: AgeRangeWheel(
-              minAge: _minAge,
-              maxAge: _maxAge,
+            title: context.l10n.ageRangeLabel,
+            child: DualRangeSliderField(
+              label: context.l10n.age,
+              min: 18,
+              max: 60,
+              startValue: _minAge,
+              endValue: _maxAge,
+              startCaption: context.l10n.minimumAge,
+              endCaption: context.l10n.maximumAge,
+              formatRange: (lo, hi) => context.l10n.ageRangeValue(lo, hi),
               onChanged: (lo, hi) => setState(() {
                 _minAge = lo;
                 _maxAge = hi;
@@ -215,18 +224,33 @@ class _PartnerPreferencesScreenState
           ),
           _card(
             icon: Icons.height,
-            title: 'Height Preference',
-            child: Row(
-              children: [
-                Expanded(
-                    child: _dropdown('Min', _minHeight, AppConstants.heightList,
-                        (v) => setState(() => _minHeight = v!))),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: _dropdown('Max', _maxHeight, AppConstants.heightList,
-                        (v) => setState(() => _maxHeight = v!))),
-              ],
-            ),
+            title: context.l10n.heightRangeLabel,
+            child: Builder(builder: (context) {
+              final heights = AppConstants.heightList;
+              int idx(String v, int fallback) {
+                final i = heights.indexOf(v);
+                return i >= 0 ? i : fallback;
+              }
+
+              final lo = idx(_minHeight, 0);
+              final hi = idx(_maxHeight, heights.length - 1);
+              return DualRangeSliderField(
+                label: context.l10n.height,
+                min: 0,
+                max: heights.length - 1,
+                startValue: lo,
+                endValue: hi < lo ? lo : hi,
+                startCaption: context.l10n.minimumHeight,
+                endCaption: context.l10n.maximumHeight,
+                formatValue: (i) => heights[i.clamp(0, heights.length - 1)],
+                formatRange: (a, b) =>
+                    context.l10n.rangeValue(heights[a], heights[b]),
+                onChanged: (a, b) => setState(() {
+                  _minHeight = heights[a];
+                  _maxHeight = heights[b];
+                }),
+              );
+            }),
           ),
           _card(
             icon: Icons.location_on_outlined,

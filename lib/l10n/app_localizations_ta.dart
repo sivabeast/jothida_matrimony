@@ -1588,4 +1588,284 @@ class AppLocalizationsTa extends AppLocalizations {
   String pleaseSelect(String field) {
     return '$field தேர்ந்தெடுக்கவும்';
   }
+
+  @override
+  String pleaseEnterField(String field) {
+    return 'உங்கள் $field உள்ளிடவும்';
+  }
+
+  @override
+  String get othersOption => 'மற்றவை';
+
+  @override
+  String customField(String label) {
+    return '$label (பிற)';
+  }
+
+  @override
+  String get typeHere => 'இங்கே தட்டச்சு செய்யவும்';
+
+  @override
+  String get anyOption => 'ஏதேனும்';
+
+  @override
+  String loadingField(String label) {
+    return '$label ஏற்றப்படுகிறது…';
+  }
+
+  @override
+  String couldNotLoadField(String label) {
+    return '$label ஏற்ற முடியவில்லை';
+  }
+
+  @override
+  String get district => 'மாவட்டம்';
+
+  @override
+  String get useMyLocation => 'என் இடத்தைப் பயன்படுத்து';
+
+  @override
+  String get detectingLocation => 'கண்டறிகிறது…';
+
+  @override
+  String onlyTamilNaduSupported(String state) {
+    return '\"$state\" கண்டறியப்பட்டது — தற்போது தமிழ்நாடு மட்டுமே ஆதரிக்கப்படுகிறது. கீழே தேர்ந்தெடுக்கவும்.';
+  }
+
+  @override
+  String cityNotInListPickNearest(String city) {
+    return '\"$city\" பட்டியலில் இல்லை — அருகிலுள்ள நகரத்தைத் தேர்ந்தெடுக்கவும்.';
+  }
+
+  @override
+  String get couldNotMatchLocation => 'உங்கள் இடத்தைப் பொருத்த முடியவில்லை — கீழே தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get locationAccessDenied => 'இட அணுகல் மறுக்கப்பட்டது. உங்கள் இடத்தைக் கைமுறையாகத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get locationDetails => 'இட விவரங்கள்';
+
+  @override
+  String get locationStepSubtitle => 'நீங்கள் எங்கு வசிக்கிறீர்கள்?';
+
+  @override
+  String get nativePlace => 'சொந்த ஊர்';
+
+  @override
+  String get citizenship => 'குடியுரிமை';
+
+  @override
+  String get selectStateDistrictCity => 'உங்கள் மாநிலம், மாவட்டம் மற்றும் நகரத்தைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get educationCareerSubtitle => 'உங்கள் கல்வித் தகுதி மற்றும் பணி விவரங்கள்.';
+
+  @override
+  String get highestEducation => 'உயர்கல்வித் தகுதி';
+
+  @override
+  String get employmentType => 'பணி வகை';
+
+  @override
+  String get courseDegree => 'படிப்பு / பட்டம்';
+
+  @override
+  String get courseDegreeHint => 'எ.கா. பி.இ கணினி அறிவியல்';
+
+  @override
+  String get religiousInformation => 'சமூக விவரங்கள்';
+
+  @override
+  String get religiousInfoSubtitle => 'உங்கள் சமூகத்திற்குள் பொருத்தமானவர்களைக் கண்டறிய உதவும்.';
+
+  @override
+  String get horoscopeStepSubtitle => 'உங்கள் பிறந்த தேதி, நேரம் மற்றும் இடத்திலிருந்து ராசி, நட்சத்திரம் மற்றும் லக்னம் தானாகக் கணக்கிடப்படும். கைமுறையாக அமைக்க மேலெழுதலை இயக்கவும்.';
+
+  @override
+  String get timeOfBirth => 'பிறந்த நேரம்';
+
+  @override
+  String get selectDateHint => 'தேதியைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get selectTimeHint => 'நேரத்தைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get birthCity => 'பிறந்த நகரம்';
+
+  @override
+  String get customBirthPlace => 'பிறந்த இடம் (பிற)';
+
+  @override
+  String get customBirthPlaceHint => 'கிராமம், நகரம் அல்லது ஊரின் பெயர்';
+
+  @override
+  String get loadingCities => 'நகரங்கள் ஏற்றப்படுகின்றன…';
+
+  @override
+  String get calculatingHoroscope => 'ஜாதகம் கணக்கிடப்படுகிறது…';
+
+  @override
+  String get selectDateTimePlaceHint => 'ஜாதகத்தைக் கணக்கிட தேதி, நேரம் மற்றும் இடத்தைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get calculatedHoroscope => 'கணக்கிடப்பட்ட ஜாதகம்';
+
+  @override
+  String get readOnlyLabel => 'படிக்க மட்டும்';
+
+  @override
+  String get overrideHoroscope => 'தானாகக் கணக்கிடப்பட்ட ஜாதகத்தை மாற்றவும்';
+
+  @override
+  String get overrideHoroscopeSubtitle => 'ராசி, நட்சத்திரம் மற்றும் லக்னத்தை கைமுறையாகத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get rasiMoonSign => 'ராசி (சந்திர ராசி)';
+
+  @override
+  String get nakshatraStar => 'நட்சத்திரம்';
+
+  @override
+  String get lagnamAscendant => 'லக்னம்';
+
+  @override
+  String get pleaseSelectTimeOfBirth => 'உங்கள் பிறந்த நேரத்தைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get pleaseSelectBirthPlace => 'உங்கள் பிறந்த இடத்தைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get unableToGenerateHoroscope => 'ஜாதக விவரங்களை உருவாக்க முடியவில்லை. தேதி, நேரம் மற்றும் பிறந்த இடத்தைச் சரிபார்க்கவும்.';
+
+  @override
+  String get partnerPreferenceTitle => 'துணை விருப்பம்';
+
+  @override
+  String get partnerPrefSubtitle => 'அனைத்தும் விருப்பத்தேர்வு — உங்களுக்குத் தேவையானதை மட்டும் அமைக்கவும். எப்போது வேண்டுமானாலும் மாற்றலாம்.';
+
+  @override
+  String get basicPreference => 'அடிப்படை விருப்பம்';
+
+  @override
+  String get communityPreference => 'சமூக விருப்பம்';
+
+  @override
+  String get educationIncomePreference => 'கல்வி & வருமான விருப்பம்';
+
+  @override
+  String get ageRangeLabel => 'வயது வரம்பு';
+
+  @override
+  String get heightRangeLabel => 'உயர வரம்பு';
+
+  @override
+  String ageRangeValue(int min, int max) {
+    return '$min – $max வயது';
+  }
+
+  @override
+  String rangeValue(String min, String max) {
+    return '$min – $max';
+  }
+
+  @override
+  String get minimumAge => 'குறைந்தபட்ச வயது';
+
+  @override
+  String get maximumAge => 'அதிகபட்ச வயது';
+
+  @override
+  String get minimumHeight => 'குறைந்தபட்ச உயரம்';
+
+  @override
+  String get maximumHeight => 'அதிகபட்ச உயரம்';
+
+  @override
+  String get chevvaiDosham => 'செவ்வாய் தோஷம்';
+
+  @override
+  String get doesntMatter => 'பரவாயில்லை';
+
+  @override
+  String get horoscopeMatchRequired => 'ஜாதகப் பொருத்தம் அவசியம்';
+
+  @override
+  String get profilePhoto => 'சுயவிவரப் புகைப்படம்';
+
+  @override
+  String get profilePhotoSubtitle => 'உங்களின் ஒரு தெளிவான புகைப்படத்தைச் சேர்க்கவும் — அதுவே உங்கள் சுயவிவரப் படமாக இருக்கும்.';
+
+  @override
+  String get addPhoto => 'புகைப்படம் சேர்';
+
+  @override
+  String get photoVisibilityTip => 'புகைப்படம் சேர்ப்பது உங்கள் சுயவிவரத்தின் கவனத்தை 3 மடங்கு அதிகரிக்கும்.';
+
+  @override
+  String get uploadHoroscopeSubtitle => 'விரும்பினால் உங்கள் ஜாதகத்தை PDF ஆக இணைக்கலாம். இதைத் தவிர்த்துவிட்டு பின்னர் சுயவிவரத்தில் சேர்க்கவும் முடியும்.';
+
+  @override
+  String get tapToSelectPdf => 'PDF தேர்ந்தெடுக்க தட்டவும்';
+
+  @override
+  String get horoscopePdfAttached => 'ஜாதக PDF இணைக்கப்பட்டது';
+
+  @override
+  String get changePdf => 'PDF மாற்று';
+
+  @override
+  String get contactStepSubtitle => 'விருப்பம் இருதரப்பிலும் ஏற்கப்பட்ட பிறகே தொடர்பு விவரங்கள் பகிரப்படும்.';
+
+  @override
+  String get contactPersonName => 'தொடர்பு நபரின் பெயர்';
+
+  @override
+  String get relationship => 'உறவுமுறை';
+
+  @override
+  String get whatsappNumber => 'வாட்ஸ்அப் எண்';
+
+  @override
+  String get whatsappSameAsMobile => 'வாட்ஸ்அப் எண் கைபேசி எண்ணைப் போலவே';
+
+  @override
+  String get contactPrivacyNote => 'உங்கள் தொலைபேசி எண் மற்றும் முகவரி இயல்பாகவே மறைக்கப்பட்டிருக்கும். இருதரப்பும் விருப்பத்தை ஏற்றுக்கொண்ட பிறகே அவை வெளிப்படுத்தப்படும்.';
+
+  @override
+  String get reviewSubmit => 'சரிபார்த்து சமர்ப்பிக்கவும்';
+
+  @override
+  String get reviewSubtitle => 'சமர்ப்பிக்கும் முன் உங்கள் விவரங்களைச் சரிபார்க்கவும்.';
+
+  @override
+  String get submitProfile => 'சுயவிவரத்தைச் சமர்ப்பி';
+
+  @override
+  String get saveChanges => 'மாற்றங்களைச் சேமி';
+
+  @override
+  String get submittingLabel => 'சமர்ப்பிக்கப்படுகிறது…';
+
+  @override
+  String get employmentLabel => 'பணி';
+
+  @override
+  String get contactPerson => 'தொடர்பு நபர்';
+
+  @override
+  String get mobileLabel => 'கைபேசி';
+
+  @override
+  String get logoutDraftMessage => 'வெளியேற விரும்புகிறீர்களா? சேமிக்கப்படாத முன்னேற்றம் வரைவாகப் பாதுகாக்கப்படும்.';
+
+  @override
+  String get mustBeSignedInToCreateProfile => 'சுயவிவரம் உருவாக்க நீங்கள் உள்நுழைந்திருக்க வேண்டும்.';
+
+  @override
+  String get profileUpdatedSuccess => 'சுயவிவரம் வெற்றிகரமாகப் புதுப்பிக்கப்பட்டது.';
+
+  @override
+  String get failedToCreateProfile => 'சுயவிவரத்தை உருவாக்க முடியவில்லை';
 }

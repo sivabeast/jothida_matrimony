@@ -18,6 +18,8 @@ class AppTextField extends StatelessWidget {
   final VoidCallback? onTap;
   final void Function(String)? onChanged;
   final List<TextInputFormatter>? inputFormatters;
+  final bool enabled;
+  final TextCapitalization textCapitalization;
 
   const AppTextField({
     super.key,
@@ -36,6 +38,8 @@ class AppTextField extends StatelessWidget {
     this.onTap,
     this.onChanged,
     this.inputFormatters,
+    this.enabled = true,
+    this.textCapitalization = TextCapitalization.none,
   });
 
   @override
@@ -49,6 +53,8 @@ class AppTextField extends StatelessWidget {
       maxLength: maxLength,
       inputFormatters: inputFormatters,
       readOnly: readOnly,
+      enabled: enabled,
+      textCapitalization: textCapitalization,
       onTap: onTap,
       onChanged: onChanged,
       decoration: InputDecoration(

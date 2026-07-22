@@ -3148,6 +3148,534 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please select {field}'**
   String pleaseSelect(String field);
+
+  /// No description provided for @pleaseEnterField.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your {field}'**
+  String pleaseEnterField(String field);
+
+  /// No description provided for @othersOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Others'**
+  String get othersOption;
+
+  /// No description provided for @customField.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom {label}'**
+  String customField(String label);
+
+  /// No description provided for @typeHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Type here'**
+  String get typeHere;
+
+  /// No description provided for @anyOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Any'**
+  String get anyOption;
+
+  /// No description provided for @loadingField.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading {label}…'**
+  String loadingField(String label);
+
+  /// No description provided for @couldNotLoadField.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load {label}'**
+  String couldNotLoadField(String label);
+
+  /// No description provided for @district.
+  ///
+  /// In en, this message translates to:
+  /// **'District'**
+  String get district;
+
+  /// No description provided for @useMyLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Use My Location'**
+  String get useMyLocation;
+
+  /// No description provided for @detectingLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Detecting…'**
+  String get detectingLocation;
+
+  /// No description provided for @onlyTamilNaduSupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Detected \"{state}\" — only Tamil Nadu is supported right now. Please pick below.'**
+  String onlyTamilNaduSupported(String state);
+
+  /// No description provided for @cityNotInListPickNearest.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{city}\" isn\'t in the list — please pick the nearest city.'**
+  String cityNotInListPickNearest(String city);
+
+  /// No description provided for @couldNotMatchLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t match your location — please pick below.'**
+  String get couldNotMatchLocation;
+
+  /// No description provided for @locationAccessDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Location access denied. Please select your location manually.'**
+  String get locationAccessDenied;
+
+  /// No description provided for @locationDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Location Details'**
+  String get locationDetails;
+
+  /// No description provided for @locationStepSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where are you located?'**
+  String get locationStepSubtitle;
+
+  /// No description provided for @nativePlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Native Place'**
+  String get nativePlace;
+
+  /// No description provided for @citizenship.
+  ///
+  /// In en, this message translates to:
+  /// **'Citizenship'**
+  String get citizenship;
+
+  /// No description provided for @selectStateDistrictCity.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select your state, district and city'**
+  String get selectStateDistrictCity;
+
+  /// No description provided for @educationCareerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your qualifications and work.'**
+  String get educationCareerSubtitle;
+
+  /// No description provided for @highestEducation.
+  ///
+  /// In en, this message translates to:
+  /// **'Highest Education'**
+  String get highestEducation;
+
+  /// No description provided for @employmentType.
+  ///
+  /// In en, this message translates to:
+  /// **'Employment Type'**
+  String get employmentType;
+
+  /// No description provided for @courseDegree.
+  ///
+  /// In en, this message translates to:
+  /// **'Course / Degree'**
+  String get courseDegree;
+
+  /// No description provided for @courseDegreeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. B.E Computer Science'**
+  String get courseDegreeHint;
+
+  /// No description provided for @religiousInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Religious Information'**
+  String get religiousInformation;
+
+  /// No description provided for @religiousInfoSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Helps find matches within your community.'**
+  String get religiousInfoSubtitle;
+
+  /// No description provided for @horoscopeStepSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rasi, Nakshatra and Lagnam are calculated automatically from your birth date, time and place. Enable override to set them manually.'**
+  String get horoscopeStepSubtitle;
+
+  /// No description provided for @timeOfBirth.
+  ///
+  /// In en, this message translates to:
+  /// **'Time of Birth'**
+  String get timeOfBirth;
+
+  /// No description provided for @selectDateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select date'**
+  String get selectDateHint;
+
+  /// No description provided for @selectTimeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select time'**
+  String get selectTimeHint;
+
+  /// No description provided for @birthCity.
+  ///
+  /// In en, this message translates to:
+  /// **'Birth City'**
+  String get birthCity;
+
+  /// No description provided for @customBirthPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Birth Place'**
+  String get customBirthPlace;
+
+  /// No description provided for @customBirthPlaceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Village, town or city name'**
+  String get customBirthPlaceHint;
+
+  /// No description provided for @loadingCities.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading cities…'**
+  String get loadingCities;
+
+  /// No description provided for @calculatingHoroscope.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculating horoscope…'**
+  String get calculatingHoroscope;
+
+  /// No description provided for @selectDateTimePlaceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select date, time and place to calculate your horoscope.'**
+  String get selectDateTimePlaceHint;
+
+  /// No description provided for @calculatedHoroscope.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculated Horoscope'**
+  String get calculatedHoroscope;
+
+  /// No description provided for @readOnlyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only'**
+  String get readOnlyLabel;
+
+  /// No description provided for @overrideHoroscope.
+  ///
+  /// In en, this message translates to:
+  /// **'Override automatically calculated horoscope'**
+  String get overrideHoroscope;
+
+  /// No description provided for @overrideHoroscopeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Rasi, Nakshatra and Lagnam manually.'**
+  String get overrideHoroscopeSubtitle;
+
+  /// No description provided for @rasiMoonSign.
+  ///
+  /// In en, this message translates to:
+  /// **'Rasi (Moon Sign)'**
+  String get rasiMoonSign;
+
+  /// No description provided for @nakshatraStar.
+  ///
+  /// In en, this message translates to:
+  /// **'Nakshatra (Star)'**
+  String get nakshatraStar;
+
+  /// No description provided for @lagnamAscendant.
+  ///
+  /// In en, this message translates to:
+  /// **'Lagnam (Ascendant)'**
+  String get lagnamAscendant;
+
+  /// No description provided for @pleaseSelectTimeOfBirth.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select your time of birth'**
+  String get pleaseSelectTimeOfBirth;
+
+  /// No description provided for @pleaseSelectBirthPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select your birth place'**
+  String get pleaseSelectBirthPlace;
+
+  /// No description provided for @unableToGenerateHoroscope.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to generate horoscope details. Please verify date, time and birth place.'**
+  String get unableToGenerateHoroscope;
+
+  /// No description provided for @partnerPreferenceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Partner Preference'**
+  String get partnerPreferenceTitle;
+
+  /// No description provided for @partnerPrefSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All optional — set what matters, skip the rest. You can refine these anytime.'**
+  String get partnerPrefSubtitle;
+
+  /// No description provided for @basicPreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic Preference'**
+  String get basicPreference;
+
+  /// No description provided for @communityPreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Community Preference'**
+  String get communityPreference;
+
+  /// No description provided for @educationIncomePreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Education & Income Preference'**
+  String get educationIncomePreference;
+
+  /// No description provided for @ageRangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Age Range'**
+  String get ageRangeLabel;
+
+  /// No description provided for @heightRangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Height Range'**
+  String get heightRangeLabel;
+
+  /// No description provided for @ageRangeValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{min} – {max} Years'**
+  String ageRangeValue(int min, int max);
+
+  /// No description provided for @rangeValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{min} – {max}'**
+  String rangeValue(String min, String max);
+
+  /// No description provided for @minimumAge.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum Age'**
+  String get minimumAge;
+
+  /// No description provided for @maximumAge.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum Age'**
+  String get maximumAge;
+
+  /// No description provided for @minimumHeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum Height'**
+  String get minimumHeight;
+
+  /// No description provided for @maximumHeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum Height'**
+  String get maximumHeight;
+
+  /// No description provided for @chevvaiDosham.
+  ///
+  /// In en, this message translates to:
+  /// **'Chevvai Dosham'**
+  String get chevvaiDosham;
+
+  /// No description provided for @doesntMatter.
+  ///
+  /// In en, this message translates to:
+  /// **'Doesn\'t Matter'**
+  String get doesntMatter;
+
+  /// No description provided for @horoscopeMatchRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope match required'**
+  String get horoscopeMatchRequired;
+
+  /// No description provided for @profilePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Photo'**
+  String get profilePhoto;
+
+  /// No description provided for @profilePhotoSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add ONE clear photo of yourself — it becomes your profile picture.'**
+  String get profilePhotoSubtitle;
+
+  /// No description provided for @addPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Photo'**
+  String get addPhoto;
+
+  /// No description provided for @photoVisibilityTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding a photo increases your profile visibility by 3x.'**
+  String get photoVisibilityTip;
+
+  /// No description provided for @uploadHoroscopeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Optionally attach your horoscope as a PDF. You can also skip this and add it later from your profile.'**
+  String get uploadHoroscopeSubtitle;
+
+  /// No description provided for @tapToSelectPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to select a PDF'**
+  String get tapToSelectPdf;
+
+  /// No description provided for @horoscopePdfAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope PDF attached'**
+  String get horoscopePdfAttached;
+
+  /// No description provided for @changePdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Change PDF'**
+  String get changePdf;
+
+  /// No description provided for @contactStepSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact details are only shared after interest is mutually accepted.'**
+  String get contactStepSubtitle;
+
+  /// No description provided for @contactPersonName.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Person Name'**
+  String get contactPersonName;
+
+  /// No description provided for @relationship.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship'**
+  String get relationship;
+
+  /// No description provided for @whatsappNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp Number'**
+  String get whatsappNumber;
+
+  /// No description provided for @whatsappSameAsMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp same as mobile'**
+  String get whatsappSameAsMobile;
+
+  /// No description provided for @contactPrivacyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Your phone number and address are hidden by default. They are only revealed when both parties accept each other\'s interest.'**
+  String get contactPrivacyNote;
+
+  /// No description provided for @reviewSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Review & Submit'**
+  String get reviewSubmit;
+
+  /// No description provided for @reviewSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Please review your details before submitting.'**
+  String get reviewSubtitle;
+
+  /// No description provided for @submitProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Profile'**
+  String get submitProfile;
+
+  /// No description provided for @saveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Changes'**
+  String get saveChanges;
+
+  /// No description provided for @submittingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitting…'**
+  String get submittingLabel;
+
+  /// No description provided for @employmentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Employment'**
+  String get employmentLabel;
+
+  /// No description provided for @contactPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Person'**
+  String get contactPerson;
+
+  /// No description provided for @mobileLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile'**
+  String get mobileLabel;
+
+  /// No description provided for @logoutDraftMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to logout? Unsaved progress will be kept as a draft.'**
+  String get logoutDraftMessage;
+
+  /// No description provided for @mustBeSignedInToCreateProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'You must be signed in to create a profile.'**
+  String get mustBeSignedInToCreateProfile;
+
+  /// No description provided for @profileUpdatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile updated successfully.'**
+  String get profileUpdatedSuccess;
+
+  /// No description provided for @failedToCreateProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create profile'**
+  String get failedToCreateProfile;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/l10n_ext.dart';
 import '../../../providers/profile_provider.dart';
-import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
 import '../../../widgets/common/religion_caste_fields.dart';
-import '../../../widgets/common/searchable_field.dart';
+import '../../../widgets/common/searchable_with_others_field.dart';
 
-/// Community step — Religion (req), Caste (req), Sub Caste (opt),
-/// Mother Tongue (req), Gothram and Kuladeivam (opt). Mirrors the website
-/// "Community" step.
+/// Community step — Religion (req), Caste (req), Sub Caste (opt) and
+/// Mother Tongue (req). Mirrors the website "Community" step.
+///
+/// Gothram and Kuladeivam were REMOVED from profile creation (spec §7); the
+/// underlying model fields are untouched so existing profiles keep their data.
+/// Each dropdown offers "Others" → custom textbox instead of a "+" button.
 class StepReligious extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   const StepReligious({super.key, required this.onNext});
@@ -27,8 +30,6 @@ class _StepReligiousState extends ConsumerState<StepReligious> {
   String? _subCaste;
   String? _subCasteId;
   String? _motherTongue;
-  final _gothramController = TextEditingController();
-  final _kuladeivamController = TextEditingController();
 
   @override
   void initState() {
@@ -41,28 +42,20 @@ class _StepReligiousState extends ConsumerState<StepReligious> {
     _subCaste = data['subCaste'] as String?;
     _subCasteId = data['subCasteId'] as String?;
     _motherTongue = data['motherTongue'] as String?;
-    _gothramController.text = (data['gothram'] as String?) ?? '';
-    _kuladeivamController.text = (data['kuladeivam'] as String?) ?? '';
-  }
-
-  @override
-  void dispose() {
-    _gothramController.dispose();
-    _kuladeivamController.dispose();
-    super.dispose();
   }
 
   void _saveAndNext() {
+    final l10n = context.l10n;
     if (_religion == null || _religion!.isEmpty) {
-      _snack('Please select your religion');
+      _snack(l10n.pleaseEnterField(l10n.religion));
       return;
     }
     if (_caste == null || _caste!.isEmpty) {
-      _snack('Please select your caste');
+      _snack(l10n.pleaseEnterField(l10n.caste));
       return;
     }
     if (_motherTongue == null || _motherTongue!.isEmpty) {
-      _snack('Please select your mother tongue');
+      _snack(l10n.pleaseEnterField(l10n.motherTongue));
       return;
     }
     ref.read(profileCreationProvider.notifier).updateData({
@@ -73,8 +66,6 @@ class _StepReligiousState extends ConsumerState<StepReligious> {
       'subCaste': _subCaste ?? '',
       'subCasteId': _subCasteId,
       'motherTongue': _motherTongue,
-      'gothram': _gothramController.text.trim(),
-      'kuladeivam': _kuladeivamController.text.trim(),
     });
     widget.onNext();
   }
@@ -84,15 +75,16 @@ class _StepReligiousState extends ConsumerState<StepReligious> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Religious Information', style: AppTextStyles.heading2),
+          Text(l10n.religiousInformation, style: AppTextStyles.heading2),
           const SizedBox(height: 8),
-          const Text('Helps find matches within your community.',
-              style: TextStyle(color: Colors.grey)),
+          Text(l10n.religiousInfoSubtitle,
+              style: const TextStyle(color: Colors.grey)),
           const SizedBox(height: 24),
           ReligionCasteFields(
             religionId: _religionId,
@@ -121,28 +113,16 @@ class _StepReligiousState extends ConsumerState<StepReligious> {
             }),
           ),
           const SizedBox(height: 16),
-          SearchableField(
-            label: 'Mother Tongue',
+          SearchableWithOthersField(
+            label: l10n.motherTongue,
             isRequired: true,
             items: AppConstants.motherTongueList,
-            selectedItem: _motherTongue,
+            value: _motherTongue,
             prefixIcon: Icons.translate,
             onChanged: (v) => setState(() => _motherTongue = v),
           ),
-          const SizedBox(height: 16),
-          AppTextField(
-            controller: _gothramController,
-            label: 'Gothram',
-            hint: 'Optional',
-          ),
-          const SizedBox(height: 16),
-          AppTextField(
-            controller: _kuladeivamController,
-            label: 'Kuladeivam',
-            hint: 'Optional',
-          ),
           const SizedBox(height: 36),
-          GradientButton(onPressed: _saveAndNext, text: 'Continue'),
+          GradientButton(onPressed: _saveAndNext, text: l10n.continueLabel),
         ],
       ),
     );

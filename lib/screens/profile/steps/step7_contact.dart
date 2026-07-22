@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/l10n_ext.dart';
 import '../../../core/utils/validators.dart';
+import '../../../core/utils/value_l10n.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
@@ -76,6 +78,7 @@ class _Step7State extends ConsumerState<Step7Contact> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Form(
@@ -83,28 +86,31 @@ class _Step7State extends ConsumerState<Step7Contact> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Contact Details',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(l10n.contactDetails,
+                style: const TextStyle(
+                    fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            const Text(
-              'Contact details are only shared after interest is mutually accepted.',
-              style: TextStyle(color: Colors.grey),
+            Text(
+              l10n.contactStepSubtitle,
+              style: const TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 24),
             AppTextField(
               controller: _nameController,
-              label: 'Contact Person Name *',
+              label: '${l10n.contactPersonName} *',
               validator: Validators.name,
             ),
             const SizedBox(height: 16),
-            const Text('Relationship',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+            Text('${l10n.relationship} *',
+                style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               children: _relationships
                   .map((r) => ChoiceChip(
-                        label: Text(r),
+                        // Stored value stays English; only the chip label is
+                        // localized.
+                        label: Text(context.localizeValue(r)),
                         selected: _relationship == r,
                         onSelected: (_) => setState(() => _relationship = r),
                         selectedColor: const Color(0xFF800020),
@@ -118,7 +124,7 @@ class _Step7State extends ConsumerState<Step7Contact> {
             const SizedBox(height: 16),
             AppTextField(
               controller: _mobileController,
-              label: 'Mobile Number *',
+              label: '${l10n.mobileNumber} *',
               hint: '9876543210',
               keyboardType: TextInputType.number,
               prefixText: '+91 ',
@@ -136,13 +142,13 @@ class _Step7State extends ConsumerState<Step7Contact> {
                   value: _sameAsAbove,
                   onChanged: (v) => setState(() => _sameAsAbove = v ?? false),
                 ),
-                const Text('WhatsApp same as mobile'),
+                Expanded(child: Text(l10n.whatsappSameAsMobile)),
               ],
             ),
             if (!_sameAsAbove) ...[
               AppTextField(
                 controller: _whatsappController,
-                label: 'WhatsApp Number',
+                label: l10n.whatsappNumber,
                 hint: '9876543210',
                 keyboardType: TextInputType.number,
                 prefixText: '+91 ',
@@ -161,22 +167,23 @@ class _Step7State extends ConsumerState<Step7Contact> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.green[200]!),
               ),
-              child: const Row(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.security, color: Colors.green, size: 20),
-                  SizedBox(width: 8),
+                  const Icon(Icons.security, color: Colors.green, size: 20),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Your phone number and address are hidden by default. They are only revealed when both parties accept each other\'s interest.',
-                      style: TextStyle(fontSize: 13),
+                      l10n.contactPrivacyNote,
+                      style: const TextStyle(fontSize: 13),
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 32),
-            GradientButton(onPressed: _saveAndNext, text: 'Continue'),
+            GradientButton(
+                onPressed: _saveAndNext, text: l10n.continueLabel),
           ],
         ),
       ),
