@@ -7,12 +7,14 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/file_actions.dart';
+import '../../../core/utils/l10n_ext.dart';
 import '../../../models/astrologer_request_model.dart';
 import '../../../models/compatibility_report_model.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/astrology_team_provider.dart';
 import '../../../providers/match_analysis_provider.dart';
 import '../../../providers/profile_provider.dart';
+import '../../../widgets/common/horoscope_documents_view.dart';
 import '../../../widgets/common/network_photo.dart';
 import '../../report/compatibility_report_screen.dart';
 
@@ -552,56 +554,20 @@ class _ProfileCard extends ConsumerWidget {
           _kv('Family Status',
               p.family.familyStatus.isNotEmpty ? p.family.familyStatus : '—'),
         ],
-        if (h != null) ...[
-          if (h.horoscopeImages.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            const Text('Horoscope Images',
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (var i = 0; i < h.horoscopeImages.length; i++)
-                  GestureDetector(
-                    onTap: () =>
-                        openRemoteFile(context, h.horoscopeImages[i], pdf: false),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: NetworkPhoto(
-                          url: h.horoscopeImages[i], width: 64, height: 64),
-                    ),
-                  ),
-              ],
-            ),
-          ],
-          if (_pdfs(h).isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (var i = 0; i < _pdfs(h).length; i++)
-                  ActionChip(
-                    avatar: const Icon(Icons.picture_as_pdf, size: 16),
-                    label: Text('Horoscope PDF ${i + 1}'),
-                    onPressed: () =>
-                        openRemoteFile(context, _pdfs(h)[i], pdf: true),
-                  ),
-              ],
-            ),
-          ],
-        ],
+        // The employee ALWAYS gets both members' uploaded horoscope documents
+        // here — image previews (tap = full screen) and PDFs with View +
+        // Download — so a report can be prepared without leaving the page.
+        const SizedBox(height: 14),
+        const Divider(height: 1),
+        const SizedBox(height: 12),
+        HoroscopeDocumentsView.fromHoroscope(
+          h,
+          title: context.l10n.horoscopeDocuments,
+          thumbnailSize: 78,
+        ),
       ],
     );
   }
-
-  List<String> _pdfs(HoroscopeDetails h) => [
-        ...h.horoscopePdfUrls,
-        if ((h.horoscopePdfUrl ?? '').isNotEmpty &&
-            !h.horoscopePdfUrls.contains(h.horoscopePdfUrl))
-          h.horoscopePdfUrl!,
-      ];
 
   Widget _kv(String k, String v) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),

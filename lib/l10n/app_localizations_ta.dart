@@ -1858,6 +1858,69 @@ class AppLocalizationsTa extends AppLocalizations {
   String get mobileLabel => 'கைபேசி';
 
   @override
+  String get horoscopeDocuments => 'ஜாதக ஆவணங்கள்';
+
+  @override
+  String get horoscopeImages => 'ஜாதகப் படங்கள்';
+
+  @override
+  String get horoscopePdfs => 'ஜாதக PDF கோப்புகள்';
+
+  @override
+  String horoscopeImageN(int n) {
+    return 'ஜாதகப் படம் $n';
+  }
+
+  @override
+  String horoscopePdfN(int n) {
+    return 'ஜாதக PDF $n';
+  }
+
+  @override
+  String get noHoroscopeFiles => 'இந்தச் சுயவிவரத்திற்கு ஜாதக ஆவணங்கள் எதுவும் பதிவேற்றப்படவில்லை.';
+
+  @override
+  String get viewFull => 'முழுமையாகப் பார்';
+
+  @override
+  String get viewLabel => 'பார்';
+
+  @override
+  String get download => 'பதிவிறக்கு';
+
+  @override
+  String get tapToOpen => 'திறக்க தட்டவும்';
+
+  @override
+  String get addImages => 'படங்களைச் சேர்';
+
+  @override
+  String get addPdf => 'PDF சேர்';
+
+  @override
+  String get uploadHoroscopeHint => 'உங்கள் ஜாதகத்தைப் படங்களாக (JPG / PNG) அல்லது PDF கோப்புகளாக இணைக்கவும். ஒன்றுக்கு மேற்பட்டவை சேர்க்கலாம்; இதைத் தவிர்த்துவிட்டு பின்னர் சுயவிவரத்தில் சேர்க்கவும் முடியும்.';
+
+  @override
+  String filesSelected(int count) {
+    return '$count கோப்பு(கள்) தேர்ந்தெடுக்கப்பட்டன';
+  }
+
+  @override
+  String get uploadingHoroscopeFiles => 'ஜாதகக் கோப்புகள் பதிவேற்றப்படுகின்றன…';
+
+  @override
+  String get couldNotPickFile => 'தேர்ந்தெடுத்த கோப்பைப் படிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get horoscopeLockedTitle => 'ஜாதகம் பூட்டப்பட்டுள்ளது';
+
+  @override
+  String get horoscopeLockedBody => 'இருதரப்பும் விருப்பத்தை ஏற்றுக்கொண்ட பிறகே இந்த உறுப்பினரின் ஜாதக ஆவணங்களைப் பார்க்க முடியும்.';
+
+  @override
+  String get horoscopeUnlockedNote => 'உங்கள் விருப்பம் ஏற்கப்பட்டது — இந்த உறுப்பினரின் ஜாதகத்தை கீழே பார்க்கவும் பதிவிறக்கவும் முடியும்.';
+
+  @override
   String get logoutDraftMessage => 'வெளியேற விரும்புகிறீர்களா? சேமிக்கப்படாத முன்னேற்றம் வரைவாகப் பாதுகாக்கப்படும்.';
 
   @override

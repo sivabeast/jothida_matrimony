@@ -77,20 +77,26 @@ class DualRangeSliderField extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                         color: Colors.black54)),
               ),
-              // Live value — updates as either handle moves.
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  formatRange(_lo, _hi),
-                  style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13),
+              const SizedBox(width: 8),
+              // Live value — updates as either handle moves. Flexible so a long
+              // translated range label shrinks instead of overflowing the row.
+              Flexible(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    formatRange(_lo, _hi),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13),
+                  ),
                 ),
               ),
             ],

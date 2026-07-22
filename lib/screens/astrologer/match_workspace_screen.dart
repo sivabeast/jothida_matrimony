@@ -8,13 +8,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/utils/file_actions.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/slot_generator.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../models/profile_model.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../widgets/common/horoscope_documents_view.dart';
 import '../../widgets/common/rasi_chart.dart';
 
 /// The astrologer's Match Analysis "Status" page / workspace — opened from a
@@ -953,72 +954,16 @@ class _PartyCard extends ConsumerWidget {
         _row('Education', p.education),
         _row('Occupation', p.occupation),
         const SizedBox(height: 12),
-        _horoscopeFiles(context, h.horoscopeImages, pdfs),
+        // Shared presentation: image previews (tap = full screen) + PDFs with
+        // View and Download, identical to the employee Request Details page.
+        HoroscopeDocumentsView(
+          imageUrls: h.horoscopeImages,
+          pdfUrls: pdfs,
+          title: context.l10n.horoscopeDocuments,
+        ),
         if (h.rasi.trim().isNotEmpty || h.lagnam.trim().isNotEmpty) ...[
           const SizedBox(height: 14),
           RasiChart(rasi: h.rasi, lagnam: h.lagnam),
-        ],
-      ],
-    );
-  }
-
-  Widget _horoscopeFiles(
-      BuildContext context, List<String> images, List<String> pdfs) {
-    if (images.isEmpty && pdfs.isEmpty) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Text('No horoscope files uploaded for this profile.',
-            style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (images.isNotEmpty) ...[
-          const Text('Horoscope Images',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5)),
-          const SizedBox(height: 6),
-          SizedBox(
-            height: 90,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: images.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (_, i) => GestureDetector(
-                onTap: () => showImageGallery(context, images, initialIndex: i),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image.network(
-                    images[i],
-                    width: 90,
-                    height: 90,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      width: 90,
-                      height: 90,
-                      color: AppColors.primary.withOpacity(0.08),
-                      child: const Icon(Icons.broken_image_outlined,
-                          color: AppColors.primary),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-        if (pdfs.isNotEmpty) ...[
-          const Text('Horoscope PDFs',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5)),
-          const SizedBox(height: 6),
-          for (var i = 0; i < pdfs.length; i++)
-            RemotePdfTile(
-                url: pdfs[i], label: 'Horoscope PDF ${i + 1}', index: i),
         ],
       ],
     );

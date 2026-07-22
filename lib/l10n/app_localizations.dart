@@ -3653,6 +3653,120 @@ abstract class AppLocalizations {
   /// **'Mobile'**
   String get mobileLabel;
 
+  /// No description provided for @horoscopeDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope Documents'**
+  String get horoscopeDocuments;
+
+  /// No description provided for @horoscopeImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope Images'**
+  String get horoscopeImages;
+
+  /// No description provided for @horoscopePdfs.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope PDFs'**
+  String get horoscopePdfs;
+
+  /// No description provided for @horoscopeImageN.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope Image {n}'**
+  String horoscopeImageN(int n);
+
+  /// No description provided for @horoscopePdfN.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope PDF {n}'**
+  String horoscopePdfN(int n);
+
+  /// No description provided for @noHoroscopeFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'No horoscope documents uploaded for this profile.'**
+  String get noHoroscopeFiles;
+
+  /// No description provided for @viewFull.
+  ///
+  /// In en, this message translates to:
+  /// **'View Full'**
+  String get viewFull;
+
+  /// No description provided for @viewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get viewLabel;
+
+  /// No description provided for @download.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get download;
+
+  /// No description provided for @tapToOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to open'**
+  String get tapToOpen;
+
+  /// No description provided for @addImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Images'**
+  String get addImages;
+
+  /// No description provided for @addPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Add PDF'**
+  String get addPdf;
+
+  /// No description provided for @uploadHoroscopeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach your horoscope as images (JPG / PNG) or PDF files. You can add more than one, and you can skip this and add them later from your profile.'**
+  String get uploadHoroscopeHint;
+
+  /// No description provided for @filesSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} file(s) selected'**
+  String filesSelected(int count);
+
+  /// No description provided for @uploadingHoroscopeFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading horoscope files…'**
+  String get uploadingHoroscopeFiles;
+
+  /// No description provided for @couldNotPickFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the selected file. Please try again.'**
+  String get couldNotPickFile;
+
+  /// No description provided for @horoscopeLockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope is locked'**
+  String get horoscopeLockedTitle;
+
+  /// No description provided for @horoscopeLockedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You can view this member\'s horoscope documents once your interest has been accepted by both sides.'**
+  String get horoscopeLockedBody;
+
+  /// No description provided for @horoscopeUnlockedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Your interest was accepted — you can view and download this member\'s horoscope below.'**
+  String get horoscopeUnlockedNote;
+
   /// No description provided for @logoutDraftMessage.
   ///
   /// In en, this message translates to:

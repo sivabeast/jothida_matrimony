@@ -86,7 +86,13 @@ final contactByUserIdProvider =
 class ProfileCreationState {
   final Map<String, dynamic> data;
   final List<File> photos;
-  final File? horoscopePdf;
+
+  /// Horoscope documents picked in the Upload step — JPG/PNG images and PDFs
+  /// are both supported, and more than one of each may be attached. They are
+  /// uploaded on submit and merged into `horoscopeDetails`.
+  final List<File> horoscopeImages;
+  final List<File> horoscopePdfs;
+
   final bool isLoading;
   final String? error;
   final bool isComplete;
@@ -102,7 +108,8 @@ class ProfileCreationState {
   const ProfileCreationState({
     this.data = const {},
     this.photos = const [],
-    this.horoscopePdf,
+    this.horoscopeImages = const [],
+    this.horoscopePdfs = const [],
     this.isLoading = false,
     this.error,
     this.isComplete = false,
@@ -113,7 +120,8 @@ class ProfileCreationState {
   ProfileCreationState copyWith({
     Map<String, dynamic>? data,
     List<File>? photos,
-    File? horoscopePdf,
+    List<File>? horoscopeImages,
+    List<File>? horoscopePdfs,
     bool? isLoading,
     String? error,
     bool? isComplete,
@@ -123,7 +131,8 @@ class ProfileCreationState {
       ProfileCreationState(
         data: data ?? this.data,
         photos: photos ?? this.photos,
-        horoscopePdf: horoscopePdf ?? this.horoscopePdf,
+        horoscopeImages: horoscopeImages ?? this.horoscopeImages,
+        horoscopePdfs: horoscopePdfs ?? this.horoscopePdfs,
         isLoading: isLoading ?? this.isLoading,
         error: error,
         isComplete: isComplete ?? this.isComplete,
@@ -146,7 +155,14 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
       // or removes a photo), the provider state would be silently corrupted.
       state = state.copyWith(photos: List.unmodifiable(photos));
 
-  void setHoroscopePdf(File pdf) => state = state.copyWith(horoscopePdf: pdf);
+  /// Replaces the horoscope documents picked in the Upload step. Defensive
+  /// copies, so a later edit of the caller's list can't corrupt the state.
+  void setHoroscopeFiles({List<File>? images, List<File>? pdfs}) =>
+      state = state.copyWith(
+        horoscopeImages:
+            images == null ? null : List.unmodifiable(images),
+        horoscopePdfs: pdfs == null ? null : List.unmodifiable(pdfs),
+      );
 
   /// Saves the wizard's data. CREATE mode (default) writes a brand-new
   /// profile; EDIT mode ([editProfileId] non-null) UPDATES the existing
@@ -186,11 +202,15 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
     try {
       final repo = ref.read(profileRepositoryProvider);
       final hasPhotos = state.photos.isNotEmpty;
-      final hasPdf = state.horoscopePdf != null;
+      final horoFiles = <({File file, bool isPdf})>[
+        for (final f in state.horoscopeImages) (file: f, isPdf: false),
+        for (final f in state.horoscopePdfs) (file: f, isPdf: true),
+      ];
+      final hasHoroFiles = horoFiles.isNotEmpty;
 
       debugPrint(
         '[submitProfile] userId=$userId  '
-        'photos=${state.photos.length}  hasPdf=$hasPdf',
+        'photos=${state.photos.length}  horoscopeFiles=${horoFiles.length}',
       );
 
       // Validate that all photo files still exist on disk before we start.
@@ -209,8 +229,8 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
       }
 
       // Split overall progress (0..1) across the upload phases that apply.
-      final photoWeight = hasPhotos ? (hasPdf ? 0.7 : 1.0) : 0.0;
-      final pdfWeight = hasPdf ? (hasPhotos ? 0.3 : 1.0) : 0.0;
+      final photoWeight = hasPhotos ? (hasHoroFiles ? 0.7 : 1.0) : 0.0;
+      final horoWeight = hasHoroFiles ? (hasPhotos ? 0.3 : 1.0) : 0.0;
 
       List<String> photoUrls = [];
       if (hasPhotos) {
@@ -230,23 +250,63 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
         debugPrint('[submitProfile] ℹ no photos to upload');
       }
 
-      String? pdfUrl;
-      if (hasPdf) {
-        state = state.copyWith(uploadStatus: 'Uploading horoscope PDF...');
-        debugPrint('[submitProfile] ▶ starting PDF upload');
-        pdfUrl = await repo.uploadHoroscopePdf(
-          userId: userId,
-          file: state.horoscopePdf!,
-          onProgress: (p) =>
-              state = state.copyWith(uploadProgress: photoWeight + p * pdfWeight),
-        );
-        debugPrint('[submitProfile] ✅ PDF upload complete → $pdfUrl');
+      // ── Horoscope documents (images + PDFs, any number of each) ──────────
+      final newHoroImageUrls = <String>[];
+      final newHoroPdfUrls = <String>[];
+      if (hasHoroFiles) {
+        state = state.copyWith(uploadStatus: 'Uploading horoscope files...');
+        debugPrint('[submitProfile] ▶ uploading ${horoFiles.length} horoscope file(s)');
+        for (var i = 0; i < horoFiles.length; i++) {
+          final entry = horoFiles[i];
+          final url = await repo.uploadHoroscopeDoc(
+            userId: userId,
+            file: entry.file,
+            isPdf: entry.isPdf,
+          );
+          (entry.isPdf ? newHoroPdfUrls : newHoroImageUrls).add(url);
+          state = state.copyWith(
+            uploadProgress:
+                photoWeight + ((i + 1) / horoFiles.length) * horoWeight,
+          );
+        }
+        debugPrint('[submitProfile] ✅ horoscope upload complete → '
+            'images=$newHoroImageUrls pdfs=$newHoroPdfUrls');
       }
 
       state = state.copyWith(
         uploadStatus: 'Saving your profile...',
-        uploadProgress: photoWeight + pdfWeight,
+        uploadProgress: photoWeight + horoWeight,
       );
+
+      // Merge the freshly uploaded URLs INTO the horoscopeDetails map. (The old
+      // code wrote a dotted `horoscopeDetails.horoscopePdfUrl` key, which
+      // ProfileModel.fromMap never reads — so the uploaded PDF was silently
+      // dropped and never reached the profile.)
+      final horoscopeMap = state.data['horoscopeDetails'] is Map
+          ? Map<String, dynamic>.from(
+              state.data['horoscopeDetails'] as Map)
+          : <String, dynamic>{};
+      if (newHoroImageUrls.isNotEmpty) {
+        horoscopeMap['horoscopeImages'] = [
+          ...toStringList(horoscopeMap['horoscopeImages']),
+          ...newHoroImageUrls,
+        ];
+      }
+      if (newHoroPdfUrls.isNotEmpty) {
+        // Tolerates legacy documents where the single-PDF field holds anything
+        // other than a plain String.
+        final legacyPdf = (horoscopeMap['horoscopePdfUrl'] ?? '').toString();
+        final existingPdfs = <String>[
+          ...toStringList(horoscopeMap['horoscopePdfUrls']),
+          if (legacyPdf.isNotEmpty) legacyPdf,
+        ];
+        horoscopeMap['horoscopePdfUrls'] = [
+          ...{...existingPdfs},
+          ...newHoroPdfUrls,
+        ];
+        // The legacy single-PDF field is now fully represented by the list.
+        horoscopeMap['horoscopePdfUrl'] = '';
+      }
 
       // In EDIT mode the existing photo URLs (seeded into the wizard data by
       // toWizardData) are kept when no new photo was picked.
@@ -259,7 +319,7 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
         ...state.data,
         'userId': userId,
         'photos': photoUrls.isNotEmpty ? photoUrls : existingPhotos,
-        if (pdfUrl != null) 'horoscopeDetails.horoscopePdfUrl': pdfUrl,
+        if (horoscopeMap.isNotEmpty) 'horoscopeDetails': horoscopeMap,
         // Profiles are active immediately on completion — no admin approval
         // step. ('rejected'/'blocked' remain available for moderation only.)
         'status': 'approved',

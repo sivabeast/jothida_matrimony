@@ -356,7 +356,7 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2)),
                 const SizedBox(width: 10),
-                Text(l10n.loadingCities),
+                Expanded(child: Text(l10n.loadingCities)),
               ]),
             )
           else
@@ -393,13 +393,13 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2)),
                 const SizedBox(width: 12),
-                Text(l10n.calculatingHoroscope),
+                Expanded(child: Text(l10n.calculatingHoroscope)),
               ]),
             )
           else if (_error != null)
             _ErrorBox(message: _error!)
           else if (_hasGenerated && !_overrideEnabled)
-            _ResultCard(
+            CalculatedHoroscopeCard(
                 rasi: _genRasi!, nakshatra: _genNakshatra!, lagnam: _genLagnam!)
           else if (!_hasGenerated)
             Text(
@@ -476,13 +476,17 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
   }
 }
 
-/// Read-only display of the calculated horoscope values.
-class _ResultCard extends StatelessWidget {
+/// Read-only display of the calculated horoscope values. Public so the layout
+/// has a direct overflow regression test (see test/horoscope_layout_test.dart).
+class CalculatedHoroscopeCard extends StatelessWidget {
   final String rasi;
   final String nakshatra;
   final String lagnam;
-  const _ResultCard(
-      {required this.rasi, required this.nakshatra, required this.lagnam});
+  const CalculatedHoroscopeCard(
+      {super.key,
+      required this.rasi,
+      required this.nakshatra,
+      required this.lagnam});
 
   @override
   Widget build(BuildContext context) {
@@ -498,17 +502,31 @@ class _ResultCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Every child is either fixed-width or bounded, so this header can
+          // never overflow — the title wraps to a second line on narrow phones
+          // instead (the old `Spacer` + two unbounded Texts overflowed by a few
+          // pixels once the labels were translated).
           Row(
             children: [
               const Icon(Icons.auto_awesome, size: 18, color: Colors.amber),
               const SizedBox(width: 8),
-              Text(l10n.calculatedHoroscope,
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-              const Spacer(),
+              Expanded(
+                child: Text(l10n.calculatedHoroscope,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 8),
               Icon(Icons.lock_outline, size: 14, color: Colors.grey[500]),
               const SizedBox(width: 4),
-              Text(l10n.readOnlyLabel,
-                  style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 110),
+                child: Text(l10n.readOnlyLabel,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+              ),
             ],
           ),
           const Divider(height: 18),

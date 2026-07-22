@@ -1858,6 +1858,69 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mobileLabel => 'Mobile';
 
   @override
+  String get horoscopeDocuments => 'Horoscope Documents';
+
+  @override
+  String get horoscopeImages => 'Horoscope Images';
+
+  @override
+  String get horoscopePdfs => 'Horoscope PDFs';
+
+  @override
+  String horoscopeImageN(int n) {
+    return 'Horoscope Image $n';
+  }
+
+  @override
+  String horoscopePdfN(int n) {
+    return 'Horoscope PDF $n';
+  }
+
+  @override
+  String get noHoroscopeFiles => 'No horoscope documents uploaded for this profile.';
+
+  @override
+  String get viewFull => 'View Full';
+
+  @override
+  String get viewLabel => 'View';
+
+  @override
+  String get download => 'Download';
+
+  @override
+  String get tapToOpen => 'Tap to open';
+
+  @override
+  String get addImages => 'Add Images';
+
+  @override
+  String get addPdf => 'Add PDF';
+
+  @override
+  String get uploadHoroscopeHint => 'Attach your horoscope as images (JPG / PNG) or PDF files. You can add more than one, and you can skip this and add them later from your profile.';
+
+  @override
+  String filesSelected(int count) {
+    return '$count file(s) selected';
+  }
+
+  @override
+  String get uploadingHoroscopeFiles => 'Uploading horoscope files…';
+
+  @override
+  String get couldNotPickFile => 'Could not read the selected file. Please try again.';
+
+  @override
+  String get horoscopeLockedTitle => 'Horoscope is locked';
+
+  @override
+  String get horoscopeLockedBody => 'You can view this member\'s horoscope documents once your interest has been accepted by both sides.';
+
+  @override
+  String get horoscopeUnlockedNote => 'Your interest was accepted — you can view and download this member\'s horoscope below.';
+
+  @override
   String get logoutDraftMessage => 'Are you sure you want to logout? Unsaved progress will be kept as a draft.';
 
   @override

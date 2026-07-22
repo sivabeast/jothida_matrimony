@@ -14,6 +14,7 @@ import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/contact_reveal_card.dart';
 import '../../widgets/common/gradient_button.dart';
+import '../../widgets/common/horoscope_documents_view.dart';
 import '../../widgets/common/network_photo.dart';
 
 class ProfileViewScreen extends ConsumerStatefulWidget {
@@ -754,18 +755,32 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     final h = profile.horoscopeDetails;
 
     if (isOwner) {
-      return _buildInfoSection(context.l10n.horoscopeDetails, [
-        _InfoItem(Icons.stars, context.l10n.rasi, h.rasi),
-        _InfoItem(Icons.star_border, context.l10n.nakshatra, h.nakshatra),
-        _InfoItem(Icons.wb_twilight, context.l10n.lagnam, h.lagnam),
-        _InfoItem(Icons.place_outlined, context.l10n.birthPlace, h.birthPlace),
-        _InfoItem(Icons.access_time, context.l10n.birthTime, h.birthTime),
-        _InfoItem(Icons.brightness_5_outlined, 'Chevvai Dosham', h.dosham),
-        _InfoItem(Icons.brightness_5_outlined, 'Rahu / Kethu Dosham',
-            h.rahuKethuDosham),
-        _InfoItem(Icons.brightness_5_outlined, 'Kalasarpa Dosham',
-            h.kalasarpaDosham),
-      ]);
+      // The owner always sees their own uploaded documents — no gate.
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildInfoSection(context.l10n.horoscopeDetails, [
+            _InfoItem(Icons.stars, context.l10n.rasi, h.rasi),
+            _InfoItem(Icons.star_border, context.l10n.nakshatra, h.nakshatra),
+            _InfoItem(Icons.wb_twilight, context.l10n.lagnam, h.lagnam),
+            _InfoItem(
+                Icons.place_outlined, context.l10n.birthPlace, h.birthPlace),
+            _InfoItem(Icons.access_time, context.l10n.birthTime, h.birthTime),
+            _InfoItem(Icons.brightness_5_outlined, 'Chevvai Dosham', h.dosham),
+            _InfoItem(Icons.brightness_5_outlined, 'Rahu / Kethu Dosham',
+                h.rahuKethuDosham),
+            _InfoItem(Icons.brightness_5_outlined, 'Kalasarpa Dosham',
+                h.kalasarpaDosham),
+          ]),
+          if (h.horoscopeImages.isNotEmpty || h.allPdfUrls.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            HoroscopeDocumentsView.fromHoroscope(
+              h,
+              title: context.l10n.horoscopeDocuments,
+            ),
+          ],
+        ],
+      );
     }
 
     // Other users: limited view (Rasi + Nakshatra only) + availability note.
@@ -836,7 +851,91 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
             ],
           ),
         ),
+        const SizedBox(height: 12),
+        _horoscopeDocumentsSection(profile),
       ],
+    );
+  }
+
+  /// Uploaded horoscope documents, gated on a mutually-accepted interest.
+  ///
+  ///  • BEFORE acceptance → a locked card explaining how to unlock it. The
+  ///    files are never rendered, downloadable or linked.
+  ///  • AFTER acceptance  → full access: image previews (tap = full screen)
+  ///    and PDFs with View + Download.
+  ///
+  /// (Employees/admins reach the same documents through the Request Details
+  /// page, which is not subject to this gate.)
+  Widget _horoscopeDocumentsSection(ProfileModel profile) {
+    final h = profile.horoscopeDetails;
+    final hasFiles =
+        h.horoscopeImages.isNotEmpty || h.allPdfUrls.isNotEmpty;
+    if (!hasFiles) return const SizedBox.shrink();
+
+    final accepted = ref.watch(interestStatusForProfileProvider(profile.id)) ==
+        InterestUiStatus.accepted;
+
+    if (!accepted) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.lock_outline, size: 18, color: Colors.grey[600]),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(context.l10n.horoscopeLockedTitle,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 13.5)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(context.l10n.horoscopeLockedBody,
+                style: TextStyle(fontSize: 12.5, color: Colors.grey[700])),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.green.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.lock_open_outlined,
+                  size: 18, color: Colors.green),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(context.l10n.horoscopeUnlockedNote,
+                    style: TextStyle(
+                        fontSize: 12.5, color: Colors.grey[800])),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          HoroscopeDocumentsView.fromHoroscope(
+            h,
+            title: context.l10n.horoscopeDocuments,
+          ),
+        ],
+      ),
     );
   }
 

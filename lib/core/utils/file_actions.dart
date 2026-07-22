@@ -225,6 +225,35 @@ Future<void> shareRemoteFile(
   }
 }
 
+/// Full-screen, zoomable preview of a LOCAL image file — used to check a
+/// horoscope image that has been picked but not uploaded yet.
+void showLocalImagePreview(BuildContext context, File file) {
+  Navigator.of(context).push(MaterialPageRoute(
+    fullscreenDialog: true,
+    builder: (_) => Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: Text(file.path.split(Platform.pathSeparator).last,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 14)),
+      ),
+      body: PhotoView(
+        imageProvider: FileImage(file),
+        backgroundDecoration: const BoxDecoration(color: Colors.black),
+        minScale: PhotoViewComputedScale.contained,
+        maxScale: PhotoViewComputedScale.covered * 4,
+        errorBuilder: (_, __, ___) => const Center(
+          child: Icon(Icons.broken_image_outlined,
+              color: Colors.white54, size: 64),
+        ),
+      ),
+    ),
+  ));
+}
+
 /// Opens a full-screen, swipeable, zoomable viewer for [imageUrls].
 void showImageGallery(
   BuildContext context,

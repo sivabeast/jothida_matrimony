@@ -374,8 +374,12 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
                 width: 16,
                 child: CircularProgressIndicator(strokeWidth: 2)),
             const SizedBox(width: 10),
-            Text(context.l10n.loadingField(label),
-                style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+            Expanded(
+              child: Text(context.l10n.loadingField(label),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+            ),
           ],
         ),
       );
@@ -391,6 +395,8 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
           children: [
             Expanded(
               child: Text(context.l10n.couldNotLoadField(label),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(color: AppColors.error, fontSize: 13)),
             ),
             TextButton(

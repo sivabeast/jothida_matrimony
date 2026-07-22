@@ -241,10 +241,12 @@ class _StepBasicState extends ConsumerState<StepBasic> {
                     const Icon(Icons.cake_outlined,
                         size: 18, color: AppColors.primary),
                     const SizedBox(width: 8),
-                    Text(context.l10n.ageYears(_age!),
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary)),
+                    Expanded(
+                      child: Text(context.l10n.ageYears(_age!),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary)),
+                    ),
                   ],
                 ),
               ),
