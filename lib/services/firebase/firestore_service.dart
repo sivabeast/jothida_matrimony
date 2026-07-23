@@ -889,10 +889,17 @@ class FirestoreService {
 
   /// Permanently deletes ALL Firestore data owned by a normal user: profile(s),
   /// interests (sent + received, any status), contact details, match
-  /// connections, notifications, any stale deletion request, and finally the
-  /// `users/{uid}` document. Each step is independently guarded so a single
-  /// failure (e.g. a rules-blocked collection) can never abort the rest — the
-  /// user document is always removed so the account reads as "deleted".
+  /// connections, notifications, horoscope-report requests, Aadhaar
+  /// verification, any stale deletion request, and finally the `users/{uid}`
+  /// document. Each step is independently guarded so a single failure (e.g. a
+  /// rules-blocked collection) can never abort the rest — the user document is
+  /// always removed LAST so the account reads as "deleted" even if an earlier
+  /// step was denied.
+  ///
+  /// Once `users/{uid}` is gone, the same Gmail signing in again lands on the
+  /// "no existing doc → create new user (isProfileComplete=false)" branch of
+  /// [createOrUpdateUserOnLogin], i.e. it is treated as a brand-new member and
+  /// sent through Profile Creation.
   Future<void> deleteUserAccountData(String uid) async {
     debugPrint('[Firestore] 🗑 deleteUserAccountData($uid)');
     await _deleteWhere(AppConstants.profilesCollection, 'userId', uid);
@@ -901,9 +908,16 @@ class FirestoreService {
     await _deleteWhere(AppConstants.notificationsCollection, 'userId', uid);
     await _deleteWhere(
         AppConstants.accountDeletionRequestsCollection, 'userId', uid);
+    // Horoscope-report / appointment bookings this member created. Owned by
+    // them per the rules, so the delete is permitted.
+    await _deleteWhere(
+        AppConstants.astrologerRequestsCollection, 'userId', uid);
+    await _deleteWhere(AppConstants.consultationsCollection, 'userId', uid);
     await _deleteArrayContains(
         AppConstants.connectionsCollection, 'uids', uid);
     await _deleteDocSafe(AppConstants.contactsCollection, uid);
+    // Sensitive KYC record — must not outlive the account.
+    await _deleteDocSafe(AppConstants.aadhaarCollection, uid);
     await _deleteDocSafe(AppConstants.usersCollection, uid);
   }
 

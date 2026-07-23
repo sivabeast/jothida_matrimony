@@ -445,16 +445,39 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
 final profileCreationProvider =
     NotifierProvider<ProfileCreationNotifier, ProfileCreationState>(() => ProfileCreationNotifier());
 
+/// Canonical gender token for a raw stored value: `'m'`, `'f'`, or `''` when it
+/// cannot be determined.
+///
+/// Profiles are written with `'Male'` / `'Female'`, but the column has picked up
+/// casing and localised variants over time. Comparing the raw strings meant a
+/// single stray `'male'` slipped past the opposite-gender rule; normalising
+/// once, here, is what makes "never show the same gender" actually hold.
+String normalizedGender(String? raw) {
+  final g = (raw ?? '').trim().toLowerCase();
+  if (g.isEmpty) return '';
+  if (g.startsWith('m') || g.startsWith('ஆ')) return 'm'; // Male · ஆண்
+  if (g.startsWith('f') || g.startsWith('w') || g.startsWith('ப')) {
+    return 'f'; // Female · பெண்
+  }
+  return '';
+}
+
+/// The opposite of [normalizedGender] as the stored value used by queries.
+String _oppositeGenderValue(String myToken) =>
+    myToken == 'f' ? 'Male' : 'Female';
+
 /// Gender of profiles to show on Discover, derived automatically from the
 /// signed-in user's own gender (opposite-gender matching). No manual toggle.
 ///
 /// Sources, in priority order: the user's matrimony profile → the `users/{uid}`
 /// account document (gender is collected at signup). Defaults to showing
-/// Female profiles until the gender is known.
+/// Female profiles until the gender is known — [DiscoverNotifier] additionally
+/// applies a client-side same-gender guard, so an unknown gender can never leak
+/// same-gender profiles into the feed once the profile does load.
 final matchGenderProvider = Provider.autoDispose<String>((ref) {
   final myGender = ref.watch(myProfileProvider).valueOrNull?.gender ??
       ref.watch(currentUserProvider).valueOrNull?.gender;
-  return myGender == 'Female' ? 'Male' : 'Female';
+  return _oppositeGenderValue(normalizedGender(myGender));
 });
 
 // ── Discover / Matches feed ────────────────────────────────────────────────
@@ -579,17 +602,32 @@ bool _ppListGate(List<String> prefs, String candidate) {
 /// used unchanged, so once they set an age preference it wins everywhere.
 ({int minAge, int maxAge}) resolveAgeRange(ProfileModel? me) {
   final pp = me?.partnerPreferences;
-  if (pp == null) return (minAge: 18, maxAge: 60);
-  final isModelDefault = pp.minAge == 18 && pp.maxAge == 40;
   final age = me?.age ?? 0;
+  // No preferences object at all → still apply the gender-based default rule,
+  // so a member without a preferences record gets the spec's age window rather
+  // than the wide-open 18–60 fallback.
+  if (pp == null) return _defaultAgeRange(me, age) ?? (minAge: 18, maxAge: 60);
+  final isModelDefault = pp.minAge == 18 && pp.maxAge == 40;
   if (!isModelDefault || age <= 0) {
     return (minAge: pp.minAge, maxAge: pp.maxAge);
   }
-  if (me?.gender == 'Female') return (minAge: age, maxAge: age + 10);
-  if (me?.gender == 'Male') {
-    return (minAge: age - 10 < 18 ? 18 : age - 10, maxAge: age);
+  return _defaultAgeRange(me, age) ?? (minAge: pp.minAge, maxAge: pp.maxAge);
+}
+
+/// The spec's gender-based default window, or null when the member's own gender
+/// or age is unknown:
+///   • Male member (age 25)   → female profiles aged 18…25
+///   • Female member (age 21) → male profiles aged 21…31
+({int minAge, int maxAge})? _defaultAgeRange(ProfileModel? me, int age) {
+  if (age <= 0) return null;
+  switch (normalizedGender(me?.gender)) {
+    case 'f':
+      return (minAge: age, maxAge: age + 10);
+    case 'm':
+      return (minAge: age - 10 < 18 ? 18 : age - 10, maxAge: age);
+    default:
+      return null;
   }
-  return (minAge: pp.minAge, maxAge: pp.maxAge);
 }
 
 /// How many of the user's ACTIVE partner-preference constraints a candidate
@@ -842,13 +880,28 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
   /// Clear all optional filters and reload.
   Future<void> clearFilters() => applyFilters(const MatchFilters());
 
-  /// Data-integrity excludes only (NOT matching filters): never show the user
-  /// themselves, married members, or deactivated / blocked accounts.
-  bool _keep(ProfileModel p, String? myUid) {
+  /// Data-integrity excludes only (NOT matching filters).
+  ///
+  /// Spec rule 4 — a profile is NEVER shown when it is:
+  ///   • the signed-in user themselves,
+  ///   • the SAME gender (hard guard on top of the server-side gender query, so
+  ///     a differently-cased or localised stored value can't leak through),
+  ///   • deleted / deactivated / blocked / rejected, or married (left the pool),
+  ///   • structurally invalid — no owner uid or no name, i.e. nothing the card
+  ///     could meaningfully render.
+  bool _keep(ProfileModel p, String? myUid, ProfileModel? me) {
+    if (p.userId.trim().isEmpty) return false;
+    if (p.name.trim().isEmpty) return false;
     if (myUid != null && p.userId == myUid) return false;
     if (p.isMarried) return false;
     if (!p.isActive) return false;
     if (p.status == 'rejected' || p.status == 'blocked') return false;
+
+    // Opposite gender only. Both sides must be known for the rule to bite —
+    // an unknown value is never used to hide a profile.
+    final mine = normalizedGender(me?.gender);
+    final theirs = normalizedGender(p.gender);
+    if (mine.isNotEmpty && theirs.isNotEmpty && mine == theirs) return false;
     return true;
   }
 
@@ -896,7 +949,7 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
       {required int fetched}) {
     final eligible = pool
         .where((p) =>
-            _keep(p, myUid) && _filters.matches(p, me) && _passesMode(p, me))
+            _keep(p, myUid, me) && _filters.matches(p, me) && _passesMode(p, me))
         .toList();
 
     int cmp(ProfileModel a, ProfileModel b) {
@@ -1030,7 +1083,7 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
       final existing = state.profiles.map((p) => p.id).toSet();
       final added = page.profiles
           .where((p) =>
-              _keep(p, myUid) &&
+              _keep(p, myUid, me) &&
               _filters.matches(p, me) &&
               _passesMode(p, me) &&
               !existing.contains(p.id))
@@ -1071,11 +1124,20 @@ final newProfilesProvider =
     pool = page.profiles;
   }
 
+  // Same-gender guard as the Matches feed — see DiscoverNotifier._keep.
+  final myGender =
+      normalizedGender(ref.watch(myProfileProvider).valueOrNull?.gender);
+
   final eligible = pool.where((p) {
+    if (p.userId.trim().isEmpty || p.name.trim().isEmpty) return false;
     if (p.userId == myUid) return false;
     if (p.isMarried) return false;
     if (!p.isActive) return false;
     if (p.status == 'rejected' || p.status == 'blocked') return false;
+    final theirs = normalizedGender(p.gender);
+    if (myGender.isNotEmpty && theirs.isNotEmpty && myGender == theirs) {
+      return false;
+    }
     return true;
   }).toList()
     // Newest joiners first.

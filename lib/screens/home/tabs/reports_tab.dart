@@ -130,7 +130,13 @@ class ReportsTab extends ConsumerWidget {
     }
     return RefreshIndicator(
       color: AppColors.primary,
-      onRefresh: () async => ref.invalidate(myMatchAnalysisRequestsProvider),
+      onRefresh: () async {
+        // Pull-to-refresh is an explicit "try again": clear the once-per-session
+        // guard so a request whose assignment failed earlier is retried, not
+        // skipped for the rest of the app's life.
+        _assignRetryAttempted.clear();
+        ref.invalidate(myMatchAnalysisRequestsProvider);
+      },
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: reports.length,

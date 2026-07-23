@@ -6,6 +6,7 @@ import '../core/config/admin_config.dart';
 import '../core/config/dev_config.dart';
 import '../core/utils/working_hours.dart';
 import '../models/astrologer_request_model.dart';
+import '../models/astrologer_team_member.dart';
 import '../models/astrology_service_config.dart';
 import '../models/profile_model.dart';
 import 'astrologer_session_provider.dart';
@@ -146,36 +147,49 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
   /// assignment and the Reports-tab self-heal both cover it).
   /// Returns true when the request ended up assigned.
   Future<bool> _tryAssign(String requestId, {bool resetStatus = true}) async {
+    final team = ref.read(astrologyTeamServiceProvider);
+    var lastError = 'unknown error';
     for (var attempt = 1; attempt <= 2; attempt++) {
+      AstrologerTeamMember? chosen;
       try {
-        final chosen = await ref
-            .read(astrologyTeamServiceProvider)
-            .assignRequest(requestId, resetStatus: resetStatus);
-        if (chosen == null) {
-          debugPrint('[MatchAnalysis] assign($requestId): no active+available '
-              'employee — left unassigned for the admin.');
-          return false;
-        }
-        debugPrint(
-            '[MatchAnalysis] assign($requestId) → ${chosen.email} (ok).');
-        // In-app notification to the employee so the new report shows up on
-        // their account immediately (best-effort).
-        if (chosen.uid.isNotEmpty) {
-          await ref.read(notificationNotifierProvider.notifier).notify(
-                toUid: chosen.uid,
-                event: AppNotificationEvent.reportAssigned,
-                route: '/astrologer-dashboard',
-              );
-        }
-        return true;
+        chosen = await team.assignRequest(requestId, resetStatus: resetStatus);
       } catch (e, st) {
+        lastError = '$e';
         debugPrint('[MatchAnalysis] assign($requestId) attempt $attempt '
             'FAILED: $e\n$st');
         if (attempt == 1) {
           await Future<void>.delayed(const Duration(seconds: 1));
         }
+        continue;
       }
+      if (chosen == null) {
+        lastError = 'no active employee registered';
+        debugPrint('[MatchAnalysis] assign($requestId): no active employee — '
+            'left unassigned for the admin.');
+        break; // retrying won't conjure an employee
+      }
+      debugPrint('[MatchAnalysis] assign($requestId) → ${chosen.email} (ok).');
+      // In-app notification to the employee so the new report shows up on
+      // their account immediately. Deliberately OUTSIDE the assignment retry:
+      // a failed notification must not re-run (or undo) a successful
+      // assignment — the request is already on their Pending Reports page.
+      if (chosen.uid.isNotEmpty) {
+        try {
+          await ref.read(notificationNotifierProvider.notifier).notify(
+                toUid: chosen.uid,
+                event: AppNotificationEvent.reportAssigned,
+                route: '/astrologer-dashboard',
+              );
+        } catch (e) {
+          debugPrint('[MatchAnalysis] assign($requestId): employee '
+              'notification failed (assignment kept): $e');
+        }
+      }
+      return true;
     }
+    // Every attempt failed. Stamp the request so it is VISIBLE as unassigned
+    // to the admin instead of disappearing between the user and the employee.
+    await team.markAssignmentFailed(requestId, lastError);
     return false;
   }
 

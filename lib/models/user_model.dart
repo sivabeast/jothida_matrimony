@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/config/admin_config.dart';
+
 class UserModel {
   final String uid;
   final String? email;
@@ -167,12 +169,26 @@ class UserModel {
   /// and Admin Dashboard access). Only the email(s) in
   /// `AdminConfig.superAdminEmails` receive this role, assigned automatically
   /// on login.
-  bool get isAdmin => role == 'admin' || role == 'super_admin';
+  ///
+  /// The whitelist is checked as a FALLBACK on top of the stored role. The role
+  /// is written by `createOrUpdateUserOnLogin`, and that write can legitimately
+  /// not be in effect yet — the document was just created, the promotion write
+  /// was blocked, or this copy of the model predates it. Deriving admin status
+  /// from the (immutable, authenticated) email as well is why the Admin button
+  /// can no longer silently disappear for the whitelisted account.
+  ///
+  /// This is a UI/UX affordance only: Firestore still enforces admin writes
+  /// server-side via the `role` field in firestore.rules, so a stale local
+  /// value grants no extra data access.
+  bool get isAdmin =>
+      role == 'admin' || role == 'super_admin' || _isWhitelistedSuperAdmin;
 
   /// Employee (horoscope-analysis staff). The internal role value keeps the
   /// legacy name 'astrologer' for data compatibility.
   bool get isAstrologer => role == 'astrologer';
-  bool get isSuperAdmin => role == 'super_admin';
+  bool get isSuperAdmin => role == 'super_admin' || _isWhitelistedSuperAdmin;
+
+  bool get _isWhitelistedSuperAdmin => AdminConfig.isSuperAdminEmail(email);
 
   /// FAMILY user — invited (by gmail) into a couple's Wedding Workspace.
   /// Family users have NO matrimony profile and are locked to the workspace;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/navigation/root_navigator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/utils/l10n_ext.dart';
@@ -106,29 +107,53 @@ Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
   );
   if (confirmed != true || !context.mounted) return;
 
-  final messenger = ScaffoldMessenger.of(context);
+  // Capture BOTH before the async gap: `context` belongs to a screen that is
+  // about to be torn down by the auth-state redirect. The ROOT messenger (not
+  // this screen's) is used because the Settings scaffold no longer exists by
+  // the time we have a result to report.
+  final messenger = rootScaffoldMessengerKey.currentState;
+  final router = GoRouter.of(context);
+  final couldNotDelete = context.l10n.couldNotDeleteAccount;
   final isAstrologer =
       ref.read(currentUserProvider).valueOrNull?.isAstrologer ?? false;
 
-  // Blocking progress while we delete.
+  // Blocking progress while we delete. PopScope stops the Android back button
+  // from dismissing it mid-deletion.
   showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (_) => const Center(child: CircularProgressIndicator()),
+    builder: (_) => const PopScope(
+      canPop: false,
+      child: Center(child: CircularProgressIndicator()),
+    ),
   );
 
+  var dialogOpen = true;
+  void closeProgress() {
+    if (!dialogOpen || !context.mounted) return;
+    dialogOpen = false;
+    Navigator.of(context, rootNavigator: true).pop();
+  }
+
   try {
-    await ref
+    final authDeleted = await ref
         .read(accountControllerProvider.notifier)
         .deleteAccount(isAstrologer: isAstrologer);
-    if (!context.mounted) return;
-    Navigator.of(context, rootNavigator: true).pop(); // dismiss progress
-    // Reset the navigation stack to Login — no back-button return.
-    context.go('/login');
+    closeProgress();
+    // `go` REPLACES the whole navigation stack, so Back cannot return to Home.
+    // The router's redirect independently enforces this: the account is signed
+    // out and its user document is gone, so every gated route sends it here.
+    router.go('/login');
+    if (!authDeleted) {
+      // Firestore data + session are gone, but the Firebase Auth record
+      // survived (re-authentication was refused). Say so rather than silently
+      // implying a clean deletion.
+      messenger?.showSnackBar(SnackBar(content: Text(couldNotDelete)));
+    }
   } catch (e) {
-    if (!context.mounted) return;
-    Navigator.of(context, rootNavigator: true).pop(); // dismiss progress
-    messenger.showSnackBar(SnackBar(content: Text(context.l10n.couldNotDeleteAccount)));
+    debugPrint('[SettingsScreen] deleteAccount failed: $e');
+    closeProgress();
+    messenger?.showSnackBar(SnackBar(content: Text(couldNotDelete)));
   }
 }
 

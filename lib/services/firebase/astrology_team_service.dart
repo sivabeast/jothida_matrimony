@@ -194,15 +194,23 @@ class AstrologyTeamService {
   Future<AstrologerTeamMember?> assignRequest(String requestId,
       {bool resetStatus = true}) async {
     final snap = await _team.where('active', isEqualTo: true).get();
-    final members = snap.docs
-        .map(AstrologerTeamMember.fromFirestore)
-        // Skip employees who have marked themselves Unavailable (spec §6).
-        .where((m) => m.available)
-        .toList();
-    if (members.isEmpty) {
-      debugPrint('[AstrologyTeam] assignRequest($requestId): no active + '
-          'available employees — leaving unassigned.');
+    final active = snap.docs.map(AstrologerTeamMember.fromFirestore).toList();
+    if (active.isEmpty) {
+      debugPrint('[AstrologyTeam] assignRequest($requestId): NO ACTIVE '
+          'EMPLOYEES registered — the request cannot be assigned. Register a '
+          'Gmail under Admin > Employees.');
       return null;
+    }
+    // Prefer employees who have marked themselves Available (spec §6). If every
+    // active employee is Unavailable we still assign to one of them rather than
+    // orphan a PAID report: an unassigned request is invisible on every Pending
+    // Reports page, which is exactly the failure this method exists to prevent.
+    var members = active.where((m) => m.available).toList();
+    if (members.isEmpty) {
+      debugPrint('[AstrologyTeam] assignRequest($requestId): every active '
+          'employee is Unavailable — assigning anyway so the paid report is '
+          'not orphaned.');
+      members = active;
     }
     members.sort((a, b) {
       // 1) Fewest pending reports first (the balancing signal).
@@ -220,26 +228,84 @@ class AstrologyTeamService {
     });
     final chosen = members.first;
 
+    // ── The assignment write, ALONE in its transaction. ────────────────────
+    //
+    // This used to also bump the chosen employee's workload counters in the
+    // same transaction. That coupled the thing that matters (stamping the
+    // assignment onto the request, which is what puts it on the employee's
+    // Pending Reports page) to a purely advisory counter on a DIFFERENT
+    // document with DIFFERENT security rules — so a single rejected counter
+    // write silently rolled back the assignment and the paid report never
+    // reached anyone.
+    // Email of whoever the request ends up assigned to — `chosen` when we wrote
+    // the assignment, or the pre-existing assignee when someone beat us to it.
+    String? assignedEmail;
+    var wroteAssignment = false;
     await _db.runTransaction((tx) async {
       final reqRef = _requests.doc(requestId);
       final reqSnap = await tx.get(reqRef);
-      if (!reqSnap.exists) return;
-      // Idempotent — never double-assign if it already has an astrologer.
-      if ((reqSnap.data()?['astrologerEmail'] ?? '')
-          .toString()
-          .trim()
-          .isNotEmpty) {
+      if (!reqSnap.exists) {
+        debugPrint('[AstrologyTeam] assignRequest($requestId): request no '
+            'longer exists.');
         return;
       }
-      tx.update(_team.doc(chosen.id), {
-        'pendingCount': FieldValue.increment(1),
-        'lastAssignedAt': FieldValue.serverTimestamp(),
-      });
+      // Idempotent — never double-assign if it already has an astrologer.
+      final existing =
+          (reqSnap.data()?['astrologerEmail'] ?? '').toString().trim();
+      if (existing.isNotEmpty) {
+        debugPrint('[AstrologyTeam] assignRequest($requestId): already '
+            'assigned to $existing — no-op.');
+        assignedEmail = existing;
+        return;
+      }
       tx.update(reqRef,
           _assignmentData(chosen, assignedBy: 'auto', resetStatus: resetStatus));
+      assignedEmail = chosen.email;
+      wroteAssignment = true;
     });
-    debugPrint('[AstrologyTeam] assignRequest($requestId) → ${chosen.email}.');
-    return chosen;
+
+    if (assignedEmail == null) return null;
+
+    if (wroteAssignment) {
+      // Workload counters — BEST EFFORT and deliberately after the fact. A
+      // failure here only skews round-robin balancing for one request; it must
+      // never undo an assignment that already succeeded. Only bumped when WE
+      // wrote the assignment, so a retry can't inflate someone's count.
+      try {
+        await _team.doc(chosen.id).update({
+          'pendingCount': FieldValue.increment(1),
+          'lastAssignedAt': FieldValue.serverTimestamp(),
+        });
+      } catch (e) {
+        debugPrint('[AstrologyTeam] assignRequest($requestId): workload counter '
+            'update failed (assignment kept): $e');
+      }
+      debugPrint('[AstrologyTeam] assignRequest($requestId) → ${chosen.email}.');
+      return chosen;
+    }
+
+    // Someone else assigned it first — report the REAL assignee so the caller
+    // notifies the right employee.
+    return active.firstWhere((m) => m.email == assignedEmail,
+        orElse: () => chosen);
+  }
+
+  /// Flags a request whose auto-assignment could not complete, so it is
+  /// VISIBLE rather than silently stuck. The admin's Horoscope Requests page
+  /// filters on `assignmentStatus` and can assign it manually; the user's
+  /// Reports tab self-heal retries it. Restricted to `assignmentStatus` +
+  /// `history`, both of which the request owner is allowed to write.
+  Future<void> markAssignmentFailed(String requestId, String reason) async {
+    try {
+      await _requests.doc(requestId).update({
+        'assignmentStatus': 'unassigned',
+        'history': FieldValue.arrayUnion([
+          BookingHistoryEntry.now('Auto-assignment failed: $reason').toMap(),
+        ]),
+      });
+    } catch (e) {
+      debugPrint('[AstrologyTeam] markAssignmentFailed($requestId) failed: $e');
+    }
   }
 
   /// The canonical assignment payload written onto a request. Emails are always

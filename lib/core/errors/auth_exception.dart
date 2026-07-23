@@ -89,6 +89,20 @@ class AuthException implements Exception {
     }
 
     if (error is FirebaseAuthException) {
+      // App Check enforcement rejects the request BEFORE the credential is even
+      // considered. Firebase reports it as a generic `internal-error` whose
+      // message names App Check, so match on the message rather than the code —
+      // otherwise a brand-new account just sees "An internal error occurred".
+      if (_mentionsAppCheck(error.message) ||
+          error.code == 'firebase-app-check-token-is-invalid') {
+        return const AuthException(
+          'Sign-in was blocked by Firebase App Check. This build is not '
+          'registered for App Check — register its SHA-256 under App Check > '
+          'Play Integrity (release), or add the printed debug token under '
+          'App Check > Manage debug tokens (debug builds). See FIREBASE_SETUP.md.',
+          code: 'app-check-token-invalid',
+        );
+      }
       switch (error.code) {
         case 'network-request-failed':
           return const AuthException(
@@ -138,5 +152,12 @@ class AuthException implements Exception {
     }
 
     return AuthException('Something went wrong. Please try again. ($error)');
+  }
+
+  /// Whether [message] is a Firebase App Check rejection.
+  static bool _mentionsAppCheck(String? message) {
+    if (message == null) return false;
+    final m = message.toLowerCase();
+    return m.contains('app check');
   }
 }

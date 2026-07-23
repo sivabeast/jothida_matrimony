@@ -51,9 +51,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ref.read(chatControllerProvider).markDelivered(threads);
       }
     });
-    // Admin icon visibility — only true for whitelisted Super Admin accounts.
-    final isSuperAdmin =
-        ref.watch(currentUserProvider).valueOrNull?.isSuperAdmin ?? false;
+    // Admin icon visibility. Gated on `isAdmin` (admin OR super_admin, with the
+    // AdminConfig e-mail whitelist as a fallback) rather than `isSuperAdmin`
+    // alone — a stored role that is stale or was never written must not make
+    // the Admin Dashboard unreachable for an admin account.
+    final isAdmin =
+        ref.watch(currentUserProvider).valueOrNull?.isAdmin ?? false;
 
     return PopScope(
       canPop: false,
@@ -134,11 +137,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             tooltip: context.l10n.notifications,
           ),
-          // Admin dashboard shortcut — visible ONLY to the Super Admin account
-          // (the whitelisted Gmail). The Astrology/astrologer dashboard is
-          // intentionally NOT here: admin and astrologer roles are fully
-          // separated, so the admin account can never open an astrologer view.
-          if (isSuperAdmin)
+          // Admin dashboard shortcut — visible ONLY to admin accounts. The
+          // Astrology/astrologer dashboard is intentionally NOT here: admin and
+          // astrologer roles are fully separated, so the admin account can
+          // never open an astrologer view.
+          if (isAdmin)
             IconButton(
               icon: const Icon(Icons.admin_panel_settings,
                   size: 26, color: AppColors.gold),

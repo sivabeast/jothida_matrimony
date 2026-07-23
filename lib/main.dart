@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:jothida_matrimony/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'core/config/app_check_config.dart';
 import 'core/navigation/root_navigator.dart';
 import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
@@ -23,6 +24,12 @@ void main() async {
     await Firebase.initializeApp(
             options: DefaultFirebaseOptions.currentPlatform)
         .timeout(const Duration(seconds: 20));
+    // App Check must be installed BEFORE the first Auth/Firestore call.
+    // With enforcement ON in the console and no provider, a brand-new Google
+    // account fails to sign in with "Firebase App Check token is invalid".
+    // Awaited (bounded to 10s inside) so the very first sign-in already carries
+    // a token; it never throws.
+    await AppCheckConfig.activate();
   } catch (e, st) {
     // Don't block the UI if Firebase isn't fully configured/reachable yet
     // (e.g. while reviewing the frontend before a real Firebase project exists).

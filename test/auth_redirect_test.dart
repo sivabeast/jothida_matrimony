@@ -145,9 +145,11 @@ void main() {
       }
     });
 
-    test('a missing user document still moves off /login', () {
-      // The document read failed or returned nothing: /home is a real screen
-      // that can recover, the login spinner is not.
+    test('a missing user document keeps the account on /login', () {
+      // REGRESSION (Delete Account): after deletion the `users/{uid}` document
+      // is gone while the Auth session is still being torn down. Sending such
+      // an account to /home is the "Delete Account just returns me Home and I'm
+      // still logged in" bug — it must stay on the login screen.
       expect(
         resolveAuthRedirect(
           location: '/login',
@@ -155,8 +157,23 @@ void main() {
           userDocLoading: false,
           user: null,
         ),
-        '/home',
+        isNull,
       );
+    });
+
+    test('a deleted account is pushed off every gated screen', () {
+      for (final loc in ['/home', '/chats', '/settings', '/reports']) {
+        expect(
+          resolveAuthRedirect(
+            location: loc,
+            isAuthenticated: true,
+            userDocLoading: false,
+            user: null,
+          ),
+          '/login',
+          reason: loc,
+        );
+      }
     });
 
     test('the family-login invite check holds the user on /login', () {

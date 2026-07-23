@@ -22,6 +22,10 @@ dependencies:
   cloud_firestore: ^5.5.0
   firebase_storage: ^12.3.3
   firebase_messaging: ^15.1.6
+  # App Check — required because App Check enforcement is ON for this project.
+  # Without a provider, Identity Toolkit rejects sign-in with
+  # "Firebase App Check token is invalid". See lib/core/config/app_check_config.dart.
+  firebase_app_check: ^0.3.1
   google_sign_in: ^6.2.2
 
   # Cloudinary (profile photo / document uploads — see

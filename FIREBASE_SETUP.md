@@ -43,6 +43,49 @@ Firebase Console → **Build → Authentication → Sign-in method**, enable:
 | **Google** | Set the provider's **support email**. Add your debug + release **SHA-1/SHA-256** keys under Project settings → Your apps → Android, then re-download `google-services.json` (or re-run `flutterfire configure`). Get the debug SHA-1 with `cd android && ./gradlew signingReport`. |
 | **Phone** | Used for OTP login. Requires the **Blaze plan** for real SMS beyond the free daily quota, plus SHA keys + Play Integrity. For testing, add test phone numbers under Phone → "Phone numbers for testing". |
 
+## 3b. App Check (REQUIRED — sign-in fails without it)
+
+If **App Check enforcement** is ON for Authentication or Firestore, a build that
+does not send an App Check token is rejected. A brand-new Google account sees:
+
+```
+An internal error has occurred.
+Firebase App Check token is invalid.
+```
+
+The app installs a provider at startup (`lib/core/config/app_check_config.dart`,
+called from `main()`), but the provider still has to be registered in the
+console:
+
+**Release builds — Play Integrity**
+
+1. Firebase Console → **Build → App Check → Apps → your Android app**.
+2. Register the **Play Integrity** provider.
+3. Paste the **SHA-256** of the key that signs the build you are testing.
+   * Uploading to Play → use the **App signing key** SHA-256 from
+     *Play Console → Setup → App integrity* (NOT the upload key).
+   * Sideloading a locally-signed release → use the upload key's SHA-256:
+     `keytool -list -v -keystore android/upload-keystore.jks -alias <alias>`
+4. Link the app in *Play Console → Setup → App integrity* so Play Integrity can
+   verify it.
+
+**Debug / `flutter run` builds — debug provider**
+
+1. Run the app once and find this line in logcat:
+   `Enter this debug secret into the allow list in the Firebase Console: <uuid>`
+2. Firebase Console → **App Check → Apps → your app → ⋮ → Manage debug tokens**
+   → add that UUID.
+3. The token is per-install: a new device or a fresh install needs a new one.
+
+**Rolling it out safely.** Turn enforcement ON only after the *Requests* tab in
+App Check shows verified traffic — enabling it early locks out every existing
+installed build.
+
+**Verifying.** `AppCheckConfig.activate()` logs `[AppCheck] activated (...)` on
+success and never throws. If sign-in still fails, the app now surfaces the real
+reason ("Sign-in was blocked by Firebase App Check…") instead of Firebase's
+generic internal error.
+
 ## 4. Create Firestore
 
 1. **Build → Firestore Database → Create database** (production mode,

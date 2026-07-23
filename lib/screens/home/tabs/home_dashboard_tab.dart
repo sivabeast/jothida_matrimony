@@ -219,10 +219,10 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     final unread = ref.watch(unreadNotificationCountProvider) +
         ref.watch(unreadAnnouncementsCountProvider);
     final unreadChats = ref.watch(myUnreadChatCountProvider);
-    // Admin + Astrology dashboard shortcuts are visible ONLY to the privileged
-    // super-admin account (the one whitelisted Gmail). Regular users and the
-    // internal astrology account never see them.
-    final isSuperAdmin = user?.isSuperAdmin ?? false;
+    // Admin dashboard shortcut — visible to admin accounts only (admin /
+    // super_admin, plus the AdminConfig e-mail whitelist as a fallback so a
+    // stale stored role can't hide it). Regular users never see it.
+    final isAdmin = user?.isAdmin ?? false;
 
     return Row(
       children: [
@@ -271,7 +271,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         ),
         // Admin shortcut only — the old Astrology Dashboard icon was removed
         // along with the whole email-based astrology access system.
-        if (isSuperAdmin)
+        if (isAdmin)
           IconButton(
             tooltip: 'Admin Dashboard',
             visualDensity: VisualDensity.compact,

@@ -271,29 +271,93 @@ class AuthService {
   /// Permanently deletes the Firebase Auth account, then clears the Google +
   /// Firebase sessions.
   ///
-  /// `currentUser.delete()` can fail with `requires-recent-login` when the
-  /// credential is stale; in that case the account doc is already gone from
-  /// Firestore, so we log and fall through to a normal sign-out rather than
-  /// blocking the user. Either way the local session is fully ended.
-  Future<void> deleteCurrentUser() async {
+  /// `currentUser.delete()` fails with `requires-recent-login` whenever the
+  /// credential is older than a few minutes — which is the normal case for
+  /// someone who opens Settings during a long session. Previously that error
+  /// was only logged, so the Auth account *survived* the "delete" and the user
+  /// looked half-deleted. Now we silently re-authenticate through Google and
+  /// retry the delete once.
+  ///
+  /// Returns true when the Firebase Auth account was actually removed. The
+  /// local session is ALWAYS ended (Google + Firebase sign-out), whatever the
+  /// outcome — deletion must never strand the user on an authenticated screen.
+  Future<bool> deleteCurrentUser() async {
+    var deleted = false;
     final user = _auth.currentUser;
     if (user != null) {
-      try {
-        await user.delete();
-        debugPrint('[AuthService] deleteCurrentUser: auth account deleted.');
-      } on FirebaseAuthException catch (e) {
-        debugPrint('[AuthService] deleteCurrentUser: delete failed '
-            '(${e.code}); signing out instead.');
-      } catch (e) {
-        debugPrint('[AuthService] deleteCurrentUser: unexpected error: $e');
-      }
+      deleted = await _deleteWithReauth(user);
+    }
+    // Always drop BOTH sessions. `disconnect()` additionally revokes the OAuth
+    // grant so the next sign-in shows the account chooser and issues a fresh
+    // consent — without it Play Services can silently hand back the same
+    // account and the "sign in again as a new user" flow feels broken.
+    try {
+      await _googleSignIn.disconnect().timeout(const Duration(seconds: 6));
+    } catch (e) {
+      debugPrint('[AuthService] deleteCurrentUser: Google disconnect '
+          'skipped ($e)');
     }
     try {
-      await _googleSignIn.signOut();
+      await _googleSignIn.signOut().timeout(const Duration(seconds: 6));
     } catch (_) {}
     try {
       await _auth.signOut();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[AuthService] deleteCurrentUser: Firebase signOut failed: $e');
+    }
+    return deleted;
+  }
+
+  /// `user.delete()`, retried once behind a silent Google re-authentication
+  /// when Firebase demands a fresh credential.
+  Future<bool> _deleteWithReauth(User user) async {
+    try {
+      await user.delete().timeout(_credentialTimeout);
+      debugPrint('[AuthService] deleteCurrentUser: auth account deleted.');
+      return true;
+    } on FirebaseAuthException catch (e) {
+      if (e.code != 'requires-recent-login') {
+        debugPrint('[AuthService] deleteCurrentUser: delete failed (${e.code}); '
+            'signing out instead.');
+        return false;
+      }
+      debugPrint('[AuthService] deleteCurrentUser: requires-recent-login — '
+          're-authenticating with Google and retrying...');
+    } catch (e) {
+      debugPrint('[AuthService] deleteCurrentUser: unexpected error: $e');
+      return false;
+    }
+
+    // Re-authenticate. `signInSilently()` reuses the account already held by
+    // Play Services, so this is invisible to the user in the normal case; if it
+    // returns nothing we fall back to the interactive picker rather than give
+    // up on deleting the account.
+    try {
+      final account = await _googleSignIn
+              .signInSilently()
+              .timeout(const Duration(seconds: 15)) ??
+          await _googleSignIn.signIn().timeout(_pickerTimeout);
+      if (account == null) {
+        debugPrint('[AuthService] deleteCurrentUser: re-authentication '
+            'cancelled — auth account NOT deleted.');
+        return false;
+      }
+      final auth = await account.authentication.timeout(_tokenTimeout);
+      await user
+          .reauthenticateWithCredential(GoogleAuthProvider.credential(
+            accessToken: auth.accessToken,
+            idToken: auth.idToken,
+          ))
+          .timeout(_credentialTimeout);
+      await user.delete().timeout(_credentialTimeout);
+      debugPrint('[AuthService] deleteCurrentUser: auth account deleted after '
+          're-authentication.');
+      return true;
+    } catch (e, st) {
+      debugPrint('[AuthService] deleteCurrentUser: re-authenticated delete '
+          'FAILED: $e\n$st');
+      return false;
+    }
   }
 
   // ── Helper ──────────────────────────────────────────────────────────────────

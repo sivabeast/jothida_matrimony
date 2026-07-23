@@ -225,14 +225,26 @@ class AuthRepository {
   /// deleted and the Google + Firebase sessions are cleared. After this the
   /// `users/{uid}` (and `astrologers/{uid}`) documents no longer exist, so the
   /// same Google account signing in again is treated as a brand-new user.
-  Future<void> deleteAccount(String uid, {required bool isAstrologer}) async {
+  /// Returns true when the Firebase **Auth** account was removed too. Firestore
+  /// data is always purged; a false result means only the auth record survived
+  /// (re-authentication was cancelled or refused), which the caller may surface.
+  Future<bool> deleteAccount(String uid, {required bool isAstrologer}) async {
     debugPrint('[AuthRepository] deleteAccount($uid, isAstrologer=$isAstrologer)');
+    // Clear the push token first so a deleted account can never keep receiving
+    // notifications on this device.
+    try {
+      await _fcm.deleteToken(uid);
+    } catch (e) {
+      debugPrint('[AuthRepository] deleteAccount: FCM token delete skipped: $e');
+    }
     if (isAstrologer) {
       await _firestore.deleteAstrologerAccountData(uid);
     } else {
       await _firestore.deleteUserAccountData(uid);
     }
-    await _auth.deleteCurrentUser();
-    debugPrint('[AuthRepository] deleteAccount: done.');
+    final authDeleted = await _auth.deleteCurrentUser();
+    debugPrint('[AuthRepository] deleteAccount: done '
+        '(authAccountDeleted=$authDeleted).');
+    return authDeleted;
   }
 }

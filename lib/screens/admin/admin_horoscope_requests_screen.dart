@@ -20,11 +20,24 @@ class AdminHoroscopeRequestsScreen extends ConsumerStatefulWidget {
       _AdminHoroscopeRequestsScreenState();
 }
 
-enum _ReqFilter { all, pendingAcceptance, accepted, inProgress, completed, reassigned }
+enum _ReqFilter {
+  all,
+  // Paid requests that never reached an employee — auto-assignment found no
+  // active employee or was rejected. These are invisible on every employee's
+  // Pending Reports page until an admin assigns them, so they get their own
+  // filter rather than being buried in "All".
+  unassigned,
+  pendingAcceptance,
+  accepted,
+  inProgress,
+  completed,
+  reassigned,
+}
 
 extension on _ReqFilter {
   String get label => switch (this) {
         _ReqFilter.all => 'All',
+        _ReqFilter.unassigned => 'Unassigned',
         _ReqFilter.pendingAcceptance => 'Pending Acceptance',
         _ReqFilter.accepted => 'Accepted',
         _ReqFilter.inProgress => 'In Progress',
@@ -39,6 +52,8 @@ class _AdminHoroscopeRequestsScreenState
 
   bool _matches(AstrologerRequestModel r) => switch (_filter) {
         _ReqFilter.all => true,
+        _ReqFilter.unassigned =>
+          !r.isAssigned && r.status != AstrologerRequestStatus.completed,
         _ReqFilter.pendingAcceptance =>
           r.status == AstrologerRequestStatus.pending,
         // Accepted & In Progress share the `accepted` status (the data model

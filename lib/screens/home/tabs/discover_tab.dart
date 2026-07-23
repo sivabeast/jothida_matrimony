@@ -28,9 +28,12 @@ import '../../../widgets/common/profile_highlight_badge.dart';
 /// visible (per spec, partner preferences never hide anyone) — preference and
 /// nakshatra matches are ranked first and highlighted with a badge.
 ///
-/// Browsing progress is remembered PER USER: profiles already viewed sort to
-/// the end of the feed, so the next session resumes from the first unseen
-/// profile instead of restarting at profile 1.
+/// Browsing progress is remembered PER USER. The exact profile the user was
+/// last on is persisted, so reopening the app CONTINUES from there instead of
+/// restarting at profile 1. A viewed profile is never removed from the feed —
+/// swiping left always goes back to the previous profile, swiping right to the
+/// next — and once every profile has been seen the browser simply stays on the
+/// last one rather than resetting or showing an empty state.
 class DiscoverTab extends ConsumerStatefulWidget {
   const DiscoverTab({super.key});
 
@@ -50,12 +53,17 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   // so page-change events can record the viewed profile.
   List<ProfileModel> _visible = const [];
 
+  /// Set once the pager has been placed at the persisted resume position, so a
+  /// later rebuild (or a merged-in page of NEW matches) can never yank the user
+  /// back to where they started.
+  bool _resumed = false;
+
   @override
   void initState() {
     super.initState();
     // Load ONLY when the feed is empty — returning to this tab (or rebuilding
     // it) must never reload from the first profile. The persisted per-user
-    // browsing progress then resumes from the first unseen profile.
+    // browsing progress then resumes from where the user left off.
     Future.microtask(() {
       final st = ref.read(discoverProvider);
       if (st.profiles.isEmpty && !st.isLoading) {
@@ -72,25 +80,23 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     super.dispose();
   }
 
-  /// The index browsing should CONTINUE from: the first profile the user has
-  /// not viewed yet. When every profile has been viewed, the rotation restarts
-  /// from profile 1 (and the history is cleared so progress tracks again).
-  int _resumeIndex(List<ProfileModel> profiles) {
-    if (profiles.isEmpty) return 0;
-    final viewed = ref.read(viewedProfilesProvider);
-    final idx = profiles.indexWhere((p) => !viewed.contains(p.id));
-    if (idx == -1) {
-      // Every profile viewed once → restart the rotation from profile 1.
-      ref.read(viewedProfilesProvider.notifier).resetHistory();
-      return 0;
-    }
-    return idx;
-  }
+  /// The index browsing should CONTINUE from — see [resolveResumeIndex].
+  int _resumeIndex(List<ProfileModel> profiles) => resolveResumeIndex(
+        profileIds: [for (final p in profiles) p.id],
+        viewed: ref.read(viewedProfilesProvider),
+        lastViewed: ref.read(lastViewedProfileProvider),
+      );
 
   /// Snaps the pager to the resume position (post-frame, when attached).
+  ///
+  /// Runs ONCE per feed load. Anything after that — a rebuild, a merged page of
+  /// new matches, a filter toggle — leaves the pager exactly where the user is.
   void _jumpToResume() {
+    if (_resumed) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_pageController.hasClients) return;
+      if (_visible.isEmpty) return;
+      _resumed = true;
       final target = _resumeIndex(_visible);
       if (target != (_pageController.page?.round() ?? 0)) {
         _pageController.jumpToPage(target);
@@ -98,28 +104,33 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     });
   }
 
-  /// Load the matches feed, then continue from the first unseen profile.
+  /// Load the matches feed, then continue from where the user left off.
   Future<void> _load() async {
+    _resumed = false;
     await ref.read(discoverProvider.notifier).load();
     if (mounted) _jumpToResume();
   }
 
   /// MANUAL refresh (pull-to-refresh / Refresh button) — reloads and
-  /// explicitly resets the browsing position back to the first profile.
+  /// explicitly resets the browsing position back to the first profile. This is
+  /// the ONLY path that discards the saved position, because the user asked
+  /// for it.
   Future<void> _refresh() async {
     await ref.read(discoverProvider.notifier).load();
-    if (mounted && _pageController.hasClients) {
-      _pageController.jumpToPage(0);
-    }
+    if (!mounted) return;
+    _resumed = true; // don't let _jumpToResume undo the explicit reset
+    if (_pageController.hasClients) _pageController.jumpToPage(0);
   }
 
   /// Record the viewed profile (per-user browsing progress) and prefetch the
   /// next page as the user nears the end of the pager.
   void _onPageChanged(int index) {
     if (index >= 0 && index < _visible.length) {
-      ref
-          .read(viewedProfilesProvider.notifier)
-          .markViewed(_visible[index].id);
+      final id = _visible[index].id;
+      ref.read(viewedProfilesProvider.notifier).markViewed(id);
+      // The resume anchor follows the user in BOTH directions, so a left swipe
+      // back to an earlier profile is where the next session picks up too.
+      ref.read(lastViewedProfileProvider.notifier).set(id);
     }
     if (index >= _visible.length - 2) {
       ref.read(discoverProvider.notifier).loadMore();
@@ -176,14 +187,24 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(discoverProvider);
-    var profiles = state.profiles;
+    // The full ranked feed — every profile that passes the matching rules,
+    // whether or not the user has already seen it. This is what decides the
+    // empty state.
+    final matched = state.profiles;
+    var profiles = matched;
     // Hide Interested Profiles (default ON): drop profiles the user has already
     // sent an interest to, so they don't reappear in the feed.
     final hideInterested = ref.watch(hideInterestedProvider);
     if (hideInterested) {
       final sentIds = ref.watch(sentInterestProfileIdsProvider);
       if (sentIds.isNotEmpty) {
-        profiles = profiles.where((p) => !sentIds.contains(p.id)).toList();
+        final remaining =
+            matched.where((p) => !sentIds.contains(p.id)).toList();
+        // Never let this convenience filter empty the page: if every match has
+        // an interest sent, keep showing them rather than dropping the user
+        // onto "No Matching Profiles" — there ARE matches, they're just all
+        // contacted.
+        if (remaining.isNotEmpty) profiles = remaining;
       }
     }
     _visible = profiles;
@@ -198,16 +219,23 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         ref.read(viewedProfilesProvider.notifier).markViewed(shown.id);
+        ref.read(lastViewedProfileProvider.notifier).set(shown.id);
       });
     }
 
-    // Refresh matches automatically when the profile (incl. partner
-    // preferences) changes — e.g. after editing preferences — resuming from
-    // the first unseen profile of the new list.
+    // Reload the feed when something that actually CHANGES the matching rules
+    // changes — the user's own gender/age or their partner preferences.
+    //
+    // `myProfileProvider` is a live snapshot stream, so it emits a brand-new
+    // ProfileModel on EVERY write to the document (a view-count bump, a photo
+    // edit, an admin touch...). Reloading on identity alone therefore rebuilt
+    // the whole feed constantly and threw away the browsing position — one of
+    // the reasons Matches kept "starting from the beginning".
     ref.listen<AsyncValue<ProfileModel?>>(myProfileProvider, (prev, next) {
       final p = prev?.valueOrNull;
       final n = next.valueOrNull;
-      if (n != null && p != null && !identical(p, n)) _load();
+      if (n == null || p == null) return;
+      if (_matchingSignature(p) != _matchingSignature(n)) _load();
     });
 
     return Container(
@@ -220,6 +248,9 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
               if (state.isLoading && profiles.isEmpty) {
                 return const Center(child: CircularProgressIndicator());
               }
+              // "No Matching Profiles" ONLY when zero profiles in the database
+              // pass the matching rules — never merely because the user has
+              // already browsed them all.
               if (profiles.isEmpty) return _emptyState(state.error != null);
               return _swipeBrowser(profiles);
             }),
@@ -227,6 +258,37 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
         ],
       ),
     );
+  }
+
+  /// Everything about the signed-in member that can change WHO matches them.
+  /// Used to decide whether a profile-document update warrants reloading the
+  /// feed (and losing the browsing position).
+  static String _matchingSignature(ProfileModel p) {
+    final pp = p.partnerPreferences;
+    return [
+      p.gender,
+      p.age,
+      pp.minAge,
+      pp.maxAge,
+      pp.minHeight,
+      pp.maxHeight,
+      pp.religion,
+      pp.caste,
+      pp.casteId,
+      pp.subCaste,
+      pp.maritalStatus,
+      pp.motherTongue,
+      pp.physicalStatus,
+      pp.income,
+      pp.country,
+      pp.state,
+      pp.district,
+      pp.city,
+      pp.rasi,
+      pp.nakshatra,
+      pp.education.join('|'),
+      pp.occupation.join('|'),
+    ].join('§');
   }
 
   // ── Top compact card ──────────────────────────────────────────────────────
