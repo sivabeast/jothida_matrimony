@@ -74,8 +74,34 @@ jobs:
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "::notice::ANDROID_KEYSTORE_BASE64 is not set — release APK/AAB steps will be skipped."
             echo "available=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "## ⚠️ Release AAB was NOT built"
+              echo ""
+              echo "The signing secrets are missing, so this run produced no App Bundle."
+              echo "A release artifact cannot be signed without the upload key."
+              echo ""
+              echo "Add these under **Settings → Secrets and variables → Actions**:"
+              echo ""
+              echo "| Secret | Value |"
+              echo "| --- | --- |"
+              echo "| \`ANDROID_KEYSTORE_BASE64\` | base64 of \`android/upload-keystore.jks\` |"
+              echo "| \`ANDROID_KEYSTORE_PASSWORD\` | \`storePassword\` from \`android/key.properties\` |"
+              echo "| \`ANDROID_KEY_PASSWORD\` | \`keyPassword\` from the same file |"
+              echo "| \`ANDROID_KEY_ALIAS\` | \`upload\` |"
+              echo ""
+              echo '```powershell'
+              echo '[Convert]::ToBase64String([IO.File]::ReadAllBytes("android/upload-keystore.jks")) | Set-Clipboard'
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            # On main the whole point of the run is to produce the uploadable
+            # bundle, so a missing key is a hard failure — a silently skipped
+            # artifact is too easy to miss. Other branches just carry on.
+            if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+              echo "::error::Release signing secrets are missing — no AAB was produced. See the job summary for the 4 secrets to add."
+              exit 1
+            fi
+            echo "::warning::Release signing secrets are missing — skipping release artifacts on this branch."
             exit 0
           fi
           echo "$KEYSTORE_BASE64" | base64 -d > android/upload-keystore.jks
@@ -131,11 +157,23 @@ jobs:
       - name: Verify the AAB is release-signed
         if: github.ref == 'refs/heads/main' && steps.signing.outputs.available == 'true'
         run: |
-          keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab | tee /tmp/cert.txt
+          AAB=build/app/outputs/bundle/release/app-release.aab
+          keytool -printcert -jarfile "$AAB" | tee /tmp/cert.txt
           if grep -qi "CN=Android Debug" /tmp/cert.txt; then
             echo "::error::The AAB is signed with a DEBUG certificate — Google Play will reject it."
             exit 1
           fi
+          {
+            echo "## ✅ Release AAB ready for Google Play"
+            echo ""
+            echo "Download it from the **jothida-matrimony-release-aab** artifact at the bottom of this page."
+            echo ""
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| Size | $(du -h "$AAB" | cut -f1) |"
+            echo "| Signed by | $(grep -m1 'Owner:' /tmp/cert.txt | sed 's/^ *Owner: //') |"
+            echo "| SHA-1 | \`$(grep -m1 'SHA1:' /tmp/cert.txt | sed 's/.*SHA1: //')\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
