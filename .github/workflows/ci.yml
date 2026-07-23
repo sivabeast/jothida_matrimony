@@ -142,20 +142,27 @@ jobs:
       - name: Build APK (Debug)
         run: flutter build apk --debug
 
-      # Release builds run ONLY when real signing credentials are available.
-      # Without them the Gradle guard fails the build on purpose, so skipping
-      # here keeps the pipeline green while making it impossible to publish a
-      # debug-signed "release" artifact.
+      # Release builds run whenever real signing credentials are available, on
+      # ANY branch — so a feature branch produces a Play-uploadable bundle
+      # without having to merge to main first. (They used to be gated on
+      # `github.ref == 'refs/heads/main'` as well, which is why a green feat/**
+      # run shipped only the debug APK.)
+      #
+      # The SIGNING gate is deliberately kept: without the upload key the
+      # Gradle guard fails the build on purpose, so skipping here keeps the
+      # pipeline green while making it impossible to publish a debug-signed
+      # "release" artifact. On main a missing key is still a hard failure
+      # (see "Set up release signing" above).
       - name: Build APK (Release)
-        if: github.ref == 'refs/heads/main' && steps.signing.outputs.available == 'true'
+        if: steps.signing.outputs.available == 'true'
         run: flutter build apk --release
 
       - name: Build AAB (Release)
-        if: github.ref == 'refs/heads/main' && steps.signing.outputs.available == 'true'
+        if: steps.signing.outputs.available == 'true'
         run: flutter build appbundle --release
 
       - name: Verify the AAB is release-signed
-        if: github.ref == 'refs/heads/main' && steps.signing.outputs.available == 'true'
+        if: steps.signing.outputs.available == 'true'
         run: |
           AAB=build/app/outputs/bundle/release/app-release.aab
           keytool -printcert -jarfile "$AAB" | tee /tmp/cert.txt
@@ -182,8 +189,15 @@ jobs:
           path: build/app/outputs/flutter-apk/app-debug.apk
 
       - name: Upload AAB artifact
-        if: github.ref == 'refs/heads/main' && steps.signing.outputs.available == 'true'
+        if: steps.signing.outputs.available == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: jothida-matrimony-release-aab
           path: build/app/outputs/bundle/release/
+
+      - name: Upload release APK artifact
+        if: steps.signing.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: jothida-matrimony-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
