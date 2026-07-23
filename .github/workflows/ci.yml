@@ -37,16 +37,55 @@ jobs:
             flutter create . --platforms=android --org=com.jothida --project-name=jothida_matrimony
           fi
 
-      # Use a fixed, committed debug keystore so every build (debug AND release,
-      # which Flutter signs with the debug key by default) has a STABLE SHA-1.
-      # Without this, CI auto-generates a random keystore each run, the SHA-1
-      # changes every build, and Google Sign-In fails with ApiException 10.
+      # Use a fixed, committed debug keystore so every DEBUG build has a STABLE
+      # SHA-1. Without this, CI auto-generates a random keystore each run, the
+      # SHA-1 changes every build, and Google Sign-In fails with ApiException 10.
       # The matching SHA-1/SHA-256 are listed in FIREBASE_SETUP.md — register
       # them once in the Firebase Console.
+      #
+      # This keystore is for DEBUG builds only. Release artifacts are signed
+      # with the upload key materialised from secrets in the next step; a
+      # release build can no longer silently fall back to this key.
       - name: Install fixed debug keystore (stable SHA-1 for Google Sign-In)
         run: |
           mkdir -p ~/.android
           cp ci/debug.keystore ~/.android/debug.keystore
+
+      # android/key.properties and android/upload-keystore.jks are git-ignored,
+      # so without this step CI has no release credentials at all. That is how
+      # the debug-signed AAB that Play rejected was produced: the old Gradle
+      # config quietly fell back to the debug key, and the artifact below was
+      # published as if it were a release build.
+      #
+      # Required repository secrets (Settings → Secrets and variables → Actions):
+      #   ANDROID_KEYSTORE_BASE64   base64 of android/upload-keystore.jks
+      #   ANDROID_KEYSTORE_PASSWORD store password
+      #   ANDROID_KEY_ALIAS         key alias (e.g. "upload")
+      #   ANDROID_KEY_PASSWORD      key password
+      # Create the first one with:
+      #   base64 -w0 android/upload-keystore.jks        (Linux/macOS)
+      #   [Convert]::ToBase64String([IO.File]::ReadAllBytes("android/upload-keystore.jks"))  (PowerShell)
+      - name: Set up release signing
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::notice::ANDROID_KEYSTORE_BASE64 is not set — release APK/AAB steps will be skipped."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > android/upload-keystore.jks
+          cat > android/key.properties << EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=../upload-keystore.jks
+          EOF
+          echo "available=true" >> "$GITHUB_OUTPUT"
 
       - name: Create .env file
         run: |
@@ -77,23 +116,36 @@ jobs:
       - name: Build APK (Debug)
         run: flutter build apk --debug
 
+      # Release builds run ONLY when real signing credentials are available.
+      # Without them the Gradle guard fails the build on purpose, so skipping
+      # here keeps the pipeline green while making it impossible to publish a
+      # debug-signed "release" artifact.
       - name: Build APK (Release)
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && steps.signing.outputs.available == 'true'
         run: flutter build apk --release
 
       - name: Build AAB (Release)
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && steps.signing.outputs.available == 'true'
         run: flutter build appbundle --release
 
-      - name: Upload APK artifact
+      - name: Verify the AAB is release-signed
+        if: github.ref == 'refs/heads/main' && steps.signing.outputs.available == 'true'
+        run: |
+          keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab | tee /tmp/cert.txt
+          if grep -qi "CN=Android Debug" /tmp/cert.txt; then
+            echo "::error::The AAB is signed with a DEBUG certificate — Google Play will reject it."
+            exit 1
+          fi
+
+      - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: jothida-matrimony-apk
-          path: build/app/outputs/flutter-apk/
+          name: jothida-matrimony-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
 
       - name: Upload AAB artifact
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && steps.signing.outputs.available == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: jothida-matrimony-aab
+          name: jothida-matrimony-release-aab
           path: build/app/outputs/bundle/release/

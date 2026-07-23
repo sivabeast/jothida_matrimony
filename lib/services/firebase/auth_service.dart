@@ -169,8 +169,23 @@ class AuthService {
       );
 
       if (googleUser == null) {
-        log('picker dismissed — user cancelled.');
-        return null; // user cancelled
+        // IMPORTANT: `signIn()` returns null for TWO very different things —
+        // the user dismissed the chooser, AND Play Services refused to complete
+        // the sign-in (most often because this build's signing certificate is
+        // not registered as an Android OAuth client, so Google will not issue
+        // an ID token). The plugin gives us no way to tell them apart, and the
+        // second case used to look like "I picked my account and nothing
+        // happened": no navigation, no error, no log.
+        //
+        // Log both possibilities explicitly, with the elapsed time — a
+        // sub-second null means the chooser could not have been interacted
+        // with, i.e. it is a configuration failure, not a cancel.
+        log('signIn() returned NO account after ${sw.elapsedMilliseconds}ms. '
+            'Either the user dismissed the chooser, or Google refused to issue '
+            'an ID token for this build. If this was not a dismissal, verify '
+            "this build's SHA-1 is registered in Firebase: "
+            'dart run tool/check_google_signin_config.dart');
+        return null;
       }
       log('account selected: ${googleUser.email}');
 

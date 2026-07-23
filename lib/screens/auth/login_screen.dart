@@ -9,6 +9,7 @@ import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/auth_routing.dart';
 import '../../core/utils/l10n_ext.dart';
+import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../providers/wedding_provider.dart';
@@ -68,10 +69,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return;
       }
 
-      final user = auth.valueOrNull;
+      var user = auth.valueOrNull;
       if (user == null) {
-        debugPrint('[LoginScreen] Google picker dismissed — staying on login.');
-        return;
+        // `GoogleSignIn.signIn()` reports "no account" for BOTH a dismissed
+        // chooser and a Play-Services refusal, so a null model on its own does
+        // not mean the user is unauthenticated. Ask Firebase — it is the only
+        // authority on whether a session exists. This is the case that looked
+        // like "authentication completes but the app stays on the login page":
+        // the flow returned null and fell straight out of the method without
+        // navigating and without an error.
+        user = await _recoverSignedInUser();
+        if (!mounted) return;
+        if (user == null) {
+          if (ref.read(authRepositoryProvider).currentUser != null) {
+            // Signed in, but the user document could not be loaded. Still never
+            // leave an authenticated account on the login screen — the router's
+            // redirect settles the destination once the document arrives.
+            debugPrint('[LoginScreen] authenticated but no user document → '
+                '/home (router redirect will correct the destination)');
+            context.go('/home');
+            return;
+          }
+          debugPrint('[LoginScreen] no Google account AND no Firebase session '
+              '→ nothing to route to. Either the chooser was dismissed, or '
+              'Google refused to issue an ID token for this build (check the '
+              '[GoogleSignIn] log lines above).');
+          return;
+        }
+        debugPrint('[LoginScreen] recovered an existing Firebase session '
+            '(uid=${user.uid}) — routing instead of staying on login.');
       }
 
       // The Matrimony card was chosen → matrimony interface on next open too.
@@ -280,6 +306,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } finally {
       ref.read(familyLoginInProgressProvider.notifier).state = false;
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Last-resort check for an authenticated session when the sign-in call
+  /// produced no [UserModel].
+  ///
+  /// Firebase Auth — not the Google plugin's return value — is the source of
+  /// truth for "is this device signed in". Returns the user document, or null
+  /// when there genuinely is no session.
+  Future<UserModel?> _recoverSignedInUser() async {
+    final repo = ref.read(authRepositoryProvider);
+    final firebaseUser = repo.currentUser;
+    if (firebaseUser == null) return null;
+    debugPrint('[LoginScreen] Google returned no account, but Firebase HAS a '
+        'session (uid=${firebaseUser.uid}) — loading the user document.');
+    try {
+      return await repo
+          .createUserDocumentAfterAuth(firebaseUser, loginProvider: 'google.com')
+          .timeout(const Duration(seconds: 15));
+    } catch (e) {
+      debugPrint('[LoginScreen] recovery user-document load failed: $e');
+      return null;
     }
   }
 

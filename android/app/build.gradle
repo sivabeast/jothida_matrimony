@@ -14,6 +14,18 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+// `storeFile` in key.properties is relative to this module (android/app), e.g.
+// "../upload-keystore.jks" → android/upload-keystore.jks.
+def releaseKeystoreFile =
+        keystoreProperties["storeFile"] ? file(keystoreProperties["storeFile"]) : null
+
+// Real release credentials are available only when the properties file AND the
+// keystore it points at both exist. Anything less must NOT produce a release
+// artifact — see the taskGraph guard at the bottom of this file.
+def hasReleaseSigning = keystorePropertiesFile.exists() &&
+        releaseKeystoreFile != null &&
+        releaseKeystoreFile.exists()
+
 android {
     namespace = "com.jothida.jothida_matrimony"
     compileSdk = flutter.compileSdkVersion
@@ -50,10 +62,10 @@ android {
         // Release (upload) key used for Play Store bundles. Credentials come
         // from android/key.properties, which is git-ignored — never committed.
         release {
-            if (keystorePropertiesFile.exists()) {
+            if (hasReleaseSigning) {
                 keyAlias = keystoreProperties["keyAlias"]
                 keyPassword = keystoreProperties["keyPassword"]
-                storeFile = keystoreProperties["storeFile"] ? file(keystoreProperties["storeFile"]) : null
+                storeFile = releaseKeystoreFile
                 storePassword = keystoreProperties["storePassword"]
             }
         }
@@ -64,11 +76,51 @@ android {
             signingConfig = signingConfigs.debug
         }
         release {
-            // Use the dedicated release keystore when key.properties is present
-            // (Play Store builds); fall back to debug signing otherwise so local
-            // `flutter run --release` still works without the release key.
-            signingConfig = keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
+            // NEVER fall back to the debug key here.
+            //
+            // This used to read `keystorePropertiesFile.exists() ?
+            // signingConfigs.release : signingConfigs.debug`. On any machine
+            // without android/key.properties — most importantly CI, where the
+            // file and the keystore are both git-ignored and therefore absent —
+            // that silently produced a **debug-signed release bundle**, which
+            // Google Play rejects with "You uploaded an APK or Android App
+            // Bundle that was signed in debug mode". The build looked like it
+            // succeeded, so the problem only surfaced at upload time.
+            //
+            // Leaving this null means a release build without credentials
+            // cannot be signed at all; the guard below turns that into an
+            // explicit, explained failure.
+            signingConfig = hasReleaseSigning ? signingConfigs.release : null
         }
+    }
+}
+
+// Fail fast when a release artifact is requested without release signing
+// credentials, instead of emitting something Play will reject.
+gradle.taskGraph.whenReady { graph ->
+    if (hasReleaseSigning) {
+        return
+    }
+    def wantsRelease = graph.allTasks.any { task ->
+        (task.name.startsWith("bundle") ||
+                task.name.startsWith("assemble") ||
+                task.name.startsWith("package")) && task.name.contains("Release")
+    }
+    if (wantsRelease) {
+        throw new GradleException(
+                "\n\nRelease signing is not configured, so this build would be " +
+                "signed with the DEBUG key and rejected by Google Play\n" +
+                "(\"You uploaded an APK or Android App Bundle that was signed " +
+                "in debug mode\").\n\n" +
+                "Expected:\n" +
+                "  android/key.properties      (storePassword, keyPassword, " +
+                "keyAlias, storeFile)\n" +
+                "  " + (releaseKeystoreFile ? releaseKeystoreFile.path
+                        : "android/upload-keystore.jks") + "\n\n" +
+                "Both are git-ignored on purpose, so they must be present " +
+                "locally (or written from\n" +
+                "secrets in CI) before building a release APK/AAB. " +
+                "See FIREBASE_SETUP.md.\n")
     }
 }
 
