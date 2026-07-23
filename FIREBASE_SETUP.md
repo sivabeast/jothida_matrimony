@@ -222,35 +222,49 @@ prints exactly what to paste where:
 dart run tool/check_google_signin_config.dart
 ```
 
-### ⚠️ Release builds: the upload key's SHA-1 is NOT registered
+### Which SHA fingerprints belong in the console
 
-`google-services.json` currently contains **one** Android OAuth client, for the
-debug keystore:
+Two keystores sign this app, and each needs BOTH its SHA-1 and SHA-256
+registered under Firebase Console → **Project settings → Your apps →**
+`com.jothida.jothida_matrimony` → **Add fingerprint**. Four entries in total —
+verified 2026-07-23, all four present:
 
-| Key | SHA-1 | Registered? |
+| Key | Hash | Fingerprint |
 |---|---|---|
-| `ci/debug.keystore` (debug builds) | `8B:4E:88:65:BD:95:8B:9B:46:60:32:B4:C8:D7:32:4D:87:7B:AD:BE` | ✅ yes |
-| `android/upload-keystore.jks` (release / Play builds) | `06:9B:78:84:FF:CE:C2:00:C3:F0:C8:C8:D3:96:3B:71:60:18:A7:62` | ❌ **no** |
+| `ci/debug.keystore` (debug + CI builds) | SHA-1 | `8B:4E:88:65:BD:95:8B:9B:46:60:32:B4:C8:D7:32:4D:87:7B:AD:BE` |
+| `ci/debug.keystore` | SHA-256 | `BE:11:8D:5D:BE:46:60:17:09:E1:11:F2:41:4C:B1:17:64:6F:A1:E4:04:1F:F1:C8:D0:21:09:E4:97:B0:DD:FE` |
+| `android/upload-keystore.jks` (release) | SHA-1 | `06:9B:78:84:FF:CE:C2:00:C3:F0:C8:C8:D3:96:3B:71:60:18:A7:62` |
+| `android/upload-keystore.jks` | SHA-256 | `1F:27:69:28:5F:37:E1:D7:A0:E4:AE:E0:80:11:14:38:6B:B6:6F:3B:81:75:FE:B5:C2:23:30:D0:D2:7D:BB:09` |
 
-Its SHA-256 is
-`1F:27:69:28:5F:37:E1:D7:A0:E4:AE:E0:80:11:14:38:6B:B6:6F:3B:81:75:FE:B5:C2:23:30:D0:D2:7D:BB:09`.
+**Never delete one of these.** Removing a debug fingerprint breaks sign-in for
+CI/debug APKs; removing an upload fingerprint breaks locally-signed release
+builds. Google returns no ID token for an unregistered signing certificate, so
+the Firebase credential exchange never happens and no Dart code can work around
+it.
 
-Because of that, **any release build signs in fine in debug and fails in
-release**: Google returns no ID token for an unregistered signing certificate,
-so the Firebase credential exchange never happens. No amount of Dart code can
-work around it. Fix it once, in the console:
+Re-derive any of them with:
 
-1. Firebase Console → **Project settings** → *Your apps* → the Android app
-   `com.jothida.jothida_matrimony` → **Add fingerprint**.
-2. Paste the release SHA-1 above. Repeat for the SHA-256.
-3. **If the app ships through Google Play** (Play App Signing), Play re-signs
-   the bundle with its own key. Copy the SHA-1 **and** SHA-256 from Play
-   Console → *Release* → *Setup* → **App signing** → "App signing key
-   certificate" and add those too — that is the certificate on the device that
-   users actually install.
-4. Re-download `google-services.json` into `android/app/`, then rebuild.
-5. Re-run `dart run tool/check_google_signin_config.dart` — it should print
+```bash
+keytool -list -v -keystore ci/debug.keystore -alias androiddebugkey -storepass android
+```
+
+#### ⚠️ Still missing: the Play App Signing certificate
+
+When the app ships through Google Play, **Play re-signs the bundle with its own
+key** — so the certificate on a user's device is neither of the two above, and
+Google Sign-In will fail for Play-installed builds until it is registered.
+
+That key does not exist until the first AAB is uploaded. Once it has been:
+
+1. Play Console → *Release* → **Setup → App integrity** → "App signing key
+   certificate" — copy its **SHA-1 and SHA-256**.
+2. Add both as fingerprints on the same Firebase Android app (making six).
+3. Re-download `google-services.json` into `android/app/`, then rebuild.
+4. Re-run `dart run tool/check_google_signin_config.dart` — it should print
    *All checks passed*.
+
+Note that this is **Google Sign-In** configuration and has nothing to do with
+App Check, which is registered separately (§3b).
 
 ### Other causes
 
