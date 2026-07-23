@@ -135,13 +135,49 @@ flutter run
 
 ## 8. Troubleshooting "Google Sign-In failed"
 
-This project's Android config (`android/app/google-services.json`,
-`android/app/build.gradle`, `ci/debug.keystore`) is already set up consistently:
-package `com.jothida.jothida_matrimony`, project `matrimony-app-bd0d5`, and the
-debug keystore's SHA-1 (`8B:4E:88:65:BD:95:8B:9B:46:60:32:B4:C8:D7:32:4D:87:7B:AD:BE`)
-matches the OAuth Android client in `google-services.json`. If you still see a
-sign-in error, the cause is almost always in the **Google Cloud / Firebase
-console**, not the code:
+Run the automated check first — it compares every signing key this project can
+produce against the OAuth clients registered in `google-services.json`, and
+prints exactly what to paste where:
+
+```bash
+dart run tool/check_google_signin_config.dart
+```
+
+### ⚠️ Release builds: the upload key's SHA-1 is NOT registered
+
+`google-services.json` currently contains **one** Android OAuth client, for the
+debug keystore:
+
+| Key | SHA-1 | Registered? |
+|---|---|---|
+| `ci/debug.keystore` (debug builds) | `8B:4E:88:65:BD:95:8B:9B:46:60:32:B4:C8:D7:32:4D:87:7B:AD:BE` | ✅ yes |
+| `android/upload-keystore.jks` (release / Play builds) | `06:9B:78:84:FF:CE:C2:00:C3:F0:C8:C8:D3:96:3B:71:60:18:A7:62` | ❌ **no** |
+
+Its SHA-256 is
+`1F:27:69:28:5F:37:E1:D7:A0:E4:AE:E0:80:11:14:38:6B:B6:6F:3B:81:75:FE:B5:C2:23:30:D0:D2:7D:BB:09`.
+
+Because of that, **any release build signs in fine in debug and fails in
+release**: Google returns no ID token for an unregistered signing certificate,
+so the Firebase credential exchange never happens. No amount of Dart code can
+work around it. Fix it once, in the console:
+
+1. Firebase Console → **Project settings** → *Your apps* → the Android app
+   `com.jothida.jothida_matrimony` → **Add fingerprint**.
+2. Paste the release SHA-1 above. Repeat for the SHA-256.
+3. **If the app ships through Google Play** (Play App Signing), Play re-signs
+   the bundle with its own key. Copy the SHA-1 **and** SHA-256 from Play
+   Console → *Release* → *Setup* → **App signing** → "App signing key
+   certificate" and add those too — that is the certificate on the device that
+   users actually install.
+4. Re-download `google-services.json` into `android/app/`, then rebuild.
+5. Re-run `dart run tool/check_google_signin_config.dart` — it should print
+   *All checks passed*.
+
+### Other causes
+
+If the fingerprints are all registered and you still see a sign-in error, the
+cause is almost always elsewhere in the **Google Cloud / Firebase console**,
+not the code:
 
 | Error code | Meaning | Fix |
 |---|---|---|
@@ -150,10 +186,37 @@ console**, not the code:
 | `ApiException: 7` | No network. | Check device connectivity. |
 | `account-exists-with-different-credential` | The email is already registered via Email/Password or Phone. | Sign in with the original method, or enable account linking. |
 
-The app now decodes the underlying `ApiException` code and shows one of the
-messages above instead of a generic "Google Sign-In failed. Please try again.",
-so check the SnackBar text (or `[AuthService] signInWithGoogle failed: ...` in
-logcat) for the specific code.
+The app decodes the underlying `ApiException` code and shows one of the messages
+above instead of a generic "Google Sign-In failed. Please try again.", so check
+the SnackBar text for the specific code.
+
+### Reading the log
+
+Every phase of the flow is logged with its elapsed time, so a failure is visible
+in `flutter logs` / `adb logcat` without a debugger. A healthy sign-in looks
+like this:
+
+```
+[GoogleSignIn +2ms]     opening the Google account picker...
+[GoogleSignIn +4210ms]  account selected: someone@gmail.com
+[GoogleSignIn +4890ms]  tokens received (idToken=true, accessToken=true)
+[GoogleSignIn +4891ms]  exchanging the Google credential with Firebase...
+[GoogleSignIn +5620ms]  Firebase sign-in succeeded. uid=abc123, isNewUser=false
+[AuthRepository] _onAuthenticated: createOrUpdateUserOnLogin(abc123, ...)
+[Firestore] abc123: existing doc found → refreshing lastLoginAt/loginProvider
+[AuthRepository] _onAuthenticated: Firestore doc ready.
+[LoginScreen] Sign-in successful (uid=abc123). Routing...
+[LoginScreen] routeAuthenticatedUser: profile complete → /home
+```
+
+Whatever line it stops after tells you which step failed:
+
+| Last line | Failing step |
+|---|---|
+| `opening the Google account picker...` | Play Services / the picker — see `watchdog:` lines below it. |
+| `account selected: ...` then `idToken=false` | The signing certificate is not registered (the table above). |
+| `exchanging the Google credential...` | Firebase Auth — provider disabled, or no network. |
+| `createOrUpdateUserOnLogin` with no `doc ready` | Firestore — rules not deployed (`permission-denied`) or offline. |
 
 ## 9. Optional
 

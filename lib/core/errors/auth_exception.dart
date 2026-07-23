@@ -1,3 +1,5 @@
+import 'dart:async' show TimeoutException;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart' show PlatformException;
 
@@ -124,6 +126,16 @@ class AuthException implements Exception {
     }
 
     if (error is AuthException) return error;
+
+    // A step of the sign-in chain stopped responding. Every step is bounded, so
+    // this surfaces as a real, retryable error rather than an endless spinner.
+    if (error is TimeoutException) {
+      return const AuthException(
+        'Google Sign-In did not respond in time. Please check your internet '
+        'connection and try again.',
+        code: 'timeout',
+      );
+    }
 
     return AuthException('Something went wrong. Please try again. ($error)');
   }

@@ -7,6 +7,7 @@ import '../core/config/dev_config.dart';
 import '../core/navigation/root_navigator.dart';
 import '../providers/auth_provider.dart';
 import '../providers/service_providers.dart';
+import 'auth_redirect.dart';
 import '../models/astrologer_request_model.dart';
 import '../screens/astrology/horoscope_report_service_screen.dart';
 import '../screens/astrology/appointment_booking_screen.dart';
@@ -105,6 +106,11 @@ class GoRouterRefreshStream extends ChangeNotifier {
     });
   }
 
+  /// Re-runs `redirect` for the current location. `notifyListeners` is
+  /// `@protected`, so external triggers (the user-document listener below) go
+  /// through this.
+  void refresh() => notifyListeners();
+
   @override
   void dispose() {
     _subscription.cancel();
@@ -120,136 +126,48 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   final refreshStream = GoRouterRefreshStream(authRepo.authStateChanges);
   ref.onDispose(refreshStream.dispose);
 
+  // Firebase authentication and the Firestore user document land at *different*
+  // times: `authStateChanges` fires the instant the credential is accepted,
+  // while `redirect` needs `users/{uid}` to decide where the account belongs.
+  // Without this listener the redirect that runs on sign-in always sees
+  // `isLoading`, bails out with `null`, and is never re-run — leaving the user
+  // wherever they were (the login screen, still spinning) unless some other
+  // code path happens to navigate. Re-running `redirect` when the document
+  // resolves makes the router self-correcting: sign-in alone is enough to land
+  // on the right screen.
+  ref.listen(currentUserProvider, (previous, next) {
+    if (next.isLoading) return;
+    debugPrint('[Router] user document resolved '
+        '(uid=${next.valueOrNull?.uid}, hasError=${next.hasError}) '
+        '— refreshing router');
+    refreshStream.refresh();
+  });
+
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     refreshListenable: refreshStream,
     redirect: (context, state) {
-      final loc = state.matchedLocation;
-      final onAuthPage = loc == '/login' ||
-          loc == '/register' ||
-          loc == '/forgot-password';
-      final onSplash = loc == '/';
-
-      // ── Demo mode (kBypassAuth): everything reachable, Home shows the
-      // profile-completion card instead of force-redirecting. ──
-      if (kBypassAuth) return null;
-
-      // ── Real auth path ──
-      // IMPORTANT: do NOT use `ref.read(firebaseAuthStreamProvider)` here.
-      // `GoRouterRefreshStream` and the StreamProvider both subscribe to the
-      // same Firebase authStateChanges stream. When signOut() fires, this
-      // redirect runs (via notifyListeners) BEFORE the StreamProvider has
-      // processed the null event — so it would still see the old user and
-      // incorrectly return null (no redirect). Instead, read currentUser
-      // synchronously from Firebase, which is always immediately accurate.
-      final isAuthenticated = ref.read(authRepositoryProvider).currentUser != null;
-      debugPrint('[Router] redirect: loc=$loc, isAuthenticated=$isAuthenticated');
-      if (!isAuthenticated) {
-        // Single common login — unauthenticated users always land on /login.
-        return (onAuthPage || onSplash) ? null : '/login';
-      }
-
-      // Authenticated → route by account type / onboarding status.
+      // The decision itself lives in `resolveAuthRedirect` (pure, unit-tested);
+      // this callback only gathers the current auth state.
+      //
+      // IMPORTANT: do NOT use `ref.read(firebaseAuthStreamProvider)` for
+      // `isAuthenticated`. `GoRouterRefreshStream` and the StreamProvider both
+      // subscribe to the same Firebase authStateChanges stream. When signOut()
+      // fires, this redirect runs (via notifyListeners) BEFORE the
+      // StreamProvider has processed the null event — so it would still see the
+      // old user and incorrectly return null (no redirect). `currentUser` is
+      // read synchronously from Firebase and is always immediately accurate.
       final userAsync = ref.read(currentUserProvider);
-      if (userAsync.isLoading) return null; // wait for the user doc to load
-      final user = userAsync.valueOrNull;
-      debugPrint('[Router] redirect check: loc=$loc, uid=${user?.uid}, '
-          'role=${user?.role}, isAdmin=${user?.isAdmin}, '
-          'isProfileComplete=${user?.isProfileComplete}');
-
-      // ── Employee (team member) account ───────────────────────────────────
-      // An `astrologer`-role account is an admin-provisioned EMPLOYEE. It lives
-      // ONLY in the Employee Portal (dashboard + request detail) and is locked
-      // out of the whole matrimony experience for strict isolation.
-      if (user != null && user.isAstrologer) {
-        final allowed = loc == '/astrologer-dashboard' ||
-            loc == '/astrologer-notifications' ||
-            loc.startsWith('/astrologer-request');
-        if (!allowed) {
-          debugPrint('[Router] employee account → /astrologer-dashboard');
-          return '/astrologer-dashboard';
-        }
-        return null;
-      }
-
-      // The Employee Portal routes are off-limits to everyone else.
-      final onAstrologerPortal = loc == '/astrologer-dashboard' ||
-          loc == '/astrologer-notifications' ||
-          loc.startsWith('/astrologer-request');
-      if (onAstrologerPortal && !(user?.isAstrologer ?? false)) {
-        debugPrint('[Router] ⛔ non-employee blocked from "$loc" → /home');
-        return '/home';
-      }
-
-      // ── Family user (invited Wedding Workspace member) ───────────────────
-      // A 'family' account has NO matrimony profile and must never reach the
-      // matchmaking experience: it lives ONLY in the Wedding Workspace (plus
-      // the public Muhurtham Calendar). Placed before the profile-completion
-      // check because family users intentionally never complete onboarding.
-      if (user != null && user.isFamily) {
-        final allowed = loc == '/wedding-workspace' ||
-            loc == '/muhurtham-calendar';
-        if (!allowed) {
-          debugPrint('[Router] family account → /wedding-workspace');
-          return '/wedding-workspace';
-        }
-        return null;
-      }
-
-      // While the Login screen's "Family Member Login" flow is verifying an
-      // invitation, hold the just-authenticated account on /login instead of
-      // racing it into matrimony onboarding (its role may be about to become
-      // 'family').
-      if (onAuthPage && ref.read(familyLoginInProgressProvider)) {
-        debugPrint('[Router] family login in progress — holding on /login');
-        return null;
-      }
-
-      // ── Admin route protection ───────────────────────────────────────────
-      // Only 'admin' / 'super_admin' accounts may reach any /admin route.
-      final onAdmin = loc == '/admin' || loc.startsWith('/admin/');
-      if (onAdmin && !(user?.isAdmin ?? false)) {
-        debugPrint('[Router] ⛔ non-admin blocked from "$loc" → /home');
-        return '/home';
-      }
-
-      if (onAuthPage) {
-        // Only a *pure* admin account auto-lands on the dashboard. A
-        // super_admin is a normal user with extra powers, so they land on Home
-        // and open the dashboard via the header Admin icon.
-        if (user?.role == 'admin') return '/admin';
-        // A pure admin account is exempt from onboarding; a super_admin is a
-        // NORMAL matrimony user and onboards exactly like everyone else.
-        if (user != null &&
-            !user.isProfileComplete &&
-            user.role != 'admin') {
-          debugPrint('[Router] redirect: profile incomplete → /profile/create');
-          return '/profile/create';
-        }
-        return '/home';
-      }
-
-      // Authenticated user with an incomplete profile must finish onboarding
-      // before reaching any other authenticated screen (Home, chats, etc.).
-      final onProfileCreate = loc == '/profile/create';
-      if (user != null &&
-          !onAdmin && // admins may still open /admin with an incomplete profile
-          !user.isProfileComplete &&
-          !onProfileCreate &&
-          !onSplash) {
-        debugPrint('[Router] redirect: profile incomplete, blocking $loc → /profile/create');
-        return '/profile/create';
-      }
-
-      // A user who has already completed their profile shouldn't be sent
-      // back through onboarding.
-      if (user != null && user.isProfileComplete && onProfileCreate) {
-        debugPrint('[Router] redirect: profile already complete → /home');
-        return '/home';
-      }
-
-      return null;
+      return resolveAuthRedirect(
+        location: state.matchedLocation,
+        bypassAuth: kBypassAuth,
+        isAuthenticated: ref.read(authRepositoryProvider).currentUser != null,
+        userDocLoading: userAsync.isLoading,
+        user: userAsync.valueOrNull,
+        familyLoginInProgress: ref.read(familyLoginInProgressProvider),
+        log: (m) => debugPrint('[Router] $m'),
+      );
     },
     routes: [
       GoRoute(path: '/', builder: (_, __) => const SplashScreen()),

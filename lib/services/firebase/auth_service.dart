@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../core/errors/auth_exception.dart';
+import '../../core/utils/sign_in_watchdog.dart';
 
 /// Thin wrapper around Firebase Auth + Google Sign-In.
 ///
@@ -111,20 +112,67 @@ class AuthService {
   }
 
   // ── Google ────────────────────────────────────────────────────────────────
+
+  /// How long the *whole* interactive picker step may take before we declare
+  /// the result lost. Generous, because the user paces this step — the
+  /// watchdog inside [pickWithRecovery] is what catches a lost result quickly.
+  static const _pickerTimeout = Duration(minutes: 3);
+  static const _tokenTimeout = Duration(seconds: 30);
+  static const _credentialTimeout = Duration(seconds: 30);
+
   /// Runs the full Google → Firebase credential exchange.
   ///
   /// Returns `null` only when the user dismisses the account picker. Any real
   /// failure is thrown as an [AuthException] with a friendly message.
+  ///
+  /// **Every step is bounded.** This method can never leave the caller waiting
+  /// forever: it either returns an account, returns `null` (cancelled), or
+  /// throws. That guarantee is what keeps the login spinner from becoming an
+  /// infinite loading state.
   Future<UserCredential?> signInWithGoogle() async {
+    final sw = Stopwatch()..start();
+    void log(String message) =>
+        debugPrint('[GoogleSignIn +${sw.elapsedMilliseconds}ms] $message');
+
     try {
+      // 0. Drop any cached Google session first.
+      //
+      // Two reasons: the account chooser is then always shown (so a user can
+      // switch accounts), and — critically — it guarantees Play Services holds
+      // NO account, which makes the step-1 recovery probe unambiguous: anything
+      // `signInSilently()` returns afterwards can only be the account the user
+      // just picked. Best-effort and bounded; a wedged Play Services here must
+      // not block the sign-in that follows.
+      await _googleSignIn
+          .signOut()
+          .timeout(const Duration(seconds: 6))
+          .catchError((Object e) {
+        log('pre-sign-in signOut skipped ($e)');
+        return null;
+      });
+
       // 1. Trigger the native Google account chooser.
-      debugPrint('[AuthService] Opening Google account picker...');
-      final googleUser = await _googleSignIn.signIn();
+      log('opening the Google account picker...');
+      final googleUser = await pickWithRecovery<GoogleSignInAccount>(
+        pick: () => _googleSignIn.signIn(),
+        recover: () => _googleSignIn.signInSilently(),
+        log: (m) => log('watchdog: $m'),
+        timeout: _pickerTimeout,
+      ).timeout(
+        // Defence in depth: pickWithRecovery already self-bounds, but a hang in
+        // its own plumbing must not become an eternal spinner either.
+        _pickerTimeout + const Duration(seconds: 10),
+        onTimeout: () => throw const AuthException(
+          'Google Sign-In did not respond. Please close the app and try again.',
+          code: 'google-picker-timeout',
+        ),
+      );
+
       if (googleUser == null) {
-        debugPrint('[AuthService] User cancelled the Google picker.');
+        log('picker dismissed — user cancelled.');
         return null; // user cancelled
       }
-      debugPrint('[AuthService] Google account selected: ${googleUser.email}');
+      log('account selected: ${googleUser.email}');
 
       // 2. Obtain the OAuth tokens for the chosen account.
       //
@@ -136,7 +184,7 @@ class AuthService {
       // ("selected the account, then stuck loading"). Bound it so a hang turns
       // into a real, actionable error instead of an eternal spinner.
       final googleAuth = await googleUser.authentication.timeout(
-        const Duration(seconds: 30),
+        _tokenTimeout,
         onTimeout: () => throw const AuthException(
           'Google Sign-In timed out while verifying your account. This usually '
           "means this build's SHA-1 fingerprint is not registered in Firebase, "
@@ -144,8 +192,7 @@ class AuthService {
           code: 'google-auth-timeout',
         ),
       );
-      debugPrint('[AuthService] Got Google tokens '
-          '(idToken=${googleAuth.idToken != null}, '
+      log('tokens received (idToken=${googleAuth.idToken != null}, '
           'accessToken=${googleAuth.accessToken != null})');
 
       // A null idToken almost always means the OAuth client / SHA-1 is not
@@ -164,30 +211,45 @@ class AuthService {
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      debugPrint('[AuthService] Exchanging Google credential with Firebase...');
+      log('exchanging the Google credential with Firebase...');
       final userCred = await _auth.signInWithCredential(credential).timeout(
-        const Duration(seconds: 30),
+        _credentialTimeout,
         onTimeout: () => throw const AuthException(
           'Signing in took too long. Please check your internet connection and '
           'try again.',
           code: 'firebase-credential-timeout',
         ),
       );
-      debugPrint('[AuthService] Firebase sign-in succeeded. '
-          'uid=${userCred.user?.uid}, '
+      log('Firebase sign-in succeeded. uid=${userCred.user?.uid}, '
           'isNewUser=${userCred.additionalUserInfo?.isNewUser}');
       return userCred;
     } catch (e, st) {
-      debugPrint('[AuthService] signInWithGoogle failed: $e\n$st');
-      // Make sure a half-finished Google session doesn't get stuck.
-      await _googleSignIn.signOut().catchError((_) => null);
-      throw AuthException.from(e);
+      final failure = AuthException.from(e);
+      debugPrint('[GoogleSignIn +${sw.elapsedMilliseconds}ms] FAILED '
+          '(${failure.code}): $e\n$st');
+      // Clear the half-finished Google session so the next attempt starts
+      // clean — detached, because awaiting a wedged Play Services here would
+      // swallow this failure into the very spinner we are trying to kill.
+      unawaited(_googleSignIn.signOut().catchError((Object e) {
+        debugPrint('[GoogleSignIn] cleanup signOut failed (ignored): $e');
+        return null;
+      }));
+      throw failure;
     }
   }
 
   // ── Sign out ───────────────────────────────────────────────────────────────
   Future<void> signOut() async {
-    await _googleSignIn.signOut().catchError((_) => null);
+    // Bounded + best-effort: a wedged Play Services must never trap the user on
+    // an authenticated screen. The Firebase sign-out below is the one that
+    // actually ends the session.
+    await _googleSignIn
+        .signOut()
+        .timeout(const Duration(seconds: 6))
+        .catchError((Object e) {
+      debugPrint('[AuthService] signOut: Google sign-out skipped ($e)');
+      return null;
+    });
     await _auth.signOut();
   }
 

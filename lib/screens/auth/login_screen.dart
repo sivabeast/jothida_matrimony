@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +10,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/auth_routing.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/service_providers.dart';
 import '../../providers/wedding_provider.dart';
 import '../../widgets/auth/login_illustrations.dart';
 import '../../widgets/common/coming_soon.dart';
@@ -38,6 +41,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   // screen, and a `finally` always clears it.
   bool _busy = false;
 
+  /// Final backstop for the whole sign-in + routing round trip.
+  ///
+  /// Every individual step already has its own (much shorter) timeout; this
+  /// exists so the spinner is bounded *structurally* rather than by trusting
+  /// that every future in the chain behaves. The picker itself is user-paced,
+  /// hence the generous budget.
+  static const _signInBudget = Duration(minutes: 4);
+
   // ── Matrimony User sign-in ──────────────────────────────────────────────
 
   Future<void> _signInAsMatrimony() async {
@@ -45,7 +56,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     debugPrint('[LoginScreen] Matrimony User → Continue with Google tapped.');
     setState(() => _busy = true);
     try {
-      await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+      await ref
+          .read(authNotifierProvider.notifier)
+          .signInWithGoogle()
+          .timeout(_signInBudget);
       if (!mounted) return;
       final auth = ref.read(authNotifierProvider);
 
@@ -67,6 +81,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       debugPrint(
           '[LoginScreen] Sign-in successful (uid=${user.uid}). Routing...');
       await routeAuthenticatedUser(context, ref, user, tag: 'LoginScreen');
+    } catch (e, st) {
+      // Reaching here almost always means authentication SUCCEEDED and only the
+      // post-auth work (entry-mode save, role lookup, navigation) blew up. The
+      // one thing we must never do is leave a signed-in user sitting on the
+      // login screen, so navigate anyway and let the router's redirect settle
+      // on the correct destination from the user document.
+      debugPrint('[LoginScreen] post-sign-in step failed: $e\n$st');
+      if (!mounted) return;
+      if (ref.read(authRepositoryProvider).currentUser != null) {
+        debugPrint('[LoginScreen] already authenticated → /home '
+            '(router redirect will correct the destination)');
+        context.go('/home');
+      } else {
+        _showAuthError(e);
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -146,7 +175,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // brand-new family Gmail is never raced into matrimony onboarding.
     ref.read(familyLoginInProgressProvider.notifier).state = true;
     try {
-      await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+      await ref
+          .read(authNotifierProvider.notifier)
+          .signInWithGoogle()
+          .timeout(_signInBudget);
       if (!mounted) return;
       final auth = ref.read(authNotifierProvider);
 
@@ -176,7 +208,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ? null
           : await ref
               .read(weddingServiceProvider)
-              .getWeddingByMemberEmail(email);
+              .getWeddingByMemberEmail(email)
+              .timeout(const Duration(seconds: 12));
 
       if (wedding == null) {
         // Not invited → no Family Workspace access. Sign back out so the
@@ -213,15 +246,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           !user.isAdmin &&
           !user.isAstrologer &&
           !user.isProfileComplete) {
-        await weddingService.promoteToFamilyRole(user.uid);
+        await weddingService
+            .promoteToFamilyRole(user.uid)
+            .timeout(const Duration(seconds: 12));
       }
-      await weddingService.markMemberJoined(wedding.id, email);
+      await weddingService
+          .markMemberJoined(wedding.id, email)
+          .timeout(const Duration(seconds: 12));
       ref.read(entryModeProvider.notifier).state = WeddingEntryMode.family;
       await WeddingEntryMode.save(WeddingEntryMode.family);
       ref.invalidate(currentUserProvider);
-      await ref.read(currentUserProvider.future);
+      await ref
+          .read(currentUserProvider.future)
+          .timeout(const Duration(seconds: 12))
+          .catchError((Object e) {
+        debugPrint('[LoginScreen] family user-doc refresh skipped: $e');
+        return null;
+      });
       if (!mounted) return;
       context.go('/wedding-workspace');
+    } catch (e, st) {
+      // Same rule as the matrimony path: an authenticated user is never left on
+      // the login screen because a post-auth step failed. If this account turns
+      // out not to be a family member after all, the router's redirect moves it
+      // to the right place — being wrong for one frame beats spinning forever.
+      debugPrint('[LoginScreen] family sign-in step failed: $e\n$st');
+      if (!mounted) return;
+      if (ref.read(authRepositoryProvider).currentUser != null) {
+        context.go('/wedding-workspace');
+      } else {
+        _showAuthError(e);
+      }
     } finally {
       ref.read(familyLoginInProgressProvider.notifier).state = false;
       if (mounted) setState(() => _busy = false);
@@ -229,9 +284,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _showAuthError(Object? err) {
-    final message =
-        err is AuthException ? err.message : context.l10n.googleSignInFailed;
-    debugPrint('[LoginScreen] signInWithGoogle error: $err');
+    final String message;
+    if (err is AuthException) {
+      message = err.message;
+    } else if (err is TimeoutException) {
+      message = 'Google Sign-In did not finish in time. Please check your '
+          'internet connection and try again.';
+    } else {
+      message = context.l10n.googleSignInFailed;
+    }
+    debugPrint('[LoginScreen] signInWithGoogle error (${err.runtimeType}): '
+        '$err');
     if (!(err is AuthException && err.cancelled)) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(message)));

@@ -24,6 +24,12 @@ Future<void> routeAuthenticatedUser(
   debugPrint('[$tag] routeAuthenticatedUser: uid=${user.uid}, role=${user.role}, '
       'isAdmin=${user.isAdmin}, isProfileComplete=${user.isProfileComplete}');
 
+  // Every Firestore call below is bounded. Authentication has ALREADY succeeded
+  // by the time we get here, so a slow registry lookup must never be able to
+  // strand the user on the login spinner — worst case we skip the optional
+  // lookup and route on what the user document already tells us.
+  const lookupTimeout = Duration(seconds: 10);
+
   // ── Family user (invited into a Wedding Workspace) ───────────────────────
   // A returning family account goes straight to the workspace — they have no
   // matrimony profile and never see onboarding / Home. (First-time family
@@ -52,18 +58,30 @@ Future<void> routeAuthenticatedUser(
     if (email != null && email.trim().isNotEmpty) {
       try {
         final team = ref.read(astrologyTeamServiceProvider);
-        final member = await team.getByEmail(email);
+        final member = await team.getByEmail(email).timeout(lookupTimeout);
         if (member != null && member.active) {
-          await team.linkUid(
-            member.id,
-            uid: user.uid,
-            displayName: user.displayName ?? '',
-            photoUrl: user.photoUrl ?? '',
-          );
-          await team.promoteToAstrologerRole(user.uid);
-          // Wait for the refreshed user doc (role) so the router gates correctly.
+          await team
+              .linkUid(
+                member.id,
+                uid: user.uid,
+                displayName: user.displayName ?? '',
+                photoUrl: user.photoUrl ?? '',
+              )
+              .timeout(lookupTimeout);
+          await team.promoteToAstrologerRole(user.uid).timeout(lookupTimeout);
+          // Wait for the refreshed user doc (role) so the router gates
+          // correctly — but never longer than the lookup budget. The Employee
+          // Portal route below is what actually matters; a slow re-read just
+          // means the router re-checks a moment later.
           ref.invalidate(currentUserProvider);
-          await ref.read(currentUserProvider.future);
+          await ref
+              .read(currentUserProvider.future)
+              .timeout(lookupTimeout)
+              .catchError((Object e) {
+            debugPrint('[$tag] user-doc refresh after employee link '
+                'skipped: $e');
+            return null;
+          });
           if (!context.mounted) return;
           debugPrint('[$tag] routeAuthenticatedUser: new employee → '
               '/astrologer-dashboard');

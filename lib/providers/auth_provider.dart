@@ -8,8 +8,17 @@ import 'service_providers.dart';
 final firebaseAuthStreamProvider = StreamProvider<User?>((ref) =>
     ref.watch(authRepositoryProvider).authStateChanges);
 
-// Current UserModel (loaded after auth)
-final currentUserProvider = FutureProvider.autoDispose<UserModel?>((ref) async {
+// Current UserModel (loaded after auth).
+//
+// Deliberately NOT autoDispose. Two things read it without holding a listener:
+// the GoRouter `redirect` callback (`ref.read`) and the post-login routing
+// (`await ref.read(currentUserProvider.future)`). With autoDispose the element
+// is torn down as soon as that read returns, so the redirect saw a *fresh*
+// `AsyncLoading` on every single call — its role/onboarding routing never ran —
+// and awaiting `.future` raced against disposal. Keeping it alive makes both
+// read the real, cached state. `signOut()` and the role-change paths already
+// call `ref.invalidate(currentUserProvider)` explicitly, so nothing goes stale.
+final currentUserProvider = FutureProvider<UserModel?>((ref) async {
   final authAsync = ref.watch(firebaseAuthStreamProvider);
   final user = authAsync.valueOrNull;
   if (user == null) return null;

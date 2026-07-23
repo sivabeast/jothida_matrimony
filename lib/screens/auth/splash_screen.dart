@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../widgets/common/app_logo.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../providers/wedding_provider.dart';
 
@@ -37,10 +36,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (!mounted) return;
 
     try {
-      final authAsync = ref.read(firebaseAuthStreamProvider);
-      final user = authAsync.valueOrNull;
-      debugPrint('[Splash] firebaseAuthStreamProvider state: '
-          '${authAsync.runtimeType}, user=${user?.uid}');
+      // Read the CURRENT user straight from Firebase rather than from the
+      // `firebaseAuthStreamProvider` snapshot. Nothing listens to that stream
+      // provider before this point, so `ref.read` here would create it and get
+      // back a brand-new `AsyncLoading` — i.e. `valueOrNull == null` — and send
+      // an already-signed-in user to /login on every cold start. `currentUser`
+      // is restored from disk during Firebase init and is immediately accurate;
+      // the stream is only used as a fallback for the rare case where the
+      // restore has not landed yet.
+      final repo = ref.read(authRepositoryProvider);
+      final user = repo.currentUser ??
+          await repo.authStateChanges.first
+              .timeout(const Duration(seconds: 3), onTimeout: () => null);
+      if (!mounted) return;
+      debugPrint('[Splash] resolved auth user=${user?.uid}');
 
       if (user == null) {
         debugPrint('[Splash] No signed-in user → /login');
@@ -51,8 +60,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
       debugPrint('[Splash] Signed in as ${user.uid} (${user.email}). '
           'Loading Firestore user doc...');
-      final userModel =
-          await ref.read(authRepositoryProvider).getUserModel(user.uid);
+      // Bounded: an unreachable Firestore would otherwise leave the splash
+      // spinner turning forever with no error and no navigation. On timeout we
+      // fall through to the catch below, which lands on /login.
+      final userModel = await repo
+          .getUserModel(user.uid)
+          .timeout(const Duration(seconds: 15));
       if (!mounted) return;
 
       if (userModel == null) {
@@ -75,7 +88,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             ? null
             : await ref
                 .read(weddingServiceProvider)
-                .getWeddingByMemberEmail(email);
+                .getWeddingByMemberEmail(email)
+                .timeout(const Duration(seconds: 12));
         if (!mounted) return;
         if (invitedWedding != null || userModel.isFamily) {
           ref.read(entryModeProvider.notifier).state = WeddingEntryMode.family;
@@ -114,7 +128,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           if (userModel.isAdmin) {
             final wedding = await ref
                 .read(weddingServiceProvider)
-                .getWeddingForCouple(user.uid);
+                .getWeddingForCouple(user.uid)
+                .timeout(const Duration(seconds: 12));
             if (!mounted) return;
             if (wedding != null && wedding.isFixed) {
               ref.read(entryModeProvider.notifier).state =
