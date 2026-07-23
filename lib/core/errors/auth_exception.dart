@@ -96,10 +96,13 @@ class AuthException implements Exception {
       if (_mentionsAppCheck(error.message) ||
           error.code == 'firebase-app-check-token-is-invalid') {
         return const AuthException(
-          'Sign-in was blocked by Firebase App Check. This build is not '
-          'registered for App Check — register its SHA-256 under App Check > '
-          'Play Integrity (release), or add the printed debug token under '
-          'App Check > Manage debug tokens (debug builds). See FIREBASE_SETUP.md.',
+          'Sign-in was blocked by Firebase App Check — this build is not '
+          'registered, and no app code can work around that.\n\n'
+          'Fastest fix: Firebase Console > Build > App Check > APIs tab > '
+          'Authentication > Unenforce.\n\n'
+          'Proper fix: register this build — Play Integrity SHA-256 for a '
+          'release build, or its debug token for a debug build. '
+          'See FIREBASE_SETUP.md section 3b.',
           code: 'app-check-token-invalid',
         );
       }

@@ -45,6 +45,27 @@ Firebase Console → **Build → Authentication → Sign-in method**, enable:
 
 ## 3b. App Check (REQUIRED — sign-in fails without it)
 
+> ### Blocked right now? Read this first.
+>
+> If the app shows **"Sign-in was blocked by Firebase App Check"**, enforcement
+> is ON and this build is not registered. **No app-side change can fix that** —
+> the token is validated on Google's servers.
+>
+> **Unblock in 30 seconds (do this first):**
+> Firebase Console → **Build → App Check → APIs** tab → **Authentication
+> (Identity Toolkit)** → **Unenforce**. Do the same for **Cloud Firestore** if
+> it shows *Enforced*. Sign-in starts working immediately on every build — no
+> rebuild, no reinstall.
+>
+> Then register the app properly (below) and turn enforcement back on once the
+> App Check **Requests** tab shows verified traffic.
+>
+> **Note on the SHA fingerprints in Project settings → Your apps.** Those are
+> for **Google Sign-In**, and they are *not* App Check. App Check has its own
+> registration screen under **Build → App Check**. Having all four fingerprints
+> listed there does nothing for App Check.
+
+
 If **App Check enforcement** is ON for Authentication or Firestore, a build that
 does not send an App Check token is rejected. A brand-new Google account sees:
 
@@ -71,11 +92,26 @@ console:
 
 **Debug / `flutter run` builds — debug provider**
 
-1. Run the app once and find this line in logcat:
-   `Enter this debug secret into the allow list in the Firebase Console: <uuid>`
+This includes the **`jothida-matrimony-debug-apk`** artifact from CI.
+
+1. With the device connected over USB, run the app and read the secret:
+   ```
+   adb logcat -s DebugAppCheckProvider
+   ```
+   Look for `Enter this debug secret into the allow list in the Firebase
+   Console: <uuid>`.
 2. Firebase Console → **App Check → Apps → your app → ⋮ → Manage debug tokens**
    → add that UUID.
-3. The token is per-install: a new device or a fresh install needs a new one.
+3. The token is **per install**: every device, and every reinstall, needs a new
+   one. That makes debug builds impractical to test against enforced App Check —
+   prefer unenforcing while testing, or test the release APK with Play Integrity
+   registered.
+
+**Building without App Check at all**
+
+`flutter build apk --dart-define=DISABLE_APP_CHECK=true` skips activation, so no
+token is attached. This only helps while enforcement is **OFF** — with it ON the
+server rejects an untokenised request exactly as it rejects an unregistered one.
 
 **Rolling it out safely.** Turn enforcement ON only after the *Requests* tab in
 App Check shows verified traffic — enabling it early locks out every existing

@@ -44,6 +44,16 @@ class AppCheckConfig {
   /// How long activation may take before we stop waiting for it.
   static const Duration _timeout = Duration(seconds: 10);
 
+  /// Escape hatch for local debugging: `--dart-define=DISABLE_APP_CHECK=true`
+  /// skips activation entirely, so no token is attached to Firebase requests.
+  ///
+  /// This only helps when App Check enforcement is OFF in the console. With
+  /// enforcement ON the server rejects an untokenised request just as firmly as
+  /// an unregistered one — the fix in that case is to register this build (or
+  /// unenforce), never to disable the client.
+  static const bool _disabled =
+      bool.fromEnvironment('DISABLE_APP_CHECK', defaultValue: false);
+
   /// True once [activate] has completed successfully at least once.
   static bool get isActive => _active;
   static bool _active = false;
@@ -54,6 +64,12 @@ class AppCheckConfig {
   /// when Firebase itself failed to initialise — it simply reports and returns.
   static Future<void> activate() async {
     if (_active) return;
+    if (_disabled) {
+      debugPrint('[AppCheck] DISABLE_APP_CHECK=true — provider NOT installed. '
+          'Firebase requests carry no App Check token; this only works while '
+          'enforcement is OFF in the console.');
+      return;
+    }
     if (kIsWeb) {
       debugPrint('[AppCheck] web build — no provider configured, skipping.');
       return;
@@ -72,6 +88,20 @@ class AppCheckConfig {
       _active = true;
       debugPrint('[AppCheck] activated '
           '(${kReleaseMode ? 'Play Integrity / App Attest' : 'debug provider'}).');
+
+      if (!kReleaseMode) {
+        // The debug provider mints a RANDOM secret per install, and it is
+        // printed by the native SDK — not by Dart — so it is easy to miss and
+        // impossible to guess. Without it registered, every debug build is
+        // blocked the moment enforcement is on. Point at it explicitly.
+        debugPrint('[AppCheck] DEBUG build: this install has its own debug '
+            'secret. Find it in logcat —\n'
+            '    adb logcat -s DebugAppCheckProvider\n'
+            '  then add that UUID under Firebase Console > App Check > Apps > '
+            'your Android app > ⋮ > Manage debug tokens.\n'
+            '  A new device or a reinstall needs a NEW token. To test without '
+            'this, unenforce App Check for Authentication.');
+      }
 
       // Auto-refresh keeps a valid token in place for long sessions, so a
       // token that expires mid-session can't turn into a spurious
