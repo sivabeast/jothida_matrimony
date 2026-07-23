@@ -137,6 +137,18 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
       final repo = ref.read(authRepositoryProvider);
       return repo.signInWithGoogle();
     });
+    // The post-login write (super-admin promotion, employee detection,
+    // lastLoginAt) has only just landed. `currentUserProvider` re-reads the
+    // document the moment `authStateChanges` fires — which is BEFORE that write
+    // — so its cached copy can be one revision stale. Since the provider is
+    // keepAlive it would stay stale for the whole session, and screens reading
+    // it (e.g. the Home header's Admin shortcut, gated on `isSuperAdmin`) would
+    // miss the promotion. Invalidate so it re-reads what was actually written.
+    if (!state.hasError) {
+      ref.invalidate(currentUserProvider);
+      debugPrint('[AuthNotifier] signInWithGoogle: currentUserProvider '
+          'invalidated so the freshly-written user document is re-read.');
+    }
     state.when(
       data: (user) => debugPrint(
           '[AuthNotifier] signInWithGoogle: state -> data (user=${user?.uid})'),
