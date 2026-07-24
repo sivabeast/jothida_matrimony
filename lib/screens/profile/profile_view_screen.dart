@@ -8,6 +8,7 @@ import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/value_l10n.dart';
 import '../../models/profile_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/block_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/interest_provider.dart';
 import '../../providers/profile_provider.dart';
@@ -84,6 +85,92 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
 
   void _reportProfile(ProfileModel profile) {
     context.push('/report/${profile.id}');
+  }
+
+  /// Report / Block overflow menu on the profile header (spec §5, §6). Block is
+  /// hidden on your own profile.
+  Widget _moderationMenu(ProfileModel profile) {
+    final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+    final isSelf = myUid != null && myUid == profile.userId;
+    final iBlocked =
+        (ref.watch(myBlockedUidsProvider).valueOrNull ?? const <String>{})
+            .contains(profile.userId);
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert),
+      onSelected: (v) {
+        switch (v) {
+          case 'report':
+            _reportProfile(profile);
+            break;
+          case 'block':
+            _confirmBlockProfile(profile);
+            break;
+          case 'unblock':
+            _unblockProfile(profile);
+            break;
+        }
+      },
+      itemBuilder: (_) => [
+        PopupMenuItem(
+          value: 'report',
+          child: ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.flag_outlined),
+            title: Text(context.l10n.reportProfileAction),
+          ),
+        ),
+        if (!isSelf)
+          PopupMenuItem(
+            value: iBlocked ? 'unblock' : 'block',
+            child: ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(iBlocked ? Icons.lock_open : Icons.block,
+                  color: iBlocked ? null : AppColors.error),
+              title: Text(iBlocked
+                  ? context.l10n.unblockUserAction
+                  : context.l10n.blockUserAction),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _confirmBlockProfile(ProfileModel profile) async {
+    final l10n = context.l10n;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.blockUserQuestion(profile.name)),
+        content: Text(l10n.blockUserBody),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.cancel)),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: Text(l10n.blockLabel),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await ref.read(blockControllerProvider.notifier).block(profile.userId);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.userBlockedToast(profile.name))));
+      context.pop();
+    }
+  }
+
+  Future<void> _unblockProfile(ProfileModel profile) async {
+    await ref.read(blockControllerProvider.notifier).unblock(profile.userId);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.l10n.userUnblockedToast(profile.name))));
+    }
   }
 
   void _showContact(ProfileModel profile) {
@@ -330,13 +417,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
           pinned: true,
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.flag_outlined),
-              onPressed: () => _reportProfile(profile),
-              tooltip: 'Report',
-            ),
-          ],
+          actions: [_moderationMenu(profile)],
           flexibleSpace: FlexibleSpaceBar(
             background: Stack(
               fit: StackFit.expand,

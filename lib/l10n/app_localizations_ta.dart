@@ -1846,7 +1846,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get saveChanges => 'மாற்றங்களைச் சேமி';
 
   @override
-  String get submittingLabel => 'சமர்ப்பிக்கப்படுகிறது…';
+  String get submittingLabel => 'சமர்ப்பிக்கிறது...';
 
   @override
   String get employmentLabel => 'பணி';
@@ -1931,4 +1931,102 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get failedToCreateProfile => 'சுயவிவரத்தை உருவாக்க முடியவில்லை';
+
+  @override
+  String get reportProfileTitle => 'சுயவிவரத்தைப் புகாரளி';
+
+  @override
+  String get reportChatTitle => 'அரட்டையைப் புகாரளி';
+
+  @override
+  String get reportProfileAction => 'சுயவிவரத்தைப் புகாரளி';
+
+  @override
+  String get reportChatAction => 'அரட்டையைப் புகாரளி';
+
+  @override
+  String get blockUserAction => 'பயனரைத் தடு';
+
+  @override
+  String get unblockUserAction => 'தடையை நீக்கு';
+
+  @override
+  String get blockLabel => 'தடு';
+
+  @override
+  String get unblockLabel => 'தடையை நீக்கு';
+
+  @override
+  String get whyReportProfile => 'இந்தச் சுயவிவரத்தை ஏன் புகாரளிக்கிறீர்கள்?';
+
+  @override
+  String get whyReportChat => 'இந்த அரட்டையை ஏன் புகாரளிக்கிறீர்கள்?';
+
+  @override
+  String get additionalDetailsOptional => 'கூடுதல் விவரங்கள் (விருப்பம்)';
+
+  @override
+  String get submitReport => 'புகாரைச் சமர்ப்பி';
+
+  @override
+  String get reportSubmittedProfile => 'புகார் சமர்ப்பிக்கப்பட்டது. எங்கள் குழு அதை மதிப்பாய்வு செய்யும்.';
+
+  @override
+  String get reportSubmittedChat => 'புகார் சமர்ப்பிக்கப்பட்டது. எங்கள் குழு இந்த உரையாடலை மதிப்பாய்வு செய்யும்.';
+
+  @override
+  String get couldNotSubmitReport => 'புகாரைச் சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get pleaseSelectReportReason => 'புகாரளிக்க ஒரு காரணத்தைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get screenshotOptional => 'திரைப்பிடிப்பு (விருப்பம்)';
+
+  @override
+  String get attachScreenshot => 'திரைப்பிடிப்பை இணை';
+
+  @override
+  String get screenshotAttached => 'திரைப்பிடிப்பு இணைக்கப்பட்டது';
+
+  @override
+  String reportingProfileWarning(String name) {
+    return 'நீங்கள் $name ஐப் புகாரளிக்கிறீர்கள். தவறான புகார்கள் உங்கள் கணக்கைப் பாதிக்கலாம்.';
+  }
+
+  @override
+  String reportingChatInfo(String name) {
+    return 'நீங்கள் $name உடனான உங்கள் உரையாடலைப் புகாரளிக்கிறீர்கள். எங்கள் குழு அதை மதிப்பாய்வு செய்யும்.';
+  }
+
+  @override
+  String blockUserQuestion(String name) {
+    return '$name ஐத் தடுக்கவா?';
+  }
+
+  @override
+  String get blockUserBody => 'அவர்கள் உங்கள் பொருத்தங்கள் மற்றும் தேடலில் இருந்து மறைந்துவிடுவார்கள்; இருவரும் அரட்டை அடிக்கவோ விருப்பம் அனுப்பவோ முடியாது. எப்போது வேண்டுமானாலும் தடையை நீக்கலாம்.';
+
+  @override
+  String userBlockedToast(String name) {
+    return '$name தடுக்கப்பட்டார்.';
+  }
+
+  @override
+  String userUnblockedToast(String name) {
+    return '$name இன் தடை நீக்கப்பட்டது.';
+  }
+
+  @override
+  String youBlockedUnblockToChat(String name) {
+    return 'நீங்கள் $name ஐத் தடுத்துள்ளீர்கள். மீண்டும் அரட்டை அடிக்க தடையை நீக்கவும்.';
+  }
+
+  @override
+  String canNoLongerMessage(String name) {
+    return '$name க்கு நீங்கள் இனி செய்தி அனுப்ப முடியாது.';
+  }
+
+  @override
+  String get cannotSendInterestBlocked => 'நீங்கள் தடுத்த பயனருக்கு விருப்பம் அனுப்ப முடியாது.';
 }

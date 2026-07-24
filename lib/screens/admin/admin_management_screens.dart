@@ -1428,10 +1428,23 @@ class AdminSettingsScreen extends StatelessWidget {
         ),
         // ── Other management areas (preserved) ──────────────────────────────
         _ActionTile(
+          icon: Icons.flag_outlined,
+          title: 'Reports',
+          subtitle: 'Profile & chat reports — review, warn, suspend, delete',
+          color: AppColors.error,
+          onTap: () => context.go('/admin/reports'),
+        ),
+        _ActionTile(
           icon: Icons.view_carousel,
           title: 'Banner Management',
           subtitle: 'Home screen banners',
           onTap: () => context.go('/admin/banners'),
+        ),
+        _ActionTile(
+          icon: Icons.science_outlined,
+          title: 'Test Data',
+          subtitle: 'Seed / delete dummy testing profiles',
+          onTap: () => context.go('/admin/test-data'),
         ),
       ],
     );

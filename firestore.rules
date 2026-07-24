@@ -130,6 +130,10 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow create: if isAuthenticated()
                     && request.resource.data.userId == request.auth.uid;
+      // Admins may create profiles directly — used by the Test Data tool to
+      // seed dummy testing profiles (isDummy == true) whose userId is a fixed
+      // seed id rather than the admin's own uid.
+      allow create: if isAdmin();
       allow update: if isAuthenticated()
                     && resource.data.userId == request.auth.uid;
       // Any signed-in user may bump engagement counters (view / interest
@@ -247,6 +251,22 @@ service cloud.firestore {
       allow create: if isAuthenticated()
                     && request.resource.data.reporterUserId == request.auth.uid;
       allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── Blocks (user ↔ user, spec §6) ──────────────────────────────────────
+    // One directional doc per block: `blocks/{blocker}__{blocked}`. The blocker
+    // owns the doc; either participant (or an admin) may read one that involves
+    // them, which is exactly what the two hide-side queries filter on.
+    match /blocks/{blockId} {
+      allow read: if isAuthenticated()
+                  && (resource.data.blockerUid == request.auth.uid
+                      || resource.data.blockedUid == request.auth.uid
+                      || isAdmin());
+      allow create: if isAuthenticated()
+                    && request.resource.data.blockerUid == request.auth.uid;
+      allow delete: if isAuthenticated()
+                    && resource.data.blockerUid == request.auth.uid;
     }
 
     // ── Account deletion requests (RETIRED collection) ────────────────────

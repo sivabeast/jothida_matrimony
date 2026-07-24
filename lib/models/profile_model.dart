@@ -106,6 +106,10 @@ class ProfileModel {
   final bool isFeatured;
   final bool isActive;
   final bool isMarried; // true once the user marks themselves as married
+  // Test/seed profile flag. Dummy profiles are created by the admin "Test Data"
+  // tool and can be bulk-deleted from there (or filtered by `isDummy == true`
+  // in the Firebase console). Real user profiles never set this.
+  final bool isDummy;
 
   const ProfileModel({
     required this.id,
@@ -168,6 +172,7 @@ class ProfileModel {
     this.isFeatured = false,
     this.isActive = true,
     this.isMarried = false,
+    this.isDummy = false,
   });
 
   factory ProfileModel.fromFirestore(DocumentSnapshot doc) {
@@ -239,6 +244,7 @@ class ProfileModel {
       isFeatured: d['isFeatured'] ?? false,
       isActive: d['isActive'] ?? true,
       isMarried: d['isMarried'] ?? false,
+      isDummy: d['isDummy'] ?? false,
     );
   }
 
@@ -309,6 +315,7 @@ class ProfileModel {
         'isFeatured': isFeatured,
         'isActive': isActive,
         'isMarried': isMarried,
+        'isDummy': isDummy,
       };
 
   // ── Convenience getters used by UI ────────────────────────────────────
@@ -500,6 +507,7 @@ class ProfileModel {
     bool? isFeatured,
     bool? isActive,
     bool? isMarried,
+    bool? isDummy,
     int? reportCount,
     int? viewCount,
     int? interestCount,
@@ -566,6 +574,7 @@ class ProfileModel {
         isFeatured: isFeatured ?? this.isFeatured,
         isActive: isActive ?? this.isActive,
         isMarried: isMarried ?? this.isMarried,
+        isDummy: isDummy ?? this.isDummy,
       );
 
   /// Returns a copy with the primary profile photo set to [url] (or cleared
@@ -629,6 +638,7 @@ class ProfileModel {
         isFeatured: isFeatured,
         isActive: isActive,
         isMarried: isMarried,
+        isDummy: isDummy,
       );
 }
 

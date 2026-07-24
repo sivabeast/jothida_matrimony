@@ -9,15 +9,19 @@ import 'package:intl/intl.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../core/services/master_astrology_data.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/location_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../services/razorpay/razorpay_service.dart';
 import '../../widgets/common/network_photo.dart';
+import '../../widgets/common/searchable_field.dart';
+import '../../widgets/common/searchable_with_others_field.dart';
 
 /// Spec §4 — **Request New Horoscope Report** (external).
 ///
@@ -27,6 +31,16 @@ import '../../widgets/common/network_photo.dart';
 /// image/PDF uploaded here). After payment the request is created as a paid
 /// `matching` request tagged `externalRequest`, auto-assigned to an employee,
 /// and tracked on the user's Reports page exactly like an internal report.
+///
+/// Second-person input rules (spec §1):
+///   * Gender is auto-set to the opposite of the logged-in user's gender and is
+///     read-only.
+///   * Age is derived from the Date of Birth and is read-only.
+///   * Place of Birth reuses the profile-creation searchable city picker.
+///   * Nakshatra / Rasi are searchable dropdowns backed by the master astrology
+///     data.
+///   * Name, DOB, Time of Birth, Place, Nakshatra and Rasi are required; the
+///     horoscope image/PDF is optional.
 class RequestExternalReportScreen extends ConsumerStatefulWidget {
   const RequestExternalReportScreen({super.key});
 
@@ -44,13 +58,15 @@ class _RequestExternalReportScreenState
 
   // Second-person fields.
   final _name = TextEditingController();
-  final _age = TextEditingController();
-  final _place = TextEditingController();
   final _tob = TextEditingController();
-  final _nakshatra = TextEditingController();
-  final _rasi = TextEditingController();
-  String _gender = 'Female';
+  String? _place; // city name or a custom "Others" value
+  String? _nakshatra;
+  String? _rasi;
   DateTime? _dob;
+
+  // Master astrology option lists (searchable Nakshatra / Rasi).
+  List<String> _rasiOptions = const [];
+  List<String> _nakOptions = const [];
 
   // Second-person uploaded horoscope.
   String _otherImageUrl = '';
@@ -62,18 +78,24 @@ class _RequestExternalReportScreenState
   void initState() {
     super.initState();
     _razorpay.init(onSuccess: _onPaymentSuccess, onFailure: _onPaymentFailure);
+    _loadMasterOptions();
   }
 
   @override
   void dispose() {
     _razorpay.dispose();
     _name.dispose();
-    _age.dispose();
-    _place.dispose();
     _tob.dispose();
-    _nakshatra.dispose();
-    _rasi.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadMasterOptions() async {
+    final m = await MasterAstrologyData.load();
+    if (!mounted) return;
+    setState(() {
+      _rasiOptions = m.rasis.map((e) => e.nameTamil).toList();
+      _nakOptions = m.nakshatras.map((e) => e.nameTamil).toList();
+    });
   }
 
   void _snack(String m) {
@@ -81,6 +103,27 @@ class _RequestExternalReportScreenState
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(m)));
+  }
+
+  // ── Derived values ─────────────────────────────────────────────────────────
+
+  /// The second person is always the opposite gender to the logged-in user.
+  /// Falls back to Female when the user's gender is unknown (still read-only).
+  String _lockedGender(ProfileModel? me) {
+    final g = (me?.gender ?? '').trim().toLowerCase();
+    if (g == 'male') return 'Female';
+    if (g == 'female') return 'Male';
+    return 'Female';
+  }
+
+  int _ageFromDob(DateTime dob) {
+    final now = DateTime.now();
+    var age = now.year - dob.year;
+    if (now.month < dob.month ||
+        (now.month == dob.month && now.day < dob.day)) {
+      age--;
+    }
+    return age < 0 ? 0 : age;
   }
 
   // ── Build the requester (self) details from the profile ──────────────────
@@ -106,15 +149,15 @@ class _RequestExternalReportScreenState
     };
   }
 
-  Map<String, dynamic> _otherMap() => {
+  Map<String, dynamic> _otherMap(ProfileModel? me) => {
         'name': _name.text.trim(),
-        'age': int.tryParse(_age.text.trim()) ?? 0,
-        'gender': _gender,
+        'age': _dob == null ? 0 : _ageFromDob(_dob!),
+        'gender': _lockedGender(me),
         'dob': _dob == null ? '' : DateFormat('dd MMM yyyy').format(_dob!),
         'tob': _tob.text.trim(),
-        'place': _place.text.trim(),
-        'nakshatra': _nakshatra.text.trim(),
-        'rasi': _rasi.text.trim(),
+        'place': (_place ?? '').trim(),
+        'nakshatra': (_nakshatra ?? '').trim(),
+        'rasi': (_rasi ?? '').trim(),
         'horoscopeImageUrl': _otherImageUrl,
         'horoscopePdfUrl': _otherPdfUrl,
       };
@@ -170,16 +213,34 @@ class _RequestExternalReportScreenState
     final picked = await showTimePicker(
         context: context, initialTime: const TimeOfDay(hour: 6, minute: 0));
     if (picked != null && mounted) {
-      _tob.text = picked.format(context);
+      setState(() => _tob.text = picked.format(context));
     }
   }
 
   // ── Pay + create ──────────────────────────────────────────────────────────
   void _payAndRequest() {
     if (_busy) return;
+    // Field-level (Name, Place, Nakshatra, Rasi) validation.
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    // Picker fields are not FormFields, so validate them explicitly.
     if (_dob == null) {
       _snack('Please select the second person\'s date of birth.');
+      return;
+    }
+    if (_tob.text.trim().isEmpty) {
+      _snack('Please select the second person\'s time of birth.');
+      return;
+    }
+    if ((_place ?? '').trim().isEmpty) {
+      _snack('Please select the second person\'s place of birth.');
+      return;
+    }
+    if ((_nakshatra ?? '').trim().isEmpty) {
+      _snack('Please select the second person\'s Nakshatra.');
+      return;
+    }
+    if ((_rasi ?? '').trim().isEmpty) {
+      _snack('Please select the second person\'s Rasi.');
       return;
     }
     setState(() => _busy = true);
@@ -219,7 +280,7 @@ class _RequestExternalReportScreenState
       final id =
           await ref.read(matchAnalysisControllerProvider.notifier).requestExternalReport(
                 requester: _requesterMap(me),
-                other: _otherMap(),
+                other: _otherMap(me),
                 amount: amount,
                 paymentId: paymentId,
                 note: note,
@@ -258,7 +319,7 @@ class _RequestExternalReportScreenState
             const SizedBox(height: 14),
             _selfCard(me),
             const SizedBox(height: 14),
-            _otherCard(),
+            _otherCard(me),
             const SizedBox(height: 16),
           ],
         ),
@@ -347,7 +408,9 @@ class _RequestExternalReportScreenState
   }
 
   // ── Second person (manual) details ────────────────────────────────────────
-  Widget _otherCard() {
+  Widget _otherCard(ProfileModel? me) {
+    final lockedGender = _lockedGender(me);
+    final ageText = _dob == null ? '—' : '${_ageFromDob(_dob!)}';
     return _card('Second Person\'s Details', Icons.person_add_alt_1_outlined, [
       TextFormField(
         controller: _name,
@@ -359,26 +422,19 @@ class _RequestExternalReportScreenState
       const SizedBox(height: 12),
       Row(
         children: [
-          Expanded(
-            child: TextFormField(
-              controller: _age,
-              keyboardType: TextInputType.number,
-              decoration: _dec('Age'),
-            ),
-          ),
+          // Age is derived from the DOB below and cannot be edited.
+          Expanded(child: _readOnlyBox('Age', ageText, Icons.cake_outlined)),
           const SizedBox(width: 10),
+          // Gender is auto-set to the opposite of the logged-in user.
           Expanded(
-            child: DropdownButtonFormField<String>(
-              value: _gender,
-              decoration: _dec('Gender *'),
-              items: const [
-                DropdownMenuItem(value: 'Female', child: Text('Female')),
-                DropdownMenuItem(value: 'Male', child: Text('Male')),
-              ],
-              onChanged: (v) => setState(() => _gender = v ?? 'Female'),
-            ),
-          ),
+              child: _readOnlyBox('Gender', lockedGender, Icons.wc_outlined)),
         ],
+      ),
+      const SizedBox(height: 6),
+      Text(
+        'Gender is set automatically to the opposite of your gender. Age is '
+        'calculated from the date of birth.',
+        style: TextStyle(fontSize: 11.5, color: Colors.grey[600]),
       ),
       const SizedBox(height: 12),
       Row(
@@ -387,49 +443,67 @@ class _RequestExternalReportScreenState
               _dob == null ? '' : DateFormat('dd MMM yyyy').format(_dob!),
               Icons.calendar_today_outlined, _pickDob)),
           const SizedBox(width: 10),
-          Expanded(
-            child: TextFormField(
-              controller: _tob,
-              readOnly: true,
-              onTap: _pickTob,
-              decoration: _dec('Time of Birth').copyWith(
-                  suffixIcon: const Icon(Icons.schedule, size: 18)),
-            ),
-          ),
+          Expanded(child: _pickerField('Time of Birth *', _tob.text,
+              Icons.schedule, _pickTob)),
         ],
       ),
       const SizedBox(height: 12),
-      TextFormField(
-        controller: _place,
-        textCapitalization: TextCapitalization.words,
-        decoration: _dec('Place of Birth'),
+      // Place of Birth — same searchable city picker as profile creation, with
+      // an "Others" fallback for places not in the database.
+      _placeField(),
+      const SizedBox(height: 12),
+      // Nakshatra / Rasi — searchable dropdowns backed by the master data.
+      SearchableField(
+        label: 'Nakshatra',
+        isRequired: true,
+        items: _nakOptions,
+        selectedItem: _nakshatra,
+        prefixIcon: Icons.auto_awesome_outlined,
+        popupMode: SearchablePopupMode.modalBottomSheet,
+        onChanged: (v) => setState(() => _nakshatra = v),
       ),
       const SizedBox(height: 12),
-      Row(
-        children: [
-          Expanded(
-            child: TextFormField(
-              controller: _nakshatra,
-              textCapitalization: TextCapitalization.words,
-              decoration: _dec('Nakshatra'),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextFormField(
-              controller: _rasi,
-              textCapitalization: TextCapitalization.words,
-              decoration: _dec('Rasi'),
-            ),
-          ),
-        ],
+      SearchableField(
+        label: 'Rasi',
+        isRequired: true,
+        items: _rasiOptions,
+        selectedItem: _rasi,
+        prefixIcon: Icons.brightness_3_outlined,
+        popupMode: SearchablePopupMode.modalBottomSheet,
+        onChanged: (v) => setState(() => _rasi = v),
       ),
       const SizedBox(height: 14),
-      const Text('Horoscope Image / PDF',
+      const Text('Horoscope Image / PDF (optional)',
           style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
       const SizedBox(height: 8),
       _uploadRow(),
     ]);
+  }
+
+  Widget _placeField() {
+    final citiesAsync = ref.watch(allCityNamesProvider);
+    final cities = citiesAsync.valueOrNull ?? const <String>[];
+    if (citiesAsync.isLoading && cities.isEmpty) {
+      return Row(children: [
+        const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2)),
+        const SizedBox(width: 10),
+        Expanded(child: Text('Loading places…',
+            style: TextStyle(color: Colors.grey[600], fontSize: 13))),
+      ]);
+    }
+    return SearchableWithOthersField(
+      label: 'Place of Birth',
+      isRequired: true,
+      prefixIcon: Icons.location_on_outlined,
+      popupMode: SearchablePopupMode.modalBottomSheet,
+      items: cities,
+      value: _place,
+      customLabel: 'Custom place of birth',
+      onChanged: (v) => setState(() => _place = v),
+    );
   }
 
   Widget _uploadRow() {
@@ -438,40 +512,39 @@ class _RequestExternalReportScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            if (hasImage)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child:
-                    NetworkPhoto(url: _otherImageUrl, width: 52, height: 52),
-              ),
-            if (hasPdf)
-              const Padding(
-                padding: EdgeInsets.only(right: 8),
-                child: Icon(Icons.picture_as_pdf,
-                    color: AppColors.error, size: 34),
-              ),
-            if (hasImage || hasPdf) const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                hasImage && hasPdf
-                    ? 'Image + PDF attached'
-                    : hasImage
-                        ? 'Image attached'
-                        : hasPdf
-                            ? 'PDF attached'
-                            : 'Optional — attach the second person\'s horoscope.',
-                style: TextStyle(
-                    fontSize: 12,
-                    color: (hasImage || hasPdf)
-                        ? AppColors.success
-                        : Colors.grey[600]),
-              ),
+        if (hasImage || hasPdf) ...[
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              if (hasImage)
+                _attachmentChip(
+                  preview: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child:
+                        NetworkPhoto(url: _otherImageUrl, width: 52, height: 52),
+                  ),
+                  label: 'Image attached',
+                  onRemove: () => setState(() => _otherImageUrl = ''),
+                ),
+              if (hasPdf)
+                _attachmentChip(
+                  preview: const Icon(Icons.picture_as_pdf,
+                      color: AppColors.error, size: 40),
+                  label: 'PDF attached',
+                  onRemove: () => setState(() => _otherPdfUrl = ''),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+        ] else
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Text(
+              'Optional — attach the second person\'s horoscope.',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
-          ],
-        ),
-        const SizedBox(height: 10),
+          ),
         Row(children: [
           Expanded(
             child: OutlinedButton.icon(
@@ -482,7 +555,7 @@ class _RequestExternalReportScreenState
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.image_outlined, size: 18),
-              label: const Text('Image'),
+              label: Text(hasImage ? 'Replace image' : 'Image'),
               style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
                   side: const BorderSide(color: AppColors.primary)),
@@ -493,7 +566,7 @@ class _RequestExternalReportScreenState
             child: OutlinedButton.icon(
               onPressed: _uploading ? null : _pickPdf,
               icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-              label: const Text('PDF'),
+              label: Text(hasPdf ? 'Replace PDF' : 'PDF'),
               style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
                   side: const BorderSide(color: AppColors.primary)),
@@ -501,6 +574,43 @@ class _RequestExternalReportScreenState
           ),
         ]),
       ],
+    );
+  }
+
+  /// A preview tile with its own Remove button, shown for each attachment.
+  Widget _attachmentChip({
+    required Widget preview,
+    required String label,
+    required VoidCallback onRemove,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: AppColors.success.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.success.withOpacity(0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(width: 52, height: 52, child: Center(child: preview)),
+          const SizedBox(width: 8),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.success,
+                  fontWeight: FontWeight.w600)),
+          const SizedBox(width: 4),
+          InkWell(
+            onTap: onRemove,
+            borderRadius: BorderRadius.circular(20),
+            child: const Padding(
+              padding: EdgeInsets.all(4),
+              child: Icon(Icons.close, size: 18, color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -591,6 +701,19 @@ class _RequestExternalReportScreenState
             ),
           ],
         ),
+      );
+
+  /// A read-only display box that looks like an input but cannot be edited
+  /// (used for the auto-derived Age and locked Gender).
+  Widget _readOnlyBox(String label, String value, IconData icon) =>
+      InputDecorator(
+        decoration: _dec(label).copyWith(
+          fillColor: Colors.grey[200],
+          suffixIcon: const Icon(Icons.lock_outline, size: 16),
+          prefixIcon: Icon(icon, size: 18),
+        ),
+        child: Text(value.isEmpty ? '—' : value,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
       );
 
   Widget _pickerField(

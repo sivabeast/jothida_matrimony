@@ -38,6 +38,7 @@ class AppConstants {
   static const String settlementsCollection = 'settlements';
   static const String chatsCollection = 'chats';
   static const String messagesSubcollection = 'messages';
+  static const String blocksCollection = 'blocks';
   static const String accountDeletionRequestsCollection = 'account_deletion_requests';
   // Contact details live OUTSIDE the public profile and unlock only after a
   // mutually-accepted interest (recorded in `connections`).
@@ -311,10 +312,25 @@ class AppConstants {
     'Bengali', 'Gujarati', 'Punjabi', 'Urdu', 'Other',
   ];
 
-  // Report Reasons
+  // Report Reasons (profile) — spec §5
   static const List<String> reportReasons = [
-    'Fake Profile', 'Wrong Information', 'Harassment',
-    'Scam', 'Inappropriate Content', 'Other',
+    'Fake Profile',
+    'Wrong Information',
+    'Spam',
+    'Harassment',
+    'Inappropriate Content',
+    'Duplicate Account',
+    'Other',
+  ];
+
+  // Report Reasons (chat) — spec §7
+  static const List<String> chatReportReasons = [
+    'Harassment',
+    'Abusive Language',
+    'Spam',
+    'Inappropriate Content',
+    'Scam / Fraud',
+    'Other',
   ];
 
   // Porutham Types

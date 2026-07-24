@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/interest_model.dart';
 import 'auth_provider.dart';
+import 'block_provider.dart';
 import 'chat_provider.dart';
 import 'locale_provider.dart';
 import 'notification_provider.dart';
@@ -68,6 +69,11 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
       if (ref.read(myProfileProvider).valueOrNull?.isMarried ?? false) {
         throw Exception(
             'Your profile is marked as Married — new interests are disabled.');
+      }
+      // Blocked in either direction (spec §6) → interest is refused.
+      if (ref.read(blockedUidsProvider).contains(receiverId)) {
+        throw Exception(
+            'You cannot send an interest to a user you have blocked.');
       }
       final interest = InterestModel(
         id: '${senderProfileId}_$receiverProfileId',

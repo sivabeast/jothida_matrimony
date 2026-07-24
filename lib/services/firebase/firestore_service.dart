@@ -254,11 +254,63 @@ class FirestoreService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+  // ── Test data (dummy profiles) — spec §3 ──────────────────────────────────
+  // The admin "Test Data" tool seeds realistic profiles for end-to-end testing
+  // and removes them again afterwards. Each is written under its own stable id
+  // (so re-seeding overwrites rather than duplicates) and force-tagged
+  // `isDummy: true` so it can be filtered/bulk-deleted here or in the console.
+
+  /// Write [profiles] to the `profiles` collection. Returns the number written.
+  Future<int> seedDummyProfiles(List<ProfileModel> profiles) async {
+    final col = _db.collection(AppConstants.profilesCollection);
+    for (var i = 0; i < profiles.length; i += 400) {
+      final batch = _db.batch();
+      for (final p in profiles.skip(i).take(400)) {
+        final map = p.toFirestore()..['isDummy'] = true;
+        batch.set(col.doc(p.id), map);
+      }
+      await batch.commit();
+    }
+    return profiles.length;
+  }
+
+  /// How many dummy profiles currently exist (`isDummy == true`).
+  Future<int> countDummyProfiles() async {
+    final snap = await _db
+        .collection(AppConstants.profilesCollection)
+        .where('isDummy', isEqualTo: true)
+        .count()
+        .get();
+    return snap.count ?? 0;
+  }
+
+  /// Delete EVERY dummy profile. Returns the number removed.
+  Future<int> deleteDummyProfiles() async {
+    final snap = await _db
+        .collection(AppConstants.profilesCollection)
+        .where('isDummy', isEqualTo: true)
+        .get();
+    var removed = 0;
+    for (var i = 0; i < snap.docs.length; i += 400) {
+      final batch = _db.batch();
+      for (final d in snap.docs.skip(i).take(400)) {
+        batch.delete(d.reference);
+        removed++;
+      }
+      await batch.commit();
+    }
+    return removed;
+  }
+
   Future<ProfileModel?> getProfile(String profileId) async {
     final doc = await _db.collection(AppConstants.profilesCollection).doc(profileId).get();
     if (!doc.exists) return null;
     return ProfileModel.fromFirestore(doc);
   }
+
+  /// Admin moderation: permanently delete a reported profile document.
+  Future<void> deleteProfileById(String profileId) =>
+      _db.collection(AppConstants.profilesCollection).doc(profileId).delete();
 
   Future<ProfileModel?> getProfileByUserId(String userId) async {
     final snap = await _db
@@ -567,12 +619,96 @@ class FirestoreService {
 
   // ── Reports ───────────────────────────────────────────────────────────────
   Future<void> submitReport(ReportModel report) async {
-    await _db.collection(AppConstants.reportsCollection).doc(report.id).set(report.toFirestore());
-    // Bump the reported profile's report count.
-    await _db.collection(AppConstants.profilesCollection).doc(report.reportedProfileId).update({
-      'reportCount': FieldValue.increment(1),
+    await _db
+        .collection(AppConstants.reportsCollection)
+        .doc(report.id)
+        .set(report.toFirestore());
+    // Bump the reported profile's report count — only for profile reports that
+    // reference a real profile (chat reports have no profile id, and the bump
+    // is non-fatal so a denied/missing update never loses the report itself).
+    if (report.reportedProfileId.trim().isNotEmpty) {
+      try {
+        await _db
+            .collection(AppConstants.profilesCollection)
+            .doc(report.reportedProfileId)
+            .update({'reportCount': FieldValue.increment(1)});
+      } catch (e) {
+        debugPrint('[FirestoreService] reportCount bump skipped: $e');
+      }
+    }
+  }
+
+  /// All reports, newest first, for the admin Report Management page.
+  Stream<List<ReportModel>> watchAllReports() => _db
+      .collection(AppConstants.reportsCollection)
+      .orderBy('createdAt', descending: true)
+      .limit(300)
+      .snapshots()
+      .map((s) => s.docs.map(ReportModel.fromFirestore).toList());
+
+  /// Admin: change a report's moderation status (spec §8 actions). Keeps the
+  /// legacy [isResolved] flag in sync so older screens still read correctly.
+  Future<void> updateReportStatus(String reportId, String status,
+      {String? adminNotes}) {
+    final resolved =
+        status == 'resolved' || status == 'rejected' || status == 'deleted';
+    return _db.collection(AppConstants.reportsCollection).doc(reportId).update({
+      'status': status,
+      'isResolved': resolved,
+      if (adminNotes != null) 'adminNotes': adminNotes,
+      'resolvedAt': resolved ? FieldValue.serverTimestamp() : null,
     });
   }
+
+  Future<void> deleteReport(String reportId) =>
+      _db.collection(AppConstants.reportsCollection).doc(reportId).delete();
+
+  /// Count of reports still awaiting review (status == 'pending') — drives the
+  /// admin dashboard's "Pending Reports" badge.
+  Future<int> countPendingReports() async {
+    final snap = await _db
+        .collection(AppConstants.reportsCollection)
+        .where('status', isEqualTo: 'pending')
+        .count()
+        .get();
+    return snap.count ?? 0;
+  }
+
+  // ── Blocks (user ↔ user, spec §6) ─────────────────────────────────────────
+  // A block is one directional doc `blocks/{blocker}__{blocked}`. Matches /
+  // search hide anyone in EITHER direction; interest & chat are refused too.
+
+  String _blockId(String blocker, String blocked) => '${blocker}__$blocked';
+
+  Future<void> blockUserId(String blockerUid, String blockedUid) => _db
+      .collection(AppConstants.blocksCollection)
+      .doc(_blockId(blockerUid, blockedUid))
+      .set({
+        'blockerUid': blockerUid,
+        'blockedUid': blockedUid,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+  Future<void> unblockUserId(String blockerUid, String blockedUid) => _db
+      .collection(AppConstants.blocksCollection)
+      .doc(_blockId(blockerUid, blockedUid))
+      .delete();
+
+  /// UIDs the signed-in user has blocked.
+  Stream<Set<String>> watchBlockedByMe(String myUid) => _db
+      .collection(AppConstants.blocksCollection)
+      .where('blockerUid', isEqualTo: myUid)
+      .snapshots()
+      .map((s) => s.docs.map((d) => d['blockedUid'] as String? ?? '').toSet()
+        ..removeWhere((e) => e.isEmpty));
+
+  /// UIDs that have blocked the signed-in user.
+  Stream<Set<String>> watchWhoBlockedMe(String myUid) => _db
+      .collection(AppConstants.blocksCollection)
+      .where('blockedUid', isEqualTo: myUid)
+      .snapshots()
+      .map((s) => s.docs.map((d) => d['blockerUid'] as String? ?? '').toSet()
+        ..removeWhere((e) => e.isEmpty));
 
   // ── Notifications ─────────────────────────────────────────────────────────
   Future<void> saveNotification(NotificationModel notification) => _db

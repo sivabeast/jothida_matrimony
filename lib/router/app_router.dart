@@ -50,6 +50,8 @@ import '../screens/admin/admin_appointments_screen.dart';
 import '../screens/admin/astrologer_verification_screen.dart';
 import '../screens/admin/admin_management_screens.dart';
 import '../screens/admin/admin_reports_page.dart';
+import '../screens/admin/admin_report_management_screen.dart';
+import '../screens/admin/admin_test_data_screen.dart';
 import '../screens/admin/employee_commission_screen.dart';
 import '../screens/admin/account_admin_screens.dart';
 import '../screens/admin/announcement_management_screen.dart';
@@ -73,6 +75,7 @@ import '../screens/support/help_support_screen.dart';
 import '../screens/legal/privacy_policy_screen.dart';
 import '../screens/legal/terms_conditions_screen.dart';
 import '../screens/report/report_profile_screen.dart';
+import '../screens/report/report_chat_screen.dart';
 import '../screens/report/request_external_report_screen.dart';
 import '../screens/muhurtham/muhurtham_calendar_screen.dart';
 import '../screens/wedding/wedding_workspace_screen.dart';
@@ -247,6 +250,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/report/:id',
         builder: (_, state) =>
             ReportProfileScreen(profileId: state.pathParameters['id']!),
+      ),
+      // Report a chat conversation (spec §7). `extra` carries otherUid + name.
+      GoRoute(
+        path: '/report-chat/:threadId',
+        builder: (_, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? const {};
+          return ReportChatScreen(
+            threadId: state.pathParameters['threadId']!,
+            otherUid: extra['otherUid'] as String? ?? '',
+            otherName: extra['otherName'] as String? ?? 'User',
+          );
+        },
       ),
       // ── Horoscope Compatibility Report (in-person appointment) ───────────
       // Service details page → appointment booking → confirmation. Opened from
@@ -468,6 +483,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               builder: (_, __) => const AppUpdateSettingsScreen()),
           GoRoute(path: '/admin/commission', builder: (_, __) => const EmployeeCommissionScreen()),
           GoRoute(path: '/admin/married', builder: (_, __) => const MarriedUsersScreen()),
+          GoRoute(path: '/admin/test-data', builder: (_, __) => const AdminTestDataScreen()),
+          GoRoute(path: '/admin/reports', builder: (_, __) => const AdminReportManagementScreen()),
         ],
       ),
     ],

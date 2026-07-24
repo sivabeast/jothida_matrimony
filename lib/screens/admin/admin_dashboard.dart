@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_team_member.dart';
 import '../../models/dashboard_analytics.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/astrology_team_provider.dart';
+import '../../providers/report_provider.dart';
 import 'admin_export.dart' show inr;
 
 /// The admin Dashboard — intentionally minimal (per spec):
@@ -111,6 +113,20 @@ class AdminDashboard extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 24),
+
+          // ── Moderation ──────────────────────────────────────────────────
+          const _SectionTitle('Moderation'),
+          InkWell(
+            onTap: () => context.go('/admin/reports'),
+            borderRadius: BorderRadius.circular(16),
+            child: _StatCard(
+              icon: Icons.flag_outlined,
+              color: AppColors.error,
+              label: 'Pending Reports',
+              value: '${ref.watch(pendingReportsCountProvider)}',
+            ),
           ),
         ],
       ),

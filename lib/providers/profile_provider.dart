@@ -9,6 +9,7 @@ import '../core/services/porutham_match.dart';
 import '../models/profile_model.dart';
 import '../services/cloudinary/cloudinary_exception.dart';
 import '../services/firebase/firestore_service.dart' show ProfilePage;
+import 'block_provider.dart';
 import 'demo_data_provider.dart';
 import 'notification_provider.dart';
 import 'service_providers.dart';
@@ -860,13 +861,33 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
   /// filter-sheet choices re-filters INSTANTLY without refetching.
   final List<ProfileModel> _pool = [];
 
+  /// UIDs blocked in either direction (spec §6) — hidden from the feed. Kept in
+  /// sync with [blockedUidsProvider]; blocking someone drops them immediately.
+  Set<String> _blocked = const {};
+
   /// When an active filter makes a single fetched page sparse, keep fetching up
   /// to this many extra pages so the feed isn't empty just because the first
   /// page happened to contain no matches.
   static const int _kMaxAutoPages = 6;
 
   @override
-  DiscoverState build() => const DiscoverState();
+  DiscoverState build() {
+    // NOTE: read (not watch) — watching here would recreate the notifier and
+    // wipe the loaded feed every time a block changes. The listener below keeps
+    // [_blocked] current instead.
+    _blocked = ref.read(blockedUidsProvider);
+    // A newly-created/removed block drops (or restores) the profile from the
+    // on-screen feed instantly, without waiting for the next fetch.
+    ref.listen(blockedUidsProvider, (_, next) {
+      _blocked = next;
+      final filtered =
+          state.profiles.where((p) => !_blocked.contains(p.userId)).toList();
+      if (filtered.length != state.profiles.length) {
+        state = state.copyWith(profiles: filtered);
+      }
+    });
+    return const DiscoverState();
+  }
 
   /// The currently applied optional filters (read by the UI for the badge).
   MatchFilters get filters => _filters;
@@ -896,6 +917,8 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
     if (p.isMarried) return false;
     if (!p.isActive) return false;
     if (p.status == 'rejected' || p.status == 'blocked') return false;
+    // User-to-user block (spec §6) — hidden in both directions.
+    if (_blocked.contains(p.userId)) return false;
 
     // Opposite gender only. Both sides must be known for the rule to bite —
     // an unknown value is never used to hide a profile.
@@ -1127,6 +1150,7 @@ final newProfilesProvider =
   // Same-gender guard as the Matches feed — see DiscoverNotifier._keep.
   final myGender =
       normalizedGender(ref.watch(myProfileProvider).valueOrNull?.gender);
+  final blocked = ref.watch(blockedUidsProvider);
 
   final eligible = pool.where((p) {
     if (p.userId.trim().isEmpty || p.name.trim().isEmpty) return false;
@@ -1134,6 +1158,7 @@ final newProfilesProvider =
     if (p.isMarried) return false;
     if (!p.isActive) return false;
     if (p.status == 'rejected' || p.status == 'blocked') return false;
+    if (blocked.contains(p.userId)) return false; // user-to-user block (§6)
     final theirs = normalizedGender(p.gender);
     if (myGender.isNotEmpty && theirs.isNotEmpty && myGender == theirs) {
       return false;

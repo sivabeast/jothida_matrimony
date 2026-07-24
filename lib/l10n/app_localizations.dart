@@ -3632,7 +3632,7 @@ abstract class AppLocalizations {
   /// No description provided for @submittingLabel.
   ///
   /// In en, this message translates to:
-  /// **'Submitting…'**
+  /// **'Submitting...'**
   String get submittingLabel;
 
   /// No description provided for @employmentLabel.
@@ -3790,6 +3790,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to create profile'**
   String get failedToCreateProfile;
+
+  /// No description provided for @reportProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Profile'**
+  String get reportProfileTitle;
+
+  /// No description provided for @reportChatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Chat'**
+  String get reportChatTitle;
+
+  /// No description provided for @reportProfileAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Report profile'**
+  String get reportProfileAction;
+
+  /// No description provided for @reportChatAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Report chat'**
+  String get reportChatAction;
+
+  /// No description provided for @blockUserAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Block user'**
+  String get blockUserAction;
+
+  /// No description provided for @unblockUserAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock user'**
+  String get unblockUserAction;
+
+  /// No description provided for @blockLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get blockLabel;
+
+  /// No description provided for @unblockLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock'**
+  String get unblockLabel;
+
+  /// No description provided for @whyReportProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Why are you reporting this profile?'**
+  String get whyReportProfile;
+
+  /// No description provided for @whyReportChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Why are you reporting this chat?'**
+  String get whyReportChat;
+
+  /// No description provided for @additionalDetailsOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional details (optional)'**
+  String get additionalDetailsOptional;
+
+  /// No description provided for @submitReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Report'**
+  String get submitReport;
+
+  /// No description provided for @reportSubmittedProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Report submitted. Our team will review it.'**
+  String get reportSubmittedProfile;
+
+  /// No description provided for @reportSubmittedChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Report submitted. Our team will review this conversation.'**
+  String get reportSubmittedChat;
+
+  /// No description provided for @couldNotSubmitReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not submit report. Please try again.'**
+  String get couldNotSubmitReport;
+
+  /// No description provided for @pleaseSelectReportReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a reason for reporting.'**
+  String get pleaseSelectReportReason;
+
+  /// No description provided for @screenshotOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Screenshot (optional)'**
+  String get screenshotOptional;
+
+  /// No description provided for @attachScreenshot.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach screenshot'**
+  String get attachScreenshot;
+
+  /// No description provided for @screenshotAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Screenshot attached'**
+  String get screenshotAttached;
+
+  /// No description provided for @reportingProfileWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'You are reporting {name}. False reports may affect your account.'**
+  String reportingProfileWarning(String name);
+
+  /// No description provided for @reportingChatInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'You are reporting your conversation with {name}. Our team will review it.'**
+  String reportingChatInfo(String name);
+
+  /// No description provided for @blockUserQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Block {name}?'**
+  String blockUserQuestion(String name);
+
+  /// No description provided for @blockUserBody.
+  ///
+  /// In en, this message translates to:
+  /// **'They will disappear from your matches and search, and neither of you can chat or send interests. You can unblock them anytime.'**
+  String get blockUserBody;
+
+  /// No description provided for @userBlockedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} has been blocked.'**
+  String userBlockedToast(String name);
+
+  /// No description provided for @userUnblockedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} has been unblocked.'**
+  String userUnblockedToast(String name);
+
+  /// No description provided for @youBlockedUnblockToChat.
+  ///
+  /// In en, this message translates to:
+  /// **'You blocked {name}. Unblock to chat again.'**
+  String youBlockedUnblockToChat(String name);
+
+  /// No description provided for @canNoLongerMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You can no longer message {name}.'**
+  String canNoLongerMessage(String name);
+
+  /// No description provided for @cannotSendInterestBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'You cannot send an interest to a user you have blocked.'**
+  String get cannotSendInterestBlocked;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

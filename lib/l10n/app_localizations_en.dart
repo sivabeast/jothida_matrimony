@@ -1846,7 +1846,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveChanges => 'Save Changes';
 
   @override
-  String get submittingLabel => 'Submitting…';
+  String get submittingLabel => 'Submitting...';
 
   @override
   String get employmentLabel => 'Employment';
@@ -1931,4 +1931,102 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get failedToCreateProfile => 'Failed to create profile';
+
+  @override
+  String get reportProfileTitle => 'Report Profile';
+
+  @override
+  String get reportChatTitle => 'Report Chat';
+
+  @override
+  String get reportProfileAction => 'Report profile';
+
+  @override
+  String get reportChatAction => 'Report chat';
+
+  @override
+  String get blockUserAction => 'Block user';
+
+  @override
+  String get unblockUserAction => 'Unblock user';
+
+  @override
+  String get blockLabel => 'Block';
+
+  @override
+  String get unblockLabel => 'Unblock';
+
+  @override
+  String get whyReportProfile => 'Why are you reporting this profile?';
+
+  @override
+  String get whyReportChat => 'Why are you reporting this chat?';
+
+  @override
+  String get additionalDetailsOptional => 'Additional details (optional)';
+
+  @override
+  String get submitReport => 'Submit Report';
+
+  @override
+  String get reportSubmittedProfile => 'Report submitted. Our team will review it.';
+
+  @override
+  String get reportSubmittedChat => 'Report submitted. Our team will review this conversation.';
+
+  @override
+  String get couldNotSubmitReport => 'Could not submit report. Please try again.';
+
+  @override
+  String get pleaseSelectReportReason => 'Please select a reason for reporting.';
+
+  @override
+  String get screenshotOptional => 'Screenshot (optional)';
+
+  @override
+  String get attachScreenshot => 'Attach screenshot';
+
+  @override
+  String get screenshotAttached => 'Screenshot attached';
+
+  @override
+  String reportingProfileWarning(String name) {
+    return 'You are reporting $name. False reports may affect your account.';
+  }
+
+  @override
+  String reportingChatInfo(String name) {
+    return 'You are reporting your conversation with $name. Our team will review it.';
+  }
+
+  @override
+  String blockUserQuestion(String name) {
+    return 'Block $name?';
+  }
+
+  @override
+  String get blockUserBody => 'They will disappear from your matches and search, and neither of you can chat or send interests. You can unblock them anytime.';
+
+  @override
+  String userBlockedToast(String name) {
+    return '$name has been blocked.';
+  }
+
+  @override
+  String userUnblockedToast(String name) {
+    return '$name has been unblocked.';
+  }
+
+  @override
+  String youBlockedUnblockToChat(String name) {
+    return 'You blocked $name. Unblock to chat again.';
+  }
+
+  @override
+  String canNoLongerMessage(String name) {
+    return 'You can no longer message $name.';
+  }
+
+  @override
+  String get cannotSendInterestBlocked => 'You cannot send an interest to a user you have blocked.';
 }

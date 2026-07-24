@@ -5,10 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/file_actions.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../models/chat_model.dart';
 import '../../providers/astrologer_provider.dart';
+import '../../providers/block_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../widgets/common/network_photo.dart';
 
@@ -230,6 +233,80 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         child: Text(text),
       );
 
+  // ── Block / unblock (spec §6) ─────────────────────────────────────────────
+  Future<void> _confirmBlock(String otherUid, String name) async {
+    final l10n = context.l10n;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.blockUserQuestion(name)),
+        content: Text(l10n.blockUserBody),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.cancel)),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: Text(l10n.blockLabel),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await ref.read(blockControllerProvider.notifier).block(otherUid);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.userBlockedToast(name))));
+    }
+  }
+
+  Future<void> _unblock(String otherUid, String name) async {
+    await ref.read(blockControllerProvider.notifier).unblock(otherUid);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.userUnblockedToast(name))));
+    }
+  }
+
+  Widget _blockedBanner(
+      {required bool iBlocked,
+      required String otherUid,
+      required String name}) {
+    return SafeArea(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        color: Colors.white,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.block, color: Colors.grey[500]),
+            const SizedBox(height: 6),
+            Text(
+              iBlocked
+                  ? context.l10n.youBlockedUnblockToChat(name)
+                  : context.l10n.canNoLongerMessage(name),
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+            ),
+            if (iBlocked) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () => _unblock(otherUid, name),
+                icon: const Icon(Icons.lock_open, size: 18),
+                label: Text(context.l10n.unblockLabel),
+                style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary)),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final myUid = ref.watch(myUidProvider) ?? '';
@@ -266,6 +343,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         (otherUid.isNotEmpty &&
             ref.watch(astrologerByIdProvider(otherUid)) != null);
 
+    // Block / report state (spec §6, §7). `blocked` is either direction — the
+    // composer is disabled; `iBlocked` decides the Block vs Unblock menu label.
+    final iBlocked =
+        (ref.watch(myBlockedUidsProvider).valueOrNull ?? const <String>{})
+            .contains(otherUid);
+    final blocked = ref.watch(blockedUidsProvider).contains(otherUid);
+
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
@@ -287,6 +371,51 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             Expanded(child: Text(name, overflow: TextOverflow.ellipsis)),
           ],
         ),
+        actions: [
+          if (otherUid.isNotEmpty)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (v) {
+                switch (v) {
+                  case 'report':
+                    context.push('/report-chat/${widget.threadId}', extra: {
+                      'otherUid': otherUid,
+                      'otherName': name,
+                    });
+                    break;
+                  case 'block':
+                    _confirmBlock(otherUid, name);
+                    break;
+                  case 'unblock':
+                    _unblock(otherUid, name);
+                    break;
+                }
+              },
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'report',
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.flag_outlined),
+                    title: Text(context.l10n.reportChatAction),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: iBlocked ? 'unblock' : 'block',
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(iBlocked ? Icons.lock_open : Icons.block,
+                        color: iBlocked ? null : AppColors.error),
+                    title: Text(iBlocked
+                        ? context.l10n.unblockUserAction
+                        : context.l10n.blockUserAction),
+                  ),
+                ),
+              ],
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -385,6 +514,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ),
               ),
             ),
+          if (blocked)
+            _blockedBanner(iBlocked: iBlocked, otherUid: otherUid, name: name)
+          else
           SafeArea(
             child: Container(
               padding: const EdgeInsets.fromLTRB(6, 8, 8, 8),

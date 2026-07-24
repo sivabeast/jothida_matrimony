@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config/dev_config.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
+import '../../core/utils/value_l10n.dart';
 import '../../models/profile_model.dart';
 import '../../models/report_model.dart';
 import '../../providers/auth_provider.dart';
@@ -33,7 +35,7 @@ class _ReportProfileScreenState extends ConsumerState<ReportProfileScreen> {
 
   Future<void> _submit(ProfileModel target) async {
     if (_reason == null) {
-      _toast('Please select a reason for reporting.');
+      _toast(context.l10n.pleaseSelectReportReason);
       return;
     }
     debugPrint('[ReportProfile] submitting report for ${target.id} '
@@ -61,12 +63,12 @@ class _ReportProfileScreenState extends ConsumerState<ReportProfileScreen> {
         await ref.read(firestoreServiceProvider).submitReport(report);
       }
       if (mounted) {
-        _toast('Report submitted. Our team will review it.');
+        _toast(context.l10n.reportSubmittedProfile);
         Navigator.of(context).pop();
       }
     } catch (e) {
       debugPrint('[ReportProfile] submit error: $e');
-      if (mounted) _toast('Could not submit report. Please try again.');
+      if (mounted) _toast(context.l10n.couldNotSubmitReport);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -87,7 +89,7 @@ class _ReportProfileScreenState extends ConsumerState<ReportProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Report Profile'),
+        title: Text(context.l10n.reportProfileTitle),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -116,8 +118,7 @@ class _ReportProfileScreenState extends ConsumerState<ReportProfileScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'You are reporting ${target.name}. False reports may '
-                        'affect your account.',
+                        context.l10n.reportingProfileWarning(target.name),
                         style: const TextStyle(fontSize: 13),
                       ),
                     ),
@@ -125,15 +126,16 @@ class _ReportProfileScreenState extends ConsumerState<ReportProfileScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text('Why are you reporting this profile?',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              Text(context.l10n.whyReportProfile,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 15)),
               const SizedBox(height: 8),
               ...AppConstants.reportReasons.map((r) => RadioListTile<String>(
                     value: r,
                     groupValue: _reason,
                     activeColor: AppColors.primary,
                     contentPadding: EdgeInsets.zero,
-                    title: Text(r),
+                    title: Text(context.localizeValue(r)),
                     onChanged: (v) => setState(() => _reason = v),
                   )),
               const SizedBox(height: 12),
@@ -141,7 +143,7 @@ class _ReportProfileScreenState extends ConsumerState<ReportProfileScreen> {
                 controller: _descCtrl,
                 maxLines: 4,
                 decoration: InputDecoration(
-                  labelText: 'Additional details (optional)',
+                  labelText: context.l10n.additionalDetailsOptional,
                   alignLabelWithHint: true,
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10)),
@@ -159,7 +161,9 @@ class _ReportProfileScreenState extends ConsumerState<ReportProfileScreen> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.send),
-                  label: Text(_submitting ? 'Submitting...' : 'Submit Report'),
+                  label: Text(_submitting
+                      ? context.l10n.submittingLabel
+                      : context.l10n.submitReport),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.error,
                     foregroundColor: Colors.white,
