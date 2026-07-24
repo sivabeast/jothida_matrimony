@@ -1,7 +1,7 @@
 name: jothida_matrimony
 description: Jothida Matrimony - Tamil Matrimony App with Horoscope & Porutham Analysis
 publish_to: 'none'
-version: 1.0.0+2
+version: 1.0.1+3
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -89,17 +89,24 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   mockito: ^5.4.4
   flutter_launcher_icons: ^0.14.3
+  image: ^4.5.4   # used by tool/gen_play_store_icon.dart (Play Console 512×512 icon)
 
 # ── Launcher icon generation ──────────────────────────────────────────────────
-# After saving assets/images/app_logo.png, run:
+# Master = assets/images/report_logo.png : the full 1024×1024 maroon branded
+# icon (couple + zodiac + "Jothida Matrimony"). app_logo.png is the yellow
+# in-app emblem and is intentionally NOT the launcher icon.
+# To regenerate:
 #   flutter pub get
-#   flutter pub run flutter_launcher_icons
+#   dart run flutter_launcher_icons
+# NOTE: after generating, the adaptive foreground gets a 16% inset re-applied in
+# android/.../mipmap-anydpi-v26/ic_launcher.xml so the full design (incl. the
+# bottom text) stays inside the adaptive safe zone instead of being masked off.
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: false
-  image_path: "assets/images/app_logo.png"
+  image_path: "assets/images/report_logo.png"
   adaptive_icon_background: "#8B0000"    # deep maroon — matches brand
-  adaptive_icon_foreground: "assets/images/app_logo.png"
+  adaptive_icon_foreground: "assets/images/report_logo.png"
   min_sdk_android: 21
 
 flutter:
