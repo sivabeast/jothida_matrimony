@@ -69,32 +69,75 @@ class UserModel {
       loginProvider: data['loginProvider'],
       gender: data['gender'],
       role: data['role'] ?? 'user',
-      isProfileComplete: data['isProfileComplete'] ?? false,
-      isEmailVerified: data['isEmailVerified'] ?? false,
-      isPhoneVerified: data['isPhoneVerified'] ?? false,
-      isBlocked: data['isBlocked'] ?? false,
+      isProfileComplete: _boolOf(data['isProfileComplete']),
+      isEmailVerified: _boolOf(data['isEmailVerified']),
+      isPhoneVerified: _boolOf(data['isPhoneVerified']),
+      isBlocked: _boolOf(data['isBlocked']),
       profileId: data['profileId'],
-      freePortuthamsUsed: data['freePortuthamsUsed'] ?? 0,
-      createdAt: data['createdAt'] != null
+      freePortuthamsUsed: _intOf(data['freePortuthamsUsed']),
+      createdAt: data['createdAt'] is Timestamp
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
-      updatedAt: data['updatedAt'] != null
+      updatedAt: data['updatedAt'] is Timestamp
           ? (data['updatedAt'] as Timestamp).toDate()
           : DateTime.now(),
-      lastLoginAt: data['lastLoginAt'] != null
+      lastLoginAt: data['lastLoginAt'] is Timestamp
           ? (data['lastLoginAt'] as Timestamp).toDate()
           : null,
-      privacySettings: Map<String, bool>.from(data['privacySettings'] ?? {
-        'hidePhone': false,
-        'hideAddress': false,
-        'hideFamilyDetails': false,
-        'hideSalary': false,
-        'hideHoroscope': false,
-        'hideAdditionalPhotos': false,
-      }),
+      privacySettings: _privacyOf(data['privacySettings']),
       fcmToken: data['fcmToken'],
       preferredLanguage: data['preferred_language'],
     );
+  }
+
+  /// Default privacy flags — used when a document has none, and to backfill any
+  /// key an older document is missing.
+  static const Map<String, bool> _defaultPrivacy = {
+    'hidePhone': false,
+    'hideAddress': false,
+    'hideFamilyDetails': false,
+    'hideSalary': false,
+    'hideHoroscope': false,
+    'hideAdditionalPhotos': false,
+  };
+
+  /// Coerces a Firestore value into a `bool` instead of blindly casting it.
+  ///
+  /// Some historic documents (and a few admin/registration writes) stored these
+  /// flags as the STRINGS `"true"`/`"false"` or as `0`/`1`. A direct assignment
+  /// then threw `type 'String' is not a subtype of type 'bool' in type cast`
+  /// during `fromFirestore`, which surfaced as "Signed in, but something went
+  /// wrong while setting up your account" and blocked the user right AFTER a
+  /// successful Google sign-in. Coercing here makes login resilient to that.
+  static bool _boolOf(dynamic v, {bool fallback = false}) {
+    if (v is bool) return v;
+    if (v is num) return v != 0;
+    if (v is String) {
+      final s = v.trim().toLowerCase();
+      if (s == 'true' || s == '1' || s == 'yes') return true;
+      if (s == 'false' || s == '0' || s == 'no' || s.isEmpty) return false;
+    }
+    return fallback;
+  }
+
+  /// Same defensive idea for the one integer field, so a stringified count
+  /// ("2") can't crash the parse either.
+  static int _intOf(dynamic v, {int fallback = 0}) {
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v.trim()) ?? fallback;
+    return fallback;
+  }
+
+  /// Builds the privacy map without a blanket `Map<String, bool>.from`, which
+  /// throws the moment ANY stored value is a string. Each value is coerced and
+  /// the defaults backfill any missing key.
+  static Map<String, bool> _privacyOf(dynamic raw) {
+    final out = Map<String, bool>.from(_defaultPrivacy);
+    if (raw is Map) {
+      raw.forEach((k, v) => out[k.toString()] = _boolOf(v));
+    }
+    return out;
   }
 
   Map<String, dynamic> toFirestore() => {
