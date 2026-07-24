@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import '../../core/constants/app_constants.dart';
+import '../../core/utils/firestore_write.dart';
 import '../../models/chat_model.dart';
 
 /// Firestore-backed 1-to-1 chat.
@@ -65,8 +66,16 @@ class ChatService {
 
     // 2) Create it. The deterministic id + merge make this idempotent and never
     // clobber a last-message a concurrent writer may have just set.
+    //
+    // Bounded write: this set() carries serverTimestamps, so its Future only
+    // resolves on a SERVER ack (offline persistence). Awaiting it raw made the
+    // "Chat" button hang forever with no error whenever the network was down or
+    // flaky — it never navigated. commitWrite caps the wait; the create is
+    // idempotent and the thread id is deterministic, so we can safely return it
+    // and navigate even when the doc is still queued to sync. A real
+    // permission-denied still throws (only TimeoutException is absorbed).
     try {
-      await ref.set({
+      await commitWrite(ref.set({
         'participantIds': [myUid, otherUid],
         'participantNames': {myUid: myName, otherUid: otherName},
         'participantPhotos': {myUid: myPhoto, otherUid: otherPhoto},
@@ -76,7 +85,7 @@ class ChatService {
         // sorts to the TOP of the Chats list immediately — the accepted-interest
         // thread must be visible without waiting for a first message.
         'lastMessageAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      }, SetOptions(merge: true)));
       debugPrint('[ChatService] thread $threadId created');
       return threadId;
     } on FirebaseException catch (e) {

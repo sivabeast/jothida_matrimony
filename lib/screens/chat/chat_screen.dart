@@ -10,6 +10,7 @@ import '../../core/utils/file_actions.dart';
 import '../../models/chat_model.dart';
 import '../../providers/astrologer_provider.dart';
 import '../../providers/chat_provider.dart';
+import '../../widgets/common/network_photo.dart';
 
 /// One conversation: realtime message stream + composer.
 class ChatScreen extends ConsumerStatefulWidget {
@@ -276,7 +277,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             CircleAvatar(
               radius: 17,
               backgroundColor: Colors.white24,
-              backgroundImage: photo.isNotEmpty ? NetworkImage(photo) : null,
+              backgroundImage: cachedPhotoProvider(photo),
               child: photo.isEmpty
                   ? Text(name.isNotEmpty ? name[0] : '?',
                       style: const TextStyle(color: Colors.white))

@@ -6,6 +6,7 @@ import '../../../models/interest_request_model.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/demo_data_provider.dart';
 import '../../../providers/requests_provider.dart';
+import '../../../widgets/common/network_photo.dart';
 
 /// Requests screen — messaging-style list of incoming and outgoing interest
 /// requests. Incoming pending requests can be Accepted/Rejected; accepted
@@ -108,9 +109,10 @@ class _RequestCard extends ConsumerWidget {
               CircleAvatar(
                 radius: 26,
                 backgroundColor: AppColors.primary.withOpacity(0.1),
-                backgroundImage: (profile?.photos.isNotEmpty ?? false)
-                    ? NetworkImage(profile!.photos.first)
-                    : null,
+                backgroundImage: cachedPhotoProvider(
+                    (profile?.photos.isNotEmpty ?? false)
+                        ? profile!.photos.first
+                        : ''),
                 child: (profile?.photos.isEmpty ?? true)
                     ? const Icon(Icons.person, color: AppColors.primary)
                     : null,

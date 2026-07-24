@@ -15,6 +15,7 @@ import '../../models/profile_model.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../widgets/common/external_party_card.dart';
 import '../../widgets/common/horoscope_documents_view.dart';
 import '../../widgets/common/rasi_chart.dart';
 
@@ -228,18 +229,35 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
         children: [
           _requesterCard(r),
           const SizedBox(height: 16),
-          const _SectionTitle('🤵 Groom Details'),
-          const SizedBox(height: 8),
-          _PartyCard(profileId: r.groomProfileId, fallbackName: r.groomName),
-          const SizedBox(height: 16),
-          const _SectionTitle('👰 Bride Details'),
-          const SizedBox(height: 8),
-          _PartyCard(profileId: r.brideProfileId, fallbackName: r.brideName),
-          const SizedBox(height: 16),
-          const _SectionTitle('🔭 Compare Horoscopes'),
-          const SizedBox(height: 8),
-          _CompareSection(
-              groomId: r.groomProfileId, brideId: r.brideProfileId),
+          if (r.isExternalReport) ...[
+            // External report: the second person is NOT a registered member, so
+            // show both parties' manually-entered details + uploaded horoscope
+            // files instead of loading profile documents.
+            const _SectionTitle('📄 External Horoscope Report'),
+            const SizedBox(height: 8),
+            ExternalPartyCard(
+                title: 'Requester (App User)',
+                icon: Icons.person,
+                data: r.externalRequester),
+            const SizedBox(height: 12),
+            ExternalPartyCard(
+                title: 'Second Person',
+                icon: Icons.person_add_alt_1,
+                data: r.externalOther),
+          ] else ...[
+            const _SectionTitle('🤵 Groom Details'),
+            const SizedBox(height: 8),
+            _PartyCard(profileId: r.groomProfileId, fallbackName: r.groomName),
+            const SizedBox(height: 16),
+            const _SectionTitle('👰 Bride Details'),
+            const SizedBox(height: 8),
+            _PartyCard(profileId: r.brideProfileId, fallbackName: r.brideName),
+            const SizedBox(height: 16),
+            const _SectionTitle('🔭 Compare Horoscopes'),
+            const SizedBox(height: 8),
+            _CompareSection(
+                groomId: r.groomProfileId, brideId: r.brideProfileId),
+          ],
           const SizedBox(height: 22),
           _actionSection(r),
           const SizedBox(height: 28),

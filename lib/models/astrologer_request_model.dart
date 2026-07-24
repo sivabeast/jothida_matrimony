@@ -238,6 +238,16 @@ class AstrologerRequestModel {
   /// `CompatibilityReport`). Null until a draft is first saved.
   final Map<String, dynamic>? compatReport;
 
+  /// For an EXTERNAL horoscope report request (spec §4) — a compatibility report
+  /// between the logged-in user and a person who is NOT registered in the app.
+  /// Holds both parties' manually-entered details + uploaded horoscope files:
+  /// `{ requester: {...}, other: {...} }`, where each map has name, age, gender,
+  /// dob, tob, place, nakshatra, rasi, horoscopeImageUrl, horoscopePdfUrl.
+  /// Null for ordinary (internal) match-analysis requests. The request type
+  /// stays `matching` so the existing assignment / payment / report pipeline is
+  /// reused unchanged.
+  final Map<String, dynamic>? externalRequest;
+
   final DateTime createdAt;
   final DateTime? respondedAt;
   final DateTime? completedAt;
@@ -340,6 +350,7 @@ class AstrologerRequestModel {
     this.analysisImages = const [],
     this.analysisPdfs = const [],
     this.compatReport,
+    this.externalRequest,
     required this.createdAt,
     this.respondedAt,
     this.completedAt,
@@ -366,6 +377,22 @@ class AstrologerRequestModel {
 
   /// True for a "Book Match Analysis" booking (groom + bride porutham request).
   bool get isMatchAnalysis => type == AstrologerRequestType.matching;
+
+  /// True when this is an EXTERNAL horoscope report (the second person is not a
+  /// registered member) rather than an internal compatibility report between two
+  /// members. Drives the request-type badge and the employee's details view.
+  bool get isExternalReport =>
+      externalRequest != null && externalRequest!['other'] is Map;
+
+  /// The requester's / other party's entered details for an external report
+  /// (empty maps for a normal request).
+  Map<String, dynamic> get externalRequester =>
+      externalRequest?['requester'] is Map
+          ? Map<String, dynamic>.from(externalRequest!['requester'] as Map)
+          : const {};
+  Map<String, dynamic> get externalOther => externalRequest?['other'] is Map
+      ? Map<String, dynamic>.from(externalRequest!['other'] as Map)
+      : const {};
 
   /// True once an astrologer has actually been assigned (auto or manual). The
   /// admin shows the assigned name/email + the Reassign action only when true.
@@ -549,6 +576,9 @@ class AstrologerRequestModel {
       compatReport: d['compatReport'] is Map
           ? Map<String, dynamic>.from(d['compatReport'] as Map)
           : null,
+      externalRequest: d['externalRequest'] is Map
+          ? Map<String, dynamic>.from(d['externalRequest'] as Map)
+          : null,
       createdAt: _toDate(d['createdAt']) ?? DateTime.now(),
       respondedAt: _toDate(d['respondedAt']),
       completedAt: _toDate(d['completedAt']),
@@ -606,6 +636,7 @@ class AstrologerRequestModel {
         'analysisImages': analysisImages,
         'analysisPdfs': analysisPdfs,
         'compatReport': compatReport,
+        'externalRequest': externalRequest,
         'createdAt': Timestamp.fromDate(createdAt),
         'respondedAt':
             respondedAt != null ? Timestamp.fromDate(respondedAt!) : null,
@@ -693,6 +724,7 @@ class AstrologerRequestModel {
         analysisImages: analysisImages ?? this.analysisImages,
         analysisPdfs: analysisPdfs ?? this.analysisPdfs,
         compatReport: compatReport,
+        externalRequest: externalRequest,
         createdAt: createdAt,
         respondedAt: respondedAt ??
             (status != null && status != AstrologerRequestStatus.pending

@@ -6,6 +6,8 @@ import '../../core/theme/app_colors.dart';
 import '../../models/chat_model.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/interest_provider.dart';
+import '../../providers/profile_provider.dart';
+import '../../widgets/common/network_photo.dart';
 
 /// All conversations of the signed-in user, updated in realtime. Reached from
 /// the Home header Chat icon via the `/chats` route, which wraps [ChatListView]
@@ -91,16 +93,23 @@ class ChatListView extends ConsumerWidget {
   }
 }
 
-class _ThreadTile extends StatelessWidget {
+class _ThreadTile extends ConsumerWidget {
   final ChatThread thread;
   final String myUid;
   const _ThreadTile({required this.thread, required this.myUid});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final name = thread.otherName(myUid);
     final photo = thread.otherPhoto(myUid);
     final unread = thread.unreadFor(myUid);
+    // Verified badge — resolved from the counterpart's (readable, cached)
+    // profile. No extra network cost when Firestore serves it from local cache.
+    final otherId = thread.otherId(myUid);
+    final verified = otherId.isEmpty
+        ? false
+        : (ref.watch(profileByUserIdProvider(otherId)).valueOrNull?.isVerified ??
+            false);
 
     return Material(
       color: Colors.white,
@@ -115,14 +124,26 @@ class _ThreadTile extends StatelessWidget {
         leading: CircleAvatar(
           radius: 24,
           backgroundColor: AppColors.primary.withOpacity(0.1),
-          backgroundImage: photo.isNotEmpty ? NetworkImage(photo) : null,
+          backgroundImage: cachedPhotoProvider(photo),
           child: photo.isEmpty
               ? Text(name.isNotEmpty ? name[0] : '?',
                   style: const TextStyle(color: AppColors.primary))
               : null,
         ),
-        title: Text(name,
-            style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Row(
+          children: [
+            Flexible(
+              child: Text(name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+            ),
+            if (verified) ...[
+              const SizedBox(width: 4),
+              const Icon(Icons.verified, size: 15, color: AppColors.primary),
+            ],
+          ],
+        ),
         subtitle: Text(
           thread.lastMessage.isEmpty ? 'Say hello!' : thread.lastMessage,
           maxLines: 1,

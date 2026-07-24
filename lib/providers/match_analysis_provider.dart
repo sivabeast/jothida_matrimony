@@ -380,6 +380,89 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     }
   }
 
+  /// Spec §4 — the user requests an **External Horoscope Report**: a
+  /// compatibility report between themselves and a person who is NOT registered
+  /// in the app. [requester] holds the logged-in user's (auto-filled) details
+  /// and [other] the manually-entered second person's details; each carries the
+  /// horoscope image/PDF URLs already uploaded by the screen. Creates a PAID
+  /// `matching` request tagged with `externalRequest` (so the whole existing
+  /// assignment / payment / report pipeline is reused), then auto-assigns it to
+  /// the employee with the fewest pending reports. Returns the new request id
+  /// (the user-facing Request ID).
+  Future<String> requestExternalReport({
+    required Map<String, dynamic> requester,
+    required Map<String, dynamic> other,
+    required int amount,
+    String note = '',
+    String? paymentId,
+  }) async {
+    state = const AsyncLoading();
+    try {
+      final me = ref.read(myProfileProvider).valueOrNull;
+      final user = ref.read(currentUserProvider).valueOrNull;
+      final uid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ??
+          user?.uid ??
+          '';
+      final location = me == null
+          ? ''
+          : [me.city, me.state].where((s) => s.trim().isNotEmpty).join(', ');
+      final lang = ref.read(localeProvider)?.languageCode ?? 'en';
+      final now = DateTime.now();
+      final txnId = paymentId ??
+          (kPaymentTestMode
+              ? 'demo_${now.millisecondsSinceEpoch}'
+              : 'razorpay_${now.millisecondsSinceEpoch}');
+
+      final requesterName =
+          (requester['name'] ?? me?.fullName ?? user?.displayName ?? 'User')
+              .toString();
+      final otherName = (other['name'] ?? 'Second person').toString();
+
+      final request = AstrologerRequestModel(
+        id: 'new',
+        astrologerId: '',
+        astrologerName: '',
+        userId: uid,
+        userName: me?.fullName ?? user?.displayName ?? 'User',
+        userPhotoUrl: me?.profilePhotoUrl ?? '',
+        userLocation: location,
+        type: AstrologerRequestType.matching,
+        status: AstrologerRequestStatus.pending,
+        message: note.trim(),
+        amount: amount,
+        // Store the two names so the existing report cards/lists render properly
+        // even though the second person has no registered profile document.
+        profileAName: requesterName,
+        profileBName: otherName,
+        externalRequest: {'requester': requester, 'other': other},
+        createdAt: now,
+        userLanguage: lang,
+        paid: amount > 0,
+        paidAt: amount > 0 ? now : null,
+        paymentId: amount > 0 ? txnId : '',
+        history: [
+          BookingHistoryEntry(at: now, label: 'External report requested'),
+          if (amount > 0)
+            BookingHistoryEntry(at: now, label: 'Payment received ($txnId)'),
+        ],
+      );
+
+      String id;
+      if (kBypassAuth) {
+        id = 'demo_${now.millisecondsSinceEpoch}';
+        ref.read(demoAstrologerRequestsProvider.notifier).add(request);
+      } else {
+        id = await ref.read(astrologerServiceProvider).createRequest(request);
+        await _tryAssign(id);
+      }
+      state = const AsyncData(null);
+      return id;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
   /// Books an in-person **Horoscope Compatibility Report** appointment after a
   /// successful (real Razorpay) payment. Creates ONE paid match-analysis request
   /// addressed to the internal astrology service — carrying the chosen

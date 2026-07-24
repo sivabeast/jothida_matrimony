@@ -10,6 +10,7 @@ import '../../providers/interest_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/wedding_provider.dart';
 import '../../widgets/common/coming_soon.dart';
+import '../../widgets/common/network_photo.dart';
 
 /// Interest Management Center — replaces the old chat/messages page.
 ///
@@ -94,17 +95,23 @@ class _InterestsCenterScreenState extends ConsumerState<InterestsCenterScreen>
           color: Colors.white,
           child: TabBar(
             controller: _tab,
-            isScrollable: true,
+            // Fixed (non-scrollable) → all 4 tabs share the row in equal widths,
+            // so there is no horizontal scroll or wasted side spacing on any
+            // screen size. Padding is trimmed and the label auto-shrinks so the
+            // count never overflows a narrow tab.
+            isScrollable: false,
             labelColor: AppColors.primary,
             unselectedLabelColor: Colors.grey,
             indicatorColor: AppColors.primary,
+            indicatorSize: TabBarIndicatorSize.tab,
+            labelPadding: const EdgeInsets.symmetric(horizontal: 2),
             labelStyle:
-                const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
             tabs: [
-              Tab(text: '${l10n.received} (${receivedPending.length})'),
-              Tab(text: '${l10n.sent} (${sentAll.length})'),
-              Tab(text: '${l10n.accepted} (${accepted.length})'),
-              Tab(text: '${l10n.rejected} (${rejected.length})'),
+              _countTab(l10n.received, receivedPending.length),
+              _countTab(l10n.sent, sentAll.length),
+              _countTab(l10n.accepted, accepted.length),
+              _countTab(l10n.rejected, rejected.length),
             ],
           ),
         ),
@@ -159,6 +166,16 @@ class _InterestsCenterScreenState extends ConsumerState<InterestsCenterScreen>
     }
     return content;
   }
+
+  /// A fixed-width tab whose "Label (count)" text shrinks to fit rather than
+  /// overflowing or forcing horizontal scroll on narrow screens.
+  Widget _countTab(String label, int count) => Tab(
+        height: 46,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text('$label ($count)', maxLines: 1),
+        ),
+      );
 
   List<InterestModel> _sorted(Iterable<InterestModel> it) {
     final list = it.toList()..sort((a, b) => b.sentAt.compareTo(a.sentAt));
@@ -267,7 +284,7 @@ class _InterestCard extends ConsumerWidget {
               CircleAvatar(
                 radius: 28,
                 backgroundColor: AppColors.primary.withOpacity(0.1),
-                backgroundImage: photo.isNotEmpty ? NetworkImage(photo) : null,
+                backgroundImage: cachedPhotoProvider(photo),
                 child: photo.isEmpty
                     ? const Icon(Icons.person, color: AppColors.primary)
                     : null,

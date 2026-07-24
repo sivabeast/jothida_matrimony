@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import 'app_logo.dart';
+import 'network_photo.dart';
 
 /// The main navigation Drawer opened from the header menu icon.
 ///
@@ -137,7 +138,7 @@ class AppDrawer extends ConsumerWidget {
                 CircleAvatar(
                   radius: 24,
                   backgroundColor: Colors.white24,
-                  backgroundImage: photo.isNotEmpty ? NetworkImage(photo) : null,
+                  backgroundImage: cachedPhotoProvider(photo),
                   child: photo.isEmpty
                       ? Text(name.isNotEmpty ? name[0].toUpperCase() : '?',
                           style: const TextStyle(

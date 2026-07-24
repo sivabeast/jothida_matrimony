@@ -73,6 +73,7 @@ import '../screens/support/help_support_screen.dart';
 import '../screens/legal/privacy_policy_screen.dart';
 import '../screens/legal/terms_conditions_screen.dart';
 import '../screens/report/report_profile_screen.dart';
+import '../screens/report/request_external_report_screen.dart';
 import '../screens/muhurtham/muhurtham_calendar_screen.dart';
 import '../screens/wedding/wedding_workspace_screen.dart';
 import '../providers/wedding_provider.dart';
@@ -254,6 +255,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/horoscope-report/:userId',
         builder: (_, state) => HoroscopeReportServiceScreen(
             otherUserId: state.pathParameters['userId']!),
+      ),
+      // ── Request New Horoscope Report (external, spec §4) ─────────────────
+      // A compatibility report between the signed-in user and a person who is
+      // NOT registered in the app. Opened from the Reports tab.
+      GoRoute(
+        path: '/request-external-report',
+        builder: (_, __) => const RequestExternalReportScreen(),
       ),
       GoRoute(
         path: '/book-appointment/:userId',

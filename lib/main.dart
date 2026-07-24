@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +25,15 @@ void main() async {
     await Firebase.initializeApp(
             options: DefaultFirebaseOptions.currentPlatform)
         .timeout(const Duration(seconds: 20));
+    // Offline persistence + a generous cache make every page open from local
+    // data instantly and cut repeat Firestore reads. Persistence is ON by
+    // default on mobile, but we set it explicitly (and bump the cache to
+    // unlimited) so cached lists/profiles survive between launches and heavy
+    // scrolling. Must run before the first Firestore access.
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    );
     // App Check must be installed BEFORE the first Auth/Firestore call.
     // With enforcement ON in the console and no provider, a brand-new Google
     // account fails to sign in with "Firebase App Check token is invalid".

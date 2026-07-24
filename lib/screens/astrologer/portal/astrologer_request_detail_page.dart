@@ -14,6 +14,7 @@ import '../../../models/profile_model.dart';
 import '../../../providers/astrology_team_provider.dart';
 import '../../../providers/match_analysis_provider.dart';
 import '../../../providers/profile_provider.dart';
+import '../../../widgets/common/external_party_card.dart';
 import '../../../widgets/common/horoscope_documents_view.dart';
 import '../../../widgets/common/network_photo.dart';
 import '../../report/compatibility_report_screen.dart';
@@ -183,17 +184,31 @@ class _AstrologerRequestDetailPageState
         children: [
           _requestHeader(r),
           const SizedBox(height: 14),
-          if ((r.groomProfileId ?? '').isNotEmpty)
-            _ProfileCard(
-                title: 'Bride / Groom A',
-                profileId: r.groomProfileId!,
-                nameFallback: r.groomName ?? ''),
-          if ((r.brideProfileId ?? '').isNotEmpty) ...[
+          if (r.isExternalReport) ...[
+            // External report: the second person is NOT registered — show both
+            // parties' entered details + uploaded horoscope files.
+            ExternalPartyCard(
+                title: 'Requester (App User)',
+                icon: Icons.person,
+                data: r.externalRequester),
             const SizedBox(height: 12),
-            _ProfileCard(
-                title: 'Bride / Groom B',
-                profileId: r.brideProfileId!,
-                nameFallback: r.brideName ?? ''),
+            ExternalPartyCard(
+                title: 'Second Person',
+                icon: Icons.person_add_alt_1,
+                data: r.externalOther),
+          ] else ...[
+            if ((r.groomProfileId ?? '').isNotEmpty)
+              _ProfileCard(
+                  title: 'Bride / Groom A',
+                  profileId: r.groomProfileId!,
+                  nameFallback: r.groomName ?? ''),
+            if ((r.brideProfileId ?? '').isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _ProfileCard(
+                  title: 'Bride / Groom B',
+                  profileId: r.brideProfileId!,
+                  nameFallback: r.brideName ?? ''),
+            ],
           ],
           const SizedBox(height: 18),
           _compatReportCard(r),

@@ -20,6 +20,7 @@ import '../../../providers/notification_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/wedding_provider.dart';
 import '../../../widgets/common/coming_soon.dart';
+import '../../../widgets/common/network_photo.dart';
 import '../../../widgets/common/profile_highlight_badge.dart';
 import '../../../widgets/home/home_banner_slide.dart';
 
@@ -238,7 +239,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         CircleAvatar(
           radius: 20,
           backgroundColor: Colors.white24,
-          backgroundImage: photo.isNotEmpty ? NetworkImage(photo) : null,
+          backgroundImage: cachedPhotoProvider(photo),
           child: photo.isEmpty
               ? Text(firstName.isNotEmpty ? firstName[0].toUpperCase() : '?',
                   style: const TextStyle(
@@ -1036,7 +1037,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     final received =
         [...(ref.watch(receivedInterestsProvider).valueOrNull ?? const [])]
           ..sort((a, b) => b.sentAt.compareTo(a.sentAt));
-    final recent = received.take(10).toList();
+    // Home shows only the latest 5 — the full list lives behind "View All".
+    final recent = received.take(5).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1050,11 +1052,11 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         if (recent.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _emptyBox(context.l10n.noInterestsReceivedYet),
+            child: _recentInterestsEmpty(context),
           )
         else
           SizedBox(
-            height: 196,
+            height: 256,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1065,6 +1067,59 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             ),
           ),
       ],
+    );
+  }
+
+  /// Friendly empty state for Recent Interests — an illustration, a short line
+  /// and a primary CTA that jumps to the Matches tab.
+  Widget _recentInterestsEmpty(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.08),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.favorite_border,
+                size: 40, color: AppColors.primary),
+          ),
+          const SizedBox(height: 12),
+          const Text('No recent interests yet.',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
+          const SizedBox(height: 4),
+          Text(
+            'When someone likes your profile, it shows up here.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12.5, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 14),
+          ElevatedButton.icon(
+            onPressed: () => ref.read(homeTabIndexProvider.notifier).state =
+                kMatchesTabIndex,
+            icon: const Icon(Icons.search, size: 18),
+            label: const Text('Explore Matches'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1368,8 +1423,9 @@ class _MatchCard extends ConsumerWidget {
 
 // ── Recent Interest Card ──────────────────────────────────────────────────────
 
-/// A compact card for a received interest. Resolves the sender's profile and
-/// shows their photo, name·age and a tap target to view the full profile.
+/// A structured card for a received interest. Resolves the sender's profile and
+/// shows their photo, name·age, education, location, the date the interest was
+/// received and a "View Profile" button. Cached image (never re-downloads).
 class _RecentInterestCard extends ConsumerWidget {
   final InterestModel interest;
   const _RecentInterestCard({required this.interest});
@@ -1378,35 +1434,40 @@ class _RecentInterestCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final senderAsync = ref.watch(profileByIdProvider(interest.senderProfileId));
     final p = senderAsync.valueOrNull;
-    final photo = (p?.photos.isNotEmpty ?? false) ? p!.photos.first : null;
+    final photo = (p?.profilePhotoUrl?.trim().isNotEmpty ?? false)
+        ? p!.profilePhotoUrl!
+        : ((p?.photos.isNotEmpty ?? false) ? p!.photos.first : '');
     final name = p == null
         ? context.l10n.newInterestLabel
         : '${p.name}${p.age > 0 ? ', ${p.age}' : ''}';
+    final education = p?.education.trim() ?? '';
+    final location = p == null
+        ? ''
+        : [p.city, p.state].where((s) => s.trim().isNotEmpty).join(', ');
+    final open = p == null ? null : () => context.push('/profile/${p.id}');
 
-    return GestureDetector(
-      onTap: p == null ? null : () => context.push('/profile/${p.id}'),
-      child: Container(
-        width: 140,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
+    return Container(
+      width: 172,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: open,
+            child: SizedBox(
+              height: 118,
+              width: double.infinity,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  photo != null
-                      ? Image.network(photo,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _placeholder())
-                      : _placeholder(),
+                  NetworkPhoto(url: photo, fallbackIconSize: 40),
                   Positioned(
                     top: 6,
                     left: 6,
@@ -1433,28 +1494,90 @@ class _RecentInterestCard extends ConsumerWidget {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-              child: Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12.5,
-                    fontFamily: 'Poppins'),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        fontFamily: 'Poppins'),
+                  ),
+                  if (education.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    _metaRow(Icons.school_outlined, education),
+                  ],
+                  if (location.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    _metaRow(Icons.location_on_outlined, location),
+                  ],
+                  const Spacer(),
+                  Row(
+                    children: [
+                      Icon(Icons.schedule,
+                          size: 11, color: Colors.grey[400]),
+                      const SizedBox(width: 3),
+                      Text(_ago(interest.sentAt),
+                          style: TextStyle(
+                              fontSize: 10.5, color: Colors.grey[500])),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 30,
+                    child: OutlinedButton(
+                      onPressed: open,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary),
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(9)),
+                      ),
+                      child: Text(context.l10n.viewProfile,
+                          style: const TextStyle(
+                              fontSize: 11.5, fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _placeholder() => Container(
-        color: Colors.grey[200],
-        child: const Icon(Icons.person, size: 40, color: Colors.grey),
+  Widget _metaRow(IconData icon, String text) => Row(
+        children: [
+          Icon(icon, size: 12, color: Colors.grey[500]),
+          const SizedBox(width: 3),
+          Expanded(
+            child: Text(text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+          ),
+        ],
       );
+
+  /// Compact relative time for the "received" date (e.g. Today, 3d, 2w).
+  String _ago(DateTime t) {
+    final diff = DateTime.now().difference(t);
+    if (diff.inDays >= 7) return '${(diff.inDays / 7).floor()}w ago';
+    if (diff.inDays >= 1) return '${diff.inDays}d ago';
+    if (diff.inHours >= 1) return '${diff.inHours}h ago';
+    if (diff.inMinutes >= 1) return '${diff.inMinutes}m ago';
+    return 'Just now';
+  }
 }
 
 // ── Home Astrologer Card ──────────────────────────────────────────────────────

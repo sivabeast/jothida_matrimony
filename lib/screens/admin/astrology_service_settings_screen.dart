@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/firestore_write.dart';
 import '../../core/utils/slot_generator.dart';
 import '../../models/astrology_service_config.dart';
 import '../../providers/astrology_config_provider.dart';
@@ -157,6 +158,8 @@ class _AstrologyServiceSettingsScreenState
 
   // ── Save ────────────────────────────────────────────────────────────────
   Future<void> _save(AstrologyServiceConfig base) async {
+    // Guard against duplicate save requests (double-taps / rapid re-entry).
+    if (_saving) return;
     if (_ctrl('expertName').text.trim().isEmpty) {
       _snack('Astrologer name is required.');
       return;
@@ -190,10 +193,19 @@ class _AstrologyServiceSettingsScreenState
       consultationCategories: List<ConsultationCategory>.from(_categories),
     );
     try {
-      await ref.read(astrologyConfigServiceProvider).save(updated);
-      if (mounted) _snack('✅ Astrology settings saved.');
+      // Bounded write: with offline persistence enabled the raw set() Future
+      // only resolves on a SERVER ack, which never arrives while offline — that
+      // is what left this button stuck on "Saving…" forever. commitWrite caps
+      // the wait and treats a queued (offline) write as success.
+      final result =
+          await commitWrite(ref.read(astrologyConfigServiceProvider).save(updated));
+      if (!mounted) return;
+      _snack(result == WriteResult.queued
+          ? '✅ Saved. Changes will sync automatically once you are online.'
+          : '✅ Astrology settings saved.');
     } catch (e, st) {
       debugPrint('[AstrologyManagement] save failed: $e\n$st');
+      if (!mounted) return;
       final msg = e.toString().toLowerCase();
       if (msg.contains('permission-denied') || msg.contains('permission_denied')) {
         _snack('Save blocked by security rules. Deploy Firestore rules '
@@ -214,11 +226,11 @@ class _AstrologyServiceSettingsScreenState
   Future<void> _persistMedia() async {
     try {
       final base = ref.read(astrologyServiceConfigValueProvider);
-      await ref.read(astrologyConfigServiceProvider).save(base.copyWith(
+      await commitWrite(ref.read(astrologyConfigServiceProvider).save(base.copyWith(
             certificates: List<AstrologyCertificate>.from(_certificates),
             awards: List<AstrologyAward>.from(_awards),
             news: List<AstrologyNews>.from(_news),
-          ));
+          )));
     } catch (e) {
       if (mounted) _snack('Could not save media: $e');
     }

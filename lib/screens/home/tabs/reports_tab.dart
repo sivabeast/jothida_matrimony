@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/file_actions.dart';
@@ -77,6 +78,27 @@ class ReportsTab extends ConsumerWidget {
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.w700,
                     fontSize: 18)),
+          ),
+          // Request a NEW compatibility report for someone who is NOT on the app
+          // (spec §4). Distinct from the internal accepted-match report flow.
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => context.push('/request-external-report'),
+                icon: const Icon(Icons.add_circle_outline, size: 18),
+                label: const Text('Request New Horoscope Report'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                  minimumSize: const Size.fromHeight(46),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
           ),
           Container(
             color: Colors.white,
@@ -189,6 +211,11 @@ class _ReportCard extends ConsumerWidget {
       : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
   String get _partnerName {
+    // External report → the second (non-registered) person's entered name.
+    if (report.isExternalReport) {
+      final other = (report.externalOther['name'] ?? '').toString().trim();
+      if (other.isNotEmpty) return other;
+    }
     final groom = report.groomName ?? '';
     final bride = report.brideName ?? '';
     if (myName.isNotEmpty && groom == myName && bride.isNotEmpty) return bride;
@@ -267,6 +294,9 @@ class _ReportCard extends ConsumerWidget {
             style: TextStyle(fontSize: 11.5, color: Colors.grey[600]),
           ),
           const SizedBox(height: 10),
+          _typeBadge(),
+          const SizedBox(height: 8),
+          _row('Request ID', report.id),
           _row(l10n.requestDate, _date(report.createdAt)),
           if (completed) _row(l10n.completedDate, _date(report.completedAt)),
           if (completed) ...[
@@ -302,6 +332,36 @@ class _ReportCard extends ConsumerWidget {
     );
   }
 
+  /// Request-type chip: external (second person not on the app) vs the internal
+  /// accepted-match compatibility report.
+  Widget _typeBadge() {
+    final external = report.isExternalReport;
+    final color = external ? AppColors.gold : AppColors.primary;
+    final label =
+        external ? 'External Horoscope Report' : 'Internal Compatibility';
+    final icon = external ? Icons.public : Icons.favorite;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: color),
+            const SizedBox(width: 5),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _row(String k, String v) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: Row(
@@ -311,9 +371,13 @@ class _ReportCard extends ConsumerWidget {
                 child: Text(k,
                     style:
                         TextStyle(fontSize: 12.5, color: Colors.grey[600]))),
-            Text(v,
-                style: const TextStyle(
-                    fontSize: 12.5, fontWeight: FontWeight.w600)),
+            Expanded(
+              child: Text(v,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 12.5, fontWeight: FontWeight.w600)),
+            ),
           ],
         ),
       );
