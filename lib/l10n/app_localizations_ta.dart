@@ -433,6 +433,45 @@ class AppLocalizationsTa extends AppLocalizations {
   String get withdrawConfirmMsg => 'இந்த விருப்பத்தைத் திரும்பப் பெறவா? அவர்களுக்கு இது இனி தெரியாது.';
 
   @override
+  String get blockedUsers => 'தடுக்கப்பட்டவர்கள்';
+
+  @override
+  String get reportedUsers => 'புகார் செய்யப்பட்டவர்கள்';
+
+  @override
+  String get unblock => 'தடையை நீக்கு';
+
+  @override
+  String get unblockConfirmMsg => 'இந்த பயனரை மீண்டும் அனுமதிக்கவா? அவர்கள் மீண்டும் உங்களைப் பார்த்து தொடர்பு கொள்ள முடியும்.';
+
+  @override
+  String get noBlockedUsers => 'நீங்கள் இதுவரை யாரையும் தடுக்கவில்லை.';
+
+  @override
+  String get noReportedUsers => 'நீங்கள் இதுவரை யாரையும் புகார் செய்யவில்லை.';
+
+  @override
+  String get blockedLabel => 'தடுக்கப்பட்டது';
+
+  @override
+  String get reasonLabel => 'காரணம்';
+
+  @override
+  String get statusSubmitted => 'சமர்ப்பிக்கப்பட்டது';
+
+  @override
+  String get statusUnderReview => 'பரிசீலனையில்';
+
+  @override
+  String get statusActionTaken => 'நடவடிக்கை எடுக்கப்பட்டது';
+
+  @override
+  String get statusClosed => 'மூடப்பட்டது';
+
+  @override
+  String get menuSectionSafety => 'பாதுகாப்பு';
+
+  @override
   String get personalDetails => 'தனிப்பட்ட விவரங்கள்';
 
   @override

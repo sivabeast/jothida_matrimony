@@ -247,7 +247,12 @@ service cloud.firestore {
 
     // ── Reports ───────────────────────────────────────────────────────────
     match /reports/{reportId} {
-      allow read: if isAdmin();
+      // Admins read every report (moderation); a user may read the reports they
+      // filed — powering the user-facing Reported Users page. The list query is
+      // constrained to `reporterUserId == uid`, which satisfies this rule.
+      allow read: if isAdmin()
+                  || (isAuthenticated()
+                      && resource.data.reporterUserId == request.auth.uid);
       allow create: if isAuthenticated()
                     && request.resource.data.reporterUserId == request.auth.uid;
       allow update: if isAdmin();

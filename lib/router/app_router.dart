@@ -71,6 +71,8 @@ import '../screens/family/family_tree_screen.dart';
 import '../screens/interests/interests_center_screen.dart';
 import '../screens/preferences/partner_preferences_screen.dart';
 import '../screens/settings/settings_screen.dart';
+import '../screens/moderation/blocked_users_screen.dart';
+import '../screens/moderation/reported_users_screen.dart';
 import '../screens/support/help_support_screen.dart';
 import '../screens/legal/privacy_policy_screen.dart';
 import '../screens/legal/terms_conditions_screen.dart';
@@ -410,6 +412,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/partner-preferences', builder: (_, __) => const PartnerPreferencesScreen()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+      // Safety / moderation (spec §6–§7): user-facing Blocked & Reported lists.
+      GoRoute(
+          path: '/blocked-users',
+          builder: (_, __) => const BlockedUsersScreen()),
+      GoRoute(
+          path: '/reported-users',
+          builder: (_, __) => const ReportedUsersScreen()),
       GoRoute(path: '/help', builder: (_, __) => const HelpSupportScreen()),
       GoRoute(path: '/privacy-policy', builder: (_, __) => const PrivacyPolicyScreen()),
       GoRoute(path: '/terms', builder: (_, __) => const TermsConditionsScreen()),

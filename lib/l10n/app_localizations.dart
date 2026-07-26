@@ -935,6 +935,84 @@ abstract class AppLocalizations {
   /// **'Withdraw this interest? They will no longer see it.'**
   String get withdrawConfirmMsg;
 
+  /// No description provided for @blockedUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked Users'**
+  String get blockedUsers;
+
+  /// No description provided for @reportedUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported Users'**
+  String get reportedUsers;
+
+  /// No description provided for @unblock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock'**
+  String get unblock;
+
+  /// No description provided for @unblockConfirmMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock this user? They will be able to see and contact you again.'**
+  String get unblockConfirmMsg;
+
+  /// No description provided for @noBlockedUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t blocked anyone yet.'**
+  String get noBlockedUsers;
+
+  /// No description provided for @noReportedUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t reported anyone yet.'**
+  String get noReportedUsers;
+
+  /// No description provided for @blockedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get blockedLabel;
+
+  /// No description provided for @reasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get reasonLabel;
+
+  /// No description provided for @statusSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted'**
+  String get statusSubmitted;
+
+  /// No description provided for @statusUnderReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Under Review'**
+  String get statusUnderReview;
+
+  /// No description provided for @statusActionTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'Action Taken'**
+  String get statusActionTaken;
+
+  /// No description provided for @statusClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get statusClosed;
+
+  /// No description provided for @menuSectionSafety.
+  ///
+  /// In en, this message translates to:
+  /// **'SAFETY'**
+  String get menuSectionSafety;
+
   /// No description provided for @personalDetails.
   ///
   /// In en, this message translates to:

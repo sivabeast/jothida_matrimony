@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/config/admin_config.dart';
 import '../../models/aadhaar_details.dart';
+import '../../models/blocked_entry.dart';
 import '../../models/profile_model.dart';
 import '../../models/interest_model.dart';
 import '../../models/report_model.dart';
@@ -716,6 +717,40 @@ class FirestoreService {
       .snapshots()
       .map((s) => s.docs.map((d) => d['blockerUid'] as String? ?? '').toSet()
         ..removeWhere((e) => e.isEmpty));
+
+  /// The signed-in user's blocks WITH the block date, newest first — for the
+  /// user-facing Blocked Users page. (Distinct from [watchBlockedByMe], which
+  /// returns just the id set used by the feed/search hide logic.)
+  Stream<List<BlockedEntry>> watchMyBlocks(String myUid) => _db
+      .collection(AppConstants.blocksCollection)
+      .where('blockerUid', isEqualTo: myUid)
+      .snapshots()
+      .map((s) {
+        final list = s.docs
+            .map((d) => BlockedEntry(
+                  uid: (d['blockedUid'] as String?) ?? '',
+                  blockedAt: (d['createdAt'] as Timestamp?)?.toDate(),
+                ))
+            .where((e) => e.uid.isNotEmpty)
+            .toList();
+        list.sort((a, b) => (b.blockedAt ?? DateTime(0))
+            .compareTo(a.blockedAt ?? DateTime(0)));
+        return list;
+      });
+
+  /// The signed-in user's OWN submitted reports (user-facing Reported Users
+  /// page). No server `orderBy` (avoids a composite index); sorted client-side.
+  /// Firestore rules must allow a user to read reports where
+  /// `reporterUserId == request.auth.uid`.
+  Stream<List<ReportModel>> watchMyReports(String reporterUid) => _db
+      .collection(AppConstants.reportsCollection)
+      .where('reporterUserId', isEqualTo: reporterUid)
+      .snapshots()
+      .map((s) {
+        final list = s.docs.map(ReportModel.fromFirestore).toList();
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return list;
+      });
 
   // ── Notifications ─────────────────────────────────────────────────────────
   Future<void> saveNotification(NotificationModel notification) => _db

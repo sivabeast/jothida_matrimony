@@ -433,6 +433,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get withdrawConfirmMsg => 'Withdraw this interest? They will no longer see it.';
 
   @override
+  String get blockedUsers => 'Blocked Users';
+
+  @override
+  String get reportedUsers => 'Reported Users';
+
+  @override
+  String get unblock => 'Unblock';
+
+  @override
+  String get unblockConfirmMsg => 'Unblock this user? They will be able to see and contact you again.';
+
+  @override
+  String get noBlockedUsers => 'You haven\'t blocked anyone yet.';
+
+  @override
+  String get noReportedUsers => 'You haven\'t reported anyone yet.';
+
+  @override
+  String get blockedLabel => 'Blocked';
+
+  @override
+  String get reasonLabel => 'Reason';
+
+  @override
+  String get statusSubmitted => 'Submitted';
+
+  @override
+  String get statusUnderReview => 'Under Review';
+
+  @override
+  String get statusActionTaken => 'Action Taken';
+
+  @override
+  String get statusClosed => 'Closed';
+
+  @override
+  String get menuSectionSafety => 'SAFETY';
+
+  @override
   String get personalDetails => 'Personal Details';
 
   @override

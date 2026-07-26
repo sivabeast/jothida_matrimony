@@ -1,12 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/report_model.dart';
+import 'auth_provider.dart';
 import 'service_providers.dart';
 
 /// All submitted reports (profile + chat), newest first — feeds the admin
 /// Report Management page (spec §8).
 final allReportsProvider = StreamProvider.autoDispose<List<ReportModel>>((ref) {
   return ref.watch(firestoreServiceProvider).watchAllReports();
+});
+
+/// The signed-in user's OWN submitted reports — feeds the user-facing Reported
+/// Users page. Requires the Firestore rule allowing a user to read reports they
+/// filed (reporterUserId == uid).
+final myReportsProvider = StreamProvider.autoDispose<List<ReportModel>>((ref) {
+  final uid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+  if (uid == null) return Stream.value(const <ReportModel>[]);
+  return ref.watch(firestoreServiceProvider).watchMyReports(uid);
 });
 
 /// Live count of reports still awaiting review — drives the admin dashboard's

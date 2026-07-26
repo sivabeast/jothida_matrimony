@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/blocked_entry.dart';
 import 'auth_provider.dart';
 import 'service_providers.dart';
 
@@ -23,6 +24,14 @@ final whoBlockedMeProvider = StreamProvider.autoDispose<Set<String>>((ref) {
   final uid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
   if (uid == null) return Stream.value(<String>{});
   return ref.watch(firestoreServiceProvider).watchWhoBlockedMe(uid);
+});
+
+/// The signed-in user's blocked users WITH block dates, newest first — feeds
+/// the user-facing Blocked Users page.
+final myBlocksProvider = StreamProvider.autoDispose<List<BlockedEntry>>((ref) {
+  final uid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+  if (uid == null) return Stream.value(const <BlockedEntry>[]);
+  return ref.watch(firestoreServiceProvider).watchMyBlocks(uid);
 });
 
 /// Union of both directions — anyone here is hidden from the feed/search and

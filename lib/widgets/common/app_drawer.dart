@@ -76,6 +76,13 @@ class AppDrawer extends ConsumerWidget {
                 _item(context, Icons.receipt_long_outlined, context.l10n.myReports,
                     () => _openTab(context, ref, kReportsTabIndex)),
 
+                // ── 🛡️ SAFETY ────────────────────────────────────────────────
+                _section('🛡️  ${context.l10n.menuSectionSafety}'),
+                _item(context, Icons.block, context.l10n.blockedUsers,
+                    () => context.push('/blocked-users')),
+                _item(context, Icons.flag_outlined, context.l10n.reportedUsers,
+                    () => context.push('/reported-users')),
+
                 // (The MEMBERSHIP / Subscription section was removed — the app
                 // has no subscription system; all matrimony features are free.)
                 const SizedBox(height: 8),
