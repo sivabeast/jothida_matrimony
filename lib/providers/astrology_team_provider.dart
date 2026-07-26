@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/astrologer_request_model.dart';
@@ -36,22 +39,79 @@ final myAstrologerTeamMemberProvider =
 
 /// Every request assigned to the signed-in astrologer (any status), newest
 /// first. Drives the astrologer Dashboard / Pending / In Progress / Completed
-/// pages. Scoped to `astrologerEmail == my Gmail` (the stable assignment key),
-/// so an astrologer only ever sees their OWN requests — and sees them even if
-/// they were assigned before this astrologer's first sign-in.
+/// pages.
+///
+/// It is the UNION of two independent Firestore streams:
+///   • by `astrologerEmail == my Gmail` — the stable key stamped at assignment
+///     time (works even before the astrologer's first sign-in);
+///   • by `astrologerId == my uid` — the ORIGINAL key. Once an employee has
+///     logged in, their uid is linked to the registry so assignment stamps
+///     `astrologerId = uid`; this path is served by the long-standing security
+///     rule, so assignments reach the employee even if the newer
+///     `astrologerEmail` read rule has not been deployed.
+///
+/// Unioning both keys (de-duplicated by doc id) means an assignment is
+/// delivered whichever key matched, and a permission error / delay on ONE
+/// source never blanks the other.
 final myAssignedRequestsProvider =
     StreamProvider.autoDispose<List<AstrologerRequestModel>>((ref) {
-  final rawEmail = ref.watch(myAuthEmailProvider);
-  if (rawEmail == null || rawEmail.trim().isEmpty) return Stream.value(const []);
   // Match the LOWERCASED email that assignment stores, so the query never
   // misses on a case difference between the token email and the registry key.
-  final email = rawEmail.trim().toLowerCase();
-  return ref
-      .read(astrologerServiceProvider)
-      .watchRequestsForAstrologerEmail(email)
-      .map((list) {
-    final sorted = [...list]
+  final email = (ref.watch(myAuthEmailProvider) ?? '').trim().toLowerCase();
+  final uid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid ?? '';
+  if (email.isEmpty && uid.isEmpty) return Stream.value(const []);
+  final svc = ref.read(astrologerServiceProvider);
+
+  final controller = StreamController<List<AstrologerRequestModel>>();
+  var latestEmail = const <AstrologerRequestModel>[];
+  var latestUid = const <AstrologerRequestModel>[];
+
+  void emit() {
+    final map = <String, AstrologerRequestModel>{};
+    for (final r in latestEmail) {
+      map[r.id] = r;
+    }
+    for (final r in latestUid) {
+      map.putIfAbsent(r.id, () => r);
+    }
+    final list = map.values.toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return sorted;
+    if (!controller.isClosed) controller.add(list);
+  }
+
+  final subs = <StreamSubscription<List<AstrologerRequestModel>>>[];
+  if (email.isNotEmpty) {
+    subs.add(svc.watchRequestsForAstrologerEmail(email).listen(
+      (list) {
+        latestEmail = list;
+        emit();
+      },
+      onError: (Object e) {
+        debugPrint('[myAssignedRequests] email source error: $e');
+        latestEmail = const [];
+        emit();
+      },
+    ));
+  }
+  if (uid.isNotEmpty) {
+    subs.add(svc.watchRequestsForAstrologer(uid).listen(
+      (list) {
+        latestUid = list;
+        emit();
+      },
+      onError: (Object e) {
+        debugPrint('[myAssignedRequests] uid source error: $e');
+        latestUid = const [];
+        emit();
+      },
+    ));
+  }
+
+  ref.onDispose(() {
+    for (final s in subs) {
+      s.cancel();
+    }
+    controller.close();
   });
+  return controller.stream;
 });
