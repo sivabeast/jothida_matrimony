@@ -421,6 +421,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get completeNow => 'Complete Now';
 
   @override
+  String get withdraw => 'Withdraw';
+
+  @override
+  String get withdrawInterest => 'Withdraw Interest';
+
+  @override
+  String get interestWithdrawn => 'Interest withdrawn';
+
+  @override
+  String get withdrawConfirmMsg => 'Withdraw this interest? They will no longer see it.';
+
+  @override
   String get personalDetails => 'Personal Details';
 
   @override

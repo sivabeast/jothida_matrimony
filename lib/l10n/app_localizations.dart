@@ -911,6 +911,30 @@ abstract class AppLocalizations {
   /// **'Complete Now'**
   String get completeNow;
 
+  /// No description provided for @withdraw.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw'**
+  String get withdraw;
+
+  /// No description provided for @withdrawInterest.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw Interest'**
+  String get withdrawInterest;
+
+  /// No description provided for @interestWithdrawn.
+  ///
+  /// In en, this message translates to:
+  /// **'Interest withdrawn'**
+  String get interestWithdrawn;
+
+  /// No description provided for @withdrawConfirmMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw this interest? They will no longer see it.'**
+  String get withdrawConfirmMsg;
+
   /// No description provided for @personalDetails.
   ///
   /// In en, this message translates to:

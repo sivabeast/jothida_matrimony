@@ -421,6 +421,18 @@ class AppLocalizationsTa extends AppLocalizations {
   String get completeNow => 'முழுமையாக்க';
 
   @override
+  String get withdraw => 'திரும்பப் பெறு';
+
+  @override
+  String get withdrawInterest => 'விருப்பத்தைத் திரும்பப் பெறு';
+
+  @override
+  String get interestWithdrawn => 'விருப்பம் திரும்பப் பெறப்பட்டது';
+
+  @override
+  String get withdrawConfirmMsg => 'இந்த விருப்பத்தைத் திரும்பப் பெறவா? அவர்களுக்கு இது இனி தெரியாது.';
+
+  @override
   String get personalDetails => 'தனிப்பட்ட விவரங்கள்';
 
   @override

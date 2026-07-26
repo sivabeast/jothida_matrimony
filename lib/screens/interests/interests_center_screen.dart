@@ -93,20 +93,27 @@ class _InterestsCenterScreenState extends ConsumerState<InterestsCenterScreen>
           ),
         Container(
           color: Colors.white,
+          padding: const EdgeInsets.only(top: 4, bottom: 10),
           child: TabBar(
             controller: _tab,
-            // Fixed (non-scrollable) → all 4 tabs share the row in equal widths,
-            // so there is no horizontal scroll or wasted side spacing on any
-            // screen size. Padding is trimmed and the label auto-shrinks so the
-            // count never overflows a narrow tab.
-            isScrollable: false,
-            labelColor: AppColors.primary,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: AppColors.primary,
+            // Scrollable pill tabs → each tab auto-sizes to its Tamil label so
+            // the text always shows at full size and never truncates; the row
+            // scrolls horizontally if the four labels don't fit the width.
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            labelColor: Colors.white,
+            unselectedLabelColor: AppColors.primary,
             indicatorSize: TabBarIndicatorSize.tab,
-            labelPadding: const EdgeInsets.symmetric(horizontal: 2),
+            indicator: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            dividerColor: Colors.transparent,
+            labelPadding: const EdgeInsets.symmetric(horizontal: 5),
             labelStyle:
-                const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            unselectedLabelStyle:
+                const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
             tabs: [
               _countTab(l10n.received, receivedPending.length),
               _countTab(l10n.sent, sentAll.length),
@@ -170,9 +177,10 @@ class _InterestsCenterScreenState extends ConsumerState<InterestsCenterScreen>
   /// A fixed-width tab whose "Label (count)" text shrinks to fit rather than
   /// overflowing or forcing horizontal scroll on narrow screens.
   Widget _countTab(String label, int count) => Tab(
-        height: 46,
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
+        height: 40,
+        child: Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text('$label ($count)', maxLines: 1),
         ),
       );
@@ -260,34 +268,58 @@ class _InterestCard extends ConsumerWidget {
     // senderId / receiverId always identify the right account, whereas a stored
     // profile-document id can be stale or missing — which is what made "View
     // Profile" fail to load on accepted matches.
+    final l10n = context.l10n;
     final profile = ref.watch(profileByUserIdProvider(otherUserId)).valueOrNull;
-    final name = profile?.name ?? context.l10n.member;
+    final name = profile?.name ?? l10n.member;
     final age = profile?.age ?? 0;
     final location = profile == null
         ? ''
         : [profile.city, profile.state].where((s) => s.trim().isNotEmpty).join(', ');
     final photo = profile?.profilePhotoUrl ?? '';
+    // Short profile summary: education · occupation.
+    final summary = profile == null
+        ? ''
+        : [profile.education, profile.occupation]
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .join(' · ');
+
+    // Interest date shown per tab: when it was responded to (accepted/rejected)
+    // or when it was originally sent.
+    final responded = mode == _CardMode.accepted || mode == _CardMode.rejected;
+    final date = responded ? (interest.respondedAt ?? interest.sentAt) : interest.sentAt;
+    final dateLabel = mode == _CardMode.accepted
+        ? l10n.accepted
+        : mode == _CardMode.rejected
+            ? l10n.rejected
+            : l10n.sent;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
-                backgroundImage: cachedPhotoProvider(photo),
-                child: photo.isEmpty
-                    ? const Icon(Icons.person, color: AppColors.primary)
-                    : null,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: NetworkPhoto(url: photo, fallbackIconSize: 26),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -295,30 +327,39 @@ class _InterestCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(age > 0 ? '$name, $age' : name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15.5)),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15.5,
+                            fontFamily: 'Poppins')),
+                    if (summary.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      _meta(Icons.work_outline, summary),
+                    ],
                     if (location.isNotEmpty) ...[
                       const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Icon(Icons.location_on_outlined,
-                              size: 13, color: Colors.grey[500]),
-                          const SizedBox(width: 3),
-                          Flexible(
-                            child: Text(location,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    fontSize: 12.5, color: Colors.grey[600])),
-                          ),
-                        ],
-                      ),
+                      _meta(Icons.location_on_outlined, location),
                     ],
                   ],
                 ),
               ),
-              if (mode == _CardMode.sent) _statusChip(context, interest.status),
-              if (mode == _CardMode.rejected) _statusChip(context, 'rejected'),
+              const SizedBox(width: 8),
+              _modeBadge(context),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Interest date line.
+          Row(
+            children: [
+              Icon(Icons.schedule, size: 13, color: Colors.grey[500]),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text('$dateLabel · ${_fmtDate(date)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -326,6 +367,99 @@ class _InterestCard extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// A compact icon + text meta row (summary / location) that ellipsizes long
+  /// values gracefully in the card.
+  Widget _meta(IconData icon, String text) => Row(
+        children: [
+          Icon(icon, size: 13, color: Colors.grey[500]),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
+          ),
+        ],
+      );
+
+  static const _months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
+
+  String _fmtDate(DateTime d) => '${d.day} ${_months[d.month - 1]} ${d.year}';
+
+  /// The status badge shown top-right of each card (Pending / Accepted /
+  /// Rejected), coloured by state.
+  Widget _modeBadge(BuildContext context) {
+    final l10n = context.l10n;
+    switch (mode) {
+      case _CardMode.received:
+        return _badge(AppColors.warning, l10n.pending, Icons.hourglass_bottom);
+      case _CardMode.sent:
+        final s = interest.status;
+        if (s == 'accepted') {
+          return _badge(AppColors.success, l10n.accepted, Icons.verified);
+        }
+        if (s == 'rejected') {
+          return _badge(AppColors.error, l10n.rejected, Icons.cancel_outlined);
+        }
+        return _badge(AppColors.warning, l10n.pending, Icons.schedule);
+      case _CardMode.accepted:
+        return _badge(AppColors.success, l10n.accepted, Icons.verified);
+      case _CardMode.rejected:
+        return _badge(AppColors.error, l10n.rejected, Icons.cancel_outlined);
+    }
+  }
+
+  Widget _badge(Color color, String label, IconData icon) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: 4),
+            Text(label,
+                style: TextStyle(
+                    color: color, fontSize: 11, fontWeight: FontWeight.w700)),
+          ],
+        ),
+      );
+
+  /// Confirms and withdraws (unsends) a pending sent interest. Deletes the doc
+  /// via the notifier so it disappears for both users immediately.
+  Future<void> _withdraw(BuildContext context, WidgetRef ref) async {
+    final l10n = context.l10n;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(l10n.withdrawInterest),
+        content: Text(l10n.withdrawConfirmMsg),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.cancel)),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.withdraw),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    await ref
+        .read(interestNotifierProvider.notifier)
+        .withdrawInterest(interest.id);
+    if (context.mounted) _snack(context, l10n.interestWithdrawn);
   }
 
   Widget _actions(
@@ -437,23 +571,35 @@ class _InterestCard extends ConsumerWidget {
           ],
         );
       case _CardMode.sent:
+        // Only a Withdraw (unsend) action for a PENDING sent interest. Once the
+        // other side has responded there is nothing to withdraw, so a short
+        // status line is shown instead.
+        if (interest.isPending) {
+          return SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _withdraw(context, ref),
+              icon: const Icon(Icons.undo, size: 18),
+              label: Text(l10n.withdrawInterest),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.error,
+                side: BorderSide(color: AppColors.error.withOpacity(0.6)),
+              ),
+            ),
+          );
+        }
         return Align(
           alignment: Alignment.centerLeft,
           child: Text(
             interest.isAccepted
                 ? l10n.sentAcceptedHint
-                : interest.isRejected
-                    ? l10n.interestDeclinedStatus
-                    : l10n.waitingForResponse,
+                : l10n.interestDeclinedStatus,
             style: TextStyle(fontSize: 12.5, color: Colors.grey[600]),
           ),
         );
       case _CardMode.rejected:
-        return Align(
-          alignment: Alignment.centerLeft,
-          child: Text(l10n.interestDeclinedStatus,
-              style: const TextStyle(fontSize: 12.5, color: Colors.grey)),
-        );
+        // The badge + date already convey the rejected state — no further action.
+        return const SizedBox.shrink();
     }
   }
 
@@ -462,31 +608,6 @@ class _InterestCard extends ConsumerWidget {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text(msg)));
-
-  Widget _statusChip(BuildContext context, String status) {
-    final accepted = status == 'accepted';
-    final rejected = status == 'rejected';
-    final color = accepted
-        ? AppColors.success
-        : rejected
-            ? AppColors.error
-            : AppColors.warning;
-    final label = accepted
-        ? context.l10n.accepted
-        : rejected
-            ? context.l10n.rejected
-            : context.l10n.pending;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(label,
-          style: TextStyle(
-              color: color, fontSize: 11, fontWeight: FontWeight.bold)),
-    );
-  }
 }
 
 /// The "Marriage Fixed" action for an accepted match. Reflects the live

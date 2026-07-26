@@ -469,6 +469,13 @@ class FirestoreService {
       .doc(interestId)
       .update({'status': status, 'respondedAt': FieldValue.serverTimestamp()});
 
+  /// Deletes an interest document — used by the sender to withdraw (unsend) a
+  /// pending interest. Firestore rules permit either party to delete.
+  Future<void> deleteInterest(String interestId) => _db
+      .collection(AppConstants.interestsCollection)
+      .doc(interestId)
+      .delete();
+
   // NOTE: no server-side `orderBy` — combining a `where` equality with
   // `orderBy('sentAt')` on a different field requires a composite index, and
   // without it the stream throws `failed-precondition` and the Interests page

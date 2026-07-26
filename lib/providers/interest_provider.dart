@@ -247,6 +247,15 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
   /// backfills matches accepted before connections were created.
   Future<void> ensureConnection(InterestModel interest) =>
       ref.read(interestRepositoryProvider).ensureConnection(interest);
+
+  /// Withdraws (unsends) a pending interest the signed-in user sent. Deletes
+  /// the interest document so it disappears from both users immediately.
+  Future<void> withdrawInterest(String interestId) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(interestRepositoryProvider).withdrawInterest(interestId);
+    });
+  }
 }
 
 final interestNotifierProvider =

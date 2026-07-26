@@ -31,6 +31,11 @@ class InterestRepository {
   Future<void> rejectInterest(String interestId) =>
       _firestore.updateInterestStatus(interestId, 'rejected');
 
+  /// Withdraws (unsends) an interest the signed-in user sent, by deleting the
+  /// document so it disappears for both parties.
+  Future<void> withdrawInterest(String interestId) =>
+      _firestore.deleteInterest(interestId);
+
   Stream<List<InterestModel>> watchSentInterests(String userId) =>
       _firestore.watchSentInterests(userId);
 
