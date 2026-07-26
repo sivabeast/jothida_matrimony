@@ -685,7 +685,10 @@ class _MatchProfilePage extends ConsumerWidget {
               Positioned(
                   top: 14,
                   left: 14,
-                  child: ProfileHighlightBadge(profile: profile)),
+                  // Green "star match" badge (spec) — no online status, no
+                  // percentage. Renders only for star-compatible profiles.
+                  child: ProfileHighlightBadge(
+                      profile: profile, color: AppColors.success)),
               // Pager position pill — orients the user in the swipe stack.
               Positioned(top: 14, right: 14, child: _pagerPill()),
             ],
