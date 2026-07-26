@@ -315,11 +315,12 @@ class AppConstants {
   // Report Reasons (profile) — spec §5
   static const List<String> reportReasons = [
     'Fake Profile',
-    'Wrong Information',
     'Spam',
     'Harassment',
-    'Inappropriate Content',
-    'Duplicate Account',
+    'Inappropriate Behaviour',
+    'Abusive Language',
+    'Wrong Information',
+    'Scam',
     'Other',
   ];
 
