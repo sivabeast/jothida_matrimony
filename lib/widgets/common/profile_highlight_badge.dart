@@ -23,10 +23,17 @@ class ProfileHighlightBadge extends ConsumerWidget {
   /// Compact variant for dense cards (smaller padding/text).
   final bool compact;
 
+  /// Optional solid background colour. When set (e.g. [AppColors.success] on the
+  /// Home recommended cards) the pill is drawn as a flat coloured chip with
+  /// white text instead of the default gold gradient — keeping the Home design's
+  /// green "star match" look without changing the badge elsewhere.
+  final Color? color;
+
   const ProfileHighlightBadge({
     super.key,
     required this.profile,
     this.compact = false,
+    this.color,
   });
 
   @override
@@ -39,19 +46,24 @@ class ProfileHighlightBadge extends ConsumerWidget {
         ? context.l10n.nakshatraMatch
         : context.l10n.matchingProfile;
 
+    final solid = color != null;
     return Container(
       padding: EdgeInsets.symmetric(
           horizontal: compact ? 8 : 10, vertical: compact ? 3 : 5),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.gold, AppColors.goldDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: solid ? color : null,
+        gradient: solid
+            ? null
+            : const LinearGradient(
+                colors: [AppColors.gold, AppColors.goldDark],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-              color: AppColors.gold.withValues(alpha: 0.35), blurRadius: 5),
+              color: (solid ? color! : AppColors.gold).withValues(alpha: 0.35),
+              blurRadius: 5),
         ],
       ),
       child: Row(
@@ -59,13 +71,18 @@ class ProfileHighlightBadge extends ConsumerWidget {
         children: [
           Text('⭐', style: TextStyle(fontSize: compact ? 10 : 12)),
           SizedBox(width: compact ? 4 : 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: AppColors.textOnGold,
-              fontSize: compact ? 10 : 12.5,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'Poppins',
+          // softWrap keeps the Tamil label fully visible if it needs a second
+          // line rather than clipping it with an ellipsis.
+          Flexible(
+            child: Text(
+              label,
+              softWrap: true,
+              style: TextStyle(
+                color: solid ? Colors.white : AppColors.textOnGold,
+                fontSize: compact ? 10 : 12.5,
+                fontWeight: FontWeight.w700,
+                fontFamily: 'Poppins',
+              ),
             ),
           ),
         ],

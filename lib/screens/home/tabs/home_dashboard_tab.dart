@@ -126,6 +126,9 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
 
           // ── Marriage Muhurtham Calendar ───────────────────────────────────
           _buildMuhurthamCard(context),
+
+          // ── Profile Completion (premium circular-progress card) ───────────
+          _buildProfileCompletionCard(context, myProfile),
           const SizedBox(height: 8),
 
           // ── Compact notification-style action cards ───────────────────────
@@ -447,31 +450,47 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     required VoidCallback onTap,
   }) {
     return InkWell(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
         child: Column(
           children: [
+            // Premium circular icon: soft two-tone tint + a subtle drop shadow.
             Container(
-              width: 52,
-              height: 52,
+              width: 54,
+              height: 54,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: color.withOpacity(0.18)),
+                gradient: LinearGradient(
+                  colors: [color.withOpacity(0.20), color.withOpacity(0.08)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.18),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(icon, color: color, size: 25),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 7),
+            // Tamil labels wrap to a second line instead of truncating — the
+            // quick-action strip stays fully readable on any screen width.
             Text(
               label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+              softWrap: true,
               style: const TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Poppins'),
+                fontSize: 11,
+                height: 1.15,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Poppins',
+              ),
             ),
           ],
         ),
@@ -518,20 +537,22 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Tamil title/subtitle wrap freely — never truncated.
                   Text(context.l10n.muhurthamCalendarTitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                      softWrap: true,
                       style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 13.5,
+                          height: 1.2,
                           fontFamily: 'Poppins')),
                   const SizedBox(height: 2),
                   if (unlocked)
                     Text(context.l10n.muhurthamSubtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                        softWrap: true,
                         style: const TextStyle(
-                            color: Colors.black54, fontSize: 11.5))
+                            color: Colors.black54, fontSize: 11.5, height: 1.25))
                   else
                     const ComingSoonBadge(compact: true),
                 ],
@@ -564,6 +585,134 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  // ── Profile Completion card ─────────────────────────────────────────────────
+
+  /// A premium profile-completion card: a circular progress ring with the live
+  /// percentage in its centre, the localized title/subtitle, and a "Complete
+  /// Now" CTA. Derived from [computeProfileCompletion] so it always agrees with
+  /// the Complete-Profile screen, and hidden once the profile reaches 100%.
+  Widget _buildProfileCompletionCard(
+      BuildContext context, ProfileModel? profile) {
+    final completion = computeProfileCompletion(profile);
+    if (completion.percent >= 100) return const SizedBox.shrink();
+    final pct = completion.percent.clamp(0, 100);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () => context.push('/complete-profile'),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Colors.white, Color(0xFFFDF4F6)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.primary.withOpacity(0.10)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Circular progress ring with the percentage in the centre.
+                SizedBox(
+                  width: 64,
+                  height: 64,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 64,
+                        height: 64,
+                        child: CircularProgressIndicator(
+                          value: pct / 100,
+                          strokeWidth: 6,
+                          strokeCap: StrokeCap.round,
+                          backgroundColor: AppColors.primary.withOpacity(0.10),
+                          valueColor: const AlwaysStoppedAnimation(
+                              AppColors.primary),
+                        ),
+                      ),
+                      Text(
+                        '$pct%',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Poppins',
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Tamil title wraps rather than truncating.
+                      Text(
+                        context.l10n.profileCompletionTitle,
+                        softWrap: true,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14.5,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        context.l10n.completeProfile,
+                        softWrap: true,
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      ),
+                      const SizedBox(height: 10),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                          textStyle: const TextStyle(
+                              fontSize: 12.5, fontWeight: FontWeight.w700),
+                        ),
+                        onPressed: () => context.push('/complete-profile'),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(child: Text(context.l10n.completeNow)),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.arrow_forward, size: 15),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -689,19 +838,10 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   // ── Compact notification-style action cards ────────────────────────────────
 
   List<Widget> _buildActionCards(BuildContext context, ProfileModel? profile) {
-    final completion = computeProfileCompletion(profile);
     final cards = <Widget>[];
 
-    // 💖 Profile Completion — hidden once the profile reaches 100%.
-    if (completion.percent < 100) {
-      cards.add(_notifCard(
-        emoji: '💖',
-        title: context.l10n.profileCompletionTitle,
-        subtitle: context.l10n.profileCompletionSubtitle(completion.percent),
-        accent: AppColors.primary,
-        onTap: () => context.push('/complete-profile'),
-      ));
-    }
+    // Profile Completion now has its own premium circular-progress card
+    // (`_buildProfileCompletionCard`) rendered above these cards.
 
     // (The old "Upgrade To Premium" card was removed — the app has NO
     // subscription system; every matrimony feature is free.)
@@ -1017,14 +1157,14 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             onViewAll: () => ref.read(homeTabIndexProvider.notifier).state = 1),
         const SizedBox(height: 12),
         SizedBox(
-          height: 234,
+          height: 258,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: preview.length,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (_, i) =>
-                SizedBox(width: 162, child: _MatchCard(profile: preview[i])),
+                SizedBox(width: 164, child: _MatchCard(profile: preview[i])),
           ),
         ),
       ],
@@ -1134,10 +1274,11 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         children: [
           Expanded(
             child: Text('$emoji  $title',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
+                softWrap: true,
                 style: const TextStyle(
                     fontSize: 16.5,
+                    height: 1.2,
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.bold)),
           ),
@@ -1346,8 +1487,9 @@ class _MatchCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Photo expands to fill the remaining height. A simple ⭐ highlight
-            // badge (top-left) marks suitable/relevant profiles — no rating.
+            // Photo expands to fill the remaining height. A green "star match"
+            // badge (top-left) marks star-compatible profiles — no percentage,
+            // no online status, no rating number.
             Expanded(
               child: Stack(
                 fit: StackFit.expand,
@@ -1359,10 +1501,20 @@ class _MatchCard extends ConsumerWidget {
                           errorBuilder: (_, __, ___) => _placeholder(),
                         )
                       : _placeholder(),
+                  // Bounded on both sides so a long Tamil label wraps within the
+                  // card instead of being clipped.
                   Positioned(
-                    top: 6,
-                    left: 6,
-                    child: ProfileHighlightBadge(profile: profile, compact: true),
+                    top: 8,
+                    left: 8,
+                    right: 8,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: ProfileHighlightBadge(
+                        profile: profile,
+                        compact: true,
+                        color: AppColors.success,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -1382,30 +1534,16 @@ class _MatchCard extends ConsumerWidget {
                         fontSize: 13,
                         fontFamily: 'Poppins'),
                   ),
+                  const SizedBox(height: 4),
+                  _metaLine(Icons.school_outlined,
+                      profile.education.isEmpty ? 'N/A' : profile.education),
+                  if (profile.occupation.trim().isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    _metaLine(Icons.work_outline, profile.occupation),
+                  ],
                   const SizedBox(height: 3),
-                  Text(
-                    profile.education.isEmpty ? 'N/A' : profile.education,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Colors.grey[600], fontSize: 11),
-                  ),
-                  const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      Icon(Icons.location_on_outlined,
-                          size: 12, color: Colors.grey[500]),
-                      const SizedBox(width: 2),
-                      Expanded(
-                        child: Text(
-                          profile.city.isEmpty ? 'N/A' : profile.city,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              TextStyle(color: Colors.grey[500], fontSize: 10.5),
-                        ),
-                      ),
-                    ],
-                  ),
+                  _metaLine(Icons.location_on_outlined,
+                      profile.city.isEmpty ? 'N/A' : profile.city),
                 ],
               ),
             ),
@@ -1414,6 +1552,22 @@ class _MatchCard extends ConsumerWidget {
       ),
     );
   }
+
+  /// A compact icon + single-line meta row (education, occupation, location).
+  Widget _metaLine(IconData icon, String text) => Row(
+        children: [
+          Icon(icon, size: 12, color: Colors.grey[500]),
+          const SizedBox(width: 3),
+          Expanded(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: Colors.grey[600], fontSize: 10.5),
+            ),
+          ),
+        ],
+      );
 
   Widget _placeholder() => Container(
         color: Colors.grey[200],

@@ -237,10 +237,12 @@ class _BottomNav extends StatelessWidget {
 
   // Icons only — labels are localized per-build from [_labels] so the bar
   // switches language instantly with the rest of the app.
-  // Order (spec): Home · Matches · Interests · Reports · Astrology.
+  // Order (spec): Home · Search · Interests · Reports · Astrology. Tab 1 opens
+  // the Discover/Matches browser — surfaced here as "Search" (தேடல்) to match
+  // the reference design; the search/magnifier icon reads as "find matches".
   static const _items = [
     _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home),
-    _NavItem(icon: Icons.favorite_border, activeIcon: Icons.favorite),
+    _NavItem(icon: Icons.search_outlined, activeIcon: Icons.search),
     _NavItem(icon: Icons.people_outline, activeIcon: Icons.people),
     _NavItem(
         icon: Icons.description_outlined, activeIcon: Icons.description),
@@ -253,7 +255,7 @@ class _BottomNav extends StatelessWidget {
     final l10n = context.l10n;
     final labels = [
       l10n.home,
-      l10n.matches,
+      l10n.search,
       l10n.interests,
       l10n.reports,
       l10n.astrology,
@@ -291,13 +293,25 @@ class _BottomNav extends StatelessWidget {
                         size: 24,
                       ),
                       const SizedBox(height: 3),
-                      Text(
-                        labels[i],
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: active ? FontWeight.w600 : FontWeight.normal,
-                          color: active ? AppColors.primary : Colors.grey[500],
-                          letterSpacing: 0.2,
+                      // FittedBox(scaleDown) guarantees the Tamil label always
+                      // fits on a single line — it never clips with an ellipsis
+                      // and never overflows the tab, on any screen width.
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            labels[i],
+                            maxLines: 1,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight:
+                                  active ? FontWeight.w600 : FontWeight.normal,
+                              color:
+                                  active ? AppColors.primary : Colors.grey[500],
+                              letterSpacing: 0.2,
+                            ),
+                          ),
                         ),
                       ),
                     ],

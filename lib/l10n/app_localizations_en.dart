@@ -418,6 +418,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get completeProfile => 'Complete your profile';
 
   @override
+  String get completeNow => 'Complete Now';
+
+  @override
   String get personalDetails => 'Personal Details';
 
   @override

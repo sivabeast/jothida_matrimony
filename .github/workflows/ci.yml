@@ -76,10 +76,12 @@ jobs:
           if [ -z "$KEYSTORE_BASE64" ]; then
             echo "available=false" >> "$GITHUB_OUTPUT"
             {
-              echo "## ⚠️ Release AAB was NOT built"
+              echo "## ⚠️ Release artifacts were NOT built — debug fallback used"
               echo ""
-              echo "The signing secrets are missing, so this run produced no App Bundle."
-              echo "A release artifact cannot be signed without the upload key."
+              echo "The signing secrets are missing, so this run produced only DEBUG-signed"
+              echo "fallback artifacts: \`jothida-matrimony-debug-apk\` and \`jothida-matrimony-debug-aab\`."
+              echo "A DEBUG-signed AAB CANNOT be uploaded to Google Play — add the secrets"
+              echo "below to also get a release-signed AAB."
               echo ""
               echo "Add these under **Settings → Secrets and variables → Actions**:"
               echo ""
@@ -94,14 +96,12 @@ jobs:
               echo '[Convert]::ToBase64String([IO.File]::ReadAllBytes("android/upload-keystore.jks")) | Set-Clipboard'
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
-            # On main the whole point of the run is to produce the uploadable
-            # bundle, so a missing key is a hard failure — a silently skipped
-            # artifact is too easy to miss. Other branches just carry on.
-            if [ "$GITHUB_REF" = "refs/heads/main" ]; then
-              echo "::error::Release signing secrets are missing — no AAB was produced. See the job summary for the 4 secrets to add."
-              exit 1
-            fi
-            echo "::warning::Release signing secrets are missing — skipping release artifacts on this branch."
+            # Debug-signed fallback artifacts (APK + AAB) are still built and
+            # uploaded below, so EVERY successful run has both an APK and an AAB
+            # to download. Release-signed artifacts are skipped until the upload
+            # key is provided via the secrets above (no hard failure on main —
+            # the run stays green and always ships the debug fallback pair).
+            echo "::warning::Release signing secrets are missing — building DEBUG-signed fallback APK + AAB only. The release (Play-uploadable) AAB was NOT produced; see the job summary for the 4 secrets to add."
             exit 0
           fi
           echo "$KEYSTORE_BASE64" | base64 -d > android/upload-keystore.jks
@@ -141,6 +141,12 @@ jobs:
 
       - name: Build APK (Debug)
         run: flutter build apk --debug
+
+      # Debug-signed AAB fallback so an App Bundle artifact ALWAYS exists, even
+      # when the release signing key is absent. This bundle is NOT uploadable to
+      # Google Play — it only guarantees the "both APK and AAB" artifact pair.
+      - name: Build AAB (Debug fallback)
+        run: flutter build appbundle --debug
 
       # Release builds run whenever real signing credentials are available, on
       # ANY branch — so a feature branch produces a Play-uploadable bundle
@@ -187,6 +193,12 @@ jobs:
         with:
           name: jothida-matrimony-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
+
+      - name: Upload debug AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jothida-matrimony-debug-aab
+          path: build/app/outputs/bundle/debug/app-debug.aab
 
       - name: Upload AAB artifact
         if: steps.signing.outputs.available == 'true'

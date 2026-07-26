@@ -418,6 +418,9 @@ class AppLocalizationsTa extends AppLocalizations {
   String get completeProfile => 'உங்கள் சுயவிவரத்தை முடிக்கவும்';
 
   @override
+  String get completeNow => 'முழுமையாக்க';
+
+  @override
   String get personalDetails => 'தனிப்பட்ட விவரங்கள்';
 
   @override

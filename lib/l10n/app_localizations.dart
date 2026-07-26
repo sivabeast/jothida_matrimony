@@ -905,6 +905,12 @@ abstract class AppLocalizations {
   /// **'Complete your profile'**
   String get completeProfile;
 
+  /// No description provided for @completeNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Now'**
+  String get completeNow;
+
   /// No description provided for @personalDetails.
   ///
   /// In en, this message translates to:
