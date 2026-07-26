@@ -21,7 +21,6 @@ import '../../../providers/profile_provider.dart';
 import '../../../providers/wedding_provider.dart';
 import '../../../widgets/common/coming_soon.dart';
 import '../../../widgets/common/network_photo.dart';
-import '../../../widgets/common/profile_highlight_badge.dart';
 import '../../../widgets/home/home_banner_slide.dart';
 
 /// Home dashboard tab. Clean, modern flow:
@@ -124,12 +123,11 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           // ── Wedding Workspace (only once a wedding exists) ────────────────
           _buildWeddingCard(context),
 
-          // ── Marriage Muhurtham Calendar ───────────────────────────────────
-          _buildMuhurthamCard(context),
+          // ── Info cards: Muhurtham | Profile Completion (side by side) ─────
+          _buildInfoCardsRow(context, myProfile),
 
-          // ── Profile Completion (premium circular-progress card) ───────────
-          _buildProfileCompletionCard(context, myProfile),
-          const SizedBox(height: 8),
+          // ── Trust / feature highlights ───────────────────────────────────
+          _buildFeatureHighlights(context),
 
           // ── Compact notification-style action cards ───────────────────────
           ..._buildActionCards(context, myProfile),
@@ -381,16 +379,18 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
+            // Premium gold/yellow border around the banner (reference).
+            border: Border.all(color: AppColors.gold, width: 3),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.22),
-                blurRadius: 18,
+                color: AppColors.gold.withOpacity(0.35),
+                blurRadius: 16,
                 offset: const Offset(0, 8),
               ),
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(15),
             child: child,
           ),
         ),
@@ -398,47 +398,74 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
 
   // ── Quick actions ──────────────────────────────────────────────────────────
 
-  /// A clean row of four premium one-tap shortcuts to the core journeys. Keeps
-  /// the most important destinations visible without crowding the dashboard.
+  /// A premium white card of five one-tap shortcuts (reference layout):
+  /// Matches · Interests · Astrology · Reports · Muhurtham Day. Each has a soft
+  /// coloured circular icon.
   Widget _buildQuickActions(BuildContext context) {
     void goTab(int i) => ref.read(homeTabIndexProvider.notifier).state = i;
+    final unlocked = ref.watch(upcomingFeaturesUnlockedProvider);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: _quickAction(
-              icon: Icons.favorite,
-              label: context.l10n.matches,
-              color: AppColors.primary,
-              onTap: () => goTab(kMatchesTabIndex),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
             ),
-          ),
-          Expanded(
-            child: _quickAction(
-              icon: Icons.people_alt_rounded,
-              label: context.l10n.interests,
-              color: const Color(0xFF2F80ED),
-              onTap: () => goTab(kInterestsTabIndex),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: _quickAction(
+                icon: Icons.favorite,
+                label: context.l10n.matches,
+                color: const Color(0xFFE64A6B),
+                onTap: () => goTab(kMatchesTabIndex),
+              ),
             ),
-          ),
-          Expanded(
-            child: _quickAction(
-              icon: Icons.auto_awesome,
-              label: context.l10n.astrology,
-              color: AppColors.goldDark,
-              onTap: () => goTab(kAstrologyTabIndex),
+            Expanded(
+              child: _quickAction(
+                icon: Icons.people_alt_rounded,
+                label: context.l10n.interests,
+                color: const Color(0xFF7C4DFF),
+                onTap: () => goTab(kInterestsTabIndex),
+              ),
             ),
-          ),
-          Expanded(
-            child: _quickAction(
-              icon: Icons.description_outlined,
-              label: context.l10n.reports,
-              color: AppColors.gold,
-              onTap: () => goTab(kReportsTabIndex),
+            Expanded(
+              child: _quickAction(
+                icon: Icons.auto_awesome,
+                label: context.l10n.astrology,
+                color: const Color(0xFFF5A623),
+                onTap: () => goTab(kAstrologyTabIndex),
+              ),
             ),
-          ),
-        ],
+            Expanded(
+              child: _quickAction(
+                icon: Icons.description_outlined,
+                label: context.l10n.reports,
+                color: const Color(0xFF2F80ED),
+                onTap: () => goTab(kReportsTabIndex),
+              ),
+            ),
+            Expanded(
+              child: _quickAction(
+                icon: Icons.event_available,
+                label: context.l10n.muhurthamDay,
+                color: const Color(0xFF34A853),
+                onTap: () => unlocked
+                    ? context.push('/muhurtham-calendar')
+                    : showComingSoonDialog(context,
+                        featureName: context.l10n.featureMuhurthamCalendar),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -450,16 +477,16 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     required VoidCallback onTap,
   }) {
     return InkWell(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(14),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 1),
         child: Column(
           children: [
             // Premium circular icon: soft two-tone tint + a subtle drop shadow.
             Container(
-              width: 54,
-              height: 54,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [color.withOpacity(0.20), color.withOpacity(0.08)],
@@ -470,14 +497,14 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
                 boxShadow: [
                   BoxShadow(
                     color: color.withOpacity(0.18),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
-              child: Icon(icon, color: color, size: 25),
+              child: Icon(icon, color: color, size: 22),
             ),
-            const SizedBox(height: 7),
+            const SizedBox(height: 6),
             // Tamil labels wrap to a second line instead of truncating — the
             // quick-action strip stays fully readable on any screen width.
             Text(
@@ -486,8 +513,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
               textAlign: TextAlign.center,
               softWrap: true,
               style: const TextStyle(
-                fontSize: 11,
-                height: 1.15,
+                fontSize: 10.5,
+                height: 1.12,
                 fontWeight: FontWeight.w600,
                 fontFamily: 'Poppins',
               ),
@@ -505,10 +532,33 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   ///
   /// LAUNCH LOCK: for non-admin users the button is locked (🔒 + Coming Soon)
   /// and only shows the shared Coming Soon dialog. Admins keep full access.
-  Widget _buildMuhurthamCard(BuildContext context) {
-    final unlocked = ref.watch(upcomingFeaturesUnlockedProvider);
+  /// Side-by-side info cards (reference): Muhurtham | Profile Completion,
+  /// equalised in height so both cards match.
+  Widget _buildInfoCardsRow(BuildContext context, ProfileModel? profile) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: _muhurthamMini(context)),
+            const SizedBox(width: 12),
+            Expanded(child: _profileCompletionMini(context, profile)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Compact vertical Muhurtham card for the info row.
+  Widget _muhurthamMini(BuildContext context) {
+    final unlocked = ref.watch(upcomingFeaturesUnlockedProvider);
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: () => unlocked
+          ? context.push('/muhurtham-calendar')
+          : showComingSoonDialog(context,
+              featureName: context.l10n.featureMuhurthamCalendar),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -517,72 +567,58 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: AppColors.gold.withOpacity(0.45)),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Tamil title wraps freely — never truncated.
+            Text(context.l10n.muhurthamCalendarTitle,
+                maxLines: 2,
+                softWrap: true,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    height: 1.2,
+                    fontFamily: 'Poppins')),
+            const SizedBox(height: 12),
             Container(
-              width: 44,
-              height: 44,
+              width: 46,
+              height: 46,
               decoration: BoxDecoration(
                 color: AppColors.gold.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
-              child: const Text('📅', style: TextStyle(fontSize: 20)),
+              child: const Text('📅', style: TextStyle(fontSize: 22)),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Tamil title/subtitle wrap freely — never truncated.
-                  Text(context.l10n.muhurthamCalendarTitle,
-                      maxLines: 2,
-                      softWrap: true,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13.5,
-                          height: 1.2,
-                          fontFamily: 'Poppins')),
-                  const SizedBox(height: 2),
-                  if (unlocked)
-                    Text(context.l10n.muhurthamSubtitle,
-                        maxLines: 2,
-                        softWrap: true,
-                        style: const TextStyle(
-                            color: Colors.black54, fontSize: 11.5, height: 1.25))
-                  else
-                    const ComingSoonBadge(compact: true),
+            const SizedBox(height: 12),
+            if (unlocked)
+              Text(context.l10n.muhurthamSubtitle,
+                  maxLines: 3,
+                  softWrap: true,
+                  style: const TextStyle(
+                      color: Colors.black54, fontSize: 11, height: 1.3))
+            else
+              const ComingSoonBadge(compact: true),
+            const Spacer(),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                if (!unlocked) ...[
+                  const Icon(Icons.lock, size: 13, color: AppColors.goldDark),
+                  const SizedBox(width: 4),
                 ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.goldDark,
-                foregroundColor: Colors.white,
-                visualDensity: VisualDensity.compact,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                textStyle: const TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w700),
-              ),
-              onPressed: () => unlocked
-                  ? context.push('/muhurtham-calendar')
-                  : showComingSoonDialog(context,
-                      featureName: context.l10n.featureMuhurthamCalendar),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (!unlocked) ...[
-                    const Icon(Icons.lock, size: 13),
-                    const SizedBox(width: 4),
-                  ],
-                  Text(context.l10n.viewCalendar),
-                ],
-              ),
+                Text(context.l10n.viewCalendar,
+                    style: const TextStyle(
+                        color: AppColors.goldDark,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12.5)),
+                const SizedBox(width: 3),
+                const Icon(Icons.arrow_forward,
+                    size: 14, color: AppColors.goldDark),
+              ],
             ),
           ],
         ),
@@ -590,129 +626,150 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     );
   }
 
+  /// Trust / feature highlights row (reference): verified profiles, safe
+  /// conversations, genuine matches, 24/7 support.
+  Widget _buildFeatureHighlights(BuildContext context) {
+    final l10n = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFFF3E0), Color(0xFFFDEAD2)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _highlight(Icons.verified_user, const Color(0xFFD4AF37),
+                l10n.trustVerifiedProfiles),
+            _highlight(
+                Icons.lock, AppColors.primary, l10n.trustSafeConversations),
+            _highlight(Icons.workspace_premium, const Color(0xFFE8590C),
+                l10n.trustGenuineMatches),
+            _highlight(
+                Icons.headset_mic, AppColors.primary, l10n.trustSupport247),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _highlight(IconData icon, Color color, String label) => Expanded(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Column(
+            children: [
+              Icon(icon, color: color, size: 22),
+              const SizedBox(height: 6),
+              Text(label,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  softWrap: true,
+                  style: const TextStyle(
+                      fontSize: 9.5, height: 1.15, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+      );
+
   // ── Profile Completion card ─────────────────────────────────────────────────
 
   /// A premium profile-completion card: a circular progress ring with the live
   /// percentage in its centre, the localized title/subtitle, and a "Complete
   /// Now" CTA. Derived from [computeProfileCompletion] so it always agrees with
   /// the Complete-Profile screen, and hidden once the profile reaches 100%.
-  Widget _buildProfileCompletionCard(
-      BuildContext context, ProfileModel? profile) {
+  /// Compact vertical Profile Completion card for the info row (reference):
+  /// title, purple circular % ring, subtitle, "Complete Now" link.
+  Widget _profileCompletionMini(BuildContext context, ProfileModel? profile) {
     final completion = computeProfileCompletion(profile);
-    if (completion.percent >= 100) return const SizedBox.shrink();
     final pct = completion.percent.clamp(0, 100);
+    const ringColor = Color(0xFF7C4DFF);
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: () => context.push('/complete-profile'),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Colors.white, Color(0xFFFDF4F6)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.primary.withOpacity(0.10)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                // Circular progress ring with the percentage in the centre.
-                SizedBox(
-                  width: 64,
-                  height: 64,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      SizedBox(
-                        width: 64,
-                        height: 64,
-                        child: CircularProgressIndicator(
-                          value: pct / 100,
-                          strokeWidth: 6,
-                          strokeCap: StrokeCap.round,
-                          backgroundColor: AppColors.primary.withOpacity(0.10),
-                          valueColor: const AlwaysStoppedAnimation(
-                              AppColors.primary),
-                        ),
-                      ),
-                      Text(
-                        '$pct%',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Tamil title wraps rather than truncating.
-                      Text(
-                        context.l10n.profileCompletionTitle,
-                        softWrap: true,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14.5,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        context.l10n.completeProfile,
-                        softWrap: true,
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          visualDensity: VisualDensity.compact,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                          textStyle: const TextStyle(
-                              fontSize: 12.5, fontWeight: FontWeight.w700),
-                        ),
-                        onPressed: () => context.push('/complete-profile'),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Flexible(child: Text(context.l10n.completeNow)),
-                            const SizedBox(width: 4),
-                            const Icon(Icons.arrow_forward, size: 15),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: () => context.push('/complete-profile'),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFF7F0FB), Color(0xFFFDF4F6)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.primary.withOpacity(0.10)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Tamil title wraps rather than truncating.
+            Text(context.l10n.profileCompletionTitle,
+                maxLines: 2,
+                softWrap: true,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    height: 1.2,
+                    fontFamily: 'Poppins')),
+            const SizedBox(height: 12),
+            Center(
+              child: SizedBox(
+                width: 62,
+                height: 62,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 62,
+                      height: 62,
+                      child: CircularProgressIndicator(
+                        value: pct / 100,
+                        strokeWidth: 6,
+                        strokeCap: StrokeCap.round,
+                        backgroundColor: ringColor.withOpacity(0.15),
+                        valueColor: const AlwaysStoppedAnimation(ringColor),
+                      ),
+                    ),
+                    Text('$pct%',
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Poppins',
+                            color: ringColor)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(context.l10n.completeProfile,
+                maxLines: 3,
+                softWrap: true,
+                style: TextStyle(
+                    color: Colors.grey[600], fontSize: 11, height: 1.3)),
+            const Spacer(),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Flexible(
+                  child: Text(context.l10n.completeNow,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12.5)),
+                ),
+                const SizedBox(width: 3),
+                const Icon(Icons.arrow_forward,
+                    size: 14, color: AppColors.primary),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -840,8 +897,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   List<Widget> _buildActionCards(BuildContext context, ProfileModel? profile) {
     final cards = <Widget>[];
 
-    // Profile Completion now has its own premium circular-progress card
-    // (`_buildProfileCompletionCard`) rendered above these cards.
+    // Profile Completion is rendered above in the side-by-side info row
+    // (`_buildInfoCardsRow` → `_profileCompletionMini`).
 
     // (The old "Upgrade To Premium" card was removed — the app has NO
     // subscription system; every matrimony feature is free.)
@@ -1142,7 +1199,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           );
         }
         return _horizontalMatchSection(
-            context, '🆕', context.l10n.newProfiles, profiles);
+            context, '💫', context.l10n.recommendedForYou, profiles);
       },
     );
   }
@@ -1157,7 +1214,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             onViewAll: () => ref.read(homeTabIndexProvider.notifier).state = 1),
         const SizedBox(height: 12),
         SizedBox(
-          height: 258,
+          height: 274,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1353,16 +1410,18 @@ class _BannerSlide extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
+          // Premium gold/yellow border around the banner (reference).
+          border: Border.all(color: AppColors.gold, width: 3),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.22),
-              blurRadius: 18,
+              color: AppColors.gold.withOpacity(0.35),
+              blurRadius: 16,
               offset: const Offset(0, 8),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(15),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -1487,37 +1546,18 @@ class _MatchCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Photo expands to fill the remaining height. A green "star match"
-            // badge (top-left) marks star-compatible profiles — no percentage,
-            // no online status, no rating number.
+            // Photo expands to fill the remaining height. No online status,
+            // no percentage, no overlay badge — the "star matching" hint is
+            // shown as simple green text below the details.
             Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  profile.photos.isNotEmpty
-                      ? Image.network(
-                          profile.photos.first,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _placeholder(),
-                        )
-                      : _placeholder(),
-                  // Bounded on both sides so a long Tamil label wraps within the
-                  // card instead of being clipped.
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    right: 8,
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: ProfileHighlightBadge(
-                        profile: profile,
-                        compact: true,
-                        color: AppColors.success,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              child: profile.photos.isNotEmpty
+                  ? Image.network(
+                      profile.photos.first,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      errorBuilder: (_, __, ___) => _placeholder(),
+                    )
+                  : _placeholder(),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
@@ -1544,6 +1584,25 @@ class _MatchCard extends ConsumerWidget {
                   const SizedBox(height: 3),
                   _metaLine(Icons.location_on_outlined,
                       profile.city.isEmpty ? 'N/A' : profile.city),
+                  const SizedBox(height: 6),
+                  // Simple green "star matching" text (spec) — NOT a badge/card.
+                  Row(
+                    children: [
+                      const Text('⭐', style: TextStyle(fontSize: 11)),
+                      const SizedBox(width: 3),
+                      Flexible(
+                        child: Text(
+                          context.l10n.starMatching,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: AppColors.success,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),

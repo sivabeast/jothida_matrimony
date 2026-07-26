@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/network_photo.dart';
+import '../../widgets/profile/field_edit_sheet.dart';
 
 /// The signed-in member's own contact record (access-gated `contacts/{uid}`;
 /// the owner can always read their own).
@@ -89,7 +91,9 @@ class MyProfileScreen extends ConsumerWidget {
         _SectionCard(
           icon: Icons.badge_outlined,
           title: 'Basic Details',
-          onEdit: () => editStep(0),
+          // Field-level editing: opens a sheet to edit ONLY the chosen field.
+          onEdit: () => showProfileFieldSheet(context,
+              sectionTitle: 'Basic Details', fieldsBuilder: basicDetailsFields),
           rows: [
             ['Profile For', s(p.profileCreatedFor)],
             ['Name', s(p.fullName)],
@@ -108,7 +112,8 @@ class MyProfileScreen extends ConsumerWidget {
         _SectionCard(
           icon: Icons.location_on_outlined,
           title: 'Location',
-          onEdit: () => editStep(1),
+          // Composite (state→district→city cascade) → dedicated section editor.
+          onEdit: () => context.push('/edit/location'),
           rows: [
             ['Location', location],
             ['Native Place', s(p.nativePlace)],
@@ -118,7 +123,9 @@ class MyProfileScreen extends ConsumerWidget {
         _SectionCard(
           icon: Icons.work_outline,
           title: 'Career',
-          onEdit: () => editStep(2),
+          // Field-level editing: edit ONLY the chosen career field.
+          onEdit: () => showProfileFieldSheet(context,
+              sectionTitle: 'Career', fieldsBuilder: careerFields),
           rows: [
             ['Education', s(p.education)],
             ['Occupation', s(p.occupation)],
@@ -130,7 +137,8 @@ class MyProfileScreen extends ConsumerWidget {
         _SectionCard(
           icon: Icons.diversity_3_outlined,
           title: 'Community',
-          onEdit: () => editStep(3),
+          // Composite (religion→caste→subcaste cascade) → dedicated editor.
+          onEdit: () => context.push('/edit/religious'),
           rows: [
             ['Religion', s(p.religion)],
             ['Caste', s(p.caste)],
@@ -143,7 +151,8 @@ class MyProfileScreen extends ConsumerWidget {
         _SectionCard(
           icon: Icons.auto_awesome_outlined,
           title: 'Horoscope',
-          onEdit: () => editStep(4),
+          // Opens ONLY the Horoscope details editor (not the full wizard).
+          onEdit: () => context.push('/horoscope'),
           rows: [
             ['Rasi', s(h.rasi)],
             ['Nakshatra', s(h.nakshatra)],
@@ -172,7 +181,8 @@ class MyProfileScreen extends ConsumerWidget {
         _SectionCard(
           icon: Icons.photo_camera_outlined,
           title: 'Photos',
-          onEdit: () => editStep(6),
+          // Opens ONLY the Photos editor.
+          onEdit: () => context.push('/edit/photos'),
           rows: const [],
           child: p.photos.isEmpty
               ? Text('No photo added yet.',
@@ -279,6 +289,125 @@ class MyProfileScreen extends ConsumerWidget {
     );
   }
 }
+
+/// Computes age from a date of birth (so editing DOB keeps `age` in sync).
+int _ageFromDob(DateTime dob) {
+  final now = DateTime.now();
+  var age = now.year - dob.year;
+  if (now.month < dob.month ||
+      (now.month == dob.month && now.day < dob.day)) {
+    age--;
+  }
+  return age < 0 ? 0 : age;
+}
+
+/// Field-level editable descriptors for the **Basic Details** section — each
+/// saves ONLY its own field (Firestore patch) and leaves everything else as-is.
+List<ProfileEditableField> basicDetailsFields(ProfileModel p) => [
+      ProfileEditableField(
+        label: 'Name',
+        kind: ProfileFieldKind.text,
+        value: p.fullName,
+        apply: (pr, v) => pr.copyWith(fullName: v as String),
+        patch: (v) => {'fullName': v},
+      ),
+      ProfileEditableField(
+        label: 'Gender',
+        kind: ProfileFieldKind.options,
+        value: p.gender,
+        options: const ['Male', 'Female'],
+        apply: (pr, v) => pr.copyWith(gender: v as String),
+        patch: (v) => {'gender': v},
+      ),
+      ProfileEditableField(
+        label: 'Age (Date of Birth)',
+        kind: ProfileFieldKind.date,
+        value: p.age > 0 ? '${p.age} yrs' : '',
+        dateValue: p.dateOfBirth,
+        apply: (pr, v) {
+          final d = v as DateTime;
+          return pr.copyWith(dateOfBirth: d, age: _ageFromDob(d));
+        },
+        patch: (v) {
+          final d = v as DateTime;
+          return {'dateOfBirth': d, 'age': _ageFromDob(d)};
+        },
+      ),
+      ProfileEditableField(
+        label: 'Height',
+        kind: ProfileFieldKind.options,
+        value: p.height,
+        options: AppConstants.heightList,
+        apply: (pr, v) => pr.copyWith(height: v as String),
+        patch: (v) => {'height': v},
+      ),
+      ProfileEditableField(
+        label: 'Weight (kg)',
+        kind: ProfileFieldKind.number,
+        value: p.weight,
+        apply: (pr, v) => pr.copyWith(weight: v as String),
+        patch: (v) => {'weight': v},
+      ),
+      ProfileEditableField(
+        label: 'Marital Status',
+        kind: ProfileFieldKind.options,
+        value: p.maritalStatus,
+        options: AppConstants.maritalStatusList,
+        apply: (pr, v) => pr.copyWith(maritalStatus: v as String),
+        patch: (v) => {'maritalStatus': v},
+      ),
+      ProfileEditableField(
+        label: 'Physical Status',
+        kind: ProfileFieldKind.options,
+        value: p.physicalStatus,
+        options: AppConstants.physicalStatusList,
+        apply: (pr, v) => pr.copyWith(physicalStatus: v as String),
+        patch: (v) => {'physicalStatus': v},
+      ),
+    ];
+
+/// Field-level editable descriptors for the **Career** section.
+List<ProfileEditableField> careerFields(ProfileModel p) => [
+      ProfileEditableField(
+        label: 'Education',
+        kind: ProfileFieldKind.options,
+        value: p.education,
+        options: AppConstants.educationList,
+        apply: (pr, v) => pr.copyWith(education: v as String),
+        patch: (v) => {'education': v},
+      ),
+      ProfileEditableField(
+        label: 'Occupation',
+        kind: ProfileFieldKind.options,
+        value: p.occupation,
+        options: AppConstants.occupationList,
+        apply: (pr, v) => pr.copyWith(occupation: v as String),
+        patch: (v) => {'occupation': v},
+      ),
+      ProfileEditableField(
+        label: 'Course / Degree',
+        kind: ProfileFieldKind.text,
+        value: p.courseDegree ?? '',
+        apply: (pr, v) => pr.copyWith(courseDegree: v as String),
+        patch: (v) => {'courseDegree': v},
+      ),
+      ProfileEditableField(
+        label: 'Employment Type',
+        kind: ProfileFieldKind.options,
+        value: p.employmentType,
+        options: AppConstants.employmentTypeList,
+        apply: (pr, v) => pr.copyWith(employmentType: v as String),
+        patch: (v) => {'employmentType': v},
+      ),
+      ProfileEditableField(
+        label: 'Annual Income',
+        kind: ProfileFieldKind.options,
+        value: p.annualIncome,
+        options: AppConstants.incomeList,
+        apply: (pr, v) => pr.copyWith(annualIncome: v as String),
+        patch: (v) => {'annualIncome': v},
+      ),
+    ];
 
 /// One profile category: title + Edit action + label/value rows (empty values
 /// are hidden). [child] renders custom content (e.g. the photo thumbnail).

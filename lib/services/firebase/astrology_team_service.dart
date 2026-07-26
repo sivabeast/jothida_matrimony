@@ -345,13 +345,24 @@ class AstrologyTeamService {
     AstrologerTeamMember m, {
     String assignedBy = 'admin',
   }) async {
+    // The assignment onto the request is what actually puts it on the employee's
+    // Pending Reports page — it must stand on its own and succeed first.
     await _requests
         .doc(requestId)
         .update(_assignmentData(m, assignedBy: assignedBy));
-    await _team.doc(m.id).update({
-      'pendingCount': FieldValue.increment(1),
-      'lastAssignedAt': FieldValue.serverTimestamp(),
-    });
+    // Workload counter — BEST EFFORT (separate doc, different rules). A failure
+    // here only skews round-robin balancing; it must never surface as an
+    // assignment failure or undo the assignment just written (mirrors the
+    // auto-assign path).
+    try {
+      await _team.doc(m.id).update({
+        'pendingCount': FieldValue.increment(1),
+        'lastAssignedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('[AstrologyTeam] assignToAstrologer($requestId): workload '
+          'counter update failed (assignment kept): $e');
+    }
   }
 
   /// Called when an astrologer submits a completed report: decrements their open

@@ -421,6 +421,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get completeNow => 'Complete Now';
 
   @override
+  String get muhurthamDay => 'Muhurtham Day';
+
+  @override
+  String get starMatching => 'Star Matching';
+
+  @override
+  String get recommendedForYou => 'Recommended for you';
+
+  @override
+  String get trustVerifiedProfiles => 'Verified Profiles';
+
+  @override
+  String get trustSafeConversations => 'Safe Conversations';
+
+  @override
+  String get trustGenuineMatches => 'Genuine Matches';
+
+  @override
+  String get trustSupport247 => '24/7 Support';
+
+  @override
   String get withdraw => 'Withdraw';
 
   @override

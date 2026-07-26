@@ -911,6 +911,48 @@ abstract class AppLocalizations {
   /// **'Complete Now'**
   String get completeNow;
 
+  /// No description provided for @muhurthamDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Muhurtham Day'**
+  String get muhurthamDay;
+
+  /// No description provided for @starMatching.
+  ///
+  /// In en, this message translates to:
+  /// **'Star Matching'**
+  String get starMatching;
+
+  /// No description provided for @recommendedForYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended for you'**
+  String get recommendedForYou;
+
+  /// No description provided for @trustVerifiedProfiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified Profiles'**
+  String get trustVerifiedProfiles;
+
+  /// No description provided for @trustSafeConversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Safe Conversations'**
+  String get trustSafeConversations;
+
+  /// No description provided for @trustGenuineMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Genuine Matches'**
+  String get trustGenuineMatches;
+
+  /// No description provided for @trustSupport247.
+  ///
+  /// In en, this message translates to:
+  /// **'24/7 Support'**
+  String get trustSupport247;
+
   /// No description provided for @withdraw.
   ///
   /// In en, this message translates to:

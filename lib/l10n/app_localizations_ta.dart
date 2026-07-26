@@ -421,6 +421,27 @@ class AppLocalizationsTa extends AppLocalizations {
   String get completeNow => 'முழுமையாக்க';
 
   @override
+  String get muhurthamDay => 'முகூர்த்த நாள்';
+
+  @override
+  String get starMatching => 'நட்சத்திர மேட்சிங்';
+
+  @override
+  String get recommendedForYou => 'உங்களுக்கு பரிந்துரைக்கப்பட்டவர்கள்';
+
+  @override
+  String get trustVerifiedProfiles => 'சரிபார்க்கப்பட்ட சுயவிவரங்கள்';
+
+  @override
+  String get trustSafeConversations => 'பாதுகாப்பான உரையாடல்கள்';
+
+  @override
+  String get trustGenuineMatches => 'உண்மையான பொருத்தங்கள்';
+
+  @override
+  String get trustSupport247 => '24/7 ஆதரவு';
+
+  @override
   String get withdraw => 'திரும்பப் பெறு';
 
   @override
