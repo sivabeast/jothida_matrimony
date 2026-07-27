@@ -192,6 +192,29 @@ const Map<String, String> kTamilValueMap = {
   'Cancelled': 'ரத்து செய்யப்பட்டது',
 };
 
+/// Runtime English → Tamil names contributed by loaded master data (castes and
+/// sub-castes number in the hundreds — far too many to hardcode in
+/// [kTamilValueMap]). [MasterDataService] populates this once the datasets load
+/// from Firestore / the bundled fallback, keyed case-insensitively on the
+/// canonical English name. [localizeValue] consults it after the static map, so
+/// a stored English caste renders in Tamil anywhere `localizeValue` is used
+/// while storage stays English (spec §13/§14).
+final Map<String, String> _masterTamilNames = {};
+
+/// Registers `{ englishName: tamilName }` pairs from master data. Empty names on
+/// either side are ignored; later registrations overwrite earlier ones.
+void registerMasterTamilNames(Map<String, String> pairs) {
+  pairs.forEach((en, ta) {
+    final k = en.trim().toLowerCase();
+    final v = ta.trim();
+    if (k.isNotEmpty && v.isNotEmpty) _masterTamilNames[k] = v;
+  });
+}
+
+/// The registered Tamil name for a canonical English [value], or null.
+String? masterTamilNameFor(String value) =>
+    _masterTamilNames[value.trim().toLowerCase()];
+
 extension ValueL10nX on BuildContext {
   /// True when the app is currently displayed in Tamil.
   bool get isTamil => Localizations.localeOf(this).languageCode == 'ta';
@@ -202,6 +225,6 @@ extension ValueL10nX on BuildContext {
     final v = (value ?? '').trim();
     if (v.isEmpty) return v;
     if (!isTamil) return v;
-    return kTamilValueMap[v] ?? v;
+    return kTamilValueMap[v] ?? masterTamilNameFor(v) ?? v;
   }
 }

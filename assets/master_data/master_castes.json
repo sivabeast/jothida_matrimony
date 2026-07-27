@@ -2,606 +2,727 @@
   {
     "id": "cas_hindu_adi_dravidar",
     "religionId": "rel_hindu",
-    "name": "Adi Dravidar"
+    "name": "Adi Dravidar",
+    "nameTamil": "ஆதி திராவிடர்"
   },
   {
     "id": "cas_hindu_agamudayar",
     "religionId": "rel_hindu",
-    "name": "Agamudayar"
+    "name": "Agamudayar",
+    "nameTamil": "அகமுடையார்"
   },
   {
     "id": "cas_hindu_ambalakarar",
     "religionId": "rel_hindu",
-    "name": "Ambalakarar"
+    "name": "Ambalakarar",
+    "nameTamil": "அம்பலகாரர்"
   },
   {
     "id": "cas_hindu_arunthathiyar",
     "religionId": "rel_hindu",
-    "name": "Arunthathiyar"
+    "name": "Arunthathiyar",
+    "nameTamil": "அருந்ததியர்"
   },
   {
     "id": "cas_hindu_arya_vysya",
     "religionId": "rel_hindu",
-    "name": "Arya Vysya"
+    "name": "Arya Vysya",
+    "nameTamil": "ஆர்ய வைசியர்"
   },
   {
     "id": "cas_hindu_badaga",
     "religionId": "rel_hindu",
-    "name": "Badaga"
+    "name": "Badaga",
+    "nameTamil": "படகர்"
   },
   {
     "id": "cas_hindu_balija_naidu",
     "religionId": "rel_hindu",
-    "name": "Balija Naidu"
+    "name": "Balija Naidu",
+    "nameTamil": "பலிஜா நாயுடு"
   },
   {
     "id": "cas_hindu_bestha",
     "religionId": "rel_hindu",
-    "name": "Bestha"
+    "name": "Bestha",
+    "nameTamil": "பெஸ்தா"
   },
   {
     "id": "cas_hindu_bhandari",
     "religionId": "rel_hindu",
-    "name": "Bhandari"
+    "name": "Bhandari",
+    "nameTamil": "பண்டாரி"
   },
   {
     "id": "cas_hindu_boyar",
     "religionId": "rel_hindu",
-    "name": "Boyar"
+    "name": "Boyar",
+    "nameTamil": "போயர்"
   },
   {
     "id": "cas_hindu_brahmin",
     "religionId": "rel_hindu",
-    "name": "Brahmin"
+    "name": "Brahmin",
+    "nameTamil": "பிராமணர்"
   },
   {
     "id": "cas_hindu_chettiar",
     "religionId": "rel_hindu",
-    "name": "Chettiar"
+    "name": "Chettiar",
+    "nameTamil": "செட்டியார்"
   },
   {
     "id": "cas_hindu_devandra_kula_vellalar",
     "religionId": "rel_hindu",
-    "name": "Devandra Kula Vellalar"
+    "name": "Devandra Kula Vellalar",
+    "nameTamil": "தேவேந்திர குல வேளாளர்"
   },
   {
     "id": "cas_hindu_devanga",
     "religionId": "rel_hindu",
-    "name": "Devanga"
+    "name": "Devanga",
+    "nameTamil": "தேவாங்கர்"
   },
   {
     "id": "cas_hindu_gounder",
     "religionId": "rel_hindu",
-    "name": "Gounder"
+    "name": "Gounder",
+    "nameTamil": "கவுண்டர்"
   },
   {
     "id": "cas_hindu_gramani",
     "religionId": "rel_hindu",
-    "name": "Gramani"
+    "name": "Gramani",
+    "nameTamil": "கிராமணி"
   },
   {
     "id": "cas_hindu_isai_vellalar",
     "religionId": "rel_hindu",
-    "name": "Isai Vellalar"
+    "name": "Isai Vellalar",
+    "nameTamil": "இசை வேளாளர்"
   },
   {
     "id": "cas_hindu_jangam",
     "religionId": "rel_hindu",
-    "name": "Jangam"
+    "name": "Jangam",
+    "nameTamil": "ஜங்கம்"
   },
   {
     "id": "cas_hindu_kaikolar",
     "religionId": "rel_hindu",
-    "name": "Kaikolar"
+    "name": "Kaikolar",
+    "nameTamil": "கைக்கோளர்"
   },
   {
     "id": "cas_hindu_kallar",
     "religionId": "rel_hindu",
-    "name": "Kallar"
+    "name": "Kallar",
+    "nameTamil": "கள்ளர்"
   },
   {
     "id": "cas_hindu_kamma_naidu",
     "religionId": "rel_hindu",
-    "name": "Kamma Naidu"
+    "name": "Kamma Naidu",
+    "nameTamil": "கம்மா நாயுடு"
   },
   {
     "id": "cas_hindu_kannadiyar",
     "religionId": "rel_hindu",
-    "name": "Kannadiyar"
+    "name": "Kannadiyar",
+    "nameTamil": "கன்னடியர்"
   },
   {
     "id": "cas_hindu_karuneegar",
     "religionId": "rel_hindu",
-    "name": "Karuneegar"
+    "name": "Karuneegar",
+    "nameTamil": "கருணீகர்"
   },
   {
     "id": "cas_hindu_konar",
     "religionId": "rel_hindu",
-    "name": "Konar"
+    "name": "Konar",
+    "nameTamil": "கோனார்"
   },
   {
     "id": "cas_hindu_koteyar",
     "religionId": "rel_hindu",
-    "name": "Koteyar"
+    "name": "Koteyar",
+    "nameTamil": "கோட்டேயர்"
   },
   {
     "id": "cas_hindu_kshatriya_raju",
     "religionId": "rel_hindu",
-    "name": "Kshatriya Raju"
+    "name": "Kshatriya Raju",
+    "nameTamil": "சத்திரிய ராஜு"
   },
   {
     "id": "cas_hindu_kulalar",
     "religionId": "rel_hindu",
-    "name": "Kulalar"
+    "name": "Kulalar",
+    "nameTamil": "குலாலர்"
   },
   {
     "id": "cas_hindu_kuravar",
     "religionId": "rel_hindu",
-    "name": "Kuravar"
+    "name": "Kuravar",
+    "nameTamil": "குறவர்"
   },
   {
     "id": "cas_hindu_kurumbar",
     "religionId": "rel_hindu",
-    "name": "Kurumbar"
+    "name": "Kurumbar",
+    "nameTamil": "குறும்பர்"
   },
   {
     "id": "cas_hindu_maravar",
     "religionId": "rel_hindu",
-    "name": "Maravar"
+    "name": "Maravar",
+    "nameTamil": "மறவர்"
   },
   {
     "id": "cas_hindu_meenavar",
     "religionId": "rel_hindu",
-    "name": "Meenavar"
+    "name": "Meenavar",
+    "nameTamil": "மீனவர்"
   },
   {
     "id": "cas_hindu_moopanar",
     "religionId": "rel_hindu",
-    "name": "Moopanar"
+    "name": "Moopanar",
+    "nameTamil": "மூப்பனார்"
   },
   {
     "id": "cas_hindu_mudaliar",
     "religionId": "rel_hindu",
-    "name": "Mudaliar"
+    "name": "Mudaliar",
+    "nameTamil": "முதலியார்"
   },
   {
     "id": "cas_hindu_mukkulathor",
     "religionId": "rel_hindu",
-    "name": "Mukkulathor"
+    "name": "Mukkulathor",
+    "nameTamil": "முக்குலத்தோர்"
   },
   {
     "id": "cas_hindu_mutharaiyar",
     "religionId": "rel_hindu",
-    "name": "Mutharaiyar"
+    "name": "Mutharaiyar",
+    "nameTamil": "முத்தரையர்"
   },
   {
     "id": "cas_hindu_nadar",
     "religionId": "rel_hindu",
-    "name": "Nadar"
+    "name": "Nadar",
+    "nameTamil": "நாடார்"
   },
   {
     "id": "cas_hindu_naicker",
     "religionId": "rel_hindu",
-    "name": "Naicker"
+    "name": "Naicker",
+    "nameTamil": "நாயக்கர்"
   },
   {
     "id": "cas_hindu_naidu",
     "religionId": "rel_hindu",
-    "name": "Naidu"
+    "name": "Naidu",
+    "nameTamil": "நாயுடு"
   },
   {
     "id": "cas_hindu_nair",
     "religionId": "rel_hindu",
-    "name": "Nair"
+    "name": "Nair",
+    "nameTamil": "நாயர்"
   },
   {
     "id": "cas_hindu_pandaram",
     "religionId": "rel_hindu",
-    "name": "Pandaram"
+    "name": "Pandaram",
+    "nameTamil": "பண்டாரம்"
   },
   {
     "id": "cas_hindu_pandithar",
     "religionId": "rel_hindu",
-    "name": "Pandithar"
+    "name": "Pandithar",
+    "nameTamil": "பண்டிதர்"
   },
   {
     "id": "cas_hindu_parkavakulam",
     "religionId": "rel_hindu",
-    "name": "Parkavakulam"
+    "name": "Parkavakulam",
+    "nameTamil": "பார்கவகுலம்"
   },
   {
     "id": "cas_hindu_pillai",
     "religionId": "rel_hindu",
-    "name": "Pillai"
+    "name": "Pillai",
+    "nameTamil": "பிள்ளை"
   },
   {
     "id": "cas_hindu_reddiar",
     "religionId": "rel_hindu",
-    "name": "Reddiar"
+    "name": "Reddiar",
+    "nameTamil": "ரெட்டியார்"
   },
   {
     "id": "cas_hindu_saliyar",
     "religionId": "rel_hindu",
-    "name": "Saliyar"
+    "name": "Saliyar",
+    "nameTamil": "சாலியர்"
   },
   {
     "id": "cas_hindu_senaithalaivar",
     "religionId": "rel_hindu",
-    "name": "Senaithalaivar"
+    "name": "Senaithalaivar",
+    "nameTamil": "சேனைத்தலைவர்"
   },
   {
     "id": "cas_hindu_sourashtra",
     "religionId": "rel_hindu",
-    "name": "Sourashtra"
+    "name": "Sourashtra",
+    "nameTamil": "சௌராஷ்டிரா"
   },
   {
     "id": "cas_hindu_udayar",
     "religionId": "rel_hindu",
-    "name": "Udayar"
+    "name": "Udayar",
+    "nameTamil": "உடையார்"
   },
   {
     "id": "cas_hindu_vannar",
     "religionId": "rel_hindu",
-    "name": "Vannar"
+    "name": "Vannar",
+    "nameTamil": "வண்ணார்"
   },
   {
     "id": "cas_hindu_vanniyar",
     "religionId": "rel_hindu",
-    "name": "Vanniyar"
+    "name": "Vanniyar",
+    "nameTamil": "வன்னியர்"
   },
   {
     "id": "cas_hindu_vellalar",
     "religionId": "rel_hindu",
-    "name": "Vellalar"
+    "name": "Vellalar",
+    "nameTamil": "வேளாளர்"
   },
   {
     "id": "cas_hindu_vettuva_gounder",
     "religionId": "rel_hindu",
-    "name": "Vettuva Gounder"
+    "name": "Vettuva Gounder",
+    "nameTamil": "வெட்டுவ கவுண்டர்"
   },
   {
     "id": "cas_hindu_vishwakarma",
     "religionId": "rel_hindu",
-    "name": "Vishwakarma"
+    "name": "Vishwakarma",
+    "nameTamil": "விஸ்வகர்மா"
   },
   {
     "id": "cas_hindu_yadava",
     "religionId": "rel_hindu",
-    "name": "Yadava"
+    "name": "Yadava",
+    "nameTamil": "யாதவர்"
   },
   {
     "id": "cas_hindu_yogeeswarar",
     "religionId": "rel_hindu",
-    "name": "Yogeeswarar"
+    "name": "Yogeeswarar",
+    "nameTamil": "யோகீஸ்வரர்"
   },
   {
     "id": "cas_hindu_veerasaiva_lingayat",
     "religionId": "rel_hindu",
-    "name": "Veerasaiva Lingayat"
+    "name": "Veerasaiva Lingayat",
+    "nameTamil": "வீரசைவ லிங்காயத்"
   },
   {
     "id": "cas_hindu_other_hindu",
     "religionId": "rel_hindu",
-    "name": "Other Hindu"
+    "name": "Other Hindu",
+    "nameTamil": "பிற இந்து"
   },
   {
     "id": "cas_muslim_sunni",
     "religionId": "rel_muslim",
-    "name": "Sunni"
+    "name": "Sunni",
+    "nameTamil": "சுன்னி"
   },
   {
     "id": "cas_muslim_shia",
     "religionId": "rel_muslim",
-    "name": "Shia"
+    "name": "Shia",
+    "nameTamil": "ஷியா"
   },
   {
     "id": "cas_muslim_sheikh",
     "religionId": "rel_muslim",
-    "name": "Sheikh"
+    "name": "Sheikh",
+    "nameTamil": "ஷேக்"
   },
   {
     "id": "cas_muslim_syed",
     "religionId": "rel_muslim",
-    "name": "Syed"
+    "name": "Syed",
+    "nameTamil": "சையத்"
   },
   {
     "id": "cas_muslim_pathan",
     "religionId": "rel_muslim",
-    "name": "Pathan"
+    "name": "Pathan",
+    "nameTamil": "பதான்"
   },
   {
     "id": "cas_muslim_mughal",
     "religionId": "rel_muslim",
-    "name": "Mughal"
+    "name": "Mughal",
+    "nameTamil": "முகலாயர்"
   },
   {
     "id": "cas_muslim_labbai",
     "religionId": "rel_muslim",
-    "name": "Labbai"
+    "name": "Labbai",
+    "nameTamil": "லப்பை"
   },
   {
     "id": "cas_muslim_marakayar",
     "religionId": "rel_muslim",
-    "name": "Marakayar"
+    "name": "Marakayar",
+    "nameTamil": "மரக்காயர்"
   },
   {
     "id": "cas_muslim_rowther",
     "religionId": "rel_muslim",
-    "name": "Rowther"
+    "name": "Rowther",
+    "nameTamil": "ராவுத்தர்"
   },
   {
     "id": "cas_muslim_kayalar",
     "religionId": "rel_muslim",
-    "name": "Kayalar"
+    "name": "Kayalar",
+    "nameTamil": "காயலர்"
   },
   {
     "id": "cas_muslim_dudekula",
     "religionId": "rel_muslim",
-    "name": "Dudekula"
+    "name": "Dudekula",
+    "nameTamil": "துடேகுலா"
   },
   {
     "id": "cas_muslim_ansari",
     "religionId": "rel_muslim",
-    "name": "Ansari"
+    "name": "Ansari",
+    "nameTamil": "அன்சாரி"
   },
   {
     "id": "cas_muslim_mappila",
     "religionId": "rel_muslim",
-    "name": "Mappila"
+    "name": "Mappila",
+    "nameTamil": "மாப்பிளா"
   },
   {
     "id": "cas_muslim_memon",
     "religionId": "rel_muslim",
-    "name": "Memon"
+    "name": "Memon",
+    "nameTamil": "மேமன்"
   },
   {
     "id": "cas_muslim_dekkani",
     "religionId": "rel_muslim",
-    "name": "Dekkani"
+    "name": "Dekkani",
+    "nameTamil": "தக்காணி"
   },
   {
     "id": "cas_muslim_other_muslim",
     "religionId": "rel_muslim",
-    "name": "Other Muslim"
+    "name": "Other Muslim",
+    "nameTamil": "பிற முஸ்லிம்"
   },
   {
     "id": "cas_christian_roman_catholic",
     "religionId": "rel_christian",
-    "name": "Roman Catholic"
+    "name": "Roman Catholic",
+    "nameTamil": "ரோமன் கத்தோலிக்கர்"
   },
   {
     "id": "cas_christian_church_of_south_india",
     "religionId": "rel_christian",
-    "name": "Church Of South India"
+    "name": "Church Of South India",
+    "nameTamil": "தென்னிந்திய திருச்சபை (CSI)"
   },
   {
     "id": "cas_christian_protestant",
     "religionId": "rel_christian",
-    "name": "Protestant"
+    "name": "Protestant",
+    "nameTamil": "புராட்டஸ்டன்ட்"
   },
   {
     "id": "cas_christian_pentecostal",
     "religionId": "rel_christian",
-    "name": "Pentecostal"
+    "name": "Pentecostal",
+    "nameTamil": "பெந்தெகொஸ்தே"
   },
   {
     "id": "cas_christian_baptist",
     "religionId": "rel_christian",
-    "name": "Baptist"
+    "name": "Baptist",
+    "nameTamil": "பாப்டிஸ்ட்"
   },
   {
     "id": "cas_christian_seventh_day_adventist",
     "religionId": "rel_christian",
-    "name": "Seventh Day Adventist"
+    "name": "Seventh Day Adventist",
+    "nameTamil": "ஏழாம்நாள் அட்வென்டிஸ்ட்"
   },
   {
     "id": "cas_christian_born_again",
     "religionId": "rel_christian",
-    "name": "Born Again"
+    "name": "Born Again",
+    "nameTamil": "மறுபிறப்பு கிறிஸ்தவர்"
   },
   {
     "id": "cas_christian_evangelical",
     "religionId": "rel_christian",
-    "name": "Evangelical"
+    "name": "Evangelical",
+    "nameTamil": "சுவிசேஷக் கிறிஸ்தவர்"
   },
   {
     "id": "cas_christian_marthoma",
     "religionId": "rel_christian",
-    "name": "Marthoma"
+    "name": "Marthoma",
+    "nameTamil": "மார்த்தோமா"
   },
   {
     "id": "cas_christian_jacobite",
     "religionId": "rel_christian",
-    "name": "Jacobite"
+    "name": "Jacobite",
+    "nameTamil": "யாக்கோபாயர்"
   },
   {
     "id": "cas_christian_orthodox",
     "religionId": "rel_christian",
-    "name": "Orthodox"
+    "name": "Orthodox",
+    "nameTamil": "ஆர்த்தடாக்ஸ்"
   },
   {
     "id": "cas_christian_syro_malabar",
     "religionId": "rel_christian",
-    "name": "Syro Malabar"
+    "name": "Syro Malabar",
+    "nameTamil": "சிரோ மலபார்"
   },
   {
     "id": "cas_christian_syro_malankara",
     "religionId": "rel_christian",
-    "name": "Syro Malankara"
+    "name": "Syro Malankara",
+    "nameTamil": "சிரோ மலங்கரை"
   },
   {
     "id": "cas_christian_knanaya",
     "religionId": "rel_christian",
-    "name": "Knanaya"
+    "name": "Knanaya",
+    "nameTamil": "க்னாநாயா"
   },
   {
     "id": "cas_christian_salvation_army",
     "religionId": "rel_christian",
-    "name": "Salvation Army"
+    "name": "Salvation Army",
+    "nameTamil": "இரட்சணிய சேனை"
   },
   {
     "id": "cas_christian_nadar_christian",
     "religionId": "rel_christian",
-    "name": "Nadar Christian"
+    "name": "Nadar Christian",
+    "nameTamil": "நாடார் கிறிஸ்தவர்"
   },
   {
     "id": "cas_christian_adi_dravida_christian",
     "religionId": "rel_christian",
-    "name": "Adi Dravida Christian"
+    "name": "Adi Dravida Christian",
+    "nameTamil": "ஆதி திராவிட கிறிஸ்தவர்"
   },
   {
     "id": "cas_christian_paravar",
     "religionId": "rel_christian",
-    "name": "Paravar"
+    "name": "Paravar",
+    "nameTamil": "பரவர்"
   },
   {
     "id": "cas_christian_vellalar_christian",
     "religionId": "rel_christian",
-    "name": "Vellalar Christian"
+    "name": "Vellalar Christian",
+    "nameTamil": "வேளாளர் கிறிஸ்தவர்"
   },
   {
     "id": "cas_christian_other_christian",
     "religionId": "rel_christian",
-    "name": "Other Christian"
+    "name": "Other Christian",
+    "nameTamil": "பிற கிறிஸ்தவர்"
   },
   {
     "id": "cas_jain_digambar",
     "religionId": "rel_jain",
-    "name": "Digambar"
+    "name": "Digambar",
+    "nameTamil": "திகம்பரர்"
   },
   {
     "id": "cas_jain_svetambar",
     "religionId": "rel_jain",
-    "name": "Svetambar"
+    "name": "Svetambar",
+    "nameTamil": "சுவேதாம்பரர்"
   },
   {
     "id": "cas_jain_tamil_jain",
     "religionId": "rel_jain",
-    "name": "Tamil Jain"
+    "name": "Tamil Jain",
+    "nameTamil": "தமிழ் சமணர்"
   },
   {
     "id": "cas_jain_oswal",
     "religionId": "rel_jain",
-    "name": "Oswal"
+    "name": "Oswal",
+    "nameTamil": "ஓஸ்வால்"
   },
   {
     "id": "cas_jain_bania_jain",
     "religionId": "rel_jain",
-    "name": "Bania Jain"
+    "name": "Bania Jain",
+    "nameTamil": "பனியா சமணர்"
   },
   {
     "id": "cas_jain_marwari_jain",
     "religionId": "rel_jain",
-    "name": "Marwari Jain"
+    "name": "Marwari Jain",
+    "nameTamil": "மார்வாரி சமணர்"
   },
   {
     "id": "cas_jain_gujarati_jain",
     "religionId": "rel_jain",
-    "name": "Gujarati Jain"
+    "name": "Gujarati Jain",
+    "nameTamil": "குஜராத்தி சமணர்"
   },
   {
     "id": "cas_jain_other_jain",
     "religionId": "rel_jain",
-    "name": "Other Jain"
+    "name": "Other Jain",
+    "nameTamil": "பிற சமணர்"
   },
   {
     "id": "cas_sikh_jat_sikh",
     "religionId": "rel_sikh",
-    "name": "Jat Sikh"
+    "name": "Jat Sikh",
+    "nameTamil": "ஜாட் சீக்கியர்"
   },
   {
     "id": "cas_sikh_khatri_sikh",
     "religionId": "rel_sikh",
-    "name": "Khatri Sikh"
+    "name": "Khatri Sikh",
+    "nameTamil": "கத்ரி சீக்கியர்"
   },
   {
     "id": "cas_sikh_arora",
     "religionId": "rel_sikh",
-    "name": "Arora"
+    "name": "Arora",
+    "nameTamil": "அரோரா"
   },
   {
     "id": "cas_sikh_ramgarhia",
     "religionId": "rel_sikh",
-    "name": "Ramgarhia"
+    "name": "Ramgarhia",
+    "nameTamil": "ராம்கரியா"
   },
   {
     "id": "cas_sikh_ahluwalia",
     "religionId": "rel_sikh",
-    "name": "Ahluwalia"
+    "name": "Ahluwalia",
+    "nameTamil": "அலுவாலியா"
   },
   {
     "id": "cas_sikh_saini",
     "religionId": "rel_sikh",
-    "name": "Saini"
+    "name": "Saini",
+    "nameTamil": "சைனி"
   },
   {
     "id": "cas_sikh_mazhabi",
     "religionId": "rel_sikh",
-    "name": "Mazhabi"
+    "name": "Mazhabi",
+    "nameTamil": "மசாபி"
   },
   {
     "id": "cas_sikh_other_sikh",
     "religionId": "rel_sikh",
-    "name": "Other Sikh"
+    "name": "Other Sikh",
+    "nameTamil": "பிற சீக்கியர்"
   },
   {
     "id": "cas_buddhist_navayana",
     "religionId": "rel_buddhist",
-    "name": "Navayana"
+    "name": "Navayana",
+    "nameTamil": "நவயானம்"
   },
   {
     "id": "cas_buddhist_theravada",
     "religionId": "rel_buddhist",
-    "name": "Theravada"
+    "name": "Theravada",
+    "nameTamil": "தேரவாதம்"
   },
   {
     "id": "cas_buddhist_mahayana",
     "religionId": "rel_buddhist",
-    "name": "Mahayana"
+    "name": "Mahayana",
+    "nameTamil": "மகாயானம்"
   },
   {
     "id": "cas_buddhist_tamil_buddhist",
     "religionId": "rel_buddhist",
-    "name": "Tamil Buddhist"
+    "name": "Tamil Buddhist",
+    "nameTamil": "தமிழ் பௌத்தர்"
   },
   {
     "id": "cas_buddhist_other_buddhist",
     "religionId": "rel_buddhist",
-    "name": "Other Buddhist"
+    "name": "Other Buddhist",
+    "nameTamil": "பிற பௌத்தர்"
   },
   {
     "id": "cas_parsi_parsi",
     "religionId": "rel_parsi",
-    "name": "Parsi"
+    "name": "Parsi",
+    "nameTamil": "பார்சி"
   },
   {
     "id": "cas_parsi_irani",
     "religionId": "rel_parsi",
-    "name": "Irani"
+    "name": "Irani",
+    "nameTamil": "ஈரானி"
   },
   {
     "id": "cas_others_inter_caste",
     "religionId": "rel_others",
-    "name": "Inter Caste"
+    "name": "Inter Caste",
+    "nameTamil": "கலப்பு ஜாதி"
   },
   {
     "id": "cas_others_spiritual",
     "religionId": "rel_others",
-    "name": "Spiritual"
+    "name": "Spiritual",
+    "nameTamil": "ஆன்மீகம்"
   },
   {
     "id": "cas_others_no_religion",
     "religionId": "rel_others",
-    "name": "No Religion"
+    "name": "No Religion",
+    "nameTamil": "மதம் இல்லை"
   },
   {
     "id": "cas_others_brahmo",
     "religionId": "rel_others",
-    "name": "Brahmo"
+    "name": "Brahmo",
+    "nameTamil": "பிரம்மோ"
   },
   {
     "id": "cas_others_other",
     "religionId": "rel_others",
-    "name": "Other"
+    "name": "Other",
+    "nameTamil": "மற்றவை"
   }
 ]

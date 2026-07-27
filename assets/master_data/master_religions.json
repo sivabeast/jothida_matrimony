@@ -1,34 +1,42 @@
 [
   {
     "id": "rel_hindu",
-    "name": "Hindu"
+    "name": "Hindu",
+    "nameTamil": "இந்து"
   },
   {
     "id": "rel_muslim",
-    "name": "Muslim"
+    "name": "Muslim",
+    "nameTamil": "முஸ்லிம்"
   },
   {
     "id": "rel_christian",
-    "name": "Christian"
+    "name": "Christian",
+    "nameTamil": "கிறிஸ்தவர்"
   },
   {
     "id": "rel_jain",
-    "name": "Jain"
+    "name": "Jain",
+    "nameTamil": "சமணர்"
   },
   {
     "id": "rel_sikh",
-    "name": "Sikh"
+    "name": "Sikh",
+    "nameTamil": "சீக்கியர்"
   },
   {
     "id": "rel_buddhist",
-    "name": "Buddhist"
+    "name": "Buddhist",
+    "nameTamil": "பௌத்தர்"
   },
   {
     "id": "rel_parsi",
-    "name": "Parsi"
+    "name": "Parsi",
+    "nameTamil": "பார்சி"
   },
   {
     "id": "rel_others",
-    "name": "Others"
+    "name": "Others",
+    "nameTamil": "மற்றவை"
   }
 ]

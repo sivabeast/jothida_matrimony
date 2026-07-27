@@ -10,12 +10,14 @@ import 'core/config/app_check_config.dart';
 import 'core/navigation/root_navigator.dart';
 import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
+import 'models/master_data.dart';
 import 'providers/app_update_provider.dart';
 import 'providers/locale_provider.dart';
 import 'router/app_router.dart';
 import 'screens/common/update_required_screen.dart';
 import 'screens/settings/language_screen.dart';
 import 'services/firebase/fcm_service.dart';
+import 'services/firebase/master_data_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,6 +56,18 @@ void main() async {
         .timeout(const Duration(seconds: 15))
         .catchError((Object e) =>
             debugPrint('FCM initialize skipped (non-fatal): $e')),
+  );
+  // Warm the Religion/Caste/Subcaste master data (Firestore-first) in the
+  // background so its Tamil names are registered with the value localizer
+  // before any stored caste is rendered — a caste then displays in Tamil
+  // app-wide (spec §13/§14), not only inside the profile wizard. Non-blocking
+  // and best-effort: a failure just leaves English display until a screen that
+  // uses the lists loads them itself.
+  unawaited(
+    MasterDataService().getReligions().catchError((Object e) {
+      debugPrint('Master-data warm-up skipped (non-fatal): $e');
+      return const <Religion>[];
+    }),
   );
   runApp(const ProviderScope(child: JothidaMatrimonyApp()));
 }
