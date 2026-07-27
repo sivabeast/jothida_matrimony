@@ -379,18 +379,20 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
-            // Premium gold/yellow border around the banner (reference).
-            border: Border.all(color: AppColors.gold, width: 3),
+            // Soft, subtle gold hairline — a premium accent that frames the
+            // banner without dominating it (spec §8). The artwork leads; a
+            // gentle neutral elevation shadow does the lifting, not the border.
+            border: Border.all(color: AppColors.gold.withOpacity(0.40), width: 1),
             boxShadow: [
               BoxShadow(
-                color: AppColors.gold.withOpacity(0.35),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(17),
             child: child,
           ),
         ),
