@@ -98,6 +98,11 @@ class ProfileModel {
 
   // Contact
   final ContactDetails contact;
+  /// How this member shares contact info (§17/§18): 'private' (default — shown
+  /// only after a mutually-accepted interest) or 'public' (any signed-in viewer
+  /// can see it). Stored on the PUBLIC profile doc so both the UI and the
+  /// `contacts/{userId}` read rule can honor it without extra lookups.
+  final String contactPrivacy;
 
   // Status
   final String status; // pending, approved, rejected, blocked
@@ -167,6 +172,7 @@ class ProfileModel {
     required this.family,
     required this.partnerPreferences,
     required this.contact,
+    this.contactPrivacy = 'private',
     this.status = 'pending',
     this.isVerified = false,
     this.reportCount = 0,
@@ -236,6 +242,7 @@ class ProfileModel {
       family: FamilyDetails.fromMap(d['family'] ?? {}),
       partnerPreferences: PartnerPreferences.fromMap(d['partnerPreferences'] ?? {}),
       contact: ContactDetails.fromMap(d['contact'] ?? {}),
+      contactPrivacy: d['contactPrivacy'] ?? 'private',
       status: d['status'] ?? 'pending',
       isVerified: d['isVerified'] ?? false,
       reportCount: d['reportCount'] ?? 0,
@@ -312,6 +319,9 @@ class ProfileModel {
         // document — they are stored in the access-gated `contacts/{userId}`
         // collection and unlock only after a mutually-accepted interest.
         // (See FirestoreService.createProfile / saveContact.)
+        // The privacy CHOICE, however, is a public setting so viewers and the
+        // contacts read rule can honor it (§17/§18).
+        'contactPrivacy': contactPrivacy,
         'status': status,
         'isVerified': isVerified,
         'reportCount': reportCount,
@@ -332,6 +342,10 @@ class ProfileModel {
   /// mode when one was entered, otherwise the canonical [fullName] (§10).
   String displayName(bool tamil) =>
       tamil && fullNameTamil.trim().isNotEmpty ? fullNameTamil : fullName;
+
+  /// True when this member chose to share contact publicly (§17/§18) — any
+  /// signed-in viewer may see it, without a mutually-accepted interest.
+  bool get isContactPublic => contactPrivacy == 'public';
   String get about => aboutMe ?? '';
   List<String> get photos {
     final list = <String>[];
@@ -404,6 +418,7 @@ class ProfileModel {
       family: FamilyDetails.fromMap(famMap),
       partnerPreferences: PartnerPreferences.fromMap(prefMap),
       contact: ContactDetails.fromMap(contactMap),
+      contactPrivacy: d['contactPrivacy'] ?? 'private',
       status: d['status'] ?? 'pending',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -466,6 +481,7 @@ class ProfileModel {
         'familyDetails': family.toMap(),
         'partnerPreferences': partnerPreferences.toMap(),
         'contactDetails': contact.toMap(),
+        'contactPrivacy': contactPrivacy,
         'status': status,
       };
 
@@ -517,6 +533,7 @@ class ProfileModel {
     FamilyDetails? family,
     PartnerPreferences? partnerPreferences,
     ContactDetails? contact,
+    String? contactPrivacy,
     String? status,
     bool? isVerified,
     bool? isFeatured,
@@ -580,6 +597,7 @@ class ProfileModel {
         family: family ?? this.family,
         partnerPreferences: partnerPreferences ?? this.partnerPreferences,
         contact: contact ?? this.contact,
+        contactPrivacy: contactPrivacy ?? this.contactPrivacy,
         status: status ?? this.status,
         isVerified: isVerified ?? this.isVerified,
         reportCount: reportCount ?? this.reportCount,
@@ -645,6 +663,7 @@ class ProfileModel {
         family: family,
         partnerPreferences: partnerPreferences,
         contact: contact,
+        contactPrivacy: contactPrivacy,
         status: status,
         isVerified: isVerified,
         reportCount: reportCount,

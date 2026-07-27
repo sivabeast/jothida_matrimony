@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/firestore_write.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 
 class PrivacySettingsScreen extends ConsumerStatefulWidget {
@@ -52,8 +54,30 @@ class _PrivacyState extends ConsumerState<PrivacySettingsScreen> {
     }
   }
 
+  /// Flips the contact-sharing preference (§17) on the user's profile doc.
+  /// Firestore-first via [commitWrite]; the switch reflects the new value as
+  /// soon as [myProfileProvider] re-emits.
+  Future<void> _setContactPrivacy(String profileId, bool public) async {
+    try {
+      await commitWrite(ref.read(firestoreServiceProvider).updateProfile(
+          profileId, {'contactPrivacy': public ? 'public' : 'private'}));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(public
+                ? 'Contact is now Public — visible to anyone viewing your profile.'
+                : 'Contact is now Private — shared only after an accepted interest.')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Could not update: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final profile = ref.watch(myProfileProvider).valueOrNull;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Privacy Settings'),
@@ -81,6 +105,33 @@ class _PrivacyState extends ConsumerState<PrivacySettingsScreen> {
             ),
           ),
           const SizedBox(height: 16),
+          // ── Contact sharing (§17) — Public vs Private, changeable any time.
+          Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: SwitchListTile(
+              secondary: Icon(
+                (profile?.isContactPublic ?? false)
+                    ? Icons.public
+                    : Icons.lock_outline,
+                color: AppColors.primary,
+              ),
+              title: const Text('Share Contact Publicly',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text(
+                (profile?.isContactPublic ?? false)
+                    ? 'Anyone viewing your profile can see your contact.'
+                    : 'Contact is shared only after you accept an interest.',
+                style: const TextStyle(fontSize: 12),
+              ),
+              value: profile?.isContactPublic ?? false,
+              onChanged: profile == null
+                  ? null
+                  : (v) => _setContactPrivacy(profile.id, v),
+              activeColor: AppColors.primary,
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
           _PrivacyTile(
             title: 'Hide Phone Number',
             subtitle: 'Phone revealed only after mutual interest acceptance',

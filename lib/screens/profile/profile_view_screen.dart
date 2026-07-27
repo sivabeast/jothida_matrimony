@@ -203,11 +203,42 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     }
   }
 
+  /// The bottom action(s). Public profiles (§17/§18) expose contact to every
+  /// viewer, so a "View Contact" button is shown up-front — the accepted branch
+  /// already reveals contact, so this only prepends it for the other states.
+  Widget _interestAction(ProfileModel profile) {
+    final accepted = ref.watch(interestStatusForProfileProvider(profile.id)) ==
+        InterestUiStatus.accepted;
+    final action = _statusInterestAction(profile);
+    if (!profile.isContactPublic || accepted) return action;
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => _showContact(profile),
+            icon: const Icon(Icons.call),
+            label: Text(context.l10n.viewContact),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary),
+              minimumSize: const Size.fromHeight(52),
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        action,
+      ],
+    );
+  }
+
   /// Status-aware bottom action. Source of truth is the real Firestore interest
   /// status, so an accepted interest never shows "Send Interest" again, and an
   /// interest the other user already sent us offers "Accept" rather than a
   /// duplicate "Send Interest".
-  Widget _interestAction(ProfileModel profile) {
+  Widget _statusInterestAction(ProfileModel profile) {
     final status = ref.watch(interestStatusForProfileProvider(profile.id));
     final accepted = status == InterestUiStatus.accepted;
     final alreadySent = status == InterestUiStatus.sent;

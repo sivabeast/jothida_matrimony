@@ -159,6 +159,13 @@ service cloud.firestore {
     match /contacts/{ownerId} {
       allow read: if isOwner(ownerId)
                   || isAdmin()
+                  // Public sharing (§17/§18): the owner chose to expose contact
+                  // to any signed-in viewer. The choice lives on the public
+                  // profile doc; legacy profiles with no setting default to
+                  // 'private', so nobody's contact becomes visible unexpectedly.
+                  || (isAuthenticated()
+                      && exists(/databases/$(database)/documents/profiles/$(ownerId))
+                      && get(/databases/$(database)/documents/profiles/$(ownerId)).data.get('contactPrivacy', 'private') == 'public')
                   || (isAuthenticated()
                       && exists(/databases/$(database)/documents/connections/$(pairId(ownerId, request.auth.uid))));
       // Admins may edit a member's contact details too — the Admin panel's

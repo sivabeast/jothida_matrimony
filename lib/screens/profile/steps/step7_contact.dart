@@ -29,6 +29,8 @@ class _Step7State extends ConsumerState<Step7Contact> {
   final _formKey = GlobalKey<FormState>();
   String _relationship = 'Self';
   bool _sameAsAbove = false;
+  // Contact-sharing choice (§17). Default Private (only after accepted interest).
+  String _contactPrivacy = 'private';
 
   // Matches the website RELATIONSHIP list.
   static const _relationships = [
@@ -51,6 +53,9 @@ class _Step7State extends ConsumerState<Step7Contact> {
         _whatsappController.text = wa;
       }
     }
+    _contactPrivacy =
+        (ref.read(profileCreationProvider).data['contactPrivacy'] as String?) ??
+            'private';
   }
 
   @override
@@ -72,8 +77,60 @@ class _Step7State extends ConsumerState<Step7Contact> {
             ? _mobileController.text.trim()
             : _whatsappController.text.trim(),
       },
+      'contactPrivacy': _contactPrivacy,
     });
     widget.onNext();
+  }
+
+  /// A selectable Private / Public contact-sharing option card.
+  Widget _privacyOption({
+    required String value,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    final selected = _contactPrivacy == value;
+    const maroon = Color(0xFF800020);
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => setState(() => _contactPrivacy = value),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: selected ? maroon.withValues(alpha: 0.06) : Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? maroon : Colors.grey.shade300,
+            width: selected ? 1.6 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: selected ? maroon : Colors.grey[600], size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: selected ? maroon : Colors.black87)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[700])),
+                ],
+              ),
+            ),
+            Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: selected ? maroon : Colors.grey[400],
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -160,26 +217,42 @@ class _Step7State extends ConsumerState<Step7Contact> {
               ),
             ],
             const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.green[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.green[200]!),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.security, color: Colors.green, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      l10n.contactPrivacyNote,
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                  ),
-                ],
-              ),
+            // ── Contact-sharing privacy choice (§17). Default Private. ──
+            Text(
+              context.isTamil
+                  ? 'உங்கள் தொடர்பு தகவலை யார் பார்க்கலாம்?'
+                  : 'How should your contact information be shared?',
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+            ),
+            const SizedBox(height: 10),
+            _privacyOption(
+              value: 'private',
+              icon: Icons.lock_outline,
+              title: context.isTamil ? 'தனிப்பட்டது' : 'Private',
+              subtitle: context.isTamil
+                  ? 'விருப்ப கோரிக்கையை ஏற்ற பிறகே தொடர்பு பகிரப்படும்.'
+                  : 'Share only after I accept an interest request.',
+            ),
+            const SizedBox(height: 10),
+            _privacyOption(
+              value: 'public',
+              icon: Icons.public,
+              title: context.isTamil ? 'பொது' : 'Public',
+              subtitle: context.isTamil
+                  ? 'உங்கள் சுயவிவரத்தைப் பார்க்கும் எவரும் தொடர்பைப் பார்க்கலாம்.'
+                  : 'Anyone viewing your profile can see your contact.',
+            ),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.security, color: Colors.green[600], size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(l10n.contactPrivacyNote,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[700])),
+                ),
+              ],
             ),
             const SizedBox(height: 32),
             GradientButton(
