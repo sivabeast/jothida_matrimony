@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:flutter/foundation.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/config/admin_config.dart';
+import '../../core/services/firestore_sync.dart';
 import '../../models/aadhaar_details.dart';
 import '../../models/blocked_entry.dart';
 import '../../models/profile_model.dart';
@@ -1008,6 +1009,44 @@ class FirestoreService {
     list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return list;
   }
+
+  // ── Realtime admin lists (spec §1-3) ───────────────────────────────────────
+  // Stream variants of the getAll* reads above, so the admin Users / Profiles
+  // screens re-render the instant a record is added, edited or DELETED —
+  // instead of showing a one-shot snapshot that goes stale until a manual
+  // refresh. Defensive per-doc parsing + client-side sort are centralized in
+  // [FirestoreSync.collectionStream].
+
+  /// Realtime [getAllUsers] — matrimony users only, newest-first.
+  Stream<List<UserModel>> watchAllUsers({int limit = 300}) =>
+      FirestoreSync.collectionStream<UserModel>(
+        _db.collection(AppConstants.usersCollection).limit(limit),
+        fromDoc: UserModel.fromFirestore,
+        where: (u) => u.role == 'user',
+        sort: (a, b) => b.createdAt.compareTo(a.createdAt),
+        label: 'allUsers',
+      );
+
+  /// Realtime [getAllProfiles] — every profile, newest-first.
+  Stream<List<ProfileModel>> watchAllProfiles({int limit = 300}) =>
+      FirestoreSync.collectionStream<ProfileModel>(
+        _db.collection(AppConstants.profilesCollection).limit(limit),
+        fromDoc: ProfileModel.fromFirestore,
+        sort: (a, b) => b.createdAt.compareTo(a.createdAt),
+        label: 'allProfiles',
+      );
+
+  /// Realtime [getPendingProfiles] — oldest-first (FIFO moderation). Sorted
+  /// client-side to avoid the where + orderBy composite index.
+  Stream<List<ProfileModel>> watchPendingProfiles() =>
+      FirestoreSync.collectionStream<ProfileModel>(
+        _db
+            .collection(AppConstants.profilesCollection)
+            .where('status', isEqualTo: 'pending'),
+        fromDoc: ProfileModel.fromFirestore,
+        sort: (a, b) => a.createdAt.compareTo(b.createdAt),
+        label: 'pendingProfiles',
+      );
 
   Future<void> approveProfile(String profileId) => _db
       .collection(AppConstants.profilesCollection)

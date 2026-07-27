@@ -15,6 +15,17 @@ class AdminRepository {
   Future<List<ProfileModel>> getAllProfiles({int limit = 300}) =>
       _firestore.getAllProfiles(limit: limit);
 
+  // Realtime variants — the admin lists auto-refresh on any add/edit/delete
+  // (spec §1-3). The one-shot get* above are kept for non-live callers.
+  Stream<List<UserModel>> watchAllUsers({int limit = 300}) =>
+      _firestore.watchAllUsers(limit: limit);
+
+  Stream<List<ProfileModel>> watchPendingProfiles() =>
+      _firestore.watchPendingProfiles();
+
+  Stream<List<ProfileModel>> watchAllProfiles({int limit = 300}) =>
+      _firestore.watchAllProfiles(limit: limit);
+
   Future<void> approveProfile(String profileId) => _firestore.approveProfile(profileId);
 
   Future<void> rejectProfile(String profileId, String reason) =>

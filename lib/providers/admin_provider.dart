@@ -25,8 +25,11 @@ final allAstrologersProvider =
   return ref.read(astrologerServiceProvider).watchAllAstrologers();
 });
 
-final allUsersProvider = FutureProvider.autoDispose<List<UserModel>>(
-    (ref) => ref.read(adminRepositoryProvider).getAllUsers(limit: 300));
+/// Realtime list of every matrimony user (newest first). A StreamProvider, so
+/// the admin Users list re-renders the instant a user is added / edited /
+/// blocked / deleted — no manual refresh, no stale rows (spec §1-3).
+final allUsersProvider = StreamProvider.autoDispose<List<UserModel>>(
+    (ref) => ref.read(adminRepositoryProvider).watchAllUsers(limit: 300));
 
 /// Live stream of every astrologer request (consultations + match-analysis /
 /// horoscope bookings). Powers the admin Horoscope Requests page.
@@ -36,8 +39,8 @@ final allAstrologerRequestsProvider =
 
 /// All matrimony profiles (newest first), keyed by [ProfileModel.userId] when
 /// joined. Powers the age / district / photo fields on the admin Users cards.
-final allProfilesProvider = FutureProvider.autoDispose<List<ProfileModel>>(
-    (ref) => ref.read(adminRepositoryProvider).getAllProfiles());
+final allProfilesProvider = StreamProvider.autoDispose<List<ProfileModel>>(
+    (ref) => ref.read(adminRepositoryProvider).watchAllProfiles());
 
 /// `userId → ProfileModel` lookup for quickly enriching a user row with its
 /// matrimony profile (age, district, photo).
@@ -47,8 +50,10 @@ final profilesByUserIdProvider =
   return {for (final p in list) p.userId: p};
 });
 
-final pendingProfilesProvider = FutureProvider.autoDispose<List<ProfileModel>>(
-    (ref) => ref.read(adminRepositoryProvider).getPendingProfiles());
+/// Realtime pending-moderation queue (oldest first) — a newly submitted or
+/// approved/rejected profile appears / disappears live (spec §1-3).
+final pendingProfilesProvider = StreamProvider.autoDispose<List<ProfileModel>>(
+    (ref) => ref.read(adminRepositoryProvider).watchPendingProfiles());
 
 class AdminActionsNotifier extends Notifier<AsyncValue<void>> {
   @override
