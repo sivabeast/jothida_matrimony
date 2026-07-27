@@ -27,6 +27,7 @@ class StepBasic extends ConsumerStatefulWidget {
 class _StepBasicState extends ConsumerState<StepBasic> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _nameTamilController = TextEditingController();
   final _dobController = TextEditingController();
   final _weightController = TextEditingController();
   final _childrenController = TextEditingController();
@@ -58,6 +59,7 @@ class _StepBasicState extends ConsumerState<StepBasic> {
     final data = ref.read(profileCreationProvider).data;
     _profileFor = data['profileFor'] as String?;
     _nameController.text = (data['name'] as String?) ?? '';
+    _nameTamilController.text = (data['nameTamil'] as String?) ?? '';
     _gender = data['gender'] as String?;
     final dobStr = data['dateOfBirth'] as String?;
     if (dobStr != null) {
@@ -85,6 +87,7 @@ class _StepBasicState extends ConsumerState<StepBasic> {
   @override
   void dispose() {
     _nameController.dispose();
+    _nameTamilController.dispose();
     _dobController.dispose();
     _weightController.dispose();
     _childrenController.dispose();
@@ -120,6 +123,10 @@ class _StepBasicState extends ConsumerState<StepBasic> {
   void _saveAndNext() {
     if (!_formKey.currentState!.validate()) return;
     final l10n = context.l10n;
+    // Tamil name is mandatory (website parity, §9/§10).
+    if (_nameTamilController.text.trim().isEmpty) {
+      return _snack(l10n.pleaseEnterField('${l10n.fullName} (தமிழ்)'));
+    }
     if (_profileFor == null || _profileFor!.isEmpty) {
       return _snack(l10n.pleaseSelect(l10n.profileCreatedFor));
     }
@@ -160,6 +167,7 @@ class _StepBasicState extends ConsumerState<StepBasic> {
       'familyDetails': fam,
       'profileFor': _profileFor,
       'name': _nameController.text.trim(),
+      'nameTamil': _nameTamilController.text.trim(),
       'gender': _gender,
       'dateOfBirth': _dob!.toIso8601String(),
       'age': _age ?? 0,
@@ -204,6 +212,15 @@ class _StepBasicState extends ConsumerState<StepBasic> {
               controller: _nameController,
               label: '${context.l10n.fullName} *',
               validator: Validators.name,
+            ),
+            const SizedBox(height: 16),
+            // Tamil-script name (§10) — required, mirroring the website's Basic
+            // step (which validates fullNameTamil). Shown in place of the
+            // English name in Tamil mode; the English name stays canonical.
+            AppTextField(
+              controller: _nameTamilController,
+              label: '${context.l10n.fullName} (தமிழ்) *',
+              textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 20),
             Text('${context.l10n.gender} *',

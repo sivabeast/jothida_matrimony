@@ -730,7 +730,7 @@ class _MatchProfilePage extends ConsumerWidget {
           children: [
             Flexible(
               child: Text(
-                '${profile.name}, ${profile.age}',
+                '${profile.displayName(context.isTamil)}, ${profile.age}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(

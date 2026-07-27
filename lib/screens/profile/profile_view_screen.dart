@@ -467,7 +467,8 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(profile.name, style: AppTextStyles.heading1),
+                Text(profile.displayName(context.isTamil),
+                    style: AppTextStyles.heading1),
                 Text(
                   '${profile.age} yrs • ${[
                     profile.city,

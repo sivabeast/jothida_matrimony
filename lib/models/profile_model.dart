@@ -25,6 +25,10 @@ class ProfileModel {
 
   // Personal Details
   final String fullName;
+  /// Optional Tamil-script name, shown when the app language is Tamil (§10).
+  /// Mirrors the website's `fullNameTamil`; storage of [fullName] stays the
+  /// canonical value used for matching / search.
+  final String fullNameTamil;
   final String gender;
   final DateTime dateOfBirth;
   final int age;
@@ -117,6 +121,7 @@ class ProfileModel {
     required this.profileCreatedBy,
     required this.profileCreatedFor,
     required this.fullName,
+    this.fullNameTamil = '',
     required this.gender,
     required this.dateOfBirth,
     required this.age,
@@ -183,6 +188,7 @@ class ProfileModel {
       profileCreatedBy: d['profileCreatedBy'] ?? 'Myself',
       profileCreatedFor: d['profileCreatedFor'] ?? 'Myself',
       fullName: d['fullName'] ?? '',
+      fullNameTamil: d['fullNameTamil'] ?? '',
       gender: d['gender'] ?? '',
       dateOfBirth: d['dateOfBirth'] != null
           ? (d['dateOfBirth'] as Timestamp).toDate()
@@ -253,6 +259,7 @@ class ProfileModel {
         'profileCreatedBy': profileCreatedBy,
         'profileCreatedFor': profileCreatedFor,
         'fullName': fullName,
+        'fullNameTamil': fullNameTamil,
         'gender': gender,
         'dateOfBirth': Timestamp.fromDate(dateOfBirth),
         'age': age,
@@ -320,6 +327,11 @@ class ProfileModel {
 
   // ── Convenience getters used by UI ────────────────────────────────────
   String get name => fullName;
+
+  /// The name to DISPLAY for the given language: the Tamil-script name in Tamil
+  /// mode when one was entered, otherwise the canonical [fullName] (§10).
+  String displayName(bool tamil) =>
+      tamil && fullNameTamil.trim().isNotEmpty ? fullNameTamil : fullName;
   String get about => aboutMe ?? '';
   List<String> get photos {
     final list = <String>[];
@@ -343,6 +355,7 @@ class ProfileModel {
       profileCreatedBy: d['profileFor'] ?? 'Myself',
       profileCreatedFor: d['profileFor'] ?? 'Myself',
       fullName: d['name'] ?? '',
+      fullNameTamil: d['nameTamil'] ?? '',
       gender: d['gender'] ?? '',
       dateOfBirth: d['dateOfBirth'] != null
           ? DateTime.tryParse(d['dateOfBirth']) ?? DateTime(1990)
@@ -405,6 +418,7 @@ class ProfileModel {
         'userId': userId,
         'profileFor': profileCreatedFor,
         'name': fullName,
+        'nameTamil': fullNameTamil,
         'gender': gender,
         'dateOfBirth': dateOfBirth.toIso8601String(),
         'age': age,
@@ -457,6 +471,7 @@ class ProfileModel {
 
   ProfileModel copyWith({
     String? fullName,
+    String? fullNameTamil,
     String? gender,
     DateTime? dateOfBirth,
     int? age,
@@ -519,6 +534,7 @@ class ProfileModel {
         profileCreatedBy: profileCreatedBy,
         profileCreatedFor: profileCreatedFor,
         fullName: fullName ?? this.fullName,
+        fullNameTamil: fullNameTamil ?? this.fullNameTamil,
         gender: gender ?? this.gender,
         dateOfBirth: dateOfBirth ?? this.dateOfBirth,
         age: age ?? this.age,
@@ -586,6 +602,7 @@ class ProfileModel {
         profileCreatedBy: profileCreatedBy,
         profileCreatedFor: profileCreatedFor,
         fullName: fullName,
+        fullNameTamil: fullNameTamil,
         gender: gender,
         dateOfBirth: dateOfBirth,
         age: age,
