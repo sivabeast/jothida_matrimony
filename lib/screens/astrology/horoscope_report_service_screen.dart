@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrology_service_config.dart';
 import '../../models/profile_model.dart';
 import '../../providers/astrology_config_provider.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
-import '../../services/razorpay/razorpay_service.dart';
+import '../../providers/service_providers.dart';
+import '../../services/billing/play_billing_service.dart';
 
 /// Online **Horoscope Analysis** — service details page (spec §1).
 ///
 /// This is a fully ONLINE report service — NOT an appointment. Opened from an
 /// accepted match's "Get Horoscope Analysis" button. It explains the report,
-/// shows the ₹399 charge, and the user pays via Razorpay to create an analysis
+/// shows the charge, and the user pays via Google Play Billing (one-time
+/// product `horoscope_report`) to create an analysis
 /// request that is auto-assigned to an astrologer. There is intentionally no
 /// "Contact Expert", "Book Appointment" or any office-visit content here.
 class HoroscopeReportServiceScreen extends ConsumerStatefulWidget {
@@ -35,33 +35,18 @@ class _HoroscopeReportServiceScreenState
     extends ConsumerState<HoroscopeReportServiceScreen> {
   static const int _fee = AppConstants.horoscopeAnalysisFee; // ₹199
 
-  final RazorpayService _razorpay = RazorpayService();
   bool _busy = false;
-  // Profiles resolved at Pay time and reused by the success handler.
-  ProfileModel? _groom;
-  ProfileModel? _bride;
-
-  @override
-  void initState() {
-    super.initState();
-    _razorpay.init(
-      onSuccess: _onPaymentSuccess,
-      onFailure: _onPaymentFailure,
-    );
-  }
-
-  @override
-  void dispose() {
-    _razorpay.dispose();
-    super.dispose();
-  }
 
   void _snack(String m) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
   }
 
-  /// Resolve both profiles, then open the Razorpay ₹399 checkout.
+  /// Resolve both profiles, launch the Google Play Billing purchase sheet for
+  /// the one-time `horoscope_report` product, and — ONLY on a successful,
+  /// verified purchase — create + auto-assign the analysis (saving the purchase
+  /// token to Firestore) and unlock it on the Reports tab. A cancelled or failed
+  /// purchase leaves the report locked and charges nothing.
   Future<void> _payAndRequest() async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -71,7 +56,7 @@ class _HoroscopeReportServiceScreenState
           await ref.read(profileByUserIdProvider(widget.otherUserId).future);
       if (me == null || partner == null) {
         _snack('Could not load both profiles. Please try again.');
-        setState(() => _busy = false);
+        if (mounted) setState(() => _busy = false);
         return;
       }
       // Groom = male, Bride = female (fallback: me = A, partner = B).
@@ -80,81 +65,50 @@ class _HoroscopeReportServiceScreenState
         groom = partner;
         bride = me;
       }
-      _groom = groom;
-      _bride = bride;
 
-      final user = ref.read(currentUserProvider).valueOrNull;
-      _razorpay.openCheckout(
-        amountPaise: _fee * 100,
-        description: 'Horoscope Analysis Report',
-        notes: {'type': 'horoscope_analysis', 'partner': widget.otherUserId},
-        userPhone: user?.phone ?? '',
-        userEmail: user?.email ?? '',
-        userName: me.fullName,
-      );
-      // _busy stays true until the gateway returns success/failure.
+      // Google Play Billing purchase sheet (one-time consumable product).
+      final result = await ref
+          .read(playBillingServiceProvider)
+          .buyConsumable(BillingProducts.horoscopeReport);
+      if (!mounted) return;
+
+      if (result.isPurchased) {
+        // Verified purchase → save the purchase + auto-assign the analysis, then
+        // unlock via the Reports tab.
+        await ref.read(matchAnalysisControllerProvider.notifier)
+            .requestAndAssignAnalysis(
+              groom: groom,
+              bride: bride,
+              amount: _fee,
+              paymentId: result.purchaseToken.isNotEmpty
+                  ? result.purchaseToken
+                  : 'play_billing',
+            );
+        if (!mounted) return;
+        _snack('Payment successful. Your analysis has been assigned to an '
+            'astrologer — track it on the Reports tab.');
+        ref.read(homeTabIndexProvider.notifier).state = 3; // Reports tab
+        context.go('/home');
+        return;
+      }
+
+      // Not purchased → the report stays locked; explain and reset the button.
+      switch (result.outcome) {
+        case BillingOutcome.canceled:
+          _snack('Payment cancelled — you have not been charged.');
+          break;
+        case BillingOutcome.unavailable:
+          _snack(result.message ??
+              'Google Play Billing is unavailable on this device.');
+          break;
+        default:
+          _snack(result.message ??
+              'Payment could not be completed. You have not been charged.');
+      }
+      if (mounted) setState(() => _busy = false);
     } catch (_) {
+      if (mounted) setState(() => _busy = false);
       _snack('Could not start the payment. Please try again.');
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  Future<void> _onPaymentSuccess(PaymentSuccessResponse response) async {
-    final groom = _groom, bride = _bride;
-    if (groom == null || bride == null) {
-      if (mounted) setState(() => _busy = false);
-      return;
-    }
-    try {
-      await ref.read(matchAnalysisControllerProvider.notifier)
-          .requestAndAssignAnalysis(
-            groom: groom,
-            bride: bride,
-            amount: _fee,
-            paymentId: response.paymentId ?? 'razorpay',
-          );
-      if (!mounted) return;
-      _snack('Payment successful. Your analysis has been assigned to an '
-          'astrologer — track it on the Reports tab.');
-      ref.read(homeTabIndexProvider.notifier).state = 3; // Reports tab
-      context.go('/home');
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _busy = false);
-      _snack('Payment succeeded but we could not create the request. Please '
-          'contact support.');
-    }
-  }
-
-  /// Payment NOT completed → the request is still created (unpaid) and
-  /// auto-assigned to an employee/admin for MANUAL horoscope verification, so
-  /// the user's request is never lost just because the gateway failed.
-  Future<void> _onPaymentFailure(PaymentFailureResponse response) async {
-    final groom = _groom, bride = _bride;
-    if (!mounted || groom == null || bride == null) {
-      if (mounted) setState(() => _busy = false);
-      return;
-    }
-    try {
-      await ref
-          .read(matchAnalysisControllerProvider.notifier)
-          .requestAndAssignAnalysis(
-            groom: groom,
-            bride: bride,
-            amount: 0, // unpaid — flags the request for manual verification
-            note: 'Payment not completed — assigned for manual '
-                'horoscope verification.',
-          );
-      if (!mounted) return;
-      setState(() => _busy = false);
-      _snack('Payment was not completed — you have not been charged. Your '
-          'request was sent for manual verification; track it on Reports.');
-      ref.read(homeTabIndexProvider.notifier).state = 3; // Reports tab
-      context.go('/home');
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _busy = false);
-      _snack('Payment failed or cancelled. You have not been charged.');
     }
   }
 

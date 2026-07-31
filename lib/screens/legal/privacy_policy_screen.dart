@@ -40,7 +40,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
           _Para(
             'Your profile is visible to other registered members as part of the matchmaking '
             'service. We do not sell your personal data. Payment processing is handled by our '
-            'payment partner (Razorpay). We may share data with law enforcement when legally required.',
+            'payment partner (Google Play Billing). We may share data with law enforcement when legally required.',
           ),
           _Heading('4. Data Security'),
           _Para(

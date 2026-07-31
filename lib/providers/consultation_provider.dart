@@ -130,7 +130,7 @@ class ConsultationController extends Notifier<AsyncValue<void>> {
   }
 
   /// Books an In-App consultation and collects payment UPFRONT ("Book & Pay").
-  /// Payment is simulated in test mode (otherwise this is where the Razorpay
+  /// Payment is simulated in test mode (otherwise this is where the Google Play
   /// checkout would run before the booking is written). The booking lands at
   /// `paid`, awaiting the astrologer's acceptance. Returns the new booking id.
   Future<String> bookAndPay({
@@ -161,7 +161,7 @@ class ConsultationController extends Notifier<AsyncValue<void>> {
       );
       final paymentId = kPaymentTestMode
           ? 'test_${DateTime.now().millisecondsSinceEpoch}'
-          : 'razorpay_${DateTime.now().millisecondsSinceEpoch}';
+          : 'manual_${DateTime.now().millisecondsSinceEpoch}';
       final id = await ref
           .read(consultationServiceProvider)
           .bookAndPay(booking, paymentId: paymentId);
@@ -177,12 +177,12 @@ class ConsultationController extends Notifier<AsyncValue<void>> {
       _guard(() => ref.read(consultationServiceProvider).respond(b, accept));
 
   /// User pays for an accepted In-App consultation. In subscription/test mode
-  /// payment is simulated; otherwise this is where the Razorpay checkout would
+  /// payment is simulated; otherwise this is where the Google Play billing would
   /// be launched before [ConsultationService.markPaid] is called on success.
   Future<void> pay(ConsultationBooking b) => _guard(() async {
         final paymentId = kPaymentTestMode
             ? 'test_${DateTime.now().millisecondsSinceEpoch}'
-            : 'razorpay_${DateTime.now().millisecondsSinceEpoch}';
+            : 'manual_${DateTime.now().millisecondsSinceEpoch}';
         await ref
             .read(consultationServiceProvider)
             .markPaid(b, paymentId: paymentId);

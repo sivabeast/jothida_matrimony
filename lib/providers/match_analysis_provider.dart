@@ -205,7 +205,7 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
   /// `pending` — the astrologer never sees an unpaid request.
   ///
   /// Payment is simulated in test mode (no real gateway); otherwise this is
-  /// where the Razorpay checkout would run before the booking is written. The
+  /// where the Google Play billing would run before the booking is written. The
   /// money is collected to the platform/admin account, never the astrologer —
   /// the admin settles astrologers weekly (spec §4).
   ///
@@ -238,7 +238,7 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
       // would run here and only on success would the booking be created.
       final paymentId = kPaymentTestMode
           ? 'demo_${now.millisecondsSinceEpoch}'
-          : 'razorpay_${now.millisecondsSinceEpoch}';
+          : 'manual_${now.millisecondsSinceEpoch}';
 
       final request = AstrologerRequestModel(
         id: 'new',
@@ -299,7 +299,7 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
   }
 
   /// Spec §4 — the user requests a **Horoscope Compatibility Report** for an
-  /// accepted match. Pays online (real Razorpay, or simulated in test mode),
+  /// accepted match. Pays online (Google Play Billing, or simulated in test mode),
   /// creates a PAID matching request, then immediately AUTO-ASSIGNS it to the
   /// employee with the fewest pending reports (round-robin tie-break). The user
   /// NEVER selects an employee and no admin action is required.
@@ -323,12 +323,12 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
           : [me.city, me.state].where((s) => s.trim().isNotEmpty).join(', ');
       final lang = ref.read(localeProvider)?.languageCode ?? 'en';
       final now = DateTime.now();
-      // Use the REAL Razorpay payment id when supplied; otherwise fall back to a
+      // Use the REAL Play Billing purchase token when supplied; otherwise fall back to a
       // simulated id (demo / no-gateway path).
       final txnId = paymentId ??
           (kPaymentTestMode
               ? 'demo_${now.millisecondsSinceEpoch}'
-              : 'razorpay_${now.millisecondsSinceEpoch}');
+              : 'manual_${now.millisecondsSinceEpoch}');
 
       final request = AstrologerRequestModel(
         id: 'new',
@@ -411,7 +411,7 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
       final txnId = paymentId ??
           (kPaymentTestMode
               ? 'demo_${now.millisecondsSinceEpoch}'
-              : 'razorpay_${now.millisecondsSinceEpoch}');
+              : 'manual_${now.millisecondsSinceEpoch}');
 
       final requesterName =
           (requester['name'] ?? me?.fullName ?? user?.displayName ?? 'User')
@@ -464,7 +464,7 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
   }
 
   /// Books an in-person **Horoscope Compatibility Report** appointment after a
-  /// successful (real Razorpay) payment. Creates ONE paid match-analysis request
+  /// successful (Google Play Billing) payment. Creates ONE paid match-analysis request
   /// addressed to the internal astrology service — carrying the chosen
   /// [date]/[slotMinutes] and an office-details snapshot — using the
   /// slot-locking deterministic-id create (throws [AppointmentSlotTakenException]
@@ -513,7 +513,7 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         profileBName: bride.fullName,
         createdAt: now,
         userLanguage: lang,
-        // Paid upfront via Razorpay — the report is never payment-locked.
+        // Paid upfront via Google Play Billing — the report is never payment-locked.
         paid: true,
         paidAt: now,
         paymentId: paymentId,
@@ -708,7 +708,7 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     try {
       final paymentId = kPaymentTestMode
           ? 'demo_${DateTime.now().millisecondsSinceEpoch}'
-          : 'razorpay_${DateTime.now().millisecondsSinceEpoch}';
+          : 'manual_${DateTime.now().millisecondsSinceEpoch}';
       if (kBypassAuth) {
         ref
             .read(demoAstrologerRequestsProvider.notifier)

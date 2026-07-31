@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
+import '../../core/utils/value_l10n.dart';
 import '../../models/location_model.dart';
 
 /// Reads the Tamil Nadu location master data (districts + cities, English and
@@ -86,6 +87,15 @@ class LocationRepository {
     _districtById = {for (final d in districts) d.id: d};
     _cities = cities;
     _citiesByDistrict = byDistrict;
+
+    // Register district/city English→Tamil names so [context.localizeValue]
+    // renders stored English location values in Tamil anywhere (profile view,
+    // My Profile, cards…) — storage stays English (spec §13/§14).
+    registerMasterTamilNames({
+      for (final d in districts) d.nameEn: d.nameTa,
+      for (final c in cities) c.nameEn: c.nameTa,
+    });
+
     debugPrint('[LocationRepository] ready — ${districts.length} districts, '
         '${cities.length} cities.');
   }

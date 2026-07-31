@@ -4,11 +4,102 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/value_l10n.dart';
 import '../../models/profile_model.dart';
+import '../../providers/location_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/network_photo.dart';
 import '../../widgets/profile/field_edit_sheet.dart';
+
+// ── Tamil display helpers (display-only — storage stays English, spec §14) ────
+
+/// Section-title translations for the My Profile page.
+const Map<String, String> _kTitleTa = {
+  'My Profile': 'என் சுயவிவரம்',
+  'Basic Details': 'அடிப்படை விவரங்கள்',
+  'Location': 'இருப்பிடம்',
+  'Career': 'தொழில்',
+  'Community': 'சமூகம்',
+  'Horoscope': 'ஜாதகம்',
+  'Partner Preferences': 'துணை விருப்பங்கள்',
+  'Photos': 'புகைப்படங்கள்',
+  'Upload Horoscope': 'ஜாதகம் பதிவேற்றம்',
+  'Contact': 'தொடர்பு',
+};
+
+/// Field-label translations for the My Profile page.
+const Map<String, String> _kLabelTa = {
+  'Profile For': 'சுயவிவரம் யாருக்காக',
+  'Name': 'பெயர்',
+  'Gender': 'பாலினம்',
+  'Age': 'வயது',
+  'Height': 'உயரம்',
+  'Weight': 'எடை',
+  'Marital Status': 'திருமண நிலை',
+  'Physical Status': 'உடல் நிலை',
+  'Children': 'குழந்தைகள்',
+  'Children Living Status': 'குழந்தைகள் வசிப்பு நிலை',
+  'Location': 'தற்போதைய வசிப்பிடம்',
+  'Native Place': 'சொந்த ஊர்',
+  'Citizenship': 'குடியுரிமை',
+  'Education': 'கல்வி',
+  'Occupation': 'பணி',
+  'Course / Degree': 'படிப்பு / பட்டம்',
+  'Employment Type': 'வேலை வகை',
+  'Annual Income': 'ஆண்டு வருமானம்',
+  'Religion': 'மதம்',
+  'Caste': 'சாதி',
+  'Sub Caste': 'உட்சாதி',
+  'Mother Tongue': 'தாய்மொழி',
+  'Gothram': 'கோத்திரம்',
+  'Kuladeivam': 'குலதெய்வம்',
+  'Rasi': 'ராசி',
+  'Nakshatra': 'நட்சத்திரம்',
+  'Lagnam': 'லக்னம்',
+  'Birth Time': 'பிறந்த நேரம்',
+  'Birth Place': 'பிறந்த இடம்',
+  'Profession': 'பணி',
+  'Income': 'வருமானம்',
+  'Horoscope Match Required': 'ஜாதக பொருத்தம் தேவை',
+  'Contact Person': 'தொடர்பு நபர்',
+  'Relationship': 'உறவுமுறை',
+  'Mobile': 'கைபேசி',
+  'WhatsApp': 'வாட்ஸ்அப்',
+  'Horoscope PDF': 'ஜாதக PDF',
+};
+
+/// Section title in the current language (English key → Tamil in Tamil mode).
+String _title(BuildContext c, String en) =>
+    c.isTamil ? (_kTitleTa[en] ?? en) : en;
+
+/// Field label in the current language.
+String _label(BuildContext c, String en) =>
+    c.isTamil ? (_kLabelTa[en] ?? en) : en;
+
+/// "25 yrs" → "25 வயது"; empty when age is unknown.
+String _ageText(BuildContext c, int age) =>
+    age <= 0 ? '' : (c.isTamil ? '$age வயது' : '$age yrs');
+
+/// Preferred-age range: "24 – 30 yrs" / "24 – 30 வயது".
+String _rangeYrs(BuildContext c, int min, int max) =>
+    c.isTamil ? '$min – $max வயது' : '$min – $max yrs';
+
+/// Height: `5'4"` → `5 அடி 4 அங்குலம்` in Tamil; unchanged otherwise.
+String _heightText(BuildContext c, String h) {
+  final v = h.trim();
+  if (v.isEmpty || !c.isTamil) return v;
+  final m = RegExp(r"(\d+)\s*'\s*(\d+)").firstMatch(v);
+  if (m != null) return '${m.group(1)} அடி ${m.group(2)} அங்குலம்';
+  return v;
+}
+
+/// Weight: "70" → "70 கிலோ" (Tamil) / "70 kg". Empty stays empty.
+String _weightText(BuildContext c, String w) {
+  final v = w.trim();
+  if (v.isEmpty) return '';
+  return c.isTamil ? '$v கிலோ' : '$v kg';
+}
 
 /// The signed-in member's own contact record (access-gated `contacts/{uid}`;
 /// the owner can always read their own).
@@ -34,11 +125,14 @@ class MyProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(myProfileProvider);
     final contact = ref.watch(myContactProvider).valueOrNull;
+    // Ensures the Tamil-Nadu location dataset loads so district/city names are
+    // registered for Tamil display (see LocationRepository); rebuilds when ready.
+    ref.watch(districtsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('My Profile'),
+        title: Text(_title(context, 'My Profile')),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -67,25 +161,32 @@ class MyProfileScreen extends ConsumerWidget {
     final h = p.horoscope;
 
     String s(Object? v) => (v == null) ? '' : v.toString().trim();
-    String yn(bool v) => v ? 'Yes' : 'No';
+    // Localized display of a stored English value (Male → ஆண், etc.).
+    String lv(Object? v) => context.localizeValue(s(v));
+    // "ஆம் / இல்லை" for a yes/no flag.
+    String yn(bool v) => context.localizeValue(v ? 'Yes' : 'No');
+    // Translate a field label for the current language.
+    String l(String en) => _label(context, en);
 
     // Edit route for a wizard section (step index in the creation flow).
     void editStep(int step) =>
         context.push('/profile/${p.id}/edit-section/$step');
 
+    // Location parts are localized individually so each (city / district /
+    // state / country) renders in Tamil while storage stays English.
     final location = [p.city, p.district, p.state, p.country]
-        .map(s)
+        .map(lv)
         .where((v) => v.isNotEmpty)
         .join(', ');
     final prefLocation = [pp.city, pp.district, pp.state]
-        .map(s)
+        .map(lv)
         .where((v) => v.isNotEmpty)
         .join(', ');
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
-        _header(p),
+        _header(context, p),
         const SizedBox(height: 6),
 
         _SectionCard(
@@ -95,17 +196,17 @@ class MyProfileScreen extends ConsumerWidget {
           onEdit: () => showProfileFieldSheet(context,
               sectionTitle: 'Basic Details', fieldsBuilder: basicDetailsFields),
           rows: [
-            ['Profile For', s(p.profileCreatedFor)],
-            ['Name', s(p.fullName)],
-            ['Gender', s(p.gender)],
-            ['Age', p.age > 0 ? '${p.age} yrs' : ''],
-            ['Height', s(p.height)],
-            ['Weight', s(p.weight).isEmpty ? '' : '${s(p.weight)} kg'],
-            ['Marital Status', s(p.maritalStatus)],
-            ['Physical Status', s(p.physicalStatus)],
+            [l('Profile For'), lv(p.profileCreatedFor)],
+            [l('Name'), p.displayName(context.isTamil)],
+            [l('Gender'), lv(p.gender)],
+            [l('Age'), _ageText(context, p.age)],
+            [l('Height'), _heightText(context, s(p.height))],
+            [l('Weight'), _weightText(context, s(p.weight))],
+            [l('Marital Status'), lv(p.maritalStatus)],
+            [l('Physical Status'), lv(p.physicalStatus)],
             if (p.childrenCount > 0) ...[
-              ['Children', '${p.childrenCount}'],
-              ['Children Living Status', s(p.childrenLivingStatus)],
+              [l('Children'), '${p.childrenCount}'],
+              [l('Children Living Status'), lv(p.childrenLivingStatus)],
             ],
           ],
         ),
@@ -115,9 +216,9 @@ class MyProfileScreen extends ConsumerWidget {
           // Composite (state→district→city cascade) → dedicated section editor.
           onEdit: () => context.push('/edit/location'),
           rows: [
-            ['Location', location],
-            ['Native Place', s(p.nativePlace)],
-            ['Citizenship', s(p.citizenship)],
+            [l('Location'), location],
+            [l('Native Place'), lv(p.nativePlace)],
+            [l('Citizenship'), lv(p.citizenship)],
           ],
         ),
         _SectionCard(
@@ -127,11 +228,11 @@ class MyProfileScreen extends ConsumerWidget {
           onEdit: () => showProfileFieldSheet(context,
               sectionTitle: 'Career', fieldsBuilder: careerFields),
           rows: [
-            ['Education', s(p.education)],
-            ['Occupation', s(p.occupation)],
-            ['Course / Degree', s(p.courseDegree)],
-            ['Employment Type', s(p.employmentType)],
-            ['Annual Income', s(p.annualIncome)],
+            [l('Education'), lv(p.education)],
+            [l('Occupation'), lv(p.occupation)],
+            [l('Course / Degree'), lv(p.courseDegree)],
+            [l('Employment Type'), lv(p.employmentType)],
+            [l('Annual Income'), lv(p.annualIncome)],
           ],
         ),
         _SectionCard(
@@ -140,12 +241,12 @@ class MyProfileScreen extends ConsumerWidget {
           // Composite (religion→caste→subcaste cascade) → dedicated editor.
           onEdit: () => context.push('/edit/religious'),
           rows: [
-            ['Religion', s(p.religion)],
-            ['Caste', s(p.caste)],
-            ['Sub Caste', s(p.subCaste)],
-            ['Mother Tongue', s(p.motherTongue)],
-            ['Gothram', s(p.gothram)],
-            ['Kuladeivam', s(p.kuladeivam)],
+            [l('Religion'), lv(p.religion)],
+            [l('Caste'), lv(p.caste)],
+            [l('Sub Caste'), lv(p.subCaste)],
+            [l('Mother Tongue'), lv(p.motherTongue)],
+            [l('Gothram'), lv(p.gothram)],
+            [l('Kuladeivam'), lv(p.kuladeivam)],
           ],
         ),
         _SectionCard(
@@ -154,11 +255,11 @@ class MyProfileScreen extends ConsumerWidget {
           // Opens ONLY the Horoscope details editor (not the full wizard).
           onEdit: () => context.push('/horoscope'),
           rows: [
-            ['Rasi', s(h.rasi)],
-            ['Nakshatra', s(h.nakshatra)],
-            ['Lagnam', s(h.lagnam)],
-            ['Birth Time', s(h.birthTime)],
-            ['Birth Place', s(h.birthPlace)],
+            [l('Rasi'), lv(h.rasi)],
+            [l('Nakshatra'), lv(h.nakshatra)],
+            [l('Lagnam'), lv(h.lagnam)],
+            [l('Birth Time'), s(h.birthTime)],
+            [l('Birth Place'), lv(h.birthPlace)],
           ],
         ),
         _SectionCard(
@@ -166,16 +267,16 @@ class MyProfileScreen extends ConsumerWidget {
           title: 'Partner Preferences',
           onEdit: () => context.push('/partner-preferences'),
           rows: [
-            ['Age', '${pp.minAge} – ${pp.maxAge} yrs'],
-            ['Height', '${pp.minHeight} – ${pp.maxHeight}'],
-            ['Caste', s(pp.caste)],
-            ['Education', pp.education.join(', ')],
-            ['Profession', pp.occupation.join(', ')],
-            ['Location', prefLocation],
-            ['Income', s(pp.income)],
-            ['Marital Status', s(pp.maritalStatus)],
-            ['Mother Tongue', s(pp.motherTongue)],
-            ['Horoscope Match Required', yn(pp.horoscopeMatchRequired)],
+            [l('Age'), _rangeYrs(context, pp.minAge, pp.maxAge)],
+            [l('Height'), '${pp.minHeight} – ${pp.maxHeight}'],
+            [l('Caste'), lv(pp.caste)],
+            [l('Education'), pp.education.map(lv).join(', ')],
+            [l('Profession'), pp.occupation.map(lv).join(', ')],
+            [l('Location'), prefLocation],
+            [l('Income'), lv(pp.income)],
+            [l('Marital Status'), lv(pp.maritalStatus)],
+            [l('Mother Tongue'), lv(pp.motherTongue)],
+            [l('Horoscope Match Required'), yn(pp.horoscopeMatchRequired)],
           ],
         ),
         _SectionCard(
@@ -185,7 +286,10 @@ class MyProfileScreen extends ConsumerWidget {
           onEdit: () => context.push('/edit/photos'),
           rows: const [],
           child: p.photos.isEmpty
-              ? Text('No photo added yet.',
+              ? Text(
+                  context.isTamil
+                      ? 'இன்னும் புகைப்படம் சேர்க்கப்படவில்லை.'
+                      : 'No photo added yet.',
                   style: TextStyle(color: Colors.grey[600], fontSize: 13))
               : ClipRRect(
                   borderRadius: BorderRadius.circular(12),
@@ -205,8 +309,10 @@ class MyProfileScreen extends ConsumerWidget {
           onEdit: () => editStep(7),
           rows: [
             [
-              'Horoscope PDF',
-              (h.horoscopePdfUrl ?? '').isNotEmpty ? 'Attached' : 'Not added',
+              l('Horoscope PDF'),
+              (h.horoscopePdfUrl ?? '').isNotEmpty
+                  ? (context.isTamil ? 'இணைக்கப்பட்டது' : 'Attached')
+                  : (context.isTamil ? 'சேர்க்கப்படவில்லை' : 'Not added'),
             ],
           ],
         ),
@@ -215,10 +321,10 @@ class MyProfileScreen extends ConsumerWidget {
           title: 'Contact',
           onEdit: () => editStep(8),
           rows: [
-            ['Contact Person', s(contact?.contactPersonName)],
-            ['Relationship', s(contact?.relationship)],
-            ['Mobile', s(contact?.mobileNumber)],
-            ['WhatsApp', s(contact?.whatsappNumber)],
+            [l('Contact Person'), s(contact?.contactPersonName)],
+            [l('Relationship'), lv(contact?.relationship)],
+            [l('Mobile'), s(contact?.mobileNumber)],
+            [l('WhatsApp'), s(contact?.whatsappNumber)],
           ],
         ),
       ],
@@ -226,11 +332,11 @@ class MyProfileScreen extends ConsumerWidget {
   }
 
   /// Top header — photo, name, quick facts.
-  Widget _header(ProfileModel p) {
+  Widget _header(BuildContext context, ProfileModel p) {
     final facts = [
-      if (p.age > 0) '${p.age} yrs',
-      if (p.height.trim().isNotEmpty) p.height,
-      if ((p.caste ?? '').trim().isNotEmpty) p.caste!,
+      if (p.age > 0) _ageText(context, p.age),
+      if (p.height.trim().isNotEmpty) _heightText(context, p.height),
+      if ((p.caste ?? '').trim().isNotEmpty) context.localizeValue(p.caste!),
     ].join(' · ');
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -266,7 +372,7 @@ class MyProfileScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(p.fullName,
+                Text(p.displayName(context.isTamil),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -448,7 +554,7 @@ class _SectionCard extends StatelessWidget {
               Icon(icon, color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(title,
+                child: Text(_title(context, title),
                     style: const TextStyle(
                         fontSize: 15,
                         fontFamily: 'Poppins',
@@ -456,7 +562,9 @@ class _SectionCard extends StatelessWidget {
               ),
               // The category's own Edit action — opens ONLY this section.
               IconButton(
-                tooltip: 'Edit $title',
+                tooltip: context.isTamil
+                    ? '${_title(context, title)} திருத்து'
+                    : 'Edit $title',
                 visualDensity: VisualDensity.compact,
                 onPressed: onEdit,
                 icon: const Icon(Icons.edit_outlined,

@@ -6,19 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
 
-import '../../core/constants/app_constants.dart';
 import '../../core/services/master_astrology_data.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/location_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
-import '../../services/razorpay/razorpay_service.dart';
 import '../../widgets/common/network_photo.dart';
 import '../../widgets/common/searchable_field.dart';
 import '../../widgets/common/searchable_with_others_field.dart';
@@ -51,10 +47,7 @@ class RequestExternalReportScreen extends ConsumerStatefulWidget {
 
 class _RequestExternalReportScreenState
     extends ConsumerState<RequestExternalReportScreen> {
-  static const int _fee = AppConstants.horoscopeAnalysisFee; // ₹199
-
   final _formKey = GlobalKey<FormState>();
-  final RazorpayService _razorpay = RazorpayService();
 
   // Second-person fields.
   final _name = TextEditingController();
@@ -77,13 +70,11 @@ class _RequestExternalReportScreenState
   @override
   void initState() {
     super.initState();
-    _razorpay.init(onSuccess: _onPaymentSuccess, onFailure: _onPaymentFailure);
     _loadMasterOptions();
   }
 
   @override
   void dispose() {
-    _razorpay.dispose();
     _name.dispose();
     _tob.dispose();
     super.dispose();
@@ -244,36 +235,18 @@ class _RequestExternalReportScreenState
       return;
     }
     setState(() => _busy = true);
-    final user = ref.read(currentUserProvider).valueOrNull;
-    final me = ref.read(myProfileProvider).valueOrNull;
-    _razorpay.openCheckout(
-      amountPaise: _fee * 100,
-      description: 'External Horoscope Report',
-      notes: const {'type': 'external_horoscope_report'},
-      userPhone: user?.phone ?? '',
-      userEmail: user?.email ?? '',
-      userName: me?.fullName ?? '',
+    // No in-app payment (Razorpay removed) — create the request directly. It is
+    // auto-assigned for verification, same as the internal report flow.
+    _createRequest(
+      amount: 0,
+      note: 'Requested in-app (no online payment) — assigned for verification.',
     );
-    // _busy stays true until the gateway returns.
   }
-
-  Future<void> _onPaymentSuccess(PaymentSuccessResponse response) =>
-      _createRequest(amount: _fee, paymentId: response.paymentId);
-
-  /// Payment not completed → still create the request (unpaid) for manual
-  /// verification, so the user's request is never lost (mirrors the internal
-  /// report flow).
-  Future<void> _onPaymentFailure(PaymentFailureResponse response) => _createRequest(
-        amount: 0,
-        note: 'Payment not completed — assigned for manual verification.',
-        failed: true,
-      );
 
   Future<void> _createRequest({
     required int amount,
     String? paymentId,
     String note = '',
-    bool failed = false,
   }) async {
     final me = ref.read(myProfileProvider).valueOrNull;
     try {
@@ -286,11 +259,7 @@ class _RequestExternalReportScreenState
                 note: note,
               );
       if (!mounted) return;
-      _snack(failed
-          ? 'Payment was not completed — you have not been charged. Request '
-              '#$id was sent for manual verification; track it on Reports.'
-          : 'Payment successful. Request #$id has been assigned — track it on '
-              'the Reports tab.');
+      _snack('Request #$id has been submitted — track it on the Reports tab.');
       ref.read(homeTabIndexProvider.notifier).state = kReportsTabIndex;
       context.go('/home');
     } catch (_) {
@@ -640,7 +609,7 @@ class _RequestExternalReportScreenState
                           strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.auto_awesome, size: 20),
               label: Text(
-                _busy ? 'Processing…' : 'Pay ₹$_fee · Request Report',
+                _busy ? 'Processing…' : 'Request Report',
                 style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               ),
               style: ElevatedButton.styleFrom(

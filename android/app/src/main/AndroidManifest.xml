@@ -6,6 +6,10 @@
     <!-- "Use My Location" — GPS-based city/state/country detection. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- Google Play Billing (in-app purchases — the horoscope_report product).
+         The in_app_purchase_android plugin also merges this permission, but it
+         is declared explicitly here for clarity. -->
+    <uses-permission android:name="com.android.vending.BILLING"/>
     <application
         android:label="Jothida Matrimony"
         android:name="${applicationName}"

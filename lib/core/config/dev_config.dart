@@ -17,7 +17,7 @@ const bool kBypassAuth = false;
 /// While `true`, selecting any subscription plan (user OR astrologer) activates
 /// it **immediately with no payment** — the subscription record, user/astrologer
 /// status, premium access and expiry are all written exactly as a real purchase
-/// would, only the Razorpay/Play-Billing step is bypassed. The UI shows a
+/// would, only the Google Play Billing step is bypassed. The UI shows a
 /// "🧪 TEST MODE" badge and an "Activate Plan" button instead of "Pay Now".
 ///
 /// Set this to `false` to restore the production flow:

@@ -101,8 +101,8 @@ class HelpSupportScreen extends StatelessWidget {
       'We compute Porutham (compatibility) from both horoscopes. Open a match and tap Compatibility, or consult an astrologer from the Astrologer tab.'
     ),
     (
-      'How do I upgrade to Premium?',
-      'Open Profile → Subscription Plans (or the Go Premium banner on Home) and choose a plan. Payments are processed securely via Razorpay.'
+      'How do I pay for a Horoscope Report?',
+      'Open an accepted match and tap Get Horoscope Analysis, then complete the purchase in the Google Play billing sheet. Your report unlocks after the payment is confirmed.'
     ),
     (
       'How do I edit my preferences?',

@@ -8,7 +8,7 @@ import '../services/firebase/astrologer_service.dart';
 import '../services/firebase/astrology_team_service.dart';
 import '../services/firebase/consultation_service.dart';
 import '../services/firebase/chat_service.dart';
-import '../services/razorpay/razorpay_service.dart';
+import '../services/billing/play_billing_service.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/profile_repository.dart';
 import '../repositories/interest_repository.dart';
@@ -24,7 +24,15 @@ final firestoreServiceProvider = Provider<FirestoreService>((ref) => FirestoreSe
 final storageServiceProvider =
     Provider<StorageService>((ref) => CloudinaryStorageService());
 final fcmServiceProvider = Provider<FcmService>((ref) => FcmService());
-final razorpayServiceProvider = Provider<RazorpayService>((ref) => RazorpayService());
+
+/// App-wide Google Play Billing service (replaces the removed Razorpay service).
+/// A single instance owns one purchase-stream listener; disposed with the
+/// provider container at app shutdown.
+final playBillingServiceProvider = Provider<PlayBillingService>((ref) {
+  final billing = PlayBillingService();
+  ref.onDispose(billing.dispose);
+  return billing;
+});
 final astrologerServiceProvider =
     Provider<AstrologerService>((ref) => AstrologerService());
 final astrologyTeamServiceProvider =

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
 
-import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/slot_generator.dart';
@@ -11,10 +9,8 @@ import '../../core/utils/value_l10n.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../models/astrology_service_config.dart';
 import '../../providers/astrology_config_provider.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../services/firebase/astrologer_service.dart';
-import '../../services/razorpay/razorpay_service.dart';
 
 /// Standalone "Book Your Appointment" flow opened from the Astrology page.
 ///
@@ -36,33 +32,18 @@ class AstrologyAppointmentScreen extends ConsumerStatefulWidget {
 
 class _AstrologyAppointmentScreenState
     extends ConsumerState<AstrologyAppointmentScreen> {
-  static const int _fee = AppConstants.appointmentBookingFee; // ₹20
-
   DateTime? _date;
   String? _session;
   String? _category;
   bool _busy = false;
 
-  final RazorpayService _razorpay = RazorpayService();
-  AstrologyServiceConfig? _pendingCfg;
-
-  @override
-  void initState() {
-    super.initState();
-    _razorpay.init(onSuccess: _onPaymentSuccess, onFailure: _onPaymentFailure);
-  }
-
-  @override
-  void dispose() {
-    _razorpay.dispose();
-    super.dispose();
-  }
-
   void _snack(String m) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
-  /// Step 3 — collect the ₹50 booking charge via Razorpay; the session is only
-  /// reserved once payment succeeds (handled in [_onPaymentSuccess]).
+  /// Books the appointment directly. Razorpay was removed and an in-person
+  /// office visit can't use Google Play Billing (a real-world service), so there
+  /// is no in-app charge — the session is reserved and the booking is
+  /// auto-confirmed; any fee is settled at the office.
   Future<void> _confirm(AstrologyServiceConfig cfg) async {
     if (_category == null || _category!.trim().isEmpty) {
       _snack(context.l10n.pleaseSelectCategory);
@@ -73,24 +54,6 @@ class _AstrologyAppointmentScreenState
       return;
     }
     setState(() => _busy = true);
-    _pendingCfg = cfg;
-    final user = ref.read(currentUserProvider).valueOrNull;
-    _razorpay.openCheckout(
-      amountPaise: _fee * 100,
-      description: 'Office Visit Appointment Booking',
-      notes: {'type': 'astrology_appointment'},
-      userPhone: user?.phone ?? '',
-      userEmail: user?.email ?? '',
-      userName: user?.displayName ?? '',
-    );
-  }
-
-  Future<void> _onPaymentSuccess(PaymentSuccessResponse response) async {
-    final cfg = _pendingCfg;
-    if (cfg == null || _date == null || _session == null) {
-      if (mounted) setState(() => _busy = false);
-      return;
-    }
     try {
       final id = await ref
           .read(matchAnalysisControllerProvider.notifier)
@@ -99,8 +62,8 @@ class _AstrologyAppointmentScreenState
             session: _session!,
             config: cfg,
             category: _category ?? '',
-            amount: _fee,
-            paymentId: response.paymentId ?? 'razorpay',
+            amount: 0,
+            paymentId: 'free',
           );
       if (!mounted) return;
       context.pushReplacement('/appointment-confirmation/$id', extra: {
@@ -124,12 +87,6 @@ class _AstrologyAppointmentScreenState
       setState(() => _busy = false);
       _snack(context.l10n.paymentOkBookingFailed);
     }
-  }
-
-  void _onPaymentFailure(PaymentFailureResponse response) {
-    if (!mounted) return;
-    setState(() => _busy = false);
-    _snack(context.l10n.paymentFailedNotCharged);
   }
 
   @override
@@ -205,7 +162,7 @@ class _AstrologyAppointmentScreenState
             label: Text(
                 _busy
                     ? context.l10n.processing
-                    : context.l10n.payAndConfirmAppointment(_fee),
+                    : context.l10n.confirm,
                 style: const TextStyle(
                     fontSize: 15.5, fontWeight: FontWeight.w700)),
             style: ElevatedButton.styleFrom(

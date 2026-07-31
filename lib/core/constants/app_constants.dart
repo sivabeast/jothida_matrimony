@@ -72,7 +72,8 @@ class AppConstants {
   static const int poruthamsPrice = 199;
   // Fee for the ONLINE Horoscope Compatibility Report (paid, auto-assigned,
   // delivered to the user's Reports page). Completely separate from the
-  // office-visit appointment fee below. Collected via Razorpay.
+  // office-visit appointment fee below. Charged via Google Play Billing
+  // (product id `horoscope_report`).
   static const int horoscopeAnalysisFee = 199;
   // Booking charge to confirm a Direct Office-Visit appointment slot. A separate,
   // independent service from the online analysis above.

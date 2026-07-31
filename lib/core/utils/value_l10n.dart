@@ -156,6 +156,11 @@ const Map<String, String> kTamilValueMap = {
   'NRI': 'வெளிநாடு வாழ் இந்தியர்',
   'Foreign National': 'வெளிநாட்டவர்',
 
+  // ── State / country (the platform serves Tamil Nadu / India) ──
+  'Tamil Nadu': 'தமிழ்நாடு',
+  'Tamilnadu': 'தமிழ்நாடு',
+  'India': 'இந்தியா',
+
   // ── Children living status ──
   'Living with me': 'என்னுடன் வசிக்கிறார்கள்',
   'Not living with me': 'என்னுடன் வசிக்கவில்லை',
