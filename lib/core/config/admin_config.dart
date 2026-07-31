@@ -27,6 +27,7 @@ class AdminConfig {
   /// normal matrimony user but also sees the Admin shortcut in the Home header.
   static const List<String> superAdminEmails = <String>[
     'sivabeast123123@gmail.com',
+    'sathiyaraj887084@gmail.com',
   ];
 
   static const String roleSuperAdmin = 'super_admin';
