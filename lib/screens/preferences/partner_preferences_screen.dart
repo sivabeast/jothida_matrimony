@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config/dev_config.dart';
 import '../../core/constants/app_constants.dart';
@@ -187,7 +187,7 @@ class _PartnerPreferencesScreenState
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Partner Preferences'),
+        title: Text(context.l10n.partnerPreferences),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -327,7 +327,7 @@ class _PartnerPreferencesScreenState
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   activeColor: AppColors.primary,
-                  title: const Text('Horoscope Match Required',
+                  title: Text(context.l10n.horoscopeMatchRequired,
                       style: TextStyle(fontSize: 14)),
                   subtitle: Text(_horoMatch ? 'Yes' : 'No',
                       style: TextStyle(color: Colors.grey[600], fontSize: 12)),
@@ -397,7 +397,7 @@ class _PartnerPreferencesScreenState
             child: OutlinedButton.icon(
               onPressed: _saving ? null : _reset,
               icon: const Icon(Icons.refresh),
-              label: const Text('Reset Preferences'),
+              label: Text(context.l10n.resetPreferences),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primary,
                 side: const BorderSide(color: AppColors.primary),

@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../models/profile_model.dart';
 import '../../providers/profile_edit_provider.dart';
 import '../../providers/profile_provider.dart';
@@ -22,26 +23,30 @@ Future<void> _persistSection(
   required ProfileModel updated,
   required Map<String, dynamic> patch,
 }) async {
+  final l10n = context.l10n;
   try {
     await ref
         .read(profileEditControllerProvider.notifier)
         .save(updated: updated, patch: patch);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Saved')));
+        .showSnackBar(SnackBar(content: Text(l10n.savedToast)));
     Navigator.of(context).maybePop();
   } catch (_) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not save. Please try again.')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(l10n.couldNotSaveRetry)));
   }
 }
 
 /// Outer wrapper: loads `myProfile`, shows the [builder] form once available.
+///
+/// [titleOf] resolves the screen title from the l10n dictionary, so every
+/// section editor switches language with the rest of the app (§21).
 class _SectionLoader extends ConsumerWidget {
-  final String title;
+  final String Function(BuildContext context) titleOf;
   final Widget Function(ProfileModel profile) builder;
-  const _SectionLoader({required this.title, required this.builder});
+  const _SectionLoader({required this.titleOf, required this.builder});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -49,7 +54,7 @@ class _SectionLoader extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: Text(title),
+        title: Text(titleOf(context)),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -57,9 +62,9 @@ class _SectionLoader extends ConsumerWidget {
         loading: () => const Center(
             child: CircularProgressIndicator(color: AppColors.primary)),
         error: (_, __) =>
-            const Center(child: Text('Could not load your profile.')),
+            Center(child: Text(context.l10n.couldNotLoadYourProfile)),
         data: (p) => p == null
-            ? const Center(child: Text('Create your profile first.'))
+            ? Center(child: Text(context.l10n.createYourProfileFirst))
             : builder(p),
       ),
     );
@@ -96,7 +101,9 @@ class _FormBody extends ConsumerWidget {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14)),
                 ),
-                child: Text(saving ? 'Saving…' : 'Save Changes'),
+                child: Text(saving
+                    ? context.l10n.savingLabel
+                    : context.l10n.saveChanges),
               ),
             ),
             const SizedBox(height: 20),
@@ -120,7 +127,7 @@ class AboutMeEditScreen extends StatelessWidget {
   const AboutMeEditScreen({super.key});
   @override
   Widget build(BuildContext context) => _SectionLoader(
-        title: 'About Me',
+        titleOf: (c) => c.l10n.aboutMe,
         builder: (p) => _AboutMeForm(profile: p),
       );
 }
@@ -154,9 +161,8 @@ class _AboutMeFormState extends ConsumerState<_AboutMeForm> {
       children: [
         AppTextField(
           controller: _about,
-          label: 'About Me',
-          hint: 'Write a few lines about yourself, your family, interests, '
-              'values and expectations.',
+          label: context.l10n.aboutMe,
+          hint: context.l10n.aboutMeHint,
           maxLines: 7,
         ),
       ],
@@ -171,7 +177,7 @@ class EducationEditScreen extends StatelessWidget {
   const EducationEditScreen({super.key});
   @override
   Widget build(BuildContext context) => _SectionLoader(
-        title: 'Education & Career',
+        titleOf: (c) => c.l10n.educationCareer,
         builder: (p) => _EducationForm(profile: p),
       );
 }
@@ -207,8 +213,8 @@ class _EducationFormState extends ConsumerState<_EducationForm> {
 
   void _save() {
     if (_education == null || _occupation == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Education and occupation are required.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.l10n.educationOccupationRequired)));
       return;
     }
     final patch = {
@@ -239,7 +245,7 @@ class _EducationFormState extends ConsumerState<_EducationForm> {
       onSave: _save,
       children: [
         SearchableField(
-          label: 'Highest Education',
+          label: context.l10n.highestEducation,
           isRequired: true,
           items: AppConstants.educations,
           selectedItem: _education,
@@ -247,10 +253,10 @@ class _EducationFormState extends ConsumerState<_EducationForm> {
           onChanged: (v) => setState(() => _education = v),
         ),
         const SizedBox(height: 16),
-        AppTextField(controller: _college, label: 'College Name'),
+        AppTextField(controller: _college, label: context.l10n.collegeName),
         const SizedBox(height: 16),
         SearchableField(
-          label: 'Occupation',
+          label: context.l10n.occupation,
           isRequired: true,
           items: AppConstants.occupations,
           selectedItem: _occupation,
@@ -259,24 +265,24 @@ class _EducationFormState extends ConsumerState<_EducationForm> {
         ),
         const SizedBox(height: 16),
         SearchableField(
-          label: 'Employment Type',
+          label: context.l10n.employmentType,
           items: AppConstants.employmentTypeList,
           selectedItem: _employmentType,
           prefixIcon: Icons.badge_outlined,
           onChanged: (v) => setState(() => _employmentType = v),
         ),
         const SizedBox(height: 16),
-        AppTextField(controller: _company, label: 'Company Name'),
+        AppTextField(controller: _company, label: context.l10n.companyName),
         const SizedBox(height: 16),
         SearchableField(
-          label: 'Annual Income',
+          label: context.l10n.annualIncome,
           items: AppConstants.incomeRanges,
           selectedItem: _income,
           prefixIcon: Icons.currency_rupee,
           onChanged: (v) => setState(() => _income = v),
         ),
         const SizedBox(height: 16),
-        AppTextField(controller: _workLocation, label: 'Work Location'),
+        AppTextField(controller: _workLocation, label: context.l10n.workLocation),
       ],
     );
   }
@@ -289,7 +295,7 @@ class LocationEditScreen extends StatelessWidget {
   const LocationEditScreen({super.key});
   @override
   Widget build(BuildContext context) => _SectionLoader(
-        title: 'Location Details',
+        titleOf: (c) => c.l10n.locationDetails,
         builder: (p) => _LocationForm(profile: p),
       );
 }
@@ -327,8 +333,8 @@ class _LocationFormState extends ConsumerState<_LocationForm> {
 
   void _save() {
     if (_state == null || _district == null || _city == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Please select state, district and city.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.l10n.selectStateDistrictCity)));
       return;
     }
     final patch = {
@@ -389,10 +395,10 @@ class _LocationFormState extends ConsumerState<_LocationForm> {
           }),
         ),
         const SizedBox(height: 16),
-        AppTextField(controller: _nativePlace, label: 'Native Place'),
+        AppTextField(controller: _nativePlace, label: context.l10n.nativePlace),
         const SizedBox(height: 16),
         SearchableField(
-          label: 'Citizenship',
+          label: context.l10n.citizenship,
           items: AppConstants.citizenshipList,
           selectedItem: _citizenship,
           prefixIcon: Icons.flag_outlined,
@@ -410,7 +416,7 @@ class ReligiousEditScreen extends StatelessWidget {
   const ReligiousEditScreen({super.key});
   @override
   Widget build(BuildContext context) => _SectionLoader(
-        title: 'Religious Information',
+        titleOf: (c) => c.l10n.religiousInformation,
         builder: (p) => _ReligiousForm(profile: p),
       );
 }
@@ -445,8 +451,8 @@ class _ReligiousFormState extends ConsumerState<_ReligiousForm> {
 
   void _save() {
     if (_religion == null || _caste == null || _caste!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Religion and caste are required.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.l10n.religionCasteRequired)));
       return;
     }
     final patch = {
@@ -505,9 +511,9 @@ class _ReligiousFormState extends ConsumerState<_ReligiousForm> {
           }),
         ),
         const SizedBox(height: 16),
-        AppTextField(controller: _gothram, label: 'Gothram'),
+        AppTextField(controller: _gothram, label: context.l10n.gothram),
         const SizedBox(height: 16),
-        AppTextField(controller: _kuladeivam, label: 'Kuladeivam'),
+        AppTextField(controller: _kuladeivam, label: context.l10n.kuladeivam),
       ],
     );
   }
@@ -520,7 +526,7 @@ class FamilyEditScreen extends StatelessWidget {
   const FamilyEditScreen({super.key});
   @override
   Widget build(BuildContext context) => _SectionLoader(
-        title: 'Family Details',
+        titleOf: (c) => c.l10n.familyDetails,
         builder: (p) => _FamilyForm(profile: p),
       );
 }
@@ -596,26 +602,26 @@ class _FamilyFormState extends ConsumerState<_FamilyForm> {
       onSave: _save,
       children: [
         SearchableField(
-          label: 'Family Type',
+          label: context.l10n.familyType,
           items: AppConstants.familyTypeList,
           selectedItem: _familyType,
           onChanged: (v) => setState(() => _familyType = v),
         ),
         const SizedBox(height: 16),
         SearchableField(
-          label: 'Family Status',
+          label: context.l10n.familyStatus,
           items: AppConstants.familyStatusList,
           selectedItem: _familyStatus,
           onChanged: (v) => setState(() => _familyStatus = v),
         ),
         const SizedBox(height: 16),
-        AppTextField(controller: _fatherName, label: 'Father Name'),
+        AppTextField(controller: _fatherName, label: context.l10n.fatherName),
         const SizedBox(height: 16),
-        AppTextField(controller: _fatherOcc, label: 'Father Occupation'),
+        AppTextField(controller: _fatherOcc, label: context.l10n.fatherOccupation),
         const SizedBox(height: 16),
-        AppTextField(controller: _motherName, label: 'Mother Name'),
+        AppTextField(controller: _motherName, label: context.l10n.motherName),
         const SizedBox(height: 16),
-        AppTextField(controller: _motherOcc, label: 'Mother Occupation'),
+        AppTextField(controller: _motherOcc, label: context.l10n.motherOccupation),
         const SizedBox(height: 16),
         Row(
           children: [
@@ -634,7 +640,7 @@ class _FamilyFormState extends ConsumerState<_FamilyForm> {
         ),
         const SizedBox(height: 16),
         AppTextField(
-            controller: _aboutFamily, label: 'About Family', maxLines: 4),
+            controller: _aboutFamily, label: context.l10n.aboutFamily, maxLines: 4),
       ],
     );
   }
@@ -658,7 +664,7 @@ class LifestyleEditScreen extends StatelessWidget {
   const LifestyleEditScreen({super.key});
   @override
   Widget build(BuildContext context) => _SectionLoader(
-        title: 'Lifestyle & Habits',
+        titleOf: (c) => c.l10n.lifestyleDetails,
         builder: (p) => _LifestyleForm(profile: p),
       );
 }
@@ -715,7 +721,7 @@ class _LifestyleFormState extends ConsumerState<_LifestyleForm> {
       onSave: _save,
       children: [
         SearchableField(
-          label: 'Eating Habit',
+          label: context.l10n.eatingHabit,
           items: AppConstants.eatingHabitList,
           selectedItem: _eating,
           prefixIcon: Icons.restaurant_outlined,
@@ -723,7 +729,7 @@ class _LifestyleFormState extends ConsumerState<_LifestyleForm> {
         ),
         const SizedBox(height: 16),
         SearchableField(
-          label: 'Smoking Habit',
+          label: context.l10n.smokingHabit,
           items: AppConstants.smokingHabitList,
           selectedItem: _smoking,
           prefixIcon: Icons.smoke_free,
@@ -731,7 +737,7 @@ class _LifestyleFormState extends ConsumerState<_LifestyleForm> {
         ),
         const SizedBox(height: 16),
         SearchableField(
-          label: 'Drinking Habit',
+          label: context.l10n.drinkingHabit,
           items: AppConstants.drinkingHabitList,
           selectedItem: _drinking,
           prefixIcon: Icons.no_drinks_outlined,
@@ -740,18 +746,18 @@ class _LifestyleFormState extends ConsumerState<_LifestyleForm> {
         const SizedBox(height: 16),
         AppTextField(
             controller: _hobbies,
-            label: 'Hobbies',
-            hint: 'e.g. Reading, Music, Cooking'),
+            label: context.l10n.hobbies,
+            hint: context.l10n.hobbiesHint),
         const SizedBox(height: 16),
         AppTextField(
             controller: _interests,
-            label: 'Interests',
-            hint: 'e.g. Travel, Sports'),
+            label: context.l10n.interests,
+            hint: context.l10n.interestsHint),
         const SizedBox(height: 16),
         AppTextField(
             controller: _languages,
-            label: 'Languages Known',
-            hint: 'Comma separated, e.g. Tamil, English'),
+            label: context.l10n.languagesKnown,
+            hint: context.l10n.languagesKnownHint),
       ],
     );
   }

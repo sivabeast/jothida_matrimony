@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -558,7 +558,7 @@ class _InterestCard extends ConsumerWidget {
                   context.push('/horoscope-report/$otherUserId');
                 },
                 icon: const Icon(Icons.description_outlined, size: 18),
-                label: const Text('Get Horoscope Compatibility Report'),
+                label: Text(context.l10n.getHoroscopeCompatibilityReport),
                 style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary)),
@@ -665,7 +665,7 @@ class _MarriageFixedButton extends ConsumerWidget {
         child: ElevatedButton.icon(
           onPressed: () => context.push('/wedding-workspace'),
           icon: const Text('💍', style: TextStyle(fontSize: 15)),
-          label: const Text('Open Wedding Workspace'),
+          label: Text(context.l10n.openWeddingWorkspace),
           style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.success,
               foregroundColor: Colors.white),
@@ -716,7 +716,7 @@ class _MarriageFixedButton extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Marriage Fixed 💍'),
+        title: Text(context.l10n.marriageFixedTitle),
         content: Text(partnerProposed
             ? '$otherName has confirmed the marriage. Confirm from your side '
                 'too?\n\nOnce both of you confirm, the Wedding Workspace '
@@ -729,13 +729,13 @@ class _MarriageFixedButton extends ConsumerWidget {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Not Yet')),
+              child: Text(context.l10n.notYet)),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.success,
                 foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Yes, Marriage Fixed'),
+            child: Text(context.l10n.yesMarriageFixed),
           ),
         ],
       ),
@@ -747,8 +747,8 @@ class _MarriageFixedButton extends ConsumerWidget {
         .read(weddingControllerProvider.notifier)
         .confirmMarriageFixed(otherUserId);
     if (wedding == null) {
-      messenger.showSnackBar(const SnackBar(
-          content: Text('Could not save Marriage Fixed. Please try again.')));
+      messenger.showSnackBar(
+          SnackBar(content: Text(context.l10n.couldNotSaveMarriageFixed)));
       return;
     }
     messenger.showSnackBar(SnackBar(

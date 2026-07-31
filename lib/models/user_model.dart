@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../core/config/admin_config.dart';
+import 'profile_model.dart' show ProfilePrivacy;
 
 class UserModel {
   final String uid;
@@ -46,14 +47,8 @@ class UserModel {
     required this.createdAt,
     required this.updatedAt,
     this.lastLoginAt,
-    this.privacySettings = const {
-      'hidePhone': false,
-      'hideAddress': false,
-      'hideFamilyDetails': false,
-      'hideSalary': false,
-      'hideHoroscope': false,
-      'hideAdditionalPhotos': false,
-    },
+    // Four switches only, all hidden by default (§16/§17). See [ProfilePrivacy].
+    this.privacySettings = ProfilePrivacy.allHidden,
     this.fcmToken,
     this.preferredLanguage,
   });
@@ -84,22 +79,11 @@ class UserModel {
       lastLoginAt: data['lastLoginAt'] is Timestamp
           ? (data['lastLoginAt'] as Timestamp).toDate()
           : null,
-      privacySettings: _privacyOf(data['privacySettings']),
+      privacySettings: ProfilePrivacy.fromMap(data['privacySettings']),
       fcmToken: data['fcmToken'],
       preferredLanguage: data['preferred_language'],
     );
   }
-
-  /// Default privacy flags — used when a document has none, and to backfill any
-  /// key an older document is missing.
-  static const Map<String, bool> _defaultPrivacy = {
-    'hidePhone': false,
-    'hideAddress': false,
-    'hideFamilyDetails': false,
-    'hideSalary': false,
-    'hideHoroscope': false,
-    'hideAdditionalPhotos': false,
-  };
 
   /// Coerces a Firestore value into a `bool` instead of blindly casting it.
   ///
@@ -127,17 +111,6 @@ class UserModel {
     if (v is num) return v.toInt();
     if (v is String) return int.tryParse(v.trim()) ?? fallback;
     return fallback;
-  }
-
-  /// Builds the privacy map without a blanket `Map<String, bool>.from`, which
-  /// throws the moment ANY stored value is a string. Each value is coerced and
-  /// the defaults backfill any missing key.
-  static Map<String, bool> _privacyOf(dynamic raw) {
-    final out = Map<String, bool>.from(_defaultPrivacy);
-    if (raw is Map) {
-      raw.forEach((k, v) => out[k.toString()] = _boolOf(v));
-    }
-    return out;
   }
 
   Map<String, dynamic> toFirestore() => {

@@ -111,14 +111,25 @@ String? resolveAuthRedirect({
     return '/home';
   }
 
+  // ── DEDICATED admin account (§2) ─────────────────────────────────────────
+  // A PURE 'admin' role is an admin-only account: it opens the Admin Dashboard
+  // and lives there. It must never reach the user Home, the user navigation,
+  // profile creation or any other user-side page — so every location outside
+  // /admin bounces back to the dashboard. (A super_admin is deliberately NOT
+  // caught here: that account is a normal matrimony member with an extra Admin
+  // shortcut.)
+  if (user.role == 'admin') {
+    if (!onAdmin) {
+      log?.call('dedicated admin account → /admin (blocked "$loc")');
+      return '/admin';
+    }
+    return null;
+  }
+
   if (onAuthPage) {
-    // Only a *pure* admin account auto-lands on the dashboard. A super_admin is
-    // a normal user with extra powers, so they land on Home and open the
-    // dashboard via the header Admin icon.
-    if (user.role == 'admin') return '/admin';
-    // A pure admin account is exempt from onboarding; a super_admin is a NORMAL
-    // matrimony user and onboards exactly like everyone else.
-    if (!user.isProfileComplete && user.role != 'admin') {
+    // (A pure admin account already returned above — it can only be on /admin.)
+    // A super_admin is a NORMAL matrimony user and onboards like everyone else.
+    if (!user.isProfileComplete) {
       log?.call('profile incomplete → /profile/create');
       return '/profile/create';
     }

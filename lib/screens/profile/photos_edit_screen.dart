@@ -6,19 +6,22 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/config/dev_config.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/utils/file_actions.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../models/profile_model.dart';
 import '../../providers/profile_edit_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/common/fullscreen_photo_viewer.dart';
+import 'square_crop_screen.dart';
 
-/// Photos section editor — manage the primary profile photo and up to 5
-/// additional photos. Uploads go through the storage service (Cloudinary); the
-/// resulting URLs are persisted to the profile so completion updates live.
+/// Profile Photo editor — exactly ONE photo per member (§1).
+///
+/// Picking an image of any aspect ratio opens the mandatory 1:1 crop screen;
+/// only the cropped square is uploaded, and it REPLACES the current photo.
+/// There is no gallery and no "additional photos" — that support was removed
+/// completely.
 class PhotosEditScreen extends ConsumerWidget {
   const PhotosEditScreen({super.key});
-
-  static const int maxAdditional = 5;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,7 +29,7 @@ class PhotosEditScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Photos'),
+        title: Text(context.l10n.profilePhoto),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -34,124 +37,100 @@ class PhotosEditScreen extends ConsumerWidget {
         loading: () => const Center(
             child: CircularProgressIndicator(color: AppColors.primary)),
         error: (_, __) =>
-            const Center(child: Text('Could not load your profile.')),
+            Center(child: Text(context.l10n.couldNotLoadYourProfile)),
         data: (p) => p == null
-            ? const Center(child: Text('Create your profile first.'))
-            : _PhotosForm(profile: p),
+            ? Center(child: Text(context.l10n.createYourProfileFirst))
+            : _PhotoForm(profile: p),
       ),
     );
   }
 }
 
-class _PhotosForm extends ConsumerStatefulWidget {
+class _PhotoForm extends ConsumerStatefulWidget {
   final ProfileModel profile;
-  const _PhotosForm({required this.profile});
+  const _PhotoForm({required this.profile});
 
   @override
-  ConsumerState<_PhotosForm> createState() => _PhotosFormState();
+  ConsumerState<_PhotoForm> createState() => _PhotoFormState();
 }
 
-class _PhotosFormState extends ConsumerState<_PhotosForm> {
+class _PhotoFormState extends ConsumerState<_PhotoForm> {
   bool _busy = false;
 
-  ProfileModel get _p => ref.read(myProfileProvider).valueOrNull ?? widget.profile;
+  ProfileModel get _p =>
+      ref.read(myProfileProvider).valueOrNull ?? widget.profile;
 
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m) => ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(m)));
 
-  Future<String?> _upload(File file, int index) async {
+  /// Pick → MANDATORY square crop → upload → replace.
+  Future<void> _changePhoto() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked == null || !mounted) return;
+
+    // The crop screen is not optional: backing out of it saves nothing.
+    final cropped = await SquareCropScreen.open(context, File(picked.path));
+    if (cropped == null || !mounted) return;
+
     if (kBypassAuth) {
-      _snack('Photo upload is not available in demo mode.');
-      return null;
-    }
-    return ref.read(storageServiceProvider).uploadProfilePhoto(
-          userId: _p.userId,
-          file: file,
-          index: index,
-        );
-  }
-
-  Future<void> _persist({String? primary, List<String>? additional}) async {
-    final p = _p;
-    final updated = (primary != null ? p.withProfilePhoto(primary) : p)
-        .copyWith(additionalPhotos: additional ?? p.additionalPhotos);
-    final patch = <String, dynamic>{
-      if (primary != null) 'profilePhotoUrl': primary,
-      if (additional != null) 'additionalPhotos': additional,
-    };
-    await ref
-        .read(profileEditControllerProvider.notifier)
-        .save(updated: updated, patch: patch);
-  }
-
-  Future<void> _changePrimary() async {
-    final x = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (x == null) return;
-    setState(() => _busy = true);
-    try {
-      final url = await _upload(File(x.path), 0);
-      if (url != null) {
-        await _persist(primary: url);
-        if (mounted) _snack('Profile photo updated');
-      }
-    } catch (_) {
-      if (mounted) _snack('Could not update the photo. Try again.');
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  Future<void> _addPhotos() async {
-    final remaining = PhotosEditScreen.maxAdditional - _p.additionalPhotos.length;
-    if (remaining <= 0) {
-      _snack('You can add up to ${PhotosEditScreen.maxAdditional} photos.');
+      _snack(context.l10n.photoUploadNotInDemo);
       return;
     }
-    final picked = await ImagePicker().pickMultiImage();
-    if (picked.isEmpty) return;
-    final files = picked.take(remaining).map((x) => File(x.path)).toList();
     setState(() => _busy = true);
     try {
-      final urls = <String>[..._p.additionalPhotos];
-      for (var i = 0; i < files.length; i++) {
-        final url = await _upload(files[i], urls.length + 1);
-        if (url != null) urls.add(url);
-      }
-      await _persist(additional: urls);
-      if (mounted) _snack('${files.length} photo(s) added');
+      final url = await ref.read(storageServiceProvider).uploadProfilePhoto(
+            userId: _p.userId,
+            file: cropped,
+            index: 0,
+          );
+      final p = _p;
+      await ref.read(profileEditControllerProvider.notifier).save(
+            updated: p.withProfilePhoto(url),
+            patch: {'profilePhotoUrl': url, 'additionalPhotos': <String>[]},
+          );
+      // Keep the denormalized users/{uid}.photoUrl in sync so the same 1:1
+      // image shows in the header, chats and everywhere else.
+      await ref.read(firestoreServiceProvider).updateUserPhoto(p.userId, url);
+      if (mounted) _snack(context.l10n.photoUpdated);
     } catch (_) {
-      if (mounted) _snack('Could not add photos. Try again.');
+      if (mounted) _snack(context.l10n.couldNotUpdatePhoto);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  Future<void> _removeAdditional(String url) async {
-    setState(() => _busy = true);
-    try {
-      final urls = _p.additionalPhotos.where((u) => u != url).toList();
-      await _persist(additional: urls);
-      if (mounted) _snack('Photo removed');
-    } catch (_) {
-      if (mounted) _snack('Could not remove photo. Try again.');
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  Future<void> _setAsPrimary(String url) async {
+  Future<void> _removePhoto() async {
+    final l10n = context.l10n;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.removePhoto),
+        content: Text(l10n.removePhotoConfirm),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.cancel)),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: Text(l10n.remove),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
     setState(() => _busy = true);
     try {
       final p = _p;
-      final oldPrimary = p.profilePhotoUrl;
-      final additional = p.additionalPhotos.where((u) => u != url).toList();
-      if (oldPrimary != null && oldPrimary.isNotEmpty) {
-        additional.insert(0, oldPrimary);
-      }
-      await _persist(primary: url, additional: additional);
-      if (mounted) _snack('Primary photo updated');
+      await ref.read(profileEditControllerProvider.notifier).save(
+            updated: p.withProfilePhoto(null),
+            patch: {'profilePhotoUrl': null, 'additionalPhotos': <String>[]},
+          );
+      await ref.read(firestoreServiceProvider).updateUserPhoto(p.userId, null);
+      if (mounted) _snack(context.l10n.photoRemoved);
     } catch (_) {
-      if (mounted) _snack('Could not update. Try again.');
+      if (mounted) _snack(context.l10n.couldNotRemovePhoto);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -159,79 +138,106 @@ class _PhotosFormState extends ConsumerState<_PhotosForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final p = ref.watch(myProfileProvider).valueOrNull ?? widget.profile;
-    final primary = p.profilePhotoUrl ?? '';
-    final additional = p.additionalPhotos;
+    final photo = p.profilePhotoUrl ?? '';
 
     return Stack(
       children: [
         ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            const Text('Profile Photo',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            const SizedBox(height: 10),
+            Text(l10n.profilePhoto,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            const SizedBox(height: 6),
+            Text(l10n.profilePhotoOneOnly,
+                style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
+            const SizedBox(height: 16),
             Center(
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: primary.isEmpty
-                        ? Container(
-                            width: 160,
-                            height: 200,
-                            color: AppColors.primary.withOpacity(0.08),
-                            child: const Icon(Icons.person,
-                                size: 64, color: AppColors.primary),
-                          )
-                        : GestureDetector(
-                            onTap: () => showImageGallery(context, [primary]),
-                            child: Image.network(primary,
-                                width: 160, height: 200, fit: BoxFit.cover),
-                          ),
-                  ),
-                  Positioned(
-                    bottom: 8,
-                    right: 8,
-                    child: GestureDetector(
-                      onTap: _changePrimary,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                            color: AppColors.primary, shape: BoxShape.circle),
-                        child: const Icon(Icons.camera_alt,
-                            color: Colors.white, size: 18),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 260),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: photo.isEmpty
+                              ? Container(
+                                  color: AppColors.primary.withOpacity(0.08),
+                                  child: const Icon(Icons.person,
+                                      size: 72, color: AppColors.primary),
+                                )
+                              : GestureDetector(
+                                  onTap: () =>
+                                      FullScreenPhotoViewer.open(context, photo),
+                                  child: Image.network(photo,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(
+                                            color: AppColors.primary
+                                                .withOpacity(0.08),
+                                            child: const Icon(
+                                                Icons.broken_image_outlined,
+                                                color: AppColors.primary),
+                                          )),
+                                ),
+                        ),
                       ),
-                    ),
+                      Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: GestureDetector(
+                          onTap: _changePhoto,
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle),
+                            child: const Icon(Icons.camera_alt,
+                                color: Colors.white, size: 20),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                const Expanded(
-                  child: Text('Additional Photos',
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            const SizedBox(height: 18),
+            if (photo.isNotEmpty)
+              Center(
+                child: Text(l10n.tapPhotoToEnlarge,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              ),
+            const SizedBox(height: 18),
+            SizedBox(
+              height: 50,
+              child: OutlinedButton.icon(
+                onPressed: _changePhoto,
+                icon: const Icon(Icons.photo_camera_outlined),
+                label: Text(photo.isEmpty ? l10n.uploadPhoto : l10n.changePhoto),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
-                Text('${additional.length}/${PhotosEditScreen.maxAdditional}',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-              ],
+              ),
             ),
-            const SizedBox(height: 10),
-            GridView.count(
-              crossAxisCount: 3,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              children: [
-                ...additional.map(_additionalTile),
-                if (additional.length < PhotosEditScreen.maxAdditional)
-                  _addTile(),
-              ],
-            ),
+            if (photo.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 50,
+                child: TextButton.icon(
+                  onPressed: _removePhoto,
+                  icon: const Icon(Icons.delete_outline),
+                  label: Text(l10n.removePhoto),
+                  style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                ),
+              ),
+            ],
           ],
         ),
         if (_busy)
@@ -243,73 +249,4 @@ class _PhotosFormState extends ConsumerState<_PhotosForm> {
       ],
     );
   }
-
-  Widget _additionalTile(String url) => Stack(
-        fit: StackFit.expand,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: GestureDetector(
-              onTap: () => showImageGallery(context, [url]),
-              child: Image.network(url,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                        color: AppColors.primary.withOpacity(0.08),
-                        child: const Icon(Icons.broken_image_outlined,
-                            color: AppColors.primary),
-                      )),
-            ),
-          ),
-          Positioned(
-            top: 2,
-            right: 2,
-            child: Container(
-              decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9), shape: BoxShape.circle),
-              child: PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, size: 18),
-                padding: EdgeInsets.zero,
-                onSelected: (v) =>
-                    v == 'primary' ? _setAsPrimary(url) : _removeAdditional(url),
-                itemBuilder: (_) => const [
-                  PopupMenuItem(
-                      value: 'primary',
-                      child: ListTile(
-                          dense: true,
-                          leading: Icon(Icons.star_outline),
-                          title: Text('Set as primary'))),
-                  PopupMenuItem(
-                      value: 'delete',
-                      child: ListTile(
-                          dense: true,
-                          leading: Icon(Icons.delete_outline, color: Colors.red),
-                          title: Text('Delete',
-                              style: TextStyle(color: Colors.red)))),
-                ],
-              ),
-            ),
-          ),
-        ],
-      );
-
-  Widget _addTile() => GestureDetector(
-        onTap: _addPhotos,
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.06),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-                color: AppColors.primary.withOpacity(0.4),
-                style: BorderStyle.solid),
-          ),
-          child: const Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.add_a_photo_outlined, color: AppColors.primary),
-              SizedBox(height: 4),
-              Text('Add', style: TextStyle(color: AppColors.primary, fontSize: 12)),
-            ],
-          ),
-        ),
-      );
 }

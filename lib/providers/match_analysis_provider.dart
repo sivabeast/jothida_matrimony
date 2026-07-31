@@ -513,7 +513,9 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         profileBName: bride.fullName,
         createdAt: now,
         userLanguage: lang,
-        // Paid upfront via Google Play Billing — the report is never payment-locked.
+        // Appointments are FREE (§12): there is no charge and nothing to
+        // collect, so the booking is recorded as settled from the start and is
+        // never payment-locked anywhere in the app or the admin panel.
         paid: true,
         paidAt: now,
         paymentId: paymentId,
@@ -526,8 +528,10 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         officeContact: config.officeContactNumber,
         history: [
           BookingHistoryEntry(at: now, label: 'Appointment booked'),
-          BookingHistoryEntry(
-              at: now, label: 'Payment received ($paymentId)'),
+          if (amount > 0)
+            BookingHistoryEntry(at: now, label: 'Payment received ($paymentId)')
+          else
+            BookingHistoryEntry(at: now, label: 'Free booking — no charge'),
         ],
       );
 

@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show debugPrint;
+﻿import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +8,7 @@ import '../../providers/chat_provider.dart';
 import '../../providers/interest_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../widgets/common/network_photo.dart';
+import '../../core/utils/l10n_ext.dart';
 
 /// All conversations of the signed-in user, updated in realtime. Reached from
 /// the Home header Chat icon via the `/chats` route, which wraps [ChatListView]
@@ -20,7 +21,7 @@ class ChatListScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Chats'),
+        title: Text(context.l10n.chatsTitle),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -224,7 +225,7 @@ class _ChatsPlaceholder extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Try again'),
+                label: Text(context.l10n.tryAgain),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
                   side: const BorderSide(color: AppColors.primary),

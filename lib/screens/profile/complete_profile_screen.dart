@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/profile_completion.dart';
 import '../../providers/profile_provider.dart';
+import '../../core/utils/l10n_ext.dart';
 
 /// Shows the profile sections that are still incomplete, each linking to the
 /// right editor — instead of restarting the onboarding wizard. Registered at
@@ -18,14 +19,14 @@ class CompleteProfileScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Complete Your Profile'),
+        title: Text(context.l10n.completeYourProfile),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
       body: profileAsync.when(
         loading: () => const Center(
             child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (e, _) => Center(child: Text('Could not load profile: $e')),
+        error: (e, _) => Center(child: Text(context.l10n.couldNotLoadProfileError('$e'))),
         data: (profile) {
           final completion = computeProfileCompletion(profile);
           final incomplete =
@@ -88,18 +89,18 @@ class CompleteProfileScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Almost there!',
-                              style: TextStyle(
+                          Text(context.l10n.almostThere,
+                              style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
                                   fontFamily: 'Poppins')),
-                          SizedBox(height: 2),
-                          Text('Finish the sections below to get more responses.',
+                          const SizedBox(height: 2),
+                          Text(context.l10n.finishSectionsHint,
                               style: TextStyle(
                                   color: Colors.white70, fontSize: 12)),
                         ],
@@ -109,7 +110,7 @@ class CompleteProfileScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              Text('Pending sections (${incomplete.length})',
+              Text(context.l10n.pendingSections(incomplete.length),
                   style: const TextStyle(
                       fontSize: 15,
                       fontFamily: 'Poppins',
@@ -129,7 +130,7 @@ class CompleteProfileScreen extends ConsumerWidget {
                       ),
                       title: Text(s.title,
                           style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: const Text('Tap to complete'),
+                      subtitle: Text(context.l10n.tapToComplete),
                       trailing: const Icon(Icons.arrow_forward_ios,
                           size: 14, color: AppColors.primary),
                       onTap: () => context.push(s.route),

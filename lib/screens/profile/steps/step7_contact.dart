@@ -26,6 +26,7 @@ class _Step7State extends ConsumerState<Step7Contact> {
   final _nameController = TextEditingController();
   final _mobileController = TextEditingController();
   final _whatsappController = TextEditingController();
+  final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   String _relationship = 'Self';
   bool _sameAsAbove = false;
@@ -52,6 +53,7 @@ class _Step7State extends ConsumerState<Step7Contact> {
       } else {
         _whatsappController.text = wa;
       }
+      _emailController.text = (c['email'] as String?) ?? '';
     }
     _contactPrivacy =
         (ref.read(profileCreationProvider).data['contactPrivacy'] as String?) ??
@@ -63,6 +65,7 @@ class _Step7State extends ConsumerState<Step7Contact> {
     _nameController.dispose();
     _mobileController.dispose();
     _whatsappController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -76,6 +79,7 @@ class _Step7State extends ConsumerState<Step7Contact> {
         'whatsappNumber': _sameAsAbove
             ? _mobileController.text.trim()
             : _whatsappController.text.trim(),
+        'email': _emailController.text.trim(),
       },
       'contactPrivacy': _contactPrivacy,
     });
@@ -155,7 +159,8 @@ class _Step7State extends ConsumerState<Step7Contact> {
             AppTextField(
               controller: _nameController,
               label: '${l10n.contactPersonName} *',
-              validator: Validators.name,
+              validator: (v) =>
+                  context.validators.requiredField(v, l10n.contactPersonName),
             ),
             const SizedBox(height: 16),
             Text('${l10n.relationship} *',
@@ -179,6 +184,10 @@ class _Step7State extends ConsumerState<Step7Contact> {
                   .toList(),
             ),
             const SizedBox(height: 16),
+            // Mobile Number (§4) — mandatory, digits ONLY, exactly 10.
+            // `digitsOnly` strips letters/spaces/symbols as they are typed and
+            // the length limiter caps at 10; the validator then refuses
+            // anything shorter, so Continue is blocked until it is valid.
             AppTextField(
               controller: _mobileController,
               label: '${l10n.mobileNumber} *',
@@ -190,7 +199,7 @@ class _Step7State extends ConsumerState<Step7Contact> {
                 FilteringTextInputFormatter.digitsOnly,
                 LengthLimitingTextInputFormatter(10),
               ],
-              validator: Validators.phone,
+              validator: context.validators.mobile,
             ),
             const SizedBox(height: 12),
             Row(
@@ -214,8 +223,22 @@ class _Step7State extends ConsumerState<Step7Contact> {
                   FilteringTextInputFormatter.digitsOnly,
                   LengthLimitingTextInputFormatter(10),
                 ],
+                // Optional field, but a partially-typed number is still invalid.
+                validator: context.validators.optionalMobile,
               ),
             ],
+            const SizedBox(height: 16),
+            // Contact email (§5) — optional, and editable later from My
+            // Profile like every other field.
+            AppTextField(
+              controller: _emailController,
+              label: l10n.email,
+              hint: 'name@example.com',
+              keyboardType: TextInputType.emailAddress,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? null
+                  : context.validators.email(v),
+            ),
             const SizedBox(height: 24),
             // ── Contact-sharing privacy choice (§17). Default Private. ──
             Text(

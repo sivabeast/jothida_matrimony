@@ -61,10 +61,13 @@ class FirestoreService {
             displayName: user.displayName,
             photoUrl: user.photoURL,
             loginProvider: loginProvider,
-            // Auto-assign super_admin to whitelisted accounts; everyone else
-            // defaults to 'user'.
+            // Auto-assign super_admin / dedicated-admin to whitelisted
+            // accounts; everyone else defaults to 'user'.
             role: AdminConfig.roleForEmail(user.email),
-            isProfileComplete: false,
+            // A DEDICATED admin never onboards (§2) — flagging the account as
+            // "complete" keeps the profile-completion gate from ever pointing
+            // it at the wizard, so no matrimony profile is created for it.
+            isProfileComplete: AdminConfig.isDedicatedAdminEmail(user.email),
             isEmailVerified: user.emailVerified,
             createdAt: now,
             updatedAt: now,
@@ -85,28 +88,43 @@ class FirestoreService {
           // account if its document was created before being whitelisted.
           final existing = snap.data();
           final currentRole = existing?['role'];
-          final isWhitelisted = AdminConfig.isSuperAdminEmail(user.email);
+          final isSuper = AdminConfig.isSuperAdminEmail(user.email);
+          final isDedicated = AdminConfig.isDedicatedAdminEmail(user.email);
           final promoteSuperAdmin =
-              isWhitelisted && currentRole != AdminConfig.roleSuperAdmin;
+              isSuper && currentRole != AdminConfig.roleSuperAdmin;
+          // A DEDICATED admin (§2) is pinned to the plain 'admin' role, which
+          // the router uses to confine it to the Admin Dashboard.
+          final promoteDedicated =
+              isDedicated && currentRole != AdminConfig.roleAdmin;
           // The whitelist is the single source of truth: an account that still
-          // holds super_admin but is no longer whitelisted is demoted to a
-          // normal user, so revoking access just means editing the whitelist.
-          final demoteSuperAdmin =
-              !isWhitelisted && currentRole == AdminConfig.roleSuperAdmin;
+          // holds a privileged role but is no longer whitelisted is demoted to
+          // a normal user, so revoking access just means editing the whitelist.
+          final demoteToUser = !isSuper &&
+              !isDedicated &&
+              (currentRole == AdminConfig.roleSuperAdmin ||
+                  currentRole == AdminConfig.roleAdmin);
           if (promoteSuperAdmin) {
             debugPrint('[Firestore] ${user.uid}: promoting ${user.email} '
                 '→ super_admin');
           }
-          if (demoteSuperAdmin) {
+          if (promoteDedicated) {
+            debugPrint('[Firestore] ${user.uid}: pinning ${user.email} '
+                '→ admin (dedicated admin account)');
+          }
+          if (demoteToUser) {
             debugPrint('[Firestore] ${user.uid}: ${user.email} no longer '
-                'whitelisted → demoting super_admin to user');
+                'whitelisted → demoting to user');
           }
           txn.update(docRef, {
             'lastLoginAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
             if (loginProvider != null) 'loginProvider': loginProvider,
             if (promoteSuperAdmin) 'role': AdminConfig.roleSuperAdmin,
-            if (demoteSuperAdmin) 'role': AdminConfig.roleUser,
+            if (promoteDedicated) 'role': AdminConfig.roleAdmin,
+            if (demoteToUser) 'role': AdminConfig.roleUser,
+            // Keeps the dedicated admin out of the onboarding gate for good,
+            // including accounts created before this rule existed.
+            if (isDedicated) 'isProfileComplete': true,
           });
         }
       });
@@ -124,7 +142,7 @@ class FirestoreService {
     // link the uid, so the router opens the Employee Portal and never the
     // matrimony pages. Super-admin accounts are excluded — admin and employee
     // stay separate.
-    if (user.email != null && !AdminConfig.isSuperAdminEmail(user.email)) {
+    if (user.email != null && !AdminConfig.isPrivilegedEmail(user.email)) {
       try {
         final teamKey = user.email!.trim().toLowerCase();
         final teamRef = _db.collection('astrology_team').doc(teamKey);
@@ -219,6 +237,15 @@ class FirestoreService {
         'photoUrl': url,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
+
+  /// Merges [data] into `users/{uid}`. Used for account-level settings that
+  /// are mirrored from elsewhere (e.g. the privacy switches, whose source of
+  /// truth is the public profile document).
+  Future<void> updateUser(String uid, Map<String, dynamic> data) => _db
+      .collection(AppConstants.usersCollection)
+      .doc(uid)
+      .set({...data, 'updatedAt': FieldValue.serverTimestamp()},
+          SetOptions(merge: true));
 
   // (updateUserSubscription was removed — the app has NO subscription system;
   // all matrimony features are free and only per-booking astrology is paid.)

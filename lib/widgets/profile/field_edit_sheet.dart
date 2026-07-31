@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
+import '../../core/utils/value_l10n.dart';
 import '../../models/profile_model.dart';
 import '../../providers/profile_edit_provider.dart';
 import '../../providers/profile_provider.dart';
@@ -16,8 +18,20 @@ enum ProfileFieldKind { text, number, options, date }
 /// [patch] the matching Firestore field subset — so saving updates ONLY this
 /// field and leaves everything else untouched.
 class ProfileEditableField {
+  /// Label shown to the member — ALREADY localized by the section's field
+  /// builder, which receives a BuildContext (§21: Edit Profile switches
+  /// language completely).
   final String label;
   final ProfileFieldKind kind;
+
+  /// When true the stored value is a controlled-vocabulary token (e.g. 'Male',
+  /// 'Hindu') and is displayed through the EN→TA value map, while storage
+  /// stays English. Free text (names, company) sets this to false.
+  final bool localizeValues;
+
+  /// Optional validator for text/number fields (e.g. the 10-digit mobile
+  /// rule). Returning a non-null message blocks the save.
+  final String? Function(String?)? validator;
 
   /// Current display value (also pre-fills the editor).
   final String value;
@@ -42,6 +56,8 @@ class ProfileEditableField {
     required this.patch,
     this.options = const [],
     this.dateValue,
+    this.localizeValues = true,
+    this.validator,
   });
 }
 
@@ -51,7 +67,8 @@ class ProfileEditableField {
 Future<void> showProfileFieldSheet(
   BuildContext context, {
   required String sectionTitle,
-  required List<ProfileEditableField> Function(ProfileModel profile)
+  required List<ProfileEditableField> Function(
+          BuildContext context, ProfileModel profile)
       fieldsBuilder,
 }) {
   return showModalBottomSheet<void>(
@@ -67,7 +84,8 @@ Future<void> showProfileFieldSheet(
 
 class _FieldListSheet extends ConsumerWidget {
   final String sectionTitle;
-  final List<ProfileEditableField> Function(ProfileModel) fieldsBuilder;
+  final List<ProfileEditableField> Function(BuildContext, ProfileModel)
+      fieldsBuilder;
   const _FieldListSheet(
       {required this.sectionTitle, required this.fieldsBuilder});
 
@@ -76,7 +94,9 @@ class _FieldListSheet extends ConsumerWidget {
     // Watching the live profile means every saved field is reflected here
     // immediately without closing the sheet.
     final profile = ref.watch(myProfileProvider).valueOrNull;
-    final fields = profile == null ? <ProfileEditableField>[] : fieldsBuilder(profile);
+    final fields = profile == null
+        ? <ProfileEditableField>[]
+        : fieldsBuilder(context, profile);
 
     return SafeArea(
       child: Padding(
@@ -115,7 +135,7 @@ class _FieldListSheet extends ConsumerWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 6),
-              child: Text('Tap a field to edit only that field.',
+              child: Text(context.l10n.tapFieldToEdit,
                   style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
             ),
             Flexible(
@@ -132,7 +152,11 @@ class _FieldListSheet extends ConsumerWidget {
                         style: const TextStyle(
                             fontSize: 13, color: Colors.black54)),
                     subtitle: Text(
-                      f.value.trim().isEmpty ? 'Not added' : f.value,
+                      f.value.trim().isEmpty
+                          ? context.l10n.notAddedYet
+                          : (f.localizeValues
+                              ? context.localizeValue(f.value)
+                              : f.value),
                       style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w600,
@@ -171,51 +195,62 @@ class _FieldListSheet extends ConsumerWidget {
     }
     if (newValue == null || !context.mounted) return;
 
+    final l10n = context.l10n;
     final messenger = ScaffoldMessenger.of(context);
     try {
       await ref.read(profileEditControllerProvider.notifier).save(
             updated: f.apply(profile, newValue),
             patch: f.patch(newValue),
           );
-      messenger.showSnackBar(const SnackBar(content: Text('Saved')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.savedToast)));
     } catch (_) {
-      messenger.showSnackBar(
-          const SnackBar(content: Text('Could not save. Please try again.')));
+      messenger
+          .showSnackBar(SnackBar(content: Text(l10n.couldNotSaveRetry)));
     }
   }
 
-  /// Text / number single-field editor.
+  /// Text / number single-field editor. Honours the field's [validator] (e.g.
+  /// the exactly-10-digit mobile rule, §4) so an invalid value can never be
+  /// saved.
   Future<String?> _promptText(
       BuildContext context, ProfileEditableField f) async {
+    final l10n = context.l10n;
     final ctrl = TextEditingController(text: f.value);
+    final formKey = GlobalKey<FormState>();
     final isNumber = f.kind == ProfileFieldKind.number;
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Edit ${f.label}'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-          inputFormatters:
-              isNumber ? [FilteringTextInputFormatter.digitsOnly] : null,
-          decoration: InputDecoration(
-            labelText: f.label,
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10)),
+        title: Text(l10n.editFieldTitle(f.label)),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: ctrl,
+            autofocus: true,
+            keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+            inputFormatters:
+                isNumber ? [FilteringTextInputFormatter.digitsOnly] : null,
+            validator: f.validator,
+            decoration: InputDecoration(
+              labelText: f.label,
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            ),
           ),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+              onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: const Text('Save'),
+            onPressed: () {
+              if (formKey.currentState?.validate() == false) return;
+              Navigator.pop(ctx, ctrl.text.trim());
+            },
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -247,8 +282,10 @@ class _FieldListSheet extends ConsumerWidget {
       context: context,
       initialDate: initial,
       firstDate: DateTime(1950),
+      // Members must be at least 18 (§14 Child Safety) — the picker cannot
+      // even offer a younger date of birth.
       lastDate: DateTime(now.year - 18, now.month, now.day),
-      helpText: 'Select ${f.label}',
+      helpText: context.l10n.selectFieldTitle(f.label),
     );
   }
 }
@@ -290,7 +327,7 @@ class _OptionPickerState extends State<_OptionPicker> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
-              child: Text('Select ${widget.field.label}',
+              child: Text(context.l10n.selectFieldTitle(widget.field.label),
                   style: const TextStyle(
                       fontSize: 16,
                       fontFamily: 'Poppins',
@@ -303,7 +340,7 @@ class _OptionPickerState extends State<_OptionPicker> {
                   autofocus: false,
                   onChanged: (v) => setState(() => _query = v),
                   decoration: InputDecoration(
-                    hintText: 'Search…',
+                    hintText: context.l10n.searchHint,
                     prefixIcon: const Icon(Icons.search, size: 20),
                     isDense: true,
                     border: OutlineInputBorder(
@@ -320,7 +357,10 @@ class _OptionPickerState extends State<_OptionPicker> {
                   final o = filtered[i];
                   final selected = o == widget.field.value;
                   return ListTile(
-                    title: Text(o),
+                    // Stored value stays English; only the label is localized.
+                    title: Text(widget.field.localizeValues
+                        ? context.localizeValue(o)
+                        : o),
                     trailing: selected
                         ? const Icon(Icons.check_circle,
                             color: AppColors.primary, size: 20)

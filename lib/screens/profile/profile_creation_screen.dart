@@ -68,9 +68,11 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   static const int _totalSteps = 10;
 
   /// Steps the user may SKIP — only the optional sections, matching the website
-  /// (Partner Preferences, Photos, Upload Horoscope). Mandatory steps never
-  /// show Skip.
-  static const Set<int> _skippableSteps = {5, 6, 7};
+  /// (Photos, Upload Horoscope). Mandatory steps never show Skip.
+  ///
+  /// Partner Preferences (step 5) is NO LONGER skippable: the partner AGE
+  /// range is mandatory (§11), so the step must be completed.
+  static const Set<int> _skippableSteps = {6, 7};
 
   /// The 10 website profile-creation steps, in the same order as the website.
   /// Titles are ALWAYS read from the l10n dictionary so they follow the

@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -72,7 +72,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       debugPrint('[ChatScreen] send failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Message couldn\'t be sent. Please try again.')),
+          SnackBar(content: Text(context.l10n.messageNotSent)),
         );
       }
       return false;
@@ -201,9 +201,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     } catch (e) {
       debugPrint('[ChatScreen] attachment send failed: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content:
-                Text('Attachment couldn\'t be sent. Please try again.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.l10n.attachmentNotSent)));
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -213,8 +212,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void _attachError(Object e) {
     debugPrint('[ChatScreen] pick failed: $e');
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Could not pick that file. Please try again.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.couldNotPickFileRetry)));
     }
   }
 
@@ -439,7 +438,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               data: (messages) {
                 if (messages.isEmpty) {
                   return Center(
-                    child: Text('Say hello to $name 👋',
+                    child: Text(context.l10n.sayHelloTo(name),
                         style: TextStyle(color: Colors.grey[500])),
                   );
                 }
@@ -848,7 +847,7 @@ class _Bubble extends StatelessWidget {
                   children: [
                     Icon(Icons.download_outlined, size: 13, color: subTint),
                     const SizedBox(width: 3),
-                    Text('Tap to open',
+                    Text(context.l10n.tapToOpen,
                         style: TextStyle(fontSize: 11.5, color: subTint)),
                   ],
                 ),

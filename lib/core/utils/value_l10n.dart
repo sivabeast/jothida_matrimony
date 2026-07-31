@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import '../constants/app_constants.dart';
+
 /// Tamil display text for canonical English DATA values (dropdown options,
 /// stored profile values, consultation categories…).
 ///
@@ -188,13 +190,46 @@ const Map<String, String> kTamilValueMap = {
   'Punjabi': 'பஞ்சாபி',
   'Urdu': 'உருது',
 
-  // ── Misc statuses ──
+  // ── Misc statuses (incl. profile status, §20 "Profile Status") ──
   'Pending': 'நிலுவையில்',
   'Accepted': 'ஏற்கப்பட்டது',
+  'Approved': 'அங்கீகரிக்கப்பட்டது',
+  'approved': 'அங்கீகரிக்கப்பட்டது',
+  'pending': 'நிலுவையில்',
+  'rejected': 'நிராகரிக்கப்பட்டது',
+  'blocked': 'தடுக்கப்பட்டது',
+  'Blocked': 'தடுக்கப்பட்டது',
+  'Active': 'செயலில்',
+  'Inactive': 'செயலில் இல்லை',
+  'Married': 'திருமணமானவர்',
   'Rejected': 'நிராகரிக்கப்பட்டது',
   'Completed': 'முடிந்தது',
   'Confirmed': 'உறுதிப்படுத்தப்பட்டது',
   'Cancelled': 'ரத்து செய்யப்பட்டது',
+};
+
+/// Astrology values (Rasi · Nakshatra · Lagnam) are stored in TAMIL script,
+/// because that is what the pickers offer. English mode must therefore
+/// translate the OTHER way (§20: "When English is selected, everything must
+/// become English").
+///
+/// [AppConstants] keeps the Tamil and English lists aligned index-for-index, so
+/// the two maps below are derived from them rather than duplicated by hand.
+final Map<String, String> _astroTaToEn = {
+  for (var i = 0; i < AppConstants.rasiList.length; i++)
+    AppConstants.rasiList[i]: AppConstants.rasiEnList[i],
+  for (var i = 0; i < AppConstants.nakshatraList.length; i++)
+    AppConstants.nakshatraList[i]: AppConstants.nakshatraEnList[i],
+};
+
+/// The reverse direction, so a value stored in English (older documents, or the
+/// website) still renders in Tamil.
+final Map<String, String> _astroEnToTa = {
+  for (final e in _astroTaToEn.entries) e.value: e.key,
+  // Also accept the bare transliteration without the zodiac name in brackets,
+  // e.g. "Mesham" as well as "Mesham (Aries)".
+  for (var i = 0; i < AppConstants.rasiEnList.length; i++)
+    AppConstants.rasiEnList[i].split(' (').first: AppConstants.rasiList[i],
 };
 
 /// Runtime English → Tamil names contributed by loaded master data (castes and
@@ -224,12 +259,25 @@ extension ValueL10nX on BuildContext {
   /// True when the app is currently displayed in Tamil.
   bool get isTamil => Localizations.localeOf(this).languageCode == 'ta';
 
-  /// Returns the Tamil display text for a stored English data [value] when the
-  /// app locale is Tamil; otherwise (or when unmapped) returns [value] as-is.
+  /// Renders a stored data [value] in the ACTIVE language (§20).
+  ///
+  ///  • Tamil mode → the Tamil text for a canonical English value (static map,
+  ///    then the master-data registry, then the astrology pairs).
+  ///  • English mode → the English text for a value stored in Tamil script
+  ///    (Rasi / Nakshatra / Lagnam are stored in Tamil, so English mode has to
+  ///    translate back).
+  ///
+  /// An unmapped value is returned unchanged, which makes this safe to apply
+  /// anywhere a stored value is rendered.
   String localizeValue(String? value) {
     final v = (value ?? '').trim();
     if (v.isEmpty) return v;
-    if (!isTamil) return v;
-    return kTamilValueMap[v] ?? masterTamilNameFor(v) ?? v;
+    if (isTamil) {
+      return kTamilValueMap[v] ??
+          masterTamilNameFor(v) ??
+          _astroEnToTa[v] ??
+          v;
+    }
+    return _astroTaToEn[v] ?? v;
   }
 }

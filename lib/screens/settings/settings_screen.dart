@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/navigation/root_navigator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/utils/account_deletion.dart';
 import '../../core/utils/l10n_ext.dart';
-import '../../providers/account_provider.dart';
-import '../../providers/auth_provider.dart';
 
 /// Settings hub — groups app preferences and links to legal/support pages.
 /// Registered at `/settings`. Reached from Profile → "Settings".
@@ -31,7 +29,7 @@ class SettingsScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         children: [
           // ── General ──────────────────────────────────────────────────────
-          _GroupLabel('General'),
+          _GroupLabel(l10n.generalSection),
           _SettingsTile(
             icon: Icons.language,
             title: l10n.language,
@@ -39,21 +37,21 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           // ── Privacy ──────────────────────────────────────────────────────
-          _GroupLabel('Privacy'),
+          _GroupLabel(l10n.privacy),
           _SettingsTile(
             icon: Icons.visibility_off_outlined,
-            title: 'Hide Profile from Search',
+            title: l10n.privacySettings,
             route: '/privacy',
           ),
           const SizedBox(height: 16),
           // ── Account ──────────────────────────────────────────────────────
           _GroupLabel(l10n.account),
           _DeleteAccountTile(
-            onTap: () => _deleteAccount(context, ref),
+            onTap: () => confirmAndDeleteAccount(context, ref),
           ),
           const SizedBox(height: 16),
           // ── About ────────────────────────────────────────────────────────
-          _GroupLabel('About'),
+          _GroupLabel(l10n.aboutSection),
           _SettingsTile(
             icon: Icons.help_outline,
             title: l10n.helpSupport,
@@ -69,6 +67,17 @@ class SettingsScreen extends ConsumerWidget {
             title: l10n.termsConditions,
             route: '/terms',
           ),
+          // Imported from the website (§14).
+          _SettingsTile(
+            icon: Icons.child_care_outlined,
+            title: l10n.childSafety,
+            route: '/child-safety',
+          ),
+          _SettingsTile(
+            icon: Icons.delete_forever_outlined,
+            title: l10n.deleteAccountPageTitle,
+            route: '/delete-account',
+          ),
           const SizedBox(height: 24),
           Center(
             child: Text(
@@ -80,80 +89,6 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-}
-
-/// Permanently deletes the account immediately (no admin approval) and returns
-/// the user to the Login screen with the navigation stack cleared.
-Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
-  final l10n = context.l10n;
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(l10n.deleteAccount),
-      content: Text(l10n.deleteAccountWarning),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.cancel)),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error, foregroundColor: Colors.white),
-          onPressed: () => Navigator.pop(ctx, true),
-          child: Text(l10n.deleteAccount),
-        ),
-      ],
-    ),
-  );
-  if (confirmed != true || !context.mounted) return;
-
-  // Capture BOTH before the async gap: `context` belongs to a screen that is
-  // about to be torn down by the auth-state redirect. The ROOT messenger (not
-  // this screen's) is used because the Settings scaffold no longer exists by
-  // the time we have a result to report.
-  final messenger = rootScaffoldMessengerKey.currentState;
-  final router = GoRouter.of(context);
-  final couldNotDelete = context.l10n.couldNotDeleteAccount;
-  final isAstrologer =
-      ref.read(currentUserProvider).valueOrNull?.isAstrologer ?? false;
-
-  // Blocking progress while we delete. PopScope stops the Android back button
-  // from dismissing it mid-deletion.
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => const PopScope(
-      canPop: false,
-      child: Center(child: CircularProgressIndicator()),
-    ),
-  );
-
-  var dialogOpen = true;
-  void closeProgress() {
-    if (!dialogOpen || !context.mounted) return;
-    dialogOpen = false;
-    Navigator.of(context, rootNavigator: true).pop();
-  }
-
-  try {
-    final authDeleted = await ref
-        .read(accountControllerProvider.notifier)
-        .deleteAccount(isAstrologer: isAstrologer);
-    closeProgress();
-    // `go` REPLACES the whole navigation stack, so Back cannot return to Home.
-    // The router's redirect independently enforces this: the account is signed
-    // out and its user document is gone, so every gated route sends it here.
-    router.go('/login');
-    if (!authDeleted) {
-      // Firestore data + session are gone, but the Firebase Auth record
-      // survived (re-authentication was refused). Say so rather than silently
-      // implying a clean deletion.
-      messenger?.showSnackBar(SnackBar(content: Text(couldNotDelete)));
-    }
-  } catch (e) {
-    debugPrint('[SettingsScreen] deleteAccount failed: $e');
-    closeProgress();
-    messenger?.showSnackBar(SnackBar(content: Text(couldNotDelete)));
   }
 }
 

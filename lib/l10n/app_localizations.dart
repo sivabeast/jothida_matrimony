@@ -1796,7 +1796,7 @@ abstract class AppLocalizations {
   /// No description provided for @interestAcceptedMatch.
   ///
   /// In en, this message translates to:
-  /// **'It\'s a match! Interest accepted 🎉'**
+  /// **'Interest accepted — it\'s a match!'**
   String get interestAcceptedMatch;
 
   /// No description provided for @profileUnavailableMatch.
@@ -3278,8 +3278,8 @@ abstract class AppLocalizations {
   /// No description provided for @selectFieldTitle.
   ///
   /// In en, this message translates to:
-  /// **'Select {label}'**
-  String selectFieldTitle(String label);
+  /// **'Select {field}'**
+  String selectFieldTitle(String field);
 
   /// No description provided for @addFieldTitle.
   ///
@@ -3410,7 +3410,7 @@ abstract class AppLocalizations {
   /// No description provided for @selectStateDistrictCity.
   ///
   /// In en, this message translates to:
-  /// **'Please select your state, district and city'**
+  /// **'Please select state, district and city.'**
   String get selectStateDistrictCity;
 
   /// No description provided for @educationCareerSubtitle.
@@ -4108,6 +4108,906 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You cannot send an interest to a user you have blocked.'**
   String get cannotSendInterestBlocked;
+
+  /// No description provided for @cropPhotoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop Photo'**
+  String get cropPhotoTitle;
+
+  /// No description provided for @cropPhotoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinch to zoom and drag to position. Only the square area inside the frame is saved.'**
+  String get cropPhotoHint;
+
+  /// No description provided for @cropAndSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop & Save'**
+  String get cropAndSave;
+
+  /// No description provided for @couldNotCropPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not crop this photo. Please choose another image.'**
+  String get couldNotCropPhoto;
+
+  /// No description provided for @profilePhotoOneOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'You have one profile photo. Uploading a new one replaces the current photo.'**
+  String get profilePhotoOneOnly;
+
+  /// No description provided for @photoCropRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop your photo before saving.'**
+  String get photoCropRequired;
+
+  /// No description provided for @tapPhotoToEnlarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the photo to view it full screen'**
+  String get tapPhotoToEnlarge;
+
+  /// No description provided for @privacyIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what other members can see. Your name, age and basic details are always visible.'**
+  String get privacyIntro;
+
+  /// No description provided for @hidePhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Phone Number'**
+  String get hidePhoneNumber;
+
+  /// No description provided for @hidePhoneNumberDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Your phone number is never shown on your profile.'**
+  String get hidePhoneNumberDesc;
+
+  /// No description provided for @hideSalaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Salary'**
+  String get hideSalaryTitle;
+
+  /// No description provided for @hideSalaryDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Your annual income is not displayed to other members.'**
+  String get hideSalaryDesc;
+
+  /// No description provided for @hideHoroscopeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Horoscope Details'**
+  String get hideHoroscopeTitle;
+
+  /// No description provided for @hideHoroscopeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Rasi, Nakshatra and horoscope documents stay hidden.'**
+  String get hideHoroscopeDesc;
+
+  /// No description provided for @hideProfilePhotoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Profile Photo'**
+  String get hideProfilePhotoTitle;
+
+  /// No description provided for @hideProfilePhotoDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Other members see a placeholder instead of your photo.'**
+  String get hideProfilePhotoDesc;
+
+  /// No description provided for @privacyDefaultNote.
+  ///
+  /// In en, this message translates to:
+  /// **'These are hidden by default and stay hidden — accepting an interest never reveals them. Only you can change these settings.'**
+  String get privacyDefaultNote;
+
+  /// No description provided for @shareContactPublicly.
+  ///
+  /// In en, this message translates to:
+  /// **'Share Contact Publicly'**
+  String get shareContactPublicly;
+
+  /// No description provided for @contactPublicNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone viewing your profile can see your contact.'**
+  String get contactPublicNote;
+
+  /// No description provided for @contactPrivateNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact is shared only after you accept an interest.'**
+  String get contactPrivateNote;
+
+  /// No description provided for @privacySettingsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy settings saved.'**
+  String get privacySettingsSaved;
+
+  /// No description provided for @privacySettingsSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save your privacy settings. Please try again.'**
+  String get privacySettingsSaveFailed;
+
+  /// No description provided for @hiddenByMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden by member'**
+  String get hiddenByMember;
+
+  /// No description provided for @photoHiddenByMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo hidden by this member'**
+  String get photoHiddenByMember;
+
+  /// No description provided for @childSafety.
+  ///
+  /// In en, this message translates to:
+  /// **'Child Safety'**
+  String get childSafety;
+
+  /// No description provided for @childSafetyStandards.
+  ///
+  /// In en, this message translates to:
+  /// **'Child Safety Standards'**
+  String get childSafetyStandards;
+
+  /// No description provided for @deleteAccountPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account'**
+  String get deleteAccountPageTitle;
+
+  /// No description provided for @lastUpdatedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated: {date}'**
+  String lastUpdatedOn(String date);
+
+  /// No description provided for @legalContactHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get legalContactHeading;
+
+  /// No description provided for @emailUs.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Us'**
+  String get emailUs;
+
+  /// No description provided for @callUs.
+  ///
+  /// In en, this message translates to:
+  /// **'Call Us'**
+  String get callUs;
+
+  /// No description provided for @chatWithSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat with support'**
+  String get chatWithSupport;
+
+  /// No description provided for @faqTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequently Asked Questions'**
+  String get faqTitle;
+
+  /// No description provided for @weAreHereToHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'We are here to help'**
+  String get weAreHereToHelp;
+
+  /// No description provided for @reachSupportTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Reach the {app} support team'**
+  String reachSupportTeam(String app);
+
+  /// No description provided for @couldNotOpenScheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open {scheme}. Please try again.'**
+  String couldNotOpenScheme(String scheme);
+
+  /// No description provided for @generalSection.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get generalSection;
+
+  /// No description provided for @aboutSection.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get aboutSection;
+
+  /// No description provided for @allProfiles.
+  ///
+  /// In en, this message translates to:
+  /// **'All Profiles'**
+  String get allProfiles;
+
+  /// No description provided for @profilesShown.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} profiles'**
+  String profilesShown(int count);
+
+  /// No description provided for @loadingMoreProfiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading more profiles…'**
+  String get loadingMoreProfiles;
+
+  /// No description provided for @noMoreProfiles.
+  ///
+  /// In en, this message translates to:
+  /// **'You have reached the end of the list.'**
+  String get noMoreProfiles;
+
+  /// No description provided for @latestProfiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest Profiles'**
+  String get latestProfiles;
+
+  /// No description provided for @partnerAgeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Select your preferred partner age range to continue.'**
+  String get partnerAgeRequired;
+
+  /// No description provided for @partnerAgeMandatoryNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Partner age range is required — matches are filtered by it.'**
+  String get partnerAgeMandatoryNote;
+
+  /// No description provided for @gothram.
+  ///
+  /// In en, this message translates to:
+  /// **'Gothram'**
+  String get gothram;
+
+  /// No description provided for @kuladeivam.
+  ///
+  /// In en, this message translates to:
+  /// **'Kuladeivam'**
+  String get kuladeivam;
+
+  /// No description provided for @companyName.
+  ///
+  /// In en, this message translates to:
+  /// **'Company'**
+  String get companyName;
+
+  /// No description provided for @collegeName.
+  ///
+  /// In en, this message translates to:
+  /// **'College'**
+  String get collegeName;
+
+  /// No description provided for @fatherOccupation.
+  ///
+  /// In en, this message translates to:
+  /// **'Father\'s Occupation'**
+  String get fatherOccupation;
+
+  /// No description provided for @motherOccupation.
+  ///
+  /// In en, this message translates to:
+  /// **'Mother\'s Occupation'**
+  String get motherOccupation;
+
+  /// No description provided for @aboutFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'About Family'**
+  String get aboutFamily;
+
+  /// No description provided for @eatingHabit.
+  ///
+  /// In en, this message translates to:
+  /// **'Eating Habit'**
+  String get eatingHabit;
+
+  /// No description provided for @smokingHabit.
+  ///
+  /// In en, this message translates to:
+  /// **'Smoking'**
+  String get smokingHabit;
+
+  /// No description provided for @drinkingHabit.
+  ///
+  /// In en, this message translates to:
+  /// **'Drinking'**
+  String get drinkingHabit;
+
+  /// No description provided for @hobbies.
+  ///
+  /// In en, this message translates to:
+  /// **'Hobbies'**
+  String get hobbies;
+
+  /// No description provided for @languagesKnown.
+  ///
+  /// In en, this message translates to:
+  /// **'Languages Known'**
+  String get languagesKnown;
+
+  /// No description provided for @rahuKethuDosham.
+  ///
+  /// In en, this message translates to:
+  /// **'Rahu / Kethu Dosham'**
+  String get rahuKethuDosham;
+
+  /// No description provided for @kalasarpaDosham.
+  ///
+  /// In en, this message translates to:
+  /// **'Kalasarpa Dosham'**
+  String get kalasarpaDosham;
+
+  /// No description provided for @workLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Work Location'**
+  String get workLocation;
+
+  /// No description provided for @couldNotLoadProfileRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this profile right now. Please try again.'**
+  String get couldNotLoadProfileRetry;
+
+  /// No description provided for @createProfileFirstInterest.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your profile first to send an interest.'**
+  String get createProfileFirstInterest;
+
+  /// No description provided for @couldNotOpenChatRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open chat. Please try again.'**
+  String get couldNotOpenChatRetry;
+
+  /// No description provided for @contactDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact details'**
+  String get contactDetailsTitle;
+
+  /// No description provided for @contactLockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact locked'**
+  String get contactLockedTitle;
+
+  /// No description provided for @contactUnlocksAfterAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact details unlock once your interest is mutually accepted.'**
+  String get contactUnlocksAfterAccept;
+
+  /// No description provided for @contactHiddenByMember.
+  ///
+  /// In en, this message translates to:
+  /// **'This member has chosen to keep their phone number private.'**
+  String get contactHiddenByMember;
+
+  /// No description provided for @callAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get callAction;
+
+  /// No description provided for @youMatchedConnectNow.
+  ///
+  /// In en, this message translates to:
+  /// **'You matched with {name} — you can now connect directly.'**
+  String youMatchedConnectNow(String name);
+
+  /// No description provided for @mobileNumberExactly10.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid 10-digit mobile number (digits only).'**
+  String get mobileNumberExactly10;
+
+  /// No description provided for @mobileNumberRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile number is required.'**
+  String get mobileNumberRequired;
+
+  /// No description provided for @photoUploadNotInDemo.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo upload is not available in demo mode.'**
+  String get photoUploadNotInDemo;
+
+  /// No description provided for @couldNotLoadYourProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your profile.'**
+  String get couldNotLoadYourProfile;
+
+  /// No description provided for @createYourProfileFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your profile first.'**
+  String get createYourProfileFirst;
+
+  /// No description provided for @tapFieldToEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a field to edit only that field.'**
+  String get tapFieldToEdit;
+
+  /// No description provided for @notAddedYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not added'**
+  String get notAddedYet;
+
+  /// No description provided for @notAddedTapToFill.
+  ///
+  /// In en, this message translates to:
+  /// **'Not added yet — tap ✎ to fill this in.'**
+  String get notAddedTapToFill;
+
+  /// No description provided for @editFieldTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {field}'**
+  String editFieldTitle(String field);
+
+  /// No description provided for @editSectionTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {section}'**
+  String editSectionTooltip(String section);
+
+  /// No description provided for @searchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search…'**
+  String get searchHint;
+
+  /// No description provided for @savedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get savedToast;
+
+  /// No description provided for @couldNotSaveRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save. Please try again.'**
+  String get couldNotSaveRetry;
+
+  /// No description provided for @noProfileFoundCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'No profile found. Create your profile first.'**
+  String get noProfileFoundCreate;
+
+  /// No description provided for @noPhotoAddedYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No photo added yet.'**
+  String get noPhotoAddedYet;
+
+  /// No description provided for @attachedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Attached'**
+  String get attachedLabel;
+
+  /// No description provided for @notAddedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Not added'**
+  String get notAddedLabel;
+
+  /// No description provided for @ageDateOfBirth.
+  ///
+  /// In en, this message translates to:
+  /// **'Age (Date of Birth)'**
+  String get ageDateOfBirth;
+
+  /// No description provided for @nameTamilLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name (Tamil)'**
+  String get nameTamilLabel;
+
+  /// No description provided for @alternateEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get alternateEmail;
+
+  /// No description provided for @myProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Profile'**
+  String get myProfileTitle;
+
+  /// No description provided for @basicDetailsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic Details'**
+  String get basicDetailsSection;
+
+  /// No description provided for @careerSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Career'**
+  String get careerSection;
+
+  /// No description provided for @communitySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Community'**
+  String get communitySection;
+
+  /// No description provided for @photosSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get photosSection;
+
+  /// No description provided for @uploadHoroscopeSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Horoscope'**
+  String get uploadHoroscopeSection;
+
+  /// No description provided for @contactSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get contactSection;
+
+  /// No description provided for @profileForLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile For'**
+  String get profileForLabel;
+
+  /// No description provided for @childrenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Children'**
+  String get childrenLabel;
+
+  /// No description provided for @contactPersonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Person'**
+  String get contactPersonLabel;
+
+  /// No description provided for @horoscopePdfLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope PDF'**
+  String get horoscopePdfLabel;
+
+  /// No description provided for @weightKgLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight (kg)'**
+  String get weightKgLabel;
+
+  /// No description provided for @bookAppointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Book Appointment'**
+  String get bookAppointment;
+
+  /// No description provided for @freeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'FREE'**
+  String get freeLabel;
+
+  /// No description provided for @appointmentFreeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking is free'**
+  String get appointmentFreeTitle;
+
+  /// No description provided for @appointmentFreeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no booking charges. Pick a date and session and confirm your appointment.'**
+  String get appointmentFreeNote;
+
+  /// No description provided for @savingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get savingLabel;
+
+  /// No description provided for @fatherName.
+  ///
+  /// In en, this message translates to:
+  /// **'Father Name'**
+  String get fatherName;
+
+  /// No description provided for @motherName.
+  ///
+  /// In en, this message translates to:
+  /// **'Mother Name'**
+  String get motherName;
+
+  /// No description provided for @aboutMeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a few lines about yourself, your family, interests and what you are looking for.'**
+  String get aboutMeHint;
+
+  /// No description provided for @educationOccupationRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Education and occupation are required.'**
+  String get educationOccupationRequired;
+
+  /// No description provided for @religionCasteRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Religion and caste are required.'**
+  String get religionCasteRequired;
+
+  /// No description provided for @hobbiesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Reading, Music, Cooking'**
+  String get hobbiesHint;
+
+  /// No description provided for @interestsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Travel, Sports'**
+  String get interestsHint;
+
+  /// No description provided for @languagesKnownHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Comma separated, e.g. Tamil, English'**
+  String get languagesKnownHint;
+
+  /// No description provided for @profileDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Details'**
+  String get profileDetails;
+
+  /// No description provided for @completeYourProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Your Profile'**
+  String get completeYourProfile;
+
+  /// No description provided for @almostThere.
+  ///
+  /// In en, this message translates to:
+  /// **'Almost there!'**
+  String get almostThere;
+
+  /// No description provided for @finishSectionsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish the sections below to get more responses.'**
+  String get finishSectionsHint;
+
+  /// No description provided for @pendingSections.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending sections ({count})'**
+  String pendingSections(int count);
+
+  /// No description provided for @tapToComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to complete'**
+  String get tapToComplete;
+
+  /// No description provided for @couldNotLoadProfileError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load profile: {error}'**
+  String couldNotLoadProfileError(String error);
+
+  /// No description provided for @findMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Matches'**
+  String get findMatches;
+
+  /// No description provided for @profileCompletionPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Completion: {percent}%'**
+  String profileCompletionPercent(int percent);
+
+  /// No description provided for @completeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get completeLabel;
+
+  /// No description provided for @basicInformationUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic information updated'**
+  String get basicInformationUpdated;
+
+  /// No description provided for @communityDetailsUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Community details updated'**
+  String get communityDetailsUpdated;
+
+  /// No description provided for @careerDetailsUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Career details updated'**
+  String get careerDetailsUpdated;
+
+  /// No description provided for @locationUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Location updated'**
+  String get locationUpdated;
+
+  /// No description provided for @aboutMeUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'About Me updated'**
+  String get aboutMeUpdated;
+
+  /// No description provided for @getHoroscopeCompatibilityReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Horoscope Compatibility Report'**
+  String get getHoroscopeCompatibilityReport;
+
+  /// No description provided for @openWeddingWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Wedding Workspace'**
+  String get openWeddingWorkspace;
+
+  /// No description provided for @marriageFixedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Marriage Fixed 💍'**
+  String get marriageFixedTitle;
+
+  /// No description provided for @notYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Yet'**
+  String get notYet;
+
+  /// No description provided for @yesMarriageFixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, Marriage Fixed'**
+  String get yesMarriageFixed;
+
+  /// No description provided for @couldNotSaveMarriageFixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save Marriage Fixed. Please try again.'**
+  String get couldNotSaveMarriageFixed;
+
+  /// No description provided for @chatsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chats'**
+  String get chatsTitle;
+
+  /// No description provided for @messageNotSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Message couldn\'t be sent. Please try again.'**
+  String get messageNotSent;
+
+  /// No description provided for @attachmentNotSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment couldn\'t be sent. Please try again.'**
+  String get attachmentNotSent;
+
+  /// No description provided for @couldNotPickFileRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not pick that file. Please try again.'**
+  String get couldNotPickFileRetry;
+
+  /// No description provided for @sayHelloTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Say hello to {name} 👋'**
+  String sayHelloTo(String name);
+
+  /// No description provided for @resetPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Preferences'**
+  String get resetPreferences;
+
+  /// No description provided for @linkCouldNotBeOpened.
+  ///
+  /// In en, this message translates to:
+  /// **'This link could not be opened.'**
+  String get linkCouldNotBeOpened;
+
+  /// No description provided for @notificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification'**
+  String get notificationTitle;
+
+  /// No description provided for @backToDiscover.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Matches'**
+  String get backToDiscover;
+
+  /// No description provided for @wantAnExpertOpinion.
+  ///
+  /// In en, this message translates to:
+  /// **'Want an expert opinion?'**
+  String get wantAnExpertOpinion;
+
+  /// No description provided for @marriageCompatibilityPorutham.
+  ///
+  /// In en, this message translates to:
+  /// **'Marriage Compatibility (Porutham)'**
+  String get marriageCompatibilityPorutham;
+
+  /// No description provided for @notEnoughHoroscopeData.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough horoscope data to calculate the poruthams for this pair. Add birth-star details to both profiles.'**
+  String get notEnoughHoroscopeData;
+
+  /// No description provided for @compatibilityUnlocksAfterAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Porutham results and horoscope compatibility unlock only after {name} accepts your interest.'**
+  String compatibilityUnlocksAfterAccept(String name);
+
+  /// No description provided for @thisPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'this person'**
+  String get thisPerson;
+
+  /// No description provided for @interestSentShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Interest sent'**
+  String get interestSentShort;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

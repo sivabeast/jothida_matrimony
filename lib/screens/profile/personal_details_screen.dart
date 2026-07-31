@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +12,7 @@ import '../../providers/service_providers.dart';
 import '../../widgets/common/location_picker_section.dart';
 import '../../widgets/common/religion_caste_fields.dart';
 import '../../widgets/profile/editable_profile_photo.dart';
+import '../../core/utils/l10n_ext.dart';
 
 /// Profile Details — the primary profile-management page (reached from the side
 /// menu's PROFILE group). It holds the profile photo, name and all personal
@@ -33,7 +34,7 @@ class PersonalDetailsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Profile Details'),
+        title: Text(context.l10n.profileDetails),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -270,7 +271,7 @@ Widget _sheetChrome({
                     minimumSize: const Size.fromHeight(48),
                     side: BorderSide(color: Colors.grey[400]!),
                   ),
-                  child: const Text('Cancel'),
+                  child: Text(context.l10n.cancel),
                 ),
               ),
               const SizedBox(width: 12),
@@ -288,7 +289,7 @@ Widget _sheetChrome({
                           height: 18,
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white))
-                      : const Text('Save'),
+                      : Text(context.l10n.save),
                 ),
               ),
             ],
@@ -469,6 +470,7 @@ class _BasicInfoSheetState extends ConsumerState<_BasicInfoSheet> {
 
   Future<void> _save() async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     final navigator = Navigator.of(context);
     setState(() => _saving = true);
     final age = _ageFromDob(_dob);
@@ -495,12 +497,12 @@ class _BasicInfoSheetState extends ConsumerState<_BasicInfoSheet> {
     try {
       await _saveSection(ref, widget.profile, data, updated);
       navigator.pop();
-      messenger.showSnackBar(const SnackBar(content: Text('Basic information updated')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.basicInformationUpdated)));
     } catch (e) {
       debugPrint('[PersonalDetails] basic save error: $e');
       if (mounted) setState(() => _saving = false);
       messenger.showSnackBar(
-          const SnackBar(content: Text('Could not save. Please try again.')));
+          SnackBar(content: Text(l10n.couldNotSaveRetry)));
     }
   }
 
@@ -566,6 +568,7 @@ class _CommunitySheetState extends ConsumerState<_CommunitySheet> {
 
   Future<void> _save() async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     final navigator = Navigator.of(context);
     setState(() => _saving = true);
     // The `data` map is written to Firestore verbatim (so cleared values/ids
@@ -589,12 +592,12 @@ class _CommunitySheetState extends ConsumerState<_CommunitySheet> {
     try {
       await _saveSection(ref, widget.profile, data, updated);
       navigator.pop();
-      messenger.showSnackBar(const SnackBar(content: Text('Community details updated')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.communityDetailsUpdated)));
     } catch (e) {
       debugPrint('[PersonalDetails] community save error: $e');
       if (mounted) setState(() => _saving = false);
       messenger.showSnackBar(
-          const SnackBar(content: Text('Could not save. Please try again.')));
+          SnackBar(content: Text(l10n.couldNotSaveRetry)));
     }
   }
 
@@ -652,6 +655,7 @@ class _CareerSheetState extends ConsumerState<_CareerSheet> {
 
   Future<void> _save() async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     final navigator = Navigator.of(context);
     setState(() => _saving = true);
     final data = {
@@ -667,12 +671,12 @@ class _CareerSheetState extends ConsumerState<_CareerSheet> {
     try {
       await _saveSection(ref, widget.profile, data, updated);
       navigator.pop();
-      messenger.showSnackBar(const SnackBar(content: Text('Career details updated')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.careerDetailsUpdated)));
     } catch (e) {
       debugPrint('[PersonalDetails] career save error: $e');
       if (mounted) setState(() => _saving = false);
       messenger.showSnackBar(
-          const SnackBar(content: Text('Could not save. Please try again.')));
+          SnackBar(content: Text(l10n.couldNotSaveRetry)));
     }
   }
 
@@ -720,6 +724,7 @@ class _LocationSheetState extends ConsumerState<_LocationSheet> {
 
   Future<void> _save() async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     final navigator = Navigator.of(context);
     setState(() => _saving = true);
     final data = {
@@ -752,12 +757,12 @@ class _LocationSheetState extends ConsumerState<_LocationSheet> {
     try {
       await _saveSection(ref, widget.profile, data, updated);
       navigator.pop();
-      messenger.showSnackBar(const SnackBar(content: Text('Location updated')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.locationUpdated)));
     } catch (e) {
       debugPrint('[PersonalDetails] location save error: $e');
       if (mounted) setState(() => _saving = false);
       messenger.showSnackBar(
-          const SnackBar(content: Text('Could not save. Please try again.')));
+          SnackBar(content: Text(l10n.couldNotSaveRetry)));
     }
   }
 
@@ -815,6 +820,7 @@ class _AboutSheetState extends ConsumerState<_AboutSheet> {
 
   Future<void> _save() async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     final navigator = Navigator.of(context);
     setState(() => _saving = true);
     final data = {'aboutMe': _about.text.trim()};
@@ -822,12 +828,12 @@ class _AboutSheetState extends ConsumerState<_AboutSheet> {
     try {
       await _saveSection(ref, widget.profile, data, updated);
       navigator.pop();
-      messenger.showSnackBar(const SnackBar(content: Text('About Me updated')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.aboutMeUpdated)));
     } catch (e) {
       debugPrint('[PersonalDetails] about save error: $e');
       if (mounted) setState(() => _saving = false);
       messenger.showSnackBar(
-          const SnackBar(content: Text('Could not save. Please try again.')));
+          SnackBar(content: Text(l10n.couldNotSaveRetry)));
     }
   }
 

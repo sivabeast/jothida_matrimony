@@ -2,22 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/phone_utils.dart';
+import '../../core/utils/value_l10n.dart';
+import '../legal/legal_content.dart';
 
 /// Help & Support — contact options + FAQ. Registered at `/help`.
+///
+/// Contact details come from [SupportContact] (§22), the single place they are
+/// defined, so the legal pages and this screen can never drift apart.
 class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});
-
-  static const String supportEmail = 'support@jothidamatrimony.com';
-  static const String supportPhone = '+919000000000';
 
   @override
   Widget build(BuildContext context) {
     debugPrint('[HelpSupportScreen] build — route /help opened');
+    final l10n = context.l10n;
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Help & Support'),
+        title: Text(l10n.helpSupport),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -35,14 +39,14 @@ class HelpSupportScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('We are here to help',
-                    style: TextStyle(
+                Text(l10n.weAreHereToHelp,
+                    style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
                         fontFamily: 'Poppins',
                         fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
-                Text('Reach the ${AppConstants.appName} support team',
+                Text(l10n.reachSupportTeam(AppConstants.appName),
                     style: const TextStyle(color: Colors.white70, fontSize: 13)),
               ],
             ),
@@ -50,37 +54,39 @@ class HelpSupportScreen extends StatelessWidget {
           const SizedBox(height: 16),
           _ContactTile(
             icon: Icons.email_outlined,
-            title: 'Email Us',
-            subtitle: supportEmail,
+            title: l10n.emailUs,
+            subtitle: SupportContact.email,
             onTap: () => _launch(
               context,
               Uri(
                 scheme: 'mailto',
-                path: supportEmail,
-                query: 'subject=${Uri.encodeComponent('${AppConstants.appName} Support')}',
+                path: SupportContact.email,
+                query:
+                    'subject=${Uri.encodeComponent('${AppConstants.appName} Support')}',
               ),
             ),
           ),
           _ContactTile(
             icon: Icons.call_outlined,
-            title: 'Call Us',
-            subtitle: '+91 90000 00000',
-            onTap: () => _launch(context, phoneCallUri(supportPhone)),
+            title: l10n.callUs,
+            subtitle: SupportContact.phoneDisplay,
+            onTap: () =>
+                _launch(context, phoneCallUri(SupportContact.phoneE164)),
           ),
           _ContactTile(
             icon: Icons.chat_outlined,
-            title: 'WhatsApp',
-            subtitle: 'Chat with support',
-            onTap: () => _launch(context, whatsappUri(supportPhone)),
+            title: l10n.whatsapp,
+            subtitle: SupportContact.phoneDisplay,
+            onTap: () => _launch(context, whatsappUri(SupportContact.phoneE164)),
           ),
           const SizedBox(height: 24),
-          const Text('Frequently Asked Questions',
-              style: TextStyle(
+          Text(l10n.faqTitle,
+              style: const TextStyle(
                   fontSize: 16,
                   fontFamily: 'Poppins',
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          ..._faqs.map((f) => _FaqTile(question: f.$1, answer: f.$2)),
+          ..._faqs(context).map((f) => _FaqTile(question: f.$1, answer: f.$2)),
           const SizedBox(height: 24),
           Center(
             child: Text('${AppConstants.appName} • v${AppConstants.appVersion}',
@@ -91,28 +97,89 @@ class HelpSupportScreen extends StatelessWidget {
     );
   }
 
-  static const List<(String, String)> _faqs = [
-    (
-      'How do I verify my profile?',
-      'Go to Home and tap "Verify Now" on the verification card, then upload a government ID. Our team reviews it within 24–48 hours.'
-    ),
-    (
-      'How does horoscope matching work?',
-      'We compute Porutham (compatibility) from both horoscopes. Open a match and tap Compatibility, or consult an astrologer from the Astrologer tab.'
-    ),
-    (
-      'How do I pay for a Horoscope Report?',
-      'Open an accepted match and tap Get Horoscope Analysis, then complete the purchase in the Google Play billing sheet. Your report unlocks after the payment is confirmed.'
-    ),
-    (
-      'How do I edit my preferences?',
-      'Tap Partner Preferences on the Home screen to set your preferred age, location, education, horoscope and more.'
-    ),
-    (
-      'How do I delete my account?',
-      'Email us at $supportEmail from your registered address and we will process the deletion within 7 days.'
-    ),
-  ];
+  /// FAQ content, in the active language.
+  static List<(String, String)> _faqs(BuildContext context) {
+    if (context.isTamil) {
+      return [
+        (
+          'என் சுயவிவரப் புகைப்படத்தை எப்படி மாற்றுவது?',
+          'எனது சுயவிவரம் → சுயவிவரப் புகைப்படம் என்பதைத் திறந்து படத்தைத் '
+              'தேர்ந்தெடுக்கவும். 1:1 சதுரமாக வெட்டிய பிறகே படம் சேமிக்கப்படும், '
+              'மேலும் அது பழைய படத்தை மாற்றும். ஒரு உறுப்பினருக்கு ஒரே ஒரு '
+              'புகைப்படம் மட்டுமே.'
+        ),
+        (
+          'என் தகவல்களை மற்றவர்கள் பார்க்காமல் எப்படி மறைப்பது?',
+          'கைபேசி எண், சம்பளம், ஜாதக விவரங்கள் மற்றும் சுயவிவரப் புகைப்படம் '
+              'இயல்பாகவே மறைக்கப்பட்டுள்ளன. அமைப்புகள் → தனியுரிமை அமைப்புகளில் '
+              'நீங்களே அவற்றை இயக்கும் வரை மறைந்தே இருக்கும் — விருப்பம் '
+              'ஏற்கப்பட்டாலும் தானாக வெளிப்படாது.'
+        ),
+        (
+          'ஜாதகப் பொருத்தம் எப்படி வேலை செய்கிறது?',
+          'இரு ஜாதகங்களிலிருந்தும் பொருத்தம் கணக்கிடப்படுகிறது. ஒரு வரனைத் '
+              'திறந்து பொருத்தம் என்பதைத் தட்டவும், அல்லது ஜோதிடர் சந்திப்பை '
+              'இலவசமாக முன்பதிவு செய்யவும்.'
+        ),
+        (
+          'ஜோதிடர் சந்திப்புக்குக் கட்டணம் உண்டா?',
+          'இல்லை. நேரத்தைத் தேர்ந்தெடுத்து சந்திப்பை முன்பதிவு செய்வது '
+              'முற்றிலும் இலவசம். முன்பதிவு "எனது முன்பதிவுகள்" பக்கத்திலும் '
+              'ஜோதிடர் டாஷ்போர்டிலும் தோன்றும்.'
+        ),
+        (
+          'சுயவிவரத்தைத் திருத்த முடியுமா?',
+          'ஆம். பெயர், பிறந்த தேதி, கல்வி, பணி, சம்பளம், ஜாதகம், துணை விருப்பம், '
+              'குடும்ப விவரங்கள், கைபேசி எண், மின்னஞ்சல் உட்பட ஒவ்வொரு புலத்தையும் '
+              'எனது சுயவிவரம் பக்கத்திலிருந்து எப்போது வேண்டுமானாலும் திருத்தலாம்.'
+        ),
+        (
+          'என் கணக்கை எப்படி நீக்குவது?',
+          'அமைப்புகள் → கணக்கை நீக்கு என்பதைத் திறக்கவும். நீக்கம் உடனடியானது; '
+              'என்ன அழிக்கப்படுகிறது என்பதை அந்தப் பக்கம் விவரிக்கிறது.'
+        ),
+      ];
+    }
+    return [
+      (
+        'How do I change my profile photo?',
+        'Open My Profile → Profile Photo and pick an image. The photo is saved '
+            'only after you crop it to a 1:1 square, and it replaces your '
+            'previous photo — every member has exactly one photo.'
+      ),
+      (
+        'How do I keep my details private?',
+        'Your phone number, salary, horoscope details and profile photo are '
+            'hidden by default. They stay hidden until you switch them on '
+            'yourself in Settings → Privacy Settings — accepting an interest '
+            'never reveals them.'
+      ),
+      (
+        'How does horoscope matching work?',
+        'We compute Porutham (compatibility) from both horoscopes. Open a '
+            'match and tap Compatibility, or book a free astrologer '
+            'appointment.'
+      ),
+      (
+        'Is the astrologer appointment free?',
+        'Yes. Selecting a slot and booking an appointment is completely free — '
+            'there are no booking charges. Your booking appears in My Bookings '
+            'and on the astrologer dashboard.'
+      ),
+      (
+        'Can I edit my profile after creating it?',
+        'Yes. Every field — name, date of birth, education, career, salary, '
+            'horoscope, partner preference, family details, mobile number and '
+            'email — can be edited at any time from My Profile. Nothing is '
+            'permanently locked.'
+      ),
+      (
+        'How do I delete my account?',
+        'Open Settings → Delete Account. Deletion is immediate and '
+            'self-service; that page explains exactly what is removed.'
+      ),
+    ];
+  }
 
   static Future<void> _launch(BuildContext context, Uri uri) async {
     debugPrint('[HelpSupportScreen] launching $uri');
@@ -121,7 +188,7 @@ class HelpSupportScreen extends StatelessWidget {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open ${uri.scheme}. Please try again.')),
+        SnackBar(content: Text(context.l10n.couldNotOpenScheme(uri.scheme))),
       );
     }
   }

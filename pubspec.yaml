@@ -47,6 +47,10 @@ dependencies:
   # UI
   cached_network_image: ^3.4.1
   image_picker: ^1.1.2
+  # Pure-Dart image decode/crop/encode — powers the mandatory 1:1 square crop
+  # screen (lib/core/utils/image_crop.dart) and the optimized profile-photo
+  # export. No native/platform configuration required.
+  image: ^4.5.4
   # Wide range: Flutter 3.27 pins intl 0.19.0, Flutter 3.41 (CI) pins 0.20.2.
   intl: ">=0.19.0 <0.21.0"
   cupertino_icons: ^1.0.8
@@ -89,7 +93,8 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   mockito: ^5.4.4
   flutter_launcher_icons: ^0.14.3
-  image: ^4.5.4   # used by tool/gen_play_store_icon.dart (Play Console 512×512 icon)
+  # NOTE: `image` moved to the main dependencies (used at runtime by the 1:1
+  # crop screen); tool/gen_play_store_icon.dart still imports it from there.
 
 # ── Launcher icon generation ──────────────────────────────────────────────────
 # Master = assets/images/report_logo.png : the full 1024×1024 maroon branded

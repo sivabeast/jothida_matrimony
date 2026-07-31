@@ -11,11 +11,16 @@ import '../../../widgets/common/gradient_button.dart';
 import '../../../widgets/common/searchable_multi_select_field.dart';
 import '../../../widgets/common/searchable_with_others_field.dart';
 
-/// Partner Preference step. Every field is OPTIONAL. The field set mirrors the
-/// website's "Partner Preferences" step exactly: age & height range, preferred
-/// education / occupation, religion / caste / sub-caste, income, marital
-/// status, mother tongue, physical status, chevvai dosham and the
-/// "horoscope match required" toggle. Tapping the button advances to Review.
+/// Partner Preference step. The field set mirrors the website's "Partner
+/// Preferences" step exactly: age & height range, preferred education /
+/// occupation, religion / caste / sub-caste, income, marital status, mother
+/// tongue, physical status, chevvai dosham and the "horoscope match required"
+/// toggle.
+///
+/// **Partner AGE is MANDATORY (§11)** — the member must actively choose a
+/// range before they can continue, and that range is what the Matches feed
+/// filters on (see `mandatoryPreferenceMatch`). Every other field stays
+/// optional.
 ///
 /// Age and Height are **dual range sliders** (spec §9–§11) — there is no wheel
 /// picker and no separate Minimum/Maximum dropdown pair any more.
@@ -35,6 +40,11 @@ class _StepPartnerPreferenceState
 
   int _minAge = 21;
   int _maxAge = 35;
+
+  /// Whether the member has ACTIVELY chosen the age range (§11). Starts false
+  /// on a fresh profile and only becomes true once they touch the slider or a
+  /// saved range is loaded, so Continue is blocked until they decide.
+  bool _ageChosen = false;
 
   /// Height is kept as an INDEX into [AppConstants.heightList] so the same
   /// range slider can drive it; it is converted back to `5'6"` on save.
@@ -65,6 +75,8 @@ class _StepPartnerPreferenceState
       _minAge = minA.clamp(_minAgeBound, _maxAgeBound);
       _maxAge = maxA.clamp(_minAgeBound, _maxAgeBound);
       if (_minAge > _maxAge) _maxAge = _minAge;
+      // Editing an existing profile: the saved range counts as chosen.
+      _ageChosen = pref['minAge'] != null && pref['maxAge'] != null;
       _minHeightIdx = _heightIndex(pref['minHeight'] as String?, 0);
       _maxHeightIdx =
           _heightIndex(pref['maxHeight'] as String?, _heights.length - 1);
@@ -104,10 +116,21 @@ class _StepPartnerPreferenceState
   }
 
   void _saveAndNext() {
+    // §11 — the profile cannot be completed without a partner age preference.
+    if (!_ageChosen) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+            SnackBar(content: Text(context.l10n.partnerAgeRequired)));
+      return;
+    }
     ref.read(profileCreationProvider.notifier).updateData({
       'partnerPreferences': {
         'minAge': _minAge,
         'maxAge': _maxAge,
+        // Records that the member actively picked this range (§11), so the
+        // matcher uses it verbatim instead of a gender-based default.
+        'agePreferenceSet': true,
         'minHeight': _heights[_minHeightIdx],
         'maxHeight': _heights[_maxHeightIdx],
         'education': _education,
@@ -141,9 +164,9 @@ class _StepPartnerPreferenceState
           const SizedBox(height: 20),
 
           _sectionTitle(l10n.basicPreference),
-          // ── Age — dual range slider ──
+          // ── Age — dual range slider. MANDATORY (§11). ──
           DualRangeSliderField(
-            label: l10n.ageRangeLabel,
+            label: '${l10n.ageRangeLabel} *',
             min: _minAgeBound,
             max: _maxAgeBound,
             startValue: _minAge,
@@ -154,7 +177,28 @@ class _StepPartnerPreferenceState
             onChanged: (lo, hi) => setState(() {
               _minAge = lo;
               _maxAge = hi;
+              _ageChosen = true;
             }),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(_ageChosen ? Icons.check_circle : Icons.info_outline,
+                    size: 15,
+                    color: _ageChosen ? AppColors.success : Colors.orange[700]),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(l10n.partnerAgeMandatoryNote,
+                      style: TextStyle(
+                          fontSize: 11.5,
+                          color: _ageChosen
+                              ? Colors.grey[600]
+                              : Colors.orange[800])),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
           // ── Height — dual range slider over the height list ──

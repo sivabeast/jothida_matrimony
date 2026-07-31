@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/value_l10n.dart';
 import '../../models/profile_model.dart';
 import '../../providers/location_provider.dart';
@@ -22,6 +23,7 @@ const Map<String, String> _kTitleTa = {
   'Career': 'தொழில்',
   'Community': 'சமூகம்',
   'Horoscope': 'ஜாதகம்',
+  'Family Details': 'குடும்ப விவரங்கள்',
   'Partner Preferences': 'துணை விருப்பங்கள்',
   'Photos': 'புகைப்படங்கள்',
   'Upload Horoscope': 'ஜாதகம் பதிவேற்றம்',
@@ -66,7 +68,16 @@ const Map<String, String> _kLabelTa = {
   'Relationship': 'உறவுமுறை',
   'Mobile': 'கைபேசி',
   'WhatsApp': 'வாட்ஸ்அப்',
+  'Email': 'மின்னஞ்சல்',
   'Horoscope PDF': 'ஜாதக PDF',
+  'Father': 'தந்தை',
+  "Father's Occupation": 'தந்தையின் தொழில்',
+  'Mother': 'தாய்',
+  "Mother's Occupation": 'தாயின் தொழில்',
+  'Brothers': 'சகோதரர்கள்',
+  'Sisters': 'சகோதரிகள்',
+  'Family Type': 'குடும்ப வகை',
+  'Family Status': 'குடும்ப நிலை',
 };
 
 /// Section title in the current language (English key → Tamil in Tamil mode).
@@ -151,7 +162,7 @@ class MyProfileScreen extends ConsumerWidget {
           children: [
             Icon(Icons.person_off_outlined, size: 48, color: Colors.grey[400]),
             const SizedBox(height: 12),
-            const Text('No profile found. Create your profile first.'),
+            Text(context.l10n.noProfileFoundCreate),
           ],
         ),
       );
@@ -249,6 +260,28 @@ class MyProfileScreen extends ConsumerWidget {
             [l('Kuladeivam'), lv(p.kuladeivam)],
           ],
         ),
+        // Family Details (§5) — editable like every other section.
+        _SectionCard(
+          icon: Icons.family_restroom_outlined,
+          title: 'Family Details',
+          onEdit: () => context.push('/edit/family'),
+          rows: [
+            [l('Father'), s(p.family.fatherName)],
+            [l("Father's Occupation"), lv(p.family.fatherOccupation)],
+            [l('Mother'), s(p.family.motherName)],
+            [l("Mother's Occupation"), lv(p.family.motherOccupation)],
+            [
+              l('Brothers'),
+              p.family.brothersCount > 0 ? '${p.family.brothersCount}' : ''
+            ],
+            [
+              l('Sisters'),
+              p.family.sistersCount > 0 ? '${p.family.sistersCount}' : ''
+            ],
+            [l('Family Type'), lv(p.family.familyType)],
+            [l('Family Status'), lv(p.family.familyStatus)],
+          ],
+        ),
         _SectionCard(
           icon: Icons.auto_awesome_outlined,
           title: 'Horoscope',
@@ -286,16 +319,14 @@ class MyProfileScreen extends ConsumerWidget {
           onEdit: () => context.push('/edit/photos'),
           rows: const [],
           child: p.photos.isEmpty
-              ? Text(
-                  context.isTamil
-                      ? 'இன்னும் புகைப்படம் சேர்க்கப்படவில்லை.'
-                      : 'No photo added yet.',
+              ? Text(context.l10n.noPhotoAddedYet,
                   style: TextStyle(color: Colors.grey[600], fontSize: 13))
+              // Square thumbnail — the photo is a 1:1 crop everywhere (§1).
               : ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: SizedBox(
-                    width: 96,
-                    height: 116,
+                    width: 104,
+                    height: 104,
                     child: NetworkPhoto(
                         url: p.photos.first,
                         fit: BoxFit.cover,
@@ -325,6 +356,7 @@ class MyProfileScreen extends ConsumerWidget {
             [l('Relationship'), lv(contact?.relationship)],
             [l('Mobile'), s(contact?.mobileNumber)],
             [l('WhatsApp'), s(contact?.whatsappNumber)],
+            [l('Email'), s(contact?.email)],
           ],
         ),
       ],
@@ -409,111 +441,161 @@ int _ageFromDob(DateTime dob) {
 
 /// Field-level editable descriptors for the **Basic Details** section — each
 /// saves ONLY its own field (Firestore patch) and leaves everything else as-is.
-List<ProfileEditableField> basicDetailsFields(ProfileModel p) => [
-      ProfileEditableField(
-        label: 'Name',
-        kind: ProfileFieldKind.text,
-        value: p.fullName,
-        apply: (pr, v) => pr.copyWith(fullName: v as String),
-        patch: (v) => {'fullName': v},
-      ),
-      ProfileEditableField(
-        label: 'Gender',
-        kind: ProfileFieldKind.options,
-        value: p.gender,
-        options: const ['Male', 'Female'],
-        apply: (pr, v) => pr.copyWith(gender: v as String),
-        patch: (v) => {'gender': v},
-      ),
-      ProfileEditableField(
-        label: 'Age (Date of Birth)',
-        kind: ProfileFieldKind.date,
-        value: p.age > 0 ? '${p.age} yrs' : '',
-        dateValue: p.dateOfBirth,
-        apply: (pr, v) {
-          final d = v as DateTime;
-          return pr.copyWith(dateOfBirth: d, age: _ageFromDob(d));
-        },
-        patch: (v) {
-          final d = v as DateTime;
-          return {'dateOfBirth': d, 'age': _ageFromDob(d)};
-        },
-      ),
-      ProfileEditableField(
-        label: 'Height',
-        kind: ProfileFieldKind.options,
-        value: p.height,
-        options: AppConstants.heightList,
-        apply: (pr, v) => pr.copyWith(height: v as String),
-        patch: (v) => {'height': v},
-      ),
-      ProfileEditableField(
-        label: 'Weight (kg)',
-        kind: ProfileFieldKind.number,
-        value: p.weight,
-        apply: (pr, v) => pr.copyWith(weight: v as String),
-        patch: (v) => {'weight': v},
-      ),
-      ProfileEditableField(
-        label: 'Marital Status',
-        kind: ProfileFieldKind.options,
-        value: p.maritalStatus,
-        options: AppConstants.maritalStatusList,
-        apply: (pr, v) => pr.copyWith(maritalStatus: v as String),
-        patch: (v) => {'maritalStatus': v},
-      ),
-      ProfileEditableField(
-        label: 'Physical Status',
-        kind: ProfileFieldKind.options,
-        value: p.physicalStatus,
-        options: AppConstants.physicalStatusList,
-        apply: (pr, v) => pr.copyWith(physicalStatus: v as String),
-        patch: (v) => {'physicalStatus': v},
-      ),
-    ];
+///
+/// EVERY field here is editable after profile creation (§5), including the
+/// Date of Birth (which also recomputes `age`, so matching stays correct).
+/// Labels come from the l10n dictionary so the editor switches language with
+/// the rest of the app (§21).
+List<ProfileEditableField> basicDetailsFields(BuildContext c, ProfileModel p) {
+  final l = c.l10n;
+  return [
+    ProfileEditableField(
+      label: l.fullName,
+      kind: ProfileFieldKind.text,
+      value: p.fullName,
+      localizeValues: false, // a person's name is never translated
+      apply: (pr, v) => pr.copyWith(fullName: v as String),
+      patch: (v) => {'fullName': v},
+    ),
+    ProfileEditableField(
+      label: l.nameTamilLabel,
+      kind: ProfileFieldKind.text,
+      value: p.fullNameTamil,
+      localizeValues: false,
+      apply: (pr, v) => pr.copyWith(fullNameTamil: v as String),
+      patch: (v) => {'fullNameTamil': v},
+    ),
+    ProfileEditableField(
+      label: l.gender,
+      kind: ProfileFieldKind.options,
+      value: p.gender,
+      options: const ['Male', 'Female'],
+      apply: (pr, v) => pr.copyWith(gender: v as String),
+      patch: (v) => {'gender': v},
+    ),
+    ProfileEditableField(
+      label: l.ageDateOfBirth,
+      kind: ProfileFieldKind.date,
+      value: p.age > 0 ? _ageText(c, p.age) : '',
+      localizeValues: false,
+      dateValue: p.dateOfBirth,
+      apply: (pr, v) {
+        final d = v as DateTime;
+        return pr.copyWith(dateOfBirth: d, age: _ageFromDob(d));
+      },
+      patch: (v) {
+        final d = v as DateTime;
+        return {'dateOfBirth': d, 'age': _ageFromDob(d)};
+      },
+    ),
+    ProfileEditableField(
+      label: l.height,
+      kind: ProfileFieldKind.options,
+      value: p.height,
+      options: AppConstants.heightList,
+      localizeValues: false, // 5'6" reads the same in both languages
+      apply: (pr, v) => pr.copyWith(height: v as String),
+      patch: (v) => {'height': v},
+    ),
+    ProfileEditableField(
+      label: l.weightKgLabel,
+      kind: ProfileFieldKind.number,
+      value: p.weight,
+      localizeValues: false,
+      apply: (pr, v) => pr.copyWith(weight: v as String),
+      patch: (v) => {'weight': v},
+    ),
+    ProfileEditableField(
+      label: l.maritalStatus,
+      kind: ProfileFieldKind.options,
+      value: p.maritalStatus,
+      options: AppConstants.maritalStatusList,
+      apply: (pr, v) => pr.copyWith(maritalStatus: v as String),
+      patch: (v) => {'maritalStatus': v},
+    ),
+    ProfileEditableField(
+      label: l.physicalStatus,
+      kind: ProfileFieldKind.options,
+      value: p.physicalStatus,
+      options: AppConstants.physicalStatusList,
+      apply: (pr, v) => pr.copyWith(physicalStatus: v as String),
+      patch: (v) => {'physicalStatus': v},
+    ),
+  ];
+}
 
 /// Field-level editable descriptors for the **Career** section.
-List<ProfileEditableField> careerFields(ProfileModel p) => [
-      ProfileEditableField(
-        label: 'Education',
-        kind: ProfileFieldKind.options,
-        value: p.education,
-        options: AppConstants.educationList,
-        apply: (pr, v) => pr.copyWith(education: v as String),
-        patch: (v) => {'education': v},
-      ),
-      ProfileEditableField(
-        label: 'Occupation',
-        kind: ProfileFieldKind.options,
-        value: p.occupation,
-        options: AppConstants.occupationList,
-        apply: (pr, v) => pr.copyWith(occupation: v as String),
-        patch: (v) => {'occupation': v},
-      ),
-      ProfileEditableField(
-        label: 'Course / Degree',
-        kind: ProfileFieldKind.text,
-        value: p.courseDegree ?? '',
-        apply: (pr, v) => pr.copyWith(courseDegree: v as String),
-        patch: (v) => {'courseDegree': v},
-      ),
-      ProfileEditableField(
-        label: 'Employment Type',
-        kind: ProfileFieldKind.options,
-        value: p.employmentType,
-        options: AppConstants.employmentTypeList,
-        apply: (pr, v) => pr.copyWith(employmentType: v as String),
-        patch: (v) => {'employmentType': v},
-      ),
-      ProfileEditableField(
-        label: 'Annual Income',
-        kind: ProfileFieldKind.options,
-        value: p.annualIncome,
-        options: AppConstants.incomeList,
-        apply: (pr, v) => pr.copyWith(annualIncome: v as String),
-        patch: (v) => {'annualIncome': v},
-      ),
-    ];
+List<ProfileEditableField> careerFields(BuildContext c, ProfileModel p) {
+  final l = c.l10n;
+  return [
+    ProfileEditableField(
+      label: l.education,
+      kind: ProfileFieldKind.options,
+      value: p.education,
+      options: AppConstants.educationList,
+      apply: (pr, v) => pr.copyWith(education: v as String),
+      patch: (v) => {'education': v},
+    ),
+    ProfileEditableField(
+      label: l.occupation,
+      kind: ProfileFieldKind.options,
+      value: p.occupation,
+      options: AppConstants.occupationList,
+      apply: (pr, v) => pr.copyWith(occupation: v as String),
+      patch: (v) => {'occupation': v},
+    ),
+    ProfileEditableField(
+      label: l.courseDegree,
+      kind: ProfileFieldKind.text,
+      value: p.courseDegree ?? '',
+      localizeValues: false,
+      apply: (pr, v) => pr.copyWith(courseDegree: v as String),
+      patch: (v) => {'courseDegree': v},
+    ),
+    ProfileEditableField(
+      label: l.employmentType,
+      kind: ProfileFieldKind.options,
+      value: p.employmentType,
+      options: AppConstants.employmentTypeList,
+      apply: (pr, v) => pr.copyWith(employmentType: v as String),
+      patch: (v) => {'employmentType': v},
+    ),
+    ProfileEditableField(
+      label: l.companyName,
+      kind: ProfileFieldKind.text,
+      value: p.companyName ?? '',
+      localizeValues: false,
+      apply: (pr, v) => pr.copyWith(companyName: v as String),
+      patch: (v) => {'companyName': v},
+    ),
+    ProfileEditableField(
+      label: l.collegeName,
+      kind: ProfileFieldKind.text,
+      value: p.collegeName ?? '',
+      localizeValues: false,
+      apply: (pr, v) => pr.copyWith(collegeName: v as String),
+      patch: (v) => {'collegeName': v},
+    ),
+    ProfileEditableField(
+      label: l.workLocation,
+      kind: ProfileFieldKind.text,
+      value: p.workLocation ?? '',
+      localizeValues: false,
+      apply: (pr, v) => pr.copyWith(workLocation: v as String),
+      patch: (v) => {'workLocation': v},
+    ),
+    // Salary (§5) — editable like everything else; whether OTHERS can see it
+    // is a separate Privacy Settings switch (§16).
+    ProfileEditableField(
+      label: l.annualIncome,
+      kind: ProfileFieldKind.options,
+      value: p.annualIncome,
+      options: AppConstants.incomeList,
+      apply: (pr, v) => pr.copyWith(annualIncome: v as String),
+      patch: (v) => {'annualIncome': v},
+    ),
+  ];
+}
 
 /// One profile category: title + Edit action + label/value rows (empty values
 /// are hidden). [child] renders custom content (e.g. the photo thumbnail).
@@ -562,9 +644,8 @@ class _SectionCard extends StatelessWidget {
               ),
               // The category's own Edit action — opens ONLY this section.
               IconButton(
-                tooltip: context.isTamil
-                    ? '${_title(context, title)} திருத்து'
-                    : 'Edit $title',
+                tooltip:
+                    context.l10n.editSectionTooltip(_title(context, title)),
                 visualDensity: VisualDensity.compact,
                 onPressed: onEdit,
                 icon: const Icon(Icons.edit_outlined,
@@ -579,7 +660,7 @@ class _SectionCard extends StatelessWidget {
           if (visible.isEmpty && child == null)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text('Not added yet — tap ✎ to fill this in.',
+              child: Text(context.l10n.notAddedTapToFill,
                   style: TextStyle(color: Colors.grey[500], fontSize: 12.5)),
             )
           else

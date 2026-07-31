@@ -1,3 +1,8 @@
+import 'package:flutter/widgets.dart';
+
+import 'l10n_ext.dart';
+import '../../l10n/app_localizations.dart';
+
 class AppValidators {
   static String? email(String? value) {
     if (value == null || value.isEmpty) return 'Email is required';
@@ -18,14 +23,25 @@ class AppValidators {
     return null;
   }
 
+  /// Mobile number rule (§4): MANDATORY, digits only, EXACTLY 10 digits — no
+  /// alphabets, no spaces, no special characters, no +91 prefix (the field
+  /// renders that separately). Anything else blocks the form.
+  ///
+  /// [isValidMobile] is the single source of truth; this wrapper only adds the
+  /// English message. Localized screens should use [LocalizedValidators.mobile]
+  /// so the error text follows the selected language.
   static String? phone(String? value) {
-    if (value == null || value.isEmpty) return 'Phone number is required';
-    final phoneRegex = RegExp(r'^[6-9]\d{9}$');
-    if (!phoneRegex.hasMatch(value.replaceAll(' ', ''))) {
-      return 'Enter a valid 10-digit mobile number';
+    final v = (value ?? '').trim();
+    if (v.isEmpty) return 'Mobile number is required.';
+    if (!isValidMobile(v)) {
+      return 'Enter a valid 10-digit mobile number (digits only).';
     }
     return null;
   }
+
+  /// Exactly ten digit characters and nothing else.
+  static bool isValidMobile(String? value) =>
+      RegExp(r'^\d{10}$').hasMatch((value ?? '').trim());
 
   static String? name(String? value) {
     if (value == null || value.isEmpty) return 'Name is required';
@@ -69,3 +85,52 @@ class AppValidators {
 
 /// Alias used by screens that refer to `Validators.*`.
 typedef Validators = AppValidators;
+
+/// Form validators whose messages follow the selected app language (§20).
+///
+/// The RULES live in [AppValidators]; this only supplies localized text, so
+/// English and Tamil can never disagree about what is valid.
+class LocalizedValidators {
+  final AppLocalizations l;
+  const LocalizedValidators(this.l);
+
+  /// Mobile number (§4): mandatory, digits only, exactly 10 digits.
+  String? mobile(String? value) {
+    final v = (value ?? '').trim();
+    if (v.isEmpty) return l.mobileNumberRequired;
+    if (!AppValidators.isValidMobile(v)) return l.mobileNumberExactly10;
+    return null;
+  }
+
+  /// Optional mobile field (e.g. a separate WhatsApp number): blank is fine,
+  /// but anything entered must still be a valid 10-digit number.
+  String? optionalMobile(String? value) {
+    final v = (value ?? '').trim();
+    if (v.isEmpty) return null;
+    return AppValidators.isValidMobile(v) ? null : l.mobileNumberExactly10;
+  }
+
+  String? name(String? value) {
+    final v = (value ?? '').trim();
+    if (v.isEmpty) return l.pleaseEnterField(l.fullName);
+    if (v.length < 2 || v.length > 50) return l.pleaseEnterField(l.fullName);
+    return null;
+  }
+
+  String? requiredField(String? value, String fieldName) =>
+      (value == null || value.trim().isEmpty)
+          ? l.pleaseEnterField(fieldName)
+          : null;
+
+  String? email(String? value) {
+    final v = (value ?? '').trim();
+    if (v.isEmpty) return l.pleaseEnterField(l.email);
+    final re = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    return re.hasMatch(v) ? null : l.invalidEmail;
+  }
+}
+
+extension ValidatorsX on BuildContext {
+  /// Localized validators for the current language.
+  LocalizedValidators get validators => LocalizedValidators(l10n);
+}

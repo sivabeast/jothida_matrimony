@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/profile_completion.dart';
 import '../../providers/profile_provider.dart';
 
@@ -70,13 +71,13 @@ class ProfileSuccessScreen extends ConsumerWidget {
                             fontSize: 26,
                             fontWeight: FontWeight.bold,
                             color: AppColors.primary)),
-                    const Text('Complete',
+                    Text(context.l10n.completeLabel,
                         style: TextStyle(fontSize: 12, color: Colors.grey)),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
-              Text('Profile Completion: $percent%',
+              Text(context.l10n.profileCompletionPercent(percent),
                   style: const TextStyle(
                       fontWeight: FontWeight.w600, fontSize: 15)),
               const Spacer(),
@@ -85,7 +86,7 @@ class ProfileSuccessScreen extends ConsumerWidget {
                 child: ElevatedButton.icon(
                   onPressed: () => context.go('/home'),
                   icon: const Icon(Icons.search),
-                  label: const Text('Find Matches'),
+                  label: Text(context.l10n.findMatches),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -101,7 +102,7 @@ class ProfileSuccessScreen extends ConsumerWidget {
                 child: OutlinedButton.icon(
                   onPressed: () => context.go('/complete-profile'),
                   icon: const Icon(Icons.edit_outlined),
-                  label: const Text('Complete Profile'),
+                  label: Text(context.l10n.completeProfile),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary),

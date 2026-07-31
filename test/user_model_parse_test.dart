@@ -49,10 +49,16 @@ void main() {
       expect(user.freePortuthamsUsed, 3);
       // Coerced string value…
       expect(user.privacySettings['hidePhone'], isTrue);
-      // …existing bool kept…
+      // …an explicit "visible" choice is kept…
       expect(user.privacySettings['hideSalary'], isFalse);
-      // …and a missing default is backfilled.
-      expect(user.privacySettings['hideAddress'], isFalse);
+      // …and a key the document is missing defaults to HIDDEN (§17).
+      expect(user.privacySettings['hideHoroscope'], isTrue);
+      expect(user.privacySettings['hidePhoto'], isTrue);
+      // The retired switches are dropped entirely (§15).
+      expect(user.privacySettings.containsKey('hideAddress'), isFalse);
+      expect(user.privacySettings.containsKey('hideFamilyDetails'), isFalse);
+      expect(
+          user.privacySettings.containsKey('hideAdditionalPhotos'), isFalse);
     });
 
     test('a document with none of the optional fields falls back cleanly', () {
@@ -62,8 +68,17 @@ void main() {
       expect(user.isProfileComplete, isFalse);
       expect(user.isBlocked, isFalse);
       expect(user.freePortuthamsUsed, 0);
-      expect(user.privacySettings.length, 6);
-      expect(user.privacySettings.values.every((v) => v == false), isTrue);
+      // Exactly four switches, ALL hidden by default (§16/§17).
+      expect(user.privacySettings.length, 4);
+      expect(user.privacySettings.values.every((v) => v == true), isTrue);
+    });
+
+    test('the legacy hideAdditionalPhotos key maps onto hidePhoto', () {
+      final user = UserModel.fromFirestore(_FakeDoc('u4', {
+        'privacySettings': {'hideAdditionalPhotos': false},
+      }));
+
+      expect(user.privacySettings['hidePhoto'], isFalse);
     });
 
     test('genuine bool/int values still parse normally', () {

@@ -123,8 +123,7 @@ bool isProfileCompleteEnough(ProfileModel? p) {
   final hasIdentity = p.fullName.trim().isNotEmpty;
   if (!hasIdentity) return false;
 
-  final hasPhoto =
-      (p.profilePhotoUrl ?? '').trim().isNotEmpty || p.additionalPhotos.isNotEmpty;
+  final hasPhoto = p.hasPhoto;
   final hasPersonal = p.education.trim().isNotEmpty ||
       p.occupation.trim().isNotEmpty ||
       p.height.trim().isNotEmpty;

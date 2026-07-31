@@ -866,7 +866,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get interestDeclined => 'விருப்பம் நிராகரிக்கப்பட்டது';
 
   @override
-  String get interestAcceptedMatch => 'இது ஒரு பொருத்தம்! விருப்பம் ஏற்கப்பட்டது 🎉';
+  String get interestAcceptedMatch => 'விருப்பம் ஏற்கப்பட்டது — இது ஒரு பொருத்தம்!';
 
   @override
   String get profileUnavailableMatch => 'இந்தப் பொருத்தத்திற்கு சுயவிவரம் கிடைக்கவில்லை.';
@@ -1645,8 +1645,8 @@ class AppLocalizationsTa extends AppLocalizations {
   }
 
   @override
-  String selectFieldTitle(String label) {
-    return '$label தேர்ந்தெடுக்கவும்';
+  String selectFieldTitle(String field) {
+    return '$field தேர்ந்தெடுக்கவும்';
   }
 
   @override
@@ -1731,7 +1731,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get citizenship => 'குடியுரிமை';
 
   @override
-  String get selectStateDistrictCity => 'உங்கள் மாநிலம், மாவட்டம் மற்றும் நகரத்தைத் தேர்ந்தெடுக்கவும்';
+  String get selectStateDistrictCity => 'மாநிலம், மாவட்டம் மற்றும் ஊரைத் தேர்ந்தெடுக்கவும்.';
 
   @override
   String get educationCareerSubtitle => 'உங்கள் கல்வித் தகுதி மற்றும் பணி விவரங்கள்.';
@@ -2104,4 +2104,478 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get cannotSendInterestBlocked => 'நீங்கள் தடுத்த பயனருக்கு விருப்பம் அனுப்ப முடியாது.';
+
+  @override
+  String get cropPhotoTitle => 'புகைப்படத்தை வெட்டவும்';
+
+  @override
+  String get cropPhotoHint => 'பெரிதாக்க இரு விரல்களால் இழுக்கவும்; இடத்தை மாற்ற நகர்த்தவும். சட்டத்திற்குள் உள்ள சதுரப் பகுதி மட்டுமே சேமிக்கப்படும்.';
+
+  @override
+  String get cropAndSave => 'வெட்டி சேமி';
+
+  @override
+  String get couldNotCropPhoto => 'இந்தப் புகைப்படத்தை வெட்ட முடியவில்லை. வேறு படத்தைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get profilePhotoOneOnly => 'உங்களுக்கு ஒரே ஒரு சுயவிவரப் புகைப்படம் மட்டுமே. புதிய படத்தைப் பதிவேற்றினால் தற்போதைய படம் மாற்றப்படும்.';
+
+  @override
+  String get photoCropRequired => 'சேமிப்பதற்கு முன் உங்கள் புகைப்படத்தை வெட்டவும்.';
+
+  @override
+  String get tapPhotoToEnlarge => 'முழுத் திரையில் பார்க்க புகைப்படத்தைத் தட்டவும்';
+
+  @override
+  String get privacyIntro => 'மற்ற உறுப்பினர்கள் என்ன பார்க்கலாம் என்பதைத் தேர்ந்தெடுங்கள். உங்கள் பெயர், வயது மற்றும் அடிப்படை விவரங்கள் எப்போதும் தெரியும்.';
+
+  @override
+  String get hidePhoneNumber => 'தொலைபேசி எண்ணை மறை';
+
+  @override
+  String get hidePhoneNumberDesc => 'உங்கள் தொலைபேசி எண் சுயவிவரத்தில் காட்டப்படாது.';
+
+  @override
+  String get hideSalaryTitle => 'சம்பளத்தை மறை';
+
+  @override
+  String get hideSalaryDesc => 'உங்கள் ஆண்டு வருமானம் மற்ற உறுப்பினர்களுக்குக் காட்டப்படாது.';
+
+  @override
+  String get hideHoroscopeTitle => 'ஜாதக விவரங்களை மறை';
+
+  @override
+  String get hideHoroscopeDesc => 'ராசி, நட்சத்திரம் மற்றும் ஜாதக ஆவணங்கள் மறைந்திருக்கும்.';
+
+  @override
+  String get hideProfilePhotoTitle => 'சுயவிவரப் புகைப்படத்தை மறை';
+
+  @override
+  String get hideProfilePhotoDesc => 'மற்ற உறுப்பினர்கள் உங்கள் புகைப்படத்திற்குப் பதிலாக ஒரு மாற்றுப் படத்தைக் காண்பார்கள்.';
+
+  @override
+  String get privacyDefaultNote => 'இவை இயல்பாகவே மறைக்கப்பட்டுள்ளன, மறைந்தே இருக்கும் — விருப்பம் ஏற்கப்பட்டாலும் தானாக வெளிப்படுத்தப்படாது. நீங்கள் மட்டுமே இந்த அமைப்புகளை மாற்ற முடியும்.';
+
+  @override
+  String get shareContactPublicly => 'தொடர்பைப் பொதுவில் பகிர்';
+
+  @override
+  String get contactPublicNote => 'உங்கள் சுயவிவரத்தைப் பார்க்கும் எவரும் உங்கள் தொடர்பைக் காணலாம்.';
+
+  @override
+  String get contactPrivateNote => 'நீங்கள் விருப்பத்தை ஏற்ற பிறகே தொடர்பு பகிரப்படும்.';
+
+  @override
+  String get privacySettingsSaved => 'தனியுரிமை அமைப்புகள் சேமிக்கப்பட்டன.';
+
+  @override
+  String get privacySettingsSaveFailed => 'தனியுரிமை அமைப்புகளைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get hiddenByMember => 'உறுப்பினரால் மறைக்கப்பட்டது';
+
+  @override
+  String get photoHiddenByMember => 'இந்த உறுப்பினர் புகைப்படத்தை மறைத்துள்ளார்';
+
+  @override
+  String get childSafety => 'குழந்தைப் பாதுகாப்பு';
+
+  @override
+  String get childSafetyStandards => 'குழந்தைப் பாதுகாப்புத் தரநிலைகள்';
+
+  @override
+  String get deleteAccountPageTitle => 'கணக்கை நீக்கு';
+
+  @override
+  String lastUpdatedOn(String date) {
+    return 'கடைசியாகப் புதுப்பிக்கப்பட்டது: $date';
+  }
+
+  @override
+  String get legalContactHeading => 'தொடர்பு';
+
+  @override
+  String get emailUs => 'மின்னஞ்சல் அனுப்பு';
+
+  @override
+  String get callUs => 'அழைக்கவும்';
+
+  @override
+  String get chatWithSupport => 'ஆதரவுக் குழுவுடன் அரட்டை';
+
+  @override
+  String get faqTitle => 'அடிக்கடி கேட்கப்படும் கேள்விகள்';
+
+  @override
+  String get weAreHereToHelp => 'நாங்கள் உதவ இங்கே இருக்கிறோம்';
+
+  @override
+  String reachSupportTeam(String app) {
+    return '$app ஆதரவுக் குழுவைத் தொடர்பு கொள்ளுங்கள்';
+  }
+
+  @override
+  String couldNotOpenScheme(String scheme) {
+    return '$scheme ஐத் திறக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  }
+
+  @override
+  String get generalSection => 'பொது';
+
+  @override
+  String get aboutSection => 'பற்றி';
+
+  @override
+  String get allProfiles => 'அனைத்து சுயவிவரங்கள்';
+
+  @override
+  String profilesShown(int count) {
+    return '$count சுயவிவரங்கள்';
+  }
+
+  @override
+  String get loadingMoreProfiles => 'மேலும் சுயவிவரங்கள் ஏற்றப்படுகின்றன…';
+
+  @override
+  String get noMoreProfiles => 'பட்டியலின் இறுதியை அடைந்துவிட்டீர்கள்.';
+
+  @override
+  String get latestProfiles => 'சமீபத்திய சுயவிவரங்கள்';
+
+  @override
+  String get partnerAgeRequired => 'தொடர விரும்பிய துணையின் வயது வரம்பைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get partnerAgeMandatoryNote => 'துணையின் வயது வரம்பு கட்டாயம் — பொருத்தங்கள் இதன் அடிப்படையில் வடிகட்டப்படும்.';
+
+  @override
+  String get gothram => 'கோத்திரம்';
+
+  @override
+  String get kuladeivam => 'குலதெய்வம்';
+
+  @override
+  String get companyName => 'நிறுவனம்';
+
+  @override
+  String get collegeName => 'கல்லூரி';
+
+  @override
+  String get fatherOccupation => 'தந்தையின் தொழில்';
+
+  @override
+  String get motherOccupation => 'தாயின் தொழில்';
+
+  @override
+  String get aboutFamily => 'குடும்பம் பற்றி';
+
+  @override
+  String get eatingHabit => 'உணவுப் பழக்கம்';
+
+  @override
+  String get smokingHabit => 'புகைப்பழக்கம்';
+
+  @override
+  String get drinkingHabit => 'மதுப்பழக்கம்';
+
+  @override
+  String get hobbies => 'பொழுதுபோக்கு';
+
+  @override
+  String get languagesKnown => 'தெரிந்த மொழிகள்';
+
+  @override
+  String get rahuKethuDosham => 'ராகு / கேது தோஷம்';
+
+  @override
+  String get kalasarpaDosham => 'காலசர்ப்ப தோஷம்';
+
+  @override
+  String get workLocation => 'பணியிடம்';
+
+  @override
+  String get couldNotLoadProfileRetry => 'இந்தச் சுயவிவரத்தை இப்போது ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get createProfileFirstInterest => 'விருப்பம் அனுப்ப முதலில் உங்கள் சுயவிவரத்தை உருவாக்கவும்.';
+
+  @override
+  String get couldNotOpenChatRetry => 'அரட்டையைத் திறக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get contactDetailsTitle => 'தொடர்பு விவரங்கள்';
+
+  @override
+  String get contactLockedTitle => 'தொடர்பு பூட்டப்பட்டுள்ளது';
+
+  @override
+  String get contactUnlocksAfterAccept => 'இருதரப்பும் விருப்பத்தை ஏற்றுக்கொண்ட பிறகே தொடர்பு விவரங்கள் திறக்கப்படும்.';
+
+  @override
+  String get contactHiddenByMember => 'இந்த உறுப்பினர் தனது தொலைபேசி எண்ணைத் தனிப்பட்டதாக வைத்திருக்கத் தேர்ந்தெடுத்துள்ளார்.';
+
+  @override
+  String get callAction => 'அழை';
+
+  @override
+  String youMatchedConnectNow(String name) {
+    return '$name உடன் நீங்கள் பொருந்தினீர்கள் — இப்போது நேரடியாகத் தொடர்பு கொள்ளலாம்.';
+  }
+
+  @override
+  String get mobileNumberExactly10 => 'சரியான 10 இலக்க கைபேசி எண்ணை உள்ளிடவும் (இலக்கங்கள் மட்டும்).';
+
+  @override
+  String get mobileNumberRequired => 'கைபேசி எண் அவசியம்.';
+
+  @override
+  String get photoUploadNotInDemo => 'டெமோ முறையில் புகைப்படப் பதிவேற்றம் கிடைக்காது.';
+
+  @override
+  String get couldNotLoadYourProfile => 'உங்கள் சுயவிவரத்தை ஏற்ற முடியவில்லை.';
+
+  @override
+  String get createYourProfileFirst => 'முதலில் உங்கள் சுயவிவரத்தை உருவாக்கவும்.';
+
+  @override
+  String get tapFieldToEdit => 'ஒரு புலத்தைத் தட்டினால் அந்தப் புலத்தை மட்டும் திருத்தலாம்.';
+
+  @override
+  String get notAddedYet => 'சேர்க்கப்படவில்லை';
+
+  @override
+  String get notAddedTapToFill => 'இன்னும் சேர்க்கப்படவில்லை — நிரப்ப ✎ ஐத் தட்டவும்.';
+
+  @override
+  String editFieldTitle(String field) {
+    return '$field திருத்து';
+  }
+
+  @override
+  String editSectionTooltip(String section) {
+    return '$section திருத்து';
+  }
+
+  @override
+  String get searchHint => 'தேடு…';
+
+  @override
+  String get savedToast => 'சேமிக்கப்பட்டது';
+
+  @override
+  String get couldNotSaveRetry => 'சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get noProfileFoundCreate => 'சுயவிவரம் இல்லை. முதலில் உங்கள் சுயவிவரத்தை உருவாக்கவும்.';
+
+  @override
+  String get noPhotoAddedYet => 'இன்னும் புகைப்படம் சேர்க்கப்படவில்லை.';
+
+  @override
+  String get attachedLabel => 'இணைக்கப்பட்டது';
+
+  @override
+  String get notAddedLabel => 'சேர்க்கப்படவில்லை';
+
+  @override
+  String get ageDateOfBirth => 'வயது (பிறந்த தேதி)';
+
+  @override
+  String get nameTamilLabel => 'பெயர் (தமிழ்)';
+
+  @override
+  String get alternateEmail => 'மின்னஞ்சல்';
+
+  @override
+  String get myProfileTitle => 'என் சுயவிவரம்';
+
+  @override
+  String get basicDetailsSection => 'அடிப்படை விவரங்கள்';
+
+  @override
+  String get careerSection => 'தொழில்';
+
+  @override
+  String get communitySection => 'சமூகம்';
+
+  @override
+  String get photosSection => 'புகைப்படங்கள்';
+
+  @override
+  String get uploadHoroscopeSection => 'ஜாதகம் பதிவேற்றம்';
+
+  @override
+  String get contactSection => 'தொடர்பு';
+
+  @override
+  String get profileForLabel => 'சுயவிவரம் யாருக்காக';
+
+  @override
+  String get childrenLabel => 'குழந்தைகள்';
+
+  @override
+  String get contactPersonLabel => 'தொடர்பு நபர்';
+
+  @override
+  String get horoscopePdfLabel => 'ஜாதக PDF';
+
+  @override
+  String get weightKgLabel => 'எடை (கிலோ)';
+
+  @override
+  String get bookAppointment => 'சந்திப்பை முன்பதிவு செய்';
+
+  @override
+  String get freeLabel => 'இலவசம்';
+
+  @override
+  String get appointmentFreeTitle => 'முன்பதிவு இலவசம்';
+
+  @override
+  String get appointmentFreeNote => 'எந்தக் கட்டணமும் இல்லை. தேதி மற்றும் நேரத்தைத் தேர்ந்தெடுத்து உங்கள் சந்திப்பை உறுதிப்படுத்துங்கள்.';
+
+  @override
+  String get savingLabel => 'சேமிக்கிறது…';
+
+  @override
+  String get fatherName => 'தந்தையின் பெயர்';
+
+  @override
+  String get motherName => 'தாயின் பெயர்';
+
+  @override
+  String get aboutMeHint => 'உங்களைப் பற்றியும், உங்கள் குடும்பம், ஆர்வங்கள் மற்றும் நீங்கள் எதிர்பார்ப்பது பற்றியும் சில வரிகள் எழுதுங்கள்.';
+
+  @override
+  String get educationOccupationRequired => 'கல்வி மற்றும் தொழில் அவசியம்.';
+
+  @override
+  String get religionCasteRequired => 'மதம் மற்றும் சாதி அவசியம்.';
+
+  @override
+  String get hobbiesHint => 'எ.கா. வாசிப்பு, இசை, சமையல்';
+
+  @override
+  String get interestsHint => 'எ.கா. பயணம், விளையாட்டு';
+
+  @override
+  String get languagesKnownHint => 'காற்புள்ளியால் பிரிக்கவும், எ.கா. தமிழ், ஆங்கிலம்';
+
+  @override
+  String get profileDetails => 'சுயவிவர விவரங்கள்';
+
+  @override
+  String get completeYourProfile => 'உங்கள் சுயவிவரத்தை முழுமையாக்குங்கள்';
+
+  @override
+  String get almostThere => 'கிட்டத்தட்ட முடிந்துவிட்டது!';
+
+  @override
+  String get finishSectionsHint => 'அதிக பதில்களைப் பெற கீழே உள்ள பகுதிகளை நிரப்புங்கள்.';
+
+  @override
+  String pendingSections(int count) {
+    return 'நிலுவையில் உள்ள பகுதிகள் ($count)';
+  }
+
+  @override
+  String get tapToComplete => 'நிரப்ப தட்டவும்';
+
+  @override
+  String couldNotLoadProfileError(String error) {
+    return 'சுயவிவரத்தை ஏற்ற முடியவில்லை: $error';
+  }
+
+  @override
+  String get findMatches => 'வரன்களைத் தேடு';
+
+  @override
+  String profileCompletionPercent(int percent) {
+    return 'சுயவிவர நிறைவு: $percent%';
+  }
+
+  @override
+  String get completeLabel => 'முழுமை';
+
+  @override
+  String get basicInformationUpdated => 'அடிப்படைத் தகவல் புதுப்பிக்கப்பட்டது';
+
+  @override
+  String get communityDetailsUpdated => 'சமூக விவரங்கள் புதுப்பிக்கப்பட்டன';
+
+  @override
+  String get careerDetailsUpdated => 'தொழில் விவரங்கள் புதுப்பிக்கப்பட்டன';
+
+  @override
+  String get locationUpdated => 'இருப்பிடம் புதுப்பிக்கப்பட்டது';
+
+  @override
+  String get aboutMeUpdated => 'என்னைப் பற்றி புதுப்பிக்கப்பட்டது';
+
+  @override
+  String get getHoroscopeCompatibilityReport => 'ஜாதகப் பொருத்த அறிக்கையைப் பெறுங்கள்';
+
+  @override
+  String get openWeddingWorkspace => 'திருமண பணியிடத்தைத் திற';
+
+  @override
+  String get marriageFixedTitle => 'திருமணம் நிச்சயம் 💍';
+
+  @override
+  String get notYet => 'இன்னும் இல்லை';
+
+  @override
+  String get yesMarriageFixed => 'ஆம், திருமணம் நிச்சயம்';
+
+  @override
+  String get couldNotSaveMarriageFixed => 'திருமண நிச்சயத்தைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get chatsTitle => 'அரட்டைகள்';
+
+  @override
+  String get messageNotSent => 'செய்தியை அனுப்ப முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get attachmentNotSent => 'இணைப்பை அனுப்ப முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get couldNotPickFileRetry => 'அந்தக் கோப்பைத் தேர்ந்தெடுக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String sayHelloTo(String name) {
+    return '$name க்கு வணக்கம் சொல்லுங்கள் 👋';
+  }
+
+  @override
+  String get resetPreferences => 'விருப்பங்களை மீட்டமை';
+
+  @override
+  String get linkCouldNotBeOpened => 'இந்த இணைப்பைத் திறக்க முடியவில்லை.';
+
+  @override
+  String get notificationTitle => 'அறிவிப்பு';
+
+  @override
+  String get backToDiscover => 'பொருத்தங்களுக்குத் திரும்பு';
+
+  @override
+  String get wantAnExpertOpinion => 'நிபுணரின் கருத்து வேண்டுமா?';
+
+  @override
+  String get marriageCompatibilityPorutham => 'திருமணப் பொருத்தம் (பொருத்தம்)';
+
+  @override
+  String get notEnoughHoroscopeData => 'இந்த ஜோடிக்குப் பொருத்தம் கணக்கிட போதுமான ஜாதகத் தகவல் இல்லை. இரு சுயவிவரங்களிலும் நட்சத்திர விவரங்களைச் சேர்க்கவும்.';
+
+  @override
+  String compatibilityUnlocksAfterAccept(String name) {
+    return '$name உங்கள் விருப்பத்தை ஏற்ற பிறகே பொருத்த முடிவுகளும் ஜாதகப் பொருத்தமும் திறக்கப்படும்.';
+  }
+
+  @override
+  String get thisPerson => 'இந்த நபர்';
+
+  @override
+  String get interestSentShort => 'விருப்பம் அனுப்பப்பட்டது';
 }

@@ -247,7 +247,6 @@ ProfileModel _build({
     motherTongue: 'Tamil',
     aboutMe: about,
     profilePhotoUrl: photo,
-    additionalPhotos: const [],
     horoscope: HoroscopeDetails(
       rasi: rasi,
       nakshatra: nakshatra,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/phone_utils.dart';
 import '../../models/profile_model.dart';
 import '../../providers/profile_provider.dart';
@@ -15,6 +16,11 @@ import '../../providers/profile_provider.dart';
 /// being deployed. If no embedded contact is supplied, it falls back to the
 /// gated collection and finally to a friendly locked state — so it's safe to
 /// drop anywhere.
+///
+/// PRIVACY (§16–§18): when the owner keeps "Hide Phone Number" on — which is
+/// the DEFAULT — [hiddenByOwner] short-circuits everything and the card simply
+/// states that the number is private. Accepting an interest never changes
+/// that, and the card never offers a way to reveal it.
 class ContactRevealCard extends ConsumerWidget {
   final String otherUserId;
   final String otherName;
@@ -24,24 +30,33 @@ class ContactRevealCard extends ConsumerWidget {
   /// accepted, so it is unlocked).
   final ContactDetails? contact;
 
+  /// The owner keeps their phone number private (§17).
+  final bool hiddenByOwner;
+
   const ContactRevealCard({
     super.key,
     required this.otherUserId,
     required this.otherName,
     this.contact,
+    this.hiddenByOwner = false,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 0) The owner's privacy switch wins over everything else.
+    if (hiddenByOwner) {
+      return _shell(child: _private(context));
+    }
+
     // 1) Preferred: the contact embedded in the readable profile document.
     final pMobile = contact?.mobileNumber.trim() ?? '';
     final pWhatsapp = contact?.whatsappNumber?.trim() ?? '';
     if (pMobile.isNotEmpty || pWhatsapp.isNotEmpty) {
-      return _shell(child: _revealed(pMobile, pWhatsapp));
+      return _shell(child: _revealed(context, pMobile, pWhatsapp));
     }
 
     // 2) Fallback: the gated contacts/{uid} collection (legacy storage).
-    if (otherUserId.isEmpty) return _shell(child: _locked());
+    if (otherUserId.isEmpty) return _shell(child: _locked(context));
     final contactAsync = ref.watch(contactByUserIdProvider(otherUserId));
     return _shell(
       child: contactAsync.when(
@@ -55,56 +70,60 @@ class ContactRevealCard extends ConsumerWidget {
             ),
           ),
         ),
-        error: (_, __) => _locked(),
+        error: (_, __) => _locked(context),
         data: (c) {
           final mobile = c?.mobileNumber ?? '';
           final whatsapp = c?.whatsappNumber ?? '';
           if (c == null || (mobile.isEmpty && whatsapp.isEmpty)) {
-            return _locked();
+            return _locked(context);
           }
-          return _revealed(mobile, whatsapp);
+          return _revealed(context, mobile, whatsapp);
         },
       ),
     );
   }
 
   // ── revealed (unlocked) state ───────────────────────────────────────────
-  Widget _revealed(String mobile, String whatsapp) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _title(unlocked: true),
-          const SizedBox(height: 12),
-          // Matched user's name — shown above the phone number. Falls back to
-          // "Not Available" when the profile has no name.
-          _infoRow(
-            icon: Icons.person_outline,
-            label: 'Name',
-            value: otherName.trim().isNotEmpty ? otherName.trim() : 'Not Available',
+  Widget _revealed(BuildContext context, String mobile, String whatsapp) {
+    final l10n = context.l10n;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _title(context, unlocked: true),
+        const SizedBox(height: 12),
+        // Matched user's name — shown above the phone number.
+        _infoRow(
+          icon: Icons.person_outline,
+          label: l10n.name,
+          value: otherName.trim().isNotEmpty
+              ? otherName.trim()
+              : l10n.notAvailable,
+        ),
+        const SizedBox(height: 8),
+        if (mobile.isNotEmpty)
+          _contactRow(
+            icon: Icons.call,
+            label: mobile,
+            actionLabel: l10n.callAction,
+            onTap: () => _launch(phoneCallUri(mobile)),
           ),
+        if (whatsapp.isNotEmpty) ...[
           const SizedBox(height: 8),
-          if (mobile.isNotEmpty)
-            _contactRow(
-              icon: Icons.call,
-              label: mobile,
-              actionLabel: 'Call',
-              onTap: () => _launch(phoneCallUri(mobile)),
-            ),
-          if (whatsapp.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            _contactRow(
-              icon: Icons.chat,
-              label: whatsapp,
-              actionLabel: 'WhatsApp',
-              onTap: () => _launch(whatsappUri(whatsapp)),
-            ),
-          ],
-          const SizedBox(height: 8),
-          Text(
-            'You matched with $otherName — you can now connect directly.',
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          _contactRow(
+            icon: Icons.chat,
+            label: whatsapp,
+            actionLabel: l10n.whatsapp,
+            onTap: () => _launch(whatsappUri(whatsapp)),
           ),
         ],
-      );
+        const SizedBox(height: 8),
+        Text(
+          l10n.youMatchedConnectNow(otherName),
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+        ),
+      ],
+    );
+  }
 
   // ── pieces ────────────────────────────────────────────────────────────────
   Widget _shell({required Widget child}) => Container(
@@ -118,25 +137,41 @@ class ContactRevealCard extends ConsumerWidget {
         child: child,
       );
 
-  Widget _title({required bool unlocked}) => Row(
+  Widget _title(BuildContext context, {required bool unlocked}) => Row(
         children: [
           Icon(unlocked ? Icons.lock_open : Icons.lock_outline,
               size: 18, color: AppColors.primary),
           const SizedBox(width: 8),
           Text(
-            unlocked ? 'Contact details' : 'Contact locked',
+            unlocked
+                ? context.l10n.contactDetailsTitle
+                : context.l10n.contactLockedTitle,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ],
       );
 
-  Widget _locked() => Column(
+  Widget _locked(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _title(unlocked: false),
+          _title(context, unlocked: false),
           const SizedBox(height: 8),
           Text(
-            'Contact details unlock once your interest is mutually accepted.',
+            context.l10n.contactUnlocksAfterAccept,
+            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+          ),
+        ],
+      );
+
+  /// The owner chose to keep their number private — a settled state, not a
+  /// "not yet" one, so it never suggests the number could be unlocked.
+  Widget _private(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _title(context, unlocked: false),
+          const SizedBox(height: 8),
+          Text(
+            context.l10n.contactHiddenByMember,
             style: TextStyle(fontSize: 13, color: Colors.grey[700]),
           ),
         ],

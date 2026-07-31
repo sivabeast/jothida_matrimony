@@ -15,6 +15,69 @@ List<String> toStringList(dynamic value) {
   return const [];
 }
 
+/// The ONLY four privacy switches the app offers (§15/§16), and the rule that
+/// every one of them defaults to HIDDEN (§17).
+///
+/// The retired switches (`hideAddress`, `hideFamilyDetails`,
+/// `hideAdditionalPhotos`) are deliberately absent: the app never collects an
+/// address, family details are not hideable, and additional photos no longer
+/// exist. Legacy values for those keys are dropped on read.
+class ProfilePrivacy {
+  ProfilePrivacy._();
+
+  static const String phone = 'hidePhone';
+  static const String salary = 'hideSalary';
+  static const String horoscope = 'hideHoroscope';
+  static const String photo = 'hidePhoto';
+
+  /// The four keys, in the order the Privacy Settings screen lists them.
+  static const List<String> keys = [phone, salary, horoscope, photo];
+
+  /// Default state: everything hidden (§17). Applied to brand-new profiles and
+  /// used to backfill any key an older document is missing — so a legacy
+  /// profile that never had these fields is treated as fully private rather
+  /// than silently exposing data.
+  static const Map<String, bool> allHidden = {
+    phone: true,
+    salary: true,
+    horoscope: true,
+    photo: true,
+  };
+
+  /// Reads a stored map defensively: coerces string/number values, ignores the
+  /// retired keys and backfills the missing ones with "hidden".
+  static Map<String, bool> fromMap(dynamic raw) {
+    final out = Map<String, bool>.from(allHidden);
+    if (raw is Map) {
+      for (final key in keys) {
+        if (raw.containsKey(key)) out[key] = _boolOf(raw[key]);
+      }
+      // Legacy alias: the photo switch used to be called hideAdditionalPhotos
+      // when a member could upload several photos.
+      if (!raw.containsKey(photo) && raw.containsKey('hideAdditionalPhotos')) {
+        out[photo] = _boolOf(raw['hideAdditionalPhotos']);
+      }
+    }
+    return out;
+  }
+
+  /// Whether [key] is hidden. Anything unknown counts as hidden — the safe
+  /// direction for a privacy flag.
+  static bool isHidden(Map<String, bool> settings, String key) =>
+      settings[key] ?? true;
+
+  static bool _boolOf(dynamic v) {
+    if (v is bool) return v;
+    if (v is num) return v != 0;
+    if (v is String) {
+      final s = v.trim().toLowerCase();
+      if (s == 'true' || s == '1' || s == 'yes') return true;
+      if (s == 'false' || s == '0' || s == 'no') return false;
+    }
+    return true; // unknown → hidden
+  }
+}
+
 class ProfileModel {
   final String id;
   final String userId;
@@ -83,9 +146,20 @@ class ProfileModel {
   // Lifestyle & habits
   final LifestyleDetails lifestyle;
 
-  // Photos
+  // Photo — EXACTLY ONE per member (§1). The image is always a 1:1 square
+  // produced by the mandatory crop screen; uploading a new one REPLACES this
+  // url. Multi-photo support (the old `additionalPhotos` list) was removed
+  // completely, so there is no gallery anywhere in the app.
   final String? profilePhotoUrl;
-  final List<String> additionalPhotos;
+
+  /// What this member keeps hidden from other members (§15–§18). Only four
+  /// switches exist — `hidePhone`, `hideSalary`, `hideHoroscope`,
+  /// `hidePhoto` — and ALL default to hidden (`true`). Accepting an interest
+  /// never flips them; only the owner can, from Privacy Settings.
+  ///
+  /// Stored on the PUBLIC profile document (like `contactPrivacy`) so a viewer
+  /// can honour it without reading the owner's private `users/{uid}` record.
+  final Map<String, bool> privacySettings;
 
   // Horoscope
   final HoroscopeDetails horoscope;
@@ -167,7 +241,7 @@ class ProfileModel {
     this.citizenship,
     this.lifestyle = const LifestyleDetails(),
     this.profilePhotoUrl,
-    this.additionalPhotos = const [],
+    this.privacySettings = ProfilePrivacy.allHidden,
     required this.horoscope,
     required this.family,
     required this.partnerPreferences,
@@ -237,7 +311,7 @@ class ProfileModel {
       citizenship: d['citizenship'],
       lifestyle: LifestyleDetails.fromMap(d['lifestyle'] ?? {}),
       profilePhotoUrl: d['profilePhotoUrl'],
-      additionalPhotos: List<String>.from(d['additionalPhotos'] ?? []),
+      privacySettings: ProfilePrivacy.fromMap(d['privacySettings']),
       horoscope: HoroscopeDetails.fromMap(d['horoscope'] ?? {}),
       family: FamilyDetails.fromMap(d['family'] ?? {}),
       partnerPreferences: PartnerPreferences.fromMap(d['partnerPreferences'] ?? {}),
@@ -311,7 +385,10 @@ class ProfileModel {
         'citizenship': citizenship,
         'lifestyle': lifestyle.toMap(),
         'profilePhotoUrl': profilePhotoUrl,
-        'additionalPhotos': additionalPhotos,
+        // Written as an empty list so any legacy extra photos are cleared the
+        // next time the profile is saved — multi-photo support is gone (§1).
+        'additionalPhotos': const <String>[],
+        'privacySettings': privacySettings,
         'horoscope': horoscope.toMap(),
         'family': family.toMap(),
         'partnerPreferences': partnerPreferences.toMap(),
@@ -347,12 +424,26 @@ class ProfileModel {
   /// signed-in viewer may see it, without a mutually-accepted interest.
   bool get isContactPublic => contactPrivacy == 'public';
   String get about => aboutMe ?? '';
+
+  /// The member's photo(s) — at most ONE (§1). Kept as a list so the existing
+  /// call sites (cards, chat avatars, admin panel) keep compiling, but it can
+  /// never hold more than a single url.
   List<String> get photos {
-    final list = <String>[];
-    if (profilePhotoUrl != null) list.add(profilePhotoUrl!);
-    list.addAll(additionalPhotos);
-    return list;
+    final url = profilePhotoUrl?.trim() ?? '';
+    return url.isEmpty ? const <String>[] : <String>[url];
   }
+
+  /// True when the member has a profile photo.
+  bool get hasPhoto => (profilePhotoUrl?.trim() ?? '').isNotEmpty;
+
+  // ── Privacy helpers (§16/§17) — default HIDDEN, never auto-revealed. ──
+  bool get hidesPhone => ProfilePrivacy.isHidden(privacySettings, ProfilePrivacy.phone);
+  bool get hidesSalary =>
+      ProfilePrivacy.isHidden(privacySettings, ProfilePrivacy.salary);
+  bool get hidesHoroscope =>
+      ProfilePrivacy.isHidden(privacySettings, ProfilePrivacy.horoscope);
+  bool get hidesPhoto => ProfilePrivacy.isHidden(privacySettings, ProfilePrivacy.photo);
+
   HoroscopeDetails get horoscopeDetails => horoscope;
 
   // ── fromMap factory for profile creation flow ─────────────────────────
@@ -412,8 +503,9 @@ class ProfileModel {
       nativePlace: d['nativePlace'],
       citizenship: d['citizenship'],
       lifestyle: LifestyleDetails.fromMap(lifeMap),
+      // Only the FIRST photo is ever kept — one photo per member (§1).
       profilePhotoUrl: photos.isNotEmpty ? photos.first : null,
-      additionalPhotos: photos.length > 1 ? photos.sublist(1) : [],
+      privacySettings: ProfilePrivacy.fromMap(d['privacySettings']),
       horoscope: HoroscopeDetails.fromMap(horoMap),
       family: FamilyDetails.fromMap(famMap),
       partnerPreferences: PartnerPreferences.fromMap(prefMap),
@@ -476,7 +568,8 @@ class ProfileModel {
         'nativePlace': nativePlace,
         'citizenship': citizenship,
         'lifestyle': lifestyle.toMap(),
-        'photos': photos, // existing URLs — kept unless new files are picked
+        'photos': photos, // the one existing URL — kept unless a new file is picked
+        'privacySettings': privacySettings,
         'horoscopeDetails': horoscope.toMap(),
         'familyDetails': family.toMap(),
         'partnerPreferences': partnerPreferences.toMap(),
@@ -528,7 +621,7 @@ class ProfileModel {
     String? citizenship,
     LifestyleDetails? lifestyle,
     String? profilePhotoUrl,
-    List<String>? additionalPhotos,
+    Map<String, bool>? privacySettings,
     HoroscopeDetails? horoscope,
     FamilyDetails? family,
     PartnerPreferences? partnerPreferences,
@@ -592,7 +685,7 @@ class ProfileModel {
         citizenship: citizenship ?? this.citizenship,
         lifestyle: lifestyle ?? this.lifestyle,
         profilePhotoUrl: profilePhotoUrl ?? this.profilePhotoUrl,
-        additionalPhotos: additionalPhotos ?? this.additionalPhotos,
+        privacySettings: privacySettings ?? this.privacySettings,
         horoscope: horoscope ?? this.horoscope,
         family: family ?? this.family,
         partnerPreferences: partnerPreferences ?? this.partnerPreferences,
@@ -658,7 +751,7 @@ class ProfileModel {
         citizenship: citizenship,
         lifestyle: lifestyle,
         profilePhotoUrl: url,
-        additionalPhotos: additionalPhotos,
+        privacySettings: privacySettings,
         horoscope: horoscope,
         family: family,
         partnerPreferences: partnerPreferences,
@@ -971,6 +1064,16 @@ class FamilyDetails {
 class PartnerPreferences {
   final int minAge;
   final int maxAge;
+
+  /// True once the member has ACTIVELY chosen [minAge]/[maxAge] (§11 — the
+  /// partner age range is mandatory at profile creation).
+  ///
+  /// Legacy profiles created before the rule existed leave this false, which
+  /// is what lets `resolveAgeRange` keep applying the gender-based default
+  /// window for them instead of a range they never picked. Once it is true the
+  /// chosen range is used verbatim — even when it happens to equal the old
+  /// 18–40 default.
+  final bool agePreferenceSet;
   final String minHeight;
   final String maxHeight;
   final List<String> education;
@@ -1002,6 +1105,7 @@ class PartnerPreferences {
   const PartnerPreferences({
     this.minAge = 18,
     this.maxAge = 40,
+    this.agePreferenceSet = false,
     this.minHeight = "5'0\"",
     this.maxHeight = "5'10\"",
     this.education = const [],
@@ -1032,6 +1136,7 @@ class PartnerPreferences {
   factory PartnerPreferences.fromMap(Map<String, dynamic> map) => PartnerPreferences(
         minAge: map['minAge'] ?? 18,
         maxAge: map['maxAge'] ?? 40,
+        agePreferenceSet: map['agePreferenceSet'] == true,
         minHeight: map['minHeight'] ?? "5'0\"",
         maxHeight: map['maxHeight'] ?? "5'10\"",
         education: toStringList(map['education']),
@@ -1062,6 +1167,7 @@ class PartnerPreferences {
   Map<String, dynamic> toMap() => {
         'minAge': minAge,
         'maxAge': maxAge,
+        'agePreferenceSet': agePreferenceSet,
         'minHeight': minHeight,
         'maxHeight': maxHeight,
         'education': education,
@@ -1092,6 +1198,7 @@ class PartnerPreferences {
   PartnerPreferences copyWith({
     int? minAge,
     int? maxAge,
+    bool? agePreferenceSet,
     String? minHeight,
     String? maxHeight,
     List<String>? education,
@@ -1121,6 +1228,7 @@ class PartnerPreferences {
       PartnerPreferences(
         minAge: minAge ?? this.minAge,
         maxAge: maxAge ?? this.maxAge,
+        agePreferenceSet: agePreferenceSet ?? this.agePreferenceSet,
         minHeight: minHeight ?? this.minHeight,
         maxHeight: maxHeight ?? this.maxHeight,
         education: education ?? this.education,
@@ -1156,11 +1264,19 @@ class ContactDetails {
   final String mobileNumber;
   final String? whatsappNumber;
 
+  /// Contact email address (§5 — every profile field must be editable).
+  ///
+  /// This is deliberately SEPARATE from the Google sign-in identity, which the
+  /// member cannot change from inside the app. It is the address they want to
+  /// be reached on, and it is editable like any other field.
+  final String email;
+
   const ContactDetails({
     required this.contactPersonName,
     required this.relationship,
     required this.mobileNumber,
     this.whatsappNumber,
+    this.email = '',
   });
 
   factory ContactDetails.fromMap(Map<String, dynamic> map) => ContactDetails(
@@ -1168,6 +1284,7 @@ class ContactDetails {
         relationship: map['relationship'] ?? '',
         mobileNumber: map['mobileNumber'] ?? '',
         whatsappNumber: map['whatsappNumber'],
+        email: map['email'] ?? '',
       );
 
   Map<String, dynamic> toMap() => {
@@ -1175,7 +1292,23 @@ class ContactDetails {
         'relationship': relationship,
         'mobileNumber': mobileNumber,
         'whatsappNumber': whatsappNumber,
+        'email': email,
       };
+
+  ContactDetails copyWith({
+    String? contactPersonName,
+    String? relationship,
+    String? mobileNumber,
+    String? whatsappNumber,
+    String? email,
+  }) =>
+      ContactDetails(
+        contactPersonName: contactPersonName ?? this.contactPersonName,
+        relationship: relationship ?? this.relationship,
+        mobileNumber: mobileNumber ?? this.mobileNumber,
+        whatsappNumber: whatsappNumber ?? this.whatsappNumber,
+        email: email ?? this.email,
+      );
 }
 
 /// Lifestyle & habits — all optional. Habit fields use the constant option

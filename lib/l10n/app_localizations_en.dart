@@ -866,7 +866,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get interestDeclined => 'Interest declined';
 
   @override
-  String get interestAcceptedMatch => 'It\'s a match! Interest accepted 🎉';
+  String get interestAcceptedMatch => 'Interest accepted — it\'s a match!';
 
   @override
   String get profileUnavailableMatch => 'Profile unavailable for this match.';
@@ -1645,8 +1645,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String selectFieldTitle(String label) {
-    return 'Select $label';
+  String selectFieldTitle(String field) {
+    return 'Select $field';
   }
 
   @override
@@ -1731,7 +1731,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get citizenship => 'Citizenship';
 
   @override
-  String get selectStateDistrictCity => 'Please select your state, district and city';
+  String get selectStateDistrictCity => 'Please select state, district and city.';
 
   @override
   String get educationCareerSubtitle => 'Your qualifications and work.';
@@ -2104,4 +2104,478 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cannotSendInterestBlocked => 'You cannot send an interest to a user you have blocked.';
+
+  @override
+  String get cropPhotoTitle => 'Crop Photo';
+
+  @override
+  String get cropPhotoHint => 'Pinch to zoom and drag to position. Only the square area inside the frame is saved.';
+
+  @override
+  String get cropAndSave => 'Crop & Save';
+
+  @override
+  String get couldNotCropPhoto => 'Could not crop this photo. Please choose another image.';
+
+  @override
+  String get profilePhotoOneOnly => 'You have one profile photo. Uploading a new one replaces the current photo.';
+
+  @override
+  String get photoCropRequired => 'Crop your photo before saving.';
+
+  @override
+  String get tapPhotoToEnlarge => 'Tap the photo to view it full screen';
+
+  @override
+  String get privacyIntro => 'Choose what other members can see. Your name, age and basic details are always visible.';
+
+  @override
+  String get hidePhoneNumber => 'Hide Phone Number';
+
+  @override
+  String get hidePhoneNumberDesc => 'Your phone number is never shown on your profile.';
+
+  @override
+  String get hideSalaryTitle => 'Hide Salary';
+
+  @override
+  String get hideSalaryDesc => 'Your annual income is not displayed to other members.';
+
+  @override
+  String get hideHoroscopeTitle => 'Hide Horoscope Details';
+
+  @override
+  String get hideHoroscopeDesc => 'Rasi, Nakshatra and horoscope documents stay hidden.';
+
+  @override
+  String get hideProfilePhotoTitle => 'Hide Profile Photo';
+
+  @override
+  String get hideProfilePhotoDesc => 'Other members see a placeholder instead of your photo.';
+
+  @override
+  String get privacyDefaultNote => 'These are hidden by default and stay hidden — accepting an interest never reveals them. Only you can change these settings.';
+
+  @override
+  String get shareContactPublicly => 'Share Contact Publicly';
+
+  @override
+  String get contactPublicNote => 'Anyone viewing your profile can see your contact.';
+
+  @override
+  String get contactPrivateNote => 'Contact is shared only after you accept an interest.';
+
+  @override
+  String get privacySettingsSaved => 'Privacy settings saved.';
+
+  @override
+  String get privacySettingsSaveFailed => 'Could not save your privacy settings. Please try again.';
+
+  @override
+  String get hiddenByMember => 'Hidden by member';
+
+  @override
+  String get photoHiddenByMember => 'Photo hidden by this member';
+
+  @override
+  String get childSafety => 'Child Safety';
+
+  @override
+  String get childSafetyStandards => 'Child Safety Standards';
+
+  @override
+  String get deleteAccountPageTitle => 'Delete Account';
+
+  @override
+  String lastUpdatedOn(String date) {
+    return 'Last updated: $date';
+  }
+
+  @override
+  String get legalContactHeading => 'Contact';
+
+  @override
+  String get emailUs => 'Email Us';
+
+  @override
+  String get callUs => 'Call Us';
+
+  @override
+  String get chatWithSupport => 'Chat with support';
+
+  @override
+  String get faqTitle => 'Frequently Asked Questions';
+
+  @override
+  String get weAreHereToHelp => 'We are here to help';
+
+  @override
+  String reachSupportTeam(String app) {
+    return 'Reach the $app support team';
+  }
+
+  @override
+  String couldNotOpenScheme(String scheme) {
+    return 'Could not open $scheme. Please try again.';
+  }
+
+  @override
+  String get generalSection => 'General';
+
+  @override
+  String get aboutSection => 'About';
+
+  @override
+  String get allProfiles => 'All Profiles';
+
+  @override
+  String profilesShown(int count) {
+    return '$count profiles';
+  }
+
+  @override
+  String get loadingMoreProfiles => 'Loading more profiles…';
+
+  @override
+  String get noMoreProfiles => 'You have reached the end of the list.';
+
+  @override
+  String get latestProfiles => 'Latest Profiles';
+
+  @override
+  String get partnerAgeRequired => 'Select your preferred partner age range to continue.';
+
+  @override
+  String get partnerAgeMandatoryNote => 'Partner age range is required — matches are filtered by it.';
+
+  @override
+  String get gothram => 'Gothram';
+
+  @override
+  String get kuladeivam => 'Kuladeivam';
+
+  @override
+  String get companyName => 'Company';
+
+  @override
+  String get collegeName => 'College';
+
+  @override
+  String get fatherOccupation => 'Father\'s Occupation';
+
+  @override
+  String get motherOccupation => 'Mother\'s Occupation';
+
+  @override
+  String get aboutFamily => 'About Family';
+
+  @override
+  String get eatingHabit => 'Eating Habit';
+
+  @override
+  String get smokingHabit => 'Smoking';
+
+  @override
+  String get drinkingHabit => 'Drinking';
+
+  @override
+  String get hobbies => 'Hobbies';
+
+  @override
+  String get languagesKnown => 'Languages Known';
+
+  @override
+  String get rahuKethuDosham => 'Rahu / Kethu Dosham';
+
+  @override
+  String get kalasarpaDosham => 'Kalasarpa Dosham';
+
+  @override
+  String get workLocation => 'Work Location';
+
+  @override
+  String get couldNotLoadProfileRetry => 'Couldn\'t load this profile right now. Please try again.';
+
+  @override
+  String get createProfileFirstInterest => 'Create your profile first to send an interest.';
+
+  @override
+  String get couldNotOpenChatRetry => 'Could not open chat. Please try again.';
+
+  @override
+  String get contactDetailsTitle => 'Contact details';
+
+  @override
+  String get contactLockedTitle => 'Contact locked';
+
+  @override
+  String get contactUnlocksAfterAccept => 'Contact details unlock once your interest is mutually accepted.';
+
+  @override
+  String get contactHiddenByMember => 'This member has chosen to keep their phone number private.';
+
+  @override
+  String get callAction => 'Call';
+
+  @override
+  String youMatchedConnectNow(String name) {
+    return 'You matched with $name — you can now connect directly.';
+  }
+
+  @override
+  String get mobileNumberExactly10 => 'Enter a valid 10-digit mobile number (digits only).';
+
+  @override
+  String get mobileNumberRequired => 'Mobile number is required.';
+
+  @override
+  String get photoUploadNotInDemo => 'Photo upload is not available in demo mode.';
+
+  @override
+  String get couldNotLoadYourProfile => 'Could not load your profile.';
+
+  @override
+  String get createYourProfileFirst => 'Create your profile first.';
+
+  @override
+  String get tapFieldToEdit => 'Tap a field to edit only that field.';
+
+  @override
+  String get notAddedYet => 'Not added';
+
+  @override
+  String get notAddedTapToFill => 'Not added yet — tap ✎ to fill this in.';
+
+  @override
+  String editFieldTitle(String field) {
+    return 'Edit $field';
+  }
+
+  @override
+  String editSectionTooltip(String section) {
+    return 'Edit $section';
+  }
+
+  @override
+  String get searchHint => 'Search…';
+
+  @override
+  String get savedToast => 'Saved';
+
+  @override
+  String get couldNotSaveRetry => 'Could not save. Please try again.';
+
+  @override
+  String get noProfileFoundCreate => 'No profile found. Create your profile first.';
+
+  @override
+  String get noPhotoAddedYet => 'No photo added yet.';
+
+  @override
+  String get attachedLabel => 'Attached';
+
+  @override
+  String get notAddedLabel => 'Not added';
+
+  @override
+  String get ageDateOfBirth => 'Age (Date of Birth)';
+
+  @override
+  String get nameTamilLabel => 'Name (Tamil)';
+
+  @override
+  String get alternateEmail => 'Email';
+
+  @override
+  String get myProfileTitle => 'My Profile';
+
+  @override
+  String get basicDetailsSection => 'Basic Details';
+
+  @override
+  String get careerSection => 'Career';
+
+  @override
+  String get communitySection => 'Community';
+
+  @override
+  String get photosSection => 'Photos';
+
+  @override
+  String get uploadHoroscopeSection => 'Upload Horoscope';
+
+  @override
+  String get contactSection => 'Contact';
+
+  @override
+  String get profileForLabel => 'Profile For';
+
+  @override
+  String get childrenLabel => 'Children';
+
+  @override
+  String get contactPersonLabel => 'Contact Person';
+
+  @override
+  String get horoscopePdfLabel => 'Horoscope PDF';
+
+  @override
+  String get weightKgLabel => 'Weight (kg)';
+
+  @override
+  String get bookAppointment => 'Book Appointment';
+
+  @override
+  String get freeLabel => 'FREE';
+
+  @override
+  String get appointmentFreeTitle => 'Booking is free';
+
+  @override
+  String get appointmentFreeNote => 'There are no booking charges. Pick a date and session and confirm your appointment.';
+
+  @override
+  String get savingLabel => 'Saving…';
+
+  @override
+  String get fatherName => 'Father Name';
+
+  @override
+  String get motherName => 'Mother Name';
+
+  @override
+  String get aboutMeHint => 'Write a few lines about yourself, your family, interests and what you are looking for.';
+
+  @override
+  String get educationOccupationRequired => 'Education and occupation are required.';
+
+  @override
+  String get religionCasteRequired => 'Religion and caste are required.';
+
+  @override
+  String get hobbiesHint => 'e.g. Reading, Music, Cooking';
+
+  @override
+  String get interestsHint => 'e.g. Travel, Sports';
+
+  @override
+  String get languagesKnownHint => 'Comma separated, e.g. Tamil, English';
+
+  @override
+  String get profileDetails => 'Profile Details';
+
+  @override
+  String get completeYourProfile => 'Complete Your Profile';
+
+  @override
+  String get almostThere => 'Almost there!';
+
+  @override
+  String get finishSectionsHint => 'Finish the sections below to get more responses.';
+
+  @override
+  String pendingSections(int count) {
+    return 'Pending sections ($count)';
+  }
+
+  @override
+  String get tapToComplete => 'Tap to complete';
+
+  @override
+  String couldNotLoadProfileError(String error) {
+    return 'Could not load profile: $error';
+  }
+
+  @override
+  String get findMatches => 'Find Matches';
+
+  @override
+  String profileCompletionPercent(int percent) {
+    return 'Profile Completion: $percent%';
+  }
+
+  @override
+  String get completeLabel => 'Complete';
+
+  @override
+  String get basicInformationUpdated => 'Basic information updated';
+
+  @override
+  String get communityDetailsUpdated => 'Community details updated';
+
+  @override
+  String get careerDetailsUpdated => 'Career details updated';
+
+  @override
+  String get locationUpdated => 'Location updated';
+
+  @override
+  String get aboutMeUpdated => 'About Me updated';
+
+  @override
+  String get getHoroscopeCompatibilityReport => 'Get Horoscope Compatibility Report';
+
+  @override
+  String get openWeddingWorkspace => 'Open Wedding Workspace';
+
+  @override
+  String get marriageFixedTitle => 'Marriage Fixed 💍';
+
+  @override
+  String get notYet => 'Not Yet';
+
+  @override
+  String get yesMarriageFixed => 'Yes, Marriage Fixed';
+
+  @override
+  String get couldNotSaveMarriageFixed => 'Could not save Marriage Fixed. Please try again.';
+
+  @override
+  String get chatsTitle => 'Chats';
+
+  @override
+  String get messageNotSent => 'Message couldn\'t be sent. Please try again.';
+
+  @override
+  String get attachmentNotSent => 'Attachment couldn\'t be sent. Please try again.';
+
+  @override
+  String get couldNotPickFileRetry => 'Could not pick that file. Please try again.';
+
+  @override
+  String sayHelloTo(String name) {
+    return 'Say hello to $name 👋';
+  }
+
+  @override
+  String get resetPreferences => 'Reset Preferences';
+
+  @override
+  String get linkCouldNotBeOpened => 'This link could not be opened.';
+
+  @override
+  String get notificationTitle => 'Notification';
+
+  @override
+  String get backToDiscover => 'Back to Matches';
+
+  @override
+  String get wantAnExpertOpinion => 'Want an expert opinion?';
+
+  @override
+  String get marriageCompatibilityPorutham => 'Marriage Compatibility (Porutham)';
+
+  @override
+  String get notEnoughHoroscopeData => 'Not enough horoscope data to calculate the poruthams for this pair. Add birth-star details to both profiles.';
+
+  @override
+  String compatibilityUnlocksAfterAccept(String name) {
+    return 'Porutham results and horoscope compatibility unlock only after $name accepts your interest.';
+  }
+
+  @override
+  String get thisPerson => 'this person';
+
+  @override
+  String get interestSentShort => 'Interest sent';
 }

@@ -76,6 +76,8 @@ import '../screens/moderation/reported_users_screen.dart';
 import '../screens/support/help_support_screen.dart';
 import '../screens/legal/privacy_policy_screen.dart';
 import '../screens/legal/terms_conditions_screen.dart';
+import '../screens/legal/child_safety_screen.dart';
+import '../screens/legal/delete_account_screen.dart';
 import '../screens/report/report_profile_screen.dart';
 import '../screens/report/report_chat_screen.dart';
 import '../screens/report/request_external_report_screen.dart';
@@ -422,6 +424,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/help', builder: (_, __) => const HelpSupportScreen()),
       GoRoute(path: '/privacy-policy', builder: (_, __) => const PrivacyPolicyScreen()),
       GoRoute(path: '/terms', builder: (_, __) => const TermsConditionsScreen()),
+      // Website pages imported into the app (§14).
+      GoRoute(
+          path: '/child-safety', builder: (_, __) => const ChildSafetyScreen()),
+      GoRoute(
+          path: '/delete-account',
+          builder: (_, __) => const DeleteAccountScreen()),
       // Dedicated Astrologer Verification queue (standalone full-screen page,
       // admin-gated by the /admin/ redirect; reached from the Dashboard and the
       // Astrologers list).

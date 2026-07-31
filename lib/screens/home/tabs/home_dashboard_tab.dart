@@ -1201,14 +1201,18 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           );
         }
         return _horizontalMatchSection(
-            context, '💫', context.l10n.recommendedForYou, profiles);
+            context, '💫', context.l10n.latestProfiles, profiles);
       },
     );
   }
 
   Widget _horizontalMatchSection(BuildContext context, String emoji,
       String title, List<ProfileModel> profiles) {
-    final preview = profiles.take(10).toList();
+    // PREVIEW ONLY (§7): Home never lists every profile — just the latest few
+    // newly-registered members. "View All" switches to the Matches tab, which
+    // is where the complete list lives (§8).
+    final preview =
+        profiles.take(kHomeNewProfilesPreviewCount).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

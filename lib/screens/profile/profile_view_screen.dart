@@ -14,6 +14,7 @@ import '../../providers/interest_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/contact_reveal_card.dart';
+import '../../widgets/common/fullscreen_photo_viewer.dart';
 import '../../widgets/common/gradient_button.dart';
 import '../../widgets/common/horoscope_documents_view.dart';
 import '../../widgets/common/network_photo.dart';
@@ -37,10 +38,15 @@ class ProfileViewScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
-  int _photoIndex = 0;
-
   /// Guards the one-time view-count increment for this screen instance.
   bool _viewCounted = false;
+
+  /// True when the signed-in user is looking at their OWN profile — the owner
+  /// always sees everything, privacy switches only apply to other members.
+  bool _isOwner(ProfileModel profile) {
+    final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+    return myUid != null && myUid == profile.userId;
+  }
 
   /// Records a single profile view per screen-open, and never when the owner
   /// views their own profile. This previously lived inside build(), so it fired
@@ -65,8 +71,8 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     final myProfile = await ref.read(profileRepositoryProvider).getProfileByUserId(userId);
     if (myProfile == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Create your profile first to send interest')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(context.l10n.createProfileFirstInterest)));
       }
       return;
     }
@@ -78,8 +84,8 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
           receiverProfileId: profile.id,
         );
     if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Interest sent successfully!')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.interestSentSuccess)));
     }
   }
 
@@ -173,6 +179,15 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     }
   }
 
+  /// Whether this member's phone number may be shown to the viewer.
+  ///
+  /// "Hide Phone Number" is ON by default (§17) and an accepted interest does
+  /// NOT flip it — only the owner can, from Privacy Settings. So the contact
+  /// actions below are hidden entirely for a member who keeps their number
+  /// private, rather than offering a button that leads to a locked card.
+  bool _phoneVisible(ProfileModel profile) =>
+      _isOwner(profile) || !profile.hidesPhone;
+
   void _showContact(ProfileModel profile) {
     // Contact & WhatsApp viewing is FREE — no plan gate. (The privacy gate —
     // contact unlocks only after a mutually-accepted interest — still lives in
@@ -188,7 +203,8 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
             ContactRevealCard(
                 otherUserId: profile.userId,
                 otherName: profile.name,
-                contact: profile.contact),
+                contact: profile.contact,
+                hiddenByOwner: !_phoneVisible(profile)),
           ],
         ),
       ),
@@ -199,7 +215,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     await ref.read(interestNotifierProvider.notifier).acceptInterest(interestId);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Interest accepted — it\'s a match!')));
+          SnackBar(content: Text(context.l10n.interestAcceptedMatch)));
     }
   }
 
@@ -210,7 +226,9 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     final accepted = ref.watch(interestStatusForProfileProvider(profile.id)) ==
         InterestUiStatus.accepted;
     final action = _statusInterestAction(profile);
-    if (!profile.isContactPublic || accepted) return action;
+    if (!profile.isContactPublic || accepted || !_phoneVisible(profile)) {
+      return action;
+    }
     return Column(
       children: [
         SizedBox(
@@ -303,24 +321,28 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              // Interest is accepted → contact is unlocked. Reveal it straight
-              // from the (readable) profile document — no connection/gated read.
-              onPressed: () => _showContact(profile),
-              icon: const Icon(Icons.call),
-              label: Text(context.l10n.viewContact),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(52),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+          // Contact is offered ONLY when the member has not switched
+          // "Hide Phone Number" on. Acceptance alone never reveals it (§17).
+          if (_phoneVisible(profile)) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                // Reveal straight from the (readable) profile document — no
+                // connection/gated read.
+                onPressed: () => _showContact(profile),
+                icon: const Icon(Icons.call),
+                label: Text(context.l10n.viewContact),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(52),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
+          ],
           // Chat — opens the conversation with this matched user. Shown ONLY
           // when the interest is accepted (this branch); the auto-created thread
           // is idempotent so this always opens the SAME conversation as the
@@ -405,16 +427,16 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Couldn\'t load this profile right now. Please try again.',
+                Text(
+                  context.l10n.couldNotLoadProfileRetry,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
+                  style: const TextStyle(color: Colors.grey),
                 ),
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
                   onPressed: _reloadProfile,
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Try Again'),
+                  label: Text(context.l10n.tryAgain),
                   style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
                       side: const BorderSide(color: AppColors.primary)),
@@ -425,7 +447,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
         ),
         data: (profile) {
           if (profile == null) {
-            return const Center(child: Text('Profile not found'));
+            return Center(child: Text(context.l10n.profileNotFound));
           }
           // Record a single view after this frame — never mutate a provider
           // during build. The guard inside _recordViewOnce ensures exactly one
@@ -441,6 +463,13 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
   }
 
   Widget _buildProfileView(ProfileModel profile) {
+    final isOwner = _isOwner(profile);
+    // §16/§17 — the four privacy switches. The owner always sees their own
+    // data; for everyone else a hidden field is simply not rendered, and
+    // accepting an interest does NOT change that.
+    final hidePhoto = !isOwner && profile.hidesPhoto;
+    final hideSalary = !isOwner && profile.hidesSalary;
+
     return CustomScrollView(
       slivers: [
         SliverAppBar(
@@ -450,46 +479,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
           foregroundColor: Colors.white,
           actions: [_moderationMenu(profile)],
           flexibleSpace: FlexibleSpaceBar(
-            background: Stack(
-              fit: StackFit.expand,
-              children: [
-                profile.photos.isNotEmpty
-                    ? NetworkPhoto(
-                        url: profile.photos[_photoIndex],
-                        fit: BoxFit.cover,
-                        fallbackIconSize: 100,
-                        showLoadingSpinner: true,
-                      )
-                    : Container(
-                        color: AppColors.primary.withOpacity(0.3),
-                        child: const Icon(Icons.person, size: 100, color: Colors.white)),
-                // Photo dots
-                if (profile.photos.length > 1)
-                  Positioned(
-                    bottom: 16,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        profile.photos.length,
-                        (i) => GestureDetector(
-                          onTap: () => setState(() => _photoIndex = i),
-                          child: Container(
-                            width: _photoIndex == i ? 20 : 8,
-                            height: 8,
-                            margin: const EdgeInsets.symmetric(horizontal: 3),
-                            decoration: BoxDecoration(
-                              color: _photoIndex == i ? Colors.white : Colors.white54,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+            background: _headerPhoto(profile, hidden: hidePhoto),
           ),
         ),
         SliverToBoxAdapter(
@@ -522,32 +512,34 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                       context.localizeValue(profile.education)),
                   _InfoItem(Icons.work_outline, context.l10n.profession,
                       context.localizeValue(profile.occupation)),
+                  // Salary is one of the four privacy switches (§16) — hidden
+                  // by default and never auto-revealed.
                   _InfoItem(Icons.payments_outlined, context.l10n.annualIncome,
-                      profile.annualIncome),
+                      hideSalary ? '' : context.localizeValue(profile.annualIncome)),
                   _InfoItem(Icons.place_outlined, context.l10n.location,
                       [profile.city, profile.state].where((s) => s.trim().isNotEmpty).join(', ')),
                   _InfoItem(Icons.translate, context.l10n.motherTongue,
                       context.localizeValue(profile.motherTongue)),
-                  _InfoItem(Icons.accessibility_new, 'Physical Status',
+                  _InfoItem(Icons.accessibility_new, context.l10n.physicalStatus,
                       context.localizeValue(profile.physicalStatus)),
                   _InfoItem(Icons.church_outlined, context.l10n.religion,
                       context.localizeValue(profile.religion)),
                   _InfoItem(Icons.people_outline, context.l10n.caste,
-                      profile.caste ?? ''),
+                      context.localizeValue(profile.caste ?? '')),
                   _InfoItem(Icons.groups_2_outlined, context.l10n.subCaste,
-                      profile.subCaste ?? ''),
-                  _InfoItem(Icons.account_balance_outlined, 'Gothram',
+                      context.localizeValue(profile.subCaste ?? '')),
+                  _InfoItem(Icons.account_balance_outlined, context.l10n.gothram,
                       profile.gothram),
-                  _InfoItem(Icons.auto_awesome_outlined, 'Kuladeivam',
+                  _InfoItem(Icons.auto_awesome_outlined, context.l10n.kuladeivam,
                       profile.kuladeivam),
-                  _InfoItem(Icons.badge_outlined, 'Employment Type',
+                  _InfoItem(Icons.badge_outlined, context.l10n.employmentType,
                       context.localizeValue(profile.employmentType)),
-                  _InfoItem(
-                      Icons.business_outlined, 'Company', profile.companyName ?? ''),
-                  _InfoItem(Icons.account_balance, 'College',
+                  _InfoItem(Icons.business_outlined, context.l10n.companyName,
+                      profile.companyName ?? ''),
+                  _InfoItem(Icons.account_balance, context.l10n.collegeName,
                       profile.collegeName ?? ''),
-                  _InfoItem(Icons.location_city_outlined, 'Native Place',
-                      profile.nativePlace ?? ''),
+                  _InfoItem(Icons.location_city_outlined,
+                      context.l10n.nativePlace, profile.nativePlace ?? ''),
                 ]),
                 if (profile.about.trim().isNotEmpty) ...[
                   const SizedBox(height: 16),
@@ -579,18 +571,82 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     );
   }
 
+  /// The single 1:1 profile photo in the collapsing header.
+  ///
+  /// Tapping it opens the full-screen viewer (dark background, zoom, pan,
+  /// close) — §10. When the member hides their photo (§16, default), a neutral
+  /// placeholder is shown instead and there is nothing to open.
+  Widget _headerPhoto(ProfileModel profile, {required bool hidden}) {
+    final url = profile.profilePhotoUrl ?? '';
+    if (hidden || url.isEmpty) {
+      return Container(
+        color: AppColors.primary.withOpacity(0.3),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.person, size: 100, color: Colors.white),
+            if (hidden) ...[
+              const SizedBox(height: 8),
+              Text(context.l10n.photoHiddenByMember,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12.5)),
+            ],
+          ],
+        ),
+      );
+    }
+    return GestureDetector(
+      onTap: () => FullScreenPhotoViewer.open(context, url),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          NetworkPhoto(
+            url: url,
+            fit: BoxFit.cover,
+            fallbackIconSize: 100,
+            showLoadingSpinner: true,
+          ),
+          Positioned(
+            right: 12,
+            bottom: 12,
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.42),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.zoom_out_map,
+                      size: 13, color: Colors.white),
+                  const SizedBox(width: 5),
+                  Text(context.l10n.tapPhotoToEnlarge,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Lifestyle section — rendered only when at least one habit/field is set.
   List<Widget> _lifestyleSection(LifestyleDetails l) {
     final items = <_InfoItem>[
-      _InfoItem(Icons.restaurant_outlined, 'Eating Habit',
+      _InfoItem(Icons.restaurant_outlined, context.l10n.eatingHabit,
           context.localizeValue(l.eatingHabit)),
-      _InfoItem(Icons.smoke_free, 'Smoking',
+      _InfoItem(Icons.smoke_free, context.l10n.smokingHabit,
           context.localizeValue(l.smokingHabit)),
-      _InfoItem(Icons.no_drinks_outlined, 'Drinking',
+      _InfoItem(Icons.no_drinks_outlined, context.l10n.drinkingHabit,
           context.localizeValue(l.drinkingHabit)),
-      _InfoItem(Icons.sports_esports_outlined, 'Hobbies', l.hobbies),
-      _InfoItem(Icons.interests_outlined, 'Interests', l.interests),
-      _InfoItem(Icons.translate, 'Languages Known',
+      _InfoItem(Icons.sports_esports_outlined, context.l10n.hobbies, l.hobbies),
+      _InfoItem(Icons.interests_outlined, context.l10n.interests, l.interests),
+      _InfoItem(Icons.translate, context.l10n.languagesKnown,
           l.languagesKnown.map(context.localizeValue).join(', ')),
     ];
     if (items.every((i) => i.value.trim().isEmpty)) return const [];
@@ -604,11 +660,11 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
   List<Widget> _familySection(FamilyDetails f) {
     final items = <_InfoItem>[
       _InfoItem(Icons.man_outlined, context.l10n.father, f.fatherName),
-      _InfoItem(
-          Icons.work_history_outlined, "Father's Occupation", f.fatherOccupation),
+      _InfoItem(Icons.work_history_outlined, context.l10n.fatherOccupation,
+          context.localizeValue(f.fatherOccupation)),
       _InfoItem(Icons.woman_outlined, context.l10n.mother, f.motherName),
-      _InfoItem(
-          Icons.work_history_outlined, "Mother's Occupation", f.motherOccupation),
+      _InfoItem(Icons.work_history_outlined, context.l10n.motherOccupation,
+          context.localizeValue(f.motherOccupation)),
       _InfoItem(Icons.group_outlined, context.l10n.brothers,
           f.brothersCount > 0 ? '${f.brothersCount}' : ''),
       _InfoItem(Icons.group_outlined, context.l10n.sisters,
@@ -626,7 +682,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       _buildInfoSection(context.l10n.familyDetails, items),
       if (f.aboutFamily.trim().isNotEmpty) ...[
         const SizedBox(height: 12),
-        Text('About Family', style: AppTextStyles.heading3),
+        Text(context.l10n.aboutFamily, style: AppTextStyles.heading3),
         const SizedBox(height: 8),
         Text(f.aboutFamily, style: AppTextStyles.bodyMedium),
       ],
@@ -789,11 +845,13 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
 
     final rows = <_PrefCmp>[];
 
+    final l10n = context.l10n;
+
     // Age (always).
     rows.add(_PrefCmp(
-      'Age',
-      '${p.minAge} - ${p.maxAge} yrs',
-      c.age > 0 ? '${c.age} yrs' : '—',
+      l10n.age,
+      l10n.ageRangeValue(p.minAge, p.maxAge),
+      c.age > 0 ? '${c.age} ${l10n.years}' : '—',
       c.age >= p.minAge && c.age <= p.maxAge,
     ));
 
@@ -805,8 +863,8 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     final hMatched =
         (minI >= 0 && maxI >= 0 && cI >= 0) ? (cI >= minI && cI <= maxI) : true;
     rows.add(_PrefCmp(
-      'Height',
-      '${p.minHeight} - ${p.maxHeight}',
+      l10n.height,
+      l10n.rangeValue(p.minHeight, p.maxHeight),
       dash(c.height),
       hMatched,
     ));
@@ -814,9 +872,9 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     // Education.
     if (p.education.isNotEmpty) {
       rows.add(_PrefCmp(
-        'Education',
-        p.education.join(', '),
-        dash(c.education),
+        l10n.education,
+        p.education.map(context.localizeValue).join(', '),
+        dash(context.localizeValue(c.education)),
         p.education.any((e) => eq(c.education, e)),
       ));
     }
@@ -824,9 +882,9 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     // Profession (occupation).
     if (p.occupation.isNotEmpty) {
       rows.add(_PrefCmp(
-        'Profession',
-        p.occupation.join(', '),
-        dash(c.occupation),
+        l10n.profession,
+        p.occupation.map(context.localizeValue).join(', '),
+        dash(context.localizeValue(c.occupation)),
         p.occupation.any((o) => eq(c.occupation, o)),
       ));
     }
@@ -839,19 +897,25 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
           [c.city, c.state].where((s) => s.trim().isNotEmpty).join(', ');
       final ok = (set(p.city) ? eq(c.city, p.city) : true) &&
           (set(p.state) ? eq(c.state, p.state) : true);
-      rows.add(_PrefCmp('Location', pref, dash(theirs), ok));
+      rows.add(_PrefCmp(l10n.location, pref, dash(theirs), ok));
     }
 
     // Religion.
     if (set(p.religion)) {
       rows.add(_PrefCmp(
-          'Religion', p.religion, dash(c.religion), eq(c.religion, p.religion)));
+          l10n.religion,
+          context.localizeValue(p.religion),
+          dash(context.localizeValue(c.religion)),
+          eq(c.religion, p.religion)));
     }
 
     // Caste.
     if (set(p.caste)) {
       rows.add(_PrefCmp(
-          'Caste', p.caste!, dash(c.caste ?? ''), eq(c.caste ?? '', p.caste)));
+          l10n.caste,
+          context.localizeValue(p.caste!),
+          dash(context.localizeValue(c.caste ?? '')),
+          eq(c.caste ?? '', p.caste)));
     }
 
     return rows;
@@ -860,12 +924,18 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
   /// Horoscope section with privacy rules:
   ///  • The OWNER sees the full generated horoscope (Rasi, Nakshatra, Lagnam,
   ///    birth details, doshams).
-  ///  • OTHER users see only Rasi + Nakshatra + a "Horoscope Available"
-  ///    indicator, and can tap "Consult Astrologer" for detailed matching.
+  ///  • A member who switched "Hide Horoscope Details" ON (the DEFAULT, §17)
+  ///    shows nothing at all to other viewers — accepting an interest does not
+  ///    change that; only the owner can, from Privacy Settings.
+  ///  • Otherwise OTHER users see only Rasi + Nakshatra + a "Horoscope
+  ///    Available" indicator, and can tap "Consult Astrologer".
   Widget _horoscopeSection(ProfileModel profile) {
-    final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
-    final isOwner = myUid != null && myUid == profile.userId;
+    final isOwner = _isOwner(profile);
     final h = profile.horoscopeDetails;
+
+    if (!isOwner && profile.hidesHoroscope) {
+      return _hiddenSectionCard(context.l10n.horoscopeDetails);
+    }
 
     if (isOwner) {
       // The owner always sees their own uploaded documents — no gate.
@@ -879,11 +949,12 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
             _InfoItem(
                 Icons.place_outlined, context.l10n.birthPlace, h.birthPlace),
             _InfoItem(Icons.access_time, context.l10n.birthTime, h.birthTime),
-            _InfoItem(Icons.brightness_5_outlined, 'Chevvai Dosham', h.dosham),
-            _InfoItem(Icons.brightness_5_outlined, 'Rahu / Kethu Dosham',
-                h.rahuKethuDosham),
-            _InfoItem(Icons.brightness_5_outlined, 'Kalasarpa Dosham',
-                h.kalasarpaDosham),
+            _InfoItem(Icons.brightness_5_outlined, context.l10n.chevvaiDosham,
+                context.localizeValue(h.dosham)),
+            _InfoItem(Icons.brightness_5_outlined, context.l10n.rahuKethuDosham,
+                context.localizeValue(h.rahuKethuDosham)),
+            _InfoItem(Icons.brightness_5_outlined, context.l10n.kalasarpaDosham,
+                context.localizeValue(h.kalasarpaDosham)),
           ]),
           if (h.horoscopeImages.isNotEmpty || h.allPdfUrls.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -1075,10 +1146,41 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       if (!mounted) return;
       context.push('/chat/$id', extra: {'name': profile.name, 'photo': photo});
     } catch (_) {
-      messenger.showSnackBar(const SnackBar(
-          content: Text('Could not open chat. Please try again.')));
+      messenger.showSnackBar(
+          SnackBar(content: Text(context.l10n.couldNotOpenChatRetry)));
     }
   }
+
+  /// Neutral "the member keeps this private" card. Used for a whole section
+  /// the owner has switched off in Privacy Settings (§16/§17) — it states the
+  /// fact without hinting at the value and offers no way to reveal it.
+  Widget _hiddenSectionCard(String title) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: AppTextStyles.heading3),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.lock_outline, size: 18, color: Colors.grey[600]),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(context.l10n.hiddenByMember,
+                      style: TextStyle(
+                          fontSize: 13, color: Colors.grey[700])),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
 
   Widget _buildInfoSection(String title, List<_InfoItem> items) {
     return Column(

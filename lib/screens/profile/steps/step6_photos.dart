@@ -7,10 +7,13 @@ import '../../../core/utils/l10n_ext.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/gradient_button.dart';
 import '../../../widgets/common/network_photo.dart';
+import '../square_crop_screen.dart';
 
-/// Profile Photo step — exactly ONE photo (the multi-photo upload was
-/// removed per spec). Picking again replaces the current choice. In Edit
-/// Profile the existing photo is shown and kept unless replaced.
+/// Profile Photo step — exactly ONE photo (§1; multi-photo upload was removed
+/// completely). Any aspect ratio may be picked, but the image ALWAYS goes
+/// through the mandatory 1:1 crop screen before it is kept, and only the
+/// cropped square is uploaded. Picking again replaces the current choice. In
+/// Edit Profile the existing photo is shown and kept unless replaced.
 class Step6Photos extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   const Step6Photos({super.key, required this.onNext});
@@ -38,11 +41,13 @@ class _Step6State extends ConsumerState<Step6Photos> {
   }
 
   Future<void> _pickPhoto() async {
-    final picked = await _picker.pickImage(
-        source: ImageSource.gallery, imageQuality: 80, maxWidth: 1200);
-    if (picked != null) {
-      setState(() => _photo = File(picked.path)); // replaces — only ONE photo
-    }
+    // Pick at full quality — the crop screen handles resizing/compression.
+    final picked = await _picker.pickImage(source: ImageSource.gallery);
+    if (picked == null || !mounted) return;
+    // MANDATORY 1:1 crop: cancelling it keeps the previous selection.
+    final cropped = await SquareCropScreen.open(context, File(picked.path));
+    if (cropped == null || !mounted) return;
+    setState(() => _photo = cropped); // replaces — only ONE photo
   }
 
   void _saveAndNext() {
@@ -72,8 +77,9 @@ class _Step6State extends ConsumerState<Step6Photos> {
             child: GestureDetector(
               onTap: _pickPhoto,
               child: Container(
-                width: 220,
-                height: 260,
+                // 1:1 preview — exactly what will be saved and shown app-wide.
+                width: 240,
+                height: 240,
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(18),

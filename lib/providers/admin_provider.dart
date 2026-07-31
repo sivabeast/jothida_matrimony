@@ -31,6 +31,30 @@ final allAstrologersProvider =
 final allUsersProvider = StreamProvider.autoDispose<List<UserModel>>(
     (ref) => ref.read(adminRepositoryProvider).watchAllUsers(limit: 300));
 
+/// LIVE stream of one member's full profile, for the admin User Details page
+/// (§6).
+///
+/// Unlike `profileByUserIdProvider` (a one-shot read restricted to
+/// approved + active profiles, so it is safe for member-to-member browsing),
+/// this streams the document itself and applies NO status filter — admins can
+/// read every profile, including pending / suspended ones. Because it is a
+/// snapshot stream, an edit the member makes in the app shows up in the admin
+/// panel immediately, with no refresh.
+final adminProfileByUserIdProvider =
+    StreamProvider.autoDispose.family<ProfileModel?, String>((ref, uid) =>
+        ref.read(profileRepositoryProvider).watchProfileByUserId(uid));
+
+/// The member's gated contact record, readable by admins (§6 — "show complete
+/// profile information"). Returns null when it hasn't been created yet.
+final adminContactByUserIdProvider =
+    FutureProvider.autoDispose.family<ContactDetails?, String>((ref, uid) async {
+  try {
+    return await ref.read(profileRepositoryProvider).getContact(uid);
+  } catch (_) {
+    return null; // not created yet / rules not deployed — show the rest
+  }
+});
+
 /// Live stream of every astrologer request (consultations + match-analysis /
 /// horoscope bookings). Powers the admin Horoscope Requests page.
 final allAstrologerRequestsProvider =

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/services/porutham_match.dart';
@@ -43,19 +43,19 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen> {
           ? _lockedView(context)
           : otherAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => const Center(
+              error: (e, _) => Center(
                 child: Padding(
-                  padding: EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(24),
                   child: Text(
-                    'Couldn\'t load this profile right now. Please try again.',
+                    context.l10n.couldNotLoadProfileRetry,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey),
+                    style: const TextStyle(color: Colors.grey),
                   ),
                 ),
               ),
               data: (other) {
                 if (other == null) {
-                  return const Center(child: Text('Profile not found'));
+                  return Center(child: Text(context.l10n.profileNotFound));
                 }
                 final result = me == null ? null : computePorutham(me, other);
                 return ListView(
@@ -65,11 +65,11 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen> {
                     const SizedBox(height: 20),
                     if (result == null)
                       _card(
-                        title: 'Marriage Compatibility (Porutham)',
-                        child: const Text(
-                          'Not enough horoscope data to calculate the poruthams '
-                          'for this pair. Add birth-star details to both profiles.',
-                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                        title: context.l10n.marriageCompatibilityPorutham,
+                        child: Text(
+                          context.l10n.notEnoughHoroscopeData,
+                          style: const TextStyle(
+                              color: Colors.grey, fontSize: 13),
                         ),
                       )
                     else ...[
@@ -83,6 +83,9 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen> {
                       otherUserId: other.userId,
                       otherName: other.name,
                       contact: other.contact,
+                      // "Hide Phone Number" is ON by default and acceptance
+                      // never reveals it (§17).
+                      hiddenByOwner: other.hidesPhone,
                     ),
                     const SizedBox(height: 16),
                     _connectAstrologerCard(),
@@ -121,8 +124,8 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen> {
                     fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
             Text(
-              'Porutham results and horoscope compatibility unlock only after '
-              '${other?.name ?? 'this person'} accepts your interest.',
+              context.l10n.compatibilityUnlocksAfterAccept(
+                  other?.name ?? context.l10n.thisPerson),
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey[600], height: 1.4),
             ),
@@ -148,7 +151,7 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen> {
             const SizedBox(height: 10),
             TextButton(
               onPressed: () => context.pop(),
-              child: const Text('Back to Discover'),
+              child: Text(context.l10n.backToDiscover),
             ),
           ],
         ),
@@ -160,7 +163,7 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen> {
   Future<void> _sendInterest(ProfileModel? other) async {
     final me = ref.read(myProfileProvider).valueOrNull;
     if (me == null || other == null) {
-      _showSnack('Create your profile first to send interest');
+      _showSnack(context.l10n.createProfileFirstInterest);
       return;
     }
     try {
@@ -170,9 +173,9 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen> {
             senderProfileId: me.id,
             receiverProfileId: other.id,
           );
-      if (mounted) _showSnack('Interest sent');
+      if (mounted) _showSnack(context.l10n.interestSentShort);
     } catch (_) {
-      if (mounted) _showSnack('Could not send interest. Please try again.');
+      if (mounted) _showSnack(context.l10n.couldNotSendInterest);
     }
   }
 
@@ -360,7 +363,7 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen> {
         children: [
           const Icon(Icons.auto_awesome, color: AppColors.goldDark, size: 30),
           const SizedBox(height: 8),
-          const Text('Want an expert opinion?',
+          Text(context.l10n.wantAnExpertOpinion,
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 4),
           const Text(

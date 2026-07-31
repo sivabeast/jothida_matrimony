@@ -11,11 +11,15 @@ import '../../providers/auth_provider.dart';
 import '../../providers/demo_data_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../screens/profile/square_crop_screen.dart';
+import '../common/fullscreen_photo_viewer.dart';
 
 /// Tappable profile avatar with a camera badge. Tapping opens View / Change /
-/// Remove options. Changing uploads via Cloudinary and writes `profilePhotoUrl`
-/// to Firestore (then refreshes the profile); removing clears it. Editing never
-/// re-opens onboarding.
+/// Remove options. Changing runs the picked image through the MANDATORY 1:1
+/// crop screen (§1), uploads the cropped square via Cloudinary and writes
+/// `profilePhotoUrl` to Firestore (then refreshes the profile); removing clears
+/// it. There is only ever ONE photo — a new upload replaces the old one.
+/// Editing never re-opens onboarding.
 ///
 /// Reused by the Profile Details page so "Change Profile Photo" lives next to
 /// the rest of the profile information.
@@ -43,9 +47,11 @@ class _EditableProfilePhotoState extends ConsumerState<EditableProfilePhoto> {
           .read(demoProfilesProvider.notifier)
           .upsert(profile.withProfilePhoto(url));
     } else {
-      await ref
-          .read(profileRepositoryProvider)
-          .updateProfile(profile.id, {'profilePhotoUrl': url});
+      await ref.read(profileRepositoryProvider).updateProfile(profile.id, {
+        'profilePhotoUrl': url,
+        // Multi-photo support is gone — clear any legacy extras (§1).
+        'additionalPhotos': <String>[],
+      });
       // Keep the denormalized users/{uid}.photoUrl in sync so the new image
       // also shows in the home header, chats and elsewhere that reads it.
       await ref
@@ -57,14 +63,20 @@ class _EditableProfilePhotoState extends ConsumerState<EditableProfilePhoto> {
   }
 
   Future<void> _changePhoto() async {
-    final picked = await ImagePicker()
-        .pickImage(source: ImageSource.gallery, imageQuality: 85);
-    if (picked == null || widget.profile == null) return;
+    // Full-quality pick: the crop screen does the resizing/compression, so no
+    // imageQuality/maxWidth here — cropping a pre-shrunk image loses detail.
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked == null || widget.profile == null || !mounted) return;
+
+    // MANDATORY 1:1 crop — backing out of it saves nothing.
+    final cropped = await SquareCropScreen.open(context, File(picked.path));
+    if (cropped == null || !mounted) return;
+
     setState(() => _busy = true);
     try {
       final url = await ref.read(storageServiceProvider).uploadProfilePhoto(
             userId: widget.profile!.userId,
-            file: File(picked.path),
+            file: cropped,
             index: 0,
           );
       await _persist(url);
@@ -107,38 +119,8 @@ class _EditableProfilePhotoState extends ConsumerState<EditableProfilePhoto> {
     }
   }
 
-  void _viewPhoto(String url) {
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.black,
-        insetPadding: const EdgeInsets.all(12),
-        child: Stack(
-          children: [
-            InteractiveViewer(
-              child: Center(
-                child: Image.network(url,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const Padding(
-                          padding: EdgeInsets.all(40),
-                          child: Icon(Icons.broken_image,
-                              color: Colors.white, size: 64),
-                        )),
-              ),
-            ),
-            Positioned(
-              top: 4,
-              right: 4,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: () => Navigator.pop(ctx),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  /// Full screen, dark background, zoom + pan, explicit close (§10).
+  void _viewPhoto(String url) => FullScreenPhotoViewer.open(context, url);
 
   void _showOptions() {
     final profile = widget.profile;

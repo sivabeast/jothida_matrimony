@@ -150,11 +150,15 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
   void updateData(Map<String, dynamic> partial) =>
       state = state.copyWith(data: {...state.data, ...partial});
 
-  void setPhotos(List<File> photos) =>
-      // Defensive copy: if the caller (Step6Photos) still holds a reference to
-      // the same list and later modifies it (e.g. user navigates back and adds
-      // or removes a photo), the provider state would be silently corrupted.
-      state = state.copyWith(photos: List.unmodifiable(photos));
+  /// Sets the ONE profile photo (§1). Anything beyond the first entry is
+  /// dropped — multi-photo support was removed completely, so the wizard can
+  /// never carry a second file through to the upload step.
+  ///
+  /// Defensive copy: if the caller (Step6Photos) still holds a reference to the
+  /// same list and later modifies it, the provider state would otherwise be
+  /// silently corrupted.
+  void setPhotos(List<File> photos) => state = state.copyWith(
+      photos: List.unmodifiable(photos.isEmpty ? const [] : [photos.first]));
 
   /// Replaces the horoscope documents picked in the Upload step. Defensive
   /// copies, so a later edit of the caller's list can't corrupt the state.
@@ -235,11 +239,8 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
 
       List<String> photoUrls = [];
       if (hasPhotos) {
-        state = state.copyWith(
-          uploadStatus: state.photos.length == 1
-              ? 'Uploading photo...'
-              : 'Uploading ${state.photos.length} photos...',
-        );
+        // Exactly one photo per member (§1) — the wizard can't hold more.
+        state = state.copyWith(uploadStatus: 'Uploading photo...');
         debugPrint('[submitProfile] ▶ starting photo upload (${state.photos.length} file(s))');
         photoUrls = await repo.uploadPhotos(
           userId: userId,
@@ -592,15 +593,18 @@ bool _ppListGate(List<String> prefs, String candidate) {
   return prefs.any((e) => e.trim().toLowerCase() == c);
 }
 
-/// Effective partner age range for [me].
+/// Effective partner age range for [me] — the range the Matches feed filters
+/// on (§11).
 ///
-/// Age preference is mandatory, but when the user left it at the model default
-/// (18–40) we apply a gender-based range derived from their OWN age — identical
-/// to the website's rule, so both platforms behave the same:
+/// The member's CHOSEN range always wins: partner age is mandatory at profile
+/// creation, and `PartnerPreferences.agePreferenceSet` records that they
+/// actually picked it — so even a deliberate 18–40 is honoured verbatim.
+///
+/// Legacy profiles created before that rule (and profiles with no preferences
+/// record at all) fall back to a gender-based window derived from their OWN
+/// age — identical to the website's rule, so both platforms behave the same:
 ///   • Female member (sees male profiles):  own age        → own age + 10
 ///   • Male member   (sees female profiles): max(18, own age − 10) → own age
-/// A range the user actually chose (anything other than the 18–40 default) is
-/// used unchanged, so once they set an age preference it wins everywhere.
 ({int minAge, int maxAge}) resolveAgeRange(ProfileModel? me) {
   final pp = me?.partnerPreferences;
   final age = me?.age ?? 0;
@@ -608,6 +612,9 @@ bool _ppListGate(List<String> prefs, String candidate) {
   // so a member without a preferences record gets the spec's age window rather
   // than the wide-open 18–60 fallback.
   if (pp == null) return _defaultAgeRange(me, age) ?? (minAge: 18, maxAge: 60);
+  // The member picked this range — use it, whatever it is.
+  if (pp.agePreferenceSet) return (minAge: pp.minAge, maxAge: pp.maxAge);
+  // Legacy: an untouched 18–40 means "never chosen" → gender-based window.
   final isModelDefault = pp.minAge == 18 && pp.maxAge == 40;
   if (!isModelDefault || age <= 0) {
     return (minAge: pp.minAge, maxAge: pp.maxAge);
@@ -1080,6 +1087,12 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
   }
 
   /// Append the next page (called as the user nears the end of the feed).
+  ///
+  /// Keeps fetching until it actually ADDS something (or the collection runs
+  /// out). Without that loop a page whose profiles are all filtered out would
+  /// add nothing, the list would not grow, no further scroll event would fire,
+  /// and the feed would appear to stop early — which is exactly the "Matches
+  /// stops after the first profile" symptom (§8).
   Future<void> loadMore() async {
     if (kBypassAuth) return; // demo store has no further pages
     if (state.isLoading || state.isLoadingMore || !state.hasMore) return;
@@ -1089,32 +1102,39 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
     try {
       final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
       final me = ref.read(myProfileProvider).valueOrNull;
-      final ProfilePage page = await ref
-          .read(profileRepositoryProvider)
-          .searchProfilesPage(
-              gender: _gender, limit: _kDiscoverPageSize, startAfter: _lastDoc);
-      _lastDoc = page.lastDoc;
+      final repo = ref.read(profileRepositoryProvider);
 
-      // Cache the raw page too, so a later filter change re-filters over
-      // everything fetched so far.
-      final pooled = _pool.map((p) => p.id).toSet();
-      _pool.addAll(page.profiles.where((p) => !pooled.contains(p.id)));
-
-      // Append, de-duplicating by id so a re-fetched boundary doc can't double.
-      // The same eligibility rules used by [_rank] apply, so newly paged-in
-      // profiles always match what's already on screen.
+      var hasMore = state.hasMore;
+      final added = <ProfileModel>[];
       final existing = state.profiles.map((p) => p.id).toSet();
-      final added = page.profiles
-          .where((p) =>
-              _keep(p, myUid, me) &&
-              _filters.matches(p, me) &&
-              _passesMode(p, me) &&
-              !existing.contains(p.id))
-          .toList();
+
+      for (var i = 0; i < _kMaxAutoPages && hasMore && added.isEmpty; i++) {
+        final ProfilePage page = await repo.searchProfilesPage(
+            gender: _gender, limit: _kDiscoverPageSize, startAfter: _lastDoc);
+        _lastDoc = page.lastDoc;
+        hasMore = page.hasMore;
+
+        // Cache the raw page too, so a later filter change re-filters over
+        // everything fetched so far.
+        final pooled = _pool.map((p) => p.id).toSet();
+        _pool.addAll(page.profiles.where((p) => !pooled.contains(p.id)));
+
+        // De-duplicate by id so a re-fetched boundary doc can't double. The
+        // same eligibility rules used by [_rank] apply, so newly paged-in
+        // profiles always match what's already on screen.
+        added.addAll(page.profiles.where((p) =>
+            _keep(p, myUid, me) &&
+            _filters.matches(p, me) &&
+            _passesMode(p, me) &&
+            !existing.contains(p.id)));
+
+        if (_lastDoc == null) hasMore = false; // no cursor → cannot page on
+      }
+
       state = state.copyWith(
         profiles: [...state.profiles, ...added],
         isLoadingMore: false,
-        hasMore: page.hasMore,
+        hasMore: hasMore,
       );
     } catch (e, st) {
       debugPrint('[Discover] loadMore failed: $e\n$st');
@@ -1126,12 +1146,18 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
 final discoverProvider =
     NotifierProvider<DiscoverNotifier, DiscoverState>(() => DiscoverNotifier());
 
+/// How many profiles the Home page previews (§7). Home is a PREVIEW section
+/// only — it never lists every profile; the full list lives on Matches (§8).
+const int kHomeNewProfilesPreviewCount = 5;
+
 /// **New Profiles** for the Home page — the LATEST registered opposite-gender
-/// profiles, newest first, capped to 10.
+/// profiles, newest first, capped to [kHomeNewProfilesPreviewCount] (§7/§9).
 ///
 /// No preference gating (same rule as the Matches feed, per spec) — besides
 /// basic eligibility (never self / married / inactive / rejected / blocked),
-/// the list simply surfaces the newest members as people register.
+/// the list simply surfaces the newest members as people register. So if the
+/// admin seeds 10 male + 10 female dummy profiles, Home shows the newest 5
+/// eligible ones and Matches shows them all.
 final newProfilesProvider =
     FutureProvider.autoDispose<List<ProfileModel>>((ref) async {
   final gender = ref.watch(matchGenderProvider);
@@ -1168,5 +1194,5 @@ final newProfilesProvider =
     // Newest joiners first.
     ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-  return eligible.take(10).toList();
+  return eligible.take(kHomeNewProfilesPreviewCount).toList();
 });

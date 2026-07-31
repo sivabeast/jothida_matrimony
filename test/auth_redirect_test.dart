@@ -101,6 +101,45 @@ void main() {
       );
     });
 
+    // §2 — the dedicated admin account is admin-ONLY: never the user Home,
+    // never profile creation, never any other user-side page.
+    test('a pure admin is confined to /admin', () {
+      for (final location in [
+        '/home',
+        '/profile/create',
+        '/matches',
+        '/settings',
+        '/chat/abc',
+        '/interests',
+      ]) {
+        expect(
+          resolveAuthRedirect(
+            location: location,
+            isAuthenticated: true,
+            userDocLoading: false,
+            user: _user(role: 'admin'),
+          ),
+          '/admin',
+          reason: 'a dedicated admin must not reach "$location"',
+        );
+      }
+    });
+
+    test('a pure admin stays put inside the admin panel', () {
+      for (final location in ['/admin', '/admin/users', '/admin/reports']) {
+        expect(
+          resolveAuthRedirect(
+            location: location,
+            isAuthenticated: true,
+            userDocLoading: false,
+            user: _user(role: 'admin'),
+          ),
+          isNull,
+          reason: 'a dedicated admin should stay on "$location"',
+        );
+      }
+    });
+
     test('a super_admin is treated as a normal member', () {
       expect(
         resolveAuthRedirect(

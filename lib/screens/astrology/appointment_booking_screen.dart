@@ -14,8 +14,12 @@ import '../../providers/profile_provider.dart';
 import '../../services/firebase/astrologer_service.dart';
 
 /// Book Your Appointment: pick a working day, pick a SESSION (Morning /
-/// Afternoon — each capacity-limited), pay the service charge, then land on the
-/// confirmation screen. A session that has reached its capacity is greyed out.
+/// Afternoon — each capacity-limited) and confirm. A session that has reached
+/// its capacity is greyed out.
+///
+/// Booking is completely FREE (§12): there is no payment step, no service
+/// charge and no booking fee anywhere in this flow. The confirmed booking shows
+/// up in My Bookings for the member and on the astrologer/employee dashboard.
 class AppointmentBookingScreen extends ConsumerStatefulWidget {
   /// The accepted-match user id whose horoscope is compared with the user's.
   final String otherUserId;
@@ -45,20 +49,19 @@ class _AppointmentBookingScreenState
     return (groom: me, bride: other);
   }
 
-  Future<void> _startPayment(
+  /// Confirms the booking. No payment step — appointments are FREE (§12).
+  Future<void> _confirmBooking(
       AstrologyServiceConfig cfg, ProfileModel me, ProfileModel other) async {
     if (_date == null || _session == null) {
       _snack(context.l10n.pleaseSelectDateSession);
       return;
     }
     setState(() => _busy = true);
-    // TESTING MODE — simulate a successful payment then create the booking.
-    final paymentId = 'demo_${DateTime.now().millisecondsSinceEpoch}';
-    await _createBooking(cfg, me, other, paymentId);
+    await _createBooking(cfg, me, other);
   }
 
-  Future<void> _createBooking(AstrologyServiceConfig cfg, ProfileModel me,
-      ProfileModel other, String paymentId) async {
+  Future<void> _createBooking(
+      AstrologyServiceConfig cfg, ProfileModel me, ProfileModel other) async {
     final pair = _pair(me, other);
     try {
       final id = await ref
@@ -68,8 +71,10 @@ class _AppointmentBookingScreenState
             bride: pair.bride,
             date: _date!,
             slotMinutes: AppointmentSession.startMinutes(_session!),
-            amount: cfg.serviceCharge,
-            paymentId: paymentId,
+            // Free of charge — recorded as a zero-amount, no-payment booking so
+            // the admin/employee views never show a pending fee.
+            amount: 0,
+            paymentId: 'free',
             config: cfg,
           );
       if (!mounted) return;
@@ -152,24 +157,24 @@ class _AppointmentBookingScreenState
           _sessionCards(cfg),
         ],
         const SizedBox(height: 22),
-        _chargeRow(cfg),
+        _freeRow(),
         const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: (_busy || other == null)
                 ? null
-                : () => _startPayment(cfg, me, other),
+                : () => _confirmBooking(cfg, me, other),
             icon: _busy
                 ? const SizedBox(
                     height: 18,
                     width: 18,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.lock_outline, size: 18),
+                : const Icon(Icons.event_available_outlined, size: 18),
             label: Text(_busy
                 ? context.l10n.processing
-                : context.l10n.payAndConfirm(cfg.serviceCharge)),
+                : context.l10n.bookAppointment),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
@@ -270,7 +275,9 @@ class _AppointmentBookingScreenState
     );
   }
 
-  Widget _chargeRow(AstrologyServiceConfig cfg) => Container(
+  /// Replaces the old service-charge row: the appointment costs nothing (§12),
+  /// so the card states that plainly instead of showing a price.
+  Widget _freeRow() => Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -281,18 +288,28 @@ class _AppointmentBookingScreenState
         ),
         child: Row(
           children: [
-            const Icon(Icons.payments_outlined,
-                size: 18, color: AppColors.primary),
+            const Icon(Icons.verified_outlined,
+                size: 18, color: AppColors.success),
             const SizedBox(width: 10),
             Expanded(
-                child: Text(context.l10n.serviceCharge,
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600))),
-            Text('₹${cfg.serviceCharge}',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(context.l10n.appointmentFreeTitle,
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 2),
+                  Text(context.l10n.appointmentFreeNote,
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey[600])),
+                ],
+              ),
+            ),
+            Text(context.l10n.freeLabel,
                 style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary)),
+                    color: AppColors.success)),
           ],
         ),
       );
