@@ -33,9 +33,37 @@ class HoroscopeReportServiceScreen extends ConsumerStatefulWidget {
 
 class _HoroscopeReportServiceScreenState
     extends ConsumerState<HoroscopeReportServiceScreen> {
+  /// Fallback price, shown only until Play's own price arrives (or if the store
+  /// is unreachable). Play Console is the source of truth — see [_priceText].
   static const int _fee = AppConstants.horoscopeAnalysisFee; // ₹199
 
   bool _busy = false;
+
+  /// Play's localized price for `horoscope_report` (e.g. "₹199.00"), loaded
+  /// from the store when this screen opens. Null while the product is still
+  /// resolving, on an emulator without Play, or if the product is not ACTIVE
+  /// in Play Console.
+  String? _storePrice;
+
+  /// What the pay button and the Service Details row display. Prefers the real
+  /// store price so changing the price in Play Console does NOT require an app
+  /// update — without this the button could promise ₹199 while Play charged
+  /// something else.
+  String get _priceText => _storePrice ?? '₹$_fee';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStorePrice();
+  }
+
+  Future<void> _loadStorePrice() async {
+    final billing = ref.read(playBillingServiceProvider);
+    await billing.init();
+    if (!mounted) return;
+    setState(() =>
+        _storePrice = billing.priceLabel(BillingProducts.horoscopeReport));
+  }
 
   void _snack(String m) {
     if (!mounted) return;
@@ -73,13 +101,20 @@ class _HoroscopeReportServiceScreenState
       if (!mounted) return;
 
       if (result.isPurchased) {
+        // Record what Play ACTUALLY charged rather than the hardcoded constant,
+        // so admin revenue stays correct if the Console price is ever changed.
+        final raw = ref
+            .read(playBillingServiceProvider)
+            .rawPrice(BillingProducts.horoscopeReport);
+        final chargedAmount = (raw != null && raw > 0) ? raw.round() : _fee;
+
         // Verified purchase → save the purchase + auto-assign the analysis, then
         // unlock via the Reports tab.
         await ref.read(matchAnalysisControllerProvider.notifier)
             .requestAndAssignAnalysis(
               groom: groom,
               bride: bride,
-              amount: _fee,
+              amount: chargedAmount,
               paymentId: result.purchaseToken.isNotEmpty
                   ? result.purchaseToken
                   : 'play_billing',
@@ -178,7 +213,9 @@ class _HoroscopeReportServiceScreenState
                           strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.auto_awesome, size: 20),
               label: Text(
-                _busy ? 'Processing…' : 'Pay ₹$_fee · Request Horoscope Analysis',
+                _busy
+                    ? 'Processing…'
+                    : 'Pay $_priceText · Request Horoscope Analysis',
                 style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               ),
               style: ElevatedButton.styleFrom(
@@ -267,7 +304,7 @@ class _HoroscopeReportServiceScreenState
             _metaRow(Icons.schedule_outlined, 'Estimated delivery',
                 'Within 2 working days after payment'),
             const Divider(height: 18),
-            _metaRow(Icons.payments_outlined, 'Service charge', '₹$_fee'),
+            _metaRow(Icons.payments_outlined, 'Service charge', _priceText),
           ],
         ),
       );

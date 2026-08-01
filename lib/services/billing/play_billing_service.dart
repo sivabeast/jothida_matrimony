@@ -103,6 +103,12 @@ class PlayBillingService {
   /// hardcoded amount.
   String? priceLabel(String productId) => _products[productId]?.price;
 
+  /// The numeric store price for [productId] (e.g. `199.0`), or null until the
+  /// product is loaded. Used to record what Play ACTUALLY charged, so the
+  /// revenue figures stay correct when the Console price is changed without an
+  /// app update.
+  double? rawPrice(String productId) => _products[productId]?.rawPrice;
+
   /// Launches the Play purchase sheet for [productId] (a one-time CONSUMABLE
   /// product). Returns once Play reports a terminal outcome for it.
   Future<BillingResult> buyConsumable(String productId) async {
