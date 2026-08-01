@@ -4,7 +4,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
-import 'package:vector_math/vector_math_64.dart' show Vector3;
 
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/image_crop.dart' as crop;
@@ -252,7 +251,7 @@ class _SquareCropScreenState extends State<SquareCropScreen> {
     final tx = -k * (geo.ox + rect.left * geo.displayW);
     final ty = -k * (geo.oy + rect.top * geo.displayH);
     _controller.value = Matrix4.identity()
-      ..scale(k, k, 1.0)
+      ..scaleByDouble(k, k, 1.0, 1.0)
       ..setTranslationRaw(tx, ty, 0);
   }
 
@@ -299,7 +298,7 @@ class _SquareCropScreenState extends State<SquareCropScreen> {
     final maxTy = -geo.oy * k;
     final tx = m.storage[12].clamp(math.min(minTx, maxTx), math.max(minTx, maxTx));
     final ty = m.storage[13].clamp(math.min(minTy, maxTy), math.max(minTy, maxTy));
-    return m.clone()..setTranslation(Vector3(tx.toDouble(), ty.toDouble(), 0));
+    return m.clone()..setTranslationRaw(tx.toDouble(), ty.toDouble(), 0);
   }
 
   void _reset() {
