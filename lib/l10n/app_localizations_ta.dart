@@ -1,3 +1,5 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -135,7 +137,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get invalidOtp => 'சரியான OTP ஐ உள்ளிடவும்';
 
   @override
-  String get passwordTooShort => 'கடவுச்சொல் குறைந்தது 6 எழுத்துகள் இருக்க வேண்டும்';
+  String get passwordTooShort =>
+      'கடவுச்சொல் குறைந்தது 6 எழுத்துகள் இருக்க வேண்டும்';
 
   @override
   String get somethingWentWrong => 'ஏதோ தவறு நடந்தது. மீண்டும் முயற்சிக்கவும்.';
@@ -451,7 +454,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get interestWithdrawn => 'விருப்பம் திரும்பப் பெறப்பட்டது';
 
   @override
-  String get withdrawConfirmMsg => 'இந்த விருப்பத்தைத் திரும்பப் பெறவா? அவர்களுக்கு இது இனி தெரியாது.';
+  String get withdrawConfirmMsg =>
+      'இந்த விருப்பத்தைத் திரும்பப் பெறவா? அவர்களுக்கு இது இனி தெரியாது.';
 
   @override
   String get blockedUsers => 'தடுக்கப்பட்டவர்கள்';
@@ -463,7 +467,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get unblock => 'தடையை நீக்கு';
 
   @override
-  String get unblockConfirmMsg => 'இந்த பயனரை மீண்டும் அனுமதிக்கவா? அவர்கள் மீண்டும் உங்களைப் பார்த்து தொடர்பு கொள்ள முடியும்.';
+  String get unblockConfirmMsg =>
+      'இந்த பயனரை மீண்டும் அனுமதிக்கவா? அவர்கள் மீண்டும் உங்களைப் பார்த்து தொடர்பு கொள்ள முடியும்.';
 
   @override
   String get noBlockedUsers => 'நீங்கள் இதுவரை யாரையும் தடுக்கவில்லை.';
@@ -511,7 +516,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get upgradeToPremium => 'பிரீமியம் திட்டத்திற்கு மேம்படுத்தவும்';
 
   @override
-  String get premiumSubtitle => 'வரம்பற்ற அணுகல் & இலவச ஜோதிடர் ஆலோசனைகளைப் பெறுங்கள்';
+  String get premiumSubtitle =>
+      'வரம்பற்ற அணுகல் & இலவச ஜோதிடர் ஆலோசனைகளைப் பெறுங்கள்';
 
   @override
   String get married => 'திருமணமானவர்';
@@ -639,10 +645,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get submitReview => 'விமர்சனத்தைச் சமர்ப்பி';
 
   @override
-  String get noReviewsYet => 'இன்னும் விமர்சனங்கள் இல்லை. முதலில் மதிப்பிடுங்கள்.';
+  String get noReviewsYet =>
+      'இன்னும் விமர்சனங்கள் இல்லை. முதலில் மதிப்பிடுங்கள்.';
 
   @override
-  String get completeProfileToRate => 'ஜோதிடர்களை மதிப்பிட உங்கள் சுயவிவரத்தை முடிக்கவும்.';
+  String get completeProfileToRate =>
+      'ஜோதிடர்களை மதிப்பிட உங்கள் சுயவிவரத்தை முடிக்கவும்.';
 
   @override
   String get ratingSubmitted => 'நன்றி! உங்கள் மதிப்பீடு சமர்ப்பிக்கப்பட்டது.';
@@ -651,7 +659,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get ratingUpdated => 'உங்கள் மதிப்பீடு புதுப்பிக்கப்பட்டது.';
 
   @override
-  String get couldNotSubmitRating => 'உங்கள் மதிப்பீட்டைச் சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get couldNotSubmitRating =>
+      'உங்கள் மதிப்பீட்டைச் சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get shareYourExperience => 'உங்கள் அனுபவத்தைப் பகிருங்கள்…';
@@ -690,7 +699,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get whatsapp => 'வாட்ஸ்அப்';
 
   @override
-  String get contactLocked => 'உங்கள் விருப்பம் ஏற்கப்பட்ட பிறகு தொடர்பு திறக்கப்படும்';
+  String get contactLocked =>
+      'உங்கள் விருப்பம் ஏற்கப்பட்ட பிறகு தொடர்பு திறக்கப்படும்';
 
   @override
   String get notifications => 'அறிவிப்புகள்';
@@ -738,13 +748,16 @@ class AppLocalizationsTa extends AppLocalizations {
   String get deleteAccount => 'கணக்கை நீக்கு';
 
   @override
-  String get deleteAccountSubtitle => 'உங்கள் கணக்கையும் அனைத்து தரவையும் நிரந்தரமாக நீக்கு';
+  String get deleteAccountSubtitle =>
+      'உங்கள் கணக்கையும் அனைத்து தரவையும் நிரந்தரமாக நீக்கு';
 
   @override
-  String get deleteAccountWarning => 'இந்தச் செயல் நிரந்தரமானது, மீட்க முடியாது.\nஉங்கள் சுயவிவரத் தரவு, புகைப்படங்கள், விருப்பங்கள், ஜாதக விவரங்கள் மற்றும் கணக்குத் தகவல் அனைத்தும் நிரந்தரமாக நீக்கப்படும்.';
+  String get deleteAccountWarning =>
+      'இந்தச் செயல் நிரந்தரமானது, மீட்க முடியாது.\nஉங்கள் சுயவிவரத் தரவு, புகைப்படங்கள், விருப்பங்கள், ஜாதக விவரங்கள் மற்றும் கணக்குத் தகவல் அனைத்தும் நிரந்தரமாக நீக்கப்படும்.';
 
   @override
-  String get couldNotDeleteAccount => 'உங்கள் கணக்கை நீக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get couldNotDeleteAccount =>
+      'உங்கள் கணக்கை நீக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get viewPhoto => 'புகைப்படத்தைப் பார்';
@@ -768,10 +781,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get photoRemoved => 'புகைப்படம் அகற்றப்பட்டது';
 
   @override
-  String get couldNotUpdatePhoto => 'புகைப்படத்தைப் புதுப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get couldNotUpdatePhoto =>
+      'புகைப்படத்தைப் புதுப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
-  String get couldNotRemovePhoto => 'புகைப்படத்தை அகற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get couldNotRemovePhoto =>
+      'புகைப்படத்தை அகற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get family => 'குடும்பம்';
@@ -783,13 +798,15 @@ class AppLocalizationsTa extends AppLocalizations {
   String get profileUnavailable => 'சுயவிவரம் கிடைக்கவில்லை';
 
   @override
-  String get memberDetailsUnavailable => 'இந்த உறுப்பினரின் விவரங்களை ஏற்ற முடியவில்லை.';
+  String get memberDetailsUnavailable =>
+      'இந்த உறுப்பினரின் விவரங்களை ஏற்ற முடியவில்லை.';
 
   @override
   String get couldNotLoadFamilyDetails => 'குடும்ப விவரங்களை ஏற்ற முடியவில்லை';
 
   @override
-  String get addFamilyFromPersonalDetails => 'உங்கள் குடும்ப மரத்தை இங்கே காண, தனிப்பட்ட விவரங்களில் இருந்து குடும்ப விவரங்களைச் சேர்க்கவும்.';
+  String get addFamilyFromPersonalDetails =>
+      'உங்கள் குடும்ப மரத்தை இங்கே காண, தனிப்பட்ட விவரங்களில் இருந்து குடும்ப விவரங்களைச் சேர்க்கவும்.';
 
   @override
   String memberNoFamilyDetails(String name) {
@@ -815,16 +832,19 @@ class AppLocalizationsTa extends AppLocalizations {
   String get whoCreatingAccountFor => 'யாருக்காக\nகணக்கை உருவாக்குகிறீர்கள்?';
 
   @override
-  String get chooseHowToUseApp => 'செயலியை எவ்வாறு பயன்படுத்த விரும்புகிறீர்கள் என்பதைத் தேர்ந்தெடுக்கவும்';
+  String get chooseHowToUseApp =>
+      'செயலியை எவ்வாறு பயன்படுத்த விரும்புகிறீர்கள் என்பதைத் தேர்ந்தெடுக்கவும்';
 
   @override
   String get pressBackToExit => 'வெளியேற மீண்டும் பின் செல்லவும்';
 
   @override
-  String get signInFailed => 'உள்நுழைவு தோல்வியடைந்தது. உங்கள் விவரங்களைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.';
+  String get signInFailed =>
+      'உள்நுழைவு தோல்வியடைந்தது. உங்கள் விவரங்களைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.';
 
   @override
-  String get googleSignInFailed => 'Google உள்நுழைவு தோல்வியடைந்தது. மீண்டும் முயற்சிக்கவும்.';
+  String get googleSignInFailed =>
+      'Google உள்நுழைவு தோல்வியடைந்தது. மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get astrologerSignInHere => 'நீங்கள் ஜோதிடரா? இங்கே உள்நுழையவும்';
@@ -842,10 +862,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get member => 'உறுப்பினர்';
 
   @override
-  String get noReceivedInterests => 'இன்னும் விருப்பங்கள் எதுவும் பெறப்படவில்லை';
+  String get noReceivedInterests =>
+      'இன்னும் விருப்பங்கள் எதுவும் பெறப்படவில்லை';
 
   @override
-  String get noSentInterests => 'நீங்கள் இன்னும் எந்த விருப்பத்தையும் அனுப்பவில்லை';
+  String get noSentInterests =>
+      'நீங்கள் இன்னும் எந்த விருப்பத்தையும் அனுப்பவில்லை';
 
   @override
   String get noAcceptedInterests => 'இன்னும் ஏற்கப்பட்ட விருப்பங்கள் இல்லை';
@@ -857,25 +879,31 @@ class AppLocalizationsTa extends AppLocalizations {
   String get couldntLoadInterests => 'விருப்பங்களை ஏற்ற முடியவில்லை';
 
   @override
-  String get checkConnectionRetry => 'உங்கள் இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.';
+  String get checkConnectionRetry =>
+      'உங்கள் இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.';
 
   @override
-  String get interestStartHint => 'தொடங்க ஒரு விருப்பத்தை அனுப்பவும் அல்லது பெறவும்.';
+  String get interestStartHint =>
+      'தொடங்க ஒரு விருப்பத்தை அனுப்பவும் அல்லது பெறவும்.';
 
   @override
   String get interestDeclined => 'விருப்பம் நிராகரிக்கப்பட்டது';
 
   @override
-  String get interestAcceptedMatch => 'விருப்பம் ஏற்கப்பட்டது — இது ஒரு பொருத்தம்!';
+  String get interestAcceptedMatch =>
+      'விருப்பம் ஏற்கப்பட்டது — இது ஒரு பொருத்தம்!';
 
   @override
-  String get profileUnavailableMatch => 'இந்தப் பொருத்தத்திற்கு சுயவிவரம் கிடைக்கவில்லை.';
+  String get profileUnavailableMatch =>
+      'இந்தப் பொருத்தத்திற்கு சுயவிவரம் கிடைக்கவில்லை.';
 
   @override
-  String get horoscopeUnavailableMember => 'இந்த உறுப்பினருக்கு ஜாதகப் பொருத்தம் கிடைக்கவில்லை.';
+  String get horoscopeUnavailableMember =>
+      'இந்த உறுப்பினருக்கு ஜாதகப் பொருத்தம் கிடைக்கவில்லை.';
 
   @override
-  String get sentAcceptedHint => 'ஏற்கப்பட்டது — தொடர்பைப் பார்க்க ஏற்கப்பட்டது தாவலைத் திறக்கவும்.';
+  String get sentAcceptedHint =>
+      'ஏற்கப்பட்டது — தொடர்பைப் பார்க்க ஏற்கப்பட்டது தாவலைத் திறக்கவும்.';
 
   @override
   String get interestDeclinedStatus => 'இந்த விருப்பம் நிராகரிக்கப்பட்டது.';
@@ -893,25 +921,30 @@ class AppLocalizationsTa extends AppLocalizations {
   String get sending => 'அனுப்புகிறது…';
 
   @override
-  String get reassignQuestion => '24 மணி நேரத்திற்குள் ஜோதிடர் பதிலளிக்கவில்லை என்றால்';
+  String get reassignQuestion =>
+      '24 மணி நேரத்திற்குள் ஜோதிடர் பதிலளிக்கவில்லை என்றால்';
 
   @override
   String get reassignWaitOnly => 'இந்த ஜோதிடருக்காக மட்டும் காத்திருக்கவும்';
 
   @override
-  String get reassignWaitOnlyDesc => 'இந்த ஜோதிடருக்காகக் காத்திருங்கள். பின்னர் நீங்களே நடவடிக்கை எடுக்கலாம்.';
+  String get reassignWaitOnlyDesc =>
+      'இந்த ஜோதிடருக்காகக் காத்திருங்கள். பின்னர் நீங்களே நடவடிக்கை எடுக்கலாம்.';
 
   @override
   String get reassignChooseLater => 'பின்னர் வேறு ஜோதிடரைத் தேர்ந்தெடுக்கிறேன்';
 
   @override
-  String get reassignChooseLaterDesc => 'புதிய ஜோதிடரை நீங்களே தேர்ந்தெடுக்க உங்களுக்கு அறிவிப்போம்.';
+  String get reassignChooseLaterDesc =>
+      'புதிய ஜோதிடரை நீங்களே தேர்ந்தெடுக்க உங்களுக்கு அறிவிப்போம்.';
 
   @override
-  String get reassignAllowAdmin => 'வேறு ஜோதிடரை நிர்வாகி நியமிக்க அனுமதிக்கவும்';
+  String get reassignAllowAdmin =>
+      'வேறு ஜோதிடரை நிர்வாகி நியமிக்க அனுமதிக்கவும்';
 
   @override
-  String get reassignAllowAdminDesc => 'எங்கள் குழு உங்களுக்காக மற்றொரு ஜோதிடரை நியமிக்கும்.';
+  String get reassignAllowAdminDesc =>
+      'எங்கள் குழு உங்களுக்காக மற்றொரு ஜோதிடரை நியமிக்கும்.';
 
   @override
   String get statusExpired => 'காலாவதியானது';
@@ -932,13 +965,16 @@ class AppLocalizationsTa extends AppLocalizations {
   String get statusRejected => 'நிராகரிக்கப்பட்டது';
 
   @override
-  String get expiredChooseAnotherMsg => 'தேர்ந்தெடுக்கப்பட்ட ஜோதிடர் தேவையான நேரத்திற்குள் பதிலளிக்கவில்லை. தயவுசெய்து வேறு ஜோதிடரைத் தேர்ந்தெடுக்கவும்.';
+  String get expiredChooseAnotherMsg =>
+      'தேர்ந்தெடுக்கப்பட்ட ஜோதிடர் தேவையான நேரத்திற்குள் பதிலளிக்கவில்லை. தயவுசெய்து வேறு ஜோதிடரைத் தேர்ந்தெடுக்கவும்.';
 
   @override
-  String get expiredAdminWillAssignMsg => 'தேர்ந்தெடுக்கப்பட்ட ஜோதிடர் சரியான நேரத்தில் பதிலளிக்கவில்லை. உங்கள் பதிவுக்கு நிர்வாகி வேறு ஜோதிடரை நியமிப்பார்.';
+  String get expiredAdminWillAssignMsg =>
+      'தேர்ந்தெடுக்கப்பட்ட ஜோதிடர் சரியான நேரத்தில் பதிலளிக்கவில்லை. உங்கள் பதிவுக்கு நிர்வாகி வேறு ஜோதிடரை நியமிப்பார்.';
 
   @override
-  String get expiredWaitOnlyMsg => 'இந்த ஜோதிடர் 24 மணி நேரத்திற்குள் பதிலளிக்கவில்லை. நீங்கள் காத்திருக்கலாம் அல்லது வேறு ஜோதிடரைத் தேர்ந்தெடுக்கலாம்.';
+  String get expiredWaitOnlyMsg =>
+      'இந்த ஜோதிடர் 24 மணி நேரத்திற்குள் பதிலளிக்கவில்லை. நீங்கள் காத்திருக்கலாம் அல்லது வேறு ஜோதிடரைத் தேர்ந்தெடுக்கலாம்.';
 
   @override
   String get chooseAnotherAstrologer => 'வேறு ஜோதிடரைத் தேர்ந்தெடுக்கவும்';
@@ -983,10 +1019,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get compatibleNakshatras => 'பொருந்தும் நட்சத்திரங்கள்';
 
   @override
-  String get compatibleNakshatrasHint => 'உங்கள் நட்சத்திரத்துடன் பொருந்தும் நட்சத்திரங்கள் இவை. பொருத்தமான Matches-இல் இந்த நட்சத்திரங்களில் உங்கள் வாழ்க்கைத்துணை விருப்பங்களுக்குப் பொருந்தும் Profiles காட்டப்படும்.';
+  String get compatibleNakshatrasHint =>
+      'உங்கள் நட்சத்திரத்துடன் பொருந்தும் நட்சத்திரங்கள் இவை. பொருத்தமான Matches-இல் இந்த நட்சத்திரங்களில் உங்கள் வாழ்க்கைத்துணை விருப்பங்களுக்குப் பொருந்தும் Profiles காட்டப்படும்.';
 
   @override
-  String get matchingStarsUnavailable => 'பொருந்தும் நட்சத்திரங்களைப் பார்க்க, ஜாதக விவரங்களில் உங்கள் நட்சத்திரத்தை (அல்லது பிறந்த தேதியை) சேர்க்கவும்.';
+  String get matchingStarsUnavailable =>
+      'பொருந்தும் நட்சத்திரங்களைப் பார்க்க, ஜாதக விவரங்களில் உங்கள் நட்சத்திரத்தை (அல்லது பிறந்த தேதியை) சேர்க்கவும்.';
 
   @override
   String get community => 'சமூகம்';
@@ -1004,10 +1042,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get goBack => 'பின் செல்லவும்';
 
   @override
-  String get noMatchingProfilesTitle => 'உங்களுக்கான பொருத்தமான Profiles இன்னும் கிடைக்கவில்லை';
+  String get noMatchingProfilesTitle =>
+      'உங்களுக்கான பொருத்தமான Profiles இன்னும் கிடைக்கவில்லை';
 
   @override
-  String get noMatchingProfilesBody => 'தற்போது Profiles எதுவும் கிடைக்கவில்லை. புதிய உறுப்பினர்கள் தொடர்ந்து இணைந்து கொண்டிருக்கிறார்கள் — கிடைக்கும் அனைத்து Profiles-ும் இங்கு தோன்றும்; உங்கள் வாழ்க்கைத்துணை விருப்பங்களுக்கு பொருந்துபவை சிறந்த பொருத்தம் அடையாளத்துடன் காட்டப்படும்.';
+  String get noMatchingProfilesBody =>
+      'தற்போது Profiles எதுவும் கிடைக்கவில்லை. புதிய உறுப்பினர்கள் தொடர்ந்து இணைந்து கொண்டிருக்கிறார்கள் — கிடைக்கும் அனைத்து Profiles-ும் இங்கு தோன்றும்; உங்கள் வாழ்க்கைத்துணை விருப்பங்களுக்கு பொருந்துபவை சிறந்த பொருத்தம் அடையாளத்துடன் காட்டப்படும்.';
 
   @override
   String get couldNotLoadMatches => 'Matches-ஐ ஏற்ற முடியவில்லை';
@@ -1022,7 +1062,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get notInterested => 'விருப்பம் இல்லை';
 
   @override
-  String get createProfileFirst => 'விருப்பம் அனுப்ப முதலில் உங்கள் Profile-ஐ உருவாக்கவும்';
+  String get createProfileFirst =>
+      'விருப்பம் அனுப்ப முதலில் உங்கள் Profile-ஐ உருவாக்கவும்';
 
   @override
   String interestSentTo(String name) {
@@ -1030,7 +1071,8 @@ class AppLocalizationsTa extends AppLocalizations {
   }
 
   @override
-  String get couldNotSendInterest => 'விருப்பத்தை அனுப்ப முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get couldNotSendInterest =>
+      'விருப்பத்தை அனுப்ப முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String youMatchedWith(String name) {
@@ -1038,7 +1080,8 @@ class AppLocalizationsTa extends AppLocalizations {
   }
 
   @override
-  String get couldNotAcceptInterest => 'விருப்பத்தை ஏற்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get couldNotAcceptInterest =>
+      'விருப்பத்தை ஏற்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get dailyInterestLimitTitle => 'இன்றைய விருப்ப வரம்பு முடிந்தது';
@@ -1061,7 +1104,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get matchingProfile => 'சிறந்த பொருத்தம்';
 
   @override
-  String get comingSoonBody => 'இந்த வசதி இன்னும் கிடைக்கவில்லை. நாங்கள் இதில் பணியாற்றி வருகிறோம்; விரைவில் வரவிருக்கும் புதுப்பிப்பில் திறக்கப்படும். காத்திருங்கள்!';
+  String get comingSoonBody =>
+      'இந்த வசதி இன்னும் கிடைக்கவில்லை. நாங்கள் இதில் பணியாற்றி வருகிறோம்; விரைவில் வரவிருக்கும் புதுப்பிப்பில் திறக்கப்படும். காத்திருங்கள்!';
 
   @override
   String get featureMarriageFixed => 'திருமணம் நிச்சயம்';
@@ -1094,10 +1138,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get selectConsultationCategory => 'ஆலோசனை வகையைத் தேர்ந்தெடுக்கவும்';
 
   @override
-  String get chooseConsultationReason => 'உங்கள் ஆலோசனை காரணத்தைத் தேர்ந்தெடுக்கவும்';
+  String get chooseConsultationReason =>
+      'உங்கள் ஆலோசனை காரணத்தைத் தேர்ந்தெடுக்கவும்';
 
   @override
-  String get noCategoriesAvailable => 'தற்போது ஆலோசனை வகைகள் எதுவும் இல்லை. பின்னர் மீண்டும் முயற்சிக்கவும்.';
+  String get noCategoriesAvailable =>
+      'தற்போது ஆலோசனை வகைகள் எதுவும் இல்லை. பின்னர் மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get selectDate => 'தேதியைத் தேர்ந்தெடுக்கவும்';
@@ -1106,10 +1152,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get selectSession => 'அமர்வைத் தேர்ந்தெடுக்கவும்';
 
   @override
-  String get selectSessionMorningEvening => 'அமர்வைத் தேர்ந்தெடுக்கவும் — காலை அல்லது மாலை';
+  String get selectSessionMorningEvening =>
+      'அமர்வைத் தேர்ந்தெடுக்கவும் — காலை அல்லது மாலை';
 
   @override
-  String get noExactSlotsNote => 'நிலையான நேர இடைவெளிகள் இல்லை — உங்கள் முன்பதிவு உறுதியானதும், சரியான நேரத்தை எங்கள் ஊழியர் நேரடியாகத் தொடர்பு கொண்டு தெரிவிப்பார்.';
+  String get noExactSlotsNote =>
+      'நிலையான நேர இடைவெளிகள் இல்லை — உங்கள் முன்பதிவு உறுதியானதும், சரியான நேரத்தை எங்கள் ஊழியர் நேரடியாகத் தொடர்பு கொண்டு தெரிவிப்பார்.';
 
   @override
   String get morning => 'காலை';
@@ -1143,37 +1191,47 @@ class AppLocalizationsTa extends AppLocalizations {
   }
 
   @override
-  String get inPersonVisitNote => 'இது நேரடி அலுவலக வருகை. உங்களுக்கு விருப்பமான தேதியும் அமர்வும் கீழே தேர்ந்தெடுக்கவும்.';
+  String get inPersonVisitNote =>
+      'இது நேரடி அலுவலக வருகை. உங்களுக்கு விருப்பமான தேதியும் அமர்வும் கீழே தேர்ந்தெடுக்கவும்.';
 
   @override
-  String get bookingClosedMessage => 'சந்திப்பு முன்பதிவு தற்போது மூடப்பட்டுள்ளது. பின்னர் மீண்டும் முயற்சிக்கவும்.';
+  String get bookingClosedMessage =>
+      'சந்திப்பு முன்பதிவு தற்போது மூடப்பட்டுள்ளது. பின்னர் மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get noWorkingDaysThisWeek => 'இந்த வாரம் வேலை நாட்கள் எதுவும் இல்லை.';
 
   @override
-  String get pleaseSelectCategory => 'தயவுசெய்து ஒரு ஆலோசனை வகையைத் தேர்ந்தெடுக்கவும்.';
+  String get pleaseSelectCategory =>
+      'தயவுசெய்து ஒரு ஆலோசனை வகையைத் தேர்ந்தெடுக்கவும்.';
 
   @override
-  String get pleaseSelectDateSession => 'தயவுசெய்து தேதியும் அமர்வும் தேர்ந்தெடுக்கவும்.';
+  String get pleaseSelectDateSession =>
+      'தயவுசெய்து தேதியும் அமர்வும் தேர்ந்தெடுக்கவும்.';
 
   @override
-  String get sessionJustFilled => 'அந்த அமர்வு இப்போது நிரம்பிவிட்டது. வேறு ஒன்றைத் தேர்ந்தெடுக்கவும்.';
+  String get sessionJustFilled =>
+      'அந்த அமர்வு இப்போது நிரம்பிவிட்டது. வேறு ஒன்றைத் தேர்ந்தெடுக்கவும்.';
 
   @override
-  String get sessionJustFilledNotCharged => 'அந்த அமர்வு இப்போது நிரம்பிவிட்டது (உங்களிடம் கட்டணம் வசூலிக்கப்படவில்லை). வேறு ஒன்றைத் தேர்ந்தெடுக்கவும்.';
+  String get sessionJustFilledNotCharged =>
+      'அந்த அமர்வு இப்போது நிரம்பிவிட்டது (உங்களிடம் கட்டணம் வசூலிக்கப்படவில்லை). வேறு ஒன்றைத் தேர்ந்தெடுக்கவும்.';
 
   @override
-  String get bookingFailed => 'உங்கள் முன்பதிவை முடிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get bookingFailed =>
+      'உங்கள் முன்பதிவை முடிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
-  String get paymentFailedNotCharged => 'கட்டணம் தோல்வியடைந்தது அல்லது ரத்து செய்யப்பட்டது. உங்களிடம் கட்டணம் வசூலிக்கப்படவில்லை.';
+  String get paymentFailedNotCharged =>
+      'கட்டணம் தோல்வியடைந்தது அல்லது ரத்து செய்யப்பட்டது. உங்களிடம் கட்டணம் வசூலிக்கப்படவில்லை.';
 
   @override
-  String get paymentOkBookingFailed => 'கட்டணம் வெற்றிகரமாக முடிந்தது, ஆனால் முன்பதிவைச் சேமிக்க முடியவில்லை. ஆதரவைத் தொடர்பு கொள்ளவும்.';
+  String get paymentOkBookingFailed =>
+      'கட்டணம் வெற்றிகரமாக முடிந்தது, ஆனால் முன்பதிவைச் சேமிக்க முடியவில்லை. ஆதரவைத் தொடர்பு கொள்ளவும்.';
 
   @override
-  String get completeOwnProfileFirst => 'சந்திப்பு முன்பதிவு செய்யும் முன் உங்கள் சுயவிவரத்தை முடிக்கவும்.';
+  String get completeOwnProfileFirst =>
+      'சந்திப்பு முன்பதிவு செய்யும் முன் உங்கள் சுயவிவரத்தை முடிக்கவும்.';
 
   @override
   String get morningSessionWindow => 'காலை அமர்வு (காலை 9:00 – மதியம் 1:00)';
@@ -1185,10 +1243,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get appointmentConfirmed => 'சந்திப்பு உறுதிப்படுத்தப்பட்டது';
 
   @override
-  String get appointmentBookedTitle => 'உங்கள் சந்திப்பு முன்பதிவு செய்யப்பட்டது!';
+  String get appointmentBookedTitle =>
+      'உங்கள் சந்திப்பு முன்பதிவு செய்யப்பட்டது!';
 
   @override
-  String get visitOfficeAtScheduled => 'குறிப்பிட்ட தேதி மற்றும் நேரத்தில் எங்கள் அலுவலகத்திற்கு வருகை தரவும்.';
+  String get visitOfficeAtScheduled =>
+      'குறிப்பிட்ட தேதி மற்றும் நேரத்தில் எங்கள் அலுவலகத்திற்கு வருகை தரவும்.';
 
   @override
   String get bookingIdLabel => 'முன்பதிவு எண்';
@@ -1203,7 +1263,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get exactTiming => 'சரியான நேரம்';
 
   @override
-  String get exactTimingNote => 'உங்கள் அமர்வுக்குள் சரியான நேரத்தை நிர்ணயிக்க எங்கள் ஊழியர் உங்களை நேரடியாகத் தொடர்பு கொள்வார்.';
+  String get exactTimingNote =>
+      'உங்கள் அமர்வுக்குள் சரியான நேரத்தை நிர்ணயிக்க எங்கள் ஊழியர் உங்களை நேரடியாகத் தொடர்பு கொள்வார்.';
 
   @override
   String get officeAddress => 'அலுவலக முகவரி';
@@ -1240,7 +1301,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get reportReadyMsg => 'உங்கள் அறிக்கை தயாராக உள்ளது.';
 
   @override
-  String get reportPreparingMsg => 'உங்கள் அறிக்கை எங்கள் ஜோதிடரால் தயாரிக்கப்படுகிறது.';
+  String get reportPreparingMsg =>
+      'உங்கள் அறிக்கை எங்கள் ஜோதிடரால் தயாரிக்கப்படுகிறது.';
 
   @override
   String get requestDate => 'கோரிக்கை தேதி';
@@ -1249,7 +1311,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get completedDate => 'முடிந்த தேதி';
 
   @override
-  String get noReportsUnderAnalysis => 'பகுப்பாய்வில் அறிக்கைகள் எதுவும் இல்லை.\nஏற்றுக்கொள்ளப்பட்ட பொருத்தத்திலிருந்து ஜாதகப் பொருத்த அறிக்கையைக் கோரவும்.';
+  String get noReportsUnderAnalysis =>
+      'பகுப்பாய்வில் அறிக்கைகள் எதுவும் இல்லை.\nஏற்றுக்கொள்ளப்பட்ட பொருத்தத்திலிருந்து ஜாதகப் பொருத்த அறிக்கையைக் கோரவும்.';
 
   @override
   String get noCompletedReports => 'முடிந்த அறிக்கைகள் இன்னும் இல்லை.';
@@ -1261,7 +1324,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get preparingReport => 'உங்கள் அறிக்கை தயாராகிறது…';
 
   @override
-  String get reportDownloadFailed => 'அறிக்கையைப் பதிவிறக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get reportDownloadFailed =>
+      'அறிக்கையைப் பதிவிறக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get imagesLabel => 'படங்கள்';
@@ -1287,7 +1351,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get descriptionLabel => 'விளக்கம்';
 
   @override
-  String get attachedAsFile => 'ஜோதிடர் பகுப்பாய்வை கீழே கோப்பாக இணைத்துள்ளார்.';
+  String get attachedAsFile =>
+      'ஜோதிடர் பகுப்பாய்வை கீழே கோப்பாக இணைத்துள்ளார்.';
 
   @override
   String get partnerPreferenceMatch => 'வாழ்க்கைத் துணை விருப்பப் பொருத்தம்';
@@ -1337,13 +1402,15 @@ class AppLocalizationsTa extends AppLocalizations {
   String get noMatchWord => 'இல்லை';
 
   @override
-  String get horoscopePrivateNote => 'முழு ஜாதகம் தனிப்பட்டது. விரிவான ஜாதகப் பொருத்தத்திற்கு, சரிபார்க்கப்பட்ட ஜோதிடரை அணுகவும்.';
+  String get horoscopePrivateNote =>
+      'முழு ஜாதகம் தனிப்பட்டது. விரிவான ஜாதகப் பொருத்தத்திற்கு, சரிபார்க்கப்பட்ட ஜோதிடரை அணுகவும்.';
 
   @override
   String get profileNotFound => 'சுயவிவரம் கிடைக்கவில்லை';
 
   @override
-  String get couldNotLoadProfile => 'இந்த சுயவிவரத்தை இப்போது ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get couldNotLoadProfile =>
+      'இந்த சுயவிவரத்தை இப்போது ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get reportLabel => 'புகார்';
@@ -1352,7 +1419,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get updateAvailableTitle => 'புதிய புதுப்பிப்பு உள்ளது';
 
   @override
-  String get updateRequiredMessage => 'தொடர உங்கள் பயன்பாட்டைப் புதுப்பிக்கவும்.';
+  String get updateRequiredMessage =>
+      'தொடர உங்கள் பயன்பாட்டைப் புதுப்பிக்கவும்.';
 
   @override
   String get updateNow => 'இப்போது புதுப்பிக்கவும்';
@@ -1367,25 +1435,30 @@ class AppLocalizationsTa extends AppLocalizations {
   String get roleMatrimonyTitle => 'திருமணப் பயனர்';
 
   @override
-  String get roleMatrimonyDesc => 'வாழ்க்கைத் துணையைத் தேடுகிறீர்களா? திருமணப் பயனராகத் தொடரவும்.';
+  String get roleMatrimonyDesc =>
+      'வாழ்க்கைத் துணையைத் தேடுகிறீர்களா? திருமணப் பயனராகத் தொடரவும்.';
 
   @override
   String get roleFamilyTitle => 'குடும்ப உறுப்பினர்';
 
   @override
-  String get roleFamilyDesc => 'அழைக்கப்பட்ட உங்கள் Google கணக்கைப் பயன்படுத்தி, ஏற்கனவே உள்ள திருமணப் பணியிடத்தில் இணையவும்.';
+  String get roleFamilyDesc =>
+      'அழைக்கப்பட்ட உங்கள் Google கணக்கைப் பயன்படுத்தி, ஏற்கனவே உள்ள திருமணப் பணியிடத்தில் இணையவும்.';
 
   @override
-  String get signInMatrimonyPrompt => 'உங்கள் வாழ்க்கைத் துணையைக் கண்டறிய Google கணக்கில் உள்நுழையவும்.';
+  String get signInMatrimonyPrompt =>
+      'உங்கள் வாழ்க்கைத் துணையைக் கண்டறிய Google கணக்கில் உள்நுழையவும்.';
 
   @override
-  String get signInFamilyPrompt => 'உங்கள் திருமணப் பணியிடத்தில் இணைய Google கணக்கில் உள்நுழையவும்.';
+  String get signInFamilyPrompt =>
+      'உங்கள் திருமணப் பணியிடத்தில் இணைய Google கணக்கில் உள்நுழையவும்.';
 
   @override
   String get notInvitedTitle => 'இன்னும் அழைக்கப்படவில்லை';
 
   @override
-  String get notInvitedBody => 'நீங்கள் இதுவரை எந்தத் திருமணப் பணியிடத்திற்கும் அழைக்கப்படவில்லை. மணமகன் அல்லது மணமகளைத் தொடர்பு கொள்ளவும்.';
+  String get notInvitedBody =>
+      'நீங்கள் இதுவரை எந்தத் திருமணப் பணியிடத்திற்கும் அழைக்கப்படவில்லை. மணமகன் அல்லது மணமகளைத் தொடர்பு கொள்ளவும்.';
 
   @override
   String get featureSecurePrivate => 'பாதுகாப்பு & தனியுரிமை';
@@ -1406,10 +1479,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get agreeToTermsPrefix => 'தொடர்வதன் மூலம், நீங்கள் எங்கள்';
 
   @override
-  String get termsAndPrivacy => 'விதிமுறைகள் & தனியுரிமைக் கொள்கையை ஏற்கிறீர்கள்';
+  String get termsAndPrivacy =>
+      'விதிமுறைகள் & தனியுரிமைக் கொள்கையை ஏற்கிறீர்கள்';
 
   @override
-  String get familyInviteOnlyNote => 'மணமகன் அல்லது மணமகளால் அழைக்கப்பட்ட Gmail முகவரிகள் மட்டுமே திருமணப் பணியிடத்தைத் திறக்க முடியும்.';
+  String get familyInviteOnlyNote =>
+      'மணமகன் அல்லது மணமகளால் அழைக்கப்பட்ட Gmail முகவரிகள் மட்டுமே திருமணப் பணியிடத்தைத் திறக்க முடியும்.';
 
   @override
   String get guest => 'விருந்தினர்';
@@ -1424,7 +1499,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get weddingWorkspaceTitle => 'திருமணப் பணியிடம்';
 
   @override
-  String get weddingPlanTogether => 'இரு குடும்பங்களுடன் இணைந்து திருமணத்தைத் திட்டமிடுங்கள்';
+  String get weddingPlanTogether =>
+      'இரு குடும்பங்களுடன் இணைந்து திருமணத்தைத் திட்டமிடுங்கள்';
 
   @override
   String weddingDaysToGo(int days) {
@@ -1456,19 +1532,23 @@ class AppLocalizationsTa extends AppLocalizations {
   }
 
   @override
-  String get marriedLeftMatchmaking => 'சுயவிவரம் பொருத்தத்திலிருந்து விலகியது · மாற்ற தட்டவும்';
+  String get marriedLeftMatchmaking =>
+      'சுயவிவரம் பொருத்தத்திலிருந்து விலகியது · மாற்ற தட்டவும்';
 
   @override
   String get foundLifePartnerQ => 'உங்கள் வாழ்க்கைத் துணையைக் கண்டீர்களா?';
 
   @override
-  String get markProfileMarried => 'உங்கள் சுயவிவரத்தைத் திருமணமானதாகக் குறிக்கவும்';
+  String get markProfileMarried =>
+      'உங்கள் சுயவிவரத்தைத் திருமணமானதாகக் குறிக்கவும்';
 
   @override
-  String get foundLifePartnerSheetTitle => '💍 உங்கள் வாழ்க்கைத் துணையைக் கண்டீர்களா?';
+  String get foundLifePartnerSheetTitle =>
+      '💍 உங்கள் வாழ்க்கைத் துணையைக் கண்டீர்களா?';
 
   @override
-  String get foundLifePartnerSheetBody => 'வாழ்த்துகள்! அவரை எப்படிக் கண்டறிந்தீர்கள் எனச் சொல்லுங்கள்.';
+  String get foundLifePartnerSheetBody =>
+      'வாழ்த்துகள்! அவரை எப்படிக் கண்டறிந்தீர்கள் எனச் சொல்லுங்கள்.';
 
   @override
   String get marriedViaAppTitle => 'ஆம் — இந்த ஆப் மூலம்';
@@ -1489,10 +1569,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get confirmMarkMarriedTitle => 'உறுதி — திருமணமானதாகக் குறிக்கவா?';
 
   @override
-  String get confirmMarkMarriedBody => 'உங்கள் சுயவிவரம் திருமணமானதாகக் குறிக்கப்பட்டு, பொருத்தப் பட்டியலிலிருந்து விலகும் (இனி Matches-இல் தோன்றாது).\n\nதிட்டங்கள் மாறினால், முகப்புப் பக்கத்திலிருந்து எப்போது வேண்டுமானாலும் இதை மாற்றலாம்.';
+  String get confirmMarkMarriedBody =>
+      'உங்கள் சுயவிவரம் திருமணமானதாகக் குறிக்கப்பட்டு, பொருத்தப் பட்டியலிலிருந்து விலகும் (இனி Matches-இல் தோன்றாது).\n\nதிட்டங்கள் மாறினால், முகப்புப் பக்கத்திலிருந்து எப்போது வேண்டுமானாலும் இதை மாற்றலாம்.';
 
   @override
-  String get marriedSuccessSnack => '🎉 வாழ்த்துகள்! உங்கள் சுயவிவரம் இப்போது திருமணமானதாகக் குறிக்கப்பட்டது.';
+  String get marriedSuccessSnack =>
+      '🎉 வாழ்த்துகள்! உங்கள் சுயவிவரம் இப்போது திருமணமானதாகக் குறிக்கப்பட்டது.';
 
   @override
   String get undoUpper => 'மாற்று';
@@ -1501,7 +1583,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get undoMarriedTitle => 'திருமண நிலையை மாற்றவா?';
 
   @override
-  String get undoMarriedBody => 'உங்கள் சுயவிவரம் இயல்பு நிலைக்குத் திரும்பி, முன்பு போலவே மீண்டும் பொருத்தத்தில் தோன்றும்.';
+  String get undoMarriedBody =>
+      'உங்கள் சுயவிவரம் இயல்பு நிலைக்குத் திரும்பி, முன்பு போலவே மீண்டும் பொருத்தத்தில் தோன்றும்.';
 
   @override
   String get keepAsMarried => 'திருமணமானதாகவே வை';
@@ -1510,7 +1593,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get undo => 'மாற்று';
 
   @override
-  String get backInMatchmaking => 'உங்கள் சுயவிவரம் மீண்டும் பொருத்தத்தில் உள்ளது.';
+  String get backInMatchmaking =>
+      'உங்கள் சுயவிவரம் மீண்டும் பொருத்தத்தில் உள்ளது.';
 
   @override
   String get recentInterests => 'சமீபத்திய ஆர்வங்கள்';
@@ -1713,10 +1797,12 @@ class AppLocalizationsTa extends AppLocalizations {
   }
 
   @override
-  String get couldNotMatchLocation => 'உங்கள் இடத்தைப் பொருத்த முடியவில்லை — கீழே தேர்ந்தெடுக்கவும்.';
+  String get couldNotMatchLocation =>
+      'உங்கள் இடத்தைப் பொருத்த முடியவில்லை — கீழே தேர்ந்தெடுக்கவும்.';
 
   @override
-  String get locationAccessDenied => 'இட அணுகல் மறுக்கப்பட்டது. உங்கள் இடத்தைக் கைமுறையாகத் தேர்ந்தெடுக்கவும்.';
+  String get locationAccessDenied =>
+      'இட அணுகல் மறுக்கப்பட்டது. உங்கள் இடத்தைக் கைமுறையாகத் தேர்ந்தெடுக்கவும்.';
 
   @override
   String get locationDetails => 'இட விவரங்கள்';
@@ -1731,10 +1817,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get citizenship => 'குடியுரிமை';
 
   @override
-  String get selectStateDistrictCity => 'மாநிலம், மாவட்டம் மற்றும் ஊரைத் தேர்ந்தெடுக்கவும்.';
+  String get selectStateDistrictCity =>
+      'மாநிலம், மாவட்டம் மற்றும் ஊரைத் தேர்ந்தெடுக்கவும்.';
 
   @override
-  String get educationCareerSubtitle => 'உங்கள் கல்வித் தகுதி மற்றும் பணி விவரங்கள்.';
+  String get educationCareerSubtitle =>
+      'உங்கள் கல்வித் தகுதி மற்றும் பணி விவரங்கள்.';
 
   @override
   String get highestEducation => 'உயர்கல்வித் தகுதி';
@@ -1749,13 +1837,67 @@ class AppLocalizationsTa extends AppLocalizations {
   String get courseDegreeHint => 'எ.கா. பி.இ கணினி அறிவியல்';
 
   @override
+  String get swipeToBrowse =>
+      'சுயவிவரங்களைப் பார்க்க இடம் / வலம் ஸ்வைப் செய்யுங்கள்';
+
+  @override
+  String get educationLevel => 'கல்வி நிலை';
+
+  @override
+  String get employmentStatus => 'வேலை நிலை';
+
+  @override
+  String get governmentOrPrivate => 'அரசு / தனியார்';
+
+  @override
+  String get businessOrProfession => 'வணிகம் / தொழில்முறை';
+
+  @override
+  String get detectingFace => 'முகத்தைக் கண்டறிகிறது…';
+
+  @override
+  String get faceCenteredHint =>
+      'முகம் கண்டறியப்பட்டு நடுவில் வைக்கப்பட்டது. வேண்டுமானால் சரிசெய்யுங்கள்.';
+
+  @override
+  String get adjustPhotoHint =>
+      'நகர்த்த இழுக்கவும், பெரிதாக்க/சிறிதாக்க பொத்தான்களைப் பயன்படுத்தவும்.';
+
+  @override
+  String get zoomIn => 'பெரிதாக்கு';
+
+  @override
+  String get zoomOut => 'சிறிதாக்கு';
+
+  @override
+  String get resetCrop => 'மீட்டமை';
+
+  @override
+  String get previewPhoto => 'முன்னோட்டம்';
+
+  @override
+  String get photoPreviewTitle => 'உங்கள் சுயவிவரப் புகைப்படம்';
+
+  @override
+  String get photoPreviewHint =>
+      'மற்ற உறுப்பினர்கள் உங்கள் புகைப்படத்தை இப்படித்தான் பார்ப்பார்கள்.';
+
+  @override
+  String get usePhoto => 'இந்தப் புகைப்படத்தைப் பயன்படுத்து';
+
+  @override
+  String get adjustAgain => 'மீண்டும் சரிசெய்';
+
+  @override
   String get religiousInformation => 'சமூக விவரங்கள்';
 
   @override
-  String get religiousInfoSubtitle => 'உங்கள் சமூகத்திற்குள் பொருத்தமானவர்களைக் கண்டறிய உதவும்.';
+  String get religiousInfoSubtitle =>
+      'உங்கள் சமூகத்திற்குள் பொருத்தமானவர்களைக் கண்டறிய உதவும்.';
 
   @override
-  String get horoscopeStepSubtitle => 'உங்கள் பிறந்த தேதி, நேரம் மற்றும் இடத்திலிருந்து ராசி, நட்சத்திரம் மற்றும் லக்னம் தானாகக் கணக்கிடப்படும். கைமுறையாக அமைக்க மேலெழுதலை இயக்கவும்.';
+  String get horoscopeStepSubtitle =>
+      'உங்கள் பிறந்த தேதி, நேரம் மற்றும் இடத்திலிருந்து ராசி, நட்சத்திரம் மற்றும் லக்னம் தானாகக் கணக்கிடப்படும். கைமுறையாக அமைக்க மேலெழுதலை இயக்கவும்.';
 
   @override
   String get timeOfBirth => 'பிறந்த நேரம்';
@@ -1782,7 +1924,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get calculatingHoroscope => 'ஜாதகம் கணக்கிடப்படுகிறது…';
 
   @override
-  String get selectDateTimePlaceHint => 'ஜாதகத்தைக் கணக்கிட தேதி, நேரம் மற்றும் இடத்தைத் தேர்ந்தெடுக்கவும்.';
+  String get selectDateTimePlaceHint =>
+      'ஜாதகத்தைக் கணக்கிட தேதி, நேரம் மற்றும் இடத்தைத் தேர்ந்தெடுக்கவும்.';
 
   @override
   String get calculatedHoroscope => 'கணக்கிடப்பட்ட ஜாதகம்';
@@ -1794,7 +1937,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get overrideHoroscope => 'தானாகக் கணக்கிடப்பட்ட ஜாதகத்தை மாற்றவும்';
 
   @override
-  String get overrideHoroscopeSubtitle => 'ராசி, நட்சத்திரம் மற்றும் லக்னத்தை கைமுறையாகத் தேர்ந்தெடுக்கவும்.';
+  String get overrideHoroscopeSubtitle =>
+      'ராசி, நட்சத்திரம் மற்றும் லக்னத்தை கைமுறையாகத் தேர்ந்தெடுக்கவும்.';
 
   @override
   String get rasiMoonSign => 'ராசி (சந்திர ராசி)';
@@ -1806,19 +1950,23 @@ class AppLocalizationsTa extends AppLocalizations {
   String get lagnamAscendant => 'லக்னம்';
 
   @override
-  String get pleaseSelectTimeOfBirth => 'உங்கள் பிறந்த நேரத்தைத் தேர்ந்தெடுக்கவும்';
+  String get pleaseSelectTimeOfBirth =>
+      'உங்கள் பிறந்த நேரத்தைத் தேர்ந்தெடுக்கவும்';
 
   @override
-  String get pleaseSelectBirthPlace => 'உங்கள் பிறந்த இடத்தைத் தேர்ந்தெடுக்கவும்';
+  String get pleaseSelectBirthPlace =>
+      'உங்கள் பிறந்த இடத்தைத் தேர்ந்தெடுக்கவும்';
 
   @override
-  String get unableToGenerateHoroscope => 'ஜாதக விவரங்களை உருவாக்க முடியவில்லை. தேதி, நேரம் மற்றும் பிறந்த இடத்தைச் சரிபார்க்கவும்.';
+  String get unableToGenerateHoroscope =>
+      'ஜாதக விவரங்களை உருவாக்க முடியவில்லை. தேதி, நேரம் மற்றும் பிறந்த இடத்தைச் சரிபார்க்கவும்.';
 
   @override
   String get partnerPreferenceTitle => 'துணை விருப்பம்';
 
   @override
-  String get partnerPrefSubtitle => 'அனைத்தும் விருப்பத்தேர்வு — உங்களுக்குத் தேவையானதை மட்டும் அமைக்கவும். எப்போது வேண்டுமானாலும் மாற்றலாம்.';
+  String get partnerPrefSubtitle =>
+      'அனைத்தும் விருப்பத்தேர்வு — உங்களுக்குத் தேவையானதை மட்டும் அமைக்கவும். எப்போது வேண்டுமானாலும் மாற்றலாம்.';
 
   @override
   String get basicPreference => 'அடிப்படை விருப்பம்';
@@ -1870,16 +2018,19 @@ class AppLocalizationsTa extends AppLocalizations {
   String get profilePhoto => 'சுயவிவரப் புகைப்படம்';
 
   @override
-  String get profilePhotoSubtitle => 'உங்களின் ஒரு தெளிவான புகைப்படத்தைச் சேர்க்கவும் — அதுவே உங்கள் சுயவிவரப் படமாக இருக்கும்.';
+  String get profilePhotoSubtitle =>
+      'உங்களின் ஒரு தெளிவான புகைப்படத்தைச் சேர்க்கவும் — அதுவே உங்கள் சுயவிவரப் படமாக இருக்கும்.';
 
   @override
   String get addPhoto => 'புகைப்படம் சேர்';
 
   @override
-  String get photoVisibilityTip => 'புகைப்படம் சேர்ப்பது உங்கள் சுயவிவரத்தின் கவனத்தை 3 மடங்கு அதிகரிக்கும்.';
+  String get photoVisibilityTip =>
+      'புகைப்படம் சேர்ப்பது உங்கள் சுயவிவரத்தின் கவனத்தை 3 மடங்கு அதிகரிக்கும்.';
 
   @override
-  String get uploadHoroscopeSubtitle => 'விரும்பினால் உங்கள் ஜாதகத்தை PDF ஆக இணைக்கலாம். இதைத் தவிர்த்துவிட்டு பின்னர் சுயவிவரத்தில் சேர்க்கவும் முடியும்.';
+  String get uploadHoroscopeSubtitle =>
+      'விரும்பினால் உங்கள் ஜாதகத்தை PDF ஆக இணைக்கலாம். இதைத் தவிர்த்துவிட்டு பின்னர் சுயவிவரத்தில் சேர்க்கவும் முடியும்.';
 
   @override
   String get tapToSelectPdf => 'PDF தேர்ந்தெடுக்க தட்டவும்';
@@ -1891,7 +2042,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get changePdf => 'PDF மாற்று';
 
   @override
-  String get contactStepSubtitle => 'விருப்பம் இருதரப்பிலும் ஏற்கப்பட்ட பிறகே தொடர்பு விவரங்கள் பகிரப்படும்.';
+  String get contactStepSubtitle =>
+      'விருப்பம் இருதரப்பிலும் ஏற்கப்பட்ட பிறகே தொடர்பு விவரங்கள் பகிரப்படும்.';
 
   @override
   String get contactPersonName => 'தொடர்பு நபரின் பெயர்';
@@ -1906,13 +2058,15 @@ class AppLocalizationsTa extends AppLocalizations {
   String get whatsappSameAsMobile => 'வாட்ஸ்அப் எண் கைபேசி எண்ணைப் போலவே';
 
   @override
-  String get contactPrivacyNote => 'உங்கள் தொலைபேசி எண் மற்றும் முகவரி இயல்பாகவே மறைக்கப்பட்டிருக்கும். இருதரப்பும் விருப்பத்தை ஏற்றுக்கொண்ட பிறகே அவை வெளிப்படுத்தப்படும்.';
+  String get contactPrivacyNote =>
+      'உங்கள் தொலைபேசி எண் மற்றும் முகவரி இயல்பாகவே மறைக்கப்பட்டிருக்கும். இருதரப்பும் விருப்பத்தை ஏற்றுக்கொண்ட பிறகே அவை வெளிப்படுத்தப்படும்.';
 
   @override
   String get reviewSubmit => 'சரிபார்த்து சமர்ப்பிக்கவும்';
 
   @override
-  String get reviewSubtitle => 'சமர்ப்பிக்கும் முன் உங்கள் விவரங்களைச் சரிபார்க்கவும்.';
+  String get reviewSubtitle =>
+      'சமர்ப்பிக்கும் முன் உங்கள் விவரங்களைச் சரிபார்க்கவும்.';
 
   @override
   String get submitProfile => 'சுயவிவரத்தைச் சமர்ப்பி';
@@ -1952,7 +2106,8 @@ class AppLocalizationsTa extends AppLocalizations {
   }
 
   @override
-  String get noHoroscopeFiles => 'இந்தச் சுயவிவரத்திற்கு ஜாதக ஆவணங்கள் எதுவும் பதிவேற்றப்படவில்லை.';
+  String get noHoroscopeFiles =>
+      'இந்தச் சுயவிவரத்திற்கு ஜாதக ஆவணங்கள் எதுவும் பதிவேற்றப்படவில்லை.';
 
   @override
   String get viewFull => 'முழுமையாகப் பார்';
@@ -1973,7 +2128,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get addPdf => 'PDF சேர்';
 
   @override
-  String get uploadHoroscopeHint => 'உங்கள் ஜாதகத்தைப் படங்களாக (JPG / PNG) அல்லது PDF கோப்புகளாக இணைக்கவும். ஒன்றுக்கு மேற்பட்டவை சேர்க்கலாம்; இதைத் தவிர்த்துவிட்டு பின்னர் சுயவிவரத்தில் சேர்க்கவும் முடியும்.';
+  String get uploadHoroscopeHint =>
+      'உங்கள் ஜாதகத்தைப் படங்களாக (JPG / PNG) அல்லது PDF கோப்புகளாக இணைக்கவும். ஒன்றுக்கு மேற்பட்டவை சேர்க்கலாம்; இதைத் தவிர்த்துவிட்டு பின்னர் சுயவிவரத்தில் சேர்க்கவும் முடியும்.';
 
   @override
   String filesSelected(int count) {
@@ -1984,25 +2140,31 @@ class AppLocalizationsTa extends AppLocalizations {
   String get uploadingHoroscopeFiles => 'ஜாதகக் கோப்புகள் பதிவேற்றப்படுகின்றன…';
 
   @override
-  String get couldNotPickFile => 'தேர்ந்தெடுத்த கோப்பைப் படிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get couldNotPickFile =>
+      'தேர்ந்தெடுத்த கோப்பைப் படிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get horoscopeLockedTitle => 'ஜாதகம் பூட்டப்பட்டுள்ளது';
 
   @override
-  String get horoscopeLockedBody => 'இருதரப்பும் விருப்பத்தை ஏற்றுக்கொண்ட பிறகே இந்த உறுப்பினரின் ஜாதக ஆவணங்களைப் பார்க்க முடியும்.';
+  String get horoscopeLockedBody =>
+      'இருதரப்பும் விருப்பத்தை ஏற்றுக்கொண்ட பிறகே இந்த உறுப்பினரின் ஜாதக ஆவணங்களைப் பார்க்க முடியும்.';
 
   @override
-  String get horoscopeUnlockedNote => 'உங்கள் விருப்பம் ஏற்கப்பட்டது — இந்த உறுப்பினரின் ஜாதகத்தை கீழே பார்க்கவும் பதிவிறக்கவும் முடியும்.';
+  String get horoscopeUnlockedNote =>
+      'உங்கள் விருப்பம் ஏற்கப்பட்டது — இந்த உறுப்பினரின் ஜாதகத்தை கீழே பார்க்கவும் பதிவிறக்கவும் முடியும்.';
 
   @override
-  String get logoutDraftMessage => 'வெளியேற விரும்புகிறீர்களா? சேமிக்கப்படாத முன்னேற்றம் வரைவாகப் பாதுகாக்கப்படும்.';
+  String get logoutDraftMessage =>
+      'வெளியேற விரும்புகிறீர்களா? சேமிக்கப்படாத முன்னேற்றம் வரைவாகப் பாதுகாக்கப்படும்.';
 
   @override
-  String get mustBeSignedInToCreateProfile => 'சுயவிவரம் உருவாக்க நீங்கள் உள்நுழைந்திருக்க வேண்டும்.';
+  String get mustBeSignedInToCreateProfile =>
+      'சுயவிவரம் உருவாக்க நீங்கள் உள்நுழைந்திருக்க வேண்டும்.';
 
   @override
-  String get profileUpdatedSuccess => 'சுயவிவரம் வெற்றிகரமாகப் புதுப்பிக்கப்பட்டது.';
+  String get profileUpdatedSuccess =>
+      'சுயவிவரம் வெற்றிகரமாகப் புதுப்பிக்கப்பட்டது.';
 
   @override
   String get failedToCreateProfile => 'சுயவிவரத்தை உருவாக்க முடியவில்லை';
@@ -2044,16 +2206,20 @@ class AppLocalizationsTa extends AppLocalizations {
   String get submitReport => 'புகாரைச் சமர்ப்பி';
 
   @override
-  String get reportSubmittedProfile => 'புகார் சமர்ப்பிக்கப்பட்டது. எங்கள் குழு அதை மதிப்பாய்வு செய்யும்.';
+  String get reportSubmittedProfile =>
+      'புகார் சமர்ப்பிக்கப்பட்டது. எங்கள் குழு அதை மதிப்பாய்வு செய்யும்.';
 
   @override
-  String get reportSubmittedChat => 'புகார் சமர்ப்பிக்கப்பட்டது. எங்கள் குழு இந்த உரையாடலை மதிப்பாய்வு செய்யும்.';
+  String get reportSubmittedChat =>
+      'புகார் சமர்ப்பிக்கப்பட்டது. எங்கள் குழு இந்த உரையாடலை மதிப்பாய்வு செய்யும்.';
 
   @override
-  String get couldNotSubmitReport => 'புகாரைச் சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get couldNotSubmitReport =>
+      'புகாரைச் சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
-  String get pleaseSelectReportReason => 'புகாரளிக்க ஒரு காரணத்தைத் தேர்ந்தெடுக்கவும்.';
+  String get pleaseSelectReportReason =>
+      'புகாரளிக்க ஒரு காரணத்தைத் தேர்ந்தெடுக்கவும்.';
 
   @override
   String get screenshotOptional => 'திரைப்பிடிப்பு (விருப்பம்)';
@@ -2080,7 +2246,8 @@ class AppLocalizationsTa extends AppLocalizations {
   }
 
   @override
-  String get blockUserBody => 'அவர்கள் உங்கள் பொருத்தங்கள் மற்றும் தேடலில் இருந்து மறைந்துவிடுவார்கள்; இருவரும் அரட்டை அடிக்கவோ விருப்பம் அனுப்பவோ முடியாது. எப்போது வேண்டுமானாலும் தடையை நீக்கலாம்.';
+  String get blockUserBody =>
+      'அவர்கள் உங்கள் பொருத்தங்கள் மற்றும் தேடலில் இருந்து மறைந்துவிடுவார்கள்; இருவரும் அரட்டை அடிக்கவோ விருப்பம் அனுப்பவோ முடியாது. எப்போது வேண்டுமானாலும் தடையை நீக்கலாம்.';
 
   @override
   String userBlockedToast(String name) {
@@ -2103,79 +2270,95 @@ class AppLocalizationsTa extends AppLocalizations {
   }
 
   @override
-  String get cannotSendInterestBlocked => 'நீங்கள் தடுத்த பயனருக்கு விருப்பம் அனுப்ப முடியாது.';
+  String get cannotSendInterestBlocked =>
+      'நீங்கள் தடுத்த பயனருக்கு விருப்பம் அனுப்ப முடியாது.';
 
   @override
   String get cropPhotoTitle => 'புகைப்படத்தை வெட்டவும்';
 
   @override
-  String get cropPhotoHint => 'பெரிதாக்க இரு விரல்களால் இழுக்கவும்; இடத்தை மாற்ற நகர்த்தவும். சட்டத்திற்குள் உள்ள சதுரப் பகுதி மட்டுமே சேமிக்கப்படும்.';
+  String get cropPhotoHint =>
+      'பெரிதாக்க இரு விரல்களால் இழுக்கவும்; இடத்தை மாற்ற நகர்த்தவும். சட்டத்திற்குள் உள்ள சதுரப் பகுதி மட்டுமே சேமிக்கப்படும்.';
 
   @override
   String get cropAndSave => 'வெட்டி சேமி';
 
   @override
-  String get couldNotCropPhoto => 'இந்தப் புகைப்படத்தை வெட்ட முடியவில்லை. வேறு படத்தைத் தேர்ந்தெடுக்கவும்.';
+  String get couldNotCropPhoto =>
+      'இந்தப் புகைப்படத்தை வெட்ட முடியவில்லை. வேறு படத்தைத் தேர்ந்தெடுக்கவும்.';
 
   @override
-  String get profilePhotoOneOnly => 'உங்களுக்கு ஒரே ஒரு சுயவிவரப் புகைப்படம் மட்டுமே. புதிய படத்தைப் பதிவேற்றினால் தற்போதைய படம் மாற்றப்படும்.';
+  String get profilePhotoOneOnly =>
+      'உங்களுக்கு ஒரே ஒரு சுயவிவரப் புகைப்படம் மட்டுமே. புதிய படத்தைப் பதிவேற்றினால் தற்போதைய படம் மாற்றப்படும்.';
 
   @override
-  String get photoCropRequired => 'சேமிப்பதற்கு முன் உங்கள் புகைப்படத்தை வெட்டவும்.';
+  String get photoCropRequired =>
+      'சேமிப்பதற்கு முன் உங்கள் புகைப்படத்தை வெட்டவும்.';
 
   @override
-  String get tapPhotoToEnlarge => 'முழுத் திரையில் பார்க்க புகைப்படத்தைத் தட்டவும்';
+  String get tapPhotoToEnlarge =>
+      'முழுத் திரையில் பார்க்க புகைப்படத்தைத் தட்டவும்';
 
   @override
-  String get privacyIntro => 'மற்ற உறுப்பினர்கள் என்ன பார்க்கலாம் என்பதைத் தேர்ந்தெடுங்கள். உங்கள் பெயர், வயது மற்றும் அடிப்படை விவரங்கள் எப்போதும் தெரியும்.';
+  String get privacyIntro =>
+      'மற்ற உறுப்பினர்கள் என்ன பார்க்கலாம் என்பதைத் தேர்ந்தெடுங்கள். உங்கள் பெயர், வயது மற்றும் அடிப்படை விவரங்கள் எப்போதும் தெரியும்.';
 
   @override
   String get hidePhoneNumber => 'தொலைபேசி எண்ணை மறை';
 
   @override
-  String get hidePhoneNumberDesc => 'உங்கள் தொலைபேசி எண் சுயவிவரத்தில் காட்டப்படாது.';
+  String get hidePhoneNumberDesc =>
+      'உங்கள் தொலைபேசி எண் சுயவிவரத்தில் காட்டப்படாது.';
 
   @override
   String get hideSalaryTitle => 'சம்பளத்தை மறை';
 
   @override
-  String get hideSalaryDesc => 'உங்கள் ஆண்டு வருமானம் மற்ற உறுப்பினர்களுக்குக் காட்டப்படாது.';
+  String get hideSalaryDesc =>
+      'உங்கள் ஆண்டு வருமானம் மற்ற உறுப்பினர்களுக்குக் காட்டப்படாது.';
 
   @override
   String get hideHoroscopeTitle => 'ஜாதக விவரங்களை மறை';
 
   @override
-  String get hideHoroscopeDesc => 'ராசி, நட்சத்திரம் மற்றும் ஜாதக ஆவணங்கள் மறைந்திருக்கும்.';
+  String get hideHoroscopeDesc =>
+      'ராசி, நட்சத்திரம் மற்றும் ஜாதக ஆவணங்கள் மறைந்திருக்கும்.';
 
   @override
   String get hideProfilePhotoTitle => 'சுயவிவரப் புகைப்படத்தை மறை';
 
   @override
-  String get hideProfilePhotoDesc => 'மற்ற உறுப்பினர்கள் உங்கள் புகைப்படத்திற்குப் பதிலாக ஒரு மாற்றுப் படத்தைக் காண்பார்கள்.';
+  String get hideProfilePhotoDesc =>
+      'மற்ற உறுப்பினர்கள் உங்கள் புகைப்படத்திற்குப் பதிலாக ஒரு மாற்றுப் படத்தைக் காண்பார்கள்.';
 
   @override
-  String get privacyDefaultNote => 'இவை இயல்பாகவே மறைக்கப்பட்டுள்ளன, மறைந்தே இருக்கும் — விருப்பம் ஏற்கப்பட்டாலும் தானாக வெளிப்படுத்தப்படாது. நீங்கள் மட்டுமே இந்த அமைப்புகளை மாற்ற முடியும்.';
+  String get privacyDefaultNote =>
+      'அனைத்து விருப்பங்களும் இயல்பாக அணைக்கப்பட்டுள்ளன (OFF) — நீங்கள் இங்கே இயக்கினால் மட்டுமே மறைக்கப்படும். நீங்கள் மட்டுமே இந்த அமைப்புகளை மாற்ற முடியும்.';
 
   @override
   String get shareContactPublicly => 'தொடர்பைப் பொதுவில் பகிர்';
 
   @override
-  String get contactPublicNote => 'உங்கள் சுயவிவரத்தைப் பார்க்கும் எவரும் உங்கள் தொடர்பைக் காணலாம்.';
+  String get contactPublicNote =>
+      'உங்கள் சுயவிவரத்தைப் பார்க்கும் எவரும் உங்கள் தொடர்பைக் காணலாம்.';
 
   @override
-  String get contactPrivateNote => 'நீங்கள் விருப்பத்தை ஏற்ற பிறகே தொடர்பு பகிரப்படும்.';
+  String get contactPrivateNote =>
+      'நீங்கள் விருப்பத்தை ஏற்ற பிறகே தொடர்பு பகிரப்படும்.';
 
   @override
   String get privacySettingsSaved => 'தனியுரிமை அமைப்புகள் சேமிக்கப்பட்டன.';
 
   @override
-  String get privacySettingsSaveFailed => 'தனியுரிமை அமைப்புகளைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get privacySettingsSaveFailed =>
+      'தனியுரிமை அமைப்புகளைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get hiddenByMember => 'உறுப்பினரால் மறைக்கப்பட்டது';
 
   @override
-  String get photoHiddenByMember => 'இந்த உறுப்பினர் புகைப்படத்தை மறைத்துள்ளார்';
+  String get photoHiddenByMember =>
+      'இந்த உறுப்பினர் புகைப்படத்தை மறைத்துள்ளார்';
 
   @override
   String get childSafety => 'குழந்தைப் பாதுகாப்பு';
@@ -2243,10 +2426,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get latestProfiles => 'சமீபத்திய சுயவிவரங்கள்';
 
   @override
-  String get partnerAgeRequired => 'தொடர விரும்பிய துணையின் வயது வரம்பைத் தேர்ந்தெடுக்கவும்.';
+  String get partnerAgeRequired =>
+      'தொடர விரும்பிய துணையின் வயது வரம்பைத் தேர்ந்தெடுக்கவும்.';
 
   @override
-  String get partnerAgeMandatoryNote => 'துணையின் வயது வரம்பு கட்டாயம் — பொருத்தங்கள் இதன் அடிப்படையில் வடிகட்டப்படும்.';
+  String get partnerAgeMandatoryNote =>
+      'துணையின் வயது வரம்பு கட்டாயம் — பொருத்தங்கள் இதன் அடிப்படையில் வடிகட்டப்படும்.';
 
   @override
   String get gothram => 'கோத்திரம்';
@@ -2294,13 +2479,16 @@ class AppLocalizationsTa extends AppLocalizations {
   String get workLocation => 'பணியிடம்';
 
   @override
-  String get couldNotLoadProfileRetry => 'இந்தச் சுயவிவரத்தை இப்போது ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get couldNotLoadProfileRetry =>
+      'இந்தச் சுயவிவரத்தை இப்போது ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
-  String get createProfileFirstInterest => 'விருப்பம் அனுப்ப முதலில் உங்கள் சுயவிவரத்தை உருவாக்கவும்.';
+  String get createProfileFirstInterest =>
+      'விருப்பம் அனுப்ப முதலில் உங்கள் சுயவிவரத்தை உருவாக்கவும்.';
 
   @override
-  String get couldNotOpenChatRetry => 'அரட்டையைத் திறக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get couldNotOpenChatRetry =>
+      'அரட்டையைத் திறக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get contactDetailsTitle => 'தொடர்பு விவரங்கள்';
@@ -2309,10 +2497,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get contactLockedTitle => 'தொடர்பு பூட்டப்பட்டுள்ளது';
 
   @override
-  String get contactUnlocksAfterAccept => 'இருதரப்பும் விருப்பத்தை ஏற்றுக்கொண்ட பிறகே தொடர்பு விவரங்கள் திறக்கப்படும்.';
+  String get contactUnlocksAfterAccept =>
+      'இருதரப்பும் விருப்பத்தை ஏற்றுக்கொண்ட பிறகே தொடர்பு விவரங்கள் திறக்கப்படும்.';
 
   @override
-  String get contactHiddenByMember => 'இந்த உறுப்பினர் தனது தொலைபேசி எண்ணைத் தனிப்பட்டதாக வைத்திருக்கத் தேர்ந்தெடுத்துள்ளார்.';
+  String get contactHiddenByMember =>
+      'இந்த உறுப்பினர் தனது தொலைபேசி எண்ணைத் தனிப்பட்டதாக வைத்திருக்கத் தேர்ந்தெடுத்துள்ளார்.';
 
   @override
   String get callAction => 'அழை';
@@ -2323,28 +2513,33 @@ class AppLocalizationsTa extends AppLocalizations {
   }
 
   @override
-  String get mobileNumberExactly10 => 'சரியான 10 இலக்க கைபேசி எண்ணை உள்ளிடவும் (இலக்கங்கள் மட்டும்).';
+  String get mobileNumberExactly10 =>
+      'சரியான 10 இலக்க கைபேசி எண்ணை உள்ளிடவும் (இலக்கங்கள் மட்டும்).';
 
   @override
   String get mobileNumberRequired => 'கைபேசி எண் அவசியம்.';
 
   @override
-  String get photoUploadNotInDemo => 'டெமோ முறையில் புகைப்படப் பதிவேற்றம் கிடைக்காது.';
+  String get photoUploadNotInDemo =>
+      'டெமோ முறையில் புகைப்படப் பதிவேற்றம் கிடைக்காது.';
 
   @override
   String get couldNotLoadYourProfile => 'உங்கள் சுயவிவரத்தை ஏற்ற முடியவில்லை.';
 
   @override
-  String get createYourProfileFirst => 'முதலில் உங்கள் சுயவிவரத்தை உருவாக்கவும்.';
+  String get createYourProfileFirst =>
+      'முதலில் உங்கள் சுயவிவரத்தை உருவாக்கவும்.';
 
   @override
-  String get tapFieldToEdit => 'ஒரு புலத்தைத் தட்டினால் அந்தப் புலத்தை மட்டும் திருத்தலாம்.';
+  String get tapFieldToEdit =>
+      'ஒரு புலத்தைத் தட்டினால் அந்தப் புலத்தை மட்டும் திருத்தலாம்.';
 
   @override
   String get notAddedYet => 'சேர்க்கப்படவில்லை';
 
   @override
-  String get notAddedTapToFill => 'இன்னும் சேர்க்கப்படவில்லை — நிரப்ப ✎ ஐத் தட்டவும்.';
+  String get notAddedTapToFill =>
+      'இன்னும் சேர்க்கப்படவில்லை — நிரப்ப ✎ ஐத் தட்டவும்.';
 
   @override
   String editFieldTitle(String field) {
@@ -2363,10 +2558,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get savedToast => 'சேமிக்கப்பட்டது';
 
   @override
-  String get couldNotSaveRetry => 'சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get couldNotSaveRetry =>
+      'சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
-  String get noProfileFoundCreate => 'சுயவிவரம் இல்லை. முதலில் உங்கள் சுயவிவரத்தை உருவாக்கவும்.';
+  String get noProfileFoundCreate =>
+      'சுயவிவரம் இல்லை. முதலில் உங்கள் சுயவிவரத்தை உருவாக்கவும்.';
 
   @override
   String get noPhotoAddedYet => 'இன்னும் புகைப்படம் சேர்க்கப்படவில்லை.';
@@ -2432,7 +2629,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get appointmentFreeTitle => 'முன்பதிவு இலவசம்';
 
   @override
-  String get appointmentFreeNote => 'எந்தக் கட்டணமும் இல்லை. தேதி மற்றும் நேரத்தைத் தேர்ந்தெடுத்து உங்கள் சந்திப்பை உறுதிப்படுத்துங்கள்.';
+  String get appointmentFreeNote =>
+      'எந்தக் கட்டணமும் இல்லை. தேதி மற்றும் நேரத்தைத் தேர்ந்தெடுத்து உங்கள் சந்திப்பை உறுதிப்படுத்துங்கள்.';
 
   @override
   String get savingLabel => 'சேமிக்கிறது…';
@@ -2444,7 +2642,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get motherName => 'தாயின் பெயர்';
 
   @override
-  String get aboutMeHint => 'உங்களைப் பற்றியும், உங்கள் குடும்பம், ஆர்வங்கள் மற்றும் நீங்கள் எதிர்பார்ப்பது பற்றியும் சில வரிகள் எழுதுங்கள்.';
+  String get aboutMeHint =>
+      'உங்களைப் பற்றியும், உங்கள் குடும்பம், ஆர்வங்கள் மற்றும் நீங்கள் எதிர்பார்ப்பது பற்றியும் சில வரிகள் எழுதுங்கள்.';
 
   @override
   String get educationOccupationRequired => 'கல்வி மற்றும் தொழில் அவசியம்.';
@@ -2459,7 +2658,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get interestsHint => 'எ.கா. பயணம், விளையாட்டு';
 
   @override
-  String get languagesKnownHint => 'காற்புள்ளியால் பிரிக்கவும், எ.கா. தமிழ், ஆங்கிலம்';
+  String get languagesKnownHint =>
+      'காற்புள்ளியால் பிரிக்கவும், எ.கா. தமிழ், ஆங்கிலம்';
 
   @override
   String get profileDetails => 'சுயவிவர விவரங்கள்';
@@ -2471,7 +2671,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get almostThere => 'கிட்டத்தட்ட முடிந்துவிட்டது!';
 
   @override
-  String get finishSectionsHint => 'அதிக பதில்களைப் பெற கீழே உள்ள பகுதிகளை நிரப்புங்கள்.';
+  String get finishSectionsHint =>
+      'அதிக பதில்களைப் பெற கீழே உள்ள பகுதிகளை நிரப்புங்கள்.';
 
   @override
   String pendingSections(int count) {
@@ -2513,7 +2714,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get aboutMeUpdated => 'என்னைப் பற்றி புதுப்பிக்கப்பட்டது';
 
   @override
-  String get getHoroscopeCompatibilityReport => 'ஜாதகப் பொருத்த அறிக்கையைப் பெறுங்கள்';
+  String get getHoroscopeCompatibilityReport =>
+      'ஜாதகப் பொருத்த அறிக்கையைப் பெறுங்கள்';
 
   @override
   String get openWeddingWorkspace => 'திருமண பணியிடத்தைத் திற';
@@ -2528,19 +2730,23 @@ class AppLocalizationsTa extends AppLocalizations {
   String get yesMarriageFixed => 'ஆம், திருமணம் நிச்சயம்';
 
   @override
-  String get couldNotSaveMarriageFixed => 'திருமண நிச்சயத்தைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get couldNotSaveMarriageFixed =>
+      'திருமண நிச்சயத்தைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get chatsTitle => 'அரட்டைகள்';
 
   @override
-  String get messageNotSent => 'செய்தியை அனுப்ப முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get messageNotSent =>
+      'செய்தியை அனுப்ப முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
-  String get attachmentNotSent => 'இணைப்பை அனுப்ப முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get attachmentNotSent =>
+      'இணைப்பை அனுப்ப முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
-  String get couldNotPickFileRetry => 'அந்தக் கோப்பைத் தேர்ந்தெடுக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+  String get couldNotPickFileRetry =>
+      'அந்தக் கோப்பைத் தேர்ந்தெடுக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String sayHelloTo(String name) {
@@ -2566,7 +2772,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get marriageCompatibilityPorutham => 'திருமணப் பொருத்தம் (பொருத்தம்)';
 
   @override
-  String get notEnoughHoroscopeData => 'இந்த ஜோடிக்குப் பொருத்தம் கணக்கிட போதுமான ஜாதகத் தகவல் இல்லை. இரு சுயவிவரங்களிலும் நட்சத்திர விவரங்களைச் சேர்க்கவும்.';
+  String get notEnoughHoroscopeData =>
+      'இந்த ஜோடிக்குப் பொருத்தம் கணக்கிட போதுமான ஜாதகத் தகவல் இல்லை. இரு சுயவிவரங்களிலும் நட்சத்திர விவரங்களைச் சேர்க்கவும்.';
 
   @override
   String compatibilityUnlocksAfterAccept(String name) {

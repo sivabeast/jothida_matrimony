@@ -16,14 +16,15 @@ import 'package:path_provider/path_provider.dart';
 class ImageCrop {
   ImageCrop._();
 
-  /// Longest edge of the exported square. 1080 keeps a crisp image on every
-  /// phone (and on the admin panel / website) while staying small enough that
-  /// the upload is quick on a mobile connection.
-  static const int outputSize = 1080;
+  /// Longest edge of the exported square. 1440 keeps the photo crisp on a
+  /// high-DPI phone and on the admin panel / website without needlessly
+  /// throwing away resolution (§11); a smaller crop is never upscaled.
+  static const int outputSize = 1440;
 
-  /// JPEG quality of the exported square — visually lossless at this size but
-  /// roughly a third of the bytes of a quality-100 encode.
-  static const int jpegQuality = 88;
+  /// JPEG quality of the exported square — visually lossless while staying far
+  /// smaller than a quality-100 encode, so the upload is still quick on a
+  /// mobile connection.
+  static const int jpegQuality = 92;
 
   /// Crops [source] to the square described by [cropRect] (values are
   /// FRACTIONS of the decoded image's width/height, i.e. 0..1), resizes the

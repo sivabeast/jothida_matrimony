@@ -5,9 +5,40 @@ The app was migrated from Razorpay to the official Google Play Billing plugin
 (consumable) product. This doc is the Play Console checklist to make the
 purchase work in production.
 
+## Billing Library version (Play deprecation warning)
+
+Play Console reports the **Play Billing Library** version compiled into the AAB,
+not the Flutter package name — and that version comes from
+`in_app_purchase_android`, not from `in_app_purchase`:
+
+| `in_app_purchase_android` | Play Billing Library |
+| ------------------------- | -------------------- |
+| `0.4.0` – `0.4.0+11`      | 7.1.1                |
+| **`0.5.0` and later**     | **8.0.0**            |
+
+`pubspec.yaml` therefore pins **`in_app_purchase_android: ^0.5.0` directly**
+(alongside `in_app_purchase: ^3.3.0`). Left transitive, pub kept resolving
+`0.4.0+3` and Play kept flagging a deprecated Billing Library. Verify after any
+dependency change:
+
+```bash
+flutter pub deps --style=compact | grep in_app_purchase_android
+```
+
+Because `in_app_purchase_android` 0.5.x requires **Flutter 3.44 / Dart 3.12**,
+`environment:` in `pubspec.yaml` and `flutter-version` in
+`.github/workflows/ci.yml` are both pinned to that floor. Downgrading either one
+breaks `flutter pub get`.
+
+This satisfies Google Play's **31 August 2026** Billing Library requirement. The
+warning clears once an AAB built from this code is uploaded — Play only
+re-evaluates on a new upload, so it will keep showing against the previously
+published bundle.
+
 ## What's already in the code
 
-- Dependency: `in_app_purchase` (see `pubspec.yaml`) — Razorpay removed.
+- Dependencies: `in_app_purchase` + `in_app_purchase_android` (Billing 8.0.0);
+  Razorpay removed.
 - Service: `lib/services/billing/play_billing_service.dart` — init, product
   loading, purchase, lifecycle (purchased / pending / canceled / error /
   restored), client-side verification + `completePurchase`.

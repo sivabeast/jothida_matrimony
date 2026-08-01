@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../core/data/career_data.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/inline_validation.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../models/profile_model.dart';
 import '../../providers/profile_edit_provider.dart';
@@ -12,6 +14,7 @@ import '../../widgets/common/app_text_field.dart';
 import '../../widgets/common/location_picker_section.dart';
 import '../../widgets/common/religion_caste_fields.dart';
 import '../../widgets/common/searchable_field.dart';
+import '../../widgets/common/searchable_with_others_field.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared chrome + save helper for every section editor.
@@ -189,10 +192,24 @@ class _EducationForm extends ConsumerStatefulWidget {
   ConsumerState<_EducationForm> createState() => _EducationFormState();
 }
 
+/// Edits the career section through the SAME dependent hierarchy as profile
+/// creation (§5–§7, §13):
+///
+///   Education Level  →  Course / Degree
+///   Employment Status → Government / Private   →  Occupation
+///                     → Business / Profession  →  Occupation
+///
+/// A profile written before the hierarchy existed opens with its level/status
+/// recovered from the flat values, so nothing has to be re-entered.
 class _EducationFormState extends ConsumerState<_EducationForm> {
+  final _v = InlineValidation();
+
+  late String? _educationLevel = _orNull(widget.profile.effectiveEducationLevel);
   late String? _education = _orNull(widget.profile.education);
+  late String? _employmentStatus =
+      _orNull(widget.profile.effectiveEmploymentStatus);
+  late String? _sector = _orNull(widget.profile.effectiveSector);
   late String? _occupation = _orNull(widget.profile.occupation);
-  late String? _employmentType = _orNull(widget.profile.employmentType);
   late String? _income = _orNull(widget.profile.annualIncome);
   late final _college =
       TextEditingController(text: widget.profile.collegeName ?? '');
@@ -203,6 +220,10 @@ class _EducationFormState extends ConsumerState<_EducationForm> {
 
   static String? _orNull(String s) => s.trim().isEmpty ? null : s;
 
+  bool get _needsCourse => CareerData.levelHasCourses(_educationLevel);
+  bool get _needsOccupation =>
+      CareerData.statusHasOccupation(_employmentStatus);
+
   @override
   void dispose() {
     _college.dispose();
@@ -211,27 +232,54 @@ class _EducationFormState extends ConsumerState<_EducationForm> {
     super.dispose();
   }
 
+  String get _sectorLabel => _employmentStatus == CareerData.statusSelfEmployed
+      ? context.l10n.businessOrProfession
+      : context.l10n.governmentOrPrivate;
+
   void _save() {
-    if (_education == null || _occupation == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.l10n.educationOccupationRequired)));
-      return;
-    }
+    final l10n = context.l10n;
+    final checks = <FieldCheck>[
+      FieldCheck.notEmpty('educationLevel', _educationLevel,
+          l10n.pleaseEnterField(l10n.educationLevel)),
+      if (_needsCourse)
+        FieldCheck.notEmpty(
+            'education', _education, l10n.pleaseEnterField(l10n.courseDegree)),
+      FieldCheck.notEmpty('employmentStatus', _employmentStatus,
+          l10n.pleaseEnterField(l10n.employmentStatus)),
+      if (_needsOccupation)
+        FieldCheck.notEmpty(
+            'sector', _sector, l10n.pleaseEnterField(_sectorLabel)),
+      if (_needsOccupation)
+        FieldCheck.notEmpty(
+            'occupation', _occupation, l10n.pleaseEnterField(l10n.occupation)),
+    ];
+    if (!_v.validate(context, checks, onChanged: () => setState(() {}))) return;
+
+    final occupation =
+        CareerData.occupationValueFor(_employmentStatus, _occupation);
+    final sector = _needsOccupation ? (_sector ?? '') : '';
+    // Annual income stays OPTIONAL (§8).
+    final income = _needsOccupation ? (_income ?? '') : '';
+
     final patch = {
-      'education': _education,
-      'occupation': _occupation,
-      'employmentType': _employmentType ?? '',
-      'annualIncome': _income ?? '',
+      'educationLevel': _educationLevel,
+      'education': _education ?? '',
+      'employmentStatus': _employmentStatus,
+      'employmentType': sector,
+      'occupation': occupation,
+      'annualIncome': income,
       'collegeName': _college.text.trim(),
       'companyName': _company.text.trim(),
       'workLocation': _workLocation.text.trim(),
     };
     _persistSection(context, ref,
         updated: widget.profile.copyWith(
-          education: _education,
-          occupation: _occupation,
-          employmentType: _employmentType ?? '',
-          annualIncome: _income ?? '',
+          educationLevel: _educationLevel,
+          education: _education ?? '',
+          employmentStatus: _employmentStatus,
+          employmentType: sector,
+          occupation: occupation,
+          annualIncome: income,
           collegeName: _college.text.trim(),
           companyName: _company.text.trim(),
           workLocation: _workLocation.text.trim(),
@@ -241,48 +289,109 @@ class _EducationFormState extends ConsumerState<_EducationForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return _FormBody(
       onSave: _save,
       children: [
         SearchableField(
-          label: context.l10n.highestEducation,
+          key: _v.anchor('educationLevel'),
+          label: l10n.educationLevel,
           isRequired: true,
-          items: AppConstants.educations,
-          selectedItem: _education,
+          items: CareerData.educationLevels,
+          selectedItem: _educationLevel,
           prefixIcon: Icons.school_outlined,
-          onChanged: (v) => setState(() => _education = v),
+          errorText: _v.errorOf('educationLevel'),
+          onChanged: (v) => setState(() {
+            _educationLevel = v;
+            _v.clear('educationLevel');
+            _v.clear('education');
+            _education = CareerData.defaultCourseFor(v);
+          }),
         ),
+        if (_needsCourse) ...[
+          const SizedBox(height: 16),
+          SearchableWithOthersField(
+            key: _v.anchor('education'),
+            label: l10n.courseDegree,
+            isRequired: true,
+            items: CareerData.coursesFor(_educationLevel),
+            value: _education,
+            prefixIcon: Icons.menu_book_outlined,
+            errorText: _v.errorOf('education'),
+            onChanged: (v) => setState(() {
+              _education = v;
+              _v.clear('education');
+            }),
+          ),
+        ],
         const SizedBox(height: 16),
-        AppTextField(controller: _college, label: context.l10n.collegeName),
-        const SizedBox(height: 16),
+        AppTextField(controller: _college, label: l10n.collegeName),
+        const SizedBox(height: 24),
         SearchableField(
-          label: context.l10n.occupation,
+          key: _v.anchor('employmentStatus'),
+          label: l10n.employmentStatus,
           isRequired: true,
-          items: AppConstants.occupations,
-          selectedItem: _occupation,
-          prefixIcon: Icons.work_outline,
-          onChanged: (v) => setState(() => _occupation = v),
-        ),
-        const SizedBox(height: 16),
-        SearchableField(
-          label: context.l10n.employmentType,
-          items: AppConstants.employmentTypeList,
-          selectedItem: _employmentType,
+          items: CareerData.employmentStatuses,
+          selectedItem: _employmentStatus,
           prefixIcon: Icons.badge_outlined,
-          onChanged: (v) => setState(() => _employmentType = v),
+          errorText: _v.errorOf('employmentStatus'),
+          onChanged: (v) => setState(() {
+            _employmentStatus = v;
+            _v.clear('employmentStatus');
+            _v.clear('sector');
+            _v.clear('occupation');
+            _sector = null;
+            _occupation = null;
+            if (!CareerData.statusHasOccupation(v)) _income = null;
+          }),
         ),
-        const SizedBox(height: 16),
-        AppTextField(controller: _company, label: context.l10n.companyName),
-        const SizedBox(height: 16),
-        SearchableField(
-          label: context.l10n.annualIncome,
-          items: AppConstants.incomeRanges,
-          selectedItem: _income,
-          prefixIcon: Icons.currency_rupee,
-          onChanged: (v) => setState(() => _income = v),
-        ),
-        const SizedBox(height: 16),
-        AppTextField(controller: _workLocation, label: context.l10n.workLocation),
+        if (_needsOccupation) ...[
+          const SizedBox(height: 16),
+          SearchableField(
+            key: _v.anchor('sector'),
+            label: _sectorLabel,
+            isRequired: true,
+            items: CareerData.sectorsFor(_employmentStatus),
+            selectedItem: _sector,
+            prefixIcon: Icons.account_balance_outlined,
+            errorText: _v.errorOf('sector'),
+            onChanged: (v) => setState(() {
+              _sector = v;
+              _v.clear('sector');
+              _v.clear('occupation');
+              _occupation = null;
+            }),
+          ),
+          const SizedBox(height: 16),
+          SearchableWithOthersField(
+            key: _v.anchor('occupation'),
+            label: l10n.occupation,
+            isRequired: true,
+            enabled: (_sector ?? '').isNotEmpty,
+            items: CareerData.occupationsFor(
+                status: _employmentStatus, sector: _sector),
+            value: _occupation,
+            prefixIcon: Icons.work_outline,
+            errorText: _v.errorOf('occupation'),
+            onChanged: (v) => setState(() {
+              _occupation = v;
+              _v.clear('occupation');
+            }),
+          ),
+          const SizedBox(height: 16),
+          AppTextField(controller: _company, label: l10n.companyName),
+          const SizedBox(height: 16),
+          // Optional (§8) — no asterisk, no validation.
+          SearchableField(
+            label: l10n.annualIncome,
+            items: AppConstants.incomeRanges,
+            selectedItem: _income,
+            prefixIcon: Icons.currency_rupee,
+            onChanged: (v) => setState(() => _income = v),
+          ),
+          const SizedBox(height: 16),
+          AppTextField(controller: _workLocation, label: l10n.workLocation),
+        ],
       ],
     );
   }
@@ -308,6 +417,8 @@ class _LocationForm extends ConsumerStatefulWidget {
 }
 
 class _LocationFormState extends ConsumerState<_LocationForm> {
+  final _v = InlineValidation();
+
   late String? _country = widget.profile.country.isEmpty
       ? 'India'
       : widget.profile.country;
@@ -332,11 +443,19 @@ class _LocationFormState extends ConsumerState<_LocationForm> {
   }
 
   void _save() {
-    if (_state == null || _district == null || _city == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.l10n.selectStateDistrictCity)));
-      return;
-    }
+    // Inline, under the location block (§10) — never a bottom snackbar.
+    final ok = _v.validate(
+      context,
+      [
+        FieldCheck(
+          id: 'location',
+          valid: _state != null && _district != null && _city != null,
+          message: context.l10n.selectStateDistrictCity,
+        ),
+      ],
+      onChanged: () => setState(() {}),
+    );
+    if (!ok) return;
     final patch = {
       'country': _country ?? 'India',
       'state': _state,
@@ -376,6 +495,7 @@ class _LocationFormState extends ConsumerState<_LocationForm> {
       onSave: _save,
       children: [
         LocationPickerSection(
+          key: _v.anchor('location'),
           initialCountry: _country,
           initialState: _state,
           initialDistrict: _district,
@@ -383,6 +503,7 @@ class _LocationFormState extends ConsumerState<_LocationForm> {
           initialLatitude: _lat,
           initialLongitude: _lng,
           onChanged: (loc) => setState(() {
+            _v.clear('location');
             _country = loc.country.isEmpty ? 'India' : loc.country;
             _state = loc.state.isEmpty ? null : loc.state;
             _stateId = loc.stateId.isEmpty ? null : loc.stateId;
@@ -394,6 +515,7 @@ class _LocationFormState extends ConsumerState<_LocationForm> {
             _lng = loc.longitude;
           }),
         ),
+        InlineFieldError(_v.errorOf('location')),
         const SizedBox(height: 16),
         AppTextField(controller: _nativePlace, label: context.l10n.nativePlace),
         const SizedBox(height: 16),
@@ -429,6 +551,8 @@ class _ReligiousForm extends ConsumerStatefulWidget {
 }
 
 class _ReligiousFormState extends ConsumerState<_ReligiousForm> {
+  final _v = InlineValidation();
+
   late String? _religion = _n(widget.profile.religion);
   late String? _religionId = widget.profile.religionId;
   late String? _caste = widget.profile.caste;
@@ -450,11 +574,17 @@ class _ReligiousFormState extends ConsumerState<_ReligiousForm> {
   }
 
   void _save() {
-    if (_religion == null || _caste == null || _caste!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.l10n.religionCasteRequired)));
-      return;
-    }
+    final l10n = context.l10n;
+    final ok = _v.validate(
+      context,
+      [
+        FieldCheck.notEmpty(
+            'religion', _religion, l10n.pleaseEnterField(l10n.religion)),
+        FieldCheck.notEmpty('caste', _caste, l10n.pleaseEnterField(l10n.caste)),
+      ],
+      onChanged: () => setState(() {}),
+    );
+    if (!ok) return;
     final patch = {
       'religion': _religion,
       'religionId': _religionId,
@@ -485,6 +615,9 @@ class _ReligiousFormState extends ConsumerState<_ReligiousForm> {
       onSave: _save,
       children: [
         ReligionCasteFields(
+          key: _v.anchor('religion'),
+          religionError: _v.errorOf('religion'),
+          casteError: _v.errorOf('caste'),
           religionId: _religionId,
           religionName: _religion,
           casteId: _casteId,
@@ -492,6 +625,8 @@ class _ReligiousFormState extends ConsumerState<_ReligiousForm> {
           subCasteId: _subCasteId,
           subCasteName: _subCaste,
           onReligionChanged: (id, name) => setState(() {
+            _v.clear('religion');
+            _v.clear('caste');
             _religionId = id;
             _religion = name;
             _casteId = null;
@@ -500,6 +635,7 @@ class _ReligiousFormState extends ConsumerState<_ReligiousForm> {
             _subCaste = null;
           }),
           onCasteChanged: (id, name) => setState(() {
+            _v.clear('caste');
             _casteId = id;
             _caste = name;
             _subCasteId = null;

@@ -14,6 +14,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../providers/wedding_provider.dart';
 import '../../widgets/auth/login_illustrations.dart';
+import '../../widgets/auth/role_card_artwork.dart';
+import '../../widgets/common/app_logo.dart';
 import '../../widgets/common/coming_soon.dart';
 
 /// App entry — ROLE-BASED. Instead of a classic login form, the user first
@@ -398,8 +400,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       padding: const EdgeInsets.fromLTRB(22, 26, 22, 8),
                       child: Column(
                         children: [
-                          const ZodiacCoupleLogo(size: 126),
-                          const SizedBox(height: 18),
+                          // The official app logo sits above the welcome
+                          // heading, centre aligned (§15). It renders
+                          // `assets/images/app_logo.png`, so swapping in the
+                          // final artwork is just replacing that one file —
+                          // AppLogo already falls back to a branded medallion
+                          // while the real logo is not in place.
+                          const AppLogo(size: 108),
+                          const SizedBox(height: 14),
+                          const ZodiacCoupleLogo(size: 96),
+                          const SizedBox(height: 16),
                           Text(
                             context.l10n.welcomeExclaim,
                             style: const TextStyle(
@@ -428,8 +438,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             title: context.l10n.roleMatrimonyTitle,
                             description: context.l10n.roleMatrimonyDesc,
                             accent: const Color(0xFFD6336C),
-                            illustration: const CoupleIllustrationCircle(
-                                size: 76, showFloatingHearts: false),
+                            illustration: RoleCardArtwork.matrimony(size: 76),
                           ),
                           const SizedBox(height: 18),
                           _roleCard(
@@ -437,8 +446,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             title: context.l10n.roleFamilyTitle,
                             description: context.l10n.roleFamilyDesc,
                             accent: AppColors.goldDark,
-                            illustration: const FamilyIllustrationCircle(
-                                size: 76, showFloatingHearts: false),
+                            illustration: RoleCardArtwork.family(size: 76),
                             locked: true, // LAUNCH LOCK — Coming Soon
                           ),
                           const SizedBox(height: 12),
@@ -651,8 +659,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 26),
                   Center(
                     child: isFamily
-                        ? const FamilyIllustrationCircle(size: 190)
-                        : const CoupleIllustrationCircle(size: 190),
+                        ? RoleCardArtwork.family(size: 190)
+                        : RoleCardArtwork.matrimony(size: 190),
                   ),
                   const SizedBox(height: 30),
                   OutlinedButton.icon(

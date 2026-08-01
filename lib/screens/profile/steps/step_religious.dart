@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/inline_validation.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/gradient_button.dart';
@@ -23,6 +24,8 @@ class StepReligious extends ConsumerStatefulWidget {
 }
 
 class _StepReligiousState extends ConsumerState<StepReligious> {
+  final _v = InlineValidation();
+
   String? _religion;
   String? _religionId;
   String? _caste;
@@ -46,18 +49,16 @@ class _StepReligiousState extends ConsumerState<StepReligious> {
 
   void _saveAndNext() {
     final l10n = context.l10n;
-    if (_religion == null || _religion!.isEmpty) {
-      _snack(l10n.pleaseEnterField(l10n.religion));
-      return;
-    }
-    if (_caste == null || _caste!.isEmpty) {
-      _snack(l10n.pleaseEnterField(l10n.caste));
-      return;
-    }
-    if (_motherTongue == null || _motherTongue!.isEmpty) {
-      _snack(l10n.pleaseEnterField(l10n.motherTongue));
-      return;
-    }
+    // Inline errors under each field + scroll to the first invalid one (§10).
+    final checks = <FieldCheck>[
+      FieldCheck.notEmpty(
+          'religion', _religion, l10n.pleaseEnterField(l10n.religion)),
+      FieldCheck.notEmpty('caste', _caste, l10n.pleaseEnterField(l10n.caste)),
+      FieldCheck.notEmpty('motherTongue', _motherTongue,
+          l10n.pleaseEnterField(l10n.motherTongue)),
+    ];
+    if (!_v.validate(context, checks, onChanged: () => setState(() {}))) return;
+
     ref.read(profileCreationProvider.notifier).updateData({
       'religion': _religion,
       'religionId': _religionId,
@@ -69,9 +70,6 @@ class _StepReligiousState extends ConsumerState<StepReligious> {
     });
     widget.onNext();
   }
-
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {
@@ -87,6 +85,9 @@ class _StepReligiousState extends ConsumerState<StepReligious> {
               style: const TextStyle(color: Colors.grey)),
           const SizedBox(height: 24),
           ReligionCasteFields(
+            key: _v.anchor('religion'),
+            religionError: _v.errorOf('religion'),
+            casteError: _v.errorOf('caste'),
             religionId: _religionId,
             religionName: _religion,
             casteId: _casteId,
@@ -94,6 +95,8 @@ class _StepReligiousState extends ConsumerState<StepReligious> {
             subCasteId: _subCasteId,
             subCasteName: _subCaste,
             onReligionChanged: (id, name) => setState(() {
+              _v.clear('religion');
+              _v.clear('caste');
               _religionId = id;
               _religion = name;
               _casteId = null;
@@ -102,6 +105,7 @@ class _StepReligiousState extends ConsumerState<StepReligious> {
               _subCaste = null;
             }),
             onCasteChanged: (id, name) => setState(() {
+              _v.clear('caste');
               _casteId = id;
               _caste = name;
               _subCasteId = null;
@@ -114,12 +118,17 @@ class _StepReligiousState extends ConsumerState<StepReligious> {
           ),
           const SizedBox(height: 16),
           SearchableWithOthersField(
+            key: _v.anchor('motherTongue'),
             label: l10n.motherTongue,
             isRequired: true,
             items: AppConstants.motherTongueList,
             value: _motherTongue,
             prefixIcon: Icons.translate,
-            onChanged: (v) => setState(() => _motherTongue = v),
+            errorText: _v.errorOf('motherTongue'),
+            onChanged: (v) => setState(() {
+              _motherTongue = v;
+              _v.clear('motherTongue');
+            }),
           ),
           const SizedBox(height: 36),
           GradientButton(onPressed: _saveAndNext, text: l10n.continueLabel),

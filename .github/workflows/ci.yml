@@ -19,9 +19,14 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          # Keep in sync with the locally installed Flutter SDK (C:\dev\flutter)
-          # and the committed android/ scaffolding it generated.
-          flutter-version: '3.27.1'
+          # Keep in sync with the locally installed Flutter SDK (C:\dev\flutter),
+          # the `environment:` block in pubspec.yaml and the committed android/
+          # scaffolding it generated.
+          #
+          # 3.44.x is a FLOOR, not a preference: Play Billing Library 8.0.0 ships
+          # in in_app_purchase_android 0.5.x, which requires Flutter 3.44 /
+          # Dart 3.12. Downgrading this breaks `flutter pub get`.
+          flutter-version: '3.44.8'
           channel: 'stable'
           cache: true
 
@@ -29,6 +34,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
+          # Play Billing 8 / AGP 8.x on Flutter 3.44 build against JDK 17+.
           java-version: '17'
 
       - name: Create Android platform files (if missing)

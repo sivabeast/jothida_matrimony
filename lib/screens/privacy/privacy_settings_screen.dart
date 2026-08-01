@@ -36,7 +36,7 @@ class _PrivacyState extends ConsumerState<PrivacySettingsScreen> {
   bool _saving = false;
 
   Map<String, bool> _effective(ProfileModel? profile) =>
-      _draft ?? profile?.privacySettings ?? ProfilePrivacy.allHidden;
+      _draft ?? profile?.privacySettings ?? ProfilePrivacy.defaults;
 
   void _set(String key, bool value, ProfileModel? profile) {
     final next = Map<String, bool>.from(_effective(profile));

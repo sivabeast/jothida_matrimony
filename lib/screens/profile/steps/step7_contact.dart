@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/inline_validation.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/utils/value_l10n.dart';
@@ -27,7 +28,11 @@ class _Step7State extends ConsumerState<Step7Contact> {
   final _mobileController = TextEditingController();
   final _whatsappController = TextEditingController();
   final _emailController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
+  final _v = InlineValidation();
+  final _nameFocus = FocusNode();
+  final _mobileFocus = FocusNode();
+  final _whatsappFocus = FocusNode();
+  final _emailFocus = FocusNode();
   String _relationship = 'Self';
   bool _sameAsAbove = false;
   // Contact-sharing choice (§17). Default Private (only after accepted interest).
@@ -66,11 +71,50 @@ class _Step7State extends ConsumerState<Step7Contact> {
     _mobileController.dispose();
     _whatsappController.dispose();
     _emailController.dispose();
+    _nameFocus.dispose();
+    _mobileFocus.dispose();
+    _whatsappFocus.dispose();
+    _emailFocus.dispose();
     super.dispose();
   }
 
   void _saveAndNext() {
-    if (!_formKey.currentState!.validate()) return;
+    final l10n = context.l10n;
+    final v = context.validators;
+    // Inline messages under each field + scroll to the first invalid one (§10).
+    final nameError =
+        v.requiredField(_nameController.text, l10n.contactPersonName);
+    final mobileError = v.mobile(_mobileController.text);
+    final whatsappError =
+        _sameAsAbove ? null : v.optionalMobile(_whatsappController.text);
+    final emailText = _emailController.text.trim();
+    final emailError = emailText.isEmpty ? null : v.email(emailText);
+
+    final checks = <FieldCheck>[
+      FieldCheck(
+          id: 'name',
+          valid: nameError == null,
+          message: nameError ?? '',
+          focusNode: _nameFocus),
+      FieldCheck(
+          id: 'mobile',
+          valid: mobileError == null,
+          message: mobileError ?? '',
+          focusNode: _mobileFocus),
+      if (!_sameAsAbove)
+        FieldCheck(
+            id: 'whatsapp',
+            valid: whatsappError == null,
+            message: whatsappError ?? '',
+            focusNode: _whatsappFocus),
+      FieldCheck(
+          id: 'email',
+          valid: emailError == null,
+          message: emailError ?? '',
+          focusNode: _emailFocus),
+    ];
+    if (!_v.validate(context, checks, onChanged: () => setState(() {}))) return;
+
     ref.read(profileCreationProvider.notifier).updateData({
       'contactDetails': {
         'contactPersonName': _nameController.text.trim(),
@@ -142,9 +186,8 @@ class _Step7State extends ConsumerState<Step7Contact> {
     final l10n = context.l10n;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
-      child: Form(
-        key: _formKey,
-        child: Column(
+      child: Builder(
+        builder: (context) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(l10n.contactDetails,
@@ -157,10 +200,17 @@ class _Step7State extends ConsumerState<Step7Contact> {
             ),
             const SizedBox(height: 24),
             AppTextField(
+              key: _v.anchor('name'),
               controller: _nameController,
+              focusNode: _nameFocus,
               label: '${l10n.contactPersonName} *',
-              validator: (v) =>
-                  context.validators.requiredField(v, l10n.contactPersonName),
+              textCapitalization: TextCapitalization.words,
+              errorText: _v.errorOf('name'),
+              onChanged: (_) {
+                if (_v.errorOf('name') != null) {
+                  setState(() => _v.clear('name'));
+                }
+              },
             ),
             const SizedBox(height: 16),
             Text('${l10n.relationship} *',
@@ -189,7 +239,9 @@ class _Step7State extends ConsumerState<Step7Contact> {
             // the length limiter caps at 10; the validator then refuses
             // anything shorter, so Continue is blocked until it is valid.
             AppTextField(
+              key: _v.anchor('mobile'),
               controller: _mobileController,
+              focusNode: _mobileFocus,
               label: '${l10n.mobileNumber} *',
               hint: '9876543210',
               keyboardType: TextInputType.number,
@@ -199,7 +251,12 @@ class _Step7State extends ConsumerState<Step7Contact> {
                 FilteringTextInputFormatter.digitsOnly,
                 LengthLimitingTextInputFormatter(10),
               ],
-              validator: context.validators.mobile,
+              errorText: _v.errorOf('mobile'),
+              onChanged: (_) {
+                if (_v.errorOf('mobile') != null) {
+                  setState(() => _v.clear('mobile'));
+                }
+              },
             ),
             const SizedBox(height: 12),
             Row(
@@ -213,7 +270,9 @@ class _Step7State extends ConsumerState<Step7Contact> {
             ),
             if (!_sameAsAbove) ...[
               AppTextField(
+                key: _v.anchor('whatsapp'),
                 controller: _whatsappController,
+                focusNode: _whatsappFocus,
                 label: l10n.whatsappNumber,
                 hint: '9876543210',
                 keyboardType: TextInputType.number,
@@ -224,20 +283,30 @@ class _Step7State extends ConsumerState<Step7Contact> {
                   LengthLimitingTextInputFormatter(10),
                 ],
                 // Optional field, but a partially-typed number is still invalid.
-                validator: context.validators.optionalMobile,
+                errorText: _v.errorOf('whatsapp'),
+                onChanged: (_) {
+                  if (_v.errorOf('whatsapp') != null) {
+                    setState(() => _v.clear('whatsapp'));
+                  }
+                },
               ),
             ],
             const SizedBox(height: 16),
             // Contact email (§5) — optional, and editable later from My
             // Profile like every other field.
             AppTextField(
+              key: _v.anchor('email'),
               controller: _emailController,
+              focusNode: _emailFocus,
               label: l10n.email,
               hint: 'name@example.com',
               keyboardType: TextInputType.emailAddress,
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? null
-                  : context.validators.email(v),
+              errorText: _v.errorOf('email'),
+              onChanged: (_) {
+                if (_v.errorOf('email') != null) {
+                  setState(() => _v.clear('email'));
+                }
+              },
             ),
             const SizedBox(height: 24),
             // ── Contact-sharing privacy choice (§17). Default Private. ──

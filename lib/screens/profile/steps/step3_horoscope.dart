@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/horoscope_calculation_service.dart';
 import '../../../core/services/master_astrology_data.dart';
+import '../../../core/utils/inline_validation.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../providers/location_provider.dart';
 import '../../../providers/profile_provider.dart';
@@ -31,6 +32,7 @@ class Step3Horoscope extends ConsumerStatefulWidget {
 }
 
 class _Step3State extends ConsumerState<Step3Horoscope> {
+  final _v = InlineValidation();
   final _calc = HoroscopeCalculationService();
   final _birthTimeController = TextEditingController();
   final _dobController = TextEditingController();
@@ -255,30 +257,29 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
   }
 
   void _saveAndNext() {
-    final messenger = ScaffoldMessenger.of(context);
     final l10n = context.l10n;
-    if (_dob == null) {
-      messenger.showSnackBar(
-          SnackBar(content: Text(l10n.pleaseSelect(l10n.dateOfBirth))));
-      return;
-    }
-    if (_birthTime == null) {
-      messenger
-          .showSnackBar(SnackBar(content: Text(l10n.pleaseSelectTimeOfBirth)));
-      return;
-    }
-    if (_effectivePlace == null || _effectivePlace!.isEmpty) {
-      messenger
-          .showSnackBar(SnackBar(content: Text(l10n.pleaseSelectBirthPlace)));
-      return;
-    }
-    if ((_effRasi ?? '').isEmpty ||
-        (_effNakshatra ?? '').isEmpty ||
-        (_effLagnam ?? '').isEmpty) {
-      messenger.showSnackBar(
-          SnackBar(content: Text(l10n.unableToGenerateHoroscope)));
-      return;
-    }
+    // Inline messages under each field, first invalid one scrolled to (§10).
+    final checks = <FieldCheck>[
+      FieldCheck(
+          id: 'dob',
+          valid: _dob != null,
+          message: l10n.pleaseSelect(l10n.dateOfBirth)),
+      FieldCheck(
+          id: 'birthTime',
+          valid: _birthTime != null,
+          message: l10n.pleaseSelectTimeOfBirth),
+      FieldCheck(
+          id: 'birthPlace',
+          valid: (_effectivePlace ?? '').isNotEmpty,
+          message: l10n.pleaseSelectBirthPlace),
+      FieldCheck(
+          id: 'horoscope',
+          valid: (_effRasi ?? '').isNotEmpty &&
+              (_effNakshatra ?? '').isNotEmpty &&
+              (_effLagnam ?? '').isNotEmpty,
+          message: l10n.unableToGenerateHoroscope),
+    ];
+    if (!_v.validate(context, checks, onChanged: () => setState(() {}))) return;
 
     ref.read(profileCreationProvider.notifier).updateData({
       'horoscopeDetails': {
@@ -330,21 +331,25 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
 
           // ── Inputs ──────────────────────────────────────────────────────
           AppTextField(
+            key: _v.anchor('dob'),
             controller: _dobController,
-            label: l10n.dateOfBirth,
+            label: '${l10n.dateOfBirth} *',
             hint: l10n.selectDateHint,
             readOnly: true,
             onTap: _pickDob,
             suffixIcon: const Icon(Icons.calendar_today_outlined),
+            errorText: _v.errorOf('dob'),
           ),
           const SizedBox(height: 16),
           AppTextField(
+            key: _v.anchor('birthTime'),
             controller: _birthTimeController,
-            label: l10n.timeOfBirth,
+            label: '${l10n.timeOfBirth} *',
             hint: l10n.selectTimeHint,
             readOnly: true,
             onTap: _pickTime,
             suffixIcon: const Icon(Icons.access_time),
+            errorText: _v.errorOf('birthTime'),
           ),
           const SizedBox(height: 16),
           if (citiesAsync.isLoading)
@@ -361,6 +366,7 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
             )
           else
             SearchableField(
+              key: _v.anchor('birthPlace'),
               label: l10n.birthCity,
               isRequired: true,
               items: cityItems,
@@ -369,7 +375,11 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
               popupMode: SearchablePopupMode.modalBottomSheet,
               itemLabel: (item) =>
                   item == _kOthers ? l10n.othersOption : item,
-              onChanged: _onPlaceChanged,
+              errorText: _v.errorOf('birthPlace'),
+              onChanged: (v) {
+                _v.clear('birthPlace');
+                _onPlaceChanged(v);
+              },
             ),
           if (_isOthers) ...[
             const SizedBox(height: 12),
@@ -378,12 +388,18 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
               label: '${l10n.customBirthPlace} *',
               hint: l10n.customBirthPlaceHint,
               prefixIcon: const Icon(Icons.edit_location_alt_outlined),
-              onChanged: _onCustomPlaceChanged,
+              errorText: _v.errorOf('birthPlace'),
+              onChanged: (v) {
+                _v.clear('birthPlace');
+                _onCustomPlaceChanged(v);
+              },
             ),
           ],
           const SizedBox(height: 24),
 
           // ── Status / generated results ───────────────────────────────────
+          InlineFieldError(_v.errorOf('horoscope')),
+          Container(key: _v.anchor('horoscope')),
           if (_calculating)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),

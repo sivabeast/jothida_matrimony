@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/data/career_data.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/inline_validation.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
@@ -38,8 +40,13 @@ class _StepPartnerPreferenceState
   static const int _minAgeBound = 18;
   static const int _maxAgeBound = 60;
 
-  int _minAge = 21;
-  int _maxAge = 35;
+  final _v = InlineValidation();
+
+  /// NOTHING is pre-selected (§10): a fresh profile starts on the full allowed
+  /// span rather than the old hardcoded 21-35, so the member cannot mistake a
+  /// default for their own choice.
+  int _minAge = _minAgeBound;
+  int _maxAge = _maxAgeBound;
 
   /// Whether the member has ACTIVELY chosen the age range (§11). Starts false
   /// on a fresh profile and only becomes true once they touch the slider or a
@@ -70,8 +77,8 @@ class _StepPartnerPreferenceState
     super.initState();
     final pref = ref.read(profileCreationProvider).data['partnerPreferences'];
     if (pref is Map) {
-      final minA = (pref['minAge'] as num?)?.toInt() ?? 21;
-      final maxA = (pref['maxAge'] as num?)?.toInt() ?? 35;
+      final minA = (pref['minAge'] as num?)?.toInt() ?? _minAgeBound;
+      final maxA = (pref['maxAge'] as num?)?.toInt() ?? _maxAgeBound;
       _minAge = minA.clamp(_minAgeBound, _maxAgeBound);
       _maxAge = maxA.clamp(_minAgeBound, _maxAgeBound);
       if (_minAge > _maxAge) _maxAge = _minAge;
@@ -117,13 +124,18 @@ class _StepPartnerPreferenceState
 
   void _saveAndNext() {
     // §11 — the profile cannot be completed without a partner age preference.
-    if (!_ageChosen) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-            SnackBar(content: Text(context.l10n.partnerAgeRequired)));
-      return;
-    }
+    // Reported INLINE under the slider (§10), never as a bottom snackbar.
+    final ok = _v.validate(
+      context,
+      [
+        FieldCheck(
+            id: 'age',
+            valid: _ageChosen,
+            message: context.l10n.partnerAgeRequired),
+      ],
+      onChanged: () => setState(() {}),
+    );
+    if (!ok) return;
     ref.read(profileCreationProvider.notifier).updateData({
       'partnerPreferences': {
         'minAge': _minAge,
@@ -166,6 +178,7 @@ class _StepPartnerPreferenceState
           _sectionTitle(l10n.basicPreference),
           // ── Age — dual range slider. MANDATORY (§11). ──
           DualRangeSliderField(
+            key: _v.anchor('age'),
             label: '${l10n.ageRangeLabel} *',
             min: _minAgeBound,
             max: _maxAgeBound,
@@ -178,8 +191,10 @@ class _StepPartnerPreferenceState
               _minAge = lo;
               _maxAge = hi;
               _ageChosen = true;
+              _v.clear('age');
             }),
           ),
+          InlineFieldError(_v.errorOf('age')),
           Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Row(
@@ -248,7 +263,7 @@ class _StepPartnerPreferenceState
             padding: const EdgeInsets.only(bottom: 16),
             child: SearchableMultiSelectField(
               label: l10n.education,
-              items: AppConstants.educations,
+              items: CareerData.allDegrees,
               selected: _education,
               onChanged: (v) => setState(() => _education = v),
             ),
@@ -257,7 +272,7 @@ class _StepPartnerPreferenceState
             padding: const EdgeInsets.only(bottom: 16),
             child: SearchableMultiSelectField(
               label: l10n.occupation,
-              items: AppConstants.occupations,
+              items: CareerData.allOccupations,
               selected: _occupation,
               onChanged: (v) => setState(() => _occupation = v),
             ),

@@ -490,6 +490,18 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
               children: [
                 Text(profile.displayName(context.isTamil),
                     style: AppTextStyles.heading1),
+                // Both names are shown when they differ (§14) — the header
+                // uses the app language, the sub-line carries the other one.
+                if (profile.fullNameTamil.trim().isNotEmpty &&
+                    profile.fullName.trim().isNotEmpty &&
+                    profile.fullNameTamil.trim() != profile.fullName.trim())
+                  Text(
+                    context.isTamil ? profile.fullName : profile.fullNameTamil,
+                    style: TextStyle(
+                        color: Colors.grey[700],
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600),
+                  ),
                 Text(
                   '${profile.age} yrs • ${[
                     profile.city,
@@ -508,10 +520,13 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                       profile.weight),
                   _InfoItem(Icons.wc, context.l10n.maritalStatus,
                       context.localizeValue(profile.maritalStatus)),
+                  // Education Level → Course/Degree and Employment Status →
+                  // Sector → Occupation (§13). The level/status/sector are
+                  // localized; degree + occupation titles stay English (§9).
                   _InfoItem(Icons.school_outlined, context.l10n.education,
-                      context.localizeValue(profile.education)),
+                      profile.educationDisplay(context.localizeValue)),
                   _InfoItem(Icons.work_outline, context.l10n.profession,
-                      context.localizeValue(profile.occupation)),
+                      profile.occupationDisplay(context.localizeValue)),
                   // Salary is one of the four privacy switches (§16) — hidden
                   // by default and never auto-revealed.
                   _InfoItem(Icons.payments_outlined, context.l10n.annualIncome,

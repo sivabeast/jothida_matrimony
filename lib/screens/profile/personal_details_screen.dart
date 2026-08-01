@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/config/dev_config.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/data/career_data.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
 import '../../providers/demo_data_provider.dart';
@@ -648,25 +649,44 @@ class _CareerSheet extends ConsumerStatefulWidget {
 }
 
 class _CareerSheetState extends ConsumerState<_CareerSheet> {
+  // Same Level → Course and Status → Sector → Occupation hierarchy as the rest
+  // of the app (§5–§7, §13).
+  late String _educationLevel = widget.profile.effectiveEducationLevel;
   late String _education = widget.profile.education;
+  late String _employmentStatus = widget.profile.effectiveEmploymentStatus;
+  late String _sector = widget.profile.effectiveSector;
   late String _occupation = widget.profile.occupation;
   late String _income = widget.profile.annualIncome;
   bool _saving = false;
+
+  bool get _needsCourse => CareerData.levelHasCourses(_educationLevel);
+  bool get _needsOccupation =>
+      CareerData.statusHasOccupation(_employmentStatus);
 
   Future<void> _save() async {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = context.l10n;
     final navigator = Navigator.of(context);
     setState(() => _saving = true);
+    final occupation =
+        CareerData.occupationValueFor(_employmentStatus, _occupation);
+    final sector = _needsOccupation ? _sector : '';
+    final income = _needsOccupation ? _income : '';
     final data = {
+      'educationLevel': _educationLevel,
       'education': _education,
-      'occupation': _occupation,
-      'annualIncome': _income,
+      'employmentStatus': _employmentStatus,
+      'employmentType': sector,
+      'occupation': occupation,
+      'annualIncome': income,
     };
     final updated = widget.profile.copyWith(
+      educationLevel: _educationLevel,
       education: _education,
-      occupation: _occupation,
-      annualIncome: _income,
+      employmentStatus: _employmentStatus,
+      employmentType: sector,
+      occupation: occupation,
+      annualIncome: income,
     );
     try {
       await _saveSection(ref, widget.profile, data, updated);
@@ -688,15 +708,49 @@ class _CareerSheetState extends ConsumerState<_CareerSheet> {
       saving: _saving,
       onSave: _save,
       children: [
-        _drop('Education', _education,
-            _optsWith(AppConstants.educationList, _education),
-            (v) => setState(() => _education = v!)),
-        _drop('Occupation', _occupation,
-            _optsWith(AppConstants.occupationList, _occupation),
-            (v) => setState(() => _occupation = v!)),
-        _drop('Annual Income', _income,
-            _optsWith(AppConstants.incomeList, _income),
-            (v) => setState(() => _income = v!)),
+        _drop('Education Level', _educationLevel,
+            _optsWith(CareerData.educationLevels, _educationLevel),
+            (v) => setState(() {
+                  _educationLevel = v!;
+                  _education = CareerData.defaultCourseFor(v) ?? '';
+                })),
+        if (_needsCourse)
+          _drop(
+              'Course / Degree',
+              _education,
+              _optsWith(CareerData.coursesFor(_educationLevel), _education),
+              (v) => setState(() => _education = v!)),
+        _drop('Employment Status', _employmentStatus,
+            _optsWith(CareerData.employmentStatuses, _employmentStatus),
+            (v) => setState(() {
+                  _employmentStatus = v!;
+                  _sector = '';
+                  _occupation = '';
+                })),
+        if (_needsOccupation) ...[
+          _drop(
+              _employmentStatus == CareerData.statusSelfEmployed
+                  ? 'Business / Profession'
+                  : 'Government / Private',
+              _sector,
+              _optsWith(CareerData.sectorsFor(_employmentStatus), _sector),
+              (v) => setState(() {
+                    _sector = v!;
+                    _occupation = '';
+                  })),
+          _drop(
+              'Occupation',
+              _occupation,
+              _optsWith(
+                  CareerData.occupationsFor(
+                      status: _employmentStatus, sector: _sector),
+                  _occupation),
+              (v) => setState(() => _occupation = v!)),
+          // Annual income is OPTIONAL (§8).
+          _drop('Annual Income', _income,
+              _optsWith(AppConstants.incomeList, _income),
+              (v) => setState(() => _income = v!)),
+        ],
       ],
     );
   }

@@ -37,6 +37,10 @@ class SearchableWithOthersField extends StatefulWidget {
   /// Label of the revealed textbox. Defaults to "Custom <label>".
   final String? customLabel;
 
+  /// Inline error shown under whichever control currently needs fixing — the
+  /// dropdown, or the custom textbox while "Others" is selected (§10).
+  final String? errorText;
+
   const SearchableWithOthersField({
     super.key,
     required this.label,
@@ -48,6 +52,7 @@ class SearchableWithOthersField extends StatefulWidget {
     this.prefixIcon,
     this.popupMode = SearchablePopupMode.menu,
     this.customLabel,
+    this.errorText,
   });
 
   @override
@@ -116,6 +121,9 @@ class _SearchableWithOthersFieldState extends State<SearchableWithOthersField> {
           enabled: widget.enabled,
           prefixIcon: widget.prefixIcon,
           popupMode: widget.popupMode,
+          // While "Others" is active the message belongs under the textbox
+          // below, not under the dropdown.
+          errorText: othersMode ? null : widget.errorText,
           items: items,
           itemLabel: (item) => item == kOthersSentinel
               ? l10n.othersOption
@@ -152,6 +160,7 @@ class _SearchableWithOthersFieldState extends State<SearchableWithOthersField> {
                 : (widget.customLabel ?? l10n.customField(widget.label)),
             hint: l10n.typeHere,
             enabled: widget.enabled,
+            errorText: widget.errorText,
             textCapitalization: TextCapitalization.words,
             onChanged: (v) => widget.onChanged(v.trim()),
             validator: widget.isRequired

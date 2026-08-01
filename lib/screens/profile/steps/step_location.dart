@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/inline_validation.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../providers/location_provider.dart';
 import '../../../providers/profile_provider.dart';
@@ -20,6 +21,8 @@ class StepLocation extends ConsumerStatefulWidget {
 }
 
 class _StepLocationState extends ConsumerState<StepLocation> {
+  final _v = InlineValidation();
+
   String? _state;
   String? _stateId;
   String? _district;
@@ -49,10 +52,19 @@ class _StepLocationState extends ConsumerState<StepLocation> {
   }
 
   void _saveAndNext() {
-    if (_state == null || _district == null || _city == null) {
-      _snack(context.l10n.selectStateDistrictCity);
-      return;
-    }
+    // Inline, under the location block (§10) — never a bottom snackbar.
+    final ok = _v.validate(
+      context,
+      [
+        FieldCheck(
+          id: 'location',
+          valid: _state != null && _district != null && _city != null,
+          message: context.l10n.selectStateDistrictCity,
+        ),
+      ],
+      onChanged: () => setState(() {}),
+    );
+    if (!ok) return;
     ref.read(profileCreationProvider.notifier).updateData({
       'country': 'India',
       'state': _state ?? '',
@@ -72,9 +84,6 @@ class _StepLocationState extends ConsumerState<StepLocation> {
     widget.onNext();
   }
 
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
-
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -88,12 +97,14 @@ class _StepLocationState extends ConsumerState<StepLocation> {
               style: const TextStyle(color: Colors.grey)),
           const SizedBox(height: 24),
           LocationPickerSection(
+            key: _v.anchor('location'),
             initialState: _state,
             initialDistrict: _district,
             initialCity: _city,
             initialLatitude: _lat,
             initialLongitude: _lng,
             onChanged: (loc) => setState(() {
+              _v.clear('location');
               _state = loc.state.isEmpty ? null : loc.state;
               _stateId = loc.stateId.isEmpty ? null : loc.stateId;
               _district = loc.district.isEmpty ? null : loc.district;
@@ -104,6 +115,7 @@ class _StepLocationState extends ConsumerState<StepLocation> {
               _lng = loc.longitude;
             }),
           ),
+          InlineFieldError(_v.errorOf('location')),
           const SizedBox(height: 16),
           _nativePlaceField(),
           const SizedBox(height: 16),

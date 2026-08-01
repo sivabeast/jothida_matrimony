@@ -1150,14 +1150,51 @@ final discoverProvider =
 /// only — it never lists every profile; the full list lives on Matches (§8).
 const int kHomeNewProfilesPreviewCount = 5;
 
-/// **New Profiles** for the Home page — the LATEST registered opposite-gender
-/// profiles, newest first, capped to [kHomeNewProfilesPreviewCount] (§7/§9).
+/// Whether [candidate] may be shown to [me] at all.
 ///
-/// No preference gating (same rule as the Matches feed, per spec) — besides
-/// basic eligibility (never self / married / inactive / rejected / blocked),
-/// the list simply surfaces the newest members as people register. So if the
-/// admin seeds 10 male + 10 female dummy profiles, Home shows the newest 5
-/// eligible ones and Matches shows them all.
+/// This is THE single eligibility rule, shared by the Matches feed
+/// ([DiscoverNotifier._keep] + [_passesMode]) and the Home preview
+/// ([newProfilesProvider]) so both pages use the exact same matching logic
+/// (§2). A profile that Home shows is therefore always also in Matches.
+///
+///   • never self, never a profile with no owner uid or no name,
+///   • never married / inactive / rejected / blocked,
+///   • never a user-to-user block, in either direction,
+///   • OPPOSITE GENDER ONLY (§3) — a male member sees female profiles and vice
+///     versa; an unknown gender on either side never hides anyone,
+///   • every partner preference the member actually SET must match.
+bool isEligibleMatch(
+  ProfileModel candidate, {
+  required ProfileModel? me,
+  required String? myUid,
+  required Set<String> blockedUids,
+}) {
+  if (candidate.userId.trim().isEmpty) return false;
+  if (candidate.name.trim().isEmpty) return false;
+  if (myUid != null && candidate.userId == myUid) return false;
+  if (candidate.isMarried) return false;
+  if (!candidate.isActive) return false;
+  if (candidate.status == 'rejected' || candidate.status == 'blocked') {
+    return false;
+  }
+  if (blockedUids.contains(candidate.userId)) return false;
+
+  final mine = normalizedGender(me?.gender);
+  final theirs = normalizedGender(candidate.gender);
+  if (mine.isNotEmpty && theirs.isNotEmpty && mine == theirs) return false;
+
+  return mandatoryPreferenceMatch(candidate, me);
+}
+
+/// **New Profiles** for the Home page — the LATEST registered profiles among
+/// exactly the ones the Matches page lists, newest first, capped to
+/// [kHomeNewProfilesPreviewCount] (§2).
+///
+/// Home is a PREVIEW: it shows the 5 most recently registered eligible
+/// profiles, so a new registration pushes the oldest of the five off the
+/// preview — while that profile stays in the database and remains fully
+/// browsable on Matches. Eligibility is [isEligibleMatch], the very same rule
+/// the Matches feed applies, so Home can never surface someone Matches hides.
 final newProfilesProvider =
     FutureProvider.autoDispose<List<ProfileModel>>((ref) async {
   final gender = ref.watch(matchGenderProvider);
@@ -1173,25 +1210,14 @@ final newProfilesProvider =
     pool = page.profiles;
   }
 
-  // Same-gender guard as the Matches feed — see DiscoverNotifier._keep.
-  final myGender =
-      normalizedGender(ref.watch(myProfileProvider).valueOrNull?.gender);
+  final me = ref.watch(myProfileProvider).valueOrNull;
   final blocked = ref.watch(blockedUidsProvider);
 
-  final eligible = pool.where((p) {
-    if (p.userId.trim().isEmpty || p.name.trim().isEmpty) return false;
-    if (p.userId == myUid) return false;
-    if (p.isMarried) return false;
-    if (!p.isActive) return false;
-    if (p.status == 'rejected' || p.status == 'blocked') return false;
-    if (blocked.contains(p.userId)) return false; // user-to-user block (§6)
-    final theirs = normalizedGender(p.gender);
-    if (myGender.isNotEmpty && theirs.isNotEmpty && myGender == theirs) {
-      return false;
-    }
-    return true;
-  }).toList()
-    // Newest joiners first.
+  final eligible = pool
+      .where((p) => isEligibleMatch(p,
+          me: me, myUid: myUid, blockedUids: blocked))
+      .toList()
+    // Newest joiners first — the newest 5 are the preview.
     ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
   return eligible.take(kHomeNewProfilesPreviewCount).toList();

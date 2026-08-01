@@ -51,10 +51,11 @@ void main() {
       expect(user.privacySettings['hidePhone'], isTrue);
       // …an explicit "visible" choice is kept…
       expect(user.privacySettings['hideSalary'], isFalse);
-      // …and a key the document is missing defaults to HIDDEN (§17).
-      expect(user.privacySettings['hideHoroscope'], isTrue);
-      expect(user.privacySettings['hidePhoto'], isTrue);
-      // The retired switches are dropped entirely (§15).
+      // …and a key the document is missing defaults to OFF / not hidden
+      // (§12 — nothing is hidden until the member turns the switch on).
+      expect(user.privacySettings['hideHoroscope'], isFalse);
+      expect(user.privacySettings['hidePhoto'], isFalse);
+      // The retired switches are dropped entirely.
       expect(user.privacySettings.containsKey('hideAddress'), isFalse);
       expect(user.privacySettings.containsKey('hideFamilyDetails'), isFalse);
       expect(
@@ -68,9 +69,9 @@ void main() {
       expect(user.isProfileComplete, isFalse);
       expect(user.isBlocked, isFalse);
       expect(user.freePortuthamsUsed, 0);
-      // Exactly four switches, ALL hidden by default (§16/§17).
+      // Exactly four switches, ALL OFF by default (§12).
       expect(user.privacySettings.length, 4);
-      expect(user.privacySettings.values.every((v) => v == true), isTrue);
+      expect(user.privacySettings.values.every((v) => v == false), isTrue);
     });
 
     test('the legacy hideAdditionalPhotos key maps onto hidePhoto', () {

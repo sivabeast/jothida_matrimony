@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/inline_validation.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../core/utils/value_l10n.dart';
 import '../../../core/utils/validators.dart';
@@ -25,12 +26,14 @@ class StepBasic extends ConsumerStatefulWidget {
 }
 
 class _StepBasicState extends ConsumerState<StepBasic> {
-  final _formKey = GlobalKey<FormState>();
+  final _v = InlineValidation();
   final _nameController = TextEditingController();
   final _nameTamilController = TextEditingController();
   final _dobController = TextEditingController();
   final _weightController = TextEditingController();
   final _childrenController = TextEditingController();
+  final _nameFocus = FocusNode();
+  final _nameTamilFocus = FocusNode();
 
   // Who this profile is for — matches the website PROFILE_FOR list.
   static const _profileForOptions = [
@@ -91,6 +94,8 @@ class _StepBasicState extends ConsumerState<StepBasic> {
     _dobController.dispose();
     _weightController.dispose();
     _childrenController.dispose();
+    _nameFocus.dispose();
+    _nameTamilFocus.dispose();
     super.dispose();
   }
 
@@ -121,38 +126,46 @@ class _StepBasicState extends ConsumerState<StepBasic> {
   }
 
   void _saveAndNext() {
-    if (!_formKey.currentState!.validate()) return;
     final l10n = context.l10n;
-    // Tamil name is mandatory (website parity, §9/§10).
-    if (_nameTamilController.text.trim().isEmpty) {
-      return _snack(l10n.pleaseEnterField('${l10n.fullName} (தமிழ்)'));
-    }
-    if (_profileFor == null || _profileFor!.isEmpty) {
-      return _snack(l10n.pleaseSelect(l10n.profileCreatedFor));
-    }
-    if (_gender == null) return _snack(l10n.pleaseSelect(l10n.gender));
-    if (_dob == null) return _snack(l10n.pleaseSelect(l10n.dateOfBirth));
-    if (_height == null || _height!.isEmpty) {
-      return _snack(l10n.pleaseSelect(l10n.height));
-    }
-    if (_maritalStatus == null || _maritalStatus!.isEmpty) {
-      return _snack(l10n.pleaseSelect(l10n.maritalStatus));
-    }
-    if (_physicalStatus == null || _physicalStatus!.isEmpty) {
-      return _snack(l10n.pleaseSelect(l10n.physicalStatus));
-    }
-    // Living status is required only when there actually are children.
-    if (_showChildren &&
-        _childrenCount > 0 &&
-        (_childrenLivingStatus == null || _childrenLivingStatus!.isEmpty)) {
-      return _snack(l10n.pleaseSelect(l10n.childrenLivingStatus));
-    }
-    if (_familyType == null || _familyType!.isEmpty) {
-      return _snack(l10n.pleaseSelect(l10n.familyType));
-    }
-    if (_familyStatus == null || _familyStatus!.isEmpty) {
-      return _snack(l10n.pleaseSelect(l10n.familyStatus));
-    }
+    // One consistent validation style (§10): an inline red message under each
+    // invalid field, and the page scrolls to + focuses the FIRST of them.
+    // BOTH names are mandatory (§14).
+    final nameError = Validators.name(_nameController.text);
+    final checks = <FieldCheck>[
+      FieldCheck.notEmpty('profileFor', _profileFor,
+          l10n.pleaseSelect(l10n.profileCreatedFor)),
+      FieldCheck(
+        id: 'name',
+        valid: nameError == null,
+        message: nameError ?? l10n.pleaseEnterField(l10n.fullName),
+        focusNode: _nameFocus,
+      ),
+      FieldCheck.notEmpty('nameTamil', _nameTamilController.text,
+          l10n.pleaseEnterField('${l10n.fullName} (தமிழ்)'),
+          focusNode: _nameTamilFocus),
+      FieldCheck(
+          id: 'gender',
+          valid: _gender != null,
+          message: l10n.pleaseSelect(l10n.gender)),
+      FieldCheck(
+          id: 'dob',
+          valid: _dob != null,
+          message: l10n.pleaseSelect(l10n.dateOfBirth)),
+      FieldCheck.notEmpty('height', _height, l10n.pleaseSelect(l10n.height)),
+      FieldCheck.notEmpty('maritalStatus', _maritalStatus,
+          l10n.pleaseSelect(l10n.maritalStatus)),
+      FieldCheck.notEmpty('physicalStatus', _physicalStatus,
+          l10n.pleaseSelect(l10n.physicalStatus)),
+      FieldCheck.notEmpty(
+          'familyType', _familyType, l10n.pleaseSelect(l10n.familyType)),
+      FieldCheck.notEmpty(
+          'familyStatus', _familyStatus, l10n.pleaseSelect(l10n.familyStatus)),
+      // Living status is required only when there actually are children.
+      if (_showChildren && _childrenCount > 0)
+        FieldCheck.notEmpty('childrenLivingStatus', _childrenLivingStatus,
+            l10n.pleaseSelect(l10n.childrenLivingStatus)),
+    ];
+    if (!_v.validate(context, checks, onChanged: () => setState(() {}))) return;
 
     // Merge into the existing familyDetails map so an edit never wipes the
     // other family fields (father/mother details, siblings…).
@@ -182,16 +195,12 @@ class _StepBasicState extends ConsumerState<StepBasic> {
     widget.onNext();
   }
 
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
-
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
-      child: Form(
-        key: _formKey,
-        child: Column(
+      child: Builder(
+        builder: (context) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(context.l10n.basicDetails, style: AppTextStyles.heading2),
@@ -200,30 +209,52 @@ class _StepBasicState extends ConsumerState<StepBasic> {
                 style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 24),
             SearchableField(
+              key: _v.anchor('profileFor'),
               label: context.l10n.profileCreatedFor,
               isRequired: true,
               items: _profileForOptions,
               selectedItem: _profileFor,
               prefixIcon: Icons.person_pin_outlined,
-              onChanged: (v) => setState(() => _profileFor = v),
+              errorText: _v.errorOf('profileFor'),
+              onChanged: (v) => setState(() {
+                _profileFor = v;
+                _v.clear('profileFor');
+              }),
             ),
             const SizedBox(height: 16),
             AppTextField(
+              key: _v.anchor('name'),
               controller: _nameController,
+              focusNode: _nameFocus,
               label: '${context.l10n.fullName} *',
-              validator: Validators.name,
+              errorText: _v.errorOf('name'),
+              textCapitalization: TextCapitalization.words,
+              onChanged: (_) {
+                if (_v.errorOf('name') != null) {
+                  setState(() => _v.clear('name'));
+                }
+              },
             ),
             const SizedBox(height: 16),
             // Tamil-script name (§10) — required, mirroring the website's Basic
             // step (which validates fullNameTamil). Shown in place of the
             // English name in Tamil mode; the English name stays canonical.
             AppTextField(
+              key: _v.anchor('nameTamil'),
               controller: _nameTamilController,
+              focusNode: _nameTamilFocus,
               label: '${context.l10n.fullName} (தமிழ்) *',
+              errorText: _v.errorOf('nameTamil'),
               textCapitalization: TextCapitalization.words,
+              onChanged: (_) {
+                if (_v.errorOf('nameTamil') != null) {
+                  setState(() => _v.clear('nameTamil'));
+                }
+              },
             ),
             const SizedBox(height: 20),
             Text('${context.l10n.gender} *',
+                key: _v.anchor('gender'),
                 style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Row(
@@ -233,16 +264,17 @@ class _StepBasicState extends ConsumerState<StepBasic> {
                 Expanded(child: _genderCard('Female', Icons.female)),
               ],
             ),
+            InlineFieldError(_v.errorOf('gender')),
             const SizedBox(height: 20),
             AppTextField(
+              key: _v.anchor('dob'),
               controller: _dobController,
               label: '${context.l10n.dateOfBirth} *',
               hint: 'DD-MM-YYYY',
               readOnly: true,
               onTap: _pickDate,
               suffixIcon: const Icon(Icons.calendar_today),
-              validator: (v) =>
-                  v == null || v.isEmpty ? context.l10n.required : null,
+              errorText: _v.errorOf('dob'),
             ),
             if (_age != null) ...[
               const SizedBox(height: 12),
@@ -270,12 +302,17 @@ class _StepBasicState extends ConsumerState<StepBasic> {
             ],
             const SizedBox(height: 20),
             SearchableField(
+              key: _v.anchor('height'),
               label: context.l10n.height,
               isRequired: true,
               items: AppConstants.heightList,
               selectedItem: _height,
               prefixIcon: Icons.height,
-              onChanged: (v) => setState(() => _height = v),
+              errorText: _v.errorOf('height'),
+              onChanged: (v) => setState(() {
+                _height = v;
+                _v.clear('height');
+              }),
             ),
             const SizedBox(height: 16),
             AppTextField(
@@ -290,39 +327,59 @@ class _StepBasicState extends ConsumerState<StepBasic> {
             ),
             const SizedBox(height: 16),
             SearchableField(
+              key: _v.anchor('maritalStatus'),
               label: context.l10n.maritalStatus,
               isRequired: true,
               items: AppConstants.maritalStatusOptions,
               selectedItem: _maritalStatus,
               prefixIcon: Icons.favorite_border,
-              onChanged: (v) => setState(() => _maritalStatus = v),
+              errorText: _v.errorOf('maritalStatus'),
+              onChanged: (v) => setState(() {
+                _maritalStatus = v;
+                _v.clear('maritalStatus');
+              }),
             ),
             const SizedBox(height: 16),
             SearchableField(
+              key: _v.anchor('physicalStatus'),
               label: context.l10n.physicalStatus,
               isRequired: true,
               items: AppConstants.physicalStatusList,
               selectedItem: _physicalStatus,
               prefixIcon: Icons.accessibility_new,
-              onChanged: (v) => setState(() => _physicalStatus = v),
+              errorText: _v.errorOf('physicalStatus'),
+              onChanged: (v) => setState(() {
+                _physicalStatus = v;
+                _v.clear('physicalStatus');
+              }),
             ),
             const SizedBox(height: 16),
             SearchableField(
+              key: _v.anchor('familyType'),
               label: context.l10n.familyType,
               isRequired: true,
               items: AppConstants.familyTypeList,
               selectedItem: _familyType,
               prefixIcon: Icons.family_restroom,
-              onChanged: (v) => setState(() => _familyType = v),
+              errorText: _v.errorOf('familyType'),
+              onChanged: (v) => setState(() {
+                _familyType = v;
+                _v.clear('familyType');
+              }),
             ),
             const SizedBox(height: 16),
             SearchableField(
+              key: _v.anchor('familyStatus'),
               label: context.l10n.familyStatus,
               isRequired: true,
               items: AppConstants.familyStatusList,
               selectedItem: _familyStatus,
               prefixIcon: Icons.diamond_outlined,
-              onChanged: (v) => setState(() => _familyStatus = v),
+              errorText: _v.errorOf('familyStatus'),
+              onChanged: (v) => setState(() {
+                _familyStatus = v;
+                _v.clear('familyStatus');
+              }),
             ),
             if (_showChildren) ...[
               const SizedBox(height: 16),
@@ -340,12 +397,17 @@ class _StepBasicState extends ConsumerState<StepBasic> {
               if (_childrenCount > 0) ...[
                 const SizedBox(height: 16),
                 SearchableField(
+                  key: _v.anchor('childrenLivingStatus'),
                   label: context.l10n.childrenLivingStatus,
                   isRequired: true,
                   items: AppConstants.childrenLivingStatusList,
                   selectedItem: _childrenLivingStatus,
                   prefixIcon: Icons.home_outlined,
-                  onChanged: (v) => setState(() => _childrenLivingStatus = v),
+                  errorText: _v.errorOf('childrenLivingStatus'),
+                  onChanged: (v) => setState(() {
+                    _childrenLivingStatus = v;
+                    _v.clear('childrenLivingStatus');
+                  }),
                 ),
               ],
             ],
@@ -361,7 +423,10 @@ class _StepBasicState extends ConsumerState<StepBasic> {
   Widget _genderCard(String gender, IconData icon) {
     final selected = _gender == gender;
     return GestureDetector(
-      onTap: () => setState(() => _gender = gender),
+      onTap: () => setState(() {
+        _gender = gender;
+        _v.clear('gender');
+      }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(18),

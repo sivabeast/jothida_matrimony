@@ -2,35 +2,43 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../core/utils/value_l10n.dart';
 import '../../../models/profile_model.dart';
 import '../../../core/services/porutham_match.dart';
 import '../../../providers/interest_provider.dart';
+import '../../../providers/matches_prefs_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/ui_preferences_provider.dart';
 import '../../../widgets/common/network_photo.dart';
 import '../../../widgets/common/profile_highlight_badge.dart';
 
-/// The Matches experience — a vertically scrolling list of EVERY eligible
-/// profile (§8).
+/// The Matches experience — a HORIZONTAL swipe browser over EVERY eligible
+/// profile (§1).
 ///
-/// It used to be a one-profile-per-page swipe browser, which is why only a
-/// single profile ever appeared on screen. It is now an infinite-scroll LIST:
-/// all eligible profiles are shown, the next page is fetched automatically as
-/// the user nears the bottom, and the footer says explicitly when the end of
-/// the list has been reached. If the database holds 20 dummy profiles, all of
-/// the eligible ones are listed here (§9) — Home only previews the latest five.
+/// One profile fills the screen at a time and the member moves through the feed
+/// left/right; there is no vertical profile list any more. The mechanics:
 ///
-/// A COMPACT single-line card sits above the feed: the user's Nakshatra, a
-/// "View Matching Stars" action (bottom sheet listing the nakshatras
-/// compatible with theirs) and the number of profiles currently shown.
+///   • **Lazy** — [PageView.builder] only builds the pages around the current
+///     one, and the next Firestore page is fetched as the member approaches the
+///     end of what has been loaded, so a large database costs nothing up front.
+///   • **Nothing is skipped** — every profile that passes the matching rules is
+///     a page, in a stable ranked order, and paging continues until the
+///     collection runs out.
+///   • **Resume** (§4) — the exact profile the member was last on is persisted
+///     per user, so reopening the app continues from there instead of profile 1.
+///     Swiping RIGHT moves on to newer/unseen profiles, swiping LEFT goes back
+///     through the ones already viewed.
 ///
-/// Eligibility is decided by [DiscoverNotifier] — opposite gender, not
-/// self/married/inactive/blocked, and every partner preference the member
-/// actually set (including the mandatory age range, §11). Preference and
-/// nakshatra matches are ranked first and highlighted with a badge.
+/// A compact single-line card above the pager shows the member's Nakshatra, the
+/// "View Matching Stars" action and the position within the feed.
+///
+/// Eligibility is decided by [DiscoverNotifier] — opposite gender only (§3),
+/// never self/married/inactive/blocked, plus every partner preference the
+/// member actually set. Home previews the newest five of exactly this same set
+/// (§2).
 class DiscoverTab extends ConsumerStatefulWidget {
   const DiscoverTab({super.key});
 
@@ -43,14 +51,25 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   /// button can flip to "Interest Sent ✓" immediately).
   final Set<String> _interestSent = {};
 
-  final ScrollController _scrollController = ScrollController();
+  final PageController _pageController = PageController();
+
+  /// Current page. Kept in state so the header counter and the "load more"
+  /// trigger stay in sync with the pager.
+  int _index = 0;
+
+  /// The saved resume position is applied ONCE per feed load — after that the
+  /// member is in control and must never be yanked back.
+  bool _resumeApplied = false;
+
+  /// Ids of the profiles currently paged, used to detect a genuinely new feed
+  /// (a reload / filter change) that should re-apply the resume position.
+  String _feedSignature = '';
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
     // Load ONLY when the feed is empty — returning to this tab (or rebuilding
-    // it) must never refetch and jump the user back to the top.
+    // it) must never refetch and jump the user back to the first profile.
     Future.microtask(() {
       final st = ref.read(discoverProvider);
       if (st.profiles.isEmpty && !st.isLoading) _load();
@@ -59,29 +78,60 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
 
   @override
   void dispose() {
-    _scrollController
-      ..removeListener(_onScroll)
-      ..dispose();
+    _pageController.dispose();
     super.dispose();
-  }
-
-  /// Fetch the next page as the user approaches the bottom, so scrolling never
-  /// stops at an artificial "first page" boundary (§8).
-  void _onScroll() {
-    if (!_scrollController.hasClients) return;
-    final position = _scrollController.position;
-    if (position.pixels >= position.maxScrollExtent - 600) {
-      ref.read(discoverProvider.notifier).loadMore();
-    }
   }
 
   Future<void> _load() => ref.read(discoverProvider.notifier).load();
 
-  /// MANUAL refresh (pull-to-refresh / Refresh button).
+  /// MANUAL refresh (Refresh button / empty-state retry).
   Future<void> _refresh() async {
+    _resumeApplied = false;
     await ref.read(discoverProvider.notifier).load();
-    if (!mounted) return;
-    if (_scrollController.hasClients) _scrollController.jumpTo(0);
+  }
+
+  // ── Browsing position ──────────────────────────────────────────────────────
+
+  /// Remembers where the member is, so the next session resumes here (§4).
+  void _onPageChanged(int page, List<ProfileModel> profiles) {
+    if (page < 0 || page >= profiles.length) {
+      setState(() => _index = page);
+      return;
+    }
+    final profile = profiles[page];
+    setState(() => _index = page);
+    ref.read(viewedProfilesProvider.notifier).markViewed(profile.id);
+    ref.read(lastViewedProfileProvider.notifier).set(profile.id);
+    _maybeLoadMore(page, profiles.length);
+  }
+
+  /// Fetch the next page while the member still has a few profiles left to
+  /// swipe through, so the pager never stalls at a page boundary.
+  void _maybeLoadMore(int page, int total) {
+    if (page >= total - 3) ref.read(discoverProvider.notifier).loadMore();
+  }
+
+  /// Jumps to the saved resume position the first time a feed is shown.
+  void _applyResume(List<ProfileModel> profiles) {
+    final signature = '${profiles.length}:${profiles.first.id}';
+    if (_resumeApplied && signature == _feedSignature) return;
+    _feedSignature = signature;
+    _resumeApplied = true;
+
+    final target = resolveResumeIndex(
+      profileIds: profiles.map((p) => p.id).toList(),
+      viewed: ref.read(viewedProfilesProvider),
+      lastViewed: ref.read(lastViewedProfileProvider),
+    );
+    if (target == _index && !_pageController.hasClients) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_pageController.hasClients) return;
+      _pageController.jumpToPage(target);
+      if (target != _index) setState(() => _index = target);
+      // Record the resumed profile so a session that only *looks* at it still
+      // counts as viewed.
+      ref.read(viewedProfilesProvider.notifier).markViewed(profiles[target].id);
+    });
   }
 
   // ── Actions ─────────────────────────────────────────────────────────────
@@ -164,8 +214,13 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
       final p = prev?.valueOrNull;
       final n = next.valueOrNull;
       if (n == null || p == null) return;
-      if (_matchingSignature(p) != _matchingSignature(n)) _load();
+      if (_matchingSignature(p) != _matchingSignature(n)) {
+        _resumeApplied = false;
+        _load();
+      }
     });
+
+    if (profiles.isNotEmpty) _applyResume(profiles);
 
     return Container(
       color: AppColors.scaffoldBg,
@@ -180,7 +235,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
               // "No Matching Profiles" ONLY when zero profiles in the database
               // pass the matching rules.
               if (profiles.isEmpty) return _emptyState(state.error != null);
-              return _profileList(profiles, state);
+              return _swipeBrowser(profiles, state);
             }),
           ),
         ],
@@ -230,12 +285,13 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
       : AppConstants.nakshatraEnList[star - 1];
 
   /// A minimal single-line card — the user's Nakshatra, the "View Matching
-  /// Stars" action and how many profiles are listed — so profiles start
+  /// Stars" action and the position in the feed — so the profile starts
   /// immediately below without wasted vertical space.
   Widget _topCompactCard(int count) {
     final l10n = context.l10n;
     final me = ref.watch(myProfileProvider).valueOrNull;
     final star = me == null ? null : profileStarIndex(me);
+    final position = count == 0 ? '' : '  ·  ${_index.clamp(0, count - 1) + 1}/$count';
 
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 10, 14, 2),
@@ -245,7 +301,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
         ],
       ),
       child: Row(
@@ -254,8 +310,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
           const SizedBox(width: 6),
           Expanded(
             child: Text(
-              '${l10n.nakshatra}: ${star == null ? '—' : _starName(star)}'
-              '${count > 0 ? '  ·  ${l10n.profilesShown(count)}' : ''}',
+              '${l10n.nakshatra}: ${star == null ? '—' : _starName(star)}$position',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -353,11 +408,12 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 12, vertical: 7),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withOpacity(0.07),
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.07),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
                                         color: AppColors.primary
-                                            .withOpacity(0.25)),
+                                            .withValues(alpha: 0.25)),
                                   ),
                                   child: Text(
                                     _starName(s),
@@ -384,62 +440,115 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     );
   }
 
-  /// The vertical, infinite-scrolling list of ALL eligible profiles (§8).
-  ///
-  /// The last item is a footer: a spinner while the next page loads, or an
-  /// explicit "end of list" note once everything has been fetched — so the
-  /// member can tell the difference between "still loading" and "that's all".
-  Widget _profileList(List<ProfileModel> profiles, DiscoverState state) {
-    return RefreshIndicator(
-      color: AppColors.primary,
-      onRefresh: _refresh,
-      child: ListView.separated(
-        controller: _scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
-        itemCount: profiles.length + 1,
-        separatorBuilder: (_, __) => const SizedBox(height: 14),
-        itemBuilder: (_, i) {
-          if (i == profiles.length) return _listFooter(state);
-          final p = profiles[i];
-          return _MatchProfileCard(
-            key: ValueKey(p.id),
-            profile: p,
-            interestSent: _interestSent.contains(p.id),
-            onInterest: () => _sendInterest(p),
-            onAccept: (interestId) => _acceptInterest(p, interestId),
-          );
-        },
+  // ── The horizontal browser (§1) ────────────────────────────────────────────
+
+  /// One page per profile, swiped left/right. A trailing page appears while the
+  /// next batch is being fetched (or once the end of the feed is reached), so
+  /// the member can always tell "still loading" from "that's everyone".
+  Widget _swipeBrowser(List<ProfileModel> profiles, DiscoverState state) {
+    final showTail = state.hasMore || state.isLoadingMore;
+    final pageCount = profiles.length + (showTail ? 1 : 0);
+
+    return Column(
+      children: [
+        Expanded(
+          child: PageView.builder(
+            controller: _pageController,
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            // Keeps neighbouring pages alive so a swipe back is instant and the
+            // photo does not reload.
+            allowImplicitScrolling: true,
+            itemCount: pageCount,
+            onPageChanged: (i) => _onPageChanged(i, profiles),
+            itemBuilder: (_, i) {
+              if (i >= profiles.length) return _tailPage(state);
+              final p = profiles[i];
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+                child: _MatchProfileCard(
+                  key: ValueKey(p.id),
+                  profile: p,
+                  interestSent: _interestSent.contains(p.id),
+                  onInterest: () => _sendInterest(p),
+                  onAccept: (interestId) => _acceptInterest(p, interestId),
+                ),
+              );
+            },
+          ),
+        ),
+        _swipeHint(profiles.length),
+      ],
+    );
+  }
+
+  /// The page after the last loaded profile: a spinner while the next batch
+  /// arrives, or the explicit end-of-feed note.
+  Widget _tailPage(DiscoverState state) {
+    final l10n = context.l10n;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (state.isLoadingMore) ...[
+              const SizedBox(
+                width: 26,
+                height: 26,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2.4, color: AppColors.primary),
+              ),
+              const SizedBox(height: 12),
+              Text(l10n.loadingMoreProfiles,
+                  style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+            ] else ...[
+              Icon(Icons.done_all, size: 40, color: Colors.grey[400]),
+              const SizedBox(height: 12),
+              Text(l10n.noMoreProfiles,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13.5, color: Colors.grey[600])),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: _refresh,
+                icon: const Icon(Icons.refresh),
+                label: Text(l10n.refresh),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _listFooter(DiscoverState state) {
-    final l10n = context.l10n;
-    if (state.isLoadingMore) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        child: Column(
-          children: [
-            const SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(
-                  strokeWidth: 2, color: AppColors.primary),
-            ),
-            const SizedBox(height: 8),
-            Text(l10n.loadingMoreProfiles,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-          ],
-        ),
-      );
-    }
-    if (state.hasMore) return const SizedBox(height: 24);
+  /// Swipe affordance + position indicator under the pager.
+  Widget _swipeHint(int total) {
+    final atStart = _index <= 0;
+    final atEnd = _index >= total - 1;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: Center(
-        child: Text(l10n.noMoreProfiles,
-            style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.chevron_left,
+              size: 18, color: atStart ? Colors.grey[300] : Colors.grey[500]),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              context.l10n.swipeToBrowse,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11.5, color: Colors.grey[600]),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Icon(Icons.chevron_right,
+              size: 18, color: atEnd ? Colors.grey[300] : Colors.grey[500]),
+        ],
       ),
     );
   }
@@ -460,7 +569,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
               width: 88,
               height: 88,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.07),
+                color: AppColors.primary.withValues(alpha: 0.07),
                 shape: BoxShape.circle,
               ),
               child: Icon(isError ? Icons.cloud_off_outlined : Icons.search_off,
@@ -506,14 +615,17 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   }
 }
 
-/// One profile card in the Matches list.
+/// One full-screen page in the Matches swipe browser.
 ///
 /// Layout (top → bottom):
 ///   • the member's 1:1 photo (tap → full profile) with the match-quality
-///     badge — or a neutral placeholder when they hide their photo (§16),
+///     badge — or a neutral placeholder when they hide their photo,
 ///   • the essential summary (name·age, verification, location, height,
 ///     education, profession, community),
 ///   • two equally-sized actions: Express Interest · View Profile.
+///
+/// The body scrolls vertically INSIDE the page when a tall summary would not
+/// otherwise fit, so nothing is ever clipped on small screens.
 class _MatchProfileCard extends ConsumerWidget {
   final ProfileModel profile;
   final bool interestSent;
@@ -559,40 +671,45 @@ class _MatchProfileCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10),
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _photo(context),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _summary(context),
-                const SizedBox(height: 14),
-                _actions(context, status),
-              ],
+      child: SingleChildScrollView(
+        // A vertical drag inside a horizontal PageView is unambiguous, so this
+        // never fights the swipe gesture.
+        physics: const ClampingScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _photo(context),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _summary(context),
+                  const SizedBox(height: 14),
+                  _actions(context, status),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   // ── Photo ────────────────────────────────────────────────────────────────
   Widget _photo(BuildContext context) {
-    // "Hide Profile Photo" is ON by default (§17) — a hidden photo shows a
-    // neutral placeholder and is never revealed by an accepted interest.
+    // "Hide Profile Photo" is OFF unless the member turned it on (§12) — a
+    // hidden photo shows a neutral placeholder.
     final hidden = profile.hidesPhoto;
     final url = hidden ? '' : (profile.profilePhotoUrl ?? '');
     return GestureDetector(
       onTap: () => _openProfile(context),
       child: AspectRatio(
-        // 1:1 — the photo is always a square crop (§1).
+        // 1:1 — the photo is always a square crop (§11).
         aspectRatio: 1,
         child: Stack(
           fit: StackFit.expand,
@@ -619,7 +736,7 @@ class _MatchProfileCard extends ConsumerWidget {
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        Colors.black.withOpacity(0.26),
+                        Colors.black.withValues(alpha: 0.26),
                         Colors.transparent,
                       ],
                     ),
@@ -643,7 +760,7 @@ class _MatchProfileCard extends ConsumerWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.45),
+                    color: Colors.black.withValues(alpha: 0.45),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -702,10 +819,11 @@ class _MatchProfileCard extends ConsumerWidget {
         // vocabulary fields are localized for display via context.localizeValue.
         _infoRow(Icons.location_on_outlined, l10n.location, _location),
         _infoRow(Icons.straighten, l10n.height, profile.height),
+        // Education / Occupation show the full hierarchy (§13).
         _infoRow(Icons.school_outlined, l10n.education,
-            context.localizeValue(profile.education)),
+            profile.educationDisplay(context.localizeValue)),
         _infoRow(Icons.work_outline_rounded, l10n.profession,
-            context.localizeValue(profile.occupation)),
+            profile.occupationDisplay(context.localizeValue)),
         _infoRow(Icons.groups_outlined, l10n.community,
             context.localizeValue(profile.caste ?? '')),
       ],
@@ -715,7 +833,7 @@ class _MatchProfileCard extends ConsumerWidget {
   Widget _verifiedChip(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: AppColors.success.withOpacity(0.12),
+          color: AppColors.success.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -743,7 +861,7 @@ class _MatchProfileCard extends ConsumerWidget {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
+              color: AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, size: 17, color: AppColors.primary),

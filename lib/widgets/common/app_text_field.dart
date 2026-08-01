@@ -20,6 +20,11 @@ class AppTextField extends StatelessWidget {
   final List<TextInputFormatter>? inputFormatters;
   final bool enabled;
   final TextCapitalization textCapitalization;
+  final FocusNode? focusNode;
+
+  /// Inline error rendered directly under the field (§10). Independent of
+  /// [validator], so [InlineValidation] can drive it without a Form.
+  final String? errorText;
 
   const AppTextField({
     super.key,
@@ -40,12 +45,16 @@ class AppTextField extends StatelessWidget {
     this.inputFormatters,
     this.enabled = true,
     this.textCapitalization = TextCapitalization.none,
+    this.focusNode,
+    this.errorText,
   });
 
   @override
   Widget build(BuildContext context) {
+    final error = (errorText ?? '').isEmpty ? null : errorText;
     return TextFormField(
       controller: controller,
+      focusNode: focusNode,
       keyboardType: keyboardType,
       validator: validator,
       obscureText: obscureText,
@@ -60,6 +69,8 @@ class AppTextField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
+        errorText: error,
+        errorMaxLines: 2,
         // Hide the character counter that maxLength would otherwise show.
         counterText: maxLength != null ? '' : null,
         suffixIcon: suffixIcon,
@@ -71,11 +82,14 @@ class AppTextField extends StatelessWidget {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+          borderSide:
+              BorderSide(color: error != null ? Colors.red : Colors.grey[300]!),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: BorderSide(
+              color: error != null ? Colors.red : AppColors.primary,
+              width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

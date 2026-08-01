@@ -48,7 +48,7 @@ class UserModel {
     required this.updatedAt,
     this.lastLoginAt,
     // Four switches only, all hidden by default (§16/§17). See [ProfilePrivacy].
-    this.privacySettings = ProfilePrivacy.allHidden,
+    this.privacySettings = ProfilePrivacy.defaults,
     this.fcmToken,
     this.preferredLanguage,
   });

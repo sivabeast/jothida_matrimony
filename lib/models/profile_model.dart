@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/data/career_data.dart';
+
 /// Safely coerce a dynamic value into a List<String>.
 ///
 /// Tolerates a single String (e.g. a dropdown value like "Any" or "B.E"),
@@ -15,8 +17,14 @@ List<String> toStringList(dynamic value) {
   return const [];
 }
 
-/// The ONLY four privacy switches the app offers (§15/§16), and the rule that
-/// every one of them defaults to HIDDEN (§17).
+/// The ONLY four privacy switches the app offers (§12), and the rule that
+/// every one of them defaults to **OFF**.
+///
+/// Nothing is hidden until the member explicitly turns a switch on: a brand-new
+/// profile is fully visible, and a legacy document missing these keys is read as
+/// "nothing hidden" rather than silently hiding data the member never asked to
+/// hide. (This reverses the earlier default-hidden behaviour, which switched
+/// every option on for everybody.)
 ///
 /// The retired switches (`hideAddress`, `hideFamilyDetails`,
 /// `hideAdditionalPhotos`) are deliberately absent: the app never collects an
@@ -33,21 +41,19 @@ class ProfilePrivacy {
   /// The four keys, in the order the Privacy Settings screen lists them.
   static const List<String> keys = [phone, salary, horoscope, photo];
 
-  /// Default state: everything hidden (§17). Applied to brand-new profiles and
-  /// used to backfill any key an older document is missing — so a legacy
-  /// profile that never had these fields is treated as fully private rather
-  /// than silently exposing data.
-  static const Map<String, bool> allHidden = {
-    phone: true,
-    salary: true,
-    horoscope: true,
-    photo: true,
+  /// Default state: every switch OFF (§12). Applied to brand-new profiles and
+  /// used to backfill any key a document is missing.
+  static const Map<String, bool> defaults = {
+    phone: false,
+    salary: false,
+    horoscope: false,
+    photo: false,
   };
 
   /// Reads a stored map defensively: coerces string/number values, ignores the
-  /// retired keys and backfills the missing ones with "hidden".
+  /// retired keys and backfills the missing ones with "not hidden".
   static Map<String, bool> fromMap(dynamic raw) {
-    final out = Map<String, bool>.from(allHidden);
+    final out = Map<String, bool>.from(defaults);
     if (raw is Map) {
       for (final key in keys) {
         if (raw.containsKey(key)) out[key] = _boolOf(raw[key]);
@@ -61,10 +67,10 @@ class ProfilePrivacy {
     return out;
   }
 
-  /// Whether [key] is hidden. Anything unknown counts as hidden — the safe
-  /// direction for a privacy flag.
+  /// Whether [key] is hidden. An absent / unparseable value counts as NOT
+  /// hidden — the switch is only on when the member turned it on (§12).
   static bool isHidden(Map<String, bool> settings, String key) =>
-      settings[key] ?? true;
+      settings[key] ?? false;
 
   static bool _boolOf(dynamic v) {
     if (v is bool) return v;
@@ -74,7 +80,7 @@ class ProfilePrivacy {
       if (s == 'true' || s == '1' || s == 'yes') return true;
       if (s == 'false' || s == '0' || s == 'no') return false;
     }
-    return true; // unknown → hidden
+    return false; // unknown → not hidden
   }
 }
 
@@ -104,7 +110,20 @@ class ProfileModel {
   final String? casteId;
   final String? subCaste;
   final String? subCasteId;
+
+  /// Education LEVEL — one of [CareerData.educationLevels] (§5). The grouping
+  /// layer above [education]; empty on documents written before the hierarchy
+  /// existed, in which case [CareerData.levelForDegree] recovers it.
+  final String educationLevel;
+
+  /// The course / degree itself. Storage is unchanged from the flat-list era
+  /// (and identical to the website's `education`), so matching, filters and the
+  /// admin panel keep working.
   final String education;
+
+  /// Employment STATUS — one of [CareerData.employmentStatuses] (§6). Empty on
+  /// legacy documents; [CareerData.statusForOccupation] recovers it.
+  final String employmentStatus;
   final String occupation;
   final String annualIncome;
   final String country;
@@ -152,10 +171,10 @@ class ProfileModel {
   // completely, so there is no gallery anywhere in the app.
   final String? profilePhotoUrl;
 
-  /// What this member keeps hidden from other members (§15–§18). Only four
+  /// What this member keeps hidden from other members (§12). Only four
   /// switches exist — `hidePhone`, `hideSalary`, `hideHoroscope`,
-  /// `hidePhoto` — and ALL default to hidden (`true`). Accepting an interest
-  /// never flips them; only the owner can, from Privacy Settings.
+  /// `hidePhoto` — and ALL default to OFF (`false`): nothing is hidden until
+  /// the member turns a switch on themselves, from Privacy Settings.
   ///
   /// Stored on the PUBLIC profile document (like `contactPrivacy`) so a viewer
   /// can honour it without reading the owner's private `users/{uid}` record.
@@ -213,7 +232,9 @@ class ProfileModel {
     this.casteId,
     this.subCaste,
     this.subCasteId,
+    this.educationLevel = '',
     required this.education,
+    this.employmentStatus = '',
     required this.occupation,
     required this.annualIncome,
     required this.country,
@@ -241,7 +262,7 @@ class ProfileModel {
     this.citizenship,
     this.lifestyle = const LifestyleDetails(),
     this.profilePhotoUrl,
-    this.privacySettings = ProfilePrivacy.allHidden,
+    this.privacySettings = ProfilePrivacy.defaults,
     required this.horoscope,
     required this.family,
     required this.partnerPreferences,
@@ -283,7 +304,9 @@ class ProfileModel {
       casteId: d['casteId'],
       subCaste: d['subCaste'],
       subCasteId: d['subCasteId'],
+      educationLevel: d['educationLevel'] ?? '',
       education: d['education'] ?? '',
+      employmentStatus: d['employmentStatus'] ?? '',
       occupation: d['occupation'] ?? '',
       annualIncome: d['annualIncome'] ?? '',
       country: d['country'] ?? 'India',
@@ -353,7 +376,9 @@ class ProfileModel {
         'casteId': casteId,
         'subCaste': subCaste,
         'subCasteId': subCasteId,
+        'educationLevel': educationLevel,
         'education': education,
+        'employmentStatus': employmentStatus,
         'occupation': occupation,
         'annualIncome': annualIncome,
         'country': country,
@@ -420,6 +445,56 @@ class ProfileModel {
   String displayName(bool tamil) =>
       tamil && fullNameTamil.trim().isNotEmpty ? fullNameTamil : fullName;
 
+  // ── Education / career hierarchy (§13) ───────────────────────────────────
+  //
+  // The stored level/status is used when present; otherwise it is recovered
+  // from the flat value, so a profile written before the hierarchy existed
+  // still renders "Level → Course" and "Status → Sector → Occupation".
+
+  String get effectiveEducationLevel => educationLevel.trim().isNotEmpty
+      ? educationLevel.trim()
+      : (CareerData.levelForDegree(education) ?? '');
+
+  String get effectiveEmploymentStatus => employmentStatus.trim().isNotEmpty
+      ? employmentStatus.trim()
+      : (CareerData.statusForOccupation(occupation,
+              employmentType: employmentType) ??
+          '');
+
+  String get effectiveSector =>
+      CareerData.sectorForOccupation(occupation, employmentType: employmentType) ??
+      '';
+
+  /// "UG · B.E" — the education LEVEL (localized) followed by the course /
+  /// degree, which stays in English exactly as the website presents it (§9).
+  /// [localize] is normally `context.localizeValue`.
+  String educationDisplay(String Function(String) localize) {
+    final level = effectiveEducationLevel;
+    final degree = education.trim();
+    if (level.isEmpty) return degree;
+    if (degree.isEmpty || degree.toLowerCase() == level.toLowerCase()) {
+      return localize(level);
+    }
+    return '${localize(level)} · $degree';
+  }
+
+  /// "Employed · Private · Software Engineer" — the employment STATUS and
+  /// SECTOR are localized; the occupation title stays English (§9). Statuses
+  /// without an occupation (Student / Job Seeker / Homemaker / Retired) render
+  /// as just the status.
+  String occupationDisplay(String Function(String) localize) {
+    final status = effectiveEmploymentStatus;
+    final occ = occupation.trim();
+    if (status.isEmpty) return occ;
+    final parts = <String>[localize(status)];
+    if (CareerData.statusHasOccupation(status)) {
+      final sector = effectiveSector;
+      if (sector.isNotEmpty) parts.add(localize(sector));
+      if (occ.isNotEmpty) parts.add(occ);
+    }
+    return parts.join(' · ');
+  }
+
   /// True when this member chose to share contact publicly (§17/§18) — any
   /// signed-in viewer may see it, without a mutually-accepted interest.
   bool get isContactPublic => contactPrivacy == 'public';
@@ -475,7 +550,9 @@ class ProfileModel {
       casteId: d['casteId'],
       subCaste: d['subCaste'],
       subCasteId: d['subCasteId'],
+      educationLevel: d['educationLevel'] ?? '',
       education: d['education'] ?? '',
+      employmentStatus: d['employmentStatus'] ?? '',
       occupation: d['occupation'] ?? '',
       annualIncome: d['annualIncome'] ?? '',
       country: d['country'] ?? 'India',
@@ -538,7 +615,9 @@ class ProfileModel {
         'casteId': casteId,
         'subCaste': subCaste,
         'subCasteId': subCasteId,
+        'educationLevel': educationLevel,
         'education': education,
+        'employmentStatus': employmentStatus,
         'occupation': occupation,
         'annualIncome': annualIncome,
         'country': country,
@@ -593,7 +672,9 @@ class ProfileModel {
     String? casteId,
     String? subCaste,
     String? subCasteId,
+    String? educationLevel,
     String? education,
+    String? employmentStatus,
     String? occupation,
     String? annualIncome,
     String? country,
@@ -657,7 +738,9 @@ class ProfileModel {
         casteId: casteId ?? this.casteId,
         subCaste: subCaste ?? this.subCaste,
         subCasteId: subCasteId ?? this.subCasteId,
+        educationLevel: educationLevel ?? this.educationLevel,
         education: education ?? this.education,
+        employmentStatus: employmentStatus ?? this.employmentStatus,
         occupation: occupation ?? this.occupation,
         annualIncome: annualIncome ?? this.annualIncome,
         country: country ?? this.country,
@@ -726,7 +809,9 @@ class ProfileModel {
         casteId: casteId,
         subCaste: subCaste,
         subCasteId: subCasteId,
+        educationLevel: educationLevel,
         education: education,
+        employmentStatus: employmentStatus,
         occupation: occupation,
         annualIncome: annualIncome,
         country: country,

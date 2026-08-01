@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../core/data/career_data.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/value_l10n.dart';
@@ -208,7 +209,10 @@ class MyProfileScreen extends ConsumerWidget {
               sectionTitle: 'Basic Details', fieldsBuilder: basicDetailsFields),
           rows: [
             [l('Profile For'), lv(p.profileCreatedFor)],
-            [l('Name'), p.displayName(context.isTamil)],
+            // BOTH names are shown, always (§14) — the canonical English name
+            // and the Tamil-script one, whichever language the app is in.
+            [l('Name'), p.fullName],
+            [l('Name (Tamil)'), p.fullNameTamil],
             [l('Gender'), lv(p.gender)],
             [l('Age'), _ageText(context, p.age)],
             [l('Height'), _heightText(context, s(p.height))],
@@ -235,15 +239,29 @@ class MyProfileScreen extends ConsumerWidget {
         _SectionCard(
           icon: Icons.work_outline,
           title: 'Career',
-          // Field-level editing: edit ONLY the chosen career field.
-          onEdit: () => showProfileFieldSheet(context,
-              sectionTitle: 'Career', fieldsBuilder: careerFields),
+          // Education and Occupation are dependent cascades (§5/§6), so the
+          // whole section is edited on its own screen rather than field by
+          // field — picking a level/status changes what the next field offers.
+          onEdit: () => context.push('/edit/education'),
           rows: [
-            [l('Education'), lv(p.education)],
-            [l('Occupation'), lv(p.occupation)],
-            [l('Course / Degree'), lv(p.courseDegree)],
-            [l('Employment Type'), lv(p.employmentType)],
-            [l('Annual Income'), lv(p.annualIncome)],
+            // Education Level -> Course / Degree (§13). The level is localized;
+            // the degree stays in English exactly like the website (§9).
+            [l('Education Level'), lv(p.effectiveEducationLevel)],
+            [l('Course / Degree'), p.education],
+            // Employment Status -> Government/Private -> Occupation (§13).
+            [l('Employment Status'), lv(p.effectiveEmploymentStatus)],
+            if (CareerData.statusHasOccupation(p.effectiveEmploymentStatus)) ...[
+              [
+                p.effectiveEmploymentStatus == CareerData.statusSelfEmployed
+                    ? l('Business / Profession')
+                    : l('Government / Private'),
+                lv(p.effectiveSector)
+              ],
+              [l('Occupation'), p.occupation],
+              [l('Annual Income'), lv(p.annualIncome)],
+            ],
+            if (p.effectiveEmploymentStatus == CareerData.statusStudent)
+              [l('Course / Degree'), lv(p.courseDegree)],
           ],
         ),
         _SectionCard(
@@ -256,8 +274,6 @@ class MyProfileScreen extends ConsumerWidget {
             [l('Caste'), lv(p.caste)],
             [l('Sub Caste'), lv(p.subCaste)],
             [l('Mother Tongue'), lv(p.motherTongue)],
-            [l('Gothram'), lv(p.gothram)],
-            [l('Kuladeivam'), lv(p.kuladeivam)],
           ],
         ),
         // Family Details (§5) — editable like every other section.
@@ -520,79 +536,6 @@ List<ProfileEditableField> basicDetailsFields(BuildContext c, ProfileModel p) {
       options: AppConstants.physicalStatusList,
       apply: (pr, v) => pr.copyWith(physicalStatus: v as String),
       patch: (v) => {'physicalStatus': v},
-    ),
-  ];
-}
-
-/// Field-level editable descriptors for the **Career** section.
-List<ProfileEditableField> careerFields(BuildContext c, ProfileModel p) {
-  final l = c.l10n;
-  return [
-    ProfileEditableField(
-      label: l.education,
-      kind: ProfileFieldKind.options,
-      value: p.education,
-      options: AppConstants.educationList,
-      apply: (pr, v) => pr.copyWith(education: v as String),
-      patch: (v) => {'education': v},
-    ),
-    ProfileEditableField(
-      label: l.occupation,
-      kind: ProfileFieldKind.options,
-      value: p.occupation,
-      options: AppConstants.occupationList,
-      apply: (pr, v) => pr.copyWith(occupation: v as String),
-      patch: (v) => {'occupation': v},
-    ),
-    ProfileEditableField(
-      label: l.courseDegree,
-      kind: ProfileFieldKind.text,
-      value: p.courseDegree ?? '',
-      localizeValues: false,
-      apply: (pr, v) => pr.copyWith(courseDegree: v as String),
-      patch: (v) => {'courseDegree': v},
-    ),
-    ProfileEditableField(
-      label: l.employmentType,
-      kind: ProfileFieldKind.options,
-      value: p.employmentType,
-      options: AppConstants.employmentTypeList,
-      apply: (pr, v) => pr.copyWith(employmentType: v as String),
-      patch: (v) => {'employmentType': v},
-    ),
-    ProfileEditableField(
-      label: l.companyName,
-      kind: ProfileFieldKind.text,
-      value: p.companyName ?? '',
-      localizeValues: false,
-      apply: (pr, v) => pr.copyWith(companyName: v as String),
-      patch: (v) => {'companyName': v},
-    ),
-    ProfileEditableField(
-      label: l.collegeName,
-      kind: ProfileFieldKind.text,
-      value: p.collegeName ?? '',
-      localizeValues: false,
-      apply: (pr, v) => pr.copyWith(collegeName: v as String),
-      patch: (v) => {'collegeName': v},
-    ),
-    ProfileEditableField(
-      label: l.workLocation,
-      kind: ProfileFieldKind.text,
-      value: p.workLocation ?? '',
-      localizeValues: false,
-      apply: (pr, v) => pr.copyWith(workLocation: v as String),
-      patch: (v) => {'workLocation': v},
-    ),
-    // Salary (§5) — editable like everything else; whether OTHERS can see it
-    // is a separate Privacy Settings switch (§16).
-    ProfileEditableField(
-      label: l.annualIncome,
-      kind: ProfileFieldKind.options,
-      value: p.annualIncome,
-      options: AppConstants.incomeList,
-      apply: (pr, v) => pr.copyWith(annualIncome: v as String),
-      patch: (v) => {'annualIncome': v},
     ),
   ];
 }

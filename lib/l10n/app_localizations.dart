@@ -62,7 +62,8 @@ import 'app_localizations_ta.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -70,7 +71,8 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -82,17 +84,18 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
-    Locale('ta')
+    Locale('ta'),
   ];
 
   /// No description provided for @appTitle.
@@ -3443,6 +3446,102 @@ abstract class AppLocalizations {
   /// **'e.g. B.E Computer Science'**
   String get courseDegreeHint;
 
+  /// No description provided for @swipeToBrowse.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe left or right to browse profiles'**
+  String get swipeToBrowse;
+
+  /// No description provided for @educationLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Education Level'**
+  String get educationLevel;
+
+  /// No description provided for @employmentStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Employment Status'**
+  String get employmentStatus;
+
+  /// No description provided for @governmentOrPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Government / Private'**
+  String get governmentOrPrivate;
+
+  /// No description provided for @businessOrProfession.
+  ///
+  /// In en, this message translates to:
+  /// **'Business / Profession'**
+  String get businessOrProfession;
+
+  /// No description provided for @detectingFace.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding the face…'**
+  String get detectingFace;
+
+  /// No description provided for @faceCenteredHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Face detected and centred. Adjust if you like.'**
+  String get faceCenteredHint;
+
+  /// No description provided for @adjustPhotoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to move, pinch or use the buttons to zoom.'**
+  String get adjustPhotoHint;
+
+  /// No description provided for @zoomIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get zoomIn;
+
+  /// No description provided for @zoomOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get zoomOut;
+
+  /// No description provided for @resetCrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get resetCrop;
+
+  /// No description provided for @previewPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get previewPhoto;
+
+  /// No description provided for @photoPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile photo'**
+  String get photoPreviewTitle;
+
+  /// No description provided for @photoPreviewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This is how other members will see your photo.'**
+  String get photoPreviewHint;
+
+  /// No description provided for @usePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this photo'**
+  String get usePhoto;
+
+  /// No description provided for @adjustAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust again'**
+  String get adjustAgain;
+
   /// No description provided for @religiousInformation.
   ///
   /// In en, this message translates to:
@@ -4208,7 +4307,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyDefaultNote.
   ///
   /// In en, this message translates to:
-  /// **'These are hidden by default and stay hidden — accepting an interest never reveals them. Only you can change these settings.'**
+  /// **'Every option is OFF by default — nothing is hidden until you turn it on here. Only you can change these settings.'**
   String get privacyDefaultNote;
 
   /// No description provided for @shareContactPublicly.
@@ -5010,7 +5109,8 @@ abstract class AppLocalizations {
   String get interestSentShort;
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -5019,25 +5119,26 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['en', 'ta'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['en', 'ta'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
-
-
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en': return AppLocalizationsEn();
-    case 'ta': return AppLocalizationsTa();
+    case 'en':
+      return AppLocalizationsEn();
+    case 'ta':
+      return AppLocalizationsTa();
   }
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
+    'that was used.',
   );
 }

@@ -31,13 +31,11 @@ android {
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
+    // AGP 8.11 + Kotlin 2.2 + the current AndroidX / ML Kit artifacts all
+    // require Java 17 bytecode; CI already runs on temurin 17.
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     defaultConfig {
@@ -121,6 +119,13 @@ gradle.taskGraph.whenReady { graph ->
                 "locally (or written from\n" +
                 "secrets in CI) before building a release APK/AAB. " +
                 "See FIREBASE_SETUP.md.\n")
+    }
+}
+
+// `kotlinOptions { }` is deprecated in Kotlin 2.x — this is the replacement.
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 

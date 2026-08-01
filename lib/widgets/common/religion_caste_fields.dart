@@ -46,6 +46,12 @@ class ReligionCasteFields extends ConsumerStatefulWidget {
   final bool showSubcaste;
   final double gap;
 
+  /// Inline validation messages (§10), each rendered under its own field so a
+  /// composite widget still reports errors exactly where they belong.
+  final String? religionError;
+  final String? casteError;
+  final String? subCasteError;
+
   const ReligionCasteFields({
     super.key,
     required this.religionId,
@@ -62,6 +68,9 @@ class ReligionCasteFields extends ConsumerStatefulWidget {
     this.subcasteRequired = false,
     this.showSubcaste = true,
     this.gap = 16,
+    this.religionError,
+    this.casteError,
+    this.subCasteError,
   });
 
   @override
@@ -119,6 +128,7 @@ class _ReligionCasteFieldsState extends ConsumerState<ReligionCasteFields> {
           prefixIcon: Icons.spa_outlined,
           isRequired: widget.religionRequired,
           enabled: !religionsAsync.isLoading,
+          errorText: widget.religionError,
           items: religionItems,
           value: widget.religionName,
           onChanged: (name) {
@@ -144,6 +154,7 @@ class _ReligionCasteFieldsState extends ConsumerState<ReligionCasteFields> {
           prefixIcon: Icons.groups_outlined,
           isRequired: widget.casteRequired,
           enabled: _hasReligion && !castesAsync.isLoading,
+          errorText: widget.casteError,
           items: casteItems,
           value: widget.casteName,
           onChanged: (name) {
@@ -168,6 +179,7 @@ class _ReligionCasteFieldsState extends ConsumerState<ReligionCasteFields> {
             prefixIcon: Icons.account_tree_outlined,
             isRequired: widget.subcasteRequired,
             enabled: _hasCaste && !subcastesAsync.isLoading,
+            errorText: widget.subCasteError,
             items: subcasteItems,
             value: widget.subCasteName,
             onChanged: (name) {

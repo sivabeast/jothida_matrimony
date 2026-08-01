@@ -42,6 +42,10 @@ class SearchableField extends StatelessWidget {
   /// "Others" sentinel with the localized label.
   final String Function(String item)? itemLabel;
 
+  /// Inline error rendered under the field and used to paint the border red
+  /// (§10). Set by [InlineValidation]; null means "no error".
+  final String? errorText;
+
   const SearchableField({
     super.key,
     required this.label,
@@ -53,10 +57,13 @@ class SearchableField extends StatelessWidget {
     this.prefixIcon,
     this.popupMode = SearchablePopupMode.menu,
     this.itemLabel,
+    this.errorText,
   });
 
   @override
   Widget build(BuildContext context) {
+    final error = (errorText ?? '').isEmpty ? null : errorText;
+    final errorColor = Theme.of(context).colorScheme.error;
     return DropdownSearch<String>(
       items: items,
       selectedItem: selectedItem,
@@ -86,14 +93,29 @@ class SearchableField extends StatelessWidget {
           prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
           filled: true,
           fillColor: enabled ? Colors.grey[50] : Colors.grey[200],
+          // The inline message (§10) is rendered here so it sits directly
+          // BELOW this field — never collected at the bottom of the page.
+          errorText: error,
+          errorMaxLines: 2,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey[300]!),
+            borderSide: BorderSide(
+                color: error != null ? errorColor : Colors.grey[300]!),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+            borderSide: BorderSide(
+                color: error != null ? errorColor : AppColors.primary,
+                width: 1.5),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: errorColor),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: errorColor, width: 1.5),
           ),
         ),
       ),

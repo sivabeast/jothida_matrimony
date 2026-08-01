@@ -1,11 +1,13 @@
 name: jothida_matrimony
 description: Jothida Matrimony - Tamil Matrimony App with Horoscope & Porutham Analysis
 publish_to: 'none'
-version: 1.1.1+5
+version: 1.2.0+6
 
 environment:
-  sdk: '>=3.3.0 <4.0.0'
-  flutter: '>=3.19.0'
+  # in_app_purchase_android 0.5.0+ (Play Billing Library 8.0.0) requires
+  # Flutter 3.44 / Dart 3.12 — keep .github/workflows/ci.yml in sync.
+  sdk: '>=3.12.0 <4.0.0'
+  flutter: '>=3.44.0'
 
 dependencies:
   flutter:
@@ -38,8 +40,16 @@ dependencies:
   # Navigation
   go_router: ^14.3.0
 
-  # Payment — Google Play Billing (official Flutter plugin)
-  in_app_purchase: ^3.2.0
+  # Payment — Google Play Billing (official Flutter plugin).
+  #
+  # `in_app_purchase_android` is pinned DIRECTLY (not just pulled in as a
+  # transitive dependency) because the Play Billing Library version is decided
+  # by that package: 0.5.0 upgraded it from 7.1.1 to **8.0.0**, which is what
+  # Google Play requires from 31 Aug 2026. Leaving it transitive let pub keep
+  # resolving 0.4.0+3 (Billing 7.x) and Play kept reporting a deprecated
+  # Billing Library. Do not relax this floor.
+  in_app_purchase: ^3.3.0
+  in_app_purchase_android: ^0.5.0
 
   # Environment
   flutter_dotenv: ^5.2.1
@@ -51,6 +61,11 @@ dependencies:
   # screen (lib/core/utils/image_crop.dart) and the optimized profile-photo
   # export. No native/platform configuration required.
   image: ^4.5.4
+  # On-device face detection for the profile photo (§11): the crop screen uses
+  # it to centre the square on the member's face before they fine-tune it.
+  # Runs entirely on the device (no network, no image ever leaves the phone);
+  # when it finds nothing, the screen simply opens in manual-crop mode.
+  google_mlkit_face_detection: ^0.14.0
   # Wide range: Flutter 3.27 pins intl 0.19.0, Flutter 3.41 (CI) pins 0.20.2.
   intl: ">=0.19.0 <0.21.0"
   cupertino_icons: ^1.0.8

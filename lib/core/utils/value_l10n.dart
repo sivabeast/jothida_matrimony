@@ -68,15 +68,24 @@ const Map<String, String> kTamilValueMap = {
   'Non-Smoker': 'புகைப்பிடிக்காதவர்',
   'Non-Drinker': 'மது அருந்தாதவர்',
 
-  // ── Employment type ──
-  'Government': 'அரசு வேலை',
+  // ── Employment STATUS + SECTOR (§6) ──
+  // Occupation TITLES are deliberately absent from this file: "Software
+  // Engineer", "Doctor", "Teacher"… must render in English on both platforms
+  // (§9). Only the status/sector vocabulary is translated.
+  'Employed': 'பணியில் உள்ளார்',
+  'Job Seeker': 'வேலை தேடுபவர்',
+  'Retired': 'ஓய்வு பெற்றவர்',
+  'Homemaker': 'இல்லத்தரசி',
+  'Student': 'மாணவர்',
+  'Government': 'அரசு',
   'Government Job': 'அரசு வேலை',
-  'Private': 'தனியார் வேலை',
+  'Private': 'தனியார்',
   'Private Job': 'தனியார் வேலை',
   'Business': 'வணிகம்',
-  'Self Employed': 'சுய தொழில்',
-  'Self-Employed': 'சுய தொழில்',
-  'Not Working': 'வேலையில் இல்லை',
+  'Profession': 'தொழில்முறை',
+  'Self Employed': 'சுயதொழில்',
+  'Self-Employed': 'சுயதொழில்',
+  'Not Working': 'வேலை இல்லை',
   'Defence': 'பாதுகாப்புத் துறை',
   'Civil Services': 'குடிமைப் பணிகள்',
 
@@ -99,7 +108,10 @@ const Map<String, String> kTamilValueMap = {
   'Hindi': 'இந்தி',
   'English': 'ஆங்கிலம்',
 
-  // ── Education (common levels) ──
+  // ── Education LEVEL (§5) ──
+  // Only the LEVEL is translated. Degree names (B.E, M.Sc, MBBS, CA…) stay in
+  // English exactly as the website presents them (§9) — that is why there is
+  // no entry for any UG/PG qualification below.
   'Below 10th': '10ஆம் வகுப்புக்குக் கீழ்',
   '10th': '10ஆம் வகுப்பு',
   '10th Standard': '10ஆம் வகுப்பு',
@@ -107,29 +119,16 @@ const Map<String, String> kTamilValueMap = {
   '12th Standard': '12ஆம் வகுப்பு',
   'Diploma': 'டிப்ளமோ',
   'ITI': 'ஐடிஐ',
+  'UG': 'இளங்கலை (UG)',
+  'PG': 'முதுகலை (PG)',
+  'Doctorate': 'முனைவர் (Doctorate)',
+  // Legacy level names still stored on older profiles.
   'Bachelors': 'இளங்கலை பட்டம்',
   "Bachelor's Degree": 'இளங்கலை பட்டம்',
   'Masters': 'முதுகலை பட்டம்',
   "Master's Degree": 'முதுகலை பட்டம்',
-  'Doctorate': 'முனைவர் பட்டம்',
   'PhD': 'முனைவர் பட்டம்',
 
-  // ── Common occupations ──
-  'Software Professional': 'மென்பொருள் நிபுணர்',
-  'Software Engineer': 'மென்பொருள் பொறியாளர்',
-  'Engineer': 'பொறியாளர்',
-  'Doctor': 'மருத்துவர்',
-  'Teacher': 'ஆசிரியர்',
-  'Professor': 'பேராசிரியர்',
-  'Lawyer': 'வழக்கறிஞர்',
-  'Accountant': 'கணக்காளர்',
-  'Banker': 'வங்கி ஊழியர்',
-  'Business Owner': 'வணிக உரிமையாளர்',
-  'Farmer': 'விவசாயி',
-  'Nurse': 'செவிலியர்',
-  'Police': 'காவலர்',
-  'Homemaker': 'இல்லத்தரசி',
-  'Student': 'மாணவர்',
   'Others': 'மற்றவை',
   'Other': 'மற்றவை',
   'Any': 'ஏதேனும்',

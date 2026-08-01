@@ -1,3 +1,5 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -451,7 +453,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get interestWithdrawn => 'Interest withdrawn';
 
   @override
-  String get withdrawConfirmMsg => 'Withdraw this interest? They will no longer see it.';
+  String get withdrawConfirmMsg =>
+      'Withdraw this interest? They will no longer see it.';
 
   @override
   String get blockedUsers => 'Blocked Users';
@@ -463,7 +466,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unblock => 'Unblock';
 
   @override
-  String get unblockConfirmMsg => 'Unblock this user? They will be able to see and contact you again.';
+  String get unblockConfirmMsg =>
+      'Unblock this user? They will be able to see and contact you again.';
 
   @override
   String get noBlockedUsers => 'You haven\'t blocked anyone yet.';
@@ -511,7 +515,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get upgradeToPremium => 'Upgrade to Premium';
 
   @override
-  String get premiumSubtitle => 'Get unlimited access & free astrologer consultations';
+  String get premiumSubtitle =>
+      'Get unlimited access & free astrologer consultations';
 
   @override
   String get married => 'Married';
@@ -642,7 +647,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noReviewsYet => 'No reviews yet. Be the first to rate.';
 
   @override
-  String get completeProfileToRate => 'Complete your profile to rate astrologers.';
+  String get completeProfileToRate =>
+      'Complete your profile to rate astrologers.';
 
   @override
   String get ratingSubmitted => 'Thank you! Your rating has been submitted.';
@@ -651,7 +657,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ratingUpdated => 'Your rating has been updated.';
 
   @override
-  String get couldNotSubmitRating => 'Could not submit your rating. Please try again.';
+  String get couldNotSubmitRating =>
+      'Could not submit your rating. Please try again.';
 
   @override
   String get shareYourExperience => 'Share your experience…';
@@ -738,13 +745,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteAccount => 'Delete Account';
 
   @override
-  String get deleteAccountSubtitle => 'Permanently delete your account and all data';
+  String get deleteAccountSubtitle =>
+      'Permanently delete your account and all data';
 
   @override
-  String get deleteAccountWarning => 'This action is permanent and cannot be undone.\nAll your profile data, photos, interests, horoscope details and account information will be permanently deleted.';
+  String get deleteAccountWarning =>
+      'This action is permanent and cannot be undone.\nAll your profile data, photos, interests, horoscope details and account information will be permanently deleted.';
 
   @override
-  String get couldNotDeleteAccount => 'Could not delete your account. Please try again.';
+  String get couldNotDeleteAccount =>
+      'Could not delete your account. Please try again.';
 
   @override
   String get viewPhoto => 'View Photo';
@@ -783,13 +793,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileUnavailable => 'Profile unavailable';
 
   @override
-  String get memberDetailsUnavailable => 'This member\'s details could not be loaded.';
+  String get memberDetailsUnavailable =>
+      'This member\'s details could not be loaded.';
 
   @override
   String get couldNotLoadFamilyDetails => 'Could not load family details';
 
   @override
-  String get addFamilyFromPersonalDetails => 'Add your family details from Personal Details to see your family tree here.';
+  String get addFamilyFromPersonalDetails =>
+      'Add your family details from Personal Details to see your family tree here.';
 
   @override
   String memberNoFamilyDetails(String name) {
@@ -821,7 +833,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pressBackToExit => 'Press back again to exit';
 
   @override
-  String get signInFailed => 'Sign in failed. Please check your credentials and try again.';
+  String get signInFailed =>
+      'Sign in failed. Please check your credentials and try again.';
 
   @override
   String get googleSignInFailed => 'Google Sign-In failed. Please try again.';
@@ -857,7 +870,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get couldntLoadInterests => 'Couldn\'t load interests';
 
   @override
-  String get checkConnectionRetry => 'Please check your connection and try again.';
+  String get checkConnectionRetry =>
+      'Please check your connection and try again.';
 
   @override
   String get interestStartHint => 'Send or receive an interest to get started.';
@@ -872,10 +886,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileUnavailableMatch => 'Profile unavailable for this match.';
 
   @override
-  String get horoscopeUnavailableMember => 'Horoscope match unavailable for this member.';
+  String get horoscopeUnavailableMember =>
+      'Horoscope match unavailable for this member.';
 
   @override
-  String get sentAcceptedHint => 'Accepted — open the Accepted tab to view contact.';
+  String get sentAcceptedHint =>
+      'Accepted — open the Accepted tab to view contact.';
 
   @override
   String get interestDeclinedStatus => 'This interest was declined.';
@@ -893,25 +909,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sending => 'Sending…';
 
   @override
-  String get reassignQuestion => 'If the astrologer doesn\'t respond within 24 hours';
+  String get reassignQuestion =>
+      'If the astrologer doesn\'t respond within 24 hours';
 
   @override
   String get reassignWaitOnly => 'Wait only for this astrologer';
 
   @override
-  String get reassignWaitOnlyDesc => 'Keep waiting for this astrologer. You can take action manually later.';
+  String get reassignWaitOnlyDesc =>
+      'Keep waiting for this astrologer. You can take action manually later.';
 
   @override
   String get reassignChooseLater => 'Let me choose another astrologer later';
 
   @override
-  String get reassignChooseLaterDesc => 'We\'ll notify you so you can pick a new astrologer yourself.';
+  String get reassignChooseLaterDesc =>
+      'We\'ll notify you so you can pick a new astrologer yourself.';
 
   @override
   String get reassignAllowAdmin => 'Allow admin to assign another astrologer';
 
   @override
-  String get reassignAllowAdminDesc => 'Our team will assign another available astrologer for you.';
+  String get reassignAllowAdminDesc =>
+      'Our team will assign another available astrologer for you.';
 
   @override
   String get statusExpired => 'Expired';
@@ -932,13 +952,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statusRejected => 'Rejected';
 
   @override
-  String get expiredChooseAnotherMsg => 'The selected astrologer did not respond within the required time. Please choose another astrologer.';
+  String get expiredChooseAnotherMsg =>
+      'The selected astrologer did not respond within the required time. Please choose another astrologer.';
 
   @override
-  String get expiredAdminWillAssignMsg => 'The selected astrologer did not respond in time. An admin will assign another astrologer to your booking.';
+  String get expiredAdminWillAssignMsg =>
+      'The selected astrologer did not respond in time. An admin will assign another astrologer to your booking.';
 
   @override
-  String get expiredWaitOnlyMsg => 'This astrologer hasn\'t responded within 24 hours. You can keep waiting or choose another astrologer.';
+  String get expiredWaitOnlyMsg =>
+      'This astrologer hasn\'t responded within 24 hours. You can keep waiting or choose another astrologer.';
 
   @override
   String get chooseAnotherAstrologer => 'Choose Another Astrologer';
@@ -983,10 +1006,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get compatibleNakshatras => 'Compatible Nakshatras';
 
   @override
-  String get compatibleNakshatrasHint => 'Nakshatras compatible with your star. Compatible Matches shows profiles from these stars that also fit your partner preferences.';
+  String get compatibleNakshatrasHint =>
+      'Nakshatras compatible with your star. Compatible Matches shows profiles from these stars that also fit your partner preferences.';
 
   @override
-  String get matchingStarsUnavailable => 'Add your Nakshatra (or date of birth) in Horoscope Details to see your matching stars.';
+  String get matchingStarsUnavailable =>
+      'Add your Nakshatra (or date of birth) in Horoscope Details to see your matching stars.';
 
   @override
   String get community => 'Community';
@@ -1007,7 +1032,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noMatchingProfilesTitle => 'No Matching Profiles Yet';
 
   @override
-  String get noMatchingProfilesBody => 'No profiles are available right now. New members are continuously joining — every available profile will appear here, and the ones that satisfy your partner preferences are highlighted with a Best Match badge.';
+  String get noMatchingProfilesBody =>
+      'No profiles are available right now. New members are continuously joining — every available profile will appear here, and the ones that satisfy your partner preferences are highlighted with a Best Match badge.';
 
   @override
   String get couldNotLoadMatches => 'Could not load matches';
@@ -1030,7 +1056,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get couldNotSendInterest => 'Could not send interest. Please try again.';
+  String get couldNotSendInterest =>
+      'Could not send interest. Please try again.';
 
   @override
   String youMatchedWith(String name) {
@@ -1038,7 +1065,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get couldNotAcceptInterest => 'Could not accept interest. Please try again.';
+  String get couldNotAcceptInterest =>
+      'Could not accept interest. Please try again.';
 
   @override
   String get dailyInterestLimitTitle => 'Daily interest limit reached';
@@ -1061,7 +1089,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get matchingProfile => 'Best Match';
 
   @override
-  String get comingSoonBody => 'This feature is not available yet. We are working on it and it will be unlocked in an upcoming update. Stay tuned!';
+  String get comingSoonBody =>
+      'This feature is not available yet. We are working on it and it will be unlocked in an upcoming update. Stay tuned!';
 
   @override
   String get featureMarriageFixed => 'Marriage Fixed';
@@ -1097,7 +1126,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chooseConsultationReason => 'Choose your consultation reason';
 
   @override
-  String get noCategoriesAvailable => 'No consultation categories are available right now. Please try again later.';
+  String get noCategoriesAvailable =>
+      'No consultation categories are available right now. Please try again later.';
 
   @override
   String get selectDate => 'Select Date';
@@ -1106,10 +1136,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectSession => 'Select Session';
 
   @override
-  String get selectSessionMorningEvening => 'Select Session — Morning or Evening';
+  String get selectSessionMorningEvening =>
+      'Select Session — Morning or Evening';
 
   @override
-  String get noExactSlotsNote => 'No fixed time slots — after your booking is confirmed, our employee will contact you personally with the exact timing.';
+  String get noExactSlotsNote =>
+      'No fixed time slots — after your booking is confirmed, our employee will contact you personally with the exact timing.';
 
   @override
   String get morning => 'Morning';
@@ -1143,10 +1175,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get inPersonVisitNote => 'This is an in-person office visit. Choose your preferred date and session below.';
+  String get inPersonVisitNote =>
+      'This is an in-person office visit. Choose your preferred date and session below.';
 
   @override
-  String get bookingClosedMessage => 'Appointment booking is currently closed. Please check back later.';
+  String get bookingClosedMessage =>
+      'Appointment booking is currently closed. Please check back later.';
 
   @override
   String get noWorkingDaysThisWeek => 'No working days available this week.';
@@ -1158,22 +1192,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pleaseSelectDateSession => 'Please select a date and session.';
 
   @override
-  String get sessionJustFilled => 'That session just filled up. Please choose another.';
+  String get sessionJustFilled =>
+      'That session just filled up. Please choose another.';
 
   @override
-  String get sessionJustFilledNotCharged => 'That session just filled up (you were not charged for it). Please choose another.';
+  String get sessionJustFilledNotCharged =>
+      'That session just filled up (you were not charged for it). Please choose another.';
 
   @override
-  String get bookingFailed => 'Could not complete your booking. Please try again.';
+  String get bookingFailed =>
+      'Could not complete your booking. Please try again.';
 
   @override
-  String get paymentFailedNotCharged => 'Payment failed or cancelled. You have not been charged.';
+  String get paymentFailedNotCharged =>
+      'Payment failed or cancelled. You have not been charged.';
 
   @override
-  String get paymentOkBookingFailed => 'Payment succeeded but the booking could not be saved. Please contact support.';
+  String get paymentOkBookingFailed =>
+      'Payment succeeded but the booking could not be saved. Please contact support.';
 
   @override
-  String get completeOwnProfileFirst => 'Complete your own profile before booking an appointment.';
+  String get completeOwnProfileFirst =>
+      'Complete your own profile before booking an appointment.';
 
   @override
   String get morningSessionWindow => 'Morning Session (9:00 AM – 1:00 PM)';
@@ -1188,7 +1228,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appointmentBookedTitle => 'Your appointment is booked!';
 
   @override
-  String get visitOfficeAtScheduled => 'Please visit our office at the scheduled date and time.';
+  String get visitOfficeAtScheduled =>
+      'Please visit our office at the scheduled date and time.';
 
   @override
   String get bookingIdLabel => 'Booking ID';
@@ -1203,7 +1244,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exactTiming => 'Exact Timing';
 
   @override
-  String get exactTimingNote => 'Our employee will contact you personally to fix the exact time within your session.';
+  String get exactTimingNote =>
+      'Our employee will contact you personally to fix the exact time within your session.';
 
   @override
   String get officeAddress => 'Office Address';
@@ -1240,7 +1282,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportReadyMsg => 'Your report is ready.';
 
   @override
-  String get reportPreparingMsg => 'Your report is being prepared by our astrologer.';
+  String get reportPreparingMsg =>
+      'Your report is being prepared by our astrologer.';
 
   @override
   String get requestDate => 'Request Date';
@@ -1249,7 +1292,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get completedDate => 'Completed Date';
 
   @override
-  String get noReportsUnderAnalysis => 'No reports under analysis.\nRequest a Horoscope Compatibility Report from an accepted match.';
+  String get noReportsUnderAnalysis =>
+      'No reports under analysis.\nRequest a Horoscope Compatibility Report from an accepted match.';
 
   @override
   String get noCompletedReports => 'No completed reports yet.';
@@ -1261,7 +1305,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get preparingReport => 'Preparing your report…';
 
   @override
-  String get reportDownloadFailed => 'Could not download the report. Please try again.';
+  String get reportDownloadFailed =>
+      'Could not download the report. Please try again.';
 
   @override
   String get imagesLabel => 'Images';
@@ -1287,7 +1332,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get descriptionLabel => 'Description';
 
   @override
-  String get attachedAsFile => 'The astrologer attached the analysis as a file below.';
+  String get attachedAsFile =>
+      'The astrologer attached the analysis as a file below.';
 
   @override
   String get partnerPreferenceMatch => 'Partner Preference Match';
@@ -1337,13 +1383,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noMatchWord => 'Doesn\'t';
 
   @override
-  String get horoscopePrivateNote => 'The full horoscope is private. For detailed horoscope matching, consult a verified astrologer.';
+  String get horoscopePrivateNote =>
+      'The full horoscope is private. For detailed horoscope matching, consult a verified astrologer.';
 
   @override
   String get profileNotFound => 'Profile not found';
 
   @override
-  String get couldNotLoadProfile => 'Couldn\'t load this profile right now. Please try again.';
+  String get couldNotLoadProfile =>
+      'Couldn\'t load this profile right now. Please try again.';
 
   @override
   String get reportLabel => 'Report';
@@ -1367,25 +1415,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roleMatrimonyTitle => 'Matrimony User';
 
   @override
-  String get roleMatrimonyDesc => 'Looking for a life partner? Continue as a Matrimony User.';
+  String get roleMatrimonyDesc =>
+      'Looking for a life partner? Continue as a Matrimony User.';
 
   @override
   String get roleFamilyTitle => 'Family Member';
 
   @override
-  String get roleFamilyDesc => 'Join an existing Wedding Workspace using your invited Google account.';
+  String get roleFamilyDesc =>
+      'Join an existing Wedding Workspace using your invited Google account.';
 
   @override
-  String get signInMatrimonyPrompt => 'Sign in with your Google account to find your life partner.';
+  String get signInMatrimonyPrompt =>
+      'Sign in with your Google account to find your life partner.';
 
   @override
-  String get signInFamilyPrompt => 'Sign in with your Google account to join your Wedding Workspace.';
+  String get signInFamilyPrompt =>
+      'Sign in with your Google account to join your Wedding Workspace.';
 
   @override
   String get notInvitedTitle => 'Not Invited Yet';
 
   @override
-  String get notInvitedBody => 'You have not been invited to any Wedding Workspace yet. Please contact the Bride or Groom.';
+  String get notInvitedBody =>
+      'You have not been invited to any Wedding Workspace yet. Please contact the Bride or Groom.';
 
   @override
   String get featureSecurePrivate => 'Secure & Private';
@@ -1409,7 +1462,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get termsAndPrivacy => 'Terms & Privacy Policy';
 
   @override
-  String get familyInviteOnlyNote => 'Only Gmail addresses invited by the Bride or Groom can open the Wedding Workspace.';
+  String get familyInviteOnlyNote =>
+      'Only Gmail addresses invited by the Bride or Groom can open the Wedding Workspace.';
 
   @override
   String get guest => 'Guest';
@@ -1424,7 +1478,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weddingWorkspaceTitle => 'Wedding Workspace';
 
   @override
-  String get weddingPlanTogether => 'Plan the wedding together with both families';
+  String get weddingPlanTogether =>
+      'Plan the wedding together with both families';
 
   @override
   String weddingDaysToGo(int days) {
@@ -1468,7 +1523,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get foundLifePartnerSheetTitle => '💍 Found your life partner?';
 
   @override
-  String get foundLifePartnerSheetBody => 'Congratulations! Tell us how you found them.';
+  String get foundLifePartnerSheetBody =>
+      'Congratulations! Tell us how you found them.';
 
   @override
   String get marriedViaAppTitle => 'Yes — through this app';
@@ -1489,10 +1545,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get confirmMarkMarriedTitle => 'Confirm — Mark as Married?';
 
   @override
-  String get confirmMarkMarriedBody => 'Your profile will be marked as Married and will leave the matchmaking pool (it will no longer appear in Matches).\n\nYou can undo this anytime from the Home page if plans change.';
+  String get confirmMarkMarriedBody =>
+      'Your profile will be marked as Married and will leave the matchmaking pool (it will no longer appear in Matches).\n\nYou can undo this anytime from the Home page if plans change.';
 
   @override
-  String get marriedSuccessSnack => '🎉 Congratulations! Your profile is now marked as Married.';
+  String get marriedSuccessSnack =>
+      '🎉 Congratulations! Your profile is now marked as Married.';
 
   @override
   String get undoUpper => 'UNDO';
@@ -1501,7 +1559,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get undoMarriedTitle => 'Undo married status?';
 
   @override
-  String get undoMarriedBody => 'Your profile will return to normal and appear in matchmaking again, exactly as before.';
+  String get undoMarriedBody =>
+      'Your profile will return to normal and appear in matchmaking again, exactly as before.';
 
   @override
   String get keepAsMarried => 'Keep as Married';
@@ -1713,10 +1772,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get couldNotMatchLocation => 'Couldn\'t match your location — please pick below.';
+  String get couldNotMatchLocation =>
+      'Couldn\'t match your location — please pick below.';
 
   @override
-  String get locationAccessDenied => 'Location access denied. Please select your location manually.';
+  String get locationAccessDenied =>
+      'Location access denied. Please select your location manually.';
 
   @override
   String get locationDetails => 'Location Details';
@@ -1731,7 +1792,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get citizenship => 'Citizenship';
 
   @override
-  String get selectStateDistrictCity => 'Please select state, district and city.';
+  String get selectStateDistrictCity =>
+      'Please select state, district and city.';
 
   @override
   String get educationCareerSubtitle => 'Your qualifications and work.';
@@ -1749,13 +1811,66 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseDegreeHint => 'e.g. B.E Computer Science';
 
   @override
+  String get swipeToBrowse => 'Swipe left or right to browse profiles';
+
+  @override
+  String get educationLevel => 'Education Level';
+
+  @override
+  String get employmentStatus => 'Employment Status';
+
+  @override
+  String get governmentOrPrivate => 'Government / Private';
+
+  @override
+  String get businessOrProfession => 'Business / Profession';
+
+  @override
+  String get detectingFace => 'Finding the face…';
+
+  @override
+  String get faceCenteredHint =>
+      'Face detected and centred. Adjust if you like.';
+
+  @override
+  String get adjustPhotoHint =>
+      'Drag to move, pinch or use the buttons to zoom.';
+
+  @override
+  String get zoomIn => 'Zoom in';
+
+  @override
+  String get zoomOut => 'Zoom out';
+
+  @override
+  String get resetCrop => 'Reset';
+
+  @override
+  String get previewPhoto => 'Preview';
+
+  @override
+  String get photoPreviewTitle => 'Your profile photo';
+
+  @override
+  String get photoPreviewHint =>
+      'This is how other members will see your photo.';
+
+  @override
+  String get usePhoto => 'Use this photo';
+
+  @override
+  String get adjustAgain => 'Adjust again';
+
+  @override
   String get religiousInformation => 'Religious Information';
 
   @override
-  String get religiousInfoSubtitle => 'Helps find matches within your community.';
+  String get religiousInfoSubtitle =>
+      'Helps find matches within your community.';
 
   @override
-  String get horoscopeStepSubtitle => 'Rasi, Nakshatra and Lagnam are calculated automatically from your birth date, time and place. Enable override to set them manually.';
+  String get horoscopeStepSubtitle =>
+      'Rasi, Nakshatra and Lagnam are calculated automatically from your birth date, time and place. Enable override to set them manually.';
 
   @override
   String get timeOfBirth => 'Time of Birth';
@@ -1782,7 +1897,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatingHoroscope => 'Calculating horoscope…';
 
   @override
-  String get selectDateTimePlaceHint => 'Select date, time and place to calculate your horoscope.';
+  String get selectDateTimePlaceHint =>
+      'Select date, time and place to calculate your horoscope.';
 
   @override
   String get calculatedHoroscope => 'Calculated Horoscope';
@@ -1794,7 +1910,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overrideHoroscope => 'Override automatically calculated horoscope';
 
   @override
-  String get overrideHoroscopeSubtitle => 'Choose Rasi, Nakshatra and Lagnam manually.';
+  String get overrideHoroscopeSubtitle =>
+      'Choose Rasi, Nakshatra and Lagnam manually.';
 
   @override
   String get rasiMoonSign => 'Rasi (Moon Sign)';
@@ -1812,13 +1929,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pleaseSelectBirthPlace => 'Please select your birth place';
 
   @override
-  String get unableToGenerateHoroscope => 'Unable to generate horoscope details. Please verify date, time and birth place.';
+  String get unableToGenerateHoroscope =>
+      'Unable to generate horoscope details. Please verify date, time and birth place.';
 
   @override
   String get partnerPreferenceTitle => 'Partner Preference';
 
   @override
-  String get partnerPrefSubtitle => 'All optional — set what matters, skip the rest. You can refine these anytime.';
+  String get partnerPrefSubtitle =>
+      'All optional — set what matters, skip the rest. You can refine these anytime.';
 
   @override
   String get basicPreference => 'Basic Preference';
@@ -1870,16 +1989,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profilePhoto => 'Profile Photo';
 
   @override
-  String get profilePhotoSubtitle => 'Add ONE clear photo of yourself — it becomes your profile picture.';
+  String get profilePhotoSubtitle =>
+      'Add ONE clear photo of yourself — it becomes your profile picture.';
 
   @override
   String get addPhoto => 'Add Photo';
 
   @override
-  String get photoVisibilityTip => 'Adding a photo increases your profile visibility by 3x.';
+  String get photoVisibilityTip =>
+      'Adding a photo increases your profile visibility by 3x.';
 
   @override
-  String get uploadHoroscopeSubtitle => 'Optionally attach your horoscope as a PDF. You can also skip this and add it later from your profile.';
+  String get uploadHoroscopeSubtitle =>
+      'Optionally attach your horoscope as a PDF. You can also skip this and add it later from your profile.';
 
   @override
   String get tapToSelectPdf => 'Tap to select a PDF';
@@ -1891,7 +2013,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get changePdf => 'Change PDF';
 
   @override
-  String get contactStepSubtitle => 'Contact details are only shared after interest is mutually accepted.';
+  String get contactStepSubtitle =>
+      'Contact details are only shared after interest is mutually accepted.';
 
   @override
   String get contactPersonName => 'Contact Person Name';
@@ -1906,7 +2029,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get whatsappSameAsMobile => 'WhatsApp same as mobile';
 
   @override
-  String get contactPrivacyNote => 'Your phone number and address are hidden by default. They are only revealed when both parties accept each other\'s interest.';
+  String get contactPrivacyNote =>
+      'Your phone number and address are hidden by default. They are only revealed when both parties accept each other\'s interest.';
 
   @override
   String get reviewSubmit => 'Review & Submit';
@@ -1952,7 +2076,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get noHoroscopeFiles => 'No horoscope documents uploaded for this profile.';
+  String get noHoroscopeFiles =>
+      'No horoscope documents uploaded for this profile.';
 
   @override
   String get viewFull => 'View Full';
@@ -1973,7 +2098,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addPdf => 'Add PDF';
 
   @override
-  String get uploadHoroscopeHint => 'Attach your horoscope as images (JPG / PNG) or PDF files. You can add more than one, and you can skip this and add them later from your profile.';
+  String get uploadHoroscopeHint =>
+      'Attach your horoscope as images (JPG / PNG) or PDF files. You can add more than one, and you can skip this and add them later from your profile.';
 
   @override
   String filesSelected(int count) {
@@ -1984,22 +2110,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploadingHoroscopeFiles => 'Uploading horoscope files…';
 
   @override
-  String get couldNotPickFile => 'Could not read the selected file. Please try again.';
+  String get couldNotPickFile =>
+      'Could not read the selected file. Please try again.';
 
   @override
   String get horoscopeLockedTitle => 'Horoscope is locked';
 
   @override
-  String get horoscopeLockedBody => 'You can view this member\'s horoscope documents once your interest has been accepted by both sides.';
+  String get horoscopeLockedBody =>
+      'You can view this member\'s horoscope documents once your interest has been accepted by both sides.';
 
   @override
-  String get horoscopeUnlockedNote => 'Your interest was accepted — you can view and download this member\'s horoscope below.';
+  String get horoscopeUnlockedNote =>
+      'Your interest was accepted — you can view and download this member\'s horoscope below.';
 
   @override
-  String get logoutDraftMessage => 'Are you sure you want to logout? Unsaved progress will be kept as a draft.';
+  String get logoutDraftMessage =>
+      'Are you sure you want to logout? Unsaved progress will be kept as a draft.';
 
   @override
-  String get mustBeSignedInToCreateProfile => 'You must be signed in to create a profile.';
+  String get mustBeSignedInToCreateProfile =>
+      'You must be signed in to create a profile.';
 
   @override
   String get profileUpdatedSuccess => 'Profile updated successfully.';
@@ -2044,16 +2175,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get submitReport => 'Submit Report';
 
   @override
-  String get reportSubmittedProfile => 'Report submitted. Our team will review it.';
+  String get reportSubmittedProfile =>
+      'Report submitted. Our team will review it.';
 
   @override
-  String get reportSubmittedChat => 'Report submitted. Our team will review this conversation.';
+  String get reportSubmittedChat =>
+      'Report submitted. Our team will review this conversation.';
 
   @override
-  String get couldNotSubmitReport => 'Could not submit report. Please try again.';
+  String get couldNotSubmitReport =>
+      'Could not submit report. Please try again.';
 
   @override
-  String get pleaseSelectReportReason => 'Please select a reason for reporting.';
+  String get pleaseSelectReportReason =>
+      'Please select a reason for reporting.';
 
   @override
   String get screenshotOptional => 'Screenshot (optional)';
@@ -2080,7 +2215,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get blockUserBody => 'They will disappear from your matches and search, and neither of you can chat or send interests. You can unblock them anytime.';
+  String get blockUserBody =>
+      'They will disappear from your matches and search, and neither of you can chat or send interests. You can unblock them anytime.';
 
   @override
   String userBlockedToast(String name) {
@@ -2103,22 +2239,26 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get cannotSendInterestBlocked => 'You cannot send an interest to a user you have blocked.';
+  String get cannotSendInterestBlocked =>
+      'You cannot send an interest to a user you have blocked.';
 
   @override
   String get cropPhotoTitle => 'Crop Photo';
 
   @override
-  String get cropPhotoHint => 'Pinch to zoom and drag to position. Only the square area inside the frame is saved.';
+  String get cropPhotoHint =>
+      'Pinch to zoom and drag to position. Only the square area inside the frame is saved.';
 
   @override
   String get cropAndSave => 'Crop & Save';
 
   @override
-  String get couldNotCropPhoto => 'Could not crop this photo. Please choose another image.';
+  String get couldNotCropPhoto =>
+      'Could not crop this photo. Please choose another image.';
 
   @override
-  String get profilePhotoOneOnly => 'You have one profile photo. Uploading a new one replaces the current photo.';
+  String get profilePhotoOneOnly =>
+      'You have one profile photo. Uploading a new one replaces the current photo.';
 
   @override
   String get photoCropRequired => 'Crop your photo before saving.';
@@ -2127,49 +2267,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tapPhotoToEnlarge => 'Tap the photo to view it full screen';
 
   @override
-  String get privacyIntro => 'Choose what other members can see. Your name, age and basic details are always visible.';
+  String get privacyIntro =>
+      'Choose what other members can see. Your name, age and basic details are always visible.';
 
   @override
   String get hidePhoneNumber => 'Hide Phone Number';
 
   @override
-  String get hidePhoneNumberDesc => 'Your phone number is never shown on your profile.';
+  String get hidePhoneNumberDesc =>
+      'Your phone number is never shown on your profile.';
 
   @override
   String get hideSalaryTitle => 'Hide Salary';
 
   @override
-  String get hideSalaryDesc => 'Your annual income is not displayed to other members.';
+  String get hideSalaryDesc =>
+      'Your annual income is not displayed to other members.';
 
   @override
   String get hideHoroscopeTitle => 'Hide Horoscope Details';
 
   @override
-  String get hideHoroscopeDesc => 'Rasi, Nakshatra and horoscope documents stay hidden.';
+  String get hideHoroscopeDesc =>
+      'Rasi, Nakshatra and horoscope documents stay hidden.';
 
   @override
   String get hideProfilePhotoTitle => 'Hide Profile Photo';
 
   @override
-  String get hideProfilePhotoDesc => 'Other members see a placeholder instead of your photo.';
+  String get hideProfilePhotoDesc =>
+      'Other members see a placeholder instead of your photo.';
 
   @override
-  String get privacyDefaultNote => 'These are hidden by default and stay hidden — accepting an interest never reveals them. Only you can change these settings.';
+  String get privacyDefaultNote =>
+      'Every option is OFF by default — nothing is hidden until you turn it on here. Only you can change these settings.';
 
   @override
   String get shareContactPublicly => 'Share Contact Publicly';
 
   @override
-  String get contactPublicNote => 'Anyone viewing your profile can see your contact.';
+  String get contactPublicNote =>
+      'Anyone viewing your profile can see your contact.';
 
   @override
-  String get contactPrivateNote => 'Contact is shared only after you accept an interest.';
+  String get contactPrivateNote =>
+      'Contact is shared only after you accept an interest.';
 
   @override
   String get privacySettingsSaved => 'Privacy settings saved.';
 
   @override
-  String get privacySettingsSaveFailed => 'Could not save your privacy settings. Please try again.';
+  String get privacySettingsSaveFailed =>
+      'Could not save your privacy settings. Please try again.';
 
   @override
   String get hiddenByMember => 'Hidden by member';
@@ -2243,10 +2392,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get latestProfiles => 'Latest Profiles';
 
   @override
-  String get partnerAgeRequired => 'Select your preferred partner age range to continue.';
+  String get partnerAgeRequired =>
+      'Select your preferred partner age range to continue.';
 
   @override
-  String get partnerAgeMandatoryNote => 'Partner age range is required — matches are filtered by it.';
+  String get partnerAgeMandatoryNote =>
+      'Partner age range is required — matches are filtered by it.';
 
   @override
   String get gothram => 'Gothram';
@@ -2294,10 +2445,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workLocation => 'Work Location';
 
   @override
-  String get couldNotLoadProfileRetry => 'Couldn\'t load this profile right now. Please try again.';
+  String get couldNotLoadProfileRetry =>
+      'Couldn\'t load this profile right now. Please try again.';
 
   @override
-  String get createProfileFirstInterest => 'Create your profile first to send an interest.';
+  String get createProfileFirstInterest =>
+      'Create your profile first to send an interest.';
 
   @override
   String get couldNotOpenChatRetry => 'Could not open chat. Please try again.';
@@ -2309,10 +2462,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get contactLockedTitle => 'Contact locked';
 
   @override
-  String get contactUnlocksAfterAccept => 'Contact details unlock once your interest is mutually accepted.';
+  String get contactUnlocksAfterAccept =>
+      'Contact details unlock once your interest is mutually accepted.';
 
   @override
-  String get contactHiddenByMember => 'This member has chosen to keep their phone number private.';
+  String get contactHiddenByMember =>
+      'This member has chosen to keep their phone number private.';
 
   @override
   String get callAction => 'Call';
@@ -2323,13 +2478,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get mobileNumberExactly10 => 'Enter a valid 10-digit mobile number (digits only).';
+  String get mobileNumberExactly10 =>
+      'Enter a valid 10-digit mobile number (digits only).';
 
   @override
   String get mobileNumberRequired => 'Mobile number is required.';
 
   @override
-  String get photoUploadNotInDemo => 'Photo upload is not available in demo mode.';
+  String get photoUploadNotInDemo =>
+      'Photo upload is not available in demo mode.';
 
   @override
   String get couldNotLoadYourProfile => 'Could not load your profile.';
@@ -2366,7 +2523,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get couldNotSaveRetry => 'Could not save. Please try again.';
 
   @override
-  String get noProfileFoundCreate => 'No profile found. Create your profile first.';
+  String get noProfileFoundCreate =>
+      'No profile found. Create your profile first.';
 
   @override
   String get noPhotoAddedYet => 'No photo added yet.';
@@ -2432,7 +2590,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appointmentFreeTitle => 'Booking is free';
 
   @override
-  String get appointmentFreeNote => 'There are no booking charges. Pick a date and session and confirm your appointment.';
+  String get appointmentFreeNote =>
+      'There are no booking charges. Pick a date and session and confirm your appointment.';
 
   @override
   String get savingLabel => 'Saving…';
@@ -2444,10 +2603,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get motherName => 'Mother Name';
 
   @override
-  String get aboutMeHint => 'Write a few lines about yourself, your family, interests and what you are looking for.';
+  String get aboutMeHint =>
+      'Write a few lines about yourself, your family, interests and what you are looking for.';
 
   @override
-  String get educationOccupationRequired => 'Education and occupation are required.';
+  String get educationOccupationRequired =>
+      'Education and occupation are required.';
 
   @override
   String get religionCasteRequired => 'Religion and caste are required.';
@@ -2471,7 +2632,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get almostThere => 'Almost there!';
 
   @override
-  String get finishSectionsHint => 'Finish the sections below to get more responses.';
+  String get finishSectionsHint =>
+      'Finish the sections below to get more responses.';
 
   @override
   String pendingSections(int count) {
@@ -2513,7 +2675,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutMeUpdated => 'About Me updated';
 
   @override
-  String get getHoroscopeCompatibilityReport => 'Get Horoscope Compatibility Report';
+  String get getHoroscopeCompatibilityReport =>
+      'Get Horoscope Compatibility Report';
 
   @override
   String get openWeddingWorkspace => 'Open Wedding Workspace';
@@ -2528,7 +2691,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yesMarriageFixed => 'Yes, Marriage Fixed';
 
   @override
-  String get couldNotSaveMarriageFixed => 'Could not save Marriage Fixed. Please try again.';
+  String get couldNotSaveMarriageFixed =>
+      'Could not save Marriage Fixed. Please try again.';
 
   @override
   String get chatsTitle => 'Chats';
@@ -2537,10 +2701,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageNotSent => 'Message couldn\'t be sent. Please try again.';
 
   @override
-  String get attachmentNotSent => 'Attachment couldn\'t be sent. Please try again.';
+  String get attachmentNotSent =>
+      'Attachment couldn\'t be sent. Please try again.';
 
   @override
-  String get couldNotPickFileRetry => 'Could not pick that file. Please try again.';
+  String get couldNotPickFileRetry =>
+      'Could not pick that file. Please try again.';
 
   @override
   String sayHelloTo(String name) {
@@ -2563,10 +2729,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wantAnExpertOpinion => 'Want an expert opinion?';
 
   @override
-  String get marriageCompatibilityPorutham => 'Marriage Compatibility (Porutham)';
+  String get marriageCompatibilityPorutham =>
+      'Marriage Compatibility (Porutham)';
 
   @override
-  String get notEnoughHoroscopeData => 'Not enough horoscope data to calculate the poruthams for this pair. Add birth-star details to both profiles.';
+  String get notEnoughHoroscopeData =>
+      'Not enough horoscope data to calculate the poruthams for this pair. Add birth-star details to both profiles.';
 
   @override
   String compatibilityUnlocksAfterAccept(String name) {
