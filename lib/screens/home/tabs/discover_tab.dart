@@ -59,11 +59,13 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
 
   /// The saved resume position is applied ONCE per feed load — after that the
   /// member is in control and must never be yanked back.
+  ///
+  /// Reset ONLY where the feed is genuinely rebuilt (pull-to-refresh, or the
+  /// member's own matching criteria changing). Deliberately NOT reset when the
+  /// list merely grows: `loadMore()` appending a page, or the "hide interested"
+  /// filter dropping a profile, must never re-seek the pager out from under
+  /// someone mid-swipe.
   bool _resumeApplied = false;
-
-  /// Ids of the profiles currently paged, used to detect a genuinely new feed
-  /// (a reload / filter change) that should re-apply the resume position.
-  String _feedSignature = '';
 
   @override
   void initState() {
@@ -111,11 +113,9 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     if (page >= total - 3) ref.read(discoverProvider.notifier).loadMore();
   }
 
-  /// Jumps to the saved resume position the first time a feed is shown.
+  /// Jumps to the saved resume position the first time a feed is shown (§4).
   void _applyResume(List<ProfileModel> profiles) {
-    final signature = '${profiles.length}:${profiles.first.id}';
-    if (_resumeApplied && signature == _feedSignature) return;
-    _feedSignature = signature;
+    if (_resumeApplied) return;
     _resumeApplied = true;
 
     final target = resolveResumeIndex(
@@ -123,11 +123,12 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
       viewed: ref.read(viewedProfilesProvider),
       lastViewed: ref.read(lastViewedProfileProvider),
     );
-    if (target == _index && !_pageController.hasClients) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_pageController.hasClients) return;
-      _pageController.jumpToPage(target);
-      if (target != _index) setState(() => _index = target);
+      if (target != _index) {
+        _pageController.jumpToPage(target);
+        setState(() => _index = target);
+      }
       // Record the resumed profile so a session that only *looks* at it still
       // counts as viewed.
       ref.read(viewedProfilesProvider.notifier).markViewed(profiles[target].id);
