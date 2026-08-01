@@ -348,9 +348,220 @@ class CoupleIllustrationCircle extends StatelessWidget {
   }
 }
 
+/// Anime-style family portrait, painted as vectors — father, mother and child
+/// in chibi proportions (oversized heads, closed "happy" eyes, blush cheeks,
+/// and the child's little ahoge hair tuft).
+///
+/// Everything is laid out in a normalised 0..1 space and multiplied by the
+/// canvas width, so the SAME artwork stays crisp at the 76px role card and the
+/// 200px role-login circle — no raster asset, no second file to ship, and it
+/// never pixelates. This replaces the four stacked `Icons.person` glyphs that
+/// used to stand in for the family.
+///
+/// Public (not `_`-private) so it can be dropped into other screens later.
+class AnimeFamilyPainter extends CustomPainter {
+  const AnimeFamilyPainter();
+
+  static const _skin = Color(0xFFF8D3B3);
+  static const _hair = Color(0xFF3A2A21);
+  static const _hairSoft = Color(0xFF5A4034);
+  static const _fatherWear = Color(0xFF33518A);
+  static const _motherWear = Color(0xFFC2185B);
+  static const _childWear = Color(0xFFF2B33D);
+  static const _blush = Color(0x59F1857D);
+  static const _ink = Color(0xFF4A3428);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    Offset p(double x, double y) => Offset(x * w, y * w);
+    double u(double v) => v * w;
+
+    final fill = Paint()..style = PaintingStyle.fill;
+    final line = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..color = _ink;
+
+    // Soft contact shadow so the group sits on the circle instead of floating.
+    fill.color = const Color(0x14000000);
+    canvas.drawOval(
+        Rect.fromCenter(
+            center: p(0.5, 0.88), width: u(0.66), height: u(0.075)),
+        fill);
+
+    // A torso is a trapezoid with curved shoulders — narrow at the neck,
+    // flaring to the hem.
+    void torso(double cx, double topY, double hemY, double hemHalf, Color c) {
+      fill.color = c;
+      canvas.drawPath(
+        Path()
+          ..moveTo(u(cx - hemHalf), u(hemY))
+          ..quadraticBezierTo(
+              u(cx - hemHalf * 0.72), u(topY), u(cx), u(topY))
+          ..quadraticBezierTo(
+              u(cx + hemHalf * 0.72), u(topY), u(cx + hemHalf), u(hemY))
+          ..close(),
+        fill,
+      );
+    }
+
+    // Closed, upturned "happy" eyes + a small smile — the anime shorthand that
+    // reads as warmth even when the whole face is only a few pixels wide.
+    void face(double cx, double cy, double r) {
+      line.strokeWidth = (r * 0.16).clamp(0.9, 3.0);
+      for (final dx in [-r * 0.40, r * 0.40]) {
+        canvas.drawArc(
+            Rect.fromCenter(
+                center: p(cx, cy) + Offset(dx, -r * 0.06),
+                width: r * 0.44,
+                height: r * 0.34),
+            math.pi,
+            math.pi,
+            false,
+            line);
+      }
+      canvas.drawArc(
+          Rect.fromCenter(
+              center: p(cx, cy) + Offset(0, r * 0.34),
+              width: r * 0.34,
+              height: r * 0.26),
+          math.pi * 0.15,
+          math.pi * 0.7,
+          false,
+          line);
+      fill.color = _blush;
+      for (final dx in [-r * 0.66, r * 0.66]) {
+        canvas.drawOval(
+            Rect.fromCenter(
+                center: p(cx, cy) + Offset(dx, r * 0.24),
+                width: r * 0.34,
+                height: r * 0.20),
+            fill);
+      }
+    }
+
+    void head(double cx, double cy, double r) {
+      fill.color = _skin;
+      canvas.drawCircle(p(cx, cy), r, fill);
+    }
+
+    // ── Father (left) ────────────────────────────────────────────────────
+    torso(0.29, 0.50, 0.84, 0.15, _fatherWear);
+    final fr = u(0.115);
+    head(0.29, 0.375, fr);
+    fill.color = _hair; // short side-parted crop
+    canvas.drawPath(
+      Path()
+        ..moveTo(u(0.29) - fr, u(0.375) - fr * 0.10)
+        ..quadraticBezierTo(
+            u(0.29) - fr * 1.02, u(0.375) - fr * 1.30, u(0.29) + fr * 0.16, u(0.375) - fr * 1.16)
+        ..quadraticBezierTo(
+            u(0.29) + fr * 1.06, u(0.375) - fr * 1.00, u(0.29) + fr, u(0.375) - fr * 0.06)
+        ..quadraticBezierTo(
+            u(0.29) + fr * 0.60, u(0.375) - fr * 0.72, u(0.29) - fr * 0.10, u(0.375) - fr * 0.60)
+        ..quadraticBezierTo(
+            u(0.29) - fr * 0.72, u(0.375) - fr * 0.52, u(0.29) - fr, u(0.375) - fr * 0.10)
+        ..close(),
+      fill,
+    );
+    face(0.29, 0.375, fr);
+
+    // ── Mother (right) ───────────────────────────────────────────────────
+    torso(0.71, 0.50, 0.84, 0.155, _motherWear);
+    final mr = u(0.115);
+    // Long hair falls behind the shoulders, so it is painted before the face.
+    fill.color = _hair;
+    canvas.drawPath(
+      Path()
+        ..moveTo(u(0.71) - mr * 1.06, u(0.375) + mr * 1.55)
+        ..quadraticBezierTo(u(0.71) - mr * 1.30, u(0.375) - mr * 0.60,
+            u(0.71), u(0.375) - mr * 1.22)
+        ..quadraticBezierTo(u(0.71) + mr * 1.30, u(0.375) - mr * 0.60,
+            u(0.71) + mr * 1.06, u(0.375) + mr * 1.55)
+        ..quadraticBezierTo(
+            u(0.71), u(0.375) + mr * 0.98, u(0.71) - mr * 1.06, u(0.375) + mr * 1.55)
+        ..close(),
+      fill,
+    );
+    head(0.71, 0.375, mr);
+    fill.color = _hair; // fringe
+    canvas.drawPath(
+      Path()
+        ..moveTo(u(0.71) - mr, u(0.375) - mr * 0.06)
+        ..quadraticBezierTo(u(0.71) - mr * 1.04, u(0.375) - mr * 1.34,
+            u(0.71), u(0.375) - mr * 1.20)
+        ..quadraticBezierTo(u(0.71) + mr * 1.04, u(0.375) - mr * 1.34,
+            u(0.71) + mr, u(0.375) - mr * 0.06)
+        ..quadraticBezierTo(u(0.71) + mr * 0.30, u(0.375) - mr * 0.46,
+            u(0.71) - mr * 0.30, u(0.375) - mr * 0.50)
+        ..quadraticBezierTo(u(0.71) - mr * 0.78, u(0.375) - mr * 0.52,
+            u(0.71) - mr, u(0.375) - mr * 0.06)
+        ..close(),
+      fill,
+    );
+    face(0.71, 0.375, mr);
+    fill.color = AppColors.gold; // flower tucked into her hair
+    for (var i = 0; i < 5; i++) {
+      final a = i * math.pi * 0.4;
+      canvas.drawCircle(
+          p(0.71, 0.375) +
+              Offset(-mr * 0.98 + math.cos(a) * mr * 0.16,
+                  -mr * 0.62 + math.sin(a) * mr * 0.16),
+          mr * 0.13,
+          fill);
+    }
+
+    // ── Child (front centre, smaller and overlapping the parents) ────────
+    torso(0.50, 0.665, 0.88, 0.105, _childWear);
+    final cr = u(0.082);
+    head(0.50, 0.585, cr);
+    fill.color = _hairSoft;
+    canvas.drawPath(
+      Path()
+        ..moveTo(u(0.50) - cr, u(0.585) - cr * 0.04)
+        ..quadraticBezierTo(u(0.50) - cr * 1.06, u(0.585) - cr * 1.34,
+            u(0.50), u(0.585) - cr * 1.20)
+        ..quadraticBezierTo(u(0.50) + cr * 1.06, u(0.585) - cr * 1.34,
+            u(0.50) + cr, u(0.585) - cr * 0.04)
+        ..quadraticBezierTo(u(0.50) + cr * 0.36, u(0.585) - cr * 0.54,
+            u(0.50) - cr * 0.36, u(0.585) - cr * 0.54)
+        ..quadraticBezierTo(u(0.50) - cr * 0.80, u(0.585) - cr * 0.50,
+            u(0.50) - cr, u(0.585) - cr * 0.04)
+        ..close(),
+      fill,
+    );
+    // Ahoge — the single stray strand that makes it read as anime.
+    line
+      ..color = _hairSoft
+      ..strokeWidth = (cr * 0.20).clamp(1.0, 3.0);
+    canvas.drawPath(
+      Path()
+        ..moveTo(u(0.50) + cr * 0.06, u(0.585) - cr * 1.16)
+        ..quadraticBezierTo(u(0.50) + cr * 0.62, u(0.585) - cr * 1.86,
+            u(0.50) + cr * 0.92, u(0.585) - cr * 1.30),
+      line,
+    );
+    line.color = _ink;
+    face(0.50, 0.585, cr);
+  }
+
+  @override
+  bool shouldRepaint(covariant AnimeFamilyPainter oldDelegate) => false;
+}
+
 // ── Family illustration circle (Family Member login) ────────────────────────
 
 class FamilyIllustrationCircle extends StatelessWidget {
+  /// Optional artwork for the Family Member role. Drop a square-ish PNG here
+  /// and BOTH the welcome role card and the family login screen pick it up —
+  /// they share this widget, so there is only one file to replace.
+  ///
+  /// If the file is absent the [AnimeFamilyPainter] vector artwork is drawn
+  /// instead, so a missing asset can never break the build or leave a blank
+  /// circle. That makes the image genuinely optional.
+  static const String assetPath = 'assets/images/family_login.png';
+
   final double size;
   final bool showFloatingHearts;
   const FamilyIllustrationCircle(
@@ -374,15 +585,20 @@ class FamilyIllustrationCircle extends StatelessWidget {
               offset: const Offset(0, 12)),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Icon(Icons.person, size: size * 0.26, color: const Color(0xFF4CAF50)),
-          Icon(Icons.person, size: size * 0.3, color: const Color(0xFFE8735B)),
-          Icon(Icons.person, size: size * 0.2, color: const Color(0xFF5C9BD1)),
-          Icon(Icons.person, size: size * 0.18, color: const Color(0xFFEF5DA8)),
-        ],
+      // ClipOval keeps a rectangular photo inside the circular frame; cover
+      // crops the edges rather than squashing the family out of proportion.
+      child: ClipOval(
+        child: Image.asset(
+          assetPath,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
+          errorBuilder: (_, __, ___) => CustomPaint(
+            size: Size.square(size),
+            painter: const AnimeFamilyPainter(),
+          ),
+        ),
       ),
     );
   }
