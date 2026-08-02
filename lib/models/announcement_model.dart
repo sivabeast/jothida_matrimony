@@ -79,6 +79,16 @@ class AnnouncementModel {
   /// Optional custom label for the action button ("Update Now", "Open"…).
   final String actionLabel;
 
+  /// Optional banner image (Cloudinary URL) shown on the announcement screen.
+  final String imageUrl;
+
+  /// 'high' pins the announcement above normal ones; anything else = 'normal'.
+  final String priority;
+
+  /// Optional future publish time (scheduling, future-ready). Null/past =
+  /// publish immediately.
+  final DateTime? scheduledAt;
+
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -92,9 +102,14 @@ class AnnouncementModel {
     this.type = 'general',
     this.actionUrl = '',
     this.actionLabel = '',
+    this.imageUrl = '',
+    this.priority = 'normal',
+    this.scheduledAt,
     required this.createdAt,
     this.updatedAt,
   });
+
+  bool get isHighPriority => priority == 'high';
 
   AnnouncementType get typeEnum => AnnouncementType.fromKey(type);
   AnnouncementAudience get audienceEnum =>
@@ -121,6 +136,11 @@ class AnnouncementModel {
       type: d['type'] ?? 'general',
       actionUrl: d['actionUrl'] ?? '',
       actionLabel: d['actionLabel'] ?? '',
+      imageUrl: d['imageUrl'] ?? '',
+      priority: d['priority'] ?? 'normal',
+      scheduledAt: d['scheduledAt'] is Timestamp
+          ? (d['scheduledAt'] as Timestamp).toDate()
+          : null,
       createdAt: d['createdAt'] is Timestamp
           ? (d['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
@@ -139,6 +159,9 @@ class AnnouncementModel {
         'type': type,
         'actionUrl': actionUrl,
         'actionLabel': actionLabel,
+        'imageUrl': imageUrl,
+        'priority': priority,
+        if (scheduledAt != null) 'scheduledAt': Timestamp.fromDate(scheduledAt!),
         'createdAt': Timestamp.fromDate(createdAt),
         if (updatedAt != null) 'updatedAt': Timestamp.fromDate(updatedAt!),
       };

@@ -7,7 +7,6 @@ import '../../core/utils/l10n_ext.dart';
 import '../../models/profile_model.dart';
 import '../../providers/interest_provider.dart';
 import '../../providers/profile_provider.dart';
-import '../../providers/requests_provider.dart';
 import '../../widgets/common/contact_reveal_card.dart';
 import '../../widgets/common/horoscope_match_badge.dart' show categoryColor;
 import '../astrologer/connect_astrologer_sheet.dart';
@@ -28,9 +27,10 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen> {
   Widget build(BuildContext context) {
     final otherAsync = ref.watch(profileByIdProvider(widget.profileId));
     final me = ref.watch(myProfileProvider).valueOrNull;
-    // Unlocked when the two users have a mutually-accepted interest.
-    final isMatched = ref.watch(isInterestAcceptedProvider(widget.profileId)) ||
-        ref.watch(isMatchedProvider(widget.profileId));
+    // Unlocked when the two users have a mutually-accepted interest — the live
+    // Firestore `interests` status is the ONLY source of truth (the legacy
+    // in-memory demo store used to leak sample data into this check).
+    final isMatched = ref.watch(isInterestAcceptedProvider(widget.profileId));
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
@@ -101,8 +101,7 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen> {
   Widget _lockedView(BuildContext context) {
     final other = ref.watch(profileByIdProvider(widget.profileId)).valueOrNull;
     final alreadySent =
-        ref.watch(hasSentInterestToProfileProvider(widget.profileId)) ||
-            ref.watch(hasSentInterestProvider(widget.profileId));
+        ref.watch(hasSentInterestToProfileProvider(widget.profileId));
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(28),
@@ -173,7 +172,11 @@ class _MatchDetailsScreenState extends ConsumerState<MatchDetailsScreen> {
             senderProfileId: me.id,
             receiverProfileId: other.id,
           );
-      if (mounted) _showSnack(context.l10n.interestSentShort);
+      if (!mounted) return;
+      final st = ref.read(interestNotifierProvider);
+      _showSnack(st.hasError
+          ? interestErrorText(st.error, context.l10n.couldNotSendInterest)
+          : context.l10n.interestSentShort);
     } catch (_) {
       if (mounted) _showSnack(context.l10n.couldNotSendInterest);
     }

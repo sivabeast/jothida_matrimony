@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -315,7 +316,7 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
     // flow, one shared validation, one shared document shape.
     final profileId = await ref
         .read(profileCreationProvider.notifier)
-        .submitProfile(account.uid);
+        .submitProfile(account.uid, adminCreated: true);
     if (!mounted) return;
     if (profileId == null) {
       final error = ref.read(profileCreationProvider).error;
@@ -324,6 +325,16 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
       return;
     }
     await _clearDraft();
+    // Audit trail (best-effort): profile created by admin + credentials
+    // handed over.
+    unawaited(ref.read(firestoreServiceProvider).logAdminAction(
+          adminUid:
+              ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ?? '',
+          action: 'profile_created',
+          targetUid: account.uid,
+          targetProfileId: profileId,
+          details: 'Admin-created member (mobile ${account.mobile})',
+        ));
     if (!mounted) return;
     messenger.showSnackBar(
         SnackBar(content: Text(context.l10n.profileCreatedForMember)));
@@ -335,6 +346,13 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
       email: account.email,
       password: (creds['password'] ?? '').toString(),
     );
+    unawaited(ref.read(firestoreServiceProvider).logAdminAction(
+          adminUid:
+              ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ?? '',
+          action: 'credentials_shared',
+          targetUid: account.uid,
+          details: 'Login details dialog shown (WhatsApp share offered)',
+        ));
     if (!mounted) return;
     context.pop();
   }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -15,21 +16,28 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint('FCM background message: ${message.messageId}');
 }
 
-/// Firebase Cloud Messaging integration (spec §8/§12).
+/// Firebase Cloud Messaging integration.
 ///
-/// Client responsibilities (delivery is triggered server-side by Cloud
-/// Functions — see `functions/index.js`):
-///   • request notification permission,
-///   • register the device token (done at login via [saveTokenToFirestore] /
-///     `AuthRepository`),
+/// Client responsibilities (delivery is triggered server-side by the Cloud
+/// Functions in `functions/index.js` — `onNotificationCreated` + the dedicated
+/// interest/chat/profile/announcement triggers):
+///   • request notification permission (incl. Android 13+ runtime permission),
+///   • register the device token at login AND on every token refresh,
+///   • subscribe the signed-in user to their announcement topic,
 ///   • show a foreground in-app banner when a push arrives while the app is
 ///     open (the OS shows the tray notification when it's backgrounded), and
-///   • deep-link to the right booking when the user taps a notification —
+///   • deep-link DIRECTLY to the target screen when a notification is tapped —
 ///     foreground, background, or cold start — using the `route` in the
-///     message data payload.
+///     message data payload. Never lands on Home first: a tap that arrives
+///     before auth/router are ready is stashed and replayed once they are.
 class FcmService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  /// A deep link whose navigation could not run yet (cold start: router not
+  /// mounted / auth still resolving). Replayed once the app is ready.
+  static String? _pendingRoute;
+  static Timer? _pendingRouteTimer;
 
   Future<void> initialize() async {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -48,16 +56,53 @@ class FcmService {
     // Tap on a tray notification while the app is backgrounded.
     FirebaseMessaging.onMessageOpenedApp.listen(_handleTap);
 
+    // Token rotation — keep users/{uid}.fcmToken current without waiting for
+    // the next login. (Invalid/expired tokens are additionally cleaned up
+    // server-side when a send fails.)
+    _messaging.onTokenRefresh.listen((token) async {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null || token.isEmpty) return;
+      try {
+        await _db.collection(AppConstants.usersCollection).doc(uid).update({
+          'fcmToken': token,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        debugPrint('FCM token refreshed for $uid');
+      } catch (e) {
+        debugPrint('FCM token refresh save failed: $e');
+      }
+    });
+
+    // Existing signed-in session (no fresh login event): make sure the device
+    // is on its announcement topic and its token is registered.
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUid != null) {
+      unawaited(saveTokenToFirestore(currentUid).catchError((e) {
+        debugPrint('FCM startup token registration failed (non-fatal): $e');
+      }));
+      // A crash / force-kill while a chat was open leaves a stale
+      // activeThreadId presence marker that would suppress that thread's
+      // pushes forever — clear it at every app start.
+      unawaited(_db
+          .collection(AppConstants.usersCollection)
+          .doc(currentUid)
+          .update({'activeThreadId': FieldValue.delete()}).catchError((e) {
+        debugPrint('FCM presence cleanup failed (non-fatal): $e');
+      }));
+    }
+
     // App opened from a terminated state by tapping a notification.
     final initial = await _messaging.getInitialMessage();
     if (initial != null) {
-      // Defer until the first frame so the router/navigator exists.
+      // Defer until the first frame so the router/navigator exists; _navigate
+      // additionally waits for auth before pushing, so the auth redirect can
+      // never swallow the deep link.
       WidgetsBinding.instance
           .addPostFrameCallback((_) => _handleTap(initial));
     }
   }
 
-  /// Shows a foreground SnackBar with a "View" action that opens the booking.
+  /// Shows a foreground banner with a "View" action that deep-links directly.
   void _showForegroundBanner(RemoteMessage message) {
     final n = message.notification;
     final title = n?.title ?? message.data['title']?.toString() ?? '';
@@ -70,6 +115,7 @@ class FcmService {
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
         duration: const Duration(seconds: 5),
+        behavior: SnackBarBehavior.floating,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,25 +132,68 @@ class FcmService {
       ));
   }
 
-  /// Opens the booking referenced by a tapped notification.
+  /// Opens the screen referenced by a tapped notification.
   void _handleTap(RemoteMessage message) {
     final route = message.data['route']?.toString();
     if (route != null && route.isNotEmpty) _navigate(route);
   }
 
-  /// Navigates to [route] using the root navigator (works regardless of which
-  /// screen is currently shown).
-  void _navigate(String route) {
+  /// The router's current location, or null when unavailable.
+  String? _currentLocation() {
     final ctx = rootNavigatorKey.currentContext;
-    if (ctx == null) {
-      // Router not ready yet (cold start) — retry on the next frame.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final c = rootNavigatorKey.currentContext;
-        if (c != null) c.push(route);
-      });
+    if (ctx == null) return null;
+    try {
+      return GoRouter.of(ctx).routerDelegate.currentConfiguration.uri.path;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// True once the router is mounted, a signed-in user exists AND the app has
+  /// LEFT the splash/auth flow. Pushing earlier is futile: the splash/login
+  /// screens finish with context.go('/home'), which REPLACES the stack and
+  /// would silently wipe the deep-linked screen.
+  bool get _readyForDeepLink {
+    if (rootNavigatorKey.currentContext == null) return false;
+    if (FirebaseAuth.instance.currentUser == null) return false;
+    final loc = _currentLocation();
+    if (loc == null || loc == '/' || loc.startsWith('/login')) return false;
+    return true;
+  }
+
+  /// Navigates to [route] using the root navigator (works regardless of which
+  /// screen is currently shown). On a cold start the router may not be mounted
+  /// yet and auth may still be resolving — in that case the route is stashed
+  /// and retried every 300ms for up to 20s, then dropped. The LAST tapped
+  /// notification wins.
+  void _navigate(String route) {
+    if (_readyForDeepLink) {
+      _pendingRouteTimer?.cancel();
+      _pendingRoute = null;
+      rootNavigatorKey.currentContext!.push(route);
       return;
     }
-    ctx.push(route);
+    _pendingRoute = route;
+    _pendingRouteTimer?.cancel();
+    var attempts = 0;
+    _pendingRouteTimer =
+        Timer.periodic(const Duration(milliseconds: 300), (timer) {
+      attempts++;
+      final pending = _pendingRoute;
+      if (pending == null || attempts > 66) {
+        timer.cancel();
+        return;
+      }
+      if (!_readyForDeepLink) return;
+      timer.cancel();
+      _pendingRoute = null;
+      // One extra frame so the post-login redirect ('/'→'/home') settles first
+      // and the pushed screen stacks ON TOP of Home instead of racing it.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final c = rootNavigatorKey.currentContext;
+        if (c != null) c.push(pending);
+      });
+    });
   }
 
   Future<String?> getToken() async {
@@ -130,6 +219,23 @@ class FcmService {
       'fcmToken': token,
       'updatedAt': FieldValue.serverTimestamp(),
     });
+    // Role-based announcement topic — lets the announcements Cloud Function
+    // broadcast with ONE topic send instead of a per-user fan-out.
+    unawaited(_subscribeAnnouncementTopic(userId));
+  }
+
+  Future<void> _subscribeAnnouncementTopic(String userId) async {
+    try {
+      final user = await _db
+          .collection(AppConstants.usersCollection)
+          .doc(userId)
+          .get()
+          .timeout(const Duration(seconds: 8));
+      final role = (user.data()?['role'] ?? 'user').toString();
+      await subscribeToTopic(role == 'astrologer' ? 'employees' : 'users');
+    } catch (e) {
+      debugPrint('FCM topic subscribe failed (non-fatal): $e');
+    }
   }
 
   Future<void> deleteToken(String userId) async {

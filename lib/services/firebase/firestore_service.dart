@@ -815,22 +815,48 @@ class FirestoreService {
   /// Creates an in-app notification for [userId]. Used by the client-side
   /// event hooks (interest sent/accepted/rejected, profile approved, report
   /// ready, appointment confirmed, admin profile update).
+  ///
+  /// When [id] is given the document id is DETERMINISTIC: one event can only
+  /// ever produce one notification (duplicate writes become rules-denied
+  /// updates and are swallowed by best-effort callers), and server-side
+  /// cleanup (e.g. interest withdrawn) can delete it by the same id. The
+  /// `notifications`-onCreate Cloud Function delivers the FCM push.
   Future<void> createNotification({
     required String userId,
     required String title,
     required String body,
     required String type,
     Map<String, dynamic>? data,
-  }) =>
-      _db.collection(AppConstants.notificationsCollection).add({
-        'userId': userId,
-        'title': title,
-        'body': body,
-        'type': type,
-        if (data != null) 'data': data,
-        'isRead': false,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+    String? id,
+    String senderId = '',
+    String targetScreen = '',
+    String targetId = '',
+  }) {
+    final doc = <String, dynamic>{
+      'userId': userId,
+      'title': title,
+      'body': body,
+      'type': type,
+      if (data != null) 'data': data,
+      'isRead': false,
+      'createdAt': FieldValue.serverTimestamp(),
+      'senderId': senderId,
+      'targetScreen': targetScreen,
+      'targetId': targetId,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    final col = _db.collection(AppConstants.notificationsCollection);
+    return id == null || id.isEmpty ? col.add(doc) : col.doc(id).set(doc);
+  }
+
+  /// Deletes a notification by its deterministic id — used when the event it
+  /// announced was undone (e.g. a pending interest withdrawn). Best-effort at
+  /// call sites; rules only allow the OWNER to delete, so the server-side
+  /// `interests`-onDelete Cloud Function is the reliable cleanup path.
+  Future<void> deleteNotificationById(String id) => _db
+      .collection(AppConstants.notificationsCollection)
+      .doc(id)
+      .delete();
 
   /// Marks EVERY unread notification of [userId] read in one batch — called
   /// when the user opens the Notifications page, so the badge count drops to
@@ -862,6 +888,61 @@ class FirestoreService {
       .doc(notificationId)
       .update({'isRead': true});
 
+  // ── Admin activity log ──────────────────────────────────────────────────────
+  /// Records one admin action in the immutable `admin_logs` audit trail.
+  /// Best-effort — an audit hiccup must never fail the action itself.
+  Future<void> logAdminAction({
+    required String adminUid,
+    required String action,
+    String targetUid = '',
+    String targetProfileId = '',
+    String details = '',
+  }) async {
+    try {
+      await _db.collection(AppConstants.adminLogsCollection).add({
+        'adminUid': adminUid,
+        'action': action,
+        'targetUid': targetUid,
+        'targetProfileId': targetProfileId,
+        'details': details,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('[Firestore] logAdminAction($action) failed (non-fatal): $e');
+    }
+  }
+
+  /// Latest admin actions, newest first (admin-only per rules).
+  Stream<List<Map<String, dynamic>>> watchAdminLogs({int limit = 200}) => _db
+      .collection(AppConstants.adminLogsCollection)
+      .orderBy('createdAt', descending: true)
+      .limit(limit)
+      .snapshots()
+      .map((s) => [
+            for (final d in s.docs) {'id': d.id, ...d.data()},
+          ]);
+
+  /// Cheap aggregate totals for the CRM dashboard — collections too large to
+  /// stream whole (users beyond the 300-row admin list, all notifications).
+  /// One count() read each; the dashboard refreshes them periodically.
+  Future<({int totalUsers, int totalNotifications})>
+      getAdminAggregateCounts() async {
+    Future<int> countOf(String collection) async {
+      try {
+        final agg =
+            await _db.collection(collection).count().get();
+        return agg.count ?? 0;
+      } catch (e) {
+        debugPrint('[Firestore] count($collection) failed: $e');
+        return 0;
+      }
+    }
+
+    final users = await countOf(AppConstants.usersCollection);
+    final notifications = await countOf(AppConstants.notificationsCollection);
+    return (totalUsers: users, totalNotifications: notifications);
+  }
+
   // ── Announcements (admin broadcast → all users & astrologers) ───────────────
   /// Live active announcements, newest first. Filters `isActive` only and sorts
   /// client-side (no composite index needed).
@@ -876,6 +957,14 @@ class FirestoreService {
         return list;
       });
 
+  /// One announcement by id — live, null when deleted/missing. Backs the
+  /// deep-linked `/announcement/:id` screen.
+  Stream<AnnouncementModel?> watchAnnouncement(String id) => _db
+      .collection(AppConstants.announcementsCollection)
+      .doc(id)
+      .snapshots()
+      .map((d) => d.exists ? AnnouncementModel.fromFirestore(d) : null);
+
   /// All announcements (any status) for the admin management screen.
   Stream<List<AnnouncementModel>> watchAllAnnouncements() => _db
       .collection(AppConstants.announcementsCollection)
@@ -887,6 +976,8 @@ class FirestoreService {
         return list;
       });
 
+  /// Creating an ACTIVE announcement also triggers the announcements-onCreate
+  /// Cloud Function, which pushes it to the audience topic.
   Future<void> createAnnouncement({
     required String title,
     required String message,
@@ -894,6 +985,8 @@ class FirestoreService {
     String type = 'general',
     String actionUrl = '',
     String actionLabel = '',
+    String imageUrl = '',
+    String priority = 'normal',
   }) =>
       _db.collection(AppConstants.announcementsCollection).add({
         'title': title,
@@ -904,6 +997,8 @@ class FirestoreService {
         'type': type,
         'actionUrl': actionUrl,
         'actionLabel': actionLabel,
+        'imageUrl': imageUrl,
+        'priority': priority,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -915,6 +1010,8 @@ class FirestoreService {
     String type = 'general',
     String actionUrl = '',
     String actionLabel = '',
+    String imageUrl = '',
+    String priority = 'normal',
   }) =>
       _db.collection(AppConstants.announcementsCollection).doc(id).update({
         'title': title,
@@ -923,6 +1020,8 @@ class FirestoreService {
         'type': type,
         'actionUrl': actionUrl,
         'actionLabel': actionLabel,
+        'imageUrl': imageUrl,
+        'priority': priority,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
@@ -1080,8 +1179,10 @@ class FirestoreService {
         label: 'allUsers',
       );
 
-  /// Realtime [getAllProfiles] — every profile, newest-first.
-  Stream<List<ProfileModel>> watchAllProfiles({int limit = 300}) =>
+  /// Realtime [getAllProfiles] — every profile, newest-first. The limit
+  /// bounds runaway reads while keeping the admin dashboard's profile stats
+  /// accurate far beyond the visible list size.
+  Stream<List<ProfileModel>> watchAllProfiles({int limit = 1000}) =>
       FirestoreSync.collectionStream<ProfileModel>(
         _db.collection(AppConstants.profilesCollection).limit(limit),
         fromDoc: ProfileModel.fromFirestore,
@@ -1119,12 +1220,22 @@ class FirestoreService {
         .get()
         .then((s) {
       for (final doc in s.docs) {
-        doc.reference.update({'status': 'blocked', 'isActive': false});
+        // Remember the pre-suspension status so Activate can restore it —
+        // unconditionally approving would silently skip the review queue for
+        // a pending/rejected profile.
+        final prior = (doc.data()['status'] ?? 'approved').toString();
+        doc.reference.update({
+          'status': 'blocked',
+          'isActive': false,
+          if (prior != 'blocked') 'statusBeforeBlock': prior,
+        });
       }
     });
   }
 
-  /// Re-enables a suspended (blocked) user and reactivates their profile(s).
+  /// Re-enables a suspended (blocked) user and restores their profile(s) to
+  /// the status they had BEFORE the suspension (legacy docs without the
+  /// marker restore to 'approved', matching the old behaviour).
   Future<void> unblockUser(String userId) async {
     await _db
         .collection(AppConstants.usersCollection)
@@ -1135,7 +1246,13 @@ class FirestoreService {
         .where('userId', isEqualTo: userId)
         .get();
     for (final doc in profiles.docs) {
-      await doc.reference.update({'status': 'approved', 'isActive': true});
+      final prior =
+          (doc.data()['statusBeforeBlock'] ?? 'approved').toString();
+      await doc.reference.update({
+        'status': prior == 'blocked' ? 'approved' : prior,
+        'isActive': true,
+        'statusBeforeBlock': FieldValue.delete(),
+      });
     }
   }
 

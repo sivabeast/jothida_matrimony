@@ -236,6 +236,12 @@ service cloud.firestore {
     }
 
     // ── Interests ─────────────────────────────────────────────────────────
+    // DUPLICATE PREVENTION (server-side): at most ONE interest may exist per
+    // profile pair, in ONE direction. The doc id is deterministic
+    // ({senderProfileId}_{receiverProfileId}), the id must match the payload
+    // (so the reverse-existence check cannot be spoofed), and a create is
+    // denied while the REVERSE interest exists — the receiver of a pending
+    // interest can only Accept/Reject, never counter-send.
     match /interests/{interestId} {
       allow read: if isAuthenticated()
                   && (resource.data.senderId == request.auth.uid
@@ -243,9 +249,21 @@ service cloud.firestore {
       // Admins may read interests for moderation + dashboard engagement counts.
       allow read: if isAdmin();
       allow create: if isAuthenticated()
-                    && request.resource.data.senderId == request.auth.uid;
+                    && request.resource.data.senderId == request.auth.uid
+                    && request.resource.data.status == 'pending'
+                    && interestId == request.resource.data.senderProfileId
+                        + '_' + request.resource.data.receiverProfileId
+                    && !exists(/databases/$(database)/documents/interests/$(
+                        request.resource.data.receiverProfileId
+                        + '_' + request.resource.data.senderProfileId));
+      // Only the RECEIVER responds, exactly once (pending → accepted/rejected),
+      // and may touch nothing but status + respondedAt.
       allow update: if isAuthenticated()
-                    && resource.data.receiverId == request.auth.uid;
+                    && resource.data.receiverId == request.auth.uid
+                    && resource.data.status == 'pending'
+                    && request.resource.data.status in ['accepted', 'rejected']
+                    && request.resource.data.diff(resource.data)
+                        .affectedKeys().hasOnly(['status', 'respondedAt']);
       // Either party may delete the interest — the sender withdrawing it, or
       // either party clearing it during account deletion.
       allow delete: if isAuthenticated()
@@ -330,6 +348,15 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── Admin activity log ────────────────────────────────────────────────
+    // Immutable audit trail of important admin actions (profile created /
+    // approved / rejected / suspended / deleted, credentials shared,
+    // announcements sent…). Admin-only, append-only.
+    match /admin_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+    }
+
     // ── Notifications ─────────────────────────────────────────────────────
     // Event notifications (interest sent/accepted/rejected, profile approved,
     // report ready, appointment confirmed, admin update) are created
@@ -339,6 +366,8 @@ service cloud.firestore {
     match /notifications/{notifId} {
       allow read: if isAuthenticated()
                   && resource.data.userId == request.auth.uid;
+      // Admin: CRM dashboard aggregate count() + moderation visibility.
+      allow read: if isAdmin();
       allow update: if isAuthenticated()
                     && resource.data.userId == request.auth.uid;
       allow create: if isAdmin();

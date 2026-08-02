@@ -140,6 +140,11 @@ class ChatService {
   /// an attachment passes [type] + [attachmentUrl] (+ [fileName]/[fileType]).
   /// The thread's `lastMessage` preview is set to [text] for a text message, or
   /// a short label (📷 Photo / 📄 PDF / 📎 Attachment) for an attachment.
+  ///
+  /// [messageId] forces a DETERMINISTIC message doc id. Used for the one-time
+  /// accepted-interest greeting ('greeting_&lt;threadId&gt;') so the client and the
+  /// interest-accepted Cloud Function can both try to post it without ever
+  /// producing two greeting bubbles.
   Future<void> sendMessage({
     required String threadId,
     required String senderId,
@@ -148,10 +153,13 @@ class ChatService {
     String attachmentUrl = '',
     String fileName = '',
     String fileType = '',
+    String? messageId,
   }) async {
     final threadRef = _chats.doc(threadId);
-    final msgRef =
-        threadRef.collection(AppConstants.messagesSubcollection).doc();
+    final messages = threadRef.collection(AppConstants.messagesSubcollection);
+    final msgRef = messageId == null || messageId.isEmpty
+        ? messages.doc()
+        : messages.doc(messageId);
     final preview = chatPreviewFor(type: type, text: text, fileName: fileName);
 
     await _db.runTransaction((txn) async {
@@ -195,4 +203,20 @@ class ChatService {
       _chats.doc(threadId).update({
         'deliveredAt.$uid': FieldValue.serverTimestamp(),
       });
+
+  /// Presence marker for push suppression: records which conversation [uid]
+  /// is currently viewing on `users/{uid}.activeThreadId` (null clears it).
+  /// The chat-message Cloud Function skips the FCM push when the receiver is
+  /// already looking at that thread. Best-effort — never throws.
+  Future<void> setActiveThread(String uid, String? threadId) async {
+    if (uid.isEmpty) return;
+    try {
+      await _db.collection(AppConstants.usersCollection).doc(uid).update({
+        'activeThreadId':
+            (threadId == null || threadId.isEmpty) ? FieldValue.delete() : threadId,
+      });
+    } catch (e) {
+      debugPrint('[ChatService] setActiveThread failed (non-fatal): $e');
+    }
+  }
 }

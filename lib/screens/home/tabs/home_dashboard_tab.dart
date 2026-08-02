@@ -127,6 +127,17 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           _buildHeaderBanner(context),
           const SizedBox(height: 18),
 
+          // ── Profile Under Review — shown only while the member's profile is
+          //    awaiting admin approval. Streams off myProfileProvider, so it
+          //    disappears the moment the status changes. ─────────────────────
+          if (myProfile != null &&
+              (myProfile.status == 'pending' ||
+                  myProfile.status == 'rejected')) ...[
+            _buildPendingReviewBanner(context,
+                rejected: myProfile.status == 'rejected'),
+            const SizedBox(height: 18),
+          ],
+
           // ── Quick actions — one-tap access to the core journeys ───────────
           _buildQuickActions(context),
           const SizedBox(height: 18),
@@ -557,6 +568,77 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
                     fontFamily: 'Poppins',
                   ),
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Profile Under Review banner ────────────────────────────────────────────
+
+  /// Premium status banner shown while the member's profile is not live:
+  /// amber/gold + hourglass while `pending` (admin review), red + info icon
+  /// when `rejected` so the member gets clear feedback instead of silence.
+  Widget _buildPendingReviewBanner(BuildContext context,
+      {bool rejected = false}) {
+    final tint = rejected ? AppColors.error : AppColors.warning;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              tint.withValues(alpha: 0.14),
+              (rejected ? tint : AppColors.gold).withValues(alpha: 0.10),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: tint.withValues(alpha: 0.45)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: tint.withValues(alpha: 0.18),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                  rejected ? Icons.info_outline : Icons.hourglass_top,
+                  color: tint,
+                  size: 21),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                      rejected
+                          ? context.l10n.profileRejectedTitle
+                          : context.l10n.profileUnderReviewTitle,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                          fontFamily: 'Poppins')),
+                  const SizedBox(height: 3),
+                  Text(
+                      rejected
+                          ? context.l10n.profileRejectedBody
+                          : context.l10n.profileUnderReviewBody,
+                      style: TextStyle(
+                          color: Colors.grey[700],
+                          fontSize: 12,
+                          height: 1.35)),
+                ],
               ),
             ),
           ],
@@ -1638,14 +1720,26 @@ class _MatchCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    '${profile.name}, ${profile.age}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        fontFamily: 'Poppins'),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          '${profile.name}, ${profile.age}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              fontFamily: 'Poppins'),
+                        ),
+                      ),
+                      // Verified badge — same green tick the Discover cards use.
+                      if (profile.isVerified) ...[
+                        const SizedBox(width: 4),
+                        const Icon(Icons.verified,
+                            size: 15, color: AppColors.success),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 4),
                   _metaLine(Icons.school_outlined,

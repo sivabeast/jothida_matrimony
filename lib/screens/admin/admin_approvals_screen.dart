@@ -1,42 +1,67 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
 import '../../providers/admin_provider.dart';
 import '../../widgets/common/data_states.dart';
 
+/// Admin → Profile Approvals (/admin/approvals).
+///
+/// Live pending-moderation queue: a profile submitted, approved or rejected
+/// anywhere shows up / disappears here instantly ([pendingProfilesProvider] is
+/// a Firestore snapshot stream). Approve / Reject pass BOTH the profile id and
+/// the owner's userId so the member gets the in-app + push notification.
 class AdminApprovalsScreen extends ConsumerWidget {
   const AdminApprovalsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profilesAsync = ref.watch(pendingProfilesProvider);
+    final count = profilesAsync.valueOrNull?.length ?? 0;
 
-    return profilesAsync.when(
-      loading: () => const LoadingState(message: 'Loading profiles...'),
-      error: (e, _) {
-        debugPrint('[AdminApprovals] load failed: $e');
-        return ErrorStateView(
-          message: 'Unable to load profiles. Please try again.',
-          onRetry: () => ref.invalidate(pendingProfilesProvider),
-        );
-      },
-      data: (profiles) => profiles.isEmpty
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_circle_outline, size: 72, color: Colors.green),
-                  SizedBox(height: 16),
-                  Text('No pending profiles', style: TextStyle(fontSize: 18)),
-                ],
+    return Scaffold(
+      backgroundColor: AppColors.scaffoldBg,
+      appBar: AppBar(
+        title: Text(count > 0 ? 'Profile Approvals ($count)' : 'Profile Approvals'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+      ),
+      body: profilesAsync.when(
+        loading: () => const LoadingState(message: 'Loading profiles...'),
+        error: (e, _) {
+          debugPrint('[AdminApprovals] load failed: $e');
+          return ErrorStateView(
+            message: 'Unable to load profiles. Please try again.',
+            onRetry: () => ref.invalidate(pendingProfilesProvider),
+          );
+        },
+        data: (profiles) => profiles.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.check_circle_outline,
+                        size: 72, color: AppColors.success),
+                    const SizedBox(height: 16),
+                    const Text('No profiles waiting for review',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 6),
+                    Text('New submissions will appear here automatically.',
+                        style:
+                            TextStyle(fontSize: 13, color: Colors.grey[600])),
+                  ],
+                ),
+              )
+            : ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: profiles.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (_, i) => _ApprovalCard(profile: profiles[i]),
               ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: profiles.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (_, i) => _ApprovalCard(profile: profiles[i]),
-            ),
+      ),
     );
   }
 }
@@ -45,6 +70,10 @@ class _ApprovalCard extends ConsumerWidget {
   final ProfileModel profile;
 
   const _ApprovalCard({required this.profile});
+
+  String _date(DateTime? d) => d == null
+      ? '—'
+      : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,6 +85,7 @@ class _ApprovalCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CircleAvatar(
                   radius: 30,
@@ -82,6 +112,10 @@ class _ApprovalCard extends ConsumerWidget {
                         '${profile.religion} • ${profile.caste}',
                         style: TextStyle(color: Colors.grey[600], fontSize: 13),
                       ),
+                      Text(
+                        'Submitted: ${_date(profile.createdAt)}',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      ),
                     ],
                   ),
                 ),
@@ -95,16 +129,29 @@ class _ApprovalCard extends ConsumerWidget {
                 _InfoChip(Icons.work_outline, profile.occupation),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () =>
+                    context.push('/admin/user/${profile.userId}'),
+                icon: const Icon(Icons.visibility_outlined, size: 18),
+                label: const Text('View Details'),
+                style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary),
+              ),
+            ),
+            const SizedBox(height: 4),
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => _reject(context, ref),
-                    icon: const Icon(Icons.close, color: Colors.red),
-                    label: const Text('Reject', style: TextStyle(color: Colors.red)),
+                    icon: const Icon(Icons.close, color: AppColors.error),
+                    label: const Text('Reject',
+                        style: TextStyle(color: AppColors.error)),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.red),
+                      side: const BorderSide(color: AppColors.error),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
                     ),
@@ -113,13 +160,12 @@ class _ApprovalCard extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => ref
-                        .read(adminActionsProvider.notifier)
-                        .approveProfile(profile.id),
+                    onPressed: () => _approve(context, ref),
                     icon: const Icon(Icons.check, color: Colors.white),
-                    label: const Text('Approve', style: TextStyle(color: Colors.white)),
+                    label: const Text('Approve',
+                        style: TextStyle(color: Colors.white)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: AppColors.success,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
                     ),
@@ -133,35 +179,68 @@ class _ApprovalCard extends ConsumerWidget {
     );
   }
 
+  Future<void> _approve(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    // userId too, so the member receives the "Profile Approved" notification.
+    await ref
+        .read(adminActionsProvider.notifier)
+        .approveProfile(profile.id, userId: profile.userId);
+    final st = ref.read(adminActionsProvider);
+    messenger.showSnackBar(SnackBar(
+      content: Text(st.hasError
+          ? 'Could not approve profile. Please try again.'
+          : '${profile.name} approved — the member has been notified.'),
+      backgroundColor: st.hasError ? AppColors.error : AppColors.success,
+    ));
+  }
+
   Future<void> _reject(BuildContext context, WidgetRef ref) async {
-    final reasonController = TextEditingController();
-    final confirmed = await showDialog<String>(
+    final controller = TextEditingController();
+    final reason = await showDialog<String>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Reject Profile'),
-        content: TextField(
-          controller: reasonController,
-          decoration: const InputDecoration(
-            hintText: 'Enter rejection reason',
-            border: OutlineInputBorder(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('Reject Profile'),
+          content: TextField(
+            controller: controller,
+            maxLines: 3,
+            autofocus: true,
+            onChanged: (_) => setState(() {}),
+            decoration: const InputDecoration(
+              hintText: 'Reason for rejection (required)',
+              border: OutlineInputBorder(),
+            ),
           ),
-          maxLines: 3,
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: controller.text.trim().isEmpty
+                  ? null
+                  : () => Navigator.pop(ctx, controller.text.trim()),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white),
+              child: const Text('Reject'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, null),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, reasonController.text),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Reject', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
-    if (confirmed != null && confirmed.isNotEmpty) {
-      await ref.read(adminActionsProvider.notifier).rejectProfile(profile.id, confirmed);
-    }
+    if (reason == null || reason.isEmpty) return;
+    if (!context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    await ref
+        .read(adminActionsProvider.notifier)
+        .rejectProfile(profile.id, reason, userId: profile.userId);
+    final st = ref.read(adminActionsProvider);
+    messenger.showSnackBar(SnackBar(
+      content: Text(st.hasError
+          ? 'Could not reject profile. Please try again.'
+          : 'Profile rejected.'),
+      backgroundColor: st.hasError ? AppColors.error : AppColors.warning,
+    ));
   }
 }
 

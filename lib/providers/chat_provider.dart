@@ -224,7 +224,47 @@ class ChatController {
         );
   }
 
-  Future<void> sendMessage(String threadId, String text) async {
+  /// Open-conversation stack (a chat can be pushed on top of another chat via
+  /// a notification tap). users/{uid}.activeThreadId always reflects the TOP,
+  /// so popping the upper chat restores presence for the one underneath
+  /// instead of blindly clearing it.
+  static final List<String> _presenceStack = [];
+
+  /// Chat-presence marker (push suppression). Pass null when leaving.
+  Future<void> setActiveThread(String? threadId) async {
+    final myUid = _ref.read(myUidProvider);
+    if (myUid == null || kBypassAuth) return;
+    await _ref.read(chatServiceProvider).setActiveThread(myUid, threadId);
+  }
+
+  /// A conversation screen became visible.
+  Future<void> enterThreadPresence(String threadId) {
+    _presenceStack.add(threadId);
+    return setActiveThread(threadId);
+  }
+
+  /// A conversation screen was closed — restore whichever chat (if any) is
+  /// still underneath it.
+  Future<void> leaveThreadPresence(String threadId) {
+    final idx = _presenceStack.lastIndexOf(threadId);
+    if (idx >= 0) _presenceStack.removeAt(idx);
+    return setActiveThread(
+        _presenceStack.isEmpty ? null : _presenceStack.last);
+  }
+
+  /// App went to the background with a chat open: pushes must resume (the
+  /// user can no longer see the conversation).
+  Future<void> suspendThreadPresence() => setActiveThread(null);
+
+  /// App returned to the foreground on a chat screen.
+  Future<void> resumeThreadPresence() async {
+    if (_presenceStack.isNotEmpty) {
+      await setActiveThread(_presenceStack.last);
+    }
+  }
+
+  Future<void> sendMessage(String threadId, String text,
+      {String? messageId}) async {
     final myUid = _ref.read(myUidProvider);
     if (myUid == null || text.trim().isEmpty) return;
     if (kBypassAuth) {
@@ -234,7 +274,10 @@ class ChatController {
       return;
     }
     await _ref.read(chatServiceProvider).sendMessage(
-        threadId: threadId, senderId: myUid, text: text.trim());
+        threadId: threadId,
+        senderId: myUid,
+        text: text.trim(),
+        messageId: messageId);
   }
 
   /// Uploads [file] (image / pdf / document) to the thread's storage folder and

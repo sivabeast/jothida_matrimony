@@ -46,6 +46,9 @@ class AppConstants {
   static const String connectionsCollection = 'connections';
   // Aadhaar verification records — SENSITIVE, gated to owner + admin only.
   static const String aadhaarCollection = 'aadhaar';
+  // Immutable audit trail of important admin actions (approve/reject/suspend/
+  // delete profile, credentials shared, announcements sent…). Admin-only.
+  static const String adminLogsCollection = 'admin_logs';
 
   // Astrologer specializations
   static const List<String> astrologerSpecializations = [

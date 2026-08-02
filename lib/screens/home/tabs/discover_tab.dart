@@ -12,10 +12,13 @@ import '../../../providers/interest_provider.dart';
 import '../../../providers/matches_prefs_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/ui_preferences_provider.dart';
+import '../../../providers/chat_provider.dart';
 import '../../../widgets/common/auto_fit_label.dart';
 import '../../../widgets/common/create_profile_cta.dart';
 import '../../../widgets/common/face_centered_photo.dart';
 import '../../../widgets/common/profile_highlight_badge.dart';
+import '../../../widgets/interest/match_celebration.dart';
+import '../../../widgets/interest/pending_interest_card.dart';
 
 /// The Matches experience — a HORIZONTAL swipe browser over EVERY eligible
 /// profile (§1).
@@ -154,6 +157,12 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
             receiverProfileId: profile.id,
           );
       if (!mounted) return;
+      // The notifier guards its work — failures land in state, not throws.
+      final st = ref.read(interestNotifierProvider);
+      if (st.hasError) {
+        _snack(interestErrorText(st.error, l10n.couldNotSendInterest));
+        return;
+      }
       setState(() => _interestSent.add(profile.id));
       _snack(l10n.interestSentTo(profile.name));
     } catch (_) {
@@ -162,7 +171,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   }
 
   /// Accept a pending interest the target sent us — turns the pair into a
-  /// match right from the card.
+  /// match right from the card, with the premium celebration overlay.
   Future<void> _acceptInterest(ProfileModel profile, String interestId) async {
     final l10n = context.l10n;
     try {
@@ -170,9 +179,66 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
           .read(interestNotifierProvider.notifier)
           .acceptInterest(interestId);
       if (!mounted) return;
-      _snack(l10n.youMatchedWith(profile.name));
+      if (ref.read(interestNotifierProvider).hasError) {
+        _snack(l10n.couldNotAcceptInterest);
+        return;
+      }
+      await showMatchCelebration(
+        context,
+        name: profile.name,
+        photoUrl: profile.hidesPhoto ? '' : (profile.profilePhotoUrl ?? ''),
+        onStartChat: () => _openChatWith(profile),
+      );
     } catch (_) {
       _snack(l10n.couldNotAcceptInterest);
+    }
+  }
+
+  /// Decline a pending interest right from the card (confirmed first).
+  Future<void> _rejectInterest(ProfileModel profile, String interestId) async {
+    final l10n = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.interestRejectedConfirmTitle),
+        content: Text(l10n.interestRejectedConfirmBody(profile.name)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.cancel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+              child: Text(l10n.reject)),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref
+          .read(interestNotifierProvider.notifier)
+          .rejectInterest(interestId);
+      if (mounted) _snack(l10n.interestDeclined);
+    } catch (_) {
+      _snack(l10n.couldNotAcceptInterest);
+    }
+  }
+
+  /// Opens (creating if needed) the chat with a just-matched profile.
+  Future<void> _openChatWith(ProfileModel profile) async {
+    try {
+      final threadId = await ref.read(chatControllerProvider).openChatWith(
+            otherUid: profile.userId,
+            otherName: profile.name,
+            otherPhoto: profile.hidesPhoto ? '' : (profile.profilePhotoUrl ?? ''),
+          );
+      if (!mounted) return;
+      context.push('/chat/$threadId', extra: {
+        'name': profile.name,
+        'photo': profile.hidesPhoto ? '' : (profile.profilePhotoUrl ?? ''),
+      });
+    } catch (_) {
+      _snack(context.l10n.couldNotOpenChatRetry);
     }
   }
 
@@ -495,6 +561,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
                 interestSent: _interestSent.contains(p.id),
                 onInterest: () => _sendInterest(p),
                 onAccept: (interestId) => _acceptInterest(p, interestId),
+                onReject: (interestId) => _rejectInterest(p, interestId),
               );
             },
           ),
@@ -656,7 +723,12 @@ class _MatchProfileCard extends ConsumerWidget {
   final ProfileModel profile;
   final bool interestSent;
   final VoidCallback onInterest;
-  final ValueChanged<String> onAccept;
+
+  /// Future-returning so the PendingInterestCard's busy guard genuinely spans
+  /// the whole accept/reject round-trip (a void callback would complete
+  /// instantly and re-enable both buttons mid-flight).
+  final Future<void> Function(String interestId) onAccept;
+  final Future<void> Function(String interestId) onReject;
 
   const _MatchProfileCard({
     super.key,
@@ -664,6 +736,7 @@ class _MatchProfileCard extends ConsumerWidget {
     required this.interestSent,
     required this.onInterest,
     required this.onAccept,
+    required this.onReject,
   });
 
   // Shared action-button geometry/typography so "Express Interest" and "View
@@ -922,6 +995,35 @@ class _MatchProfileCard extends ConsumerWidget {
 
   // ── Actions ────────────────────────────────────────────────────────────────
   Widget _actions(BuildContext context, InterestUiStatus status) {
+    // A pending RECEIVED interest replaces the whole action row with the
+    // premium Accept/Reject card — this member must never be offered a
+    // (duplicate) "Express Interest" while one is already waiting for them.
+    if (status == InterestUiStatus.receivedPending) {
+      return Consumer(builder: (context, ref, _) {
+        final pending =
+            ref.watch(pendingReceivedInterestFromProfileProvider(profile.id));
+        if (pending == null) return const SizedBox.shrink();
+        return Column(
+          children: [
+            PendingInterestCard(
+              compact: true,
+              name: profile.name,
+              onAccept: () => onAccept(pending.id),
+              onReject: () => onReject(pending.id),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: _outlinedButton(
+                icon: Icons.person_outline,
+                label: context.l10n.viewProfile,
+                onPressed: () => _openProfile(context),
+              ),
+            ),
+          ],
+        );
+      });
+    }
     return Row(
       children: [
         Expanded(child: _interestButton(context, status)),

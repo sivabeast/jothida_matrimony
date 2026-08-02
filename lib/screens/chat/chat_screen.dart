@@ -13,6 +13,7 @@ import '../../models/chat_model.dart';
 import '../../providers/astrologer_provider.dart';
 import '../../providers/block_provider.dart';
 import '../../providers/chat_provider.dart';
+import '../../providers/profile_provider.dart';
 import '../../widgets/common/network_photo.dart';
 
 /// One conversation: realtime message stream + composer.
@@ -29,7 +30,8 @@ class ChatScreen extends ConsumerStatefulWidget {
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends ConsumerState<ChatScreen> {
+class _ChatScreenState extends ConsumerState<ChatScreen>
+    with WidgetsBindingObserver {
   final _controller = TextEditingController();
   bool _sending = false;
 
@@ -38,15 +40,44 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   /// clears instantly, and the sender's tick flips to "Seen").
   String? _lastReadMsgId;
 
+  /// Captured in initState so dispose() can clear presence without touching
+  /// ref after the element is unmounted.
+  ChatController? _chatController;
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-        () => ref.read(chatControllerProvider).markRead(widget.threadId));
+    WidgetsBinding.instance.addObserver(this);
+    Future.microtask(() {
+      if (!mounted) return;
+      _chatController = ref.read(chatControllerProvider);
+      _chatController!.markRead(widget.threadId);
+      // Presence: while this conversation is VISIBLE, its push notifications
+      // are suppressed server-side (the user is already looking at it).
+      _chatController!.enterThreadPresence(widget.threadId);
+    });
+  }
+
+  /// Backgrounding/locking the phone does NOT dispose this screen — presence
+  /// must be released the moment the conversation stops being visible, or the
+  /// other member's messages would silently arrive without a push. Resuming
+  /// restores it.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _chatController?.resumeThreadPresence();
+      _chatController?.markRead(widget.threadId);
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.detached) {
+      _chatController?.suspendThreadPresence();
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _chatController?.leaveThreadPresence(widget.threadId);
     _controller.dispose();
     super.dispose();
   }
@@ -342,6 +373,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         (otherUid.isNotEmpty &&
             ref.watch(astrologerByIdProvider(otherUid)) != null);
 
+    // Verified badge in the header — resolved from the counterpart's matrimony
+    // profile. Astrologer/employee chats have no profile, so the lookup simply
+    // yields null (or a denied read) and no badge is shown.
+    final otherVerified = otherUid.isNotEmpty &&
+        (ref
+                .watch(profileByUserIdProvider(otherUid))
+                .valueOrNull
+                ?.isVerified ??
+            false);
+
     // Block / report state (spec §6, §7). `blocked` is either direction — the
     // composer is disabled; `iBlocked` decides the Block vs Unblock menu label.
     final iBlocked =
@@ -367,7 +408,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   : null,
             ),
             const SizedBox(width: 10),
-            Expanded(child: Text(name, overflow: TextOverflow.ellipsis)),
+            Expanded(
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(name, overflow: TextOverflow.ellipsis),
+                  ),
+                  if (otherVerified) ...[
+                    const SizedBox(width: 6),
+                    const Icon(Icons.verified,
+                        size: 16, color: AppColors.gold),
+                  ],
+                ],
+              ),
+            ),
           ],
         ),
         actions: [

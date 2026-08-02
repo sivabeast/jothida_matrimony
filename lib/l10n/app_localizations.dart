@@ -2729,7 +2729,7 @@ abstract class AppLocalizations {
   /// No description provided for @updateAvailableTitle.
   ///
   /// In en, this message translates to:
-  /// **'New Update Available'**
+  /// **'Update Available'**
   String get updateAvailableTitle;
 
   /// No description provided for @updateRequiredMessage.
@@ -5479,6 +5479,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No contact details have been added yet.'**
   String get contactNotProvided;
+
+  /// No description provided for @pendingInterestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} has shown interest in you!'**
+  String pendingInterestTitle(String name);
+
+  /// No description provided for @pendingInterestTitleGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone has shown interest in you!'**
+  String get pendingInterestTitleGeneric;
+
+  /// No description provided for @pendingInterestBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept to connect instantly and start chatting — or politely decline.'**
+  String get pendingInterestBody;
+
+  /// No description provided for @matchCelebrationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s a Match!'**
+  String get matchCelebrationTitle;
+
+  /// No description provided for @matchCelebrationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You and {name} are now connected. Say hello!'**
+  String matchCelebrationBody(String name);
+
+  /// No description provided for @startChatting.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Chatting'**
+  String get startChatting;
+
+  /// No description provided for @keepBrowsing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Browsing'**
+  String get keepBrowsing;
+
+  /// No description provided for @awaitingYourResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting your response'**
+  String get awaitingYourResponse;
+
+  /// No description provided for @interestRejectedConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline this interest?'**
+  String get interestRejectedConfirmTitle;
+
+  /// No description provided for @interestRejectedConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} will be notified that you declined their interest.'**
+  String interestRejectedConfirmBody(String name);
+
+  /// No description provided for @profileUnderReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Under Review'**
+  String get profileUnderReviewTitle;
+
+  /// No description provided for @profileUnderReviewBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile is being reviewed by our team. You will be notified the moment it is approved and visible to matches.'**
+  String get profileUnderReviewBody;
+
+  /// No description provided for @profileRejectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Not Approved'**
+  String get profileRejectedTitle;
+
+  /// No description provided for @profileRejectedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile could not be approved. Please review your details or contact our support team for help.'**
+  String get profileRejectedBody;
+
+  /// No description provided for @updateAvailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A new version of the app is available on Google Play. Update now for the latest features and fixes.'**
+  String get updateAvailableBody;
+
+  /// No description provided for @later.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get later;
 }
 
 class _AppLocalizationsDelegate

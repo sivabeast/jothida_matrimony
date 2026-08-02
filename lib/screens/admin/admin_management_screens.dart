@@ -1396,6 +1396,19 @@ class AdminSettingsScreen extends StatelessWidget {
           color: AppColors.primary,
           onTap: () => context.go('/admin/create-profile'),
         ),
+        _ActionTile(
+          icon: Icons.fact_check_outlined,
+          title: 'Profile Approvals',
+          subtitle: 'Review pending profiles — approve or reject',
+          color: AppColors.warning,
+          onTap: () => context.go('/admin/approvals'),
+        ),
+        _ActionTile(
+          icon: Icons.history,
+          title: 'Activity Log',
+          subtitle: 'Audit trail of admin actions',
+          onTap: () => context.go('/admin/activity-log'),
+        ),
         const SizedBox(height: 4),
         // ── Core settings groups ────────────────────────────────────────────
         _ActionTile(

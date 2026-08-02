@@ -67,7 +67,9 @@ String? resolveAuthRedirect({
       loc == '/astrologer-notifications' ||
       loc.startsWith('/astrologer-request');
   if (user.isAstrologer) {
-    if (!onAstrologerPortal) {
+    // Announcement pushes to the 'employees' topic deep-link to the shared
+    // read-only announcement screen — allowed alongside the portal routes.
+    if (!onAstrologerPortal && !loc.startsWith('/announcement/')) {
       log?.call('employee account → /astrologer-dashboard');
       return '/astrologer-dashboard';
     }

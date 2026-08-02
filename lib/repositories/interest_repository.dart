@@ -11,10 +11,21 @@ class InterestRepository {
   /// Accepts an interest AND records the connection that unlocks contact
   /// details for both users. Falls back to a plain status update if the
   /// interest document can't be loaded.
+  ///
+  /// IDEMPOTENT: an interest that is already accepted (double-tap, second
+  /// device, retried call) is treated as success — re-issuing the status
+  /// update would be denied by the rules (which only allow the one
+  /// pending→accepted/rejected transition) and surface a false
+  /// "Could not accept" error after the match had in fact succeeded.
   Future<void> acceptInterest(String interestId) async {
     final interest = await _firestore.getInterestById(interestId);
     if (interest == null) {
       return _firestore.updateInterestStatus(interestId, 'accepted');
+    }
+    if (interest.isAccepted) {
+      // Already matched — just make sure the contact-unlock connection exists.
+      await _firestore.createConnection(interest);
+      return;
     }
     return _firestore.acceptInterestAndConnect(interest);
   }

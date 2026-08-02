@@ -185,7 +185,12 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
   /// profile; EDIT mode ([editProfileId] non-null) UPDATES the existing
   /// document in place — never a duplicate — keeping photos/PDF that weren't
   /// re-picked and preserving moderation fields (status, counters, verified).
-  Future<String?> submitProfile(String userId, {String? editProfileId}) async {
+  /// [adminCreated] — true when an ADMIN is creating this profile through the
+  /// shared wizard: the profile goes live immediately (the admin **is** the
+  /// reviewer). Self-registered profiles enter the approval workflow as
+  /// 'pending' and only appear in Matches/Search once an admin approves them.
+  Future<String?> submitProfile(String userId,
+      {String? editProfileId, bool adminCreated = false}) async {
     state = state.copyWith(isLoading: true, error: null, uploadProgress: 0, uploadStatus: null);
 
     // ── Demo mode: save the profile to the in-memory store, no backend ──
@@ -334,9 +339,11 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
         'userId': userId,
         'photos': photoUrls.isNotEmpty ? photoUrls : existingPhotos,
         if (horoscopeMap.isNotEmpty) 'horoscopeDetails': horoscopeMap,
-        // Profiles are active immediately on completion — no admin approval
-        // step. ('rejected'/'blocked' remain available for moderation only.)
-        'status': 'approved',
+        // Approval workflow: self-registered profiles start PENDING REVIEW and
+        // become visible in Matches/Search only after an admin approves them.
+        // Admin-created profiles are approved on the spot (the admin is the
+        // reviewer). 'rejected'/'blocked' remain moderation outcomes.
+        'status': adminCreated ? 'approved' : 'pending',
         'isActive': true,
         'createdAt': DateTime.now(),
         'updatedAt': DateTime.now(),
@@ -383,12 +390,15 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
         debugPrint('[submitProfile] ▶ marking profile completed for userId=$userId');
         await ref.read(firestoreServiceProvider).markProfileCompleted(userId);
         debugPrint('[submitProfile] ✅ markProfileCompleted done');
-        // In-app "Profile Approved" notification — profiles go live immediately
-        // on completion (best-effort; never fails the save).
-        await ref.read(notificationNotifierProvider.notifier).notify(
-              toUid: userId,
-              event: AppNotificationEvent.profileApproved,
-            );
+        if (adminCreated) {
+          // Admin-created profiles are live immediately — tell the member.
+          await ref.read(notificationNotifierProvider.notifier).notify(
+                toUid: userId,
+                event: AppNotificationEvent.profileApproved,
+              );
+        }
+        // Self-registered profiles get their "Profile Approved" notification
+        // when the admin actually approves them (AdminActionsNotifier).
       }
 
       ref.invalidate(currentUserProvider); // refresh the gate

@@ -61,6 +61,9 @@ class NotificationNotifier extends Notifier<void> {
     required AppNotificationEvent event,
     String name = '',
     String route = '',
+    String? id,
+    String targetScreen = '',
+    String targetId = '',
   }) async {
     if (toUid.isEmpty) return;
     try {
@@ -78,6 +81,11 @@ class NotificationNotifier extends Notifier<void> {
             body: t.body,
             type: _typeKey(event),
             data: route.isEmpty ? null : {'route': route},
+            id: id,
+            senderId:
+                ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ?? '',
+            targetScreen: targetScreen,
+            targetId: targetId,
           );
     } catch (e) {
       debugPrint('[Notifications] notify(${event.name}) failed: $e');

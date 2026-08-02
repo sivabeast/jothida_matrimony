@@ -11,12 +11,21 @@ final announcementsProvider =
   return ref.watch(firestoreServiceProvider).watchAnnouncements();
 });
 
+/// High-priority announcements pin above normal ones; newest first within
+/// each band (the source stream is already date-sorted).
+List<AnnouncementModel> _prioritySorted(Iterable<AnnouncementModel> items) => [
+      for (final a in items)
+        if (a.isHighPriority) a,
+      for (final a in items)
+        if (!a.isHighPriority) a,
+    ];
+
 /// Active announcements broadcast to USERS — the only ones the user app shows.
 final userAnnouncementsProvider =
     Provider.autoDispose<List<AnnouncementModel>>((ref) {
   final all =
       ref.watch(announcementsProvider).valueOrNull ?? const <AnnouncementModel>[];
-  return [for (final a in all) if (a.isForUsers) a];
+  return _prioritySorted([for (final a in all) if (a.isForUsers) a]);
 });
 
 /// Active announcements broadcast to EMPLOYEES — Employee Portal only.
@@ -24,13 +33,20 @@ final employeeAnnouncementsProvider =
     Provider.autoDispose<List<AnnouncementModel>>((ref) {
   final all =
       ref.watch(announcementsProvider).valueOrNull ?? const <AnnouncementModel>[];
-  return [for (final a in all) if (a.isForEmployees) a];
+  return _prioritySorted([for (final a in all) if (a.isForEmployees) a]);
 });
 
 /// All announcements (any status) for the admin management screen.
 final allAnnouncementsProvider =
     StreamProvider.autoDispose<List<AnnouncementModel>>((ref) {
   return ref.watch(firestoreServiceProvider).watchAllAnnouncements();
+});
+
+/// One announcement by id — live; null while missing/deleted. Backs the
+/// deep-linked `/announcement/:id` screen (notification taps).
+final announcementByIdProvider = StreamProvider.autoDispose
+    .family<AnnouncementModel?, String>((ref, id) {
+  return ref.watch(firestoreServiceProvider).watchAnnouncement(id);
 });
 
 /// Admin CRUD controller for announcements.
@@ -45,6 +61,8 @@ class AnnouncementController extends Notifier<AsyncValue<void>> {
     String type = 'general',
     String actionUrl = '',
     String actionLabel = '',
+    String imageUrl = '',
+    String priority = 'normal',
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() =>
@@ -54,7 +72,9 @@ class AnnouncementController extends Notifier<AsyncValue<void>> {
             audience: audience,
             type: type,
             actionUrl: actionUrl,
-            actionLabel: actionLabel));
+            actionLabel: actionLabel,
+            imageUrl: imageUrl,
+            priority: priority));
   }
 
   /// Direct per-account notification to the SELECTED [uids] (users or
@@ -80,6 +100,8 @@ class AnnouncementController extends Notifier<AsyncValue<void>> {
     String type = 'general',
     String actionUrl = '',
     String actionLabel = '',
+    String imageUrl = '',
+    String priority = 'normal',
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() =>
@@ -89,7 +111,9 @@ class AnnouncementController extends Notifier<AsyncValue<void>> {
             isActive: isActive,
             type: type,
             actionUrl: actionUrl,
-            actionLabel: actionLabel));
+            actionLabel: actionLabel,
+            imageUrl: imageUrl,
+            priority: priority));
   }
 
   Future<void> delete(String id) async {

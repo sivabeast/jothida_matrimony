@@ -5,6 +5,8 @@ import '../models/profile_model.dart';
 import '../models/astrologer_account_model.dart';
 import '../models/astrologer_request_model.dart';
 import '../models/dashboard_analytics.dart';
+import 'auth_provider.dart';
+import 'notification_provider.dart';
 import 'service_providers.dart';
 
 final adminStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>(
@@ -79,32 +81,83 @@ final profilesByUserIdProvider =
 final pendingProfilesProvider = StreamProvider.autoDispose<List<ProfileModel>>(
     (ref) => ref.read(adminRepositoryProvider).watchPendingProfiles());
 
+/// Live admin activity log (audit trail), newest first.
+final adminLogsProvider =
+    StreamProvider.autoDispose<List<Map<String, dynamic>>>(
+        (ref) => ref.read(firestoreServiceProvider).watchAdminLogs());
+
+/// Aggregate totals too big to stream whole (all users / all notifications):
+/// count() queries refreshed every 45s so the dashboard stays near-realtime
+/// without an unbounded listener.
+final adminAggregateCountsProvider = StreamProvider.autoDispose<
+    ({int totalUsers, int totalNotifications})>((ref) async* {
+  final svc = ref.read(firestoreServiceProvider);
+  while (true) {
+    yield await svc.getAdminAggregateCounts();
+    await Future.delayed(const Duration(seconds: 45));
+  }
+});
+
 class AdminActionsNotifier extends Notifier<AsyncValue<void>> {
   @override
   AsyncValue<void> build() => const AsyncData(null);
 
-  Future<void> approveProfile(String profileId) async {
+  /// Best-effort append to the `admin_logs` audit trail.
+  Future<void> _log(String action,
+      {String targetUid = '', String targetProfileId = '', String details = ''}) {
+    final adminUid =
+        ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ?? '';
+    return ref.read(firestoreServiceProvider).logAdminAction(
+          adminUid: adminUid,
+          action: action,
+          targetUid: targetUid,
+          targetProfileId: targetProfileId,
+          details: details,
+        );
+  }
+
+  /// Approves a pending profile. When [userId] is provided the member gets the
+  /// "Profile Approved" notification (+ push via the Cloud Function gate).
+  Future<void> approveProfile(String profileId, {String userId = ''}) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
         () => ref.read(adminRepositoryProvider).approveProfile(profileId));
+    if (state.hasError) return;
+    await _log('profile_approved',
+        targetUid: userId, targetProfileId: profileId);
+    if (userId.isNotEmpty) {
+      await ref.read(notificationNotifierProvider.notifier).notify(
+            toUid: userId,
+            event: AppNotificationEvent.profileApproved,
+            id: 'profile_approved_$profileId',
+            targetScreen: 'home',
+            targetId: profileId,
+          );
+    }
   }
 
-  Future<void> rejectProfile(String profileId, String reason) async {
+  Future<void> rejectProfile(String profileId, String reason,
+      {String userId = ''}) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
         () => ref.read(adminRepositoryProvider).rejectProfile(profileId, reason));
+    if (state.hasError) return;
+    await _log('profile_rejected',
+        targetUid: userId, targetProfileId: profileId, details: reason);
   }
 
   Future<void> blockUser(String userId) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
         () => ref.read(adminRepositoryProvider).blockUser(userId));
+    if (!state.hasError) await _log('user_suspended', targetUid: userId);
   }
 
   Future<void> unblockUser(String userId) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
         () => ref.read(adminRepositoryProvider).unblockUser(userId));
+    if (!state.hasError) await _log('user_activated', targetUid: userId);
   }
 
   Future<void> deleteUser(String userId) async {
@@ -114,6 +167,8 @@ class AdminActionsNotifier extends Notifier<AsyncValue<void>> {
         () => ref.read(adminRepositoryProvider).deleteUser(userId));
     if (state.hasError) {
       debugPrint('[AdminActions] ❌ deleteUser failed: ${state.error}');
+    } else {
+      await _log('user_deleted', targetUid: userId);
     }
   }
 

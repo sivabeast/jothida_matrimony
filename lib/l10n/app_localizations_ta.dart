@@ -1416,7 +1416,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get reportLabel => 'புகார்';
 
   @override
-  String get updateAvailableTitle => 'புதிய புதுப்பிப்பு உள்ளது';
+  String get updateAvailableTitle => 'புதிய Update உள்ளது';
 
   @override
   String get updateRequiredMessage =>
@@ -2995,4 +2995,63 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get contactNotProvided =>
       'இதுவரை தொடர்பு விவரங்கள் சேர்க்கப்படவில்லை.';
+
+  @override
+  String pendingInterestTitle(String name) {
+    return '$name உங்கள் மீது விருப்பம் தெரிவித்துள்ளார்!';
+  }
+
+  @override
+  String get pendingInterestTitleGeneric =>
+      'ஒருவர் உங்கள் மீது விருப்பம் தெரிவித்துள்ளார்!';
+
+  @override
+  String get pendingInterestBody =>
+      'ஏற்றுக்கொண்டு உடனே இணைந்து உரையாடத் தொடங்குங்கள் — அல்லது மரியாதையுடன் நிராகரிக்கலாம்.';
+
+  @override
+  String get matchCelebrationTitle => 'பொருத்தம் கிடைத்தது!';
+
+  @override
+  String matchCelebrationBody(String name) {
+    return 'நீங்களும் $name அவர்களும் இப்போது இணைக்கப்பட்டுள்ளீர்கள். வணக்கம் சொல்லுங்கள்!';
+  }
+
+  @override
+  String get startChatting => 'உரையாடலைத் தொடங்கு';
+
+  @override
+  String get keepBrowsing => 'தொடர்ந்து பார்க்கவும்';
+
+  @override
+  String get awaitingYourResponse => 'உங்கள் பதிலுக்காக காத்திருக்கிறது';
+
+  @override
+  String get interestRejectedConfirmTitle => 'இந்த விருப்பத்தை நிராகரிக்கவா?';
+
+  @override
+  String interestRejectedConfirmBody(String name) {
+    return 'நீங்கள் நிராகரித்தது $name அவர்களுக்கு தெரிவிக்கப்படும்.';
+  }
+
+  @override
+  String get profileUnderReviewTitle => 'Profile பரிசீலனையில் உள்ளது';
+
+  @override
+  String get profileUnderReviewBody =>
+      'உங்கள் Profile எங்கள் குழுவால் பரிசீலிக்கப்படுகிறது. அங்கீகரிக்கப்பட்டு Matches-க்கு தெரியும் உடனேயே உங்களுக்கு தெரிவிக்கப்படும்.';
+
+  @override
+  String get profileRejectedTitle => 'Profile அங்கீகரிக்கப்படவில்லை';
+
+  @override
+  String get profileRejectedBody =>
+      'உங்கள் Profile-ஐ அங்கீகரிக்க முடியவில்லை. உங்கள் விவரங்களை சரிபார்க்கவும் அல்லது உதவிக்கு எங்கள் ஆதரவு குழுவை தொடர்பு கொள்ளவும்.';
+
+  @override
+  String get updateAvailableBody =>
+      'Google Play-இல் App-இன் புதிய பதிப்பு உள்ளது. புதிய அம்சங்களுக்கும் திருத்தங்களுக்கும் இப்போதே Update செய்யுங்கள்.';
+
+  @override
+  String get later => 'பின்னர்';
 }

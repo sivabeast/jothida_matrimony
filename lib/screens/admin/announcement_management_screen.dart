@@ -1,3 +1,6 @@
+import 'dart:async' show unawaited;
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
@@ -7,6 +10,8 @@ import '../../models/user_model.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/announcement_provider.dart';
 import '../../providers/astrology_team_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/service_providers.dart';
 
 /// Admin "Notification Management" — TWO fully independent systems (per spec):
 ///
@@ -110,9 +115,11 @@ class _AnnouncementManagementScreenState
     final msgC = TextEditingController();
     final urlC = TextEditingController();
     final labelC = TextEditingController();
+    final imageC = TextEditingController();
     var type = audience == AnnouncementAudience.users
         ? AnnouncementType.general
         : AnnouncementType.announcement;
+    var highPriority = false;
     var toAll = true;
     var selected = <String, String>{}; // uid → display name
     var sending = false;
@@ -270,6 +277,26 @@ class _AnnouncementManagementScreenState
                       border: const OutlineInputBorder(),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: imageC,
+                    keyboardType: TextInputType.url,
+                    decoration: const InputDecoration(
+                      labelText: 'Image URL (optional)',
+                      hintText: 'https://…  banner shown on the announcement',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    value: highPriority,
+                    activeColor: AppColors.error,
+                    title: const Text('High priority'),
+                    subtitle: const Text(
+                        'Pinned above normal announcements',
+                        style: TextStyle(fontSize: 12)),
+                    onChanged: (v) => setLocal(() => highPriority = v),
+                  ),
                 ],
                 const SizedBox(height: 16),
                 SizedBox(
@@ -310,7 +337,26 @@ class _AnnouncementManagementScreenState
                                 type: type.key,
                                 actionUrl: urlC.text.trim(),
                                 actionLabel: labelC.text.trim(),
+                                imageUrl: imageC.text.trim(),
+                                priority: highPriority ? 'high' : 'normal',
                               );
+                              // Audit trail (best-effort) — only when the
+                              // broadcast actually saved.
+                              if (!ref
+                                  .read(announcementControllerProvider)
+                                  .hasError) {
+                                unawaited(ref
+                                    .read(firestoreServiceProvider)
+                                    .logAdminAction(
+                                      adminUid: ref
+                                              .read(firebaseAuthStreamProvider)
+                                              .valueOrNull
+                                              ?.uid ??
+                                          '',
+                                      action: 'announcement_sent',
+                                      details: title,
+                                    ));
+                              }
                             } else {
                               await ctrl.sendToSelected(
                                 uids: selected.keys.toList(),
@@ -655,11 +701,25 @@ class _AnnouncementCard extends ConsumerWidget {
               ),
             ],
           ),
+          if (a.imageUrl.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: CachedNetworkImage(
+                imageUrl: a.imageUrl.trim(),
+                height: 90,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorWidget: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            ),
+          ],
           const SizedBox(height: 6),
           Wrap(
             spacing: 6,
             runSpacing: 4,
             children: [
+              if (a.isHighPriority) _pill('HIGH', AppColors.error),
               _pill(a.typeEnum.label, AppColors.primary),
               _pill(a.audienceEnum.label,
                   a.isForUsers ? AppColors.info : AppColors.warning),
@@ -718,8 +778,10 @@ class _AnnouncementCard extends ConsumerWidget {
     final msgC = TextEditingController(text: a.message);
     final urlC = TextEditingController(text: a.actionUrl);
     final labelC = TextEditingController(text: a.actionLabel);
+    final imageC = TextEditingController(text: a.imageUrl);
     var active = a.isActive;
     var type = a.typeEnum;
+    var highPriority = a.isHighPriority;
 
     final saved = await showDialog<bool>(
       context: context,
@@ -778,6 +840,22 @@ class _AnnouncementCard extends ConsumerWidget {
                     border: const OutlineInputBorder(),
                   ),
                 ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: imageC,
+                  keyboardType: TextInputType.url,
+                  decoration: const InputDecoration(
+                    labelText: 'Image URL (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  value: highPriority,
+                  activeColor: AppColors.error,
+                  title: const Text('High priority'),
+                  onChanged: (v) => setLocal(() => highPriority = v),
+                ),
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
                   value: active,
@@ -822,7 +900,9 @@ class _AnnouncementCard extends ConsumerWidget {
         isActive: active,
         type: type.key,
         actionUrl: urlC.text.trim(),
-        actionLabel: labelC.text.trim());
+        actionLabel: labelC.text.trim(),
+        imageUrl: imageC.text.trim(),
+        priority: highPriority ? 'high' : 'normal');
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Notification updated')));

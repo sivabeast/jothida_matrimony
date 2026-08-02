@@ -1397,7 +1397,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportLabel => 'Report';
 
   @override
-  String get updateAvailableTitle => 'New Update Available';
+  String get updateAvailableTitle => 'Update Available';
 
   @override
   String get updateRequiredMessage => 'Update your application to continue.';
@@ -2957,4 +2957,63 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get contactNotProvided => 'No contact details have been added yet.';
+
+  @override
+  String pendingInterestTitle(String name) {
+    return '$name has shown interest in you!';
+  }
+
+  @override
+  String get pendingInterestTitleGeneric =>
+      'Someone has shown interest in you!';
+
+  @override
+  String get pendingInterestBody =>
+      'Accept to connect instantly and start chatting — or politely decline.';
+
+  @override
+  String get matchCelebrationTitle => 'It\'s a Match!';
+
+  @override
+  String matchCelebrationBody(String name) {
+    return 'You and $name are now connected. Say hello!';
+  }
+
+  @override
+  String get startChatting => 'Start Chatting';
+
+  @override
+  String get keepBrowsing => 'Keep Browsing';
+
+  @override
+  String get awaitingYourResponse => 'Awaiting your response';
+
+  @override
+  String get interestRejectedConfirmTitle => 'Decline this interest?';
+
+  @override
+  String interestRejectedConfirmBody(String name) {
+    return '$name will be notified that you declined their interest.';
+  }
+
+  @override
+  String get profileUnderReviewTitle => 'Profile Under Review';
+
+  @override
+  String get profileUnderReviewBody =>
+      'Your profile is being reviewed by our team. You will be notified the moment it is approved and visible to matches.';
+
+  @override
+  String get profileRejectedTitle => 'Profile Not Approved';
+
+  @override
+  String get profileRejectedBody =>
+      'Your profile could not be approved. Please review your details or contact our support team for help.';
+
+  @override
+  String get updateAvailableBody =>
+      'A new version of the app is available on Google Play. Update now for the latest features and fixes.';
+
+  @override
+  String get later => 'Later';
 }

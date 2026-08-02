@@ -70,13 +70,49 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
         throw Exception(
             'Your profile is marked as Married — new interests are disabled.');
       }
+      // Approval workflow: an unapproved (pending/rejected) profile is not
+      // visible to anyone, so its interests would show as broken "Member"
+      // cards on the receiver side. Interests unlock at approval.
+      final myStatus = ref.read(myProfileProvider).valueOrNull?.status;
+      if (myStatus != null && myStatus != 'approved') {
+        throw Exception(myStatus == 'pending'
+            ? 'Your profile is awaiting approval — you can send interests '
+                'as soon as it is approved.'
+            : 'Your profile is not approved for matchmaking.');
+      }
       // Blocked in either direction (spec §6) → interest is refused.
       if (ref.read(blockedUidsProvider).contains(receiverId)) {
         throw Exception(
             'You cannot send an interest to a user you have blocked.');
       }
+
+      // DUPLICATE PREVENTION — an interest may exist in at most ONE direction
+      // per pair. Check BOTH deterministic doc ids straight from Firestore
+      // (the live streams may not be loaded on every surface):
+      //  • forward  ({me}_{them})  → I already sent one; never send twice.
+      //  • reverse  ({them}_{me})  → THEY already sent one; the only valid
+      //    responses are Accept / Reject, never a counter-interest.
+      // The security rules enforce the same invariant server-side, so a race
+      // between two devices cannot slip through either.
+      final repo = ref.read(interestRepositoryProvider);
+      final forwardId = '${senderProfileId}_$receiverProfileId';
+      final reverseId = '${receiverProfileId}_$senderProfileId';
+      final existingForward = await repo.getInterestById(forwardId);
+      if (existingForward != null) {
+        if (existingForward.isAccepted) return; // already matched — no-op
+        throw Exception('You have already sent an interest to this profile.');
+      }
+      final existingReverse = await repo.getInterestById(reverseId);
+      if (existingReverse != null) {
+        if (existingReverse.isAccepted) return; // already matched — no-op
+        throw Exception(existingReverse.isPending
+            ? 'This member has already shown interest in you — '
+                'accept or decline their interest instead.'
+            : 'An interest already exists between you and this profile.');
+      }
+
       final interest = InterestModel(
-        id: '${senderProfileId}_$receiverProfileId',
+        id: forwardId,
         senderId: senderId,
         receiverId: receiverId,
         senderProfileId: senderProfileId,
@@ -84,13 +120,20 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
         status: 'pending',
         sentAt: DateTime.now(),
       );
-      await ref.read(interestRepositoryProvider).sendInterest(interest);
-      // In-app "Interest Received" notification for the receiver (best-effort).
+      await repo.sendInterest(interest);
+      // In-app "Interest Received" notification for the receiver. The
+      // DETERMINISTIC id means a re-send after withdraw can never stack a
+      // second notification, and the `interests`-onDelete Cloud Function can
+      // remove it when the interest is withdrawn. The `notifications`-onCreate
+      // Cloud Function delivers the FCM push.
       await ref.read(notificationNotifierProvider.notifier).notify(
             toUid: receiverId,
             event: AppNotificationEvent.interestReceived,
             name: ref.read(myProfileProvider).valueOrNull?.fullName ?? '',
-            route: '/interests?tab=received',
+            route: '/interests?tab=received&highlight=$senderId',
+            id: 'interest_received_$forwardId',
+            targetScreen: 'interests',
+            targetId: forwardId,
           );
     });
   }
@@ -115,17 +158,28 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
 
   /// Notifies the ORIGINAL SENDER of [interestId] that their interest was
   /// accepted / rejected. Best-effort — never fails the action.
+  ///
+  /// The route deep-links straight to the tab the interest now lives in, with
+  /// the counterpart (me, the responder) highlighted; deterministic ids keep
+  /// one notification per interest outcome.
   Future<void> _notifyInterestOutcome(
       String interestId, AppNotificationEvent event) async {
     try {
       final interest =
           await ref.read(interestRepositoryProvider).getInterestById(interestId);
       if (interest == null) return;
+      final accepted = event == AppNotificationEvent.interestAccepted;
       await ref.read(notificationNotifierProvider.notifier).notify(
             toUid: interest.senderId,
             event: event,
             name: ref.read(myProfileProvider).valueOrNull?.fullName ?? '',
-            route: '/interests?tab=sent',
+            route: accepted
+                ? '/interests?tab=accepted&highlight=${interest.receiverId}'
+                : '/interests?tab=rejected&highlight=${interest.receiverId}',
+            id: '${accepted ? 'interest_accepted' : 'interest_rejected'}'
+                '_$interestId',
+            targetScreen: 'interests',
+            targetId: interestId,
           );
     } catch (e) {
       debugPrint('[InterestNotifier] outcome notification failed: $e');
@@ -216,11 +270,14 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
         } else {
           final isTamil =
               ref.read(localeProvider)?.languageCode == 'ta';
+          // Deterministic id: the interest-accepted Cloud Function posts the
+          // same greeting doc, so client + server can never double-greet.
           await chat.sendMessage(
               threadId,
               isTamil
                   ? kInterestAcceptedFirstMessageTa
-                  : kInterestAcceptedFirstMessageEn);
+                  : kInterestAcceptedFirstMessageEn,
+              messageId: 'greeting_$threadId');
         }
       } catch (e) {
         debugPrint(
@@ -260,6 +317,17 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
 
 final interestNotifierProvider =
     NotifierProvider<InterestNotifier, AsyncValue<void>>(() => InterestNotifier());
+
+/// Human-readable message from a failed interest action, for SnackBars. The
+/// notifier wraps actions in AsyncValue.guard (they never throw), so call
+/// sites read the state afterwards; this strips the 'Exception: ' prefix from
+/// the deliberate, already-friendly messages thrown above and returns
+/// [fallback] for raw platform errors.
+String interestErrorText(Object? error, String fallback) {
+  final s = (error ?? '').toString();
+  if (s.startsWith('Exception: ')) return s.substring('Exception: '.length);
+  return fallback;
+}
 
 /// The set of OTHER users' UIDs the signed-in user has a mutually-accepted
 /// interest with (either direction). This is the single source of truth for

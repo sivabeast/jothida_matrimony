@@ -11,11 +11,11 @@ import '../../providers/chat_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/common/app_drawer.dart';
+import '../../widgets/common/update_available_dialog.dart';
 import '../interests/interests_center_screen.dart';
 import 'tabs/astrology_service_page.dart';
 import 'tabs/discover_tab.dart';
 import 'tabs/home_dashboard_tab.dart';
-import 'tabs/notifications_tab.dart';
 import 'tabs/reports_tab.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -36,6 +36,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ReportsTab(),             // 3 – Reports
     AstrologyServicePage(),   // 4 – Astrology
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Soft "Update Available" prompt — shown at most once per published
+    // version, after the first frame so the home shell is fully laid out.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) maybeShowUpdateAvailableDialog(context, ref);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -122,19 +132,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: const Icon(Icons.notifications_none, size: 26),
                   )
                 : const Icon(Icons.notifications_none, size: 26),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => Scaffold(
-                  appBar: AppBar(
-                    title: Text(context.l10n.notifications),
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                  body: const NotificationsTab(),
-                ),
-              ),
-            ),
+            // The registered route (not an inline page) so the bell, in-app
+            // rows and push taps all share ONE navigation path.
+            onPressed: () => context.push('/notifications'),
             tooltip: context.l10n.notifications,
           ),
           // Admin dashboard shortcut — visible ONLY to admin accounts. The

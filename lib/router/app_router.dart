@@ -48,6 +48,8 @@ import '../screens/admin/admin_settlements_screen.dart';
 import '../screens/admin/admin_horoscope_requests_screen.dart';
 import '../screens/admin/admin_appointments_screen.dart';
 import '../screens/admin/astrologer_verification_screen.dart';
+import '../screens/admin/admin_activity_log_screen.dart';
+import '../screens/admin/admin_approvals_screen.dart';
 import '../screens/admin/admin_management_screens.dart';
 import '../screens/admin/admin_reports_page.dart';
 import '../screens/admin/admin_report_management_screen.dart';
@@ -64,6 +66,8 @@ import '../screens/horoscope/member_horoscope_screen.dart';
 import '../screens/horoscope/horoscope_match_screen.dart';
 import '../screens/profile/personal_details_screen.dart';
 import '../screens/profile/complete_profile_screen.dart';
+import '../providers/navigation_provider.dart';
+import '../screens/notifications/announcement_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
 import '../screens/profile/profile_section_edit_screens.dart';
 import '../screens/profile/photos_edit_screen.dart';
@@ -341,7 +345,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Profile Details (PROFILE group) — photo, name & all personal info.
       GoRoute(path: '/personal-details', builder: (_, __) => const PersonalDetailsScreen()),
       // Interests as a standalone page (side menu's Interests Sent / Received).
-      // ?tab=sent|received|accepted|rejected selects the opening tab.
+      // ?tab=sent|received|accepted|rejected selects the opening tab and
+      // ?highlight=<uid> scrolls to + flashes that counterpart's card — used
+      // by notification deep links so the triggering profile is unmistakable.
       GoRoute(
         path: '/interests',
         builder: (_, state) {
@@ -352,12 +358,40 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             'rejected' => 3,
             _ => 0, // received
           };
-          return InterestsCenterScreen(initialTab: idx, standalone: true);
+          return InterestsCenterScreen(
+            initialTab: idx,
+            standalone: true,
+            highlightUid: state.uri.queryParameters['highlight'],
+          );
         },
       ),
       GoRoute(
           path: '/notifications',
           builder: (_, __) => const NotificationsScreen()),
+      // Direct destination of announcement notification taps — there is NO
+      // generic notification-details page.
+      GoRoute(
+        path: '/announcement/:id',
+        builder: (_, state) =>
+            AnnouncementScreen(announcementId: state.pathParameters['id']!),
+      ),
+      // Reports deep link (push-notification taps; legacy '/my-analysis'
+      // documents too). The reports list lives ONLY on the Home bottom-nav
+      // tab, so select that tab and land on /home instead of 404-ing.
+      GoRoute(
+        path: '/reports',
+        redirect: (_, __) {
+          ref.read(homeTabIndexProvider.notifier).state = kReportsTabIndex;
+          return '/home';
+        },
+      ),
+      GoRoute(
+        path: '/my-analysis',
+        redirect: (_, __) {
+          ref.read(homeTabIndexProvider.notifier).state = kReportsTabIndex;
+          return '/home';
+        },
+      ),
       GoRoute(path: '/complete-profile', builder: (_, __) => const CompleteProfileScreen()),
       // ── Section-wise profile editors (opened from the completion card) ────
       GoRoute(path: '/edit/about', builder: (_, __) => const AboutMeEditScreen()),
@@ -509,6 +543,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/admin/married', builder: (_, __) => const MarriedUsersScreen()),
           GoRoute(path: '/admin/test-data', builder: (_, __) => const AdminTestDataScreen()),
           GoRoute(path: '/admin/reports', builder: (_, __) => const AdminReportManagementScreen()),
+          // Profile approval queue — self-registered profiles wait here until
+          // an admin approves/rejects them (approval workflow).
+          GoRoute(
+              path: '/admin/approvals',
+              builder: (_, __) => const AdminApprovalsScreen()),
+          // Immutable audit trail of admin actions.
+          GoRoute(
+              path: '/admin/activity-log',
+              builder: (_, __) => const AdminActivityLogScreen()),
         ],
       ),
     ],

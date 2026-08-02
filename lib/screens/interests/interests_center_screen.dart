@@ -1,23 +1,27 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/navigation/root_navigator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../models/interest_model.dart';
 import '../../models/wedding_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/chat_provider.dart';
 import '../../providers/interest_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/wedding_provider.dart';
 import '../../widgets/common/coming_soon.dart';
 import '../../widgets/common/network_photo.dart';
+import '../../widgets/interest/match_celebration.dart';
 
 /// Interest Management Center — replaces the old chat/messages page.
 ///
-/// Four tabs over the Firestore `interests` collection:
-///  • Received  — pending interests others sent me (Accept / Reject)
-///  • Sent      — interests I sent (with status)
-///  • Accepted  — mutually accepted (View Profile / Horoscope)
+/// Four MUTUALLY-EXCLUSIVE tabs over the Firestore `interests` collection
+/// (a profile can only ever appear under its interest's current status):
+///  • Received  — PENDING interests others sent me (Accept / Reject)
+///  • Sent      — PENDING interests I sent (Withdraw)
+///  • Accepted  — mutually accepted (Chat / View Profile / Horoscope)
 ///  • Rejected  — declined history
 class InterestsCenterScreen extends ConsumerStatefulWidget {
   /// Initial tab to open: 0 Received · 1 Sent · 2 Accepted · 3 Rejected.
@@ -28,10 +32,16 @@ class InterestsCenterScreen extends ConsumerStatefulWidget {
   /// rendered inline as the Home shell's Interests tab.
   final bool standalone;
 
+  /// UID of the counterpart to scroll to and briefly highlight in the initial
+  /// tab — set when arriving from a notification so the user immediately sees
+  /// WHICH profile triggered it.
+  final String? highlightUid;
+
   const InterestsCenterScreen({
     super.key,
     this.initialTab = 0,
     this.standalone = false,
+    this.highlightUid,
   });
 
   @override
@@ -43,6 +53,17 @@ class _InterestsCenterScreenState extends ConsumerState<InterestsCenterScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tab = TabController(
       length: 4, vsync: this, initialIndex: widget.initialTab.clamp(0, 3));
+
+  /// Consumed once — the first time the target tab renders its list.
+  String? _pendingHighlight;
+
+  @override
+  void initState() {
+    super.initState();
+    _pendingHighlight = widget.highlightUid?.trim().isEmpty ?? true
+        ? null
+        : widget.highlightUid!.trim();
+  }
 
   @override
   void dispose() {
@@ -61,15 +82,15 @@ class _InterestsCenterScreenState extends ConsumerState<InterestsCenterScreen>
     final loading = sentAsync.isLoading || receivedAsync.isLoading;
     final hasError = sentAsync.hasError || receivedAsync.hasError;
 
-    // Tab contents. Received shows only PENDING (actionable) interests; once
-    // accepted/rejected they move to the Accepted / Rejected tabs.
-    //
-    // Accepted/Rejected merge BOTH directions (interests I sent + interests I
-    // received), so the same person can appear twice — once per direction, or
-    // from a duplicate interest doc. De-duplicate by the OTHER user's id so each
-    // matched profile is shown exactly once.
+    // Tab contents — STRICTLY status-partitioned so no profile can ever appear
+    // under two tabs at once:
+    //  • Received = pending interests sent TO me;
+    //  • Sent     = pending interests I sent (an accepted one lives ONLY in
+    //    Accepted, a declined one ONLY in Rejected);
+    //  • Accepted/Rejected merge BOTH directions and de-duplicate by the OTHER
+    //    user's id so each profile is shown exactly once.
     final receivedPending = _sorted(received.where((i) => i.isPending));
-    final sentAll = _sorted(sent);
+    final sentPending = _sorted(sent.where((i) => i.isPending));
     final accepted = _dedupByCounterpart(
         _sorted([...sent, ...received].where((i) => i.isAccepted)), myUid);
     final rejected = _dedupByCounterpart(
@@ -116,7 +137,7 @@ class _InterestsCenterScreenState extends ConsumerState<InterestsCenterScreen>
                 const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
             tabs: [
               _countTab(l10n.received, receivedPending.length),
-              _countTab(l10n.sent, sentAll.length),
+              _countTab(l10n.sent, sentPending.length),
               _countTab(l10n.accepted, accepted.length),
               _countTab(l10n.rejected, rejected.length),
             ],
@@ -132,28 +153,36 @@ class _InterestsCenterScreenState extends ConsumerState<InterestsCenterScreen>
                   myUid: myUid,
                   loading: loading,
                   hasError: hasError,
-                  emptyText: l10n.noReceivedInterests),
+                  emptyText: l10n.noReceivedInterests,
+                  highlightUid: _highlightFor(0),
+                  onHighlightShown: _clearHighlight),
               _InterestList(
-                  items: sentAll,
+                  items: sentPending,
                   mode: _CardMode.sent,
                   myUid: myUid,
                   loading: loading,
                   hasError: hasError,
-                  emptyText: l10n.noSentInterests),
+                  emptyText: l10n.noSentInterests,
+                  highlightUid: _highlightFor(1),
+                  onHighlightShown: _clearHighlight),
               _InterestList(
                   items: accepted,
                   mode: _CardMode.accepted,
                   myUid: myUid,
                   loading: loading,
                   hasError: hasError,
-                  emptyText: l10n.noAcceptedInterests),
+                  emptyText: l10n.noAcceptedInterests,
+                  highlightUid: _highlightFor(2),
+                  onHighlightShown: _clearHighlight),
               _InterestList(
                   items: rejected,
                   mode: _CardMode.rejected,
                   myUid: myUid,
                   loading: loading,
                   hasError: hasError,
-                  emptyText: l10n.noRejectedInterests),
+                  emptyText: l10n.noRejectedInterests,
+                  highlightUid: _highlightFor(3),
+                  onHighlightShown: _clearHighlight),
             ],
           ),
         ),
@@ -172,6 +201,19 @@ class _InterestsCenterScreenState extends ConsumerState<InterestsCenterScreen>
       );
     }
     return content;
+  }
+
+  /// The highlight target for tab [index] — only the tab the screen was opened
+  /// on receives it, and only until it has been shown once.
+  String? _highlightFor(int index) =>
+      index == widget.initialTab.clamp(0, 3) ? _pendingHighlight : null;
+
+  void _clearHighlight() {
+    if (_pendingHighlight == null) return;
+    // Post-frame: the callback fires during the list's first build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _pendingHighlight = null);
+    });
   }
 
   /// A fixed-width tab whose "Label (count)" text shrinks to fit rather than
@@ -208,13 +250,17 @@ class _InterestsCenterScreenState extends ConsumerState<InterestsCenterScreen>
 
 enum _CardMode { received, sent, accepted, rejected }
 
-class _InterestList extends StatelessWidget {
+class _InterestList extends StatefulWidget {
   final List<InterestModel> items;
   final _CardMode mode;
   final String myUid;
   final bool loading;
   final bool hasError;
   final String emptyText;
+
+  /// Counterpart UID to scroll to + briefly flash (from a notification tap).
+  final String? highlightUid;
+  final VoidCallback? onHighlightShown;
 
   const _InterestList({
     required this.items,
@@ -223,27 +269,89 @@ class _InterestList extends StatelessWidget {
     required this.loading,
     required this.hasError,
     required this.emptyText,
+    this.highlightUid,
+    this.onHighlightShown,
   });
 
   @override
+  State<_InterestList> createState() => _InterestListState();
+}
+
+class _InterestListState extends State<_InterestList> {
+  final ScrollController _scroll = ScrollController();
+
+  /// The counterpart uid currently being flashed ('' = none).
+  String _flashUid = '';
+  bool _highlightConsumed = false;
+
+  /// Rough per-card extents used to land the scroll near the target — the
+  /// flash animation then makes the exact card unmistakable.
+  double get _estimatedExtent => switch (widget.mode) {
+        _CardMode.accepted => 330,
+        _CardMode.received => 210,
+        _ => 190,
+      };
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  String _counterpartOf(InterestModel i) =>
+      i.senderId == widget.myUid ? i.receiverId : i.senderId;
+
+  void _maybeHighlight() {
+    final target = widget.highlightUid;
+    if (_highlightConsumed || target == null || widget.items.isEmpty) return;
+    final index =
+        widget.items.indexWhere((i) => _counterpartOf(i) == target);
+    if (index < 0) return;
+    _highlightConsumed = true;
+    widget.onHighlightShown?.call();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      if (_scroll.hasClients && index > 0) {
+        final offset = (index * _estimatedExtent)
+            .clamp(0.0, _scroll.position.maxScrollExtent);
+        await _scroll.animateTo(offset,
+            duration: const Duration(milliseconds: 450),
+            curve: Curves.easeOutCubic);
+      }
+      if (!mounted) return;
+      setState(() => _flashUid = target);
+      Future.delayed(const Duration(milliseconds: 2600), () {
+        if (mounted) setState(() => _flashUid = '');
+      });
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (items.isEmpty) {
-      if (loading) {
+    if (widget.items.isEmpty) {
+      if (widget.loading) {
         return const Center(child: CircularProgressIndicator());
       }
       return _EmptyState(
-        text: hasError ? context.l10n.couldntLoadInterests : emptyText,
-        subtitle: hasError
+        text: widget.hasError ? context.l10n.couldntLoadInterests : widget.emptyText,
+        subtitle: widget.hasError
             ? context.l10n.checkConnectionRetry
             : context.l10n.interestStartHint,
       );
     }
+    _maybeHighlight();
     return ListView.separated(
+      controller: _scroll,
       padding: const EdgeInsets.all(12),
-      itemCount: items.length,
+      itemCount: widget.items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (_, i) =>
-          _InterestCard(interest: items[i], mode: mode, myUid: myUid),
+      itemBuilder: (_, i) => _InterestCard(
+        interest: widget.items[i],
+        mode: widget.mode,
+        myUid: widget.myUid,
+        highlighted: _flashUid.isNotEmpty &&
+            _counterpartOf(widget.items[i]) == _flashUid,
+      ),
     );
   }
 }
@@ -253,10 +361,14 @@ class _InterestCard extends ConsumerWidget {
   final _CardMode mode;
   final String myUid;
 
+  /// True while this card is being flashed after a notification deep link.
+  final bool highlighted;
+
   const _InterestCard({
     required this.interest,
     required this.mode,
     required this.myUid,
+    this.highlighted = false,
   });
 
   @override
@@ -294,17 +406,26 @@ class _InterestCard extends ConsumerWidget {
             ? l10n.rejected
             : l10n.sent;
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: highlighted ? const Color(0xFFFFF6E3) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+            color: highlighted ? AppColors.gold : Colors.grey.shade200,
+            width: highlighted ? 2 : 1),
         boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4)),
+          highlighted
+              ? BoxShadow(
+                  color: AppColors.gold.withOpacity(0.45),
+                  blurRadius: 16,
+                  spreadRadius: 2)
+              : BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -363,7 +484,7 @@ class _InterestCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
-          _actions(context, ref, otherUserId, name),
+          _actions(context, ref, otherUserId, name, photo),
         ],
       ),
     );
@@ -456,14 +577,118 @@ class _InterestCard extends ConsumerWidget {
       ),
     );
     if (ok != true || !context.mounted) return;
+    final container = ProviderScope.containerOf(context, listen: false);
     await ref
         .read(interestNotifierProvider.notifier)
         .withdrawInterest(interest.id);
-    if (context.mounted) _snack(context, l10n.interestWithdrawn);
+    final ctx = context.mounted ? context : rootNavigatorKey.currentContext;
+    if (ctx == null) return;
+    final failed = container.read(interestNotifierProvider).hasError;
+    ScaffoldMessenger.maybeOf(ctx)?.showSnackBar(SnackBar(
+        content: Text(
+            failed ? ctx.l10n.couldNotSendInterest : l10n.interestWithdrawn)));
   }
 
-  Widget _actions(
-      BuildContext context, WidgetRef ref, String otherUserId, String name) {
+  /// Accepts the interest, then plays the premium match celebration with a
+  /// one-tap jump into the (auto-created) conversation.
+  ///
+  /// NOTE on contexts: the accepted card leaves the Received list the moment
+  /// the stream flips (often BEFORE the await returns), unmounting this
+  /// card's context — the celebration is therefore shown on the ROOT
+  /// navigator so it always appears.
+  Future<void> _accept(BuildContext context, WidgetRef ref, String otherUserId,
+      String name, String photo) async {
+    final l10n = context.l10n;
+    final notifier = ref.read(interestNotifierProvider.notifier);
+    // Read once up-front; ref stays valid via the provider container even if
+    // this card's element is disposed mid-await.
+    final container = ProviderScope.containerOf(context, listen: false);
+    await notifier.acceptInterest(interest.id);
+    final rootCtx = rootNavigatorKey.currentContext;
+    final ctx = context.mounted ? context : rootCtx;
+    if (ctx == null) return;
+    if (container.read(interestNotifierProvider).hasError) {
+      ScaffoldMessenger.maybeOf(ctx)?.showSnackBar(
+          SnackBar(content: Text(l10n.couldNotAcceptInterest)));
+      return;
+    }
+    await showMatchCelebration(
+      ctx,
+      name: name,
+      photoUrl: photo,
+      onStartChat: () {
+        final c = rootNavigatorKey.currentContext;
+        if (c != null) _openChatFromRoot(c, container, otherUserId, name, photo);
+      },
+    );
+  }
+
+  /// Opens the conversation via the root context (safe after this card has
+  /// been unmounted by the accept).
+  Future<void> _openChatFromRoot(BuildContext ctx, ProviderContainer container,
+      String otherUserId, String name, String photo) async {
+    try {
+      final threadId = await container.read(chatControllerProvider).openChatWith(
+          otherUid: otherUserId, otherName: name, otherPhoto: photo);
+      final c = rootNavigatorKey.currentContext;
+      if (c != null && c.mounted) {
+        c.push('/chat/$threadId', extra: {'name': name, 'photo': photo});
+      }
+    } catch (_) {
+      final c = rootNavigatorKey.currentContext;
+      if (c != null && c.mounted) {
+        ScaffoldMessenger.maybeOf(c)?.showSnackBar(
+            SnackBar(content: Text(c.l10n.couldNotOpenChatRetry)));
+      }
+    }
+  }
+
+  /// Confirms, then declines the interest (the sender is notified).
+  Future<void> _reject(BuildContext context, WidgetRef ref, String name) async {
+    final l10n = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(l10n.interestRejectedConfirmTitle),
+        content: Text(l10n.interestRejectedConfirmBody(name)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.cancel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+              child: Text(l10n.reject)),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final container = ProviderScope.containerOf(context, listen: false);
+    await ref.read(interestNotifierProvider.notifier).rejectInterest(interest.id);
+    final ctx = context.mounted ? context : rootNavigatorKey.currentContext;
+    if (ctx == null) return;
+    final failed = container.read(interestNotifierProvider).hasError;
+    ScaffoldMessenger.maybeOf(ctx)?.showSnackBar(SnackBar(
+        content:
+            Text(failed ? ctx.l10n.couldNotAcceptInterest : l10n.interestDeclined)));
+  }
+
+  /// Opens (creating if needed) the conversation with the matched member.
+  Future<void> _openChat(BuildContext context, WidgetRef ref,
+      String otherUserId, String name, String photo) async {
+    try {
+      final threadId = await ref.read(chatControllerProvider).openChatWith(
+          otherUid: otherUserId, otherName: name, otherPhoto: photo);
+      if (!context.mounted) return;
+      context.push('/chat/$threadId', extra: {'name': name, 'photo': photo});
+    } catch (_) {
+      if (context.mounted) _snack(context, context.l10n.couldNotOpenChatRetry);
+    }
+  }
+
+  Widget _actions(BuildContext context, WidgetRef ref, String otherUserId,
+      String name, String photo) {
     final l10n = context.l10n;
     switch (mode) {
       case _CardMode.received:
@@ -471,12 +696,7 @@ class _InterestCard extends ConsumerWidget {
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: () {
-                  ref
-                      .read(interestNotifierProvider.notifier)
-                      .rejectInterest(interest.id);
-                  _snack(context, l10n.interestDeclined);
-                },
+                onPressed: () => _reject(context, ref, name),
                 style:
                     OutlinedButton.styleFrom(foregroundColor: AppColors.error),
                 child: Text(l10n.reject),
@@ -484,17 +704,23 @@ class _InterestCard extends ConsumerWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: ElevatedButton(
-                onPressed: () {
-                  ref
-                      .read(interestNotifierProvider.notifier)
-                      .acceptInterest(interest.id);
-                  _snack(context, l10n.interestAcceptedMatch);
-                },
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success,
-                    foregroundColor: Colors.white),
-                child: Text(l10n.accept),
+              flex: 2,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: FilledButton.icon(
+                  onPressed: () =>
+                      _accept(context, ref, otherUserId, name, photo),
+                  icon: const Icon(Icons.favorite, size: 18),
+                  label: Text(l10n.accept),
+                  style: FilledButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      shape: const StadiumBorder()),
+                ),
               ),
             ),
           ],
@@ -502,6 +728,20 @@ class _InterestCard extends ConsumerWidget {
       case _CardMode.accepted:
         return Column(
           children: [
+            // Chat — the primary action for a match (spec: start chatting now).
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () =>
+                    _openChat(context, ref, otherUserId, name, photo),
+                icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                label: Text(l10n.chat),
+                style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.gold,
+                    foregroundColor: Colors.white),
+              ),
+            ),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
@@ -571,30 +811,18 @@ class _InterestCard extends ConsumerWidget {
           ],
         );
       case _CardMode.sent:
-        // Only a Withdraw (unsend) action for a PENDING sent interest. Once the
-        // other side has responded there is nothing to withdraw, so a short
-        // status line is shown instead.
-        if (interest.isPending) {
-          return SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => _withdraw(context, ref),
-              icon: const Icon(Icons.undo, size: 18),
-              label: Text(l10n.withdrawInterest),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.error,
-                side: BorderSide(color: AppColors.error.withOpacity(0.6)),
-              ),
+        // The Sent tab lists PENDING interests only (responded ones live in
+        // Accepted / Rejected), so Withdraw is always the action here.
+        return SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => _withdraw(context, ref),
+            icon: const Icon(Icons.undo, size: 18),
+            label: Text(l10n.withdrawInterest),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.error,
+              side: BorderSide(color: AppColors.error.withOpacity(0.6)),
             ),
-          );
-        }
-        return Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            interest.isAccepted
-                ? l10n.sentAcceptedHint
-                : l10n.interestDeclinedStatus,
-            style: TextStyle(fontSize: 12.5, color: Colors.grey[600]),
           ),
         );
       case _CardMode.rejected:

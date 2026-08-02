@@ -20,6 +20,8 @@ import '../../widgets/common/face_centered_photo.dart';
 import '../../widgets/common/fullscreen_photo_viewer.dart';
 import '../../widgets/common/gradient_button.dart';
 import '../../widgets/common/horoscope_documents_view.dart';
+import '../../widgets/interest/match_celebration.dart';
+import '../../widgets/interest/pending_interest_card.dart';
 
 class ProfileViewScreen extends ConsumerStatefulWidget {
   /// Open by profile-document id — used from Discover / Matches, where the id
@@ -85,10 +87,12 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
           senderProfileId: myProfile.id,
           receiverProfileId: profile.id,
         );
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.interestSentSuccess)));
-    }
+    if (!mounted) return;
+    final st = ref.read(interestNotifierProvider);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(st.hasError
+            ? interestErrorText(st.error, context.l10n.couldNotSendInterest)
+            : context.l10n.interestSentSuccess)));
   }
 
   void _reportProfile(ProfileModel profile) {
@@ -213,11 +217,51 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     );
   }
 
-  Future<void> _acceptInterest(String interestId) async {
+  Future<void> _acceptInterest(ProfileModel profile, String interestId) async {
     await ref.read(interestNotifierProvider.notifier).acceptInterest(interestId);
-    if (mounted) {
+    if (!mounted) return;
+    if (ref.read(interestNotifierProvider).hasError) {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.interestAcceptedMatch)));
+          SnackBar(content: Text(context.l10n.couldNotAcceptInterest)));
+      return;
+    }
+    // Premium match celebration with a one-tap jump into the new chat.
+    await showMatchCelebration(
+      context,
+      name: profile.fullName,
+      photoUrl: profile.hidesPhoto ? '' : (profile.profilePhotoUrl ?? ''),
+      onStartChat: () => _openChat(profile),
+    );
+  }
+
+  Future<void> _rejectInterest(ProfileModel profile, String interestId) async {
+    final l10n = context.l10n;
+    // Reject stays available but is guarded by a light confirmation — it
+    // notifies the sender and cannot be undone from this screen.
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.interestRejectedConfirmTitle),
+        content: Text(l10n.interestRejectedConfirmBody(profile.fullName)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.cancel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+              child: Text(l10n.reject)),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(interestNotifierProvider.notifier).rejectInterest(interestId);
+    if (mounted) {
+      final failed = ref.read(interestNotifierProvider).hasError;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(failed
+              ? context.l10n.couldNotAcceptInterest
+              : context.l10n.interestDeclined)));
     }
   }
 
@@ -284,20 +328,13 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     if (status == InterestUiStatus.receivedPending) {
       final pending =
           ref.watch(pendingReceivedInterestFromProfileProvider(profile.id));
-      return SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: pending == null ? null : () => _acceptInterest(pending.id),
-          icon: const Icon(Icons.favorite),
-          label: Text(context.l10n.acceptInterest),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.success,
-            foregroundColor: Colors.white,
-            minimumSize: const Size.fromHeight(52),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
+      if (pending == null) return const SizedBox.shrink();
+      // The receiver of a pending interest NEVER sees "Send Interest" — only
+      // this premium Accept / Reject card (duplicate-interest prevention).
+      return PendingInterestCard(
+        name: profile.fullName,
+        onAccept: () => _acceptInterest(profile, pending.id),
+        onReject: () => _rejectInterest(profile, pending.id),
       );
     }
 
@@ -490,8 +527,21 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(profile.displayName(context.isTamil),
-                    style: AppTextStyles.heading1),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(profile.displayName(context.isTamil),
+                          style: AppTextStyles.heading1),
+                    ),
+                    // Verified badge — mirrors the Discover card's chip so
+                    // verification reads consistently across the app.
+                    if (profile.isVerified) ...[
+                      const SizedBox(width: 8),
+                      _verifiedChip(context),
+                    ],
+                  ],
+                ),
                 // Both names are shown when they differ (§14) — the header
                 // uses the app language, the sub-line carries the other one.
                 if (profile.fullNameTamil.trim().isNotEmpty &&
@@ -612,6 +662,28 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       ],
     );
   }
+
+  /// Small green "Verified" chip shown beside the member's name once an admin
+  /// has verified the profile — same look as the Discover card's badge.
+  Widget _verifiedChip(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.success.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.verified, size: 14, color: AppColors.success),
+            const SizedBox(width: 4),
+            Text(context.l10n.verified,
+                style: const TextStyle(
+                    color: AppColors.success,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700)),
+          ],
+        ),
+      );
 
   /// The single 1:1 profile photo in the collapsing header.
   ///

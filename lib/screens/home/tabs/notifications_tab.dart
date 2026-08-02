@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../models/announcement_model.dart';
@@ -7,7 +8,6 @@ import '../../../models/notification_model.dart';
 import '../../../providers/announcement_provider.dart';
 import '../../../providers/navigation_provider.dart';
 import '../../../providers/notification_provider.dart';
-import '../../notifications/notification_detail_screen.dart';
 
 /// Notification page — admin announcements (platform-wide) plus the user's own
 /// notifications (interests, approvals…), merged newest-first.
@@ -26,22 +26,36 @@ class NotificationsTab extends ConsumerStatefulWidget {
 }
 
 class _NotificationsTabState extends ConsumerState<NotificationsTab> {
-  /// Guards the once-per-open bulk mark-read (announcements need the loaded
-  /// list, so it runs on the first frame that has data).
-  bool _markedAllRead = false;
+  /// Guards for the once-per-open bulk mark-read. SPLIT per source: the two
+  /// Firestore streams resolve in nondeterministic order, and a single latch
+  /// could fire while the announcements list was still empty — permanently
+  /// skipping the announcement badge clear for this open.
+  bool _markedNotifsRead = false;
+  bool _markedAnnouncementsRead = false;
 
   void _markAllReadOnce(List<AnnouncementModel> announcements) {
-    if (_markedAllRead) return;
-    _markedAllRead = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      // Per-user notifications → Firestore batch (badge clears via stream).
-      ref.read(notificationNotifierProvider.notifier).markAllRead();
-      // Announcements → local read-ids set.
-      ref
-          .read(announcementsReadProvider.notifier)
-          .markAllRead(announcements.map((a) => a.id));
-    });
+    // Per-user notifications → Firestore batch (badge clears via stream).
+    if (!_markedNotifsRead &&
+        ref.read(notificationsProvider).hasValue) {
+      _markedNotifsRead = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(notificationNotifierProvider.notifier).markAllRead();
+        }
+      });
+    }
+    // Announcements → local read-ids set, only once their stream has loaded.
+    if (!_markedAnnouncementsRead &&
+        ref.read(announcementsProvider).hasValue) {
+      _markedAnnouncementsRead = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref
+              .read(announcementsReadProvider.notifier)
+              .markAllRead(announcements.map((a) => a.id));
+        }
+      });
+    }
   }
 
   @override
@@ -86,10 +100,40 @@ class _NotificationsTabState extends ConsumerState<NotificationsTab> {
   }
 }
 
-void _openDetails(BuildContext context, NotificationDetailArgs args) {
-  Navigator.of(context).push(MaterialPageRoute(
-    builder: (_) => NotificationDetailScreen(args: args),
-  ));
+/// Direct deep-link for a tapped notification — the SAME contract as a push
+/// notification tap (there is NO intermediate details page): the stored
+/// `data.route` wins, with a type-based fallback for legacy documents that
+/// were written without one.
+void _openNotificationTarget(
+    BuildContext context, WidgetRef ref, NotificationModel n) {
+  var route = n.route;
+  if (route.isEmpty) {
+    route = switch (n.type) {
+      'interest_received' => '/interests?tab=received',
+      'interest_accepted' => '/interests?tab=accepted',
+      'interest_rejected' => '/interests?tab=rejected',
+      'porutham_ready' => '/reports',
+      'chat_message' => n.targetId.isNotEmpty ? '/chat/${n.targetId}' : '/chats',
+      'new_match' =>
+        n.targetId.isNotEmpty ? '/profile/${n.targetId}' : '/home',
+      'announcement' =>
+        n.targetId.isNotEmpty ? '/announcement/${n.targetId}' : '',
+      'appointment' => '/my-appointments',
+      'report_assigned' => '/astrologer-dashboard',
+      // The member's profile went live — Home is where they see themselves
+      // back in the flow. (Free-text admin notices have no destination.)
+      'profile_approval' => '/home',
+      _ => '',
+    };
+  }
+  if (route.isEmpty) return;
+  // Reports links (incl. legacy '/my-analysis') open the bottom-nav Reports
+  // tab — the standalone "My Reports" page no longer exists.
+  if (isReportsRoute(route)) {
+    goToReportsTab(context, ref);
+    return;
+  }
+  context.push(route);
 }
 
 /// One row in the merged feed — either an admin announcement or a per-user
@@ -185,21 +229,10 @@ class _AnnouncementTile extends ConsumerWidget {
         ],
       ),
       onTap: () {
-        // Opening the details is what marks it read — permanently.
+        // Opening the announcement marks it read — the Announcement screen is
+        // the direct destination (no details page).
         ref.read(announcementsReadProvider.notifier).markRead(a.id);
-        _openDetails(
-          context,
-          NotificationDetailArgs(
-            title: a.title,
-            body: a.message,
-            date: a.createdAt,
-            typeLabel: a.typeEnum.label,
-            icon: icon,
-            color: color,
-            actionUrl: a.hasAction ? a.actionUrl : null,
-            actionLabel: a.effectiveActionLabel,
-          ),
-        );
+        context.push('/announcement/${a.id}');
       },
     );
   }
@@ -223,6 +256,14 @@ class _NotificationTile extends ConsumerWidget {
         return Colors.red;
       case 'profile_approval':
         return AppColors.primary;
+      case 'chat_message':
+        return Colors.teal;
+      case 'new_match':
+        return Colors.purple;
+      case 'announcement':
+        return AppColors.gold;
+      case 'app_update':
+        return Colors.indigo;
       default:
         return Colors.blue;
     }
@@ -242,27 +283,16 @@ class _NotificationTile extends ConsumerWidget {
         return Icons.access_time;
       case 'profile_approval':
         return Icons.verified_user;
+      case 'chat_message':
+        return Icons.chat_bubble_outline;
+      case 'new_match':
+        return Icons.person_add_alt_1;
+      case 'announcement':
+        return Icons.campaign;
+      case 'app_update':
+        return Icons.system_update;
       default:
         return Icons.notifications;
-    }
-  }
-
-  static String _typeLabel(String type) {
-    switch (type) {
-      case 'interest_received':
-        return 'Interest Received';
-      case 'interest_accepted':
-        return 'Interest Accepted';
-      case 'interest_rejected':
-        return 'Interest Update';
-      case 'porutham_ready':
-        return 'Horoscope Match';
-      case 'subscription_expiry':
-        return 'Subscription';
-      case 'profile_approval':
-        return 'Profile';
-      default:
-        return 'Notification';
     }
   }
 
@@ -297,31 +327,12 @@ class _NotificationTile extends ConsumerWidget {
         ],
       ),
       onTap: () {
-        // Opening the notification marks it read once and for all.
+        // Opening the notification marks it read once and for all, then
+        // navigates DIRECTLY to its target (same contract as a push tap).
         if (unread) {
           ref.read(notificationNotifierProvider.notifier).markRead(n.id);
         }
-        final route = n.data?['route']?.toString() ?? '';
-        // Report notifications open the bottom-nav Reports tab DIRECTLY (the
-        // standalone "My Reports" page was removed; legacy '/my-analysis'
-        // links land on the tab too).
-        if (isReportsRoute(route)) {
-          goToReportsTab(context, ref);
-          return;
-        }
-        _openDetails(
-          context,
-          NotificationDetailArgs(
-            title: n.title,
-            body: n.body,
-            date: n.createdAt,
-            typeLabel: _typeLabel(n.type),
-            icon: _typeIcon(n.type),
-            color: color,
-            actionUrl: route.isNotEmpty ? route : null,
-            actionLabel: 'Open',
-          ),
-        );
+        _openNotificationTarget(context, ref, n);
       },
     );
   }

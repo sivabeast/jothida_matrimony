@@ -87,18 +87,28 @@ class UserDetailsScreen extends ConsumerWidget {
                             fontSize: 18, fontWeight: FontWeight.w700)),
                   ),
                   const Divider(height: 24),
-                  _sectionTitle('Account'),
+                  _sectionTitle('Login Information'),
                   const SizedBox(height: 8),
                   _row('User ID', user.uid),
-                  _row('Sign-in Email', user.email ?? '—'),
-                  _row('Sign-in Provider', user.loginProvider ?? '—'),
+                  _row('Authentication Method',
+                      _authMethod(user.loginProvider)),
+                  _row(
+                      'Registered Mobile',
+                      (user.phone ?? '').trim().isEmpty
+                          ? '—'
+                          : user.phone!.trim()),
+                  _row(
+                      'Registered Email',
+                      (user.email ?? '').trim().isEmpty
+                          ? '—'
+                          : user.email!.trim()),
                   _row('Role', user.role),
                   _row('Account Status',
                       user.isBlocked ? 'Suspended' : 'Active'),
                   _row('Profile Completed',
                       user.isProfileComplete ? 'Yes' : 'No'),
                   _row('Preferred Language', user.preferredLanguage ?? '—'),
-                  _row('Registered', _date(user.createdAt)),
+                  _row('Created Date', _date(user.createdAt)),
                   _row('Last Login', _date(user.lastLoginAt)),
                 ]),
                 const SizedBox(height: 14),
@@ -110,8 +120,11 @@ class UserDetailsScreen extends ConsumerWidget {
                         'This account has not created a matrimony profile yet.',
                         style: TextStyle(fontSize: 13)),
                   ])
-                else
+                else ...[
                   ..._profileCards(profile, contact),
+                  const SizedBox(height: 14),
+                  _moderationActionsCard(context, ref, profile),
+                ],
                 const SizedBox(height: 14),
                 _card([
                   _sectionTitle('Activity'),
@@ -196,7 +209,6 @@ class UserDetailsScreen extends ConsumerWidget {
         _row('Name', s(p.fullName)),
         // Both names are recorded on every profile (§14).
         _row('Name (Tamil)', s(p.fullNameTamil)),
-        _row('Name (Tamil)', s(p.fullNameTamil)),
         _row('Gender', s(p.gender)),
         _row('Date of Birth', _date(p.dateOfBirth)),
         _row('Age', n(p.age)),
@@ -226,7 +238,6 @@ class UserDetailsScreen extends ConsumerWidget {
         const SizedBox(height: 8),
         _row('Education Level', s(p.effectiveEducationLevel)),
         _row('Course / Degree', s(p.education)),
-        _row('Course / Degree', s(p.courseDegree)),
         _row('College', s(p.collegeName)),
         _row('Employment Status', s(p.effectiveEmploymentStatus)),
         _row('Government / Private', s(p.effectiveSector)),
@@ -350,6 +361,152 @@ class UserDetailsScreen extends ConsumerWidget {
     final p = profile?.profilePhotoUrl ?? '';
     if (p.isNotEmpty) return p;
     return user.photoUrl ?? '';
+  }
+
+  /// Human-readable login method (§ Login Information).
+  String _authMethod(String? provider) {
+    final p = (provider ?? '').trim().toLowerCase();
+    if (p.isEmpty) return '—';
+    if (p == 'google.com' || p == 'google') return 'Google';
+    if (p == 'password') return 'Phone/Email + Password';
+    return provider!.trim();
+  }
+
+  /// Status-aware moderation actions — Approve / Reject a pending profile,
+  /// re-approve a rejected one; approved profiles point the admin at the
+  /// account-level Suspend/Activate button instead.
+  Widget _moderationActionsCard(
+      BuildContext context, WidgetRef ref, ProfileModel p) {
+    final status = p.status.trim().toLowerCase();
+    return _card([
+      _sectionTitle('Moderation Actions'),
+      const SizedBox(height: 12),
+      if (status == 'pending')
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => _approveProfile(context, ref, p),
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text('Approve'),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(46)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _rejectProfile(context, ref, p),
+                icon: const Icon(Icons.cancel_outlined),
+                label: const Text('Reject'),
+                style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: const BorderSide(color: AppColors.error),
+                    minimumSize: const Size.fromHeight(46)),
+              ),
+            ),
+          ],
+        )
+      else if (status == 'rejected')
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => _approveProfile(context, ref, p),
+            icon: const Icon(Icons.check_circle_outline),
+            label: const Text('Approve'),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.success,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(46)),
+          ),
+        )
+      else if (status == 'approved')
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.info_outline, size: 18, color: AppColors.info),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'This profile is approved. To take it off the platform, use '
+                'the Suspend button below — Activate restores access.',
+                style: TextStyle(fontSize: 12.5, color: Colors.grey[700]),
+              ),
+            ),
+          ],
+        )
+      else
+        Text('No moderation action available for status "${p.status}".',
+            style: TextStyle(fontSize: 12.5, color: Colors.grey[700])),
+    ]);
+  }
+
+  Future<void> _approveProfile(
+      BuildContext context, WidgetRef ref, ProfileModel p) async {
+    final messenger = ScaffoldMessenger.of(context);
+    // Pass BOTH ids so the member receives the "Profile Approved" push.
+    await ref
+        .read(adminActionsProvider.notifier)
+        .approveProfile(p.id, userId: p.userId);
+    final st = ref.read(adminActionsProvider);
+    messenger.showSnackBar(SnackBar(
+      content: Text(st.hasError
+          ? 'Could not approve profile. Please try again.'
+          : 'Profile approved — the member has been notified.'),
+      backgroundColor: st.hasError ? AppColors.error : AppColors.success,
+    ));
+  }
+
+  Future<void> _rejectProfile(
+      BuildContext context, WidgetRef ref, ProfileModel p) async {
+    final controller = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('Reject Profile'),
+          content: TextField(
+            controller: controller,
+            maxLines: 3,
+            autofocus: true,
+            onChanged: (_) => setState(() {}),
+            decoration: const InputDecoration(
+              hintText: 'Reason for rejection (required)',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: controller.text.trim().isEmpty
+                  ? null
+                  : () => Navigator.pop(ctx, controller.text.trim()),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white),
+              child: const Text('Reject'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (reason == null || reason.isEmpty) return;
+    if (!context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    await ref
+        .read(adminActionsProvider.notifier)
+        .rejectProfile(p.id, reason, userId: p.userId);
+    final st = ref.read(adminActionsProvider);
+    messenger.showSnackBar(SnackBar(
+      content: Text(st.hasError
+          ? 'Could not reject profile. Please try again.'
+          : 'Profile rejected.'),
+      backgroundColor: st.hasError ? AppColors.error : AppColors.warning,
+    ));
   }
 
   Future<void> _toggleStatus(
