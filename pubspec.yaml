@@ -56,6 +56,11 @@ dependencies:
 
   # UI
   cached_network_image: ^3.4.1
+  # The on-disk cache behind cached_network_image, promoted to a DIRECT
+  # dependency because face-centred rendering
+  # (lib/core/utils/face_crop_resolver.dart) needs the already-downloaded file
+  # to run ML Kit on — reading the cache instead of re-downloading the photo.
+  flutter_cache_manager: ^3.4.1
   image_picker: ^1.1.2
   # Pure-Dart image decode/crop/encode — powers the mandatory 1:1 square crop
   # screen (lib/core/utils/image_crop.dart) and the optimized profile-photo

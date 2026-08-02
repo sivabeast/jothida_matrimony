@@ -4,12 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../services/firebase/admin_account_service.dart';
+import '../../widgets/profile/share_login_details_dialog.dart';
 import 'steps/step_basic.dart';
 import 'steps/step_location.dart';
 import 'steps/step_education.dart';
@@ -19,6 +22,7 @@ import 'steps/step_partner_preference.dart';
 import 'steps/step6_photos.dart';
 import 'steps/step_horoscope_upload.dart';
 import 'steps/step7_contact.dart';
+import 'steps/step_login_credentials.dart';
 import 'steps/step_review.dart';
 
 /// Multi-step onboarding wizard (12 steps incl. the success screen).
@@ -46,7 +50,18 @@ class ProfileCreationScreen extends ConsumerStatefulWidget {
   /// Requires [editProfileId].
   final int? sectionStep;
 
-  const ProfileCreationScreen({super.key, this.editProfileId, this.sectionStep});
+  /// ADMIN mode (route `/admin/create-profile`): the admin fills in the SAME
+  /// wizard on a member's behalf, then a final "Login Credentials" step creates
+  /// the member's login. Nothing about the form, validation or structure
+  /// changes — this is one shared profile-creation flow, not a second one.
+  final bool adminMode;
+
+  const ProfileCreationScreen({
+    super.key,
+    this.editProfileId,
+    this.sectionStep,
+    this.adminMode = false,
+  });
 
   @override
   ConsumerState<ProfileCreationScreen> createState() =>
@@ -60,12 +75,22 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   late int _currentStep = widget.sectionStep?.clamp(0, _totalSteps - 1) ?? 0;
   bool _ready = false; // draft/profile loaded → safe to build steps that prefill
 
+  /// True while the member's Firebase Auth account is being created (admin
+  /// mode). Keeps the app-bar spinner up across that step too.
+  bool _provisioning = false;
+
   bool get _isEditMode => widget.editProfileId != null;
 
   /// Single-section editing (from My Profile). Implies [_isEditMode].
   bool get _isSectionMode => _isEditMode && widget.sectionStep != null;
 
-  static const int _totalSteps = 10;
+  /// Admin-on-behalf creation — adds ONE extra step (Login Credentials) at the
+  /// very end. Never combined with edit/section mode.
+  bool get _isAdminMode => widget.adminMode && !_isEditMode;
+
+  /// The 10 shared profile steps, plus the admin-only Login Credentials step.
+  static const int _memberSteps = 10;
+  int get _totalSteps => _isAdminMode ? _memberSteps + 1 : _memberSteps;
 
   /// Steps the user may SKIP — only the optional sections, matching the website
   /// (Photos, Upload Horoscope). Mandatory steps never show Skip.
@@ -90,6 +115,7 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
       l.uploadHoroscope,
       l.contact,
       l.review,
+      if (_isAdminMode) l.loginCredentials,
     ];
   }
 
@@ -138,7 +164,9 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
         } catch (e) {
           debugPrint('[ProfileCreation] edit prefill failed: $e');
         }
-      } else {
+      } else if (!_isAdminMode) {
+        // Admin mode always starts blank: the admin's OWN abandoned draft must
+        // never leak into a profile they are creating for someone else.
         try {
           final prefs = await SharedPreferences.getInstance();
           final raw = prefs.getString(_draftKey);
@@ -158,7 +186,9 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   }
 
   Future<void> _saveDraft() async {
-    if (_isEditMode) return;
+    // Never persist an edit, and never persist a profile the admin is creating
+    // for someone else (it would resurface as the admin's own draft).
+    if (_isEditMode || _isAdminMode) return;
     try {
       final data = ref.read(profileCreationProvider).data;
       final prefs = await SharedPreferences.getInstance();
@@ -241,7 +271,79 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
     }
   }
 
+  /// ADMIN mode save: provision the member's login FIRST, then write the very
+  /// same profile the member would have created themselves — under the new
+  /// member's uid, so it is genuinely THEIR profile and they are never asked to
+  /// create one again.
+  ///
+  /// The account is created before the profile deliberately: if account
+  /// creation fails (duplicate mobile/e-mail, weak password) nothing is written
+  /// at all, so a half-created member can't be left behind.
+  Future<void> _submitAsAdmin() async {
+    final l10n = context.l10n;
+    final data = ref.read(profileCreationProvider).data;
+    final creds = data['loginCredentials'];
+    if (creds is! Map) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.loginCredentials)));
+      return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _provisioning = true);
+    final ProvisionedAccount account;
+    try {
+      account = await AdminAccountService().provisionMemberAccount(
+        name: (data['name'] ?? '').toString().trim(),
+        mobile: (creds['mobile'] ?? '').toString(),
+        email: (creds['email'] ?? '').toString(),
+        password: (creds['password'] ?? '').toString(),
+        gender: (data['gender'] ?? '').toString(),
+      );
+    } catch (e) {
+      debugPrint('[ProfileCreation] admin account provisioning failed: $e');
+      if (!mounted) return;
+      setState(() => _provisioning = false);
+      final message = e is AuthException ? e.message : e.toString();
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _provisioning = false);
+
+    // Same submit path as a member creating their own profile — one shared
+    // flow, one shared validation, one shared document shape.
+    final profileId = await ref
+        .read(profileCreationProvider.notifier)
+        .submitProfile(account.uid);
+    if (!mounted) return;
+    if (profileId == null) {
+      final error = ref.read(profileCreationProvider).error;
+      messenger.showSnackBar(SnackBar(
+          content: Text(error ?? context.l10n.failedToCreateProfile)));
+      return;
+    }
+    await _clearDraft();
+    if (!mounted) return;
+    messenger.showSnackBar(
+        SnackBar(content: Text(context.l10n.profileCreatedForMember)));
+    // Hand the member their login — including the one-tap WhatsApp share.
+    await showShareLoginDetailsDialog(
+      context,
+      memberName: (data['name'] ?? '').toString().trim(),
+      mobile: account.mobile,
+      email: account.email,
+      password: (creds['password'] ?? '').toString(),
+    );
+    if (!mounted) return;
+    context.pop();
+  }
+
   Future<void> _submitProfile() async {
+    if (_isAdminMode) {
+      await _submitAsAdmin();
+      return;
+    }
     final userId = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -293,6 +395,9 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
         onEditStep: _goToStep,
         isEditMode: _isEditMode,
       ),
+      // Admin only — the final Login Credentials step, which is what actually
+      // triggers the save (account + profile) in that mode.
+      if (_isAdminMode) StepLoginCredentials(onNext: _nextStep),
     ];
 
     return Scaffold(
@@ -314,7 +419,9 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
             : _currentStep > 0
                 ? IconButton(
                     icon: const Icon(Icons.arrow_back), onPressed: _prevStep)
-                : _isEditMode
+                : (_isEditMode || _isAdminMode)
+                    // Admin mode is a normal admin page — closing it just
+                    // leaves; it must never sign the admin out.
                     ? IconButton(
                         icon: const Icon(Icons.close),
                         onPressed: () => context.pop())
@@ -327,7 +434,7 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
         // OPTIONAL sections, plus the submit spinner. Section mode never
         // shows Skip (closing already discards).
         actions: [
-          if (creationState.isLoading)
+          if (creationState.isLoading || _provisioning)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 18),
               child: Center(

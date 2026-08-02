@@ -128,29 +128,17 @@ String? resolveAuthRedirect({
 
   if (onAuthPage) {
     // (A pure admin account already returned above — it can only be on /admin.)
-    // A super_admin is a NORMAL matrimony user and onboards like everyone else.
-    if (!user.isProfileComplete) {
-      log?.call('profile incomplete → /profile/create');
-      return '/profile/create';
-    }
-    // Nothing else keeps an authenticated account on the login screen.
+    // EVERY authenticated account lands on Home. Profile creation is NEVER
+    // forced: signing in (or creating an account) goes straight to the Home
+    // page, which shows a "Create Profile" call-to-action while the member has
+    // no matrimony profile. Only tapping that CTA opens the wizard.
+    log?.call('authenticated on an auth page → /home');
     return '/home';
-  }
-
-  // Authenticated user with an incomplete profile must finish onboarding before
-  // reaching any other authenticated screen (Home, chats, etc.).
-  final onProfileCreate = loc == '/profile/create';
-  if (!onAdmin && // admins may still open /admin with an incomplete profile
-      !user.isProfileComplete &&
-      !onProfileCreate &&
-      !onSplash) {
-    log?.call('profile incomplete, blocking $loc → /profile/create');
-    return '/profile/create';
   }
 
   // A user who has already completed their profile shouldn't be sent back
   // through onboarding.
-  if (user.isProfileComplete && onProfileCreate) {
+  if (user.isProfileComplete && loc == '/profile/create') {
     log?.call('profile already complete → /home');
     return '/home';
   }

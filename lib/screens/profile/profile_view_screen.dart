@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -13,11 +14,12 @@ import '../../providers/chat_provider.dart';
 import '../../providers/interest_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/common/auto_fit_label.dart';
 import '../../widgets/common/contact_reveal_card.dart';
+import '../../widgets/common/face_centered_photo.dart';
 import '../../widgets/common/fullscreen_photo_viewer.dart';
 import '../../widgets/common/gradient_button.dart';
 import '../../widgets/common/horoscope_documents_view.dart';
-import '../../widgets/common/network_photo.dart';
 
 class ProfileViewScreen extends ConsumerStatefulWidget {
   /// Open by profile-document id — used from Discover / Matches, where the id
@@ -513,8 +515,16 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                 // ── Basic Details — labels via l10n, stored values via the
                 // EN→TA value map so everything switches with the language. ──
                 _buildInfoSection(context.l10n.basicDetails, [
+                  _InfoItem(Icons.person_outline, context.l10n.fullName,
+                      profile.displayName(context.isTamil)),
+                  _InfoItem(Icons.wc_outlined, context.l10n.gender,
+                      context.localizeValue(profile.gender)),
                   _InfoItem(Icons.cake_outlined, context.l10n.age,
                       '${profile.age} ${context.l10n.years}'),
+                  // Date of Birth — entered in the wizard's Basic Details step
+                  // and now surfaced here like every other field.
+                  _InfoItem(Icons.event_outlined, context.l10n.dateOfBirth,
+                      _formatDate(profile.dateOfBirth)),
                   _InfoItem(Icons.height, context.l10n.height, profile.height),
                   _InfoItem(Icons.monitor_weight_outlined, context.l10n.weight,
                       profile.weight),
@@ -555,6 +565,18 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                       profile.collegeName ?? ''),
                   _InfoItem(Icons.location_city_outlined,
                       context.l10n.nativePlace, profile.nativePlace ?? ''),
+                  _InfoItem(Icons.school, context.l10n.courseDegree,
+                      profile.courseDegree ?? ''),
+                  _InfoItem(Icons.place, context.l10n.workLocation,
+                      profile.workLocation ?? ''),
+                  _InfoItem(Icons.flag_outlined, context.l10n.citizenship,
+                      context.localizeValue(profile.citizenship ?? '')),
+                  _InfoItem(
+                      Icons.child_care_outlined,
+                      context.l10n.childrenCountLabel,
+                      profile.childrenCount > 0
+                          ? '${profile.childrenCount}'
+                          : ''),
                 ]),
                 if (profile.about.trim().isNotEmpty) ...[
                   const SizedBox(height: 16),
@@ -570,8 +592,13 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                 const SizedBox(height: 20),
                 // ── Lifestyle Details ──
                 ..._lifestyleSection(profile.lifestyle),
-                // ── Partner Preference Comparison ──
+                // ── Partner Preference (this member's own saved preferences) ──
+                ..._partnerPreferenceSection(profile),
+                // ── Partner Preference Comparison (viewer's prefs vs this) ──
                 ..._partnerPreferenceComparison(profile),
+                const SizedBox(height: 20),
+                // ── Contact Details (from the Contact Details step) ──
+                _contactSection(profile),
                 const SizedBox(height: 32),
                 // Status-aware action: accepted → View Contact (never "Send
                 // Interest" again); pending → "Interest Sent"; otherwise the
@@ -610,13 +637,16 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       );
     }
     return GestureDetector(
+      // Tapping always opens the ORIGINAL, uncropped image — the face-centred
+      // crop below only affects the header thumbnail.
       onTap: () => FullScreenPhotoViewer.open(context, url),
       child: Stack(
         fit: StackFit.expand,
         children: [
-          NetworkPhoto(
+          FaceCenteredPhoto(
             url: url,
             fit: BoxFit.cover,
+            fallbackAlignment: Alignment.topCenter,
             fallbackIconSize: 100,
             showLoadingSpinner: true,
           ),
@@ -682,8 +712,12 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
           context.localizeValue(f.motherOccupation)),
       _InfoItem(Icons.group_outlined, context.l10n.brothers,
           f.brothersCount > 0 ? '${f.brothersCount}' : ''),
+      _InfoItem(Icons.group_outlined, context.l10n.marriedBrothers,
+          f.marriedBrothers > 0 ? '${f.marriedBrothers}' : ''),
       _InfoItem(Icons.group_outlined, context.l10n.sisters,
           f.sistersCount > 0 ? '${f.sistersCount}' : ''),
+      _InfoItem(Icons.group_outlined, context.l10n.marriedSisters,
+          f.marriedSisters > 0 ? '${f.marriedSisters}' : ''),
       _InfoItem(Icons.family_restroom, context.l10n.familyType,
           context.localizeValue(f.familyType)),
       _InfoItem(Icons.diamond_outlined, context.l10n.familyStatus,
@@ -704,6 +738,159 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       const SizedBox(height: 20),
     ];
   }
+
+  String _formatDate(DateTime date) => DateFormat('dd MMM yyyy').format(date);
+
+  /// THIS member's own saved Partner Preferences — every value they entered in
+  /// the wizard's Partner Preference step, rendered dynamically (a preference
+  /// left unset is simply omitted, never shown as a placeholder).
+  ///
+  /// Distinct from [_partnerPreferenceComparison] below, which compares the
+  /// VIEWER's preferences against this profile.
+  List<Widget> _partnerPreferenceSection(ProfileModel profile) {
+    final p = profile.partnerPreferences;
+    final l10n = context.l10n;
+
+    // 'Any' is the "no preference" sentinel — treat it as unset.
+    String value(String? raw) {
+      final v = (raw ?? '').trim();
+      if (v.isEmpty || v.toLowerCase() == 'any') return '';
+      return context.localizeValue(v);
+    }
+
+    String list(List<String> raw) =>
+        raw.map(context.localizeValue).where((s) => s.isNotEmpty).join(', ');
+
+    final location = [p.city, p.district, p.state, p.country]
+        .map(value)
+        .where((s) => s.isNotEmpty)
+        .join(', ');
+
+    final items = <_InfoItem>[
+      _InfoItem(
+          Icons.cake_outlined,
+          l10n.preferredAgeRange,
+          p.agePreferenceSet
+              ? l10n.ageRangeValue(p.minAge, p.maxAge)
+              : ''),
+      _InfoItem(Icons.height, l10n.preferredHeightRange,
+          (p.minHeight.trim().isEmpty && p.maxHeight.trim().isEmpty)
+              ? ''
+              : l10n.rangeValue(p.minHeight, p.maxHeight)),
+      _InfoItem(Icons.school_outlined, l10n.preferredEducation,
+          list(p.education)),
+      _InfoItem(Icons.work_outline, l10n.preferredOccupation,
+          list(p.occupation)),
+      _InfoItem(Icons.payments_outlined, l10n.preferredIncome, value(p.income)),
+      _InfoItem(Icons.place_outlined, l10n.preferredLocation, location),
+      _InfoItem(Icons.wc, l10n.maritalStatus, value(p.maritalStatus)),
+      _InfoItem(Icons.church_outlined, l10n.religion, value(p.religion)),
+      _InfoItem(Icons.people_outline, l10n.caste, value(p.caste)),
+      _InfoItem(Icons.groups_2_outlined, l10n.subCaste, value(p.subCaste)),
+      _InfoItem(Icons.translate, l10n.motherTongue, value(p.motherTongue)),
+      _InfoItem(Icons.accessibility_new, l10n.physicalStatus,
+          value(p.physicalStatus)),
+      _InfoItem(Icons.badge_outlined, l10n.employmentType,
+          value(p.employmentType)),
+      _InfoItem(Icons.stars, l10n.rasi, value(p.rasi)),
+      _InfoItem(Icons.star_border, l10n.nakshatra, value(p.nakshatra)),
+      _InfoItem(Icons.brightness_5_outlined, l10n.chevvaiDosham,
+          value(p.chevvaiDosham)),
+      _InfoItem(Icons.restaurant_outlined, l10n.eatingHabit,
+          value(p.eatingHabit)),
+      _InfoItem(Icons.smoke_free, l10n.smokingHabit, value(p.smokingHabit)),
+      _InfoItem(
+          Icons.no_drinks_outlined, l10n.drinkingHabit, value(p.drinkingHabit)),
+      _InfoItem(Icons.auto_awesome_outlined, l10n.horoscopeMatchRequired,
+          p.horoscopeMatchRequired ? l10n.yes : ''),
+    ];
+    if (items.every((i) => i.value.trim().isEmpty)) return const [];
+    return [
+      _buildInfoSection(l10n.partnerPreferences, items),
+      const SizedBox(height: 20),
+    ];
+  }
+
+  /// Contact Details — ALWAYS the record written by the Contact Details step of
+  /// profile creation (`contacts/{userId}`), never any other source.
+  ///
+  /// It is STREAMED, so editing contact details updates this section
+  /// automatically. Visibility follows the member's own choice: the owner always
+  /// sees it; another member sees it when the profile is set to public contact
+  /// sharing or after a mutually-accepted interest (the Firestore rule is the
+  /// real gate — a denied read renders the locked card).
+  Widget _contactSection(ProfileModel profile) {
+    final l10n = context.l10n;
+    final async = ref.watch(contactStreamByUserIdProvider(profile.userId));
+    return async.when(
+      loading: () => const SizedBox.shrink(),
+      // A denied read is the expected "not unlocked yet" state, not an error.
+      error: (_, __) => _lockedContactCard(),
+      data: (contact) {
+        if (contact == null) {
+          return _isOwner(profile)
+              ? _emptySectionCard(l10n.contactDetails, l10n.contactNotProvided)
+              : _lockedContactCard();
+        }
+        final whatsapp = (contact.whatsappNumber ?? '').trim();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildInfoSection(l10n.contactDetails, [
+              _InfoItem(Icons.person_outline, l10n.contactPersonName,
+                  contact.contactPersonName),
+              // Self / Father / Mother / Brother / Sister / Guardian /
+              // Relative / Friend — never hardcoded, always what was saved.
+              _InfoItem(Icons.family_restroom, l10n.relationship,
+                  context.localizeValue(contact.relationship)),
+              _InfoItem(Icons.call_outlined, l10n.mobileNumber,
+                  contact.mobileNumber),
+              _InfoItem(Icons.chat_outlined, l10n.whatsappNumber, whatsapp),
+              _InfoItem(Icons.email_outlined, l10n.email, contact.email),
+            ]),
+            const SizedBox(height: 6),
+            Text(l10n.contactDetailsFromProfile,
+                style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _lockedContactCard() => _emptySectionCard(
+      context.l10n.contactDetails, context.l10n.contactLockedNote,
+      icon: Icons.lock_outline);
+
+  /// A neutral card for a section that has no data (or is not unlocked).
+  Widget _emptySectionCard(String title, String message,
+          {IconData icon = Icons.info_outline}) =>
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: AppTextStyles.heading3),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, size: 18, color: Colors.grey[600]),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(message,
+                      style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
 
   /// Partner-preference COMPARISON — instead of just listing the viewer's
   /// preferences, compares each against THIS profile and shows whether it
@@ -957,6 +1144,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Every horoscope value entered during profile creation.
           _buildInfoSection(context.l10n.horoscopeDetails, [
             _InfoItem(Icons.stars, context.l10n.rasi, h.rasi),
             _InfoItem(Icons.star_border, context.l10n.nakshatra, h.nakshatra),
@@ -964,6 +1152,16 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
             _InfoItem(
                 Icons.place_outlined, context.l10n.birthPlace, h.birthPlace),
             _InfoItem(Icons.access_time, context.l10n.birthTime, h.birthTime),
+            _InfoItem(Icons.nightlight_outlined, context.l10n.moonSign,
+                context.localizeValue(h.moonSign)),
+            _InfoItem(Icons.wb_sunny_outlined, context.l10n.sunSign,
+                context.localizeValue(h.sunSign)),
+            _InfoItem(Icons.timelapse_outlined, context.l10n.dasaBalance,
+                h.dasaBalance),
+            _InfoItem(Icons.self_improvement_outlined, context.l10n.yogam,
+                context.localizeValue(h.yogam)),
+            _InfoItem(Icons.change_history_outlined, context.l10n.karanam,
+                context.localizeValue(h.karanam)),
             _InfoItem(Icons.brightness_5_outlined, context.l10n.chevvaiDosham,
                 context.localizeValue(h.dosham)),
             _InfoItem(Icons.brightness_5_outlined, context.l10n.rahuKethuDosham,
@@ -1198,6 +1396,8 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       );
 
   Widget _buildInfoSection(String title, List<_InfoItem> items) {
+    final rows = items.where((item) => item.value.trim().isNotEmpty).toList();
+    if (rows.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1210,20 +1410,60 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
             border: Border.all(color: Colors.grey[200]!),
           ),
           child: Column(
-            children: items
-                .where((item) => item.value.isNotEmpty)
-                .map((item) => ListTile(
-                      dense: true,
-                      leading: Icon(item.icon, size: 20, color: AppColors.primary),
-                      title: Text(item.label,
-                          style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                      trailing: Text(item.value,
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                    ))
-                .toList(),
+            children: [
+              for (var i = 0; i < rows.length; i++) ...[
+                if (i > 0) Divider(height: 1, color: Colors.grey[200]),
+                _infoRow(rows[i]),
+              ],
+            ],
           ),
         ),
       ],
+    );
+  }
+
+  /// One label/value row.
+  ///
+  /// The previous `ListTile` put the value in `trailing`, which has no width
+  /// budget — a long occupation or education value collided with the label and
+  /// broke the layout. Here the LABEL takes a fixed share and never splits (it
+  /// shrinks slightly instead), while the VALUE takes the rest and wraps freely
+  /// over as many lines as it needs. Same treatment in every section.
+  Widget _infoRow(_InfoItem item) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(item.icon, size: 19, color: AppColors.primary),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 4,
+            child: AutoFitLabel(
+              item.label,
+              maxLines: 2,
+              minFontSize: 9,
+              textAlign: TextAlign.start,
+              style: const TextStyle(
+                  fontSize: 12, height: 1.25, color: Colors.grey),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 5,
+            child: Text(
+              item.value,
+              softWrap: true,
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                  fontSize: 13.5, height: 1.3, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

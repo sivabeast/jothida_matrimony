@@ -446,6 +446,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/admin/users',
               builder: (_, __) => const AdminUsersPage()),
+          // "Create Profiles" — the admin fills in the SAME profile-creation
+          // wizard on a member's behalf, then a final Login Credentials step
+          // creates the member's login. One shared flow, no duplicate form.
+          GoRoute(
+              path: '/admin/create-profile',
+              builder: (_, __) =>
+                  const ProfileCreationScreen(adminMode: true)),
           // Per-user details (Edit / Delete). Reached by tapping a user card.
           GoRoute(
               path: '/admin/user/:uid',

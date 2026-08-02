@@ -3,10 +3,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../core/errors/auth_exception.dart';
+import '../core/utils/login_identifier.dart';
 import '../models/user_model.dart';
 import '../services/firebase/auth_service.dart';
 import '../services/firebase/firestore_service.dart';
 import '../services/firebase/fcm_service.dart';
+import '../services/firebase/login_directory_service.dart';
 
 /// Orchestrates authentication: delegates credential work to [AuthService] and
 /// user-document work to [FirestoreService]. The UI/providers only talk to this
@@ -15,8 +17,9 @@ class AuthRepository {
   final AuthService _auth;
   final FirestoreService _firestore;
   final FcmService _fcm;
+  final LoginDirectoryService _directory;
 
-  AuthRepository(this._auth, this._firestore, this._fcm);
+  AuthRepository(this._auth, this._firestore, this._fcm, this._directory);
 
   Stream<User?> get authStateChanges => _auth.authStateChanges;
   User? get currentUser => _auth.currentUser;
@@ -65,6 +68,57 @@ class AuthRepository {
   }
 
   Future<void> sendPasswordReset(String email) => _auth.sendPasswordReset(email);
+
+  // ── Password login: mobile number OR e-mail (§ two login methods) ─────────
+
+  /// Resolves whatever the member typed into the single "Phone Number or Email"
+  /// field to the e-mail address their Firebase password credential uses.
+  ///
+  ///  • an e-mail → itself, no lookup at all;
+  ///  • a mobile number → the `login_index` entry when one exists (member
+  ///    registered with a real e-mail), otherwise the deterministic
+  ///    [LoginIdentifier.phoneAuthEmail] address that phone-only accounts use.
+  ///
+  /// Throws [AuthException] when the input is neither.
+  Future<String> resolveAuthEmail(String identifier) async {
+    final value = identifier.trim();
+    switch (LoginIdentifier.kindOf(value)) {
+      case LoginIdentifierKind.email:
+        return value.toLowerCase();
+      case LoginIdentifierKind.phone:
+        final mobile = LoginIdentifier.localMobile(value)!;
+        final mapped = await _directory.authEmailForPhone(mobile);
+        final resolved = mapped ?? LoginIdentifier.phoneAuthEmail(mobile);
+        debugPrint('[AuthRepository] resolveAuthEmail: mobile $mobile → '
+            '${mapped == null ? 'synthesized' : 'indexed'} address');
+        return resolved;
+      case LoginIdentifierKind.unknown:
+        throw const AuthException(
+          'Enter a valid 10-digit mobile number or e-mail address.',
+          code: 'invalid-identifier',
+        );
+    }
+  }
+
+  /// Signs in with **mobile number + password** or **e-mail + password** —
+  /// the only two password login methods (usernames were removed).
+  Future<UserModel> signInWithIdentifier(
+      String identifier, String password) async {
+    final email = await resolveAuthEmail(identifier);
+    debugPrint('[AuthRepository] signInWithIdentifier: starting...');
+    final cred = await _auth.signInWithEmail(email, password);
+    final model =
+        await _onAuthenticated(cred.user!, loginProvider: 'password');
+    // Self-healing: an account that has a mobile number but no directory entry
+    // (registered before this index existed, or a failed write) gets one now,
+    // so the NEXT phone login resolves directly.
+    final mobile = LoginIdentifier.localMobile(model.phone ?? '');
+    if (mobile != null) {
+      unawaited(_directory.registerQuietly(
+          mobile: mobile, authEmail: email, uid: model.uid));
+    }
+    return model;
+  }
 
   /// Full Google sign-in. Returns the resolved [UserModel], or `null` if the
   /// user dismissed the account picker. Throws [AuthException] on real errors.
@@ -177,36 +231,53 @@ class AuthRepository {
           {String? phone, String? loginProvider}) =>
       _onAuthenticated(user, phone: phone, loginProvider: loginProvider);
 
-  /// Email/password signup for matrimony **users**: creates the auth account,
-  /// the `users/{uid}` document, and saves the essential registration details
-  /// (name, mobile, gender, DOB, location) in one go.
+  /// **Account creation** (not profile creation) for matrimony users: creates
+  /// the Firebase Auth credential, the `users/{uid}` document, the mobile →
+  /// sign-in-address index entry, and stores the registration details.
+  ///
+  /// [email] is optional. When it is empty the Firebase credential uses the
+  /// deterministic phone address ([LoginIdentifier.phoneAuthEmail]), so the
+  /// member can still sign in with **mobile number + password**.
+  ///
+  /// The new account intentionally stays `isProfileComplete: false`: the
+  /// matrimony profile is created later, only when the member chooses to.
   Future<UserModel> registerUserWithDetails({
-    required String email,
     required String password,
     required String name,
     required String phone,
     required String gender,
     required DateTime dateOfBirth,
-    required String location,
+    String email = '',
+    String location = '',
   }) async {
-    debugPrint('[AuthRepository] registerUserWithDetails($email): '
-        'creating Firebase account...');
-    final cred = await _auth.registerWithEmail(email, password);
+    final realEmail = email.trim().toLowerCase();
+    final mobile = LoginIdentifier.localMobile(phone) ?? phone.trim();
+    final authEmail = realEmail.isNotEmpty
+        ? realEmail
+        : LoginIdentifier.phoneAuthEmail(mobile);
+    debugPrint('[AuthRepository] registerUserWithDetails: creating Firebase '
+        'account (realEmail=${realEmail.isNotEmpty})...');
+    final cred = await _auth.registerWithEmail(authEmail, password);
     final user = cred.user!;
     debugPrint('[AuthRepository] registerUserWithDetails: Firebase user '
         '${user.uid} created. Updating display name...');
     await user.updateDisplayName(name);
-    await _onAuthenticated(user, phone: phone, loginProvider: 'password');
+    await _onAuthenticated(user, phone: mobile, loginProvider: 'password');
     debugPrint('[AuthRepository] registerUserWithDetails: saving registration '
         'details to Firestore...');
     await _firestore.saveUserRegistrationDetails(
       user.uid,
       name: name,
-      phone: phone,
+      phone: mobile,
       gender: gender,
       dateOfBirth: dateOfBirth,
       location: location,
+      email: realEmail,
     );
+    // Mobile login resolution — best-effort so a blocked/slow index write can
+    // never fail an otherwise-successful registration.
+    await _directory.registerQuietly(
+        mobile: mobile, authEmail: authEmail, uid: user.uid);
     final model = (await _firestore.getUser(user.uid))!;
     debugPrint('[AuthRepository] registerUserWithDetails: done. '
         'isProfileComplete=${model.isProfileComplete}');

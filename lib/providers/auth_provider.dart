@@ -73,18 +73,19 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
     );
   }
 
-  /// User signup collecting the essential details required by the spec
-  /// (name, mobile, gender, DOB, location).
+  /// Account creation collecting the essential details required by the spec
+  /// (name, mobile, e-mail, password, gender, DOB). This creates the ACCOUNT
+  /// only — the matrimony profile is created later, when the member chooses.
   Future<void> registerUser({
-    required String email,
     required String password,
     required String name,
     required String phone,
     required String gender,
     required DateTime dateOfBirth,
-    required String location,
+    String email = '',
+    String location = '',
   }) async {
-    debugPrint('[AuthNotifier] registerUser: state -> loading ($email)');
+    debugPrint('[AuthNotifier] registerUser: state -> loading ($phone)');
     state = const AsyncLoading();
     state = await AsyncValue.guard(() {
       return ref.read(authRepositoryProvider).registerUserWithDetails(
@@ -104,6 +105,30 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
       error: (e, st) =>
           debugPrint('[AuthNotifier] registerUser: state -> error: $e'),
       loading: () => debugPrint('[AuthNotifier] registerUser: still loading?!'),
+    );
+  }
+
+  /// Password sign-in with EITHER a 10-digit mobile number OR an e-mail
+  /// address — the app's only two password login methods. The repository
+  /// resolves the identifier to the Firebase credential address.
+  Future<void> signInWithIdentifier(String identifier, String password) async {
+    debugPrint('[AuthNotifier] signInWithIdentifier: state -> loading');
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() =>
+        ref.read(authRepositoryProvider).signInWithIdentifier(
+              identifier,
+              password,
+            ));
+    // The login write (lastLoginAt, role reconciliation) has just landed;
+    // re-read the document so the router sees the fresh account state.
+    if (!state.hasError) ref.invalidate(currentUserProvider);
+    state.when(
+      data: (user) => debugPrint(
+          '[AuthNotifier] signInWithIdentifier: state -> data (${user?.uid})'),
+      error: (e, st) =>
+          debugPrint('[AuthNotifier] signInWithIdentifier: error: $e'),
+      loading: () => debugPrint('[AuthNotifier] signInWithIdentifier: '
+          'still loading?!'),
     );
   }
 

@@ -12,7 +12,9 @@ import '../../../providers/interest_provider.dart';
 import '../../../providers/matches_prefs_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/ui_preferences_provider.dart';
-import '../../../widgets/common/network_photo.dart';
+import '../../../widgets/common/auto_fit_label.dart';
+import '../../../widgets/common/create_profile_cta.dart';
+import '../../../widgets/common/face_centered_photo.dart';
 import '../../../widgets/common/profile_highlight_badge.dart';
 
 /// The Matches experience — a HORIZONTAL swipe browser over EVERY eligible
@@ -184,6 +186,20 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
 
   @override
   Widget build(BuildContext context) {
+    // A member without a matrimony profile never sees profiles here — just the
+    // premium "Create Profile" call-to-action (the same one Home shows).
+    final myProfileAsync = ref.watch(myProfileProvider);
+    if (myProfileAsync.valueOrNull == null) {
+      return Container(
+        color: AppColors.scaffoldBg,
+        child: myProfileAsync.isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.primary))
+            : CreateProfileCta(
+                title: context.l10n.matchesLockedTitle, expanded: true),
+      );
+    }
+
     final state = ref.watch(discoverProvider);
     // The full ranked feed — every profile that passes the matching rules.
     final matched = state.profiles;
@@ -443,16 +459,24 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
 
   // ── The horizontal browser (§1) ────────────────────────────────────────────
 
-  /// One page per profile, swiped left/right. A trailing page appears while the
-  /// next batch is being fetched (or once the end of the feed is reached), so
-  /// the member can always tell "still loading" from "that's everyone".
+  /// One page per profile, swiped left/right — OR moved with the two subtle
+  /// arrows overlaid on the photo. A trailing page appears while the next batch
+  /// is being fetched (or once the end of the feed is reached), so the member
+  /// can always tell "still loading" from "that's everyone".
+  ///
+  /// There is deliberately NO instruction text under the profile: the arrows
+  /// are the affordance, and swiping keeps working exactly as before.
   Widget _swipeBrowser(List<ProfileModel> profiles, DiscoverState state) {
     final showTail = state.hasMore || state.isLoadingMore;
     final pageCount = profiles.length + (showTail ? 1 : 0);
+    final width = MediaQuery.of(context).size.width;
+    // The photo is a full-width square, so its vertical centre — where the
+    // arrows belong — sits half a screen-width down the page.
+    final arrowTop = (width / 2) - 24;
 
-    return Column(
+    return Stack(
       children: [
-        Expanded(
+        Positioned.fill(
           child: PageView.builder(
             controller: _pageController,
             scrollDirection: Axis.horizontal,
@@ -465,21 +489,48 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
             itemBuilder: (_, i) {
               if (i >= profiles.length) return _tailPage(state);
               final p = profiles[i];
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-                child: _MatchProfileCard(
-                  key: ValueKey(p.id),
-                  profile: p,
-                  interestSent: _interestSent.contains(p.id),
-                  onInterest: () => _sendInterest(p),
-                  onAccept: (interestId) => _acceptInterest(p, interestId),
-                ),
+              return _MatchProfileCard(
+                key: ValueKey(p.id),
+                profile: p,
+                interestSent: _interestSent.contains(p.id),
+                onInterest: () => _sendInterest(p),
+                onAccept: (interestId) => _acceptInterest(p, interestId),
               );
             },
           ),
         ),
-        _swipeHint(profiles.length),
+        Positioned(
+          left: 8,
+          top: arrowTop,
+          child: _NavArrow(
+            icon: Icons.chevron_left_rounded,
+            tooltip: context.l10n.previousProfile,
+            enabled: _index > 0,
+            onTap: () => _goToPage(_index - 1),
+          ),
+        ),
+        Positioned(
+          right: 8,
+          top: arrowTop,
+          child: _NavArrow(
+            icon: Icons.chevron_right_rounded,
+            tooltip: context.l10n.nextProfile,
+            enabled: _index < pageCount - 1,
+            onTap: () => _goToPage(_index + 1),
+          ),
+        ),
       ],
+    );
+  }
+
+  /// Arrow navigation. Animates the SAME pager the swipe drives, so tapping and
+  /// swiping are interchangeable and the resume position stays correct.
+  void _goToPage(int page) {
+    if (page < 0 || !_pageController.hasClients) return;
+    _pageController.animateToPage(
+      page,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
     );
   }
 
@@ -522,34 +573,6 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
             ],
           ],
         ),
-      ),
-    );
-  }
-
-  /// Swipe affordance + position indicator under the pager.
-  Widget _swipeHint(int total) {
-    final atStart = _index <= 0;
-    final atEnd = _index >= total - 1;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.chevron_left,
-              size: 18, color: atStart ? Colors.grey[300] : Colors.grey[500]),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              context.l10n.swipeToBrowse,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11.5, color: Colors.grey[600]),
-            ),
-          ),
-          const SizedBox(width: 6),
-          Icon(Icons.chevron_right,
-              size: 18, color: atEnd ? Colors.grey[300] : Colors.grey[500]),
-        ],
       ),
     );
   }
@@ -616,13 +639,15 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   }
 }
 
-/// One full-screen page in the Matches swipe browser.
+/// One full-screen page in the Matches browser.
 ///
-/// Layout (top → bottom):
-///   • the member's 1:1 photo (tap → full profile) with the match-quality
-///     badge — or a neutral placeholder when they hide their photo,
-///   • the essential summary (name·age, verification, location, height,
-///     education, profession, community),
+/// ONE CONTINUOUS PROFILE LAYOUT — deliberately not a card:
+///   • a large, edge-to-edge, near-square FACE-CENTRED photo (tap → full
+///     profile), or a neutral placeholder when the member hides their photo;
+///   • the details flow directly beneath it on the page itself — no white card,
+///     no border, no second surface — so photo and details read as one profile;
+///   • exactly ONE badge, "⭐ Nakshatra Match", sitting under Name + Age and
+///     never overlaid on the photo;
 ///   • two equally-sized actions: Express Interest · View Profile.
 ///
 /// The body scrolls vertically INSIDE the page when a tall summary would not
@@ -666,42 +691,37 @@ class _MatchProfileCard extends ConsumerWidget {
       status = InterestUiStatus.sent;
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: SingleChildScrollView(
-        // A vertical drag inside a horizontal PageView is unambiguous, so this
-        // never fights the swipe gesture.
-        physics: const ClampingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _photo(context),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _summary(context),
-                  const SizedBox(height: 14),
-                  _actions(context, status),
-                ],
-              ),
+    // No card wrapper: the photo runs edge-to-edge and the details sit straight
+    // on the page, so one profile reads as a single continuous layout.
+    return SingleChildScrollView(
+      // A vertical drag inside a horizontal PageView is unambiguous, so this
+      // never fights the swipe gesture.
+      physics: const ClampingScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _photo(context),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _summary(context),
+                const SizedBox(height: 18),
+                _actions(context, status),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   // ── Photo ────────────────────────────────────────────────────────────────
+
+  /// Full-width, almost-square, face-centred photo. Nothing is overlaid on it
+  /// except the "photo hidden" note — the match badge lives below, with the
+  /// name.
   Widget _photo(BuildContext context) {
     // "Hide Profile Photo" is OFF unless the member turned it on (§12) — a
     // hidden photo shows a neutral placeholder.
@@ -710,26 +730,30 @@ class _MatchProfileCard extends ConsumerWidget {
     return GestureDetector(
       onTap: () => _openProfile(context),
       child: AspectRatio(
-        // 1:1 — the photo is always a square crop (§11).
-        aspectRatio: 1,
+        // Almost square (§11 keeps the stored crop 1:1); a hair wider than tall
+        // leaves room for the details without a scroll on most phones.
+        aspectRatio: 1 / 0.96,
         child: Stack(
           fit: StackFit.expand,
           children: [
-            NetworkPhoto(
+            FaceCenteredPhoto(
               url: url,
               fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
+              // Portraits are shot head-up, so a top-anchored crop is the right
+              // guess until on-device detection locates the actual face.
+              fallbackAlignment: Alignment.topCenter,
               fallbackIcon: Icons.person,
               fallbackIconSize: 88,
               fallbackBg: const Color(0xFFEFE7D6),
               showLoadingSpinner: true,
             ),
-            // Soft bottom scrim — adds depth without overlaying any text.
+            // Soft bottom scrim — blends the photo into the details below so
+            // the two feel like one surface rather than two stacked blocks.
             Positioned(
               left: 0,
               right: 0,
               bottom: 0,
-              height: 80,
+              height: 90,
               child: IgnorePointer(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -737,26 +761,18 @@ class _MatchProfileCard extends ConsumerWidget {
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        Colors.black.withValues(alpha: 0.26),
-                        Colors.transparent,
+                        AppColors.scaffoldBg,
+                        AppColors.scaffoldBg.withValues(alpha: 0.0),
                       ],
                     ),
                   ),
                 ),
               ),
             ),
-            Positioned(
-              top: 12,
-              left: 12,
-              // Green "star match" badge (spec) — no online status, no
-              // percentage. Renders only for star-compatible profiles.
-              child: ProfileHighlightBadge(
-                  profile: profile, color: AppColors.success),
-            ),
             if (hidden)
               Positioned(
-                bottom: 10,
-                left: 12,
+                bottom: 14,
+                left: 18,
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -814,7 +830,11 @@ class _MatchProfileCard extends ConsumerWidget {
             ],
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
+        // The ONE match badge — "⭐ Nakshatra Match" — directly under Name +
+        // Age. Never on the photo, and never alongside another quality label.
+        ProfileHighlightBadge(profile: profile, nakshatraOnly: true),
+        const SizedBox(height: 12),
         // Essential fields — each rendered only when present.
         // Free-text (city) / numeric (height) stay as entered; the controlled-
         // vocabulary fields are localized for display via context.localizeValue.
@@ -872,17 +892,24 @@ class _MatchProfileCard extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
+                // The LABEL never splits — it shrinks a touch instead, so a
+                // long Tamil field name ("பணி/தொழில்") stays on one line.
+                AutoFitLabel(label,
+                    maxLines: 1,
+                    minFontSize: 8.5,
+                    textAlign: TextAlign.start,
                     style: TextStyle(
                         fontSize: 11,
                         color: Colors.grey[500],
                         letterSpacing: 0.2)),
                 const SizedBox(height: 2),
+                // The VALUE may wrap freely over several lines.
                 Text(value,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: 3,
+                    softWrap: true,
                     style: const TextStyle(
                         fontSize: 14,
+                        height: 1.3,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary)),
               ],
@@ -1013,4 +1040,69 @@ class _MatchProfileCard extends ConsumerWidget {
           ],
         ),
       );
+}
+
+/// A deliberately subtle circular navigation arrow overlaid on the profile
+/// photo — the replacement for the removed "swipe left / swipe right"
+/// instruction text.
+///
+/// At rest it is semi-transparent so it never competes with the photo; it lifts
+/// to full opacity while being pressed (and dims to almost nothing at the ends
+/// of the feed, where there is nowhere to go).
+class _NavArrow extends StatefulWidget {
+  final IconData icon;
+  final String tooltip;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _NavArrow({
+    required this.icon,
+    required this.tooltip,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  State<_NavArrow> createState() => _NavArrowState();
+}
+
+class _NavArrowState extends State<_NavArrow> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final double opacity = !widget.enabled
+        ? 0.16
+        : _pressed
+            ? 0.92
+            : 0.42;
+    return Tooltip(
+      message: widget.tooltip,
+      child: GestureDetector(
+        onTapDown: widget.enabled ? (_) => setState(() => _pressed = true) : null,
+        onTapCancel:
+            widget.enabled ? () => setState(() => _pressed = false) : null,
+        onTapUp: widget.enabled
+            ? (_) {
+                setState(() => _pressed = false);
+                widget.onTap();
+              }
+            : null,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 140),
+          opacity: opacity,
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.black.withValues(alpha: 0.42),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.55)),
+            ),
+            child: Icon(widget.icon, color: Colors.white, size: 30),
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -116,6 +116,29 @@ service cloud.firestore {
       allow delete: if isOwner(userId) || isAdmin();
     }
 
+    // ── Login index (mobile number → sign-in address) ─────────────────────
+    // login_index/{10-digit-mobile} = { authEmail, uid, updatedAt }.
+    //
+    // Firebase Authentication verifies a password against an E-MAIL credential
+    // only, so a member logging in with their MOBILE NUMBER has to be resolved
+    // to that address first — before they are authenticated, which is why the
+    // read is public. The document holds nothing but the sign-in address and
+    // its owner; no profile, contact or account data is duplicated here.
+    //
+    // Writes are locked to the owner (uid must equal the caller), so nobody can
+    // re-point another member's number at their own account.
+    match /login_index/{mobile} {
+      allow read: if true;
+      allow create: if isAuthenticated()
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.authEmail is string;
+      allow update: if isAdmin()
+                    || (isAuthenticated()
+                        && resource.data.uid == request.auth.uid
+                        && request.resource.data.uid == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
     // ── Profiles ─────────────────────────────────────────────────────────
     // Public profile data (no contact details — those live in /contacts) is
     // visible to signed-in MATRIMONY users. Astrologers must not browse the

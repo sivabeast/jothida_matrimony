@@ -126,6 +126,10 @@ class ProfileRepository {
   /// treats as "locked").
   Future<ContactDetails?> getContact(String userId) => _firestore.getContact(userId);
 
+  /// LIVE contact details — see [FirestoreService.watchContact].
+  Stream<ContactDetails?> watchContact(String userId) =>
+      _firestore.watchContact(userId);
+
   /// Creates/updates the caller's own contact details in the gated
   /// `contacts/{userId}` collection.
   Future<void> saveContact(String userId, ContactDetails contact) =>

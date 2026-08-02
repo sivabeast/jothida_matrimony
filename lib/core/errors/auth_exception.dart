@@ -118,10 +118,38 @@ class AuthException implements Exception {
             'sign-in method.',
             code: 'account-exists-with-different-credential',
           );
+        // Password login. Modern Firebase projects have e-mail-enumeration
+        // protection ON, which collapses "no such account" and "wrong password"
+        // into `invalid-credential` — so all three get the same, deliberately
+        // non-enumerating message.
         case 'invalid-credential':
+        case 'user-not-found':
+        case 'wrong-password':
           return const AuthException(
-            'The sign-in credential is invalid or has expired. Please try again.',
+            'Incorrect mobile number / email or password. Please check your '
+            'details and try again.',
             code: 'invalid-credential',
+          );
+        case 'invalid-email':
+          return const AuthException(
+            'Enter a valid 10-digit mobile number or email address.',
+            code: 'invalid-email',
+          );
+        case 'email-already-in-use':
+          return const AuthException(
+            'An account already exists with these details. Please sign in '
+            'instead, or use Forgot Password.',
+            code: 'email-already-in-use',
+          );
+        case 'weak-password':
+          return const AuthException(
+            'Choose a stronger password — at least 6 characters.',
+            code: 'weak-password',
+          );
+        case 'too-many-requests':
+          return const AuthException(
+            'Too many attempts. Please wait a few minutes and try again.',
+            code: 'too-many-requests',
           );
         case 'user-disabled':
           return const AuthException(

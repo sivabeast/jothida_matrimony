@@ -65,7 +65,9 @@ void main() {
       );
     });
 
-    test('a brand-new member goes to onboarding', () {
+    // Profile creation is never forced: a brand-new account goes straight to
+    // Home, which shows the "Create Profile" call-to-action.
+    test('a brand-new member goes to Home, NOT onboarding', () {
       expect(
         resolveAuthRedirect(
           location: '/login',
@@ -73,7 +75,7 @@ void main() {
           userDocLoading: false,
           user: _user(isProfileComplete: false),
         ),
-        '/profile/create',
+        '/home',
       );
     });
 
@@ -287,15 +289,32 @@ void main() {
       );
     });
 
-    test('an incomplete profile is funnelled back into onboarding', () {
+    test('an account without a profile browses freely — never forced into '
+        'onboarding', () {
+      for (final loc in ['/chats', '/home', '/settings', '/interests']) {
+        expect(
+          resolveAuthRedirect(
+            location: loc,
+            isAuthenticated: true,
+            userDocLoading: false,
+            user: _user(isProfileComplete: false),
+          ),
+          isNull,
+          reason: loc,
+        );
+      }
+    });
+
+    test('the profile wizard opens on demand for an account without a profile',
+        () {
       expect(
         resolveAuthRedirect(
-          location: '/chats',
+          location: '/profile/create',
           isAuthenticated: true,
           userDocLoading: false,
           user: _user(isProfileComplete: false),
         ),
-        '/profile/create',
+        isNull,
       );
     });
 

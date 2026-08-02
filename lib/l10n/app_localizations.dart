@@ -3767,7 +3767,7 @@ abstract class AppLocalizations {
   /// No description provided for @horoscopeMatchRequired.
   ///
   /// In en, this message translates to:
-  /// **'Horoscope match required'**
+  /// **'Horoscope Match Required'**
   String get horoscopeMatchRequired;
 
   /// No description provided for @profilePhoto.
@@ -5107,6 +5107,378 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Interest sent'**
   String get interestSentShort;
+
+  /// No description provided for @signInToYourAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to your account'**
+  String get signInToYourAccount;
+
+  /// No description provided for @phoneOrEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Number or Email'**
+  String get phoneOrEmail;
+
+  /// No description provided for @phoneOrEmailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'9876543210 or you@email.com'**
+  String get phoneOrEmailHint;
+
+  /// No description provided for @confirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Password'**
+  String get confirmPassword;
+
+  /// No description provided for @invalidLoginIdentifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid 10-digit mobile number or email address.'**
+  String get invalidLoginIdentifier;
+
+  /// No description provided for @loginFailedCheckDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Login failed. Please check your details and try again.'**
+  String get loginFailedCheckDetails;
+
+  /// No description provided for @newToJothida.
+  ///
+  /// In en, this message translates to:
+  /// **'New to Jothida Matrimony?'**
+  String get newToJothida;
+
+  /// No description provided for @familyMemberLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Family Member Login'**
+  String get familyMemberLogin;
+
+  /// No description provided for @createAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A few details and your account is ready.'**
+  String get createAccountSubtitle;
+
+  /// No description provided for @acceptTermsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'I accept the Terms & Conditions and the Privacy Policy'**
+  String get acceptTermsLabel;
+
+  /// No description provided for @pleaseAcceptTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Please accept the Terms & Conditions to continue.'**
+  String get pleaseAcceptTerms;
+
+  /// No description provided for @pleaseSelectGender.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select your gender'**
+  String get pleaseSelectGender;
+
+  /// No description provided for @pleaseSelectDob.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select your date of birth'**
+  String get pleaseSelectDob;
+
+  /// No description provided for @accountCreatedWelcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created. Welcome to Jothida Matrimony!'**
+  String get accountCreatedWelcome;
+
+  /// No description provided for @registrationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create your account. Please try again.'**
+  String get registrationFailed;
+
+  /// No description provided for @resetViaEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get resetViaEmail;
+
+  /// No description provided for @resetViaPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile Number'**
+  String get resetViaPhone;
+
+  /// No description provided for @resetPasswordIntroEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your registered email address. We will send you a link to reset your password.'**
+  String get resetPasswordIntroEmail;
+
+  /// No description provided for @resetPasswordIntroPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your registered mobile number. We will send you a verification code.'**
+  String get resetPasswordIntroPhone;
+
+  /// No description provided for @sendResetLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Reset Link'**
+  String get sendResetLink;
+
+  /// No description provided for @sendVerificationCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Verification Code'**
+  String get sendVerificationCode;
+
+  /// No description provided for @otpVerification.
+  ///
+  /// In en, this message translates to:
+  /// **'OTP Verification'**
+  String get otpVerification;
+
+  /// No description provided for @enterCodeSentTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit code sent to {number}'**
+  String enterCodeSentTo(String number);
+
+  /// No description provided for @newPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New Password'**
+  String get newPassword;
+
+  /// No description provided for @verifyAndReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify & Reset Password'**
+  String get verifyAndReset;
+
+  /// No description provided for @passwordResetSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password updated. Please sign in with your new password.'**
+  String get passwordResetSuccess;
+
+  /// No description provided for @resetLinkSentTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your inbox at {email} for a password reset link.'**
+  String resetLinkSentTo(String email);
+
+  /// No description provided for @backToLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Login'**
+  String get backToLogin;
+
+  /// No description provided for @phoneResetUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile password reset is not available yet on this build. Please reset using your email address, or contact support.'**
+  String get phoneResetUnavailable;
+
+  /// No description provided for @createProfileCtaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete your profile to discover matching profiles'**
+  String get createProfileCtaTitle;
+
+  /// No description provided for @createProfileCtaBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Matches, interests, chat and contact details unlock as soon as your matrimony profile is ready.'**
+  String get createProfileCtaBody;
+
+  /// No description provided for @matchesLockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete your profile to view matching profiles'**
+  String get matchesLockedTitle;
+
+  /// No description provided for @unlockAfterProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlocks after you create your profile'**
+  String get unlockAfterProfile;
+
+  /// No description provided for @previousProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous profile'**
+  String get previousProfile;
+
+  /// No description provided for @nextProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Next profile'**
+  String get nextProfile;
+
+  /// No description provided for @loginCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Login Credentials'**
+  String get loginCredentials;
+
+  /// No description provided for @loginCredentialsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'These are the details the member will use to sign in. Both are pre-filled from the profile and can be edited.'**
+  String get loginCredentialsHint;
+
+  /// No description provided for @createMatrimonyProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Matrimony Profile'**
+  String get createMatrimonyProfile;
+
+  /// No description provided for @createProfilesMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Profiles'**
+  String get createProfilesMenu;
+
+  /// No description provided for @shareLoginDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Share Login Details'**
+  String get shareLoginDetails;
+
+  /// No description provided for @mobileAlreadyRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'This mobile number already has an account.'**
+  String get mobileAlreadyRegistered;
+
+  /// No description provided for @emailAlreadyRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'This email address already has an account.'**
+  String get emailAlreadyRegistered;
+
+  /// No description provided for @createAccountAndProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Account & Profile'**
+  String get createAccountAndProfile;
+
+  /// No description provided for @profileCreatedForMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile created. The member can now sign in.'**
+  String get profileCreatedForMember;
+
+  /// No description provided for @adminProfileIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a complete matrimony profile on behalf of a member, then hand them their login details.'**
+  String get adminProfileIntro;
+
+  /// No description provided for @childrenCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Children'**
+  String get childrenCountLabel;
+
+  /// No description provided for @dasaBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Dasa Balance'**
+  String get dasaBalance;
+
+  /// No description provided for @yogam.
+  ///
+  /// In en, this message translates to:
+  /// **'Yogam'**
+  String get yogam;
+
+  /// No description provided for @karanam.
+  ///
+  /// In en, this message translates to:
+  /// **'Karanam'**
+  String get karanam;
+
+  /// No description provided for @moonSign.
+  ///
+  /// In en, this message translates to:
+  /// **'Moon Sign'**
+  String get moonSign;
+
+  /// No description provided for @sunSign.
+  ///
+  /// In en, this message translates to:
+  /// **'Sun Sign'**
+  String get sunSign;
+
+  /// No description provided for @marriedBrothers.
+  ///
+  /// In en, this message translates to:
+  /// **'Married Brothers'**
+  String get marriedBrothers;
+
+  /// No description provided for @marriedSisters.
+  ///
+  /// In en, this message translates to:
+  /// **'Married Sisters'**
+  String get marriedSisters;
+
+  /// No description provided for @preferredAgeRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferred Age'**
+  String get preferredAgeRange;
+
+  /// No description provided for @preferredHeightRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferred Height'**
+  String get preferredHeightRange;
+
+  /// No description provided for @preferredEducation.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferred Education'**
+  String get preferredEducation;
+
+  /// No description provided for @preferredOccupation.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferred Occupation'**
+  String get preferredOccupation;
+
+  /// No description provided for @preferredIncome.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferred Income'**
+  String get preferredIncome;
+
+  /// No description provided for @preferredLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferred Location'**
+  String get preferredLocation;
+
+  /// No description provided for @contactDetailsFromProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Entered in the Contact Details step of profile creation.'**
+  String get contactDetailsFromProfile;
+
+  /// No description provided for @contactLockedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact details unlock once your interest is accepted.'**
+  String get contactLockedNote;
+
+  /// No description provided for @contactNotProvided.
+  ///
+  /// In en, this message translates to:
+  /// **'No contact details have been added yet.'**
+  String get contactNotProvided;
 }
 
 class _AppLocalizationsDelegate

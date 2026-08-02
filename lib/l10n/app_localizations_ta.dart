@@ -203,7 +203,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get register => 'பதிவு செய்க';
 
   @override
-  String get createAccount => 'கணக்கை உருவாக்கு';
+  String get createAccount => 'புதிய கணக்கை உருவாக்கு';
 
   @override
   String get forgotPassword => 'கடவுச்சொல் மறந்துவிட்டதா?';
@@ -2012,7 +2012,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get doesntMatter => 'பரவாயில்லை';
 
   @override
-  String get horoscopeMatchRequired => 'ஜாதகப் பொருத்தம் அவசியம்';
+  String get horoscopeMatchRequired => 'ஜாதகப் பொருத்தம் தேவை';
 
   @override
   String get profilePhoto => 'சுயவிவரப் புகைப்படம்';
@@ -2785,4 +2785,214 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get interestSentShort => 'விருப்பம் அனுப்பப்பட்டது';
+
+  @override
+  String get signInToYourAccount => 'உங்கள் கணக்கில் உள்நுழையவும்';
+
+  @override
+  String get phoneOrEmail => 'தொலைபேசி எண் அல்லது மின்னஞ்சல்';
+
+  @override
+  String get phoneOrEmailHint => '9876543210 அல்லது you@email.com';
+
+  @override
+  String get confirmPassword => 'கடவுச்சொல்லை உறுதிப்படுத்தவும்';
+
+  @override
+  String get invalidLoginIdentifier =>
+      'சரியான 10 இலக்க கைபேசி எண் அல்லது மின்னஞ்சல் முகவரியை உள்ளிடவும்.';
+
+  @override
+  String get loginFailedCheckDetails =>
+      'உள்நுழைவு தோல்வி. உங்கள் விவரங்களைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get newToJothida => 'ஜோதிட மேட்ரிமோனிக்குப் புதியவரா?';
+
+  @override
+  String get familyMemberLogin => 'குடும்ப உறுப்பினர் உள்நுழைவு';
+
+  @override
+  String get createAccountSubtitle =>
+      'சில விவரங்கள் போதும், உங்கள் கணக்கு தயார்.';
+
+  @override
+  String get acceptTermsLabel =>
+      'விதிமுறைகள் மற்றும் தனியுரிமைக் கொள்கையை ஏற்கிறேன்';
+
+  @override
+  String get pleaseAcceptTerms => 'தொடர விதிமுறைகளை ஏற்கவும்.';
+
+  @override
+  String get pleaseSelectGender => 'பாலினத்தைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get pleaseSelectDob => 'பிறந்த தேதியைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get accountCreatedWelcome => 'கணக்கு உருவாக்கப்பட்டது. வரவேற்கிறோம்!';
+
+  @override
+  String get registrationFailed =>
+      'கணக்கை உருவாக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get resetViaEmail => 'மின்னஞ்சல்';
+
+  @override
+  String get resetViaPhone => 'கைபேசி எண்';
+
+  @override
+  String get resetPasswordIntroEmail =>
+      'பதிவு செய்த மின்னஞ்சல் முகவரியை உள்ளிடவும். கடவுச்சொல்லை மீட்டமைக்கும் இணைப்பை அனுப்புவோம்.';
+
+  @override
+  String get resetPasswordIntroPhone =>
+      'பதிவு செய்த கைபேசி எண்ணை உள்ளிடவும். சரிபார்ப்புக் குறியீட்டை அனுப்புவோம்.';
+
+  @override
+  String get sendResetLink => 'மீட்டமைப்பு இணைப்பை அனுப்பு';
+
+  @override
+  String get sendVerificationCode => 'சரிபார்ப்புக் குறியீட்டை அனுப்பு';
+
+  @override
+  String get otpVerification => 'OTP சரிபார்ப்பு';
+
+  @override
+  String enterCodeSentTo(String number) {
+    return '$number எண்ணுக்கு அனுப்பப்பட்ட 6 இலக்கக் குறியீட்டை உள்ளிடவும்';
+  }
+
+  @override
+  String get newPassword => 'புதிய கடவுச்சொல்';
+
+  @override
+  String get verifyAndReset => 'சரிபார்த்து கடவுச்சொல்லை மாற்று';
+
+  @override
+  String get passwordResetSuccess =>
+      'கடவுச்சொல் புதுப்பிக்கப்பட்டது. புதிய கடவுச்சொல்லுடன் உள்நுழையவும்.';
+
+  @override
+  String resetLinkSentTo(String email) {
+    return '$email முகவரிக்கு அனுப்பிய மீட்டமைப்பு இணைப்பைச் சரிபார்க்கவும்.';
+  }
+
+  @override
+  String get backToLogin => 'உள்நுழைவுக்குத் திரும்பு';
+
+  @override
+  String get phoneResetUnavailable =>
+      'கைபேசி வழி கடவுச்சொல் மீட்டமைப்பு இந்தப் பதிப்பில் இன்னும் இல்லை. மின்னஞ்சல் வழியாக மீட்டமைக்கவும் அல்லது ஆதரவைத் தொடர்பு கொள்ளவும்.';
+
+  @override
+  String get createProfileCtaTitle =>
+      'பொருத்தமான சுயவிவரங்களைக் காண உங்கள் சுயவிவரத்தை உருவாக்குங்கள்';
+
+  @override
+  String get createProfileCtaBody =>
+      'உங்கள் திருமணச் சுயவிவரம் தயாரானதும் பொருத்தங்கள், விருப்பங்கள், அரட்டை மற்றும் தொடர்பு விவரங்கள் திறக்கப்படும்.';
+
+  @override
+  String get matchesLockedTitle =>
+      'பொருத்தமான சுயவிவரங்களைக் காண உங்கள் சுயவிவரத்தை உருவாக்குங்கள்';
+
+  @override
+  String get unlockAfterProfile => 'சுயவிவரம் உருவாக்கிய பிறகு திறக்கும்';
+
+  @override
+  String get previousProfile => 'முந்தைய சுயவிவரம்';
+
+  @override
+  String get nextProfile => 'அடுத்த சுயவிவரம்';
+
+  @override
+  String get loginCredentials => 'உள்நுழைவு விவரங்கள்';
+
+  @override
+  String get loginCredentialsHint =>
+      'உறுப்பினர் உள்நுழைய இந்த விவரங்களைப் பயன்படுத்துவார். இரண்டும் சுயவிவரத்திலிருந்து நிரப்பப்படும், திருத்தலாம்.';
+
+  @override
+  String get createMatrimonyProfile => 'திருமணச் சுயவிவரத்தை உருவாக்கு';
+
+  @override
+  String get createProfilesMenu => 'சுயவிவரங்களை உருவாக்கு';
+
+  @override
+  String get shareLoginDetails => 'உள்நுழைவு விவரங்களைப் பகிர்';
+
+  @override
+  String get mobileAlreadyRegistered =>
+      'இந்தக் கைபேசி எண்ணுக்கு ஏற்கனவே கணக்கு உள்ளது.';
+
+  @override
+  String get emailAlreadyRegistered =>
+      'இந்த மின்னஞ்சல் முகவரிக்கு ஏற்கனவே கணக்கு உள்ளது.';
+
+  @override
+  String get createAccountAndProfile => 'கணக்கு மற்றும் சுயவிவரத்தை உருவாக்கு';
+
+  @override
+  String get profileCreatedForMember =>
+      'சுயவிவரம் உருவாக்கப்பட்டது. உறுப்பினர் இப்போது உள்நுழையலாம்.';
+
+  @override
+  String get adminProfileIntro =>
+      'உறுப்பினர் சார்பாக முழுமையான திருமணச் சுயவிவரத்தை உருவாக்கி, உள்நுழைவு விவரங்களை அவர்களுக்கு வழங்குங்கள்.';
+
+  @override
+  String get childrenCountLabel => 'குழந்தைகள்';
+
+  @override
+  String get dasaBalance => 'தசா பாக்கி';
+
+  @override
+  String get yogam => 'யோகம்';
+
+  @override
+  String get karanam => 'கரணம்';
+
+  @override
+  String get moonSign => 'சந்திர ராசி';
+
+  @override
+  String get sunSign => 'சூரிய ராசி';
+
+  @override
+  String get marriedBrothers => 'திருமணமான சகோதரர்கள்';
+
+  @override
+  String get marriedSisters => 'திருமணமான சகோதரிகள்';
+
+  @override
+  String get preferredAgeRange => 'விரும்பும் வயது';
+
+  @override
+  String get preferredHeightRange => 'விரும்பும் உயரம்';
+
+  @override
+  String get preferredEducation => 'விரும்பும் கல்வி';
+
+  @override
+  String get preferredOccupation => 'விரும்பும் பணி';
+
+  @override
+  String get preferredIncome => 'விரும்பும் வருமானம்';
+
+  @override
+  String get preferredLocation => 'விரும்பும் இடம்';
+
+  @override
+  String get contactDetailsFromProfile =>
+      'சுயவிவரம் உருவாக்கும் தொடர்பு படிநிலையில் உள்ளிட்டவை.';
+
+  @override
+  String get contactLockedNote =>
+      'உங்கள் விருப்பம் ஏற்கப்பட்ட பிறகு தொடர்பு விவரங்கள் திறக்கும்.';
+
+  @override
+  String get contactNotProvided =>
+      'இதுவரை தொடர்பு விவரங்கள் சேர்க்கப்படவில்லை.';
 }

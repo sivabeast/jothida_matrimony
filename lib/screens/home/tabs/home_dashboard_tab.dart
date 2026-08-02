@@ -19,7 +19,10 @@ import '../../../providers/navigation_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/wedding_provider.dart';
+import '../../../widgets/common/auto_fit_label.dart';
 import '../../../widgets/common/coming_soon.dart';
+import '../../../widgets/common/create_profile_cta.dart';
+import '../../../widgets/common/face_centered_photo.dart';
 import '../../../widgets/common/network_photo.dart';
 import '../../../widgets/home/home_banner_slide.dart';
 
@@ -92,8 +95,16 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   Widget build(BuildContext context) {
     // Home is ONLY for discovering newly-joined members (spec). The full
     // matching directory lives on the Matches tab.
-    final newProfilesAsync = ref.watch(newProfilesProvider);
-    final myProfile = ref.watch(myProfileProvider).valueOrNull;
+    final myProfileAsync = ref.watch(myProfileProvider);
+    final myProfile = myProfileAsync.valueOrNull;
+    // A member without a matrimony profile sees NO profiles anywhere on Home —
+    // no recommendations, no newly-joined members, no received interests — just
+    // the premium "Create Profile" call-to-action. While the profile document is
+    // still loading we withhold the sections too, so nothing flashes in and out.
+    final hasProfile = myProfile != null;
+    final newProfilesAsync = hasProfile
+        ? ref.watch(newProfilesProvider)
+        : const AsyncValue<List<ProfileModel>>.data([]);
 
     // Automatic "Married" status: once the wedding date passes, the couple
     // member's profile leaves matchmaking. The sweep no-ops unless due.
@@ -120,6 +131,15 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           _buildQuickActions(context),
           const SizedBox(height: 18),
 
+          // ── No profile yet → the premium Create Profile call-to-action, in
+          //    place of every matrimony profile section below. ──────────────
+          if (!hasProfile) ...[
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: CreateProfileCta(),
+            ),
+          ],
+
           // ── Wedding Workspace (only once a wedding exists) ────────────────
           _buildWeddingCard(context),
 
@@ -133,12 +153,15 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           ..._buildActionCards(context, myProfile),
           const SizedBox(height: 8),
 
-          // ── New Profiles (newly joined members) ───────────────────────────
-          _buildNewProfiles(context, newProfilesAsync),
-          const SizedBox(height: 22),
+          // Matrimony profiles are shown ONLY to members who have a profile.
+          if (hasProfile) ...[
+            // ── New Profiles (newly joined members) ─────────────────────────
+            _buildNewProfiles(context, newProfilesAsync),
+            const SizedBox(height: 22),
 
-          // ── Recent Interests ──────────────────────────────────────────────
-          _buildRecentInterests(context),
+            // ── Recent Interests ────────────────────────────────────────────
+            _buildRecentInterests(context),
+          ],
           const SizedBox(height: 24),
         ],
       ),
@@ -421,7 +444,12 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             ),
           ],
         ),
+        // `start` (not the default `center`) is what keeps all five icons on
+        // EXACTLY the same baseline: a two-line Tamil label used to make its
+        // column taller, and centring then pushed that column's icon down
+        // relative to the others.
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: _quickAction(
@@ -484,6 +512,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 1),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Premium circular icon: soft two-tone tint + a subtle drop shadow.
             Container(
@@ -507,18 +536,27 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
               child: Icon(icon, color: color, size: 22),
             ),
             const SizedBox(height: 6),
-            // Tamil labels wrap to a second line instead of truncating — the
-            // quick-action strip stays fully readable on any screen width.
-            Text(
-              label,
-              maxLines: 2,
-              textAlign: TextAlign.center,
-              softWrap: true,
-              style: const TextStyle(
-                fontSize: 10.5,
-                height: 1.12,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Poppins',
+            // Fixed-height label area so all five columns are exactly the same
+            // height and the icons above them stay perfectly in line, whether
+            // the label needs one line (English) or two (Tamil).
+            SizedBox(
+              height: 26,
+              child: Align(
+                alignment: Alignment.topCenter,
+                // Prefers a single line and only wraps between WHOLE words,
+                // shrinking the font slightly when a long Tamil word would
+                // otherwise be split mid-word.
+                child: AutoFitLabel(
+                  label,
+                  maxLines: 2,
+                  minFontSize: 7.5,
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    height: 1.12,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
               ),
             ),
           ],
@@ -575,10 +613,12 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Tamil title wraps freely — never truncated.
-            Text(context.l10n.muhurthamCalendarTitle,
+            // Tamil title wraps only between whole words, shrinking a little
+            // when a long word would otherwise be broken.
+            AutoFitLabel(context.l10n.muhurthamCalendarTitle,
                 maxLines: 2,
-                softWrap: true,
+                minFontSize: 10,
+                textAlign: TextAlign.start,
                 style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
@@ -661,19 +701,33 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     );
   }
 
+  /// One trust/feature highlight cell. The icon row stays level across all four
+  /// cells (the label sits in a fixed-height box) and long Tamil labels such as
+  /// "சரிபார்க்கப்பட்ட சுயவிவரங்கள்" shrink slightly rather than being split
+  /// mid-word.
   Widget _highlight(IconData icon, Color color, String label) => Expanded(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 2),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, color: color, size: 22),
               const SizedBox(height: 6),
-              Text(label,
-                  maxLines: 2,
-                  textAlign: TextAlign.center,
-                  softWrap: true,
-                  style: const TextStyle(
-                      fontSize: 9.5, height: 1.15, fontWeight: FontWeight.w600)),
+              SizedBox(
+                height: 34,
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: AutoFitLabel(
+                    label,
+                    maxLines: 3,
+                    minFontSize: 7,
+                    style: const TextStyle(
+                        fontSize: 9.5,
+                        height: 1.15,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -694,7 +748,10 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
 
     return InkWell(
       borderRadius: BorderRadius.circular(18),
-      onTap: () => context.push('/complete-profile'),
+      // With no matrimony profile yet there is nothing to "complete" — the card
+      // opens the creation wizard instead of the section-by-section editor.
+      onTap: () => context.push(
+          profile == null ? '/profile/create' : '/complete-profile'),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -709,10 +766,11 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Tamil title wraps rather than truncating.
-            Text(context.l10n.profileCompletionTitle,
+            // Tamil title wraps between whole words rather than truncating.
+            AutoFitLabel(context.l10n.profileCompletionTitle,
                 maxLines: 2,
-                softWrap: true,
+                minFontSize: 10,
+                textAlign: TextAlign.start,
                 style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
@@ -1336,9 +1394,10 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
-            child: Text('$emoji  $title',
+            child: AutoFitLabel('$emoji  $title',
                 maxLines: 2,
-                softWrap: true,
+                minFontSize: 12,
+                textAlign: TextAlign.start,
                 style: const TextStyle(
                     fontSize: 16.5,
                     height: 1.2,
@@ -1552,18 +1611,26 @@ class _MatchCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Photo expands to fill the remaining height. No online status,
-            // no percentage, no overlay badge — the "star matching" hint is
-            // shown as simple green text below the details.
+            // Photo expands to fill the remaining height, FACE-CENTRED so the
+            // head is never cropped (plain centre crop when no face is found).
+            // No online status, no percentage, no overlay badge — the "star
+            // matching" hint is shown as simple green text below the details.
             Expanded(
-              child: profile.photos.isNotEmpty
-                  ? Image.network(
-                      profile.photos.first,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      errorBuilder: (_, __, ___) => _placeholder(),
-                    )
-                  : _placeholder(),
+              child: SizedBox(
+                width: double.infinity,
+                child: FaceCenteredPhoto(
+                  url: profile.hidesPhoto
+                      ? ''
+                      : (profile.profilePhotoUrl?.trim().isNotEmpty ?? false)
+                          ? profile.profilePhotoUrl!
+                          : (profile.photos.isNotEmpty
+                              ? profile.photos.first
+                              : ''),
+                  fit: BoxFit.cover,
+                  fallbackIconSize: 48,
+                  fallbackBg: Colors.grey[200],
+                ),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
@@ -1634,10 +1701,6 @@ class _MatchCard extends ConsumerWidget {
         ],
       );
 
-  Widget _placeholder() => Container(
-        color: Colors.grey[200],
-        child: const Icon(Icons.person, size: 48, color: Colors.grey),
-      );
 }
 
 // ── Recent Interest Card ──────────────────────────────────────────────────────
@@ -1686,7 +1749,8 @@ class _RecentInterestCard extends ConsumerWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  NetworkPhoto(url: photo, fallbackIconSize: 40),
+                  // Face-centred so the sender's head is never cut off.
+                  FaceCenteredPhoto(url: photo, fallbackIconSize: 40),
                   Positioned(
                     top: 6,
                     left: 6,

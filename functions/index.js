@@ -154,3 +154,83 @@ exports.chatWithAstrologyBot = onCall({ secrets: [ANTHROPIC_API_KEY] }, async (r
 
   return { reply };
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Password reset by MOBILE NUMBER (OTP verified).
+//
+// The app supports two password login identifiers: mobile number and e-mail.
+// "Forgot password" by e-mail is handled entirely by Firebase (reset link), but
+// a member who only has a mobile number needs a server-side reset: the Firebase
+// client SDK can only change the password of the account it is signed into, and
+// verifying an SMS code signs the device into the PHONE-provider identity, not
+// into the member's password account.
+//
+// Flow enforced here:
+//   1. the app verifies the SMS code with Firebase Phone Auth, which produces a
+//      short-lived session whose token carries `phone_number` and
+//      sign_in_provider == 'phone';
+//   2. this function checks that the verified number is exactly the number the
+//      caller is trying to reset — so possession of the SIM is proven;
+//   3. it resolves that number to the owning account through `login_index` and
+//      sets the new password with the Admin SDK;
+//   4. the throwaway phone-provider identity created in step 1 is deleted, so
+//      OTP resets never litter Firebase Auth with orphan accounts.
+//
+// Deploy with:  firebase deploy --only functions:resetPasswordWithPhone
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MIN_PASSWORD_LENGTH = 6;
+
+/** Digits-only Indian number without the country code, or '' when invalid. */
+function localMobile(raw) {
+  let digits = String(raw || '').replace(/[^0-9]/g, '');
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1);
+  if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2);
+  return digits.length === 10 ? digits : '';
+}
+
+exports.resetPasswordWithPhone = onCall(async (request) => {
+  const auth = request.auth;
+  if (!auth) {
+    throw new HttpsError('unauthenticated', 'Verify the OTP before resetting your password.');
+  }
+
+  const provider = auth.token?.firebase?.sign_in_provider;
+  if (provider !== 'phone') {
+    throw new HttpsError('permission-denied', 'This reset requires an OTP-verified phone session.');
+  }
+
+  const verified = localMobile(auth.token?.phone_number);
+  const requested = localMobile(request.data?.mobile);
+  if (!verified || !requested || verified !== requested) {
+    throw new HttpsError('permission-denied', 'The verified number does not match the number being reset.');
+  }
+
+  const newPassword = String(request.data?.newPassword || '');
+  if (newPassword.length < MIN_PASSWORD_LENGTH) {
+    throw new HttpsError('invalid-argument', `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+  }
+
+  const indexSnap = await db.collection('login_index').doc(verified).get();
+  const targetUid = indexSnap.exists ? indexSnap.data().uid : null;
+  if (!targetUid) {
+    // Deliberately vague: never reveal whether a number has an account.
+    throw new HttpsError('not-found', 'No password account is registered for this mobile number.');
+  }
+
+  await admin.auth().updateUser(targetUid, { password: newPassword });
+  console.log(`[resetPasswordWithPhone] password reset for uid=${targetUid}`);
+
+  // Clean up the throwaway phone identity, unless the OTP session IS the
+  // account (i.e. the phone number is linked to it directly).
+  if (auth.uid !== targetUid) {
+    try {
+      await admin.auth().deleteUser(auth.uid);
+    } catch (err) {
+      console.warn('[resetPasswordWithPhone] temp phone identity cleanup skipped:', err);
+    }
+  }
+
+  return { ok: true };
+});

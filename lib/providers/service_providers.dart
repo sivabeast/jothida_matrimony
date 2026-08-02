@@ -8,6 +8,7 @@ import '../services/firebase/astrologer_service.dart';
 import '../services/firebase/astrology_team_service.dart';
 import '../services/firebase/consultation_service.dart';
 import '../services/firebase/chat_service.dart';
+import '../services/firebase/login_directory_service.dart';
 import '../services/billing/play_billing_service.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/profile_repository.dart';
@@ -41,11 +42,17 @@ final consultationServiceProvider =
     Provider<ConsultationService>((ref) => ConsultationService());
 final chatServiceProvider = Provider<ChatService>((ref) => ChatService());
 
+/// Mobile-number → sign-in-address index, used to resolve a phone login before
+/// the user is authenticated (see [LoginDirectoryService]).
+final loginDirectoryServiceProvider =
+    Provider<LoginDirectoryService>((ref) => LoginDirectoryService());
+
 // ── Repositories ──────────────────────────────────────────────────────────────
 final authRepositoryProvider = Provider<AuthRepository>((ref) => AuthRepository(
       ref.watch(authServiceProvider),
       ref.watch(firestoreServiceProvider),
       ref.watch(fcmServiceProvider),
+      ref.watch(loginDirectoryServiceProvider),
     ));
 
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) => ProfileRepository(

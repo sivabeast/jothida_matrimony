@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_core/firebase_core.dart' show FirebaseApp;
 import 'package:flutter/foundation.dart';
 
 /// Firebase **App Check** bootstrap.
@@ -119,6 +120,34 @@ class AppCheckConfig {
           '"App Check token is invalid".');
     } catch (e, st) {
       debugPrint('[AppCheck] activate() FAILED (continuing): $e\n$st');
+    }
+  }
+
+  /// Installs the same provider on a SECONDARY [FirebaseApp].
+  ///
+  /// Needed by the admin "Create Matrimony Profile" flow, which provisions the
+  /// member's Firebase Auth account through a second app instance so the
+  /// admin's own session is never swapped out. That instance is a separate
+  /// Firebase client and carries no App Check token of its own — with
+  /// enforcement ON, account creation would be rejected without this.
+  ///
+  /// Best-effort and bounded, exactly like [activate].
+  static Future<void> activateFor(FirebaseApp app) async {
+    if (_disabled || kIsWeb) return;
+    try {
+      await FirebaseAppCheck.instanceFor(app: app)
+          .activate(
+            androidProvider: kReleaseMode
+                ? AndroidProvider.playIntegrity
+                : AndroidProvider.debug,
+            appleProvider:
+                kReleaseMode ? AppleProvider.appAttest : AppleProvider.debug,
+          )
+          .timeout(_timeout);
+      debugPrint('[AppCheck] activated for secondary app "${app.name}".');
+    } catch (e) {
+      debugPrint('[AppCheck] secondary-app activation skipped '
+          '("${app.name}"): $e');
     }
   }
 }

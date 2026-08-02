@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/config/admin_config.dart';
 import '../../core/services/firestore_sync.dart';
+import '../../core/utils/login_identifier.dart';
 import '../../models/aadhaar_details.dart';
 import '../../models/blocked_entry.dart';
 import '../../models/profile_model.dart';
@@ -56,7 +57,12 @@ class FirestoreService {
           final now = DateTime.now();
           final newUser = UserModel(
             uid: user.uid,
-            email: user.email,
+            // A phone-only account signs in through a synthesized,
+            // non-deliverable address — never store that as the member's
+            // e-mail; the account simply has none until they add one.
+            email: LoginIdentifier.isPhoneAuthEmail(user.email)
+                ? null
+                : user.email,
             phone: phone ?? user.phoneNumber,
             displayName: user.displayName,
             photoUrl: user.photoURL,
@@ -176,22 +182,30 @@ class FirestoreService {
     return UserModel.fromFirestore(fresh);
   }
 
-  /// Saves the essential registration details collected on the user signup
-  /// form (name, mobile, gender, DOB, location) onto `users/{uid}`.
+  /// Saves the essential registration details collected on the Create Account
+  /// form (name, mobile, gender, DOB, and optionally e-mail/location) onto
+  /// `users/{uid}`.
+  ///
+  /// [email] is the member's REAL address. It is written only when non-empty so
+  /// a phone-only account (whose Firebase credential uses a synthesized,
+  /// non-deliverable address) never advertises that internal address as its
+  /// contact e-mail, and an existing value is never blanked.
   Future<void> saveUserRegistrationDetails(
     String uid, {
     required String name,
     required String phone,
     required String gender,
     required DateTime dateOfBirth,
-    required String location,
+    String location = '',
+    String email = '',
   }) =>
       _db.collection(AppConstants.usersCollection).doc(uid).set({
         'displayName': name,
         'phone': phone,
         'gender': gender,
         'dateOfBirth': Timestamp.fromDate(dateOfBirth),
-        'location': location,
+        if (location.trim().isNotEmpty) 'location': location.trim(),
+        if (email.trim().isNotEmpty) 'email': email.trim().toLowerCase(),
         // Role is assigned in createOrUpdateUserOnLogin (which honours the
         // Super Admin whitelist); don't overwrite it here.
         'updatedAt': FieldValue.serverTimestamp(),
@@ -597,6 +611,18 @@ class FirestoreService {
     if (!doc.exists) return null;
     return ContactDetails.fromMap(doc.data()!);
   }
+
+  /// LIVE contact details for [userId] — the record written by the Contact
+  /// Details step of profile creation and by every later edit.
+  ///
+  /// Streaming (rather than a one-shot read) is what makes the View Profile
+  /// contact section update by itself the moment the owner edits their contact
+  /// details, with no refresh and no second source of truth.
+  Stream<ContactDetails?> watchContact(String userId) => FirestoreSync.docStream(
+        _db.collection(AppConstants.contactsCollection).doc(userId),
+        fromDoc: (d) => ContactDetails.fromMap(d.data() ?? const {}),
+        label: 'contact',
+      );
 
   /// Creates/updates the caller's own contact details.
   Future<void> saveContact(String userId, ContactDetails contact) => _db

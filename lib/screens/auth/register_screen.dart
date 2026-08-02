@@ -6,16 +6,23 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_text_styles.dart';
-import '../../core/utils/auth_routing.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/validators.dart';
+import '../../core/utils/value_l10n.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/wedding_provider.dart';
 import '../../widgets/common/gradient_button.dart';
 import '../../widgets/common/app_text_field.dart';
 
-/// User signup — collects only the essentials: name, mobile, gender, date of
-/// birth and location, plus email/password credentials. The full matrimony
-/// profile is completed later from the Home screen.
+/// **Account creation** — deliberately NOT profile creation.
+///
+/// This page only opens a login for the member: Full Name, Mobile Number,
+/// Email Address, Password, Confirm Password, Gender, Date of Birth and the
+/// Terms & Conditions acceptance. Nothing matrimony-specific is asked here.
+///
+/// On success the account is created, the member is signed in automatically and
+/// sent straight to the **Home page**. The matrimony profile is created later,
+/// only when they tap "Create Profile" on Home.
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
@@ -27,9 +34,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _dobController = TextEditingController();
-  final _locationController = TextEditingController();
   final _emailController = TextEditingController();
+  final _dobController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -37,14 +43,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   DateTime? _dob;
   bool _obscurePass = true;
   bool _obscureConfirm = true;
+  bool _acceptedTerms = false;
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _dobController.dispose();
-    _locationController.dispose();
     _emailController.dispose();
+    _dobController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -54,10 +60,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime(now.year - 25),
+      initialDate: _dob ?? DateTime(now.year - 25),
       firstDate: DateTime(now.year - 80),
       lastDate: DateTime(now.year - 18, now.month, now.day),
-      helpText: 'Select your date of birth',
+      helpText: context.l10n.dateOfBirth,
     );
     if (picked != null) {
       setState(() {
@@ -67,18 +73,27 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
   }
 
+  void _snack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Future<void> _register() async {
-    debugPrint('[RegisterScreen] "Create Account" tapped for '
-        '${_emailController.text.trim()}');
-    if (!_formKey.currentState!.validate()) return;
+    final l10n = context.l10n;
+    debugPrint('[RegisterScreen] "Create Account" tapped.');
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     if (_gender.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select your gender')));
+      _snack(l10n.pleaseSelectGender);
       return;
     }
     if (_dob == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select your date of birth')));
+      _snack(l10n.pleaseSelectDob);
+      return;
+    }
+    if (!_acceptedTerms) {
+      _snack(l10n.pleaseAcceptTerms);
       return;
     }
 
@@ -89,193 +104,256 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           phone: _phoneController.text.trim(),
           gender: _gender,
           dateOfBirth: _dob!,
-          location: _locationController.text.trim(),
         );
     final auth = ref.read(authNotifierProvider);
     if (!mounted) return;
     if (auth.hasError) {
       final err = auth.error;
-      final message = err is AuthException
-          ? err.message
-          : 'Registration failed. Please try again.';
+      final message =
+          err is AuthException ? err.message : l10n.registrationFailed;
       debugPrint('[RegisterScreen] registerUser error: $err');
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
-    } else if (auth.valueOrNull != null) {
-      final user = auth.valueOrNull!;
-      debugPrint('[RegisterScreen] Registration successful (uid=${user.uid}, '
-          'isProfileComplete=${user.isProfileComplete}). Routing...');
-      await routeAuthenticatedUser(context, ref, user, tag: 'RegisterScreen');
+      _snack(message);
+      return;
     }
+    final user = auth.valueOrNull;
+    if (user == null) {
+      _snack(l10n.registrationFailed);
+      return;
+    }
+    debugPrint('[RegisterScreen] account created (uid=${user.uid}) — '
+        'signed in automatically, going straight to Home.');
+    // The member is already authenticated by `createUserWithEmailAndPassword`.
+    // Profile creation is NEVER forced: Home shows the "Create Profile" card.
+    ref.read(entryModeProvider.notifier).state = WeddingEntryMode.matrimony;
+    await WeddingEntryMode.save(WeddingEntryMode.matrimony);
+    if (!mounted) return;
+    _snack(l10n.accountCreatedWelcome);
+    context.go('/home');
   }
 
   @override
   Widget build(BuildContext context) {
-    final authAsync = ref.watch(authNotifierProvider);
+    final l10n = context.l10n;
+    final v = context.validators;
+    final busy = ref.watch(authNotifierProvider).isLoading;
+
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Create Account'),
+        // English "Create Account" / Tamil "புதிய கணக்கை உருவாக்கு" — this page
+        // is ONLY about opening an account, never a marriage registration.
+        title: Text(l10n.createAccount),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Image.asset(
-                  'assets/images/app_logo.png',
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) =>
-                      const Icon(Icons.favorite,
-                          color: AppColors.primary, size: 48),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text('Find your perfect match', style: AppTextStyles.heading2),
-              const SizedBox(height: 4),
-              Text('A few details to get you started',
-                  style: AppTextStyles.bodyMedium),
-              const SizedBox(height: 28),
-              AppTextField(
-                controller: _nameController,
-                label: 'Full Name',
-                hint: 'Your name',
-                validator: Validators.name,
-              ),
-              const SizedBox(height: 16),
-              AppTextField(
-                controller: _phoneController,
-                label: 'Mobile Number',
-                hint: '9876543210',
-                keyboardType: TextInputType.phone,
-                prefixText: '+91 ',
-                maxLength: 10,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: Validators.phone,
-              ),
-              const SizedBox(height: 16),
-              // Gender
-              Text('Gender',
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  _genderChip('Male', Icons.male),
-                  const SizedBox(width: 12),
-                  _genderChip('Female', Icons.female),
-                ],
-              ),
-              const SizedBox(height: 16),
-              AppTextField(
-                controller: _dobController,
-                label: 'Date of Birth',
-                hint: 'Select date',
-                readOnly: true,
-                onTap: _pickDob,
-                suffixIcon: const Icon(Icons.calendar_today, size: 18),
-                validator: (v) =>
-                    (v == null || v.isEmpty) ? 'Date of birth is required' : null,
-              ),
-              const SizedBox(height: 16),
-              AppTextField(
-                controller: _locationController,
-                label: 'Location',
-                hint: 'City, State (e.g. Chennai, Tamil Nadu)',
-                validator: (v) =>
-                    Validators.required(v, fieldName: 'Location'),
-              ),
-              const SizedBox(height: 24),
-              const Divider(),
-              const SizedBox(height: 12),
-              Text('Login credentials',
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 12),
-              AppTextField(
-                controller: _emailController,
-                label: 'Email Address',
-                hint: 'your@email.com',
-                keyboardType: TextInputType.emailAddress,
-                validator: Validators.email,
-              ),
-              const SizedBox(height: 16),
-              AppTextField(
-                controller: _passwordController,
-                label: 'Password',
-                hint: 'Min. 6 characters',
-                obscureText: _obscurePass,
-                validator: Validators.password,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                      _obscurePass ? Icons.visibility_off : Icons.visibility),
-                  onPressed: () => setState(() => _obscurePass = !_obscurePass),
-                ),
-              ),
-              const SizedBox(height: 16),
-              AppTextField(
-                controller: _confirmPasswordController,
-                label: 'Confirm Password',
-                hint: 'Re-enter password',
-                obscureText: _obscureConfirm,
-                validator: (val) =>
-                    Validators.confirmPassword(val, _passwordController.text),
-                suffixIcon: IconButton(
-                  icon: Icon(_obscureConfirm
-                      ? Icons.visibility_off
-                      : Icons.visibility),
-                  onPressed: () =>
-                      setState(() => _obscureConfirm = !_obscureConfirm),
-                ),
-              ),
-              const SizedBox(height: 32),
-              GradientButton(
-                onPressed: authAsync.isLoading ? null : _register,
-                isLoading: authAsync.isLoading,
-                text: 'Create Account',
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Already have an account? '),
-                  GestureDetector(
-                    onTap: () => context.pop(),
-                    child: Text(
-                      'Sign In',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Image.asset(
+                        'assets/images/app_logo.png',
+                        width: 88,
+                        height: 88,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Icon(Icons.favorite,
+                            color: AppColors.primary, size: 44),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 14),
+                    Text(
+                      l10n.createAccount,
+                      style: const TextStyle(
+                          fontFamily: 'serif',
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(l10n.createAccountSubtitle,
+                        style:
+                            TextStyle(color: Colors.grey.shade600, fontSize: 13.5)),
+                    const SizedBox(height: 24),
+                    AppTextField(
+                      controller: _nameController,
+                      label: '${l10n.fullName} *',
+                      hint: l10n.fullName,
+                      textCapitalization: TextCapitalization.words,
+                      validator: v.name,
+                    ),
+                    const SizedBox(height: 16),
+                    AppTextField(
+                      controller: _phoneController,
+                      label: '${l10n.mobileNumber} *',
+                      hint: '9876543210',
+                      keyboardType: TextInputType.phone,
+                      prefixText: '+91 ',
+                      maxLength: 10,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(10),
+                      ],
+                      validator: v.mobile,
+                    ),
+                    const SizedBox(height: 16),
+                    AppTextField(
+                      controller: _emailController,
+                      label: '${l10n.email} *',
+                      hint: 'you@email.com',
+                      keyboardType: TextInputType.emailAddress,
+                      validator: v.email,
+                    ),
+                    const SizedBox(height: 16),
+                    AppTextField(
+                      controller: _passwordController,
+                      label: '${l10n.password} *',
+                      hint: '••••••',
+                      obscureText: _obscurePass,
+                      validator: Validators.password,
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscurePass
+                            ? Icons.visibility_off
+                            : Icons.visibility),
+                        onPressed: () =>
+                            setState(() => _obscurePass = !_obscurePass),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    AppTextField(
+                      controller: _confirmPasswordController,
+                      label: '${l10n.confirmPassword} *',
+                      hint: '••••••',
+                      obscureText: _obscureConfirm,
+                      validator: (val) => Validators.confirmPassword(
+                          val, _passwordController.text),
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscureConfirm
+                            ? Icons.visibility_off
+                            : Icons.visibility),
+                        onPressed: () =>
+                            setState(() => _obscureConfirm = !_obscureConfirm),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text('${l10n.gender} *',
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _genderChip(context.localizeValue('Male'), 'Male', Icons.male),
+                        const SizedBox(width: 12),
+                        _genderChip(context.localizeValue('Female'), 'Female', Icons.female),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    AppTextField(
+                      controller: _dobController,
+                      label: '${l10n.dateOfBirth} *',
+                      hint: 'dd mmm yyyy',
+                      readOnly: true,
+                      onTap: _pickDob,
+                      suffixIcon: const Icon(Icons.calendar_today, size: 18),
+                      validator: (val) => (val == null || val.isEmpty)
+                          ? context.l10n.pleaseSelectDob
+                          : null,
+                    ),
+                    const SizedBox(height: 18),
+                    // Terms & Conditions acceptance — mandatory.
+                    InkWell(
+                      onTap: () =>
+                          setState(() => _acceptedTerms = !_acceptedTerms),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Checkbox(
+                              value: _acceptedTerms,
+                              activeColor: AppColors.primary,
+                              onChanged: (val) =>
+                                  setState(() => _acceptedTerms = val ?? false),
+                            ),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 12),
+                                child: Text(
+                                  l10n.acceptTermsLabel,
+                                  // Long Tamil sentence: wraps between whole
+                                  // words, never clipped.
+                                  softWrap: true,
+                                  style: const TextStyle(
+                                      fontSize: 13, height: 1.35),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    GradientButton(
+                      onPressed: busy ? null : _register,
+                      isLoading: busy,
+                      text: l10n.createAccount,
+                    ),
+                    const SizedBox(height: 18),
+                    Center(
+                      child: Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(l10n.alreadyHaveAccount,
+                              style: TextStyle(
+                                  color: Colors.grey.shade700, fontSize: 13.5)),
+                          GestureDetector(
+                            onTap: busy
+                                ? null
+                                : () => context.canPop()
+                                    ? context.pop()
+                                    : context.go('/login'),
+                            child: Text(
+                              l10n.signIn,
+                              style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _genderChip(String value, IconData icon) {
+  /// Gender selector. The stored value stays English ('Male'/'Female') so the
+  /// matching rules keep working; only the label follows the app language.
+  Widget _genderChip(String label, String value, IconData icon) {
     final selected = _gender == value;
     return Expanded(
       child: InkWell(
         onTap: () => setState(() => _gender = value),
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
           decoration: BoxDecoration(
-            color: selected
-                ? AppColors.primary.withOpacity(0.08)
-                : Colors.transparent,
+            color:
+                selected ? AppColors.primary.withOpacity(0.08) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: selected ? AppColors.primary : AppColors.border,
@@ -287,15 +365,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             children: [
               Icon(icon,
                   size: 20,
-                  color:
-                      selected ? AppColors.primary : AppColors.textSecondary),
+                  color: selected ? AppColors.primary : AppColors.textSecondary),
               const SizedBox(width: 8),
-              Text(
-                value,
-                style: TextStyle(
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color:
-                      selected ? AppColors.primary : AppColors.textSecondary,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color:
+                        selected ? AppColors.primary : AppColors.textSecondary,
+                  ),
                 ),
               ),
             ],

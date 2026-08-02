@@ -1983,7 +1983,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get doesntMatter => 'Doesn\'t Matter';
 
   @override
-  String get horoscopeMatchRequired => 'Horoscope match required';
+  String get horoscopeMatchRequired => 'Horoscope Match Required';
 
   @override
   String get profilePhoto => 'Profile Photo';
@@ -2746,4 +2746,215 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get interestSentShort => 'Interest sent';
+
+  @override
+  String get signInToYourAccount => 'Sign in to your account';
+
+  @override
+  String get phoneOrEmail => 'Phone Number or Email';
+
+  @override
+  String get phoneOrEmailHint => '9876543210 or you@email.com';
+
+  @override
+  String get confirmPassword => 'Confirm Password';
+
+  @override
+  String get invalidLoginIdentifier =>
+      'Enter a valid 10-digit mobile number or email address.';
+
+  @override
+  String get loginFailedCheckDetails =>
+      'Login failed. Please check your details and try again.';
+
+  @override
+  String get newToJothida => 'New to Jothida Matrimony?';
+
+  @override
+  String get familyMemberLogin => 'Family Member Login';
+
+  @override
+  String get createAccountSubtitle =>
+      'A few details and your account is ready.';
+
+  @override
+  String get acceptTermsLabel =>
+      'I accept the Terms & Conditions and the Privacy Policy';
+
+  @override
+  String get pleaseAcceptTerms =>
+      'Please accept the Terms & Conditions to continue.';
+
+  @override
+  String get pleaseSelectGender => 'Please select your gender';
+
+  @override
+  String get pleaseSelectDob => 'Please select your date of birth';
+
+  @override
+  String get accountCreatedWelcome =>
+      'Account created. Welcome to Jothida Matrimony!';
+
+  @override
+  String get registrationFailed =>
+      'Could not create your account. Please try again.';
+
+  @override
+  String get resetViaEmail => 'Email';
+
+  @override
+  String get resetViaPhone => 'Mobile Number';
+
+  @override
+  String get resetPasswordIntroEmail =>
+      'Enter your registered email address. We will send you a link to reset your password.';
+
+  @override
+  String get resetPasswordIntroPhone =>
+      'Enter your registered mobile number. We will send you a verification code.';
+
+  @override
+  String get sendResetLink => 'Send Reset Link';
+
+  @override
+  String get sendVerificationCode => 'Send Verification Code';
+
+  @override
+  String get otpVerification => 'OTP Verification';
+
+  @override
+  String enterCodeSentTo(String number) {
+    return 'Enter the 6-digit code sent to $number';
+  }
+
+  @override
+  String get newPassword => 'New Password';
+
+  @override
+  String get verifyAndReset => 'Verify & Reset Password';
+
+  @override
+  String get passwordResetSuccess =>
+      'Password updated. Please sign in with your new password.';
+
+  @override
+  String resetLinkSentTo(String email) {
+    return 'Check your inbox at $email for a password reset link.';
+  }
+
+  @override
+  String get backToLogin => 'Back to Login';
+
+  @override
+  String get phoneResetUnavailable =>
+      'Mobile password reset is not available yet on this build. Please reset using your email address, or contact support.';
+
+  @override
+  String get createProfileCtaTitle =>
+      'Complete your profile to discover matching profiles';
+
+  @override
+  String get createProfileCtaBody =>
+      'Matches, interests, chat and contact details unlock as soon as your matrimony profile is ready.';
+
+  @override
+  String get matchesLockedTitle =>
+      'Complete your profile to view matching profiles';
+
+  @override
+  String get unlockAfterProfile => 'Unlocks after you create your profile';
+
+  @override
+  String get previousProfile => 'Previous profile';
+
+  @override
+  String get nextProfile => 'Next profile';
+
+  @override
+  String get loginCredentials => 'Login Credentials';
+
+  @override
+  String get loginCredentialsHint =>
+      'These are the details the member will use to sign in. Both are pre-filled from the profile and can be edited.';
+
+  @override
+  String get createMatrimonyProfile => 'Create Matrimony Profile';
+
+  @override
+  String get createProfilesMenu => 'Create Profiles';
+
+  @override
+  String get shareLoginDetails => 'Share Login Details';
+
+  @override
+  String get mobileAlreadyRegistered =>
+      'This mobile number already has an account.';
+
+  @override
+  String get emailAlreadyRegistered =>
+      'This email address already has an account.';
+
+  @override
+  String get createAccountAndProfile => 'Create Account & Profile';
+
+  @override
+  String get profileCreatedForMember =>
+      'Profile created. The member can now sign in.';
+
+  @override
+  String get adminProfileIntro =>
+      'Create a complete matrimony profile on behalf of a member, then hand them their login details.';
+
+  @override
+  String get childrenCountLabel => 'Children';
+
+  @override
+  String get dasaBalance => 'Dasa Balance';
+
+  @override
+  String get yogam => 'Yogam';
+
+  @override
+  String get karanam => 'Karanam';
+
+  @override
+  String get moonSign => 'Moon Sign';
+
+  @override
+  String get sunSign => 'Sun Sign';
+
+  @override
+  String get marriedBrothers => 'Married Brothers';
+
+  @override
+  String get marriedSisters => 'Married Sisters';
+
+  @override
+  String get preferredAgeRange => 'Preferred Age';
+
+  @override
+  String get preferredHeightRange => 'Preferred Height';
+
+  @override
+  String get preferredEducation => 'Preferred Education';
+
+  @override
+  String get preferredOccupation => 'Preferred Occupation';
+
+  @override
+  String get preferredIncome => 'Preferred Income';
+
+  @override
+  String get preferredLocation => 'Preferred Location';
+
+  @override
+  String get contactDetailsFromProfile =>
+      'Entered in the Contact Details step of profile creation.';
+
+  @override
+  String get contactLockedNote =>
+      'Contact details unlock once your interest is accepted.';
+
+  @override
+  String get contactNotProvided => 'No contact details have been added yet.';
 }

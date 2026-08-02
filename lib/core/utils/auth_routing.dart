@@ -102,12 +102,12 @@ Future<void> routeAuthenticatedUser(
     // Admin icon in the header) and falls through to the normal user flow.
     debugPrint('[$tag] routeAuthenticatedUser: admin account → /admin');
     context.go('/admin');
-  } else if (!user.isProfileComplete) {
-    debugPrint('[$tag] routeAuthenticatedUser: profile incomplete → '
-        '/profile/create');
-    context.go('/profile/create');
   } else {
-    debugPrint('[$tag] routeAuthenticatedUser: profile complete → /home');
+    // Profile creation is NEVER forced. Every matrimony account — brand new or
+    // returning, with or without a profile — lands on Home; the Home page shows
+    // a "Create Profile" call-to-action until a profile exists.
+    debugPrint('[$tag] routeAuthenticatedUser: → /home '
+        '(isProfileComplete=${user.isProfileComplete})');
     context.go('/home');
   }
 }

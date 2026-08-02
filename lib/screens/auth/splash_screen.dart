@@ -112,10 +112,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         // user flow below.
         debugPrint('[Splash] Pure admin account → /admin');
         context.go('/admin');
-      } else if (!userModel.isProfileComplete) {
-        debugPrint('[Splash] Profile incomplete → /profile/create');
-        context.go('/profile/create');
       } else {
+        // Profile creation is NEVER forced on launch either: an account without
+        // a matrimony profile opens Home, which shows the "Create Profile"
+        // call-to-action. Only tapping that starts the wizard.
         // ── Workspace-first entry after Marriage Fixed ───────────────────
         // Once both partners confirmed Marriage Fixed, the app opens the
         // Wedding Workspace directly (a "Switch to Matrimony" button lives
@@ -143,7 +143,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           debugPrint('[Splash] couple wedding lookup failed (non-fatal): $e');
         }
         if (!mounted) return;
-        debugPrint('[Splash] Profile complete → /home');
+        debugPrint('[Splash] → /home '
+            '(isProfileComplete=${userModel.isProfileComplete})');
         context.go('/home');
       }
     } catch (e, st) {

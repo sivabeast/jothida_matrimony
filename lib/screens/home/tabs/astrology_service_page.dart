@@ -29,11 +29,68 @@ class AstrologyServicePage extends ConsumerWidget {
     final async = ref.watch(astrologyServiceConfigProvider);
     return Container(
       color: AppColors.scaffoldBg,
+      // `astrology_service/config` is the single source of truth and the stream
+      // is realtime, so an admin change lands here instantly.
+      //
+      // On error we keep showing the LAST KNOWN live config rather than
+      // substituting the built-in defaults: silently swapping in hardcoded
+      // values was what made a failed read look like "the admin's changes never
+      // arrived". With no value yet, the failure is surfaced honestly — the
+      // listener re-subscribes by itself and the page fills in when it succeeds.
       child: async.when(
+        skipError: true,
         loading: () => const Center(
             child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (_, __) => const _Body(cfg: AstrologyServiceConfig.defaults),
+        error: (e, __) => _ConfigUnavailable(
+          error: e,
+          onRetry: () => ref.invalidate(astrologyServiceConfigProvider),
+        ),
         data: (cfg) => _Body(cfg: cfg),
+      ),
+    );
+  }
+}
+
+/// Shown only when the live astrology configuration could not be read AND no
+/// earlier value is available. Never renders stand-in content — the page always
+/// reflects what the admin actually published.
+class _ConfigUnavailable extends StatelessWidget {
+  final Object error;
+  final VoidCallback onRetry;
+
+  const _ConfigUnavailable({required this.error, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final denied = error.toString().toLowerCase().contains('permission');
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.cloud_off_outlined, size: 52, color: Colors.grey[400]),
+            const SizedBox(height: 14),
+            Text(
+              denied
+                  ? 'Astrology details could not be loaded (permission denied). '
+                      'Deploy the Firestore rules and try again.'
+                  : context.l10n.checkConnectionRetry,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[700], fontSize: 13.5),
+            ),
+            const SizedBox(height: 18),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: Text(context.l10n.tryAgain),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

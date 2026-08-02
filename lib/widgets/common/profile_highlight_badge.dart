@@ -29,11 +29,18 @@ class ProfileHighlightBadge extends ConsumerWidget {
   /// green "star match" look without changing the badge elsewhere.
   final Color? color;
 
+  /// When true the badge renders ONLY for a nakshatra match — the plain
+  /// preference-match variant is suppressed. The Matches page uses this so a
+  /// profile carries exactly one badge, "⭐ Nakshatra Match", and never a second
+  /// quality label.
+  final bool nakshatraOnly;
+
   const ProfileHighlightBadge({
     super.key,
     required this.profile,
     this.compact = false,
     this.color,
+    this.nakshatraOnly = false,
   });
 
   @override
@@ -41,6 +48,9 @@ class ProfileHighlightBadge extends ConsumerWidget {
     final me = ref.watch(myProfileProvider).valueOrNull;
     final highlight = profileHighlight(me, profile);
     if (highlight == ProfileHighlight.none) return const SizedBox.shrink();
+    if (nakshatraOnly && highlight != ProfileHighlight.nakshatra) {
+      return const SizedBox.shrink();
+    }
 
     final label = highlight == ProfileHighlight.nakshatra
         ? context.l10n.nakshatraMatch

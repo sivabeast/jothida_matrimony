@@ -225,7 +225,15 @@ class _AstrologyServiceSettingsScreenState
   /// other (text) fields.
   Future<void> _persistMedia() async {
     try {
-      final base = ref.read(astrologyServiceConfigValueProvider);
+      // Only ever merge on top of the REAL saved config. Using the defaults as
+      // a base (which `astrologyServiceConfigValueProvider` falls back to before
+      // the stream has emitted) would overwrite the admin's live settings.
+      final base = ref.read(astrologyServiceConfigProvider).valueOrNull;
+      if (base == null) {
+        debugPrint('[AstrologyManagement] media save deferred — the live '
+            'config has not loaded yet.');
+        return;
+      }
       await commitWrite(ref.read(astrologyConfigServiceProvider).save(base.copyWith(
             certificates: List<AstrologyCertificate>.from(_certificates),
             awards: List<AstrologyAward>.from(_awards),
@@ -253,10 +261,43 @@ class _AstrologyServiceSettingsScreenState
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
+      // Keep the last known live config on a transient listener error (the
+      // stream re-subscribes by itself). Editing on top of the built-in
+      // DEFAULTS would let a save overwrite the admin's real settings with
+      // stand-in values, so the defaults form is never shown here.
       body: async.when(
+        skipError: true,
         loading: () => const Center(
             child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (_, __) => _form(AstrologyServiceConfig.defaults),
+        error: (e, __) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.cloud_off_outlined,
+                    size: 52, color: Colors.grey[400]),
+                const SizedBox(height: 14),
+                Text(
+                  'Could not load the astrology settings.\n$e',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                ),
+                const SizedBox(height: 18),
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      ref.invalidate(astrologyServiceConfigProvider),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Try Again'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
         data: (cfg) => _form(cfg),
       ),
     );

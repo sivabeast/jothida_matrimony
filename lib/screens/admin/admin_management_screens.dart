@@ -1384,6 +1384,19 @@ class AdminSettingsScreen extends StatelessWidget {
           subtitle: 'Platform controls & configuration',
         ),
         const SizedBox(height: 16),
+        // ── Member provisioning ─────────────────────────────────────────────
+        // For members who cannot use the app themselves: the admin creates the
+        // full matrimony profile through the SAME wizard members use, then
+        // hands over the login (with a one-tap WhatsApp share).
+        _ActionTile(
+          icon: Icons.person_add_alt_1,
+          title: 'Create Matrimony Profile',
+          subtitle:
+              'Create a profile on a member\'s behalf and give them a login',
+          color: AppColors.primary,
+          onTap: () => context.go('/admin/create-profile'),
+        ),
+        const SizedBox(height: 4),
         // ── Core settings groups ────────────────────────────────────────────
         _ActionTile(
           icon: Icons.savings_outlined,

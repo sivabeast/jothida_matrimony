@@ -83,6 +83,18 @@ final contactByUserIdProvider =
   return ref.watch(profileRepositoryProvider).getContact(userId);
 });
 
+/// LIVE version of [contactByUserIdProvider] — the contact record entered in
+/// the Contact Details step of profile creation, streamed so an edit shows up on
+/// the View Profile screen immediately, with no refresh.
+///
+/// Emits an AsyncError when the viewer is not allowed to see the contact (the
+/// Firestore rule denies the read), which the UI renders as the locked state.
+final contactStreamByUserIdProvider =
+    StreamProvider.autoDispose.family<ContactDetails?, String>((ref, userId) {
+  if (kBypassAuth) return Stream.value(null);
+  return ref.watch(profileRepositoryProvider).watchContact(userId);
+});
+
 // Profile creation / editing notifier
 class ProfileCreationState {
   final Map<String, dynamic> data;
