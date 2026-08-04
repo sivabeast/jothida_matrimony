@@ -481,10 +481,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget _header(AppLocalizations l10n) {
     return Column(
       children: [
-        const AppLogo(size: 84),
-        const SizedBox(height: 10),
-        const ZodiacCoupleLogo(size: 74),
-        const SizedBox(height: 14),
+        // ONE brand mark: the official application launcher icon, centred and
+        // sized to lead the page. The old stacked pair (in-app emblem + zodiac
+        // couple illustration) competed with each other and with the title.
+        const SizedBox(height: 8),
+        const Center(child: AppLauncherLogo(size: 116)),
+        const SizedBox(height: 26),
         Text(
           l10n.welcomeBack,
           textAlign: TextAlign.center,

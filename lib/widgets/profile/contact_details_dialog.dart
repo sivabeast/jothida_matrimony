@@ -51,26 +51,52 @@ class _ContactDetailsDialogState extends ConsumerState<_ContactDetailsDialog> {
     _fetch = _load();
   }
 
-  /// Fresh read of `contacts/{userId}`.
+  /// Fresh read of `contacts/{userId}`, with the two repairs that used to make
+  /// this popup come up empty for a genuinely connected pair:
   ///
-  /// A denied read on a MATCHED pair means the `connections/{pair}` doc the
-  /// rule checks was never written (the accept-time write is best-effort and
-  /// silently skips when rules are mid-deploy). Backfill it from the accepted
-  /// interest and retry once, so a real match is never permanently locked out.
+  ///  1. **Denied read** — the `connections/{pair}` doc the rule checks was
+  ///     never written (the accept-time write is best-effort and silently skips
+  ///     when rules are mid-deploy). Backfill it from the accepted interest and
+  ///     retry once, so a real match is never permanently locked out.
+  ///  2. **Missing record** — profiles created before the gated `contacts`
+  ///     collection existed (or whose contact write was denied at the time)
+  ///     have no document, even though the SAME details are carried on the
+  ///     profile the caller already holds. Fall back to those instead of
+  ///     reporting "not provided". When the viewer is the owner, the record is
+  ///     also written back so every future viewer reads it normally.
   Future<ContactDetails?> _load() async {
     final repo = ref.read(profileRepositoryProvider);
+    ContactDetails? stored;
     try {
-      return await repo.getContact(widget.profile.userId);
+      stored = await repo.getContact(widget.profile.userId);
     } catch (e) {
       if (!'$e'.contains('permission-denied')) rethrow;
       final accepted =
           ref.read(acceptedInterestForProfileProvider(widget.profile.id));
       if (accepted == null) rethrow;
+      debugPrint('[ContactDetails] read denied — backfilling the connection '
+          'for interest ${accepted.id} and retrying.');
       await ref
           .read(interestNotifierProvider.notifier)
           .ensureConnection(accepted);
-      return repo.getContact(widget.profile.userId);
+      stored = await repo.getContact(widget.profile.userId);
     }
+    if (stored != null && stored.hasAnyValue) return stored;
+
+    // Nothing gated — fall back to whatever the profile document carries.
+    final embedded = widget.profile.contact;
+    if (!embedded.hasAnyValue) return stored;
+    debugPrint('[ContactDetails] contacts/${widget.profile.userId} is empty — '
+        'falling back to the contact details on the profile document.');
+    if (_isOwner) {
+      // Self-heal: only the owner (or an admin) may write this record.
+      try {
+        await repo.saveContact(widget.profile.userId, embedded);
+      } catch (e) {
+        debugPrint('[ContactDetails] contact backfill skipped: $e');
+      }
+    }
+    return embedded;
   }
 
   bool get _isOwner {
@@ -87,13 +113,17 @@ class _ContactDetailsDialogState extends ConsumerState<_ContactDetailsDialog> {
             InterestUiStatus.accepted;
 
     // Privacy decision — evaluated BEFORE any data is rendered.
-    final hiddenByOwner = !_isOwner && profile.hidesPhone;
+    //
+    // "Hide Phone Number" hides exactly that: the mobile and WhatsApp numbers
+    // (and their Call / WhatsApp buttons). It no longer blanks the ENTIRE
+    // popup, which used to swallow a member's e-mail and contact person too —
+    // details they never asked to hide. If the switch leaves nothing to show,
+    // [_contactBody] falls back to the hidden-by-owner message.
+    final hidePhoneNumbers = !_isOwner && profile.hidesPhone;
     final allowed = _isOwner || accepted || profile.isContactPublic;
 
     Widget body;
-    if (hiddenByOwner) {
-      body = _privacyMessage(l10n.contactHiddenByOwnerMessage);
-    } else if (!allowed) {
+    if (!allowed) {
       body = _privacyMessage(l10n.contactPrivateMessage);
     } else {
       body = FutureBuilder<ContactDetails?>(
@@ -131,18 +161,11 @@ class _ContactDetailsDialogState extends ConsumerState<_ContactDetailsDialog> {
           // "Not provided" only when the record carries NOTHING — a member who
           // saved an email or a WhatsApp number but no mobile still has
           // contact details worth showing.
-          final hasAny = contact != null &&
-              [
-                contact.contactPersonName,
-                contact.mobileNumber,
-                contact.whatsappNumber ?? '',
-                contact.email,
-              ].any((v) => v.trim().isNotEmpty);
-          if (!hasAny) {
+          if (contact == null || !contact.hasAnyValue) {
             return _privacyMessage(l10n.contactNotProvided,
                 icon: Icons.info_outline);
           }
-          return _contactBody(contact);
+          return _contactBody(contact, hidePhoneNumbers: hidePhoneNumbers);
         },
       );
     }
@@ -216,10 +239,13 @@ class _ContactDetailsDialogState extends ConsumerState<_ContactDetailsDialog> {
     );
   }
 
-  Widget _contactBody(ContactDetails contact) {
+  Widget _contactBody(ContactDetails contact,
+      {required bool hidePhoneNumbers}) {
     final l10n = context.l10n;
-    final mobile = contact.mobileNumber.trim();
-    final whatsapp = (contact.whatsappNumber ?? '').trim();
+    // The owner's "Hide Phone Number" switch removes the two NUMBERS only.
+    final mobile = hidePhoneNumbers ? '' : contact.mobileNumber.trim();
+    final whatsapp =
+        hidePhoneNumbers ? '' : (contact.whatsappNumber ?? '').trim();
     // Filter empty fields FIRST so dividers only sit between visible rows.
     final rows = <(IconData, String, String)>[
       (Icons.person_outline, l10n.contactPersonName, contact.contactPersonName),
@@ -232,6 +258,11 @@ class _ContactDetailsDialogState extends ConsumerState<_ContactDetailsDialog> {
       (Icons.chat_outlined, l10n.whatsappNumber, whatsapp),
       (Icons.email_outlined, l10n.email, contact.email),
     ].where((r) => r.$3.trim().isNotEmpty).toList();
+    // Everything this member shares happens to be hidden — say so plainly
+    // rather than showing an empty frame.
+    if (rows.isEmpty) {
+      return _privacyMessage(l10n.contactHiddenByOwnerMessage);
+    }
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [

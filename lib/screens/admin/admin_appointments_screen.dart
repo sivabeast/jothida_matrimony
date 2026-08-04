@@ -5,10 +5,9 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/app_dialogs.dart';
 import '../../core/utils/appointment_status.dart';
-import '../../core/utils/slot_generator.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../providers/appointment_provider.dart';
-import '../../providers/profile_provider.dart';
+import '../../widgets/admin/appointment_admin_views.dart';
 import '../../widgets/common/data_states.dart';
 import '../../widgets/common/network_photo.dart';
 import '../../widgets/common/skeletons.dart';
@@ -78,12 +77,18 @@ class _AdminAppointmentsScreenState
     }
   }
 
+  /// Matches on everything printed on the card that identifies a booking. The
+  /// e-mail lives on the member's contact record rather than the booking, so it
+  /// is deliberately NOT searched here — searching it would mean a gated read
+  /// per row on every keystroke.
   bool _matchesQuery(AstrologerRequestModel r) {
     if (_query.trim().isEmpty) return true;
     final q = _query.trim().toLowerCase();
     return r.userName.toLowerCase().contains(q) ||
         r.userPhone.toLowerCase().contains(q) ||
-        r.id.toLowerCase().contains(q);
+        r.id.toLowerCase().contains(q) ||
+        r.astrologerName.toLowerCase().contains(q) ||
+        r.category.toLowerCase().contains(q);
   }
 
   @override
@@ -145,7 +150,7 @@ class _AdminAppointmentsScreenState
           controller: _search,
           onChanged: (v) => setState(() => _query = v),
           decoration: InputDecoration(
-            hintText: 'Search by name, mobile or booking ID',
+            hintText: 'Search by name, mobile, booking ID or astrologer',
             prefixIcon: const Icon(Icons.search),
             suffixIcon: _query.isEmpty
                 ? null
@@ -236,28 +241,35 @@ class _AppointmentAdminCard extends ConsumerWidget {
     }
   }
 
+  /// Opens the "Reschedule" sheet and applies the chosen day + session.
+  Future<void> _reschedule(BuildContext context, WidgetRef ref) async {
+    final picked = await showAppointmentRescheduleSheet(context, appt);
+    if (picked == null || !context.mounted) return;
+    try {
+      await ref.read(appointmentControllerProvider.notifier).reschedule(
+            appt,
+            visitDate: picked.date,
+            session: picked.session,
+          );
+      if (context.mounted) {
+        showAppSnack(
+            context,
+            'Rescheduled to '
+            '${DateFormat('EEE, d MMM yyyy').format(picked.date)} · '
+            '${AppointmentSession.shortLabel(picked.session)}.');
+      }
+    } catch (_) {
+      if (context.mounted) {
+        showAppSnack(context, 'Could not reschedule. Please try again.',
+            error: true);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Resolve mobile + photo: prefer the denormalised values; fall back to the
-    // live profile only when missing (older records).
-    final profile = (appt.userPhone.isEmpty || appt.userPhotoUrl.isEmpty)
-        ? ref.watch(profileByUserIdProvider(appt.userId)).valueOrNull
-        : null;
-    final phone = appt.userPhone.isNotEmpty
-        ? appt.userPhone
-        : (profile?.contact.mobileNumber ?? '');
-    final photo =
-        appt.userPhotoUrl.isNotEmpty ? appt.userPhotoUrl : (profile?.profilePhotoUrl ?? '');
+    final d = AppointmentCardData.of(ref, appt);
     final color = appointmentStatusColor(appt.status);
-    final date = appt.visitDate == null
-        ? '—'
-        : DateFormat('EEE, d MMM yyyy').format(appt.visitDate!);
-    final time = appt.session.isNotEmpty
-        ? AppointmentSession.shortLabel(appt.session)
-        : (appt.slotStartMinutes == null
-            ? '—'
-            : formatMinutes(appt.slotStartMinutes!));
-    final created = DateFormat('d MMM yyyy, h:mm a').format(appt.createdAt);
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -275,7 +287,7 @@ class _AppointmentAdminCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipOval(
-                child: NetworkPhoto(url: photo, width: 48, height: 48),
+                child: NetworkPhoto(url: d.photo, width: 48, height: 48),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -288,70 +300,83 @@ class _AppointmentAdminCard extends ConsumerWidget {
                         style: const TextStyle(
                             fontSize: 15, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 2),
-                    Text('ID: ${appt.userId}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                    if (phone.isNotEmpty)
-                      Text('📞 $phone',
+                    if (d.phone.isNotEmpty)
+                      Text('📞 ${d.phone}',
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.grey[700])),
+                    if (d.email.isNotEmpty)
+                      Text('✉ ${d.email}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style:
                               TextStyle(fontSize: 12, color: Colors.grey[700])),
                   ],
                 ),
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(appointmentStatusLabel(appt.status),
-                    style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: color)),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _pill(appointmentStatusLabel(appt.status), color),
+                  const SizedBox(height: 4),
+                  _pill(d.paymentStatus,
+                      appt.paid ? AppColors.success : AppColors.warning),
+                ],
               ),
             ],
           ),
           const Divider(height: 18),
-          // Consultation reason (admin-managed category picked at booking).
-          _info(Icons.category_outlined, 'Consultation Reason',
-              appt.category.trim().isEmpty ? '—' : appt.category),
+          Row(
+            children: [
+              Expanded(
+                  child: _info(Icons.category_outlined, 'Appointment Type',
+                      d.appointmentType)),
+              Expanded(
+                  child: _info(
+                      Icons.place_outlined, 'Meeting Type', d.meetingType)),
+            ],
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: _info(Icons.event_outlined, 'Date', date)),
-              Expanded(child: _info(Icons.schedule_outlined, 'Session', time)),
+              Expanded(child: _info(Icons.event_outlined, 'Date', d.date)),
+              Expanded(child: _info(Icons.schedule_outlined, 'Time', d.time)),
             ],
           ),
           const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
-                child: _info(
-                    Icons.payments_outlined,
-                    'Payment',
-                    appt.paid
-                        ? 'Paid${appt.amount > 0 ? ' · ₹${appt.amount}' : ''}'
-                        : 'Not Paid'),
-              ),
+                  child: _info(Icons.payments_outlined, 'Payment', d.payment)),
               Expanded(
-                child: _info(Icons.badge_outlined, 'Assigned Employee',
-                    appt.astrologerName.trim().isEmpty ? '—' : appt.astrologerName),
-              ),
+                  child: _info(Icons.badge_outlined, 'Astrologer',
+                      d.astrologer)),
             ],
           ),
           const SizedBox(height: 8),
           _info(Icons.confirmation_number_outlined, 'Booking ID', appt.id),
+          if (d.notes.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            _info(Icons.sticky_note_2_outlined, 'Notes', d.notes),
+          ],
           const SizedBox(height: 6),
-          _info(Icons.history_toggle_off_outlined, 'Created', created),
+          _info(Icons.history_toggle_off_outlined, 'Created', d.created),
           const SizedBox(height: 10),
           _actions(context, ref),
         ],
       ),
     );
   }
+
+  Widget _pill(String text, Color color) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(text,
+            style: TextStyle(
+                fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+      );
 
   Widget _info(IconData icon, String label, String value) => Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,18 +393,32 @@ class _AppointmentAdminCard extends ConsumerWidget {
         ],
       );
 
-  /// Paid bookings are CONFIRMED automatically at payment time, so there is no
-  /// manual Confirm (or back-to-Pending) action — the admin's only actions are
-  /// Complete and Cancel (plus Delete for cleanup).
+  /// Every action the spec asks for, offered only when it makes sense for the
+  /// booking's current state:
+  ///   • **View Details** — always (the full record, incl. the audit trail);
+  ///   • **Confirm** — while still pending (paid bookings auto-confirm at
+  ///     payment time, so this is for free / unpaid ones);
+  ///   • **Reschedule** — until the visit is completed or cancelled;
+  ///   • **Complete** / **Cancel** — until one of them has happened;
+  ///   • **Delete** — cleanup, always.
   Widget _actions(BuildContext context, WidgetRef ref) {
     final s = appt.status;
+    final open = s != AstrologerRequestStatus.completed &&
+        s != AstrologerRequestStatus.rejected;
     final chips = <Widget>[
-      if (s != AstrologerRequestStatus.completed &&
-          s != AstrologerRequestStatus.rejected)
+      _actionBtn(context, 'View Details', Icons.receipt_long_outlined,
+          AppColors.primary, () => showAppointmentDetailsSheet(context, appt)),
+      if (s == AstrologerRequestStatus.pending)
+        _actionBtn(context, 'Confirm', Icons.check_circle_outline,
+            AppColors.success,
+            () => _setStatus(context, ref, AstrologerRequestStatus.accepted)),
+      if (open)
+        _actionBtn(context, 'Reschedule', Icons.event_repeat_outlined,
+            AppColors.warning, () => _reschedule(context, ref)),
+      if (open)
         _actionBtn(context, 'Complete', Icons.verified_outlined, AppColors.info,
             () => _setStatus(context, ref, AstrologerRequestStatus.completed)),
-      if (s != AstrologerRequestStatus.rejected &&
-          s != AstrologerRequestStatus.completed)
+      if (open)
         _actionBtn(context, 'Cancel', Icons.cancel_outlined, AppColors.error,
             () => _setStatus(context, ref, AstrologerRequestStatus.rejected)),
       _actionBtn(context, 'Delete', Icons.delete_outline, Colors.grey.shade700,

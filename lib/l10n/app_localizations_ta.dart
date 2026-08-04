@@ -371,6 +371,19 @@ class AppLocalizationsTa extends AppLocalizations {
   String get acceptInterest => 'விருப்பத்தை ஏற்கவும்';
 
   @override
+  String get viewContactDetails => 'தொடர்பு விவரங்களைப் பார்க்கவும்';
+
+  @override
+  String get connectedTitle => 'நீங்கள் இணைக்கப்பட்டுள்ளீர்கள்';
+
+  @override
+  String get connectedBody =>
+      'தொடர்பு விவரங்கள், அரட்டை மற்றும் ஜாதகப் பொருத்தம் இருவருக்கும் இப்போது திறக்கப்பட்டுள்ளன.';
+
+  @override
+  String get connectedActionsTitle => 'இணைந்த பிறகான செயல்கள்';
+
+  @override
   String get interestRejected => 'விருப்பம் நிராகரிக்கப்பட்டது';
 
   @override

@@ -291,79 +291,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       );
     }
 
-    if (accepted) {
-      return Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.check_circle, color: Colors.green, size: 18),
-                const SizedBox(width: 8),
-                Text(context.l10n.interestAccepted,
-                    style: const TextStyle(
-                        color: Colors.green, fontWeight: FontWeight.w600)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Astrology Consultation (spec §6/§12) — offered ONLY after mutual
-          // acceptance; nothing is generated or shared automatically.
-          _astroConsultCard(profile),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              // The popup itself decides what may be shown (accepted /
-              // public / private / hidden-by-owner) — spec §2.
-              onPressed: () => _showContact(profile),
-              icon: const Icon(Icons.contact_phone_outlined),
-              label: Text(context.l10n.contactDetails),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(52),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Chat — opens the conversation with this matched user. Shown ONLY
-          // when the interest is accepted (this branch); the auto-created thread
-          // is idempotent so this always opens the SAME conversation as the
-          // Chats tab (spec §4/§7). Single leading icon, Material styling.
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () => _openChat(profile),
-              icon: const Icon(Icons.chat_bubble_outline, size: 20),
-              label: Text(context.l10n.chat,
-                  style: const TextStyle(
-                      fontSize: 15,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2)),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.gold,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(52),
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                elevation: 1.5,
-                shadowColor: AppColors.gold.withOpacity(0.4),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
+    if (accepted) return _connectedActionsCard(profile);
 
     if (alreadySent) {
       return SizedBox(
@@ -389,6 +317,250 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
         onPressed: () => _sendInterest(profile),
         text: context.l10n.sendInterest,
       ),
+    );
+  }
+
+  /// The bottom card AFTER both members are connected (spec §5).
+  ///
+  /// Interest buttons are gone; what replaces them is one premium card:
+  ///   • a "You are Connected" banner;
+  ///   • **View Contact Details** as the single full-width primary action;
+  ///   • the connected actions — **Chat** and **Horoscope Matching** — as two
+  ///     equal tiles beneath it.
+  ///
+  /// None of these exist before acceptance: this whole card only ever renders
+  /// in the accepted branch of [_statusInterestAction].
+  Widget _connectedActionsCard(ProfileModel profile) {
+    final l10n = context.l10n;
+    // The horoscope request (if any) decides what the Horoscope Matching tile
+    // does — book, wait, or open the finished report.
+    final reqAsync = ref.watch(compatRequestForPairProvider(profile.id));
+    final req = reqAsync.valueOrNull;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.success.withValues(alpha: 0.30)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Connected banner ──
+              Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.verified_user_outlined,
+                        size: 22, color: AppColors.success),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(l10n.connectedTitle,
+                            style: const TextStyle(
+                                fontSize: 15,
+                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.success)),
+                        const SizedBox(height: 2),
+                        Text(l10n.connectedBody,
+                            style: TextStyle(
+                                fontSize: 12,
+                                height: 1.35,
+                                color: Colors.grey[700])),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // ── Primary action: View Contact Details ──
+              // The popup itself enforces what may be shown (accepted /
+              // public / private / hidden-by-owner) — spec §2.
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => _showContact(profile),
+                  icon: const Icon(Icons.contact_phone_outlined, size: 21),
+                  label: Text(l10n.viewContactDetails,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 15.5,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2)),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(54),
+                    elevation: 2,
+                    shadowColor: AppColors.primary.withValues(alpha: 0.4),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(l10n.connectedActionsTitle.toUpperCase(),
+                  style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      color: Colors.grey[500])),
+              const SizedBox(height: 10),
+              // ── Connected actions: two equal tiles ──
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: _connectedActionTile(
+                        icon: Icons.chat_bubble_outline,
+                        color: AppColors.gold,
+                        label: l10n.chat,
+                        // The auto-created thread is idempotent, so this always
+                        // opens the SAME conversation as the Chats tab.
+                        onTap: () => _openChat(profile),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _horoscopeMatchingTile(profile, req, reqAsync.isLoading),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Status detail for an EXISTING horoscope request (under analysis /
+        // ready). With no request yet, the tile above is the entry point and
+        // this stays out of the way.
+        if (req != null) ...[
+          const SizedBox(height: 12),
+          _astroConsultCard(profile),
+        ],
+      ],
+    );
+  }
+
+  /// One square-ish connected-action tile — icon bubble over a centred label,
+  /// sized purely by the row so both tiles are always identical.
+  Widget _connectedActionTile({
+    required IconData icon,
+    required Color color,
+    required String label,
+    String? subtitle,
+    VoidCallback? onTap,
+  }) {
+    final enabled = onTap != null;
+    return Material(
+      color: color.withValues(alpha: enabled ? 0.08 : 0.05),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+                color: color.withValues(alpha: enabled ? 0.35 : 0.18)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon,
+                  size: 24,
+                  color: enabled ? color : color.withValues(alpha: 0.5)),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w600,
+                  height: 1.2,
+                  color: enabled ? AppColors.textPrimary : Colors.grey,
+                ),
+              ),
+              if (subtitle != null && subtitle.trim().isNotEmpty) ...[
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 10.5, color: Colors.grey[600]),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The Horoscope Matching tile — one control, three states, driven by the
+  /// real request document so it can never offer a second booking for a pair
+  /// that already has one (spec §12, one request per partner).
+  Widget _horoscopeMatchingTile(
+      ProfileModel profile, AstrologerRequestModel? req, bool loading) {
+    final l10n = context.l10n;
+    if (loading) {
+      return _connectedActionTile(
+        icon: Icons.auto_awesome_outlined,
+        color: AppColors.primary,
+        label: l10n.horoscopeMatching,
+      );
+    }
+    if (req == null) {
+      return _connectedActionTile(
+        icon: Icons.auto_awesome_outlined,
+        color: AppColors.primary,
+        label: l10n.horoscopeMatching,
+        onTap: () => context.push('/horoscope-report/${profile.userId}'),
+      );
+    }
+    if (req.status == AstrologerRequestStatus.completed) {
+      return _connectedActionTile(
+        icon: Icons.task_alt,
+        color: AppColors.success,
+        label: l10n.viewHoroscopeReport,
+        onTap: () => _viewCompatReport(req),
+      );
+    }
+    // Requested and under analysis — informational, deliberately not tappable.
+    return _connectedActionTile(
+      icon: Icons.hourglass_top,
+      color: AppColors.warning,
+      label: l10n.horoscopeMatching,
+      subtitle: l10n.reportUnderAnalysisTitle,
     );
   }
 
@@ -790,9 +962,18 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                 // ── Partner Preference Comparison (viewer's prefs vs this) ──
                 ..._partnerPreferenceComparison(profile),
                 const SizedBox(height: 20),
-                // ── Contact Details (from the Contact Details step) ──
-                _contactSection(profile),
-                const SizedBox(height: 32),
+                // ── Contact Details ──
+                // Removed ENTIRELY before the interest is accepted (spec §3):
+                // no heading, no card, no button, nothing that hints a phone or
+                // e-mail exists. Only the owner, a connected member, or a
+                // member whose owner published their contact ever sees it.
+                if (isOwner ||
+                    ref.watch(interestStatusForProfileProvider(profile.id)) ==
+                        InterestUiStatus.accepted ||
+                    profile.isContactPublic) ...[
+                  _contactSection(profile),
+                  const SizedBox(height: 32),
+                ],
                 // Status-aware action: accepted → View Contact (never "Send
                 // Interest" again); pending → "Interest Sent"; otherwise the
                 // Send Interest button.
@@ -1026,10 +1207,15 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     ];
   }
 
-  /// Contact Details entry (spec §2): the page NEVER renders contact person,
-  /// relationship, mobile, WhatsApp or email inline. This card only offers
-  /// the dedicated button; the popup enforces accepted / public / private and
-  /// always fetches the LATEST saved `contacts/{userId}` record.
+  /// Contact Details entry.
+  ///
+  /// NOTHING contact-related exists on this page until the interest is
+  /// accepted: no phone, no e-mail, no button, no card, not even the section
+  /// heading. [_buildProfileView] therefore only calls this once the viewer is
+  /// entitled — the owner, a connected (accepted) member, or a member whose
+  /// owner explicitly published their contact. Even then the values are never
+  /// rendered inline: the button opens the popup, which re-checks access
+  /// itself and always fetches the LATEST saved `contacts/{userId}` record.
   Widget _contactSection(ProfileModel profile) {
     final l10n = context.l10n;
     return Column(

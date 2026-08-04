@@ -12,8 +12,10 @@ import '../../core/utils/l10n_ext.dart';
 ///    other action block;
 ///  • a subtle continuous pulse on the heart badge draws the eye without
 ///    being distracting;
-///  • Accept is the single prominent, rounded, gradient action; Reject stays
-///    available but visually secondary.
+///  • Reject and Accept Interest are EQUAL-width, equal-height buttons on one
+///    balanced row — same corner radius, same 52pt target, one gutter between
+///    them. Accept carries the brand gradient so it still reads as the primary
+///    choice without stealing width from Reject.
 class PendingInterestCard extends StatefulWidget {
   /// Display name of the member who sent the interest ('' → generic copy).
   final String name;
@@ -96,7 +98,7 @@ class _PendingInterestCardState extends State<PendingInterestCard>
           ],
         ),
         child: Container(
-          padding: EdgeInsets.all(widget.compact ? 12 : 16),
+          padding: EdgeInsets.all(widget.compact ? 14 : 18),
           decoration: BoxDecoration(
             color: Theme.of(context).brightness == Brightness.dark
                 ? AppColors.darkCard
@@ -107,6 +109,7 @@ class _PendingInterestCardState extends State<PendingInterestCard>
             mainAxisSize: MainAxisSize.min,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // Pulsing heart badge — the "notice me" element.
                   AnimatedBuilder(
@@ -165,70 +168,21 @@ class _PendingInterestCardState extends State<PendingInterestCard>
                   ),
                 ],
               ),
-              SizedBox(height: widget.compact ? 10 : 14),
-              Row(
-                children: [
-                  // Reject — present but deliberately quiet.
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _busy ? null : () => _run(widget.onReject),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textSecondary,
-                        side: BorderSide(
-                            color:
-                                AppColors.textSecondary.withValues(alpha: 0.4)),
-                        minimumSize: const Size.fromHeight(46),
-                        shape: const StadiumBorder(),
-                      ),
-                      child: Text(l10n.reject),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Accept — the hero action (2× width, gradient, elevated).
-                  Expanded(
-                    flex: 2,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
-                        borderRadius: BorderRadius.circular(26),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.35),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: FilledButton.icon(
-                        onPressed: _busy ? null : () => _run(widget.onAccept),
-                        icon: _busy
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Icon(Icons.favorite, size: 19),
-                        label: Text(
-                          l10n.accept,
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(46),
-                          shape: const StadiumBorder(),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              SizedBox(height: widget.compact ? 14 : 18),
+              // Balanced action row: two equal halves, identical height and
+              // radius, one 12pt gutter. Nothing is wider or taller than its
+              // partner — only colour separates primary from secondary.
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Reject — present, readable, deliberately quiet.
+                    Expanded(child: _rejectButton(l10n.reject)),
+                    const SizedBox(width: 12),
+                    // Accept Interest — same footprint, brand gradient.
+                    Expanded(child: _acceptButton(l10n.acceptInterest)),
+                  ],
+                ),
               ),
             ],
           ),
@@ -236,4 +190,87 @@ class _PendingInterestCardState extends State<PendingInterestCard>
       ),
     );
   }
+
+  static const double _btnHeight = 52;
+  static final BorderRadius _btnRadius = BorderRadius.circular(14);
+
+  Widget _rejectButton(String label) => OutlinedButton(
+        onPressed: _busy ? null : () => _run(widget.onReject),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.textSecondary,
+          side: BorderSide(
+              color: AppColors.textSecondary.withValues(alpha: 0.35),
+              width: 1.4),
+          minimumSize: const Size.fromHeight(_btnHeight),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          shape: RoundedRectangleBorder(borderRadius: _btnRadius),
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w600,
+            fontSize: 14.5,
+          ),
+        ),
+      );
+
+  Widget _acceptButton(String label) => DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: AppColors.primaryGradient,
+          borderRadius: _btnRadius,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.32),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FilledButton(
+          onPressed: _busy ? null : () => _run(widget.onAccept),
+          style: FilledButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: Colors.transparent,
+            disabledForegroundColor: Colors.white70,
+            minimumSize: const Size.fromHeight(_btnHeight),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            shape: RoundedRectangleBorder(borderRadius: _btnRadius),
+          ),
+          child: _busy
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.favorite, size: 18),
+                    const SizedBox(width: 7),
+                    // Flexible so a long Tamil label shrinks the text rather
+                    // than overflowing the equal-width half.
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14.5,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      );
 }

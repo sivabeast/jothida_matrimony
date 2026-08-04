@@ -177,21 +177,58 @@ class AppConstants {
     'Any Caste', 'Other',
   ];
 
-  // Marital Status
+  // ── Marital status ────────────────────────────────────────────────────────
+  /// The ONE marital-status list. Every surface reads this and nothing else:
+  /// profile creation (member AND admin — they are the same wizard), profile
+  /// edit, admin edit, partner preferences, filters and search.
+  ///
+  /// There used to be a second `maritalStatusOptions` list holding
+  /// `Widow` / `Widower`, which is why the same dropdown offered different
+  /// values depending on which screen you opened. It is gone: adding or
+  /// removing an option here changes it everywhere at once.
+  ///
+  /// `Widowed` is deliberately the only bereavement option and is rendered in
+  /// Tamil as the gender-neutral "துணையை இழந்தவர்" — the app never offers the
+  /// gendered "விதவை" / "விதவர்".
   static const List<String> maritalStatusList = [
-    'Never Married', 'Divorced', 'Widowed', 'Awaiting Divorce',
+    'Never Married',
+    'Married',
+    'Divorced',
+    'Widowed',
   ];
 
-  // Marital Status options used by the onboarding wizard (per spec).
-  static const List<String> maritalStatusOptions = [
-    'Never Married', 'Divorced', 'Widow', 'Widower',
-  ];
+  /// Values written by older builds → the canonical option they map onto.
+  /// Kept so an existing profile still selects the right dropdown entry (and
+  /// still displays correctly) after the list was unified.
+  static const Map<String, String> legacyMaritalStatusAliases = {
+    'Widow': 'Widowed',
+    'Widower': 'Widowed',
+    'Unmarried': 'Never Married',
+    'Awaiting Divorce': 'Divorced',
+    'Separated': 'Divorced',
+  };
+
+  /// Maps a STORED marital status onto the canonical option, so a dropdown
+  /// seeded from an old profile lands on a real entry instead of showing blank
+  /// (or appending a stale one-off option). Unknown / empty values return null.
+  static String? normalizeMaritalStatus(String? stored) {
+    final v = (stored ?? '').trim();
+    if (v.isEmpty) return null;
+    if (maritalStatusList.contains(v)) return v;
+    return legacyMaritalStatusAliases[v];
+  }
 
   /// Marital statuses that imply the user may have children → show the
-  /// children count / living-status fields.
+  /// children count / living-status fields. Includes the legacy spellings so
+  /// the check works on a raw stored value too.
   static const List<String> maritalStatusesWithChildren = [
-    'Divorced', 'Widow', 'Widower', 'Widowed', 'Awaiting Divorce',
+    'Divorced', 'Widowed',
+    'Widow', 'Widower', 'Awaiting Divorce', 'Separated',
   ];
+
+  /// Gender options. Hardcoded `['Male', 'Female']` literals were scattered
+  /// across the member and admin forms; they all read this now.
+  static const List<String> genderList = ['Male', 'Female'];
 
   // Physical status (Step 3)
   static const List<String> physicalStatusList = [

@@ -278,9 +278,10 @@ class FirestoreService {
     //    security rule hasn't been deployed yet (firebase deploy --only
     //    firestore:rules), the write is denied — but the profile must still
     //    save, so we log and continue instead of failing the whole save.
-    if (profile.userId.isNotEmpty &&
-        (profile.contact.mobileNumber.isNotEmpty ||
-            (profile.contact.whatsappNumber ?? '').isNotEmpty)) {
+    // Gated on ANY contact value (not just a phone number): a member who
+    // entered only an e-mail used to get no `contacts/{userId}` record at all,
+    // which made the Contact Details popup report "not provided" forever.
+    if (profile.userId.isNotEmpty && profile.contact.hasAnyValue) {
       try {
         await saveContact(profile.userId, profile.contact);
       } catch (e) {

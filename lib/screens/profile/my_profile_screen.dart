@@ -485,7 +485,7 @@ List<ProfileEditableField> basicDetailsFields(BuildContext c, ProfileModel p) {
       label: l.gender,
       kind: ProfileFieldKind.options,
       value: p.gender,
-      options: const ['Male', 'Female'],
+      options: AppConstants.genderList,
       apply: (pr, v) => pr.copyWith(gender: v as String),
       patch: (v) => {'gender': v},
     ),

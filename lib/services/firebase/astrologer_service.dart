@@ -387,13 +387,22 @@ class AstrologerService {
         return out;
       });
 
-  /// Every in-person APPOINTMENT addressed to the internal astrology service
-  /// (both standalone consultations and horoscope-report visits), newest first.
-  /// Powers the admin Appointment Management page. Single-field equality query
-  /// (no composite index); the `hasAppointment` filter + sort are client-side.
-  Stream<List<AstrologerRequestModel>> watchInternalAppointments() => _db
+  /// EVERY in-person appointment booking (standalone consultations and
+  /// horoscope-report visits alike), newest first. Powers the admin Appointment
+  /// Management page.
+  ///
+  /// The filter is the booking's own `visitDateKey` — which is written for
+  /// every appointment and left `''` for everything else — NOT the astrologer
+  /// it happens to be addressed to. That distinction matters: assigning a
+  /// booking to an employee overwrites `astrologerId` with their uid, so the
+  /// previous `astrologerId == internal_astrology` query silently dropped every
+  /// assigned booking off the admin's list.
+  ///
+  /// Single-field range query (automatic index, no composite index needed); the
+  /// `hasAppointment` re-check and the sort stay client-side.
+  Stream<List<AstrologerRequestModel>> watchAllAppointments() => _db
       .collection(AppConstants.astrologerRequestsCollection)
-      .where('astrologerId', isEqualTo: kInternalAstrologyId)
+      .where('visitDateKey', isGreaterThan: '')
       .snapshots()
       .map((s) {
         final list = s.docs
@@ -442,6 +451,62 @@ class AstrologerService {
         // completed, cancelled…) notifies once; retries of the SAME
         // transition collapse.
         id: 'appointment_status_${r.id}_${status.name}',
+        data: {'requestId': r.id, 'route': '/my-appointments'},
+      );
+    }
+  }
+
+  /// Admin RESCHEDULES an appointment to a new day / session.
+  ///
+  /// The old session's capacity is released and the new one taken, so the
+  /// booked-slots index stays honest for everyone else's date picker. The
+  /// booking keeps its id, its payment and its history — only the visit moves —
+  /// and the member is notified with the new date.
+  Future<void> rescheduleAppointment(
+    AstrologerRequestModel r, {
+    required DateTime visitDate,
+    required String session,
+  }) async {
+    final dateKey = '${visitDate.year.toString().padLeft(4, '0')}-'
+        '${visitDate.month.toString().padLeft(2, '0')}-'
+        '${visitDate.day.toString().padLeft(2, '0')}';
+    if (dateKey == r.visitDateKey && session == r.session) return; // no-op
+
+    final start = AppointmentSession.startMinutes(session);
+    final label = '${AppointmentSession.shortLabel(session)} · $dateKey';
+    await _db
+        .collection(AppConstants.astrologerRequestsCollection)
+        .doc(r.id)
+        .update({
+      'visitDate': Timestamp.fromDate(DateTime(
+          visitDate.year, visitDate.month, visitDate.day)),
+      'visitDateKey': dateKey,
+      'session': session,
+      'slotStartMinutes': start,
+      'slotKey': '${(start ~/ 60).toString().padLeft(2, '0')}'
+          '${(start % 60).toString().padLeft(2, '0')}',
+      'updatedAt': FieldValue.serverTimestamp(),
+      'history': FieldValue.arrayUnion(
+          [BookingHistoryEntry.now('Rescheduled to $label').toMap()]),
+    });
+
+    // Move the capacity: free the old session, take the new one. Both are
+    // best-effort merges — a failed index write must never undo the reschedule.
+    await _freeSlot(r);
+    try {
+      await _appointmentSlotsDoc(dateKey)
+          .set({session: FieldValue.increment(1)}, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('[AstrologerService] reschedule slot claim skipped: $e');
+    }
+
+    if (r.userId.trim().isNotEmpty) {
+      await _notify(
+        r.userId,
+        'Appointment Rescheduled',
+        'Your appointment has been moved to $label.',
+        'appointment_status',
+        id: 'appointment_rescheduled_${r.id}_${dateKey}_$session',
         data: {'requestId': r.id, 'route': '/my-appointments'},
       );
     }

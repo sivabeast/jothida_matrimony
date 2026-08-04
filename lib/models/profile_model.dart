@@ -1380,6 +1380,21 @@ class ContactDetails {
         'email': email,
       };
 
+  /// True when this record carries ANY reachable detail.
+  ///
+  /// The gated `contacts/{userId}` record used to be written only when a
+  /// MOBILE or WhatsApp number was present, so a member who entered just an
+  /// e-mail (or only a contact person) ended up with no record at all and the
+  /// Contact Details popup reported "not provided". Every write path now gates
+  /// on this instead.
+  bool get hasAnyValue => [
+        contactPersonName,
+        relationship,
+        mobileNumber,
+        whatsappNumber ?? '',
+        email,
+      ].any((v) => v.trim().isNotEmpty);
+
   ContactDetails copyWith({
     String? contactPersonName,
     String? relationship,

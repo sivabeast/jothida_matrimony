@@ -26,8 +26,9 @@ final myAppointmentsProvider =
       .map((list) => list.where((r) => r.hasAppointment).toList());
 });
 
-/// EVERY in-person appointment addressed to the internal astrology service —
-/// powers the admin Appointment Management page. Realtime, newest first.
+/// EVERY appointment booking a user has created — powers the admin Appointment
+/// Management page. Realtime, newest first, and independent of which astrologer
+/// the booking is currently assigned to.
 final allAppointmentsProvider =
     StreamProvider.autoDispose<List<AstrologerRequestModel>>((ref) {
   if (kBypassAuth) {
@@ -36,7 +37,7 @@ final allAppointmentsProvider =
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return Stream.value(list);
   }
-  return ref.read(astrologerServiceProvider).watchInternalAppointments();
+  return ref.read(astrologerServiceProvider).watchAllAppointments();
 });
 
 /// Admin actions on an appointment: change status (which, for a cancellation,
@@ -56,6 +57,27 @@ class AppointmentController extends Notifier<AsyncValue<void>> {
             .setStatus(r.id, status);
       } else {
         await ref.read(astrologerServiceProvider).setAppointmentStatus(r, status);
+      }
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
+  /// Moves a booking to a new day / session, releasing the old session's
+  /// capacity and taking the new one.
+  Future<void> reschedule(
+    AstrologerRequestModel r, {
+    required DateTime visitDate,
+    required String session,
+  }) async {
+    state = const AsyncLoading();
+    try {
+      if (!kBypassAuth) {
+        await ref
+            .read(astrologerServiceProvider)
+            .rescheduleAppointment(r, visitDate: visitDate, session: session);
       }
       state = const AsyncData(null);
     } catch (e, st) {

@@ -96,7 +96,9 @@ class _StepPartnerPreferenceState
       _caste = _orNull(pref['caste'] as String?);
       _subCasteController.text = _orNull(pref['subCaste'] as String?) ?? '';
       _income = _orNull(pref['income'] as String?);
-      _maritalStatus = _orNull(pref['maritalStatus'] as String?);
+      // Legacy 'Widow' / 'Widower' preferences fold onto 'Widowed'.
+      _maritalStatus = AppConstants.normalizeMaritalStatus(
+          _orNull(pref['maritalStatus'] as String?));
       _motherTongue = _orNull(pref['motherTongue'] as String?);
       _physicalStatus = _orNull(pref['physicalStatus'] as String?);
       _chevvai = _orNull(pref['chevvaiDosham'] as String?);
@@ -233,7 +235,7 @@ class _StepPartnerPreferenceState
             }),
           ),
           const SizedBox(height: 16),
-          _pref(l10n.maritalStatus, AppConstants.maritalStatusOptions,
+          _pref(l10n.maritalStatus, AppConstants.maritalStatusList,
               _maritalStatus, (v) => _maritalStatus = v),
           _pref(l10n.physicalStatus, AppConstants.physicalStatusList,
               _physicalStatus, (v) => _physicalStatus = v),

@@ -448,7 +448,11 @@ class _BasicInfoSheetState extends ConsumerState<_BasicInfoSheet> {
   late String _gender = widget.profile.gender.isEmpty ? 'Male' : widget.profile.gender;
   late DateTime _dob = widget.profile.dateOfBirth;
   late String _height = widget.profile.height;
-  late String _marital = widget.profile.maritalStatus;
+  // Normalised so a legacy stored value selects a real dropdown entry rather
+  // than appending a one-off stale option via [_optsWith].
+  late String _marital =
+      AppConstants.normalizeMaritalStatus(widget.profile.maritalStatus) ??
+          widget.profile.maritalStatus;
   late String _tongue = widget.profile.motherTongue;
   bool _saving = false;
 
@@ -516,7 +520,7 @@ class _BasicInfoSheetState extends ConsumerState<_BasicInfoSheet> {
       onSave: _save,
       children: [
         _tf(_name, 'Full Name'),
-        _drop('Gender', _gender, _optsWith(const ['Male', 'Female'], _gender),
+        _drop('Gender', _gender, _optsWith(AppConstants.genderList, _gender),
             (v) => setState(() => _gender = v!)),
         Padding(
           padding: const EdgeInsets.only(bottom: 12),

@@ -101,8 +101,11 @@ class _AdminEditUserScreenState extends ConsumerState<AdminEditUserScreen> {
         _ctrl('ppMaxAge', '${p.partnerPreferences.maxAge}');
         _ctrl('ppReligion', p.partnerPreferences.religion);
         _ctrl('ppCaste', p.partnerPreferences.caste ?? '');
-        _gender = p.gender.isEmpty ? null : p.gender;
-        _maritalStatus = p.maritalStatus.isEmpty ? null : p.maritalStatus;
+        _gender = AppConstants.genderList.contains(p.gender) ? p.gender : null;
+        // Legacy 'Widow' / 'Widower' / 'Awaiting Divorce' fold onto the
+        // canonical option so the dropdown seeds correctly (an unmatched value
+        // would come up blank and be silently blanked on save).
+        _maritalStatus = AppConstants.normalizeMaritalStatus(p.maritalStatus);
         _height =
             AppConstants.heightList.contains(p.height) ? p.height : null;
         _rasi =
@@ -324,15 +327,15 @@ class _AdminEditUserScreenState extends ConsumerState<AdminEditUserScreen> {
                     const SizedBox(height: 14),
                     _card('👤 Profile Details', [
                       _text('fullName', 'Full Name'),
-                      _dropdown(
-                          'Gender',
-                          const ['Male', 'Female'],
-                          _gender,
+                      // Every option list here is the SAME shared constant the
+                      // member's profile-creation wizard reads — the admin
+                      // panel keeps no dropdown values of its own.
+                      _dropdown('Gender', AppConstants.genderList, _gender,
                           (v) => setState(() => _gender = v)),
                       _dropdown('Height', AppConstants.heightList, _height,
                           (v) => setState(() => _height = v)),
                       _dropdown('Marital Status',
-                          AppConstants.maritalStatusOptions, _maritalStatus,
+                          AppConstants.maritalStatusList, _maritalStatus,
                           (v) => setState(() => _maritalStatus = v)),
                       _text('education', 'Education'),
                       _text('occupation', 'Occupation'),

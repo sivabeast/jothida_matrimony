@@ -812,6 +812,30 @@ abstract class AppLocalizations {
   /// **'Accept Interest'**
   String get acceptInterest;
 
+  /// No description provided for @viewContactDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'View Contact Details'**
+  String get viewContactDetails;
+
+  /// No description provided for @connectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You are Connected'**
+  String get connectedTitle;
+
+  /// No description provided for @connectedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact details, chat and horoscope matching are now unlocked for both of you.'**
+  String get connectedBody;
+
+  /// No description provided for @connectedActionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected Actions'**
+  String get connectedActionsTitle;
+
   /// No description provided for @interestRejected.
   ///
   /// In en, this message translates to:

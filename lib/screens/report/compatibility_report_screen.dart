@@ -9,6 +9,7 @@ import '../../providers/astrology_team_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../widgets/report/analysis_profile_cards.dart';
 import 'compatibility_report_print.dart';
 
 const Color _maroon = AppColors.primary;
@@ -479,6 +480,14 @@ class _CompatibilityReportScreenState
         padding: const EdgeInsets.all(14),
         children: [
           _brandHeader(number, date),
+          // Reviewer view (admin "Analyze" / employee portal): the COMPLETE
+          // submitted profile of both sides comes first, so the report is
+          // filled in after reading them — not from the summary strip alone.
+          // The member-facing report never shows this block.
+          if (widget.employee) ...[
+            const SizedBox(height: 12),
+            AnalysisProfileCards(request: r),
+          ],
           const SizedBox(height: 12),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,

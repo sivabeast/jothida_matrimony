@@ -370,7 +370,7 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
         // Keep the gated contact record in sync with the edited details —
         // but ONLY when the wizard actually carries contact data, so editing
         // another section can never blank the saved contact record.
-        if (profile.contact.mobileNumber.trim().isNotEmpty) {
+        if (profile.contact.hasAnyValue) {
           try {
             await ref
                 .read(firestoreServiceProvider)

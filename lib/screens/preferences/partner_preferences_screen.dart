@@ -89,7 +89,10 @@ class _PartnerPreferencesScreenState
       ..clear()
       ..addAll(p.occupation);
     _income = _safe(p.income, _incomeOpts);
-    _maritalStatus = _safe(p.maritalStatus, _maritalOpts);
+    // Normalise first so a legacy 'Widow' / 'Widower' preference selects
+    // 'Widowed' instead of silently falling back to "Any".
+    _maritalStatus = _safe(
+        AppConstants.normalizeMaritalStatus(p.maritalStatus), _maritalOpts);
     _rasi = _safe(p.rasi, _rasiOpts);
     _nakshatra = _safe(p.nakshatra, _nakshatraOpts);
     _horoMatch = p.horoscopeMatchRequired;

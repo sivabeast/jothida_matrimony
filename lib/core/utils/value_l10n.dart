@@ -20,12 +20,17 @@ const Map<String, String> kTamilValueMap = {
   'Female': 'பெண்',
 
   // ── Marital status ──
+  // Bereavement is ALWAYS the gender-neutral "துணையை இழந்தவர்". The gendered
+  // "விதவை" / "விதவர்" are never shown — the legacy `Widow` / `Widower` values
+  // still stored on older profiles map onto the same neutral wording, so they
+  // read correctly without a data migration.
   'Never Married': 'திருமணம் ஆகாதவர்',
   'Unmarried': 'திருமணம் ஆகாதவர்',
+  'Married': 'திருமணமானவர்',
   'Divorced': 'விவாகரத்து ஆனவர்',
   'Widowed': 'துணையை இழந்தவர்',
-  'Widow': 'விதவை',
-  'Widower': 'மனைவியை இழந்தவர்',
+  'Widow': 'துணையை இழந்தவர்',
+  'Widower': 'துணையை இழந்தவர்',
   'Awaiting Divorce': 'விவாகரத்துக்காக காத்திருப்பவர்',
   'Separated': 'பிரிந்து வாழ்பவர்',
 
@@ -200,7 +205,7 @@ const Map<String, String> kTamilValueMap = {
   'Blocked': 'தடுக்கப்பட்டது',
   'Active': 'செயலில்',
   'Inactive': 'செயலில் இல்லை',
-  'Married': 'திருமணமானவர்',
+  // 'Married' (the profile status) shares the marital-status entry above.
   'Rejected': 'நிராகரிக்கப்பட்டது',
   'Completed': 'முடிந்தது',
   'Confirmed': 'உறுதிப்படுத்தப்பட்டது',

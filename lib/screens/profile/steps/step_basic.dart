@@ -71,7 +71,11 @@ class _StepBasicState extends ConsumerState<StepBasic> {
     }
     _height = data['height'] as String?;
     _weightController.text = (data['weight'] as String?) ?? '';
-    _maritalStatus = data['maritalStatus'] as String?;
+    // Normalised so a profile saved with a legacy value ('Widow', 'Widower',
+    // 'Awaiting Divorce') seeds the dropdown on the canonical option instead of
+    // coming up blank when the wizard is reopened to edit it.
+    _maritalStatus =
+        AppConstants.normalizeMaritalStatus(data['maritalStatus'] as String?);
     _physicalStatus = data['physicalStatus'] as String?;
     _childrenLivingStatus = data['childrenLivingStatus'] as String?;
     final count = data['childrenCount'];
@@ -259,9 +263,17 @@ class _StepBasicState extends ConsumerState<StepBasic> {
             const SizedBox(height: 8),
             Row(
               children: [
-                Expanded(child: _genderCard('Male', Icons.male)),
-                const SizedBox(width: 16),
-                Expanded(child: _genderCard('Female', Icons.female)),
+                for (var i = 0; i < AppConstants.genderList.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 16),
+                  Expanded(
+                    child: _genderCard(
+                      AppConstants.genderList[i],
+                      AppConstants.genderList[i] == 'Female'
+                          ? Icons.female
+                          : Icons.male,
+                    ),
+                  ),
+                ],
               ],
             ),
             InlineFieldError(_v.errorOf('gender')),
@@ -330,7 +342,7 @@ class _StepBasicState extends ConsumerState<StepBasic> {
               key: _v.anchor('maritalStatus'),
               label: context.l10n.maritalStatus,
               isRequired: true,
-              items: AppConstants.maritalStatusOptions,
+              items: AppConstants.maritalStatusList,
               selectedItem: _maritalStatus,
               prefixIcon: Icons.favorite_border,
               errorText: _v.errorOf('maritalStatus'),

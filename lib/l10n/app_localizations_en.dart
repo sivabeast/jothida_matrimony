@@ -370,6 +370,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get acceptInterest => 'Accept Interest';
 
   @override
+  String get viewContactDetails => 'View Contact Details';
+
+  @override
+  String get connectedTitle => 'You are Connected';
+
+  @override
+  String get connectedBody =>
+      'Contact details, chat and horoscope matching are now unlocked for both of you.';
+
+  @override
+  String get connectedActionsTitle => 'Connected Actions';
+
+  @override
   String get interestRejected => 'Interest Rejected';
 
   @override
