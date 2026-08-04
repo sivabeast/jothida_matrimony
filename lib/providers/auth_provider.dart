@@ -8,6 +8,16 @@ import 'service_providers.dart';
 final firebaseAuthStreamProvider = StreamProvider<User?>((ref) =>
     ref.watch(authRepositoryProvider).authStateChanges);
 
+/// True while the app is in GUEST MODE (an anonymous Firebase session).
+///
+/// Watches [firebaseAuthStreamProvider] so it flips the instant a guest links
+/// their account and becomes a real member — screens gating on it update
+/// without a manual refresh.
+final isGuestProvider = Provider<bool>((ref) {
+  final user = ref.watch(firebaseAuthStreamProvider).valueOrNull;
+  return user?.isAnonymous ?? false;
+});
+
 // Current UserModel (loaded after auth).
 //
 // Deliberately NOT autoDispose. Two things read it without holding a listener:
@@ -22,6 +32,11 @@ final currentUserProvider = FutureProvider<UserModel?>((ref) async {
   final authAsync = ref.watch(firebaseAuthStreamProvider);
   final user = authAsync.valueOrNull;
   if (user == null) return null;
+  // A GUEST has no `users/{uid}` document by design, so skip the read entirely
+  // rather than round-tripping to Firestore for a document that will never
+  // exist. The router treats "guest" as its own branch before it ever looks at
+  // this value (see resolveAuthRedirect).
+  if (user.isAnonymous) return null;
   return ref.watch(authRepositoryProvider).getUserModel(user.uid);
 });
 
@@ -180,6 +195,25 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
       error: (e, st) =>
           debugPrint('[AuthNotifier] signInWithGoogle: state -> error: $e'),
       loading: () => debugPrint('[AuthNotifier] signInWithGoogle: still loading?!'),
+    );
+  }
+
+  /// Enters Guest Mode (§13). Browse-only: the router sends a guest to the
+  /// Login Required screen for anything personalized, and the security rules
+  /// reject every write from an anonymous session.
+  Future<void> signInAsGuest() async {
+    debugPrint('[AuthNotifier] signInAsGuest: state -> loading');
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(authRepositoryProvider).signInAsGuest();
+      return null; // a guest has no UserModel
+    });
+    state.when(
+      data: (_) => debugPrint('[AuthNotifier] signInAsGuest: guest session '
+          'ready — router will land on /home'),
+      error: (e, st) =>
+          debugPrint('[AuthNotifier] signInAsGuest: state -> error: $e'),
+      loading: () => debugPrint('[AuthNotifier] signInAsGuest: still loading?!'),
     );
   }
 

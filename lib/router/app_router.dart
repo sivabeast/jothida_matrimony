@@ -22,6 +22,7 @@ import '../screens/astrologer/portal/astrologer_shell.dart';
 import '../screens/astrologer/portal/astrologer_notifications_page.dart';
 import '../screens/astrologer/portal/astrologer_request_detail_page.dart';
 import '../screens/auth/splash_screen.dart';
+import '../screens/auth/login_required_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/chat/chat_list_screen.dart';
 import '../screens/chat/chat_screen.dart';
@@ -175,6 +176,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         location: state.matchedLocation,
         bypassAuth: kBypassAuth,
         isAuthenticated: ref.read(authRepositoryProvider).currentUser != null,
+        // Read straight from Firebase for the same reason as isAuthenticated:
+        // it is always immediately accurate, unlike a StreamProvider that may
+        // not have processed the latest auth event yet.
+        isGuest: ref.read(authRepositoryProvider).isGuest,
         userDocLoading: userAsync.isLoading,
         user: userAsync.valueOrNull,
         familyLoginInProgress: ref.read(familyLoginInProgressProvider),
@@ -184,6 +189,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      // Where Guest Mode sends anything personalized (§13).
+      GoRoute(
+          path: '/login-required',
+          builder: (_, __) => const LoginRequiredScreen()),
       // ── Employee Portal (admin-provisioned staff; common login only) ─────
       GoRoute(
           path: '/astrologer-dashboard',

@@ -3045,7 +3045,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get startChatting => 'Start Chatting';
 
   @override
-  String get keepBrowsing => 'Keep Browsing';
+  String get keepBrowsing => 'Keep browsing as guest';
 
   @override
   String get awaitingYourResponse => 'Awaiting your response';
@@ -3071,6 +3071,52 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profileRejectedBody =>
       'Your profile could not be approved. Please review your details or contact our support team for help.';
+
+  @override
+  String get continueAsGuest => 'Continue as Guest';
+
+  @override
+  String get couldNotContinueAsGuest =>
+      'Could not start guest browsing. Please try again, or log in instead.';
+
+  @override
+  String get loginRequiredTitle => 'Login Required';
+
+  @override
+  String get loginRequiredBody =>
+      'You are browsing as a guest. Create a free account or log in to use matches, interests, chat, astrology and your profile.';
+
+  @override
+  String get guestUpgradeNote =>
+      'Your guest session is kept — signing up upgrades it to a full account, so nothing is lost and no duplicate account is created.';
+
+  @override
+  String get guestModeBanner =>
+      'You are browsing as a guest. Sign up to unlock matches, interests and chat.';
+
+  @override
+  String get guestActionNeedsLogin => 'Please log in to use this feature.';
+
+  @override
+  String get downloadProfile => 'Download Profile';
+
+  @override
+  String get downloadProfileSubtitle =>
+      'Save this member\'s details as the Jothida Matrimony profile form.';
+
+  @override
+  String get downloadAsPdf => 'Download as PDF';
+
+  @override
+  String get downloadAsImages => 'Download as Images';
+
+  @override
+  String get downloadProfileLocked =>
+      'You can download a profile only after the interest is accepted.';
+
+  @override
+  String get downloadProfileFailed =>
+      'Could not prepare the profile. Please try again.';
 
   @override
   String get updateAvailableBody =>

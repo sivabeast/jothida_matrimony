@@ -2,8 +2,18 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
+    // A REGISTERED account — signed in with a real provider, never an
+    // anonymous/guest session. Everything in this bucket is member media
+    // (profile photos, horoscope charts, ID proofs, astrologer certificates),
+    // so no anonymous caller has any business reading OR writing it. The
+    // marketing website's anonymous session must never be able to enumerate
+    // member media, and Guest Mode in the app is browse-only.
+    //
+    // `sign_in_provider` is stamped by Firebase and cannot be forged, so this
+    // holds regardless of what any client claims.
     function isSignedIn() {
-      return request.auth != null;
+      return request.auth != null
+          && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
 
     function isAdmin() {

@@ -343,4 +343,119 @@ void main() {
       );
     });
   });
+
+  // ── Guest Mode (§13) ──────────────────────────────────────────────────────
+  //
+  // A guest is authenticated to Firebase but has NO users/{uid} document, so
+  // these cases all pass `user: null` — which for a NON-guest would mean
+  // "bounce to /login". The guest branch has to win first, otherwise Guest
+  // Mode is unusable.
+  group('guest mode', () {
+    String? guestAt(String location) => resolveAuthRedirect(
+          location: location,
+          isAuthenticated: true,
+          isGuest: true,
+          userDocLoading: false,
+          user: null,
+        );
+
+    test('a guest may browse the public surfaces', () {
+      for (final loc in const [
+        '/home',
+        '/muhurtham-calendar',
+        '/privacy-policy',
+        '/terms',
+        '/child-safety',
+        '/help',
+        '/announcement/abc123',
+      ]) {
+        expect(guestAt(loc), isNull, reason: 'guest should be allowed at $loc');
+      }
+    });
+
+    test('every personalized feature sends a guest to Login Required', () {
+      // The exact list the spec calls out, plus the routes that would leak
+      // member data or write permanent records.
+      for (final loc in const [
+        '/matches',
+        '/interests',
+        '/chats',
+        '/chat/thread1',
+        '/my-profile',
+        '/profile/create',
+        '/profile/p1',
+        '/profile/p1/edit',
+        '/astrology-appointment',
+        '/book-appointment/u1',
+        '/horoscope-files',
+        '/horoscope-report/u1',
+        '/reports',
+        '/my-appointments',
+        '/notifications',
+        '/settings',
+        '/partner-preferences',
+        '/wedding-workspace',
+      ]) {
+        expect(guestAt(loc), '/login-required',
+            reason: 'guest should be blocked from $loc');
+      }
+    });
+
+    test('a guest never reaches the admin panel or the employee portal', () {
+      expect(guestAt('/admin'), '/login-required');
+      expect(guestAt('/admin/users'), '/login-required');
+      expect(guestAt('/astrologer-dashboard'), '/login-required');
+    });
+
+    test('an unknown route is blocked by default, not allowed', () {
+      // The allow-list is what makes a NEW personalized screen safe before
+      // anyone remembers to gate it.
+      expect(guestAt('/some-feature-added-next-year'), '/login-required');
+    });
+
+    test('a guest may still reach the auth pages to upgrade', () {
+      expect(guestAt('/login'), isNull);
+      expect(guestAt('/register'), isNull);
+      expect(guestAt('/login-required'), isNull);
+    });
+
+    test('guest routing does not leak into a real signed-in account', () {
+      // Same location, isGuest false → the normal rules apply and a member
+      // with no user document still goes to /login.
+      expect(
+        resolveAuthRedirect(
+          location: '/matches',
+          isAuthenticated: true,
+          isGuest: false,
+          userDocLoading: false,
+          user: null,
+        ),
+        '/login',
+      );
+      // …and a real member is NOT sent to /login-required.
+      expect(
+        resolveAuthRedirect(
+          location: '/matches',
+          isAuthenticated: true,
+          isGuest: false,
+          userDocLoading: false,
+          user: _user(isProfileComplete: true),
+        ),
+        isNull,
+      );
+    });
+
+    test('a signed-out visitor is unaffected by the guest branch', () {
+      expect(
+        resolveAuthRedirect(
+          location: '/home',
+          isAuthenticated: false,
+          isGuest: false,
+          userDocLoading: false,
+          user: null,
+        ),
+        '/login',
+      );
+    });
+  });
 }

@@ -3083,7 +3083,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get startChatting => 'உரையாடலைத் தொடங்கு';
 
   @override
-  String get keepBrowsing => 'தொடர்ந்து பார்க்கவும்';
+  String get keepBrowsing => 'விருந்தினராகவே தொடரவும்';
 
   @override
   String get awaitingYourResponse => 'உங்கள் பதிலுக்காக காத்திருக்கிறது';
@@ -3109,6 +3109,52 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get profileRejectedBody =>
       'உங்கள் Profile-ஐ அங்கீகரிக்க முடியவில்லை. உங்கள் விவரங்களை சரிபார்க்கவும் அல்லது உதவிக்கு எங்கள் ஆதரவு குழுவை தொடர்பு கொள்ளவும்.';
+
+  @override
+  String get continueAsGuest => 'விருந்தினராக தொடரவும்';
+
+  @override
+  String get couldNotContinueAsGuest =>
+      'விருந்தினர் பயன்முறையை தொடங்க முடியவில்லை. மீண்டும் முயற்சிக்கவும் அல்லது உள்நுழையவும்.';
+
+  @override
+  String get loginRequiredTitle => 'உள்நுழைவு தேவை';
+
+  @override
+  String get loginRequiredBody =>
+      'நீங்கள் விருந்தினராக பார்வையிடுகிறீர்கள். Matches, விருப்பங்கள், அரட்டை, ஜோதிடம் மற்றும் உங்கள் Profile-ஐ பயன்படுத்த இலவச கணக்கை உருவாக்கவும் அல்லது உள்நுழையவும்.';
+
+  @override
+  String get guestUpgradeNote =>
+      'உங்கள் விருந்தினர் அமர்வு பாதுகாக்கப்படும் — பதிவு செய்தால் அதுவே முழு கணக்காக மாறும், எதுவும் இழக்கப்படாது, நகல் கணக்கும் உருவாகாது.';
+
+  @override
+  String get guestModeBanner =>
+      'நீங்கள் விருந்தினராக பார்வையிடுகிறீர்கள். Matches, விருப்பங்கள், அரட்டையை திறக்க பதிவு செய்யுங்கள்.';
+
+  @override
+  String get guestActionNeedsLogin => 'இந்த வசதியை பயன்படுத்த உள்நுழையவும்.';
+
+  @override
+  String get downloadProfile => 'Profile-ஐ பதிவிறக்கவும்';
+
+  @override
+  String get downloadProfileSubtitle =>
+      'இந்த உறுப்பினரின் விவரங்களை ஜோதிட மேட்ரிமோனி பதிவு படிவமாக சேமிக்கவும்.';
+
+  @override
+  String get downloadAsPdf => 'PDF ஆக பதிவிறக்கவும்';
+
+  @override
+  String get downloadAsImages => 'படமாக பதிவிறக்கவும்';
+
+  @override
+  String get downloadProfileLocked =>
+      'விருப்பம் ஏற்கப்பட்ட பிறகுதான் Profile-ஐ பதிவிறக்க முடியும்.';
+
+  @override
+  String get downloadProfileFailed =>
+      'Profile-ஐ தயாரிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get updateAvailableBody =>

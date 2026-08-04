@@ -9,7 +9,7 @@ import '../../models/user_model.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/service_providers.dart';
-import 'user_profile_export.dart';
+import '../../widgets/export/profile_form_export.dart';
 
 /// Live counts of a user's Horoscope Analysis + Appointment bookings.
 final _userRequestsProvider = StreamProvider.autoDispose
@@ -405,7 +405,9 @@ class UserDetailsScreen extends ConsumerWidget {
   }
 
   /// Runs the branded A4 capture (visible "preparing" screen) and hands the
-  /// result to the system share sheet as a PDF or as PNG page images.
+  /// result to the system share sheet as a PDF or as PNG page images. The
+  /// admin download is the complete record — nothing redacted — laid out as
+  /// the printed Jothida Matrimony registration form.
   Future<void> _export(BuildContext context, WidgetRef ref, UserModel user,
       ProfileModel profile, ContactDetails? contact,
       {required bool asPdf}) async {
@@ -413,25 +415,20 @@ class UserDetailsScreen extends ConsumerWidget {
     // Stamped into every page footer: who generated this export.
     final adminEmail =
         ref.read(currentUserProvider).valueOrNull?.email?.trim() ?? '';
-    var slug = profile.fullName
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
-        .replaceAll(RegExp(r'^_+|_+$'), '');
-    if (slug.isEmpty) slug = user.uid; // Tamil-only / empty names
-    final base = 'member_profile_$slug';
+    final options = ProfileFormExportOptions.admin(adminEmail: adminEmail);
+    final base = profileExportBaseName(profile);
     final ok = asPdf
-        ? await exportUserProfilePdf(context,
-            user: user,
+        ? await exportProfileFormPdf(context,
             profile: profile,
+            user: user,
             contact: contact,
-            adminEmail: adminEmail,
+            options: options,
             fileName: '$base.pdf')
-        : await exportUserProfileImages(context,
-            user: user,
+        : await exportProfileFormImages(context,
             profile: profile,
+            user: user,
             contact: contact,
-            adminEmail: adminEmail,
+            options: options,
             baseName: base);
     if (!ok) {
       messenger.showSnackBar(const SnackBar(

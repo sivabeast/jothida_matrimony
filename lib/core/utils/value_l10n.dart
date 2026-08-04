@@ -259,6 +259,20 @@ void registerMasterTamilNames(Map<String, String> pairs) {
 String? masterTamilNameFor(String value) =>
     _masterTamilNames[value.trim().toLowerCase()];
 
+/// Tamil text for a stored data [value], INDEPENDENT of the active locale.
+///
+/// [ValueL10nX.localizeValue] follows the UI language, which is right for the
+/// screen but wrong for artefacts that are Tamil by design — the printed
+/// registration form (`profile_form_export.dart`) must read the same whether
+/// the member had the app in Tamil or English when they tapped Download.
+/// Resolution order matches `localizeValue`'s Tamil branch, and an unmapped
+/// value is returned unchanged.
+String tamilValue(String? value) {
+  final v = (value ?? '').trim();
+  if (v.isEmpty) return v;
+  return kTamilValueMap[v] ?? masterTamilNameFor(v) ?? _astroEnToTa[v] ?? v;
+}
+
 extension ValueL10nX on BuildContext {
   /// True when the app is currently displayed in Tamil.
   bool get isTamil => Localizations.localeOf(this).languageCode == 'ta';

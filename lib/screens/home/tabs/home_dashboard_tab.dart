@@ -17,6 +17,7 @@ import '../../../providers/account_provider.dart';
 import '../../../providers/announcement_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/banner_provider.dart';
+import '../../auth/login_required_screen.dart';
 import '../../../providers/chat_provider.dart';
 import '../../../providers/interest_provider.dart';
 import '../../../providers/navigation_provider.dart';
@@ -142,6 +143,10 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           // ── Curved luxury header + overlapping hero banner ────────────────
           _buildHeaderBanner(context),
           const SizedBox(height: 18),
+
+          // ── Guest Mode strip (§13) — renders itself only for an anonymous
+          //    session, so it costs nothing for a signed-in member. ──────────
+          const GuestModeBanner(),
 
           // ── Profile Under Review — shown only while the member's profile is
           //    awaiting admin approval. Streams off myProfileProvider, so it

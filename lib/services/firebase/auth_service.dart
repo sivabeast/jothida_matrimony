@@ -76,7 +76,9 @@ class AuthService {
       smsCode: otp,
     );
     return _guard(() async {
-      final cred = await _auth.signInWithCredential(credential);
+      // Upgrades a Guest Mode session in place rather than creating a second
+      // account for the same person.
+      final cred = await _signInOrLink(credential);
       debugPrint('[AuthService] signInWithOTP: success. '
           'uid=${cred.user?.uid}, isNewUser=${cred.additionalUserInfo?.isNewUser}');
       return cred;
@@ -84,15 +86,14 @@ class AuthService {
   }
 
   // ── Email / Password ──────────────────────────────────────────────────────
-  Future<UserCredential> registerWithEmail(String email, String password) {
+  /// Creates an e-mail/password account. Delegates to
+  /// [registerOrLinkWithEmail] so a Guest Mode session is upgraded in place
+  /// instead of leaving the visitor with two accounts.
+  Future<UserCredential> registerWithEmail(String email, String password) async {
     debugPrint('[AuthService] registerWithEmail: creating account for $email');
-    return _guard(() async {
-      final cred = await _auth.createUserWithEmailAndPassword(
-          email: email, password: password);
-      debugPrint('[AuthService] registerWithEmail: success. '
-          'uid=${cred.user?.uid}');
-      return cred;
-    });
+    final cred = await registerOrLinkWithEmail(email, password);
+    debugPrint('[AuthService] registerWithEmail: success. uid=${cred.user?.uid}');
+    return cred;
   }
 
   Future<UserCredential> signInWithEmail(String email, String password) {
@@ -109,6 +110,92 @@ class AuthService {
   Future<void> sendPasswordReset(String email) {
     debugPrint('[AuthService] sendPasswordReset: sending to $email');
     return _guard(() => _auth.sendPasswordResetEmail(email: email));
+  }
+
+  // ── Guest Mode (anonymous) + account linking ──────────────────────────────
+
+  /// Error codes meaning "this credential already belongs to a real account".
+  static const _kAlreadyRegistered = {
+    'credential-already-in-use',
+    'email-already-in-use',
+    'account-exists-with-different-credential',
+    'provider-already-linked',
+  };
+
+  /// True when the live session is a GUEST (anonymous) one.
+  bool get isGuest => _auth.currentUser?.isAnonymous ?? false;
+
+  /// Starts a guest session.
+  ///
+  /// Anonymous auth exists for exactly one purpose in this app: letting a
+  /// visitor explore before registering. It is NEVER a data-storage identity —
+  /// the Firestore and Storage rules reject every write whose sign-in provider
+  /// is 'anonymous', so a guest physically cannot create a profile, a booking,
+  /// an interest or any other permanent record.
+  Future<UserCredential> signInAnonymously() {
+    debugPrint('[AuthService] signInAnonymously: starting a guest session...');
+    return _guard(() async {
+      final cred = await _auth.signInAnonymously();
+      debugPrint('[AuthService] signInAnonymously: guest uid=${cred.user?.uid}');
+      return cred;
+    });
+  }
+
+  /// Signs in with [credential], UPGRADING the current guest session in place
+  /// when there is one — so a visitor who explores first and registers second
+  /// keeps the SAME uid instead of collecting a second account.
+  ///
+  /// When the credential already belongs to a real account, the "guest" is just
+  /// a returning member who tapped Continue as Guest first. There is nothing to
+  /// migrate — Guest Mode never writes permanent data, and the security rules
+  /// guarantee that — so the throwaway anonymous account is abandoned and they
+  /// are signed into their real one. Without this fallback, tapping Continue as
+  /// Guest would permanently lock a returning member out of their own account.
+  Future<UserCredential> _signInOrLink(AuthCredential credential) async {
+    final guest = _auth.currentUser;
+    if (guest != null && guest.isAnonymous) {
+      try {
+        final linked = await guest.linkWithCredential(credential);
+        debugPrint('[AuthService] _signInOrLink: guest ${guest.uid} upgraded '
+            'in place — no duplicate account created.');
+        return linked;
+      } on FirebaseAuthException catch (e) {
+        if (!_kAlreadyRegistered.contains(e.code)) rethrow;
+        debugPrint('[AuthService] _signInOrLink: credential already belongs to '
+            'an account (${e.code}) — discarding the guest session and signing '
+            'into the existing account instead.');
+      }
+    }
+    return _auth.signInWithCredential(credential);
+  }
+
+  /// Public, error-mapped form of [_signInOrLink].
+  Future<UserCredential> signInOrLink(AuthCredential credential) =>
+      _guard(() => _signInOrLink(credential));
+
+  /// Creates an e-mail/password account, upgrading a guest session in place
+  /// when there is one. Same duplicate-account guarantee as [_signInOrLink].
+  Future<UserCredential> registerOrLinkWithEmail(String email, String password) {
+    debugPrint('[AuthService] registerOrLinkWithEmail: $email '
+        '(guest upgrade=${isGuest})');
+    return _guard(() async {
+      final guest = _auth.currentUser;
+      if (guest != null && guest.isAnonymous) {
+        try {
+          final linked = await guest.linkWithCredential(
+              EmailAuthProvider.credential(email: email, password: password));
+          debugPrint('[AuthService] registerOrLinkWithEmail: guest '
+              '${guest.uid} upgraded in place.');
+          return linked;
+        } on FirebaseAuthException catch (e) {
+          if (!_kAlreadyRegistered.contains(e.code)) rethrow;
+          debugPrint('[AuthService] registerOrLinkWithEmail: address already '
+              'registered (${e.code}) — creating normally.');
+        }
+      }
+      return _auth.createUserWithEmailAndPassword(
+          email: email, password: password);
+    });
   }
 
   // ── Google ────────────────────────────────────────────────────────────────
@@ -227,7 +314,8 @@ class AuthService {
         idToken: googleAuth.idToken,
       );
       log('exchanging the Google credential with Firebase...');
-      final userCred = await _auth.signInWithCredential(credential).timeout(
+      // Upgrades a Guest Mode session in place (same uid, no duplicate).
+      final userCred = await _signInOrLink(credential).timeout(
         _credentialTimeout,
         onTimeout: () => throw const AuthException(
           'Signing in took too long. Please check your internet connection and '

@@ -5627,7 +5627,7 @@ abstract class AppLocalizations {
   /// No description provided for @keepBrowsing.
   ///
   /// In en, this message translates to:
-  /// **'Keep Browsing'**
+  /// **'Keep browsing as guest'**
   String get keepBrowsing;
 
   /// No description provided for @awaitingYourResponse.
@@ -5671,6 +5671,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your profile could not be approved. Please review your details or contact our support team for help.'**
   String get profileRejectedBody;
+
+  /// No description provided for @continueAsGuest.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue as Guest'**
+  String get continueAsGuest;
+
+  /// No description provided for @couldNotContinueAsGuest.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start guest browsing. Please try again, or log in instead.'**
+  String get couldNotContinueAsGuest;
+
+  /// No description provided for @loginRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Login Required'**
+  String get loginRequiredTitle;
+
+  /// No description provided for @loginRequiredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You are browsing as a guest. Create a free account or log in to use matches, interests, chat, astrology and your profile.'**
+  String get loginRequiredBody;
+
+  /// No description provided for @guestUpgradeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Your guest session is kept — signing up upgrades it to a full account, so nothing is lost and no duplicate account is created.'**
+  String get guestUpgradeNote;
+
+  /// No description provided for @guestModeBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'You are browsing as a guest. Sign up to unlock matches, interests and chat.'**
+  String get guestModeBanner;
+
+  /// No description provided for @guestActionNeedsLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Please log in to use this feature.'**
+  String get guestActionNeedsLogin;
+
+  /// No description provided for @downloadProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Download Profile'**
+  String get downloadProfile;
+
+  /// No description provided for @downloadProfileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save this member\'s details as the Jothida Matrimony profile form.'**
+  String get downloadProfileSubtitle;
+
+  /// No description provided for @downloadAsPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Download as PDF'**
+  String get downloadAsPdf;
+
+  /// No description provided for @downloadAsImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Download as Images'**
+  String get downloadAsImages;
+
+  /// No description provided for @downloadProfileLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'You can download a profile only after the interest is accepted.'**
+  String get downloadProfileLocked;
+
+  /// No description provided for @downloadProfileFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not prepare the profile. Please try again.'**
+  String get downloadProfileFailed;
 
   /// No description provided for @updateAvailableBody.
   ///

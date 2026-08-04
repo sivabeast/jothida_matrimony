@@ -3,7 +3,33 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ── Helper functions ──────────────────────────────────────────────────
+
+    // A REGISTERED account — signed in with a real provider (Google, phone,
+    // or e-mail + password). NEVER an anonymous/guest session.
+    //
+    // This is the DEFAULT gate for the entire rule set, which makes the whole
+    // database deny-by-default for anonymous callers. Two things sign in
+    // anonymously against this project: the marketing website's public session
+    // and the app's Guest Mode. Neither may ever create or modify astrology
+    // data, admin or employee data, profiles, interests, appointments,
+    // horoscope reports, chats or any other permanent record.
+    //
+    // `request.auth.token.firebase.sign_in_provider` is set by Firebase itself
+    // and cannot be forged by a client, so this is a server-side guarantee —
+    // not something the app is trusted to enforce.
     function isAuthenticated() {
+      return request.auth != null
+          && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    // ANY signed-in caller, anonymous sessions included.
+    //
+    // Deliberately narrow in scope: use it ONLY for public, read-only
+    // reference data that the marketing website and Guest Mode legitimately
+    // need before anyone registers. Never use it to guard a write, and never
+    // to guard another member's data. Every use is listed and justified at its
+    // call site below.
+    function isAnyVisitor() {
       return request.auth != null;
     }
 
@@ -45,11 +71,14 @@ service cloud.firestore {
     // user (including the website's anonymous session) may read; only admins
     // maintain it. Oversized datasets are split into a `chunks` subcollection
     // (Firestore documents max out at 1 MB).
+    // PUBLIC REFERENCE DATA — isAnyVisitor: the website's anonymous session and
+    // the app's Guest Mode both need the location/caste/option datasets to
+    // render pickers before anyone registers. Read-only; writes stay admin-only.
     match /master_data/{docId} {
-      allow read: if isAuthenticated();
+      allow read: if isAnyVisitor();
       allow write: if isAdmin();
       match /chunks/{chunkId} {
-        allow read: if isAuthenticated();
+        allow read: if isAnyVisitor();
         allow write: if isAdmin();
       }
     }
@@ -59,11 +88,21 @@ service cloud.firestore {
     // holding user-added values that the canonical (bundled) master data is
     // missing. Any signed-in user may append a value; entries stream live to
     // every user, search, filters and the admin panel. Only admins may delete.
+    // Read is public reference data (isAnyVisitor). Writing is REGISTERED-only
+    // and APPEND-ONLY: this document is shared by every user, every search
+    // filter and the admin panel, and the previous rule let any caller replace
+    // `entries` wholesale — including with an empty list, wiping the dataset
+    // for everyone. Growth-only matches the documented "+ Add" intent; removing
+    // an entry stays an admin action.
     match /master_options/{type} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated()
-                            && request.resource.data.entries is list;
-      allow delete: if isAdmin();
+      allow read: if isAnyVisitor();
+      allow create: if isAuthenticated()
+                    && request.resource.data.entries is list;
+      allow update: if isAuthenticated()
+                    && request.resource.data.entries is list
+                    && request.resource.data.entries.size()
+                        >= resource.data.entries.size();
+      allow update, delete: if isAdmin();
     }
 
     // ── Aadhaar verification (SENSITIVE — never public) ────────────────────
@@ -96,8 +135,13 @@ service cloud.firestore {
     // Any signed-in visitor (including the anonymous public session) may
     // SUBMIT a message; only admins may read them or change read/unread
     // status. Deploy with: firebase deploy --only firestore:rules
+    // isAnyVisitor on CREATE is deliberate and is the ONLY write in this file
+    // an anonymous session may perform: the marketing site's contact form runs
+    // on the public anonymous session, and a visitor who has not registered is
+    // exactly who needs to send it. The payload is pinned to status 'unread'
+    // and nothing here is readable without admin.
     match /contact_messages/{messageId} {
-      allow create: if isAuthenticated()
+      allow create: if isAnyVisitor()
                     && request.resource.data.status == 'unread';
       allow read, update, delete: if isAdmin();
     }
@@ -144,6 +188,18 @@ service cloud.firestore {
     // visible to signed-in MATRIMONY users. Astrologers must not browse the
     // user database, so the blanket astrologer read was removed; only admins
     // get full read access for moderation.
+    //
+    // DELIBERATE: this read is isAuthenticated (REGISTERED), not isAnyVisitor.
+    // A profile carries personal data — name, photo, date of birth, caste,
+    // family and location — so an anonymous session must not be able to
+    // enumerate the membership. This is also the spec's own rule: a guest may
+    // browse Home and public information but must never see Matches.
+    //
+    // Consequence to be aware of: if the marketing website ever renders real
+    // member profiles from its ANONYMOUS session, that listing stops working
+    // and the site must sign the visitor in properly (or read a curated,
+    // non-personal showcase collection instead). Do not "fix" it by widening
+    // this back to isAnyVisitor.
     match /profiles/{profileId} {
       allow read: if isAuthenticated()
                   && resource.data.status == 'approved'
@@ -222,16 +278,17 @@ service cloud.firestore {
     // ── Master data (religions / castes / subcastes) ──────────────────────
     // Public reference data: any signed-in user may read; only admins write.
     // Seeded via scripts in master_data/seed_master_data.js.
+    // PUBLIC REFERENCE DATA (isAnyVisitor) — same rationale as master_data.
     match /master_religions/{id} {
-      allow read: if isAuthenticated();
+      allow read: if isAnyVisitor();
       allow write: if isAdmin();
     }
     match /master_castes/{id} {
-      allow read: if isAuthenticated();
+      allow read: if isAnyVisitor();
       allow write: if isAdmin();
     }
     match /master_subcastes/{id} {
-      allow read: if isAuthenticated();
+      allow read: if isAnyVisitor();
       allow write: if isAdmin();
     }
 

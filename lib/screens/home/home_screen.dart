@@ -180,7 +180,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // ── Bottom Navigation ─────────────────────────────────────────────────
       bottomNavigationBar: _BottomNav(
         selectedIndex: selectedIndex,
-        onTap: (i) => ref.read(homeTabIndexProvider.notifier).state = i,
+        // Guest Mode (§13): tabs 1-4 (Matches, Interests, Reports, Astrology)
+        // are personalized. They live INSIDE this screen's IndexedStack rather
+        // than at their own routes, so the router's guest redirect can never
+        // see them — the gate has to be here. Tab 0 (Home) stays browsable.
+        onTap: (i) {
+          if (i != 0 && ref.read(isGuestProvider)) {
+            context.push('/login-required');
+            return;
+          }
+          ref.read(homeTabIndexProvider.notifier).state = i;
+        },
       ),
       ),
     );

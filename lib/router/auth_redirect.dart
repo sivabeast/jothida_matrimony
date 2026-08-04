@@ -1,5 +1,33 @@
 import '../models/user_model.dart';
 
+/// Everywhere a GUEST (anonymous) session is allowed to go.
+///
+/// Guest Mode is an ALLOW-LIST, deliberately — not a block-list of the
+/// personalized screens. Every route that is not named here sends a guest to
+/// the Login Required screen, so a personalized feature added later is locked
+/// down by default instead of being exposed until someone remembers to block
+/// it. These are the screens that show public, non-personal information only.
+const Set<String> kGuestAllowedRoutes = {
+  '/', // splash
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/login-required',
+  '/home', // browse + explore (personalized cards gate themselves)
+  '/muhurtham-calendar', // public almanac
+  '/help',
+  '/language',
+  '/privacy-policy',
+  '/terms',
+  '/child-safety',
+};
+
+/// True when a guest may open [location].
+bool isGuestAllowedRoute(String location) =>
+    kGuestAllowedRoutes.contains(location) ||
+    // Admin broadcasts are public read-only content.
+    location.startsWith('/announcement/');
+
 /// The routing decision the GoRouter `redirect` callback makes, as a pure
 /// function of the app's auth state.
 ///
@@ -14,11 +42,15 @@ import '../models/user_model.dart';
 /// caller must re-invoke this once it resolves — the router does that from a
 /// `currentUserProvider` listener — otherwise the "wait for the user doc"
 /// branch below becomes a dead end.
+/// [isGuest] is `true` for an anonymous (Guest Mode) session. A guest is
+/// authenticated as far as Firebase is concerned but has NO `users/{uid}`
+/// document and may never reach a personalized screen.
 String? resolveAuthRedirect({
   required String location,
   required bool isAuthenticated,
   required bool userDocLoading,
   required UserModel? user,
+  bool isGuest = false,
   bool bypassAuth = false,
   bool familyLoginInProgress = false,
   void Function(String message)? log,
@@ -36,6 +68,22 @@ String? resolveAuthRedirect({
   if (!isAuthenticated) {
     // Single common login — unauthenticated users always land on /login.
     return (onAuthPage || onSplash) ? null : '/login';
+  }
+
+  // ── Guest (anonymous) session ────────────────────────────────────────────
+  // Guest Mode signs in anonymously so the app can be explored before
+  // registering. A guest has NO `users/{uid}` document BY DESIGN — nothing
+  // permanent is ever written for them — so this has to be decided here,
+  // ahead of both the "wait for the user doc" and "no user document" branches
+  // below. Falling through would leave a guest bouncing to /login forever.
+  //
+  // Firestore rules enforce the same boundary server-side (an anonymous
+  // sign-in provider cannot write anything), so this redirect is the UX, not
+  // the security.
+  if (isGuest) {
+    if (isGuestAllowedRoute(loc)) return null;
+    log?.call('guest blocked from "$loc" → /login-required');
+    return '/login-required';
   }
 
   // Authenticated → route by account type / onboarding status.

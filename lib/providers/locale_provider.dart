@@ -35,7 +35,10 @@ class LocaleNotifier extends Notifier<Locale?> {
     // so the astrologer's report follows it and the preference survives a
     // re-install / device change. Best-effort: a signed-out first-launch choice
     // simply skips this, and a write hiccup must never block switching language.
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    // Skip guests entirely: they have no user document and the security rules
+    // reject anonymous writes, so this would only ever be a doomed round-trip.
+    final authUser = FirebaseAuth.instance.currentUser;
+    final uid = (authUser != null && !authUser.isAnonymous) ? authUser.uid : null;
     if (uid != null) {
       try {
         await FirebaseFirestore.instance

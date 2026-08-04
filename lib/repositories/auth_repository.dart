@@ -25,6 +25,21 @@ class AuthRepository {
   User? get currentUser => _auth.currentUser;
   String? get currentUserId => _auth.currentUserId;
 
+  /// True when the live session is a GUEST (anonymous) one — browse-only, with
+  /// no `users/{uid}` document and no write access anywhere.
+  bool get isGuest => _auth.isGuest;
+
+  /// Starts Guest Mode. Deliberately does NOT create a `users/{uid}` document:
+  /// a guest stores nothing permanent, and the security rules enforce that
+  /// server-side. The account becomes real only when the guest registers or
+  /// logs in, at which point it is LINKED in place (same uid).
+  Future<void> signInAsGuest() async {
+    debugPrint('[AuthRepository] signInAsGuest: starting guest session...');
+    final cred = await _auth.signInAnonymously();
+    debugPrint('[AuthRepository] signInAsGuest: guest ${cred.user?.uid} ready '
+        '(no user document written — guests persist nothing).');
+  }
+
   Future<void> verifyPhone({
     required String phoneNumber,
     required Function(String) onCodeSent,

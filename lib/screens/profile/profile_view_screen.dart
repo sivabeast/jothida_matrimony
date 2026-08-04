@@ -19,6 +19,7 @@ import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/auto_fit_label.dart';
+import '../../widgets/export/profile_form_export.dart';
 import '../../widgets/common/face_centered_photo.dart';
 import '../../widgets/common/fullscreen_photo_viewer.dart';
 import '../../widgets/common/gradient_button.dart';
@@ -196,6 +197,104 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
   /// LATEST saved contact record — nothing is ever rendered inline.
   void _showContact(ProfileModel profile) {
     showContactDetailsDialog(context, profile: profile);
+  }
+
+  /// Downloads this member's profile as the branded Tamil registration form,
+  /// as a PDF or as page images.
+  ///
+  /// **Only ever reachable after a mutually-accepted interest**: the entry
+  /// point lives inside [_connectedActionsCard], which nothing but the
+  /// `accepted` branch of [_statusInterestAction] renders. The check is
+  /// re-asserted here so a stale widget can never produce a file, and the
+  /// export itself is redacted by the OWNER's privacy switches
+  /// ([ProfileFormExportOptions.forMatch]) — the download can never contain
+  /// more than this screen already shows.
+  Future<void> _downloadProfile(ProfileModel profile,
+      {required bool asPdf}) async {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    if (ref.read(interestStatusForProfileProvider(profile.id)) !=
+        InterestUiStatus.accepted) {
+      messenger.showSnackBar(
+          SnackBar(content: Text(l10n.downloadProfileLocked)));
+      return;
+    }
+
+    // Contact is unlocked by the acceptance, so read the LATEST gated
+    // `contacts/{userId}` record rather than the copy embedded in the profile
+    // document. A denied/failed read is not fatal — the form then falls back
+    // to the embedded contact, exactly like the Contact Details popup.
+    ContactDetails? contact;
+    try {
+      contact =
+          await ref.read(profileRepositoryProvider).getContact(profile.userId);
+    } catch (e) {
+      debugPrint('[ProfileDownload] contact read skipped: $e');
+    }
+    if (!mounted) return;
+
+    final options = ProfileFormExportOptions.forMatch(profile);
+    final base = profileExportBaseName(profile);
+    final ok = asPdf
+        ? await exportProfileFormPdf(context,
+            profile: profile,
+            contact: contact,
+            options: options,
+            fileName: '$base.pdf')
+        : await exportProfileFormImages(context,
+            profile: profile,
+            contact: contact,
+            options: options,
+            baseName: base);
+    if (!ok) messenger.showSnackBar(SnackBar(content: Text(l10n.downloadProfileFailed)));
+  }
+
+  /// Format picker for the connected-member download — PDF or images, the
+  /// same two choices the admin export offers.
+  Future<void> _chooseDownloadFormat(ProfileModel profile) async {
+    final l10n = context.l10n;
+    final asPdf = await showModalBottomSheet<bool>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 14),
+            Text(l10n.downloadProfile,
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: Text(l10n.downloadProfileSubtitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 12.5, height: 1.4, color: Colors.grey[600])),
+            ),
+            const SizedBox(height: 10),
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf_outlined,
+                  color: AppColors.primary),
+              title: Text(l10n.downloadAsPdf),
+              onTap: () => Navigator.pop(ctx, true),
+            ),
+            ListTile(
+              leading:
+                  const Icon(Icons.image_outlined, color: AppColors.primary),
+              title: Text(l10n.downloadAsImages),
+              onTap: () => Navigator.pop(ctx, false),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (asPdf == null || !mounted) return;
+    await _downloadProfile(profile, asPdf: asPdf);
   }
 
   Future<void> _acceptInterest(ProfileModel profile, String interestId) async {
@@ -449,6 +548,32 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                       child: _horoscopeMatchingTile(profile, req, reqAsync.isLoading),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              // ── Download this member's profile ──
+              // Lives inside the connected card ON PURPOSE: this card only
+              // exists in the accepted branch, so the download is structurally
+              // impossible before the interest is accepted.
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _chooseDownloadFormat(profile),
+                  icon: const Icon(Icons.download_outlined, size: 19),
+                  label: Text(l10n.downloadProfile,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w600)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
                 ),
               ),
             ],
