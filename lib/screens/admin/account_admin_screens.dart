@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../providers/account_provider.dart';
 import '../../providers/admin_provider.dart';
 import '../../widgets/common/data_states.dart';
+import '../../widgets/common/skeletons.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Married Users + marriage statistics
@@ -54,31 +55,41 @@ class MarriedUsersScreen extends ConsumerWidget {
           const SizedBox(height: 10),
           marriedAsync.when(
             loading: () => const Padding(
-              padding: EdgeInsets.all(24),
-              child: LoadingState(),
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: SkeletonList(items: 5),
             ),
             error: (e, _) {
               debugPrint('[Admin] married users load failed: $e');
-              return const Padding(
-                padding: EdgeInsets.all(24),
+              return Padding(
+                padding: const EdgeInsets.all(24),
                 child: ErrorStateView(
-                    message: 'Unable to load married users. Please try again.'),
+                  message: 'Unable to load married users. Please try again.',
+                  onRetry: () => ref.invalidate(marriedProfilesProvider),
+                ),
               );
             },
             data: (list) {
               if (list.isEmpty) {
-                return const _Empty(
+                return const EmptyState(
                   icon: Icons.favorite_border,
-                  message: 'No married users yet.',
+                  message: 'No married users yet',
+                  subtitle: 'Members marked as married will appear here.',
                 );
               }
               return Column(
                 children: list
-                    .map((p) => Card(
-                          elevation: 0,
+                    .map((p) => Container(
                           margin: const EdgeInsets.only(bottom: 8),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                  color:
+                                      Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 8),
+                            ],
+                          ),
                           child: ListTile(
                             leading: const CircleAvatar(
                               backgroundColor: Color(0x22D4AF37),
@@ -105,8 +116,10 @@ class MarriedUsersScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,30 +135,3 @@ class MarriedUsersScreen extends ConsumerWidget {
       );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _Empty extends StatelessWidget {
-  final IconData icon;
-  final String message;
-  const _Empty({required this.icon, required this.message});
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 64, color: AppColors.primary.withOpacity(0.4)),
-            const SizedBox(height: 16),
-            Text(message,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey[600], fontSize: 14)),
-          ],
-        ),
-      ),
-    );
-  }
-}

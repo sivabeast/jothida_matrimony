@@ -3,6 +3,7 @@ const {
   onDocumentCreated,
   onDocumentWritten,
 } = require('firebase-functions/v2/firestore');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
 const { setGlobalOptions } = require('firebase-functions/v2');
 const admin = require('firebase-admin');
@@ -283,6 +284,19 @@ const NOTIF_TEMPLATES = {
       body: `${name || 'ஒரு உறுப்பினர்'} உங்கள் விருப்பத்தை நிராகரித்துள்ளார்.`,
     }),
   },
+  // To the ACCEPTOR of an interest: accepting unlocked the OTHER member's
+  // contact details. (The sender's unlock is implied by interest_accepted —
+  // they are never double-notified.)
+  contact_available: {
+    en: (name) => ({
+      title: 'Contact Details Available 📞',
+      body: `You are now connected with ${name || 'a member'} — their contact details are available on their profile.`,
+    }),
+    ta: (name) => ({
+      title: 'தொடர்பு விவரங்கள் கிடைத்தன 📞',
+      body: `நீங்கள் ${name || 'ஒரு உறுப்பினர்'} உடன் இணைந்துள்ளீர்கள் — அவர்களின் தொடர்பு விவரங்களை இப்போது Profile-இல் பார்க்கலாம்.`,
+    }),
+  },
   chat_message: {
     en: (name) => ({
       title: 'New Message 💬',
@@ -368,12 +382,16 @@ async function pushToUser(uid, { title, body, route, type, collapseKey }) {
     android: {
       priority: 'high',
       collapseKey: collapseKey || undefined,
-      // No channelId: the app creates no custom channel, so naming one would
-      // silently fall back to the low-importance "Miscellaneous" channel.
-      // The FCM default channel + high priority shows tray + sound reliably.
       notification: {
         priority: 'high',
         defaultSound: true,
+        // The app now guarantees this channel exists: FcmService creates the
+        // high-importance 'high_importance_channel' at every startup (via
+        // flutter_local_notifications) and the manifest names it as the FCM
+        // default. Targeting it makes background pushes heads-up + sound.
+        // (It used to be omitted because naming a non-existent channel would
+        // silently fall back to the low-importance "Miscellaneous" channel.)
+        channelId: 'high_importance_channel',
       },
     },
     apns: {
@@ -473,6 +491,7 @@ exports.onInterestWritten = onDocumentWritten(
         `interest_received_${interestId}`,
         `interest_accepted_${interestId}`,
         `interest_rejected_${interestId}`,
+        `contact_available_${interestId}`,
       ];
       await Promise.all(
         ids.map((id) =>
@@ -560,6 +579,31 @@ exports.onInterestWritten = onDocumentWritten(
         senderId: receiverId,
         targetScreen: 'interests',
         targetId: interestId,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      // The ACCEPTOR (interest receiver) just unlocked the SENDER's contact
+      // details — tell them where to see them. One event = one notification
+      // per user: the sender got interest_accepted above (their unlock is
+      // implied), so only the acceptor gets this one.
+      const receiver = await getUser(receiverId);
+      const rLang =
+        receiver && receiver.preferred_language === 'ta' ? 'ta' : 'en';
+      const senderProfile = await getProfileByUserId(senderId);
+      const ct = templateFor(
+        'contact_available', rLang, profileDisplayName(senderProfile, rLang));
+      await createNotificationIfAbsent(`contact_available_${interestId}`, {
+        userId: receiverId,
+        title: ct.title,
+        body: ct.body,
+        type: 'contact_available',
+        // /profile-user/:uid — open the SENDER's profile by their USER id.
+        data: { route: `/profile-user/${senderId}` },
+        isRead: false,
+        senderId,
+        targetScreen: 'profile-user',
+        targetId: senderId,
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       });
@@ -889,6 +933,62 @@ exports.onProfileWritten = onDocumentWritten(
 // One TOPIC send per announcement (clients subscribe to 'users'/'employees'
 // at login) — no per-user fan-out writes. The announcement document itself is
 // the stored history shown in every user's notification feed.
+//
+// Two delivery paths share sendAnnouncementToTopic():
+//   • onAnnouncementCreated — immediate announcements (no scheduledAt, or one
+//     already in the past);
+//   • sendScheduledAnnouncements — a 5-minute sweep that sends the
+//     future-scheduled ones once their time arrives.
+// A transactional `pushedAt` claim on the announcement doc makes the two
+// paths race-safe: whoever stamps first sends; everyone else no-ops.
+
+/**
+ * Sends one announcement to its audience topic AT MOST once. Claims the doc
+ * by stamping `pushedAt` in a transaction before sending — a concurrent
+ * caller (create trigger vs. scheduler sweep) loses the claim and does
+ * nothing. Returns true when THIS call performed the send.
+ */
+async function sendAnnouncementToTopic(announcementId, a) {
+  const ref = db.collection('announcements').doc(announcementId);
+  const claimed = await db.runTransaction(async (txn) => {
+    const snap = await txn.get(ref);
+    if (!snap.exists) return false;
+    const d = snap.data() || {};
+    if (d.pushedAt) return false; // already sent (or another caller is sending)
+    if (d.isActive === false) return false;
+    txn.update(ref, { pushedAt: FieldValue.serverTimestamp() });
+    return true;
+  });
+  if (!claimed) return false;
+
+  const topic = a.audience === 'employees' ? 'employees' : 'users';
+  const title = String(a.title || '').slice(0, 200);
+  const body = String(a.message || '').slice(0, 500);
+  const route = `/announcement/${announcementId}`;
+  try {
+    await admin.messaging().send({
+      topic,
+      notification: { title, body },
+      data: { route, type: 'announcement' },
+      android: {
+        priority: 'high',
+        notification: {
+          priority: 'high',
+          defaultSound: true,
+          // Channel is guaranteed by the app (see pushToUser above).
+          channelId: 'high_importance_channel',
+        },
+      },
+      apns: { payload: { aps: { sound: 'default' } } },
+    });
+    console.log(`[announcement] ${announcementId} pushed to topic=${topic}`);
+    return true;
+  } catch (err) {
+    console.error(`[announcement] ${announcementId} topic push failed:`, err);
+    return false;
+  }
+}
+
 exports.onAnnouncementCreated = onDocumentCreated(
   'announcements/{announcementId}',
   async (event) => {
@@ -896,33 +996,33 @@ exports.onAnnouncementCreated = onDocumentCreated(
     if (!snap) return;
     const a = snap.data();
     if (!a || a.isActive === false) return;
-    // Future-scheduled announcements are not pushed at create time.
+    // Future-scheduled announcements are not pushed at create time — the
+    // sendScheduledAnnouncements sweep delivers them when they fall due.
     if (a.scheduledAt && a.scheduledAt.toMillis &&
         a.scheduledAt.toMillis() > Date.now()) {
       console.log(`[announcement] ${event.params.announcementId} scheduled — skip push`);
       return;
     }
-    const topic = a.audience === 'employees' ? 'employees' : 'users';
-    const title = String(a.title || '').slice(0, 200);
-    const body = String(a.message || '').slice(0, 500);
-    const route = `/announcement/${event.params.announcementId}`;
-    try {
-      await admin.messaging().send({
-        topic,
-        notification: { title, body },
-        data: { route, type: 'announcement' },
-        android: {
-          priority: 'high',
-          notification: {
-            priority: 'high',
-            defaultSound: true,
-          },
-        },
-        apns: { payload: { aps: { sound: 'default' } } },
-      });
-      console.log(`[announcement] pushed to topic=${topic}`);
-    } catch (err) {
-      console.error('[announcement] topic push failed:', err);
-    }
+    await sendAnnouncementToTopic(event.params.announcementId, a);
   }
 );
+
+// Sweeps for active announcements whose scheduledAt has arrived and which
+// have not been pushed yet (no pushedAt stamp), and sends them via the same
+// claimed topic-send helper. Only docs WITH a scheduledAt are considered —
+// unscheduled announcements were already sent by the create trigger.
+// Range + orderBy on the same field needs no composite index; the newest-first
+// limit keeps the read bounded no matter how much history accumulates.
+exports.sendScheduledAnnouncements = onSchedule('every 5 minutes', async () => {
+  const due = await db
+    .collection('announcements')
+    .where('scheduledAt', '<=', admin.firestore.Timestamp.now())
+    .orderBy('scheduledAt', 'desc')
+    .limit(50)
+    .get();
+  for (const doc of due.docs) {
+    const a = doc.data();
+    if (!a || a.isActive === false || a.pushedAt) continue;
+    await sendAnnouncementToTopic(doc.id, a);
+  }
+});

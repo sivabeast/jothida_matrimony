@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_dialogs.dart';
 import '../../core/utils/file_actions.dart';
 import '../../core/utils/slot_generator.dart';
 import '../../models/astrologer_account_model.dart';
@@ -16,6 +17,7 @@ import '../../providers/astrologer_review_provider.dart';
 import '../../providers/consultation_provider.dart';
 import '../../providers/settlement_provider.dart';
 import '../../widgets/common/data_states.dart';
+import '../../widgets/common/skeletons.dart';
 import 'admin_export.dart' show inr;
 
 /// Admin → Astrologer profile (`/admin/astrologer/:id`).
@@ -49,7 +51,14 @@ class AdminAstrologerProfileScreen extends ConsumerWidget {
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
         ),
-        body: const LoadingState(message: 'Loading astrologer…'),
+        body: ListView(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          children: const [
+            SkeletonCard(height: 200),
+            SkeletonCard(height: 260),
+            SkeletonCard(height: 120),
+          ],
+        ),
       );
     }
 
@@ -106,27 +115,16 @@ class AdminAstrologerProfileScreen extends ConsumerWidget {
   Future<void> _suspend(
       BuildContext context, WidgetRef ref, AstrologerAccount a) async {
     final messenger = ScaffoldMessenger.of(context);
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Suspend Astrologer'),
-        content: Text('Suspend ${a.fullName}? They lose live visibility and '
-            'return to the verification queue.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Suspend'),
-          ),
-        ],
-      ),
+    final ok = await showAppConfirmDialog(
+      context,
+      title: 'Suspend Astrologer?',
+      message: 'Suspend ${a.fullName}? They lose live visibility and '
+          'return to the verification queue.',
+      confirmLabel: 'Suspend',
+      icon: Icons.pause_circle_outline_rounded,
+      danger: true,
     );
-    if (ok != true) return;
+    if (!ok) return;
     await ref.read(adminActionsProvider.notifier).suspendAstrologer(a.id);
     final st = ref.read(adminActionsProvider);
     messenger.showSnackBar(SnackBar(
@@ -447,9 +445,11 @@ class _ReviewsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(astrologerReviewsProvider(astrologerId));
     return async.when(
-      loading: () => const LoadingState(message: 'Loading reviews…'),
-      error: (_, __) => const EmptyState(
-          icon: Icons.reviews_outlined, message: 'Could not load reviews'),
+      loading: () => const SkeletonList(items: 5, showAvatar: false),
+      error: (_, __) => ErrorStateView(
+        message: 'Unable to load reviews. Please try again.',
+        onRetry: () => ref.invalidate(astrologerReviewsProvider(astrologerId)),
+      ),
       data: (reviews) {
         if (reviews.isEmpty) {
           return const EmptyState(
@@ -519,28 +519,17 @@ class _PayoutsTab extends ConsumerWidget {
   Future<void> _markPaid(BuildContext context, WidgetRef ref,
       AstrologerSettlement s, List<ConsultationBooking> due) async {
     final messenger = ScaffoldMessenger.of(context);
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Mark as Paid'),
-        content: Text('Settle ${inr(s.pendingPayout)} to $name for '
-            '${due.length} consultation${due.length == 1 ? '' : 's'}? '
-            'This records a full (100%) payout.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Confirm Payout'),
-          ),
-        ],
-      ),
+    final ok = await showAppConfirmDialog(
+      context,
+      title: 'Mark as Paid?',
+      message: 'Settle ${inr(s.pendingPayout)} to $name for '
+          '${due.length} consultation${due.length == 1 ? '' : 's'}? '
+          'This records a full (100%) payout.',
+      confirmLabel: 'Confirm Payout',
+      icon: Icons.payments_outlined,
     );
-    if (ok != true) return;
+    if (!ok) return;
+    if (!context.mounted) return;
     await ref.read(consultationControllerProvider.notifier).settle(
           astrologerId: astrologerId,
           astrologerName: name,

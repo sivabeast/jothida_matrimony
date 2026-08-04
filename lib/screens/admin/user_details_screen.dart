@@ -7,7 +7,9 @@ import '../../models/astrologer_request_model.dart';
 import '../../models/profile_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/admin_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/service_providers.dart';
+import 'user_profile_export.dart';
 
 /// Live counts of a user's Horoscope Analysis + Appointment bookings.
 final _userRequestsProvider = StreamProvider.autoDispose
@@ -58,6 +60,9 @@ class UserDetailsScreen extends ConsumerWidget {
         title: const Text('User Details'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        actions: [
+          if (user != null) _exportMenu(context, ref, user, profile, contact),
+        ],
       ),
       body: user == null
           ? const Center(
@@ -355,6 +360,84 @@ class UserDetailsScreen extends ConsumerWidget {
         _row('Last Updated', _date(p.updatedAt)),
       ]),
     ];
+  }
+
+  /// AppBar export action (§13). With no profile there is nothing to export,
+  /// so the button explains that instead of opening the format menu.
+  Widget _exportMenu(BuildContext context, WidgetRef ref, UserModel user,
+      ProfileModel? profile, ContactDetails? contact) {
+    if (profile == null) {
+      return IconButton(
+        icon: const Icon(Icons.download_outlined),
+        tooltip: 'Export profile',
+        onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('This account has not created a matrimony '
+                  'profile yet, so there is nothing to export.')),
+        ),
+      );
+    }
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.download_outlined),
+      tooltip: 'Export profile',
+      onSelected: (v) =>
+          _export(context, ref, user, profile, contact, asPdf: v == 'pdf'),
+      itemBuilder: (_) => const [
+        PopupMenuItem(
+          value: 'pdf',
+          child: Row(children: [
+            Icon(Icons.picture_as_pdf_outlined,
+                size: 20, color: AppColors.primary),
+            SizedBox(width: 10),
+            Text('Export as PDF'),
+          ]),
+        ),
+        PopupMenuItem(
+          value: 'images',
+          child: Row(children: [
+            Icon(Icons.image_outlined, size: 20, color: AppColors.primary),
+            SizedBox(width: 10),
+            Text('Export as Images'),
+          ]),
+        ),
+      ],
+    );
+  }
+
+  /// Runs the branded A4 capture (visible "preparing" screen) and hands the
+  /// result to the system share sheet as a PDF or as PNG page images.
+  Future<void> _export(BuildContext context, WidgetRef ref, UserModel user,
+      ProfileModel profile, ContactDetails? contact,
+      {required bool asPdf}) async {
+    final messenger = ScaffoldMessenger.of(context);
+    // Stamped into every page footer: who generated this export.
+    final adminEmail =
+        ref.read(currentUserProvider).valueOrNull?.email?.trim() ?? '';
+    var slug = profile.fullName
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'^_+|_+$'), '');
+    if (slug.isEmpty) slug = user.uid; // Tamil-only / empty names
+    final base = 'member_profile_$slug';
+    final ok = asPdf
+        ? await exportUserProfilePdf(context,
+            user: user,
+            profile: profile,
+            contact: contact,
+            adminEmail: adminEmail,
+            fileName: '$base.pdf')
+        : await exportUserProfileImages(context,
+            user: user,
+            profile: profile,
+            contact: contact,
+            adminEmail: adminEmail,
+            baseName: base);
+    if (!ok) {
+      messenger.showSnackBar(const SnackBar(
+          content:
+              Text('Could not prepare the profile export. Please try again.')));
+    }
   }
 
   String _photo(ProfileModel? profile, UserModel user) {

@@ -1,7 +1,12 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+
+import '../../core/constants/app_constants.dart';
+import '../firebase/firestore_service.dart';
 
 /// The Play Console product IDs. Create + ACTIVATE these under
 /// Play Console → Monetize with Play → Products → One-time products.
@@ -168,6 +173,12 @@ class PlayBillingService {
         case PurchaseStatus.restored:
           final verified = await _verifyPurchase(p);
           await _finish(p);
+          // NEW payments only (not restores) get the "Payment Successful"
+          // notification + push. Detached: a notification hiccup must never
+          // affect the purchase result.
+          if (verified && p.status == PurchaseStatus.purchased) {
+            unawaited(_notifyPaymentSuccess(p));
+          }
           _resolve(p, verified ? BillingOutcome.purchased : BillingOutcome.error,
               message: verified ? null : 'Purchase verification failed.');
           break;
@@ -186,6 +197,69 @@ class PlayBillingService {
   Future<bool> _verifyPurchase(PurchaseDetails p) async {
     final token = p.verificationData.serverVerificationData;
     return token.isNotEmpty && BillingProducts.all.contains(p.productID);
+  }
+
+  /// Writes the in-app "Payment Successful" notification for the signed-in
+  /// buyer; the `notifications`-onCreate Cloud Function turns it into the
+  /// device push (spec §7 — payment success event).
+  ///
+  /// DETERMINISTIC doc id — `payment_` + the Play order id (falling back to
+  /// the purchase token) — so a redelivered purchase update (stream replay,
+  /// app restart before completePurchase) rewrites the SAME document instead
+  /// of creating a duplicate, and the onCreate push gate fires at most once.
+  ///
+  /// Bilingual copy in the RECEIVER's `preferred_language`, mirroring
+  /// NotificationNotifier's template pattern. Best-effort: never throws.
+  Future<void> _notifyPaymentSuccess(PurchaseDetails p) async {
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return;
+
+      // Firestore doc ids must not contain '/'; order ids / purchase tokens
+      // are URL-safe but sanitize defensively and bound the length.
+      String keyOf(String raw) =>
+          raw.trim().replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '');
+      var key = keyOf(p.purchaseID ?? '');
+      if (key.isEmpty) {
+        key = keyOf(p.verificationData.serverVerificationData);
+      }
+      if (key.length > 120) key = key.substring(key.length - 120);
+      if (key.isEmpty) return; // nothing deterministic to key on
+
+      var tamil = false;
+      try {
+        final snap = await FirebaseFirestore.instance
+            .collection(AppConstants.usersCollection)
+            .doc(uid)
+            .get()
+            .timeout(const Duration(seconds: 8));
+        tamil = (snap.data()?['preferred_language'] ?? 'en') == 'ta';
+      } catch (_) {/* fall through to English */}
+
+      // Include what Play actually charged when the product is loaded.
+      final price = priceLabel(p.productID);
+      final amount = (price == null || price.isEmpty) ? '' : ' ($price)';
+
+      final title = tamil ? 'பணம் பெறப்பட்டது ✅' : 'Payment Successful ✅';
+      final body = tamil
+          ? 'உங்கள் கட்டணம்$amount வெற்றிகரமாக பெறப்பட்டது. உங்கள் ஜாதக '
+              'அறிக்கை கோரிக்கை எங்கள் ஜோதிட குழுவிடம் உள்ளது — Reports '
+              'பக்கத்தில் பார்க்கவும்.'
+          : 'Your payment$amount was received. Your horoscope report request '
+              'is with our astrology team — track it in the Reports tab.';
+
+      await FirestoreService().createNotification(
+        userId: uid,
+        title: title,
+        body: body,
+        type: 'payment_success',
+        data: {'route': '/reports', 'productId': p.productID},
+        id: 'payment_$key',
+        targetScreen: 'reports',
+      );
+    } catch (e) {
+      debugPrint('[Billing] payment notification failed (non-fatal): $e');
+    }
   }
 
   /// Acknowledges / consumes a purchase so Play stops re-delivering it (and, for

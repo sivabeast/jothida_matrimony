@@ -24,6 +24,11 @@ dependencies:
   cloud_firestore: ^5.5.0
   firebase_storage: ^12.3.3
   firebase_messaging: ^15.1.6
+  # Foreground heads-up notifications: FCM only draws tray notifications while
+  # the app is backgrounded/killed, so FcmService renders foreground pushes
+  # itself on the 'high_importance_channel' channel it creates at startup.
+  # Requires core-library desugaring — see android/app/build.gradle.
+  flutter_local_notifications: ^19.0.0
   # App Check — required because App Check enforcement is ON for this project.
   # Without a provider, Identity Toolkit rejects sign-in with
   # "Firebase App Check token is invalid". See lib/core/config/app_check_config.dart.

@@ -326,6 +326,8 @@ class AstrologyTeamService {
       'assignedAt': FieldValue.serverTimestamp(),
       'assignedBy': assignedBy,
       'assignmentStatus': 'assigned',
+      // Assigning to an EMPLOYEE always releases any admin self-claim.
+      'assignedToAdmin': false,
       if (resetStatus) 'workflowStatus': 'new',
       if (resetStatus) 'status': AstrologerRequestStatus.pending.name,
       if (resetStatus) 'inProgress': false,

@@ -10,7 +10,9 @@ import '../../providers/announcement_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../providers/app_update_provider.dart';
 import '../../widgets/common/app_drawer.dart';
+import '../../widgets/common/force_update_dialog.dart';
 import '../../widgets/common/update_available_dialog.dart';
 import '../interests/interests_center_screen.dart';
 import 'tabs/astrology_service_page.dart';
@@ -40,16 +42,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Soft "Update Available" prompt — shown at most once per published
-    // version, after the first frame so the home shell is fully laid out.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) maybeShowUpdateAvailableDialog(context, ref);
+      if (!mounted) return;
+      // Force update (spec §3): Home renders normally underneath; a premium
+      // non-dismissible popup carries the store link. Handles the config
+      // having loaded BEFORE Home mounted; later emissions are caught by the
+      // ref.listen in build.
+      final required = ref.read(forceUpdateRequiredProvider);
+      if (required != null) {
+        showForceUpdateDialog(context, required);
+        return; // the soft prompt would only double up behind it
+      }
+      // Soft "Update Available" prompt — shown at most once per published
+      // version, after the first frame so the home shell is fully laid out.
+      maybeShowUpdateAvailableDialog(context, ref);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final selectedIndex = ref.watch(homeTabIndexProvider);
+    // Live force-update gate: fires when the admin flips Force Update ON (or
+    // the config stream first emits after Home mounted).
+    ref.listen(forceUpdateRequiredProvider, (_, next) {
+      if (next != null && mounted) showForceUpdateDialog(context, next);
+    });
     final unread = ref.watch(unreadNotificationCountProvider) +
         ref.watch(unreadAnnouncementsCountProvider);
     // Delivery receipts: whenever the (already-watched) threads stream emits a

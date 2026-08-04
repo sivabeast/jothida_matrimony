@@ -36,6 +36,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- FCM: post background/killed-state pushes on the app's own
+             high-importance channel (created by FcmService at startup via
+             flutter_local_notifications) instead of the low-importance FCM
+             fallback channel. Keep in sync with FcmService and
+             functions/index.js (channelId). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="high_importance_channel" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

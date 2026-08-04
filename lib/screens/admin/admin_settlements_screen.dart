@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_dialogs.dart';
 import '../../models/consultation_model.dart';
 import '../../models/settlement_model.dart';
 import '../../providers/consultation_provider.dart';
 import '../../providers/settlement_provider.dart';
 import '../../widgets/common/data_states.dart';
+import '../../widgets/common/skeletons.dart';
 import 'admin_export.dart' show inr;
 
 /// Admin → Settlements & Payouts.
@@ -64,7 +66,15 @@ class _PayoutsTab extends ConsumerWidget {
         .toList();
 
     return async.when(
-      loading: () => const LoadingState(message: 'Loading settlements…'),
+      loading: () => ListView(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        children: const [
+          SkeletonCard(height: 90),
+          SkeletonCard(height: 140),
+          SkeletonCard(height: 140),
+          SkeletonCard(height: 140),
+        ],
+      ),
       error: (e, _) => ErrorStateView(
         message: 'Could not load settlements.',
         onRetry: () => ref.invalidate(allConsultationsProvider),
@@ -132,12 +142,12 @@ class _AstrologerPayoutCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-              color: hasPending
-                  ? AppColors.warning.withOpacity(0.4)
-                  : Colors.grey.withOpacity(0.15)),
+          border: hasPending
+              ? Border.all(color: AppColors.warning.withValues(alpha: 0.4))
+              : null,
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)
           ],
         ),
         child: Column(
@@ -227,29 +237,18 @@ class _SettlementDetailSheet extends ConsumerWidget {
   Future<void> _markPaid(
       BuildContext context, WidgetRef ref, List<ConsultationBooking> due) async {
     final messenger = ScaffoldMessenger.of(context);
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Mark as Paid'),
-        content: Text(
-            'Settle ${inr(settlement.pendingPayout)} to ${settlement.name} for '
-            '${due.length} consultation${due.length == 1 ? '' : 's'}? This records '
-            'a full (100%) payout.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Confirm Payout'),
-          ),
-        ],
-      ),
+    final ok = await showAppConfirmDialog(
+      context,
+      title: 'Mark as Paid?',
+      message:
+          'Settle ${inr(settlement.pendingPayout)} to ${settlement.name} for '
+          '${due.length} consultation${due.length == 1 ? '' : 's'}? This '
+          'records a full (100%) payout.',
+      confirmLabel: 'Confirm Payout',
+      icon: Icons.payments_outlined,
     );
-    if (ok != true) return;
+    if (!ok) return;
+    if (!context.mounted) return;
     await ref.read(consultationControllerProvider.notifier).settle(
           astrologerId: settlement.astrologerId,
           astrologerName: settlement.name,
@@ -422,27 +421,16 @@ class _RefundsTab extends ConsumerWidget {
   Future<void> _refund(
       BuildContext context, WidgetRef ref, ConsultationBooking b) async {
     final messenger = ScaffoldMessenger.of(context);
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Process Refund'),
-        content: Text('Refund ${inr(b.amount)} to ${b.userName}? '
-            '${b.astrologerName} rejected this booking.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Refund'),
-          ),
-        ],
-      ),
+    final ok = await showAppConfirmDialog(
+      context,
+      title: 'Process Refund?',
+      message: 'Refund ${inr(b.amount)} to ${b.userName}? '
+          '${b.astrologerName} rejected this booking.',
+      confirmLabel: 'Refund',
+      icon: Icons.replay_circle_filled_outlined,
     );
-    if (ok != true) return;
+    if (!ok) return;
+    if (!context.mounted) return;
     await ref.read(consultationControllerProvider.notifier).refund(b);
     final st = ref.read(consultationControllerProvider);
     messenger.showSnackBar(SnackBar(
@@ -472,7 +460,11 @@ class _RefundsTab extends ConsumerWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.error.withOpacity(0.25)),
+            border: Border.all(color: AppColors.error.withValues(alpha: 0.25)),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -63,6 +63,21 @@ final allAstrologerRequestsProvider =
     StreamProvider.autoDispose<List<AstrologerRequestModel>>(
         (ref) => ref.read(astrologerServiceProvider).watchAllRequests());
 
+/// Paid astrology-service transactions — every `astrologer_requests` booking
+/// with `paid == true`, newest payment first (`paidAt`, falling back to
+/// `createdAt` for older docs). Derived from [allAstrologerRequestsProvider]
+/// so the admin Payments page and the Dashboard payment analytics stay
+/// realtime; the source stream's loading/error states are preserved.
+final paidAstrologerRequestsProvider =
+    Provider.autoDispose<AsyncValue<List<AstrologerRequestModel>>>((ref) {
+  return ref.watch(allAstrologerRequestsProvider).whenData((list) {
+    final paid = list.where((r) => r.paid).toList()
+      ..sort((a, b) =>
+          (b.paidAt ?? b.createdAt).compareTo(a.paidAt ?? a.createdAt));
+    return paid;
+  });
+});
+
 /// All matrimony profiles (newest first), keyed by [ProfileModel.userId] when
 /// joined. Powers the age / district / photo fields on the admin Users cards.
 final allProfilesProvider = StreamProvider.autoDispose<List<ProfileModel>>(
@@ -130,6 +145,9 @@ class AdminActionsNotifier extends Notifier<AsyncValue<void>> {
             toUid: userId,
             event: AppNotificationEvent.profileApproved,
             id: 'profile_approved_$profileId',
+            // Explicit route so the PUSH tap deep-links too (the in-app feed
+            // already falls back to /home for this type; pushes do not).
+            route: '/home',
             targetScreen: 'home',
             targetId: profileId,
           );

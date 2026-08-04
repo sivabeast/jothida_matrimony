@@ -71,6 +71,40 @@ final myMatchAnalysisRequestsProvider =
           .toList());
 });
 
+/// The signed-in user's compatibility-report request for one partner PROFILE
+/// id, if any (spec §12: one user + one partner profile = ONE request, ever).
+///
+/// Counts BOTH delivery modes, because each produces the same Marriage
+/// Compatibility Report for the pair: the online paid report
+/// ([requestAndAssignAnalysis]) and the in-person appointment
+/// ([bookAppointment]). Having booked either one is what closes the door on a
+/// second request for that partner.
+///
+/// Precedence: a completed report always wins (it stays reusable forever);
+/// otherwise the newest non-rejected request (pending/accepted → the status
+/// card). Rejected-only pairs return null so the member may request again.
+/// Loading/error of the underlying stream is preserved so payment gates can
+/// hold the button until the answer is known.
+final compatRequestForPairProvider = Provider.autoDispose
+    .family<AsyncValue<AstrologerRequestModel?>, String>((ref, partnerProfileId) {
+  return ref.watch(myMatchAnalysisRequestsProvider).whenData((list) {
+    // Every request in the list is mine, so matching the partner's profile id
+    // on either side (groom/bride) identifies the pair.
+    final forPair = list
+        .where((r) =>
+            r.profileAId == partnerProfileId || r.profileBId == partnerProfileId)
+        .toList();
+    if (forPair.isEmpty) return null;
+    for (final r in forPair) {
+      if (r.status == AstrologerRequestStatus.completed) return r;
+    }
+    final active = forPair
+        .where((r) => r.status != AstrologerRequestStatus.rejected)
+        .toList();
+    return active.isEmpty ? null : active.first;
+  });
+});
+
 /// DEPRECATED (legacy per-astrologer inbox). Retained only so the now-unwired
 /// astrologer screens still analyse; the live app routes match analysis through
 /// the single internal service ([internalAstrologyRequestsProvider]).
@@ -823,6 +857,41 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         await ref
             .read(astrologerServiceProvider)
             .startAnalysis(request.id, userId: request.userId);
+      }
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
+  /// ADMIN claims [request] for SELF-analysis (spec §11 "Assign to Me" /
+  /// "Analyze as Admin"): a guarded transaction stamps the signed-in admin as
+  /// the request's astrologer (`assignedToAdmin: true`, status `accepted`) —
+  /// and with [startAnalysis] also moves the workflow to `in_progress` right
+  /// before the analysis form opens. Throws `RequestClaimException` when the
+  /// request is already completed or someone else is mid-analysis; rethrows so
+  /// the admin screen can show the SnackBar / blocking dialog.
+  Future<void> claimRequestForAdmin(
+    AstrologerRequestModel request, {
+    bool startAnalysis = false,
+  }) async {
+    state = const AsyncLoading();
+    try {
+      if (!kBypassAuth) {
+        final auth = ref.read(firebaseAuthStreamProvider).valueOrNull;
+        final user = ref.read(currentUserProvider).valueOrNull;
+        final uid = auth?.uid ?? user?.uid ?? '';
+        final email = (auth?.email ?? user?.email ?? '').trim().toLowerCase();
+        if (uid.isEmpty) {
+          throw Exception('Not signed in.');
+        }
+        await ref.read(astrologerServiceProvider).claimRequestForAdmin(
+              requestId: request.id,
+              adminUid: uid,
+              adminEmail: email,
+              startAnalysis: startAnalysis,
+            );
       }
       state = const AsyncData(null);
     } catch (e, st) {

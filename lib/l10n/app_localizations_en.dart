@@ -1575,6 +1575,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recentInterests => 'Recent Interests';
 
   @override
+  String get recentInterestsEmptyTitle => 'No recent interests yet.';
+
+  @override
+  String get recentInterestsEmptySubtitle =>
+      'When someone likes your profile, it shows up here.';
+
+  @override
+  String get exploreMatches => 'Explore Matches';
+
+  @override
   String get noInterestsReceivedYet => 'No interests received yet.';
 
   @override
@@ -2957,6 +2967,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get contactNotProvided => 'No contact details have been added yet.';
+
+  @override
+  String get contactPrivateMessage =>
+      'This member\'s contact details are private. They are shared only after both of you accept the interest.';
+
+  @override
+  String get contactHiddenByOwnerMessage =>
+      'This member keeps their contact details hidden.';
+
+  @override
+  String get couldNotLoadContact =>
+      'Could not load contact details. Please check your connection and try again.';
+
+  @override
+  String get religiousDetails => 'Religious Details';
+
+  @override
+  String get professionalDetails => 'Professional Details';
+
+  @override
+  String get astroConsultTitle => 'Astrology Consultation';
+
+  @override
+  String get astroConsultBody =>
+      'Your interest is accepted! Have our expert astrologer check the horoscope compatibility for this match.';
+
+  @override
+  String get reportUnderAnalysisTitle => 'Report Requested';
+
+  @override
+  String get reportUnderAnalysisBody =>
+      'Your horoscope compatibility report for this profile is being prepared. We will notify you as soon as it is ready.';
+
+  @override
+  String get viewHoroscopeReport => 'View Horoscope Report';
+
+  @override
+  String get compatAlreadyRequestedNote =>
+      'You have already requested a compatibility report for this profile. One report per profile — its status is shown below.';
 
   @override
   String pendingInterestTitle(String name) {

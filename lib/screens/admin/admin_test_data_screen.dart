@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/data/dummy_profiles.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_dialogs.dart';
 import '../../providers/service_providers.dart';
 
 /// Admin **Test Data** tool (spec §3).
@@ -38,11 +39,9 @@ class _AdminTestDataScreenState extends ConsumerState<AdminTestDataScreen> {
     }
   }
 
-  void _snack(String m) {
+  void _snack(String m, {bool error = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(m)));
+    showAppSnack(context, m, error: error);
   }
 
   Future<void> _seed() async {
@@ -55,7 +54,9 @@ class _AdminTestDataScreenState extends ConsumerState<AdminTestDataScreen> {
       _snack('Seeded $n dummy profiles.');
       await _refreshCount();
     } catch (e) {
-      _snack('Could not seed dummy profiles: $e');
+      debugPrint('[TestData] seed failed: $e');
+      _snack('Could not seed the dummy profiles. Please try again.',
+          error: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -63,33 +64,25 @@ class _AdminTestDataScreenState extends ConsumerState<AdminTestDataScreen> {
 
   Future<void> _deleteAll() async {
     if (_busy) return;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete all dummy profiles?'),
-        content: const Text(
-            'This permanently removes every profile tagged as dummy '
-            '(isDummy = true). Real user profiles are not affected.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Delete all'),
-          ),
-        ],
-      ),
+    final ok = await showAppConfirmDialog(
+      context,
+      title: 'Delete All Dummy Profiles?',
+      message: 'This permanently removes every profile tagged as dummy '
+          '(isDummy = true). Real user profiles are not affected.',
+      confirmLabel: 'Delete All',
+      icon: Icons.delete_sweep_outlined,
+      danger: true,
     );
-    if (ok != true) return;
+    if (!ok || !mounted) return;
     setState(() => _busy = true);
     try {
       final n = await ref.read(firestoreServiceProvider).deleteDummyProfiles();
       _snack('Deleted $n dummy profiles.');
       await _refreshCount();
     } catch (e) {
-      _snack('Could not delete dummy profiles: $e');
+      debugPrint('[TestData] delete failed: $e');
+      _snack('Could not delete the dummy profiles. Please try again.',
+          error: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -133,11 +126,16 @@ class _AdminTestDataScreenState extends ConsumerState<AdminTestDataScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: Colors.grey.shade200)),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 8),
+              ],
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(

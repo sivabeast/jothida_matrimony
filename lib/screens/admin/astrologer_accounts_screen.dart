@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_dialogs.dart';
 import '../../providers/service_providers.dart';
 import '../../services/firebase/astrology_team_service.dart';
 import 'astrologer_performance.dart';
@@ -107,25 +108,25 @@ class AstrologerAccountsScreen extends ConsumerWidget {
               mobile: mobileCtrl.text,
             );
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Employee added. They can now sign in with '
-                  'Google using that email to open the Employee Portal.'),
-              backgroundColor: Colors.green));
+          showAppSnack(
+              context,
+              'Employee added. They can now sign in with Google using that '
+              'email to open the Employee Portal.');
         }
       } on AstrologerExistsException {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('This email is already registered as an employee.'),
-              backgroundColor: AppColors.error));
+          showAppSnack(
+              context, 'This email is already registered as an employee.',
+              error: true);
         }
       } catch (e) {
-        // Surface the real reason (e.g. a permission error) so it is actionable
-        // instead of a generic "try again".
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('Could not add employee: $e'),
-              backgroundColor: AppColors.error));
-        }
+        debugPrint('[AstrologerAccounts] add employee failed: $e');
+        // Keep the permission case actionable instead of a generic "try again".
+        final msg = e.toString().toLowerCase().contains('permission')
+            ? 'Could not add the employee — blocked by security rules. '
+                'Deploy the Firestore rules and try again.'
+            : 'Could not add the employee. Please try again.';
+        if (context.mounted) showAppSnack(context, msg, error: true);
       }
     }
   }

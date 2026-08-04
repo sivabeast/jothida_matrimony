@@ -4,7 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
+import '../../models/astrologer_request_model.dart';
 import '../../models/astrology_service_config.dart';
+import '../../models/compatibility_report_model.dart';
 import '../../models/profile_model.dart';
 import '../../providers/astrology_config_provider.dart';
 import '../../providers/match_analysis_provider.dart';
@@ -12,6 +15,7 @@ import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../services/billing/play_billing_service.dart';
+import '../report/compatibility_report_screen.dart';
 
 /// Online **Horoscope Analysis** — service details page (spec §1).
 ///
@@ -87,6 +91,16 @@ class _HoroscopeReportServiceScreenState
         if (mounted) setState(() => _busy = false);
         return;
       }
+      // ONE request per partner profile (spec §12) — re-checked here, right
+      // before the store sheet opens, so a stale button can never charge for
+      // a duplicate. The completed/pending UI states replace the pay bar too.
+      final existing =
+          ref.read(compatRequestForPairProvider(partner.id)).valueOrNull;
+      if (existing != null) {
+        _snack(context.l10n.compatAlreadyRequestedNote);
+        if (mounted) setState(() => _busy = false);
+        return;
+      }
       // Groom = male, Bride = female (fallback: me = A, partner = B).
       ProfileModel groom = me, bride = partner;
       if (me.gender == 'Female' || partner.gender == 'Male') {
@@ -150,6 +164,18 @@ class _HoroscopeReportServiceScreenState
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(astrologyServiceConfigProvider);
+    // ONE request per partner profile (spec §12): resolve the partner's
+    // profile id, then look up any existing request for the pair. While
+    // either lookup is loading the pay button stays disabled — the sheet must
+    // never open before the duplicate check has an answer.
+    final partnerAsync = ref.watch(profileByUserIdProvider(widget.otherUserId));
+    final partnerId = partnerAsync.valueOrNull?.id;
+    final existingAsync = partnerId == null
+        ? const AsyncValue<AstrologerRequestModel?>.loading()
+        : ref.watch(compatRequestForPairProvider(partnerId));
+    final gateLoading = partnerAsync.isLoading || existingAsync.isLoading;
+    final existing = existingAsync.valueOrNull;
+
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
@@ -160,17 +186,23 @@ class _HoroscopeReportServiceScreenState
       body: async.when(
         loading: () => const Center(
             child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (_, __) => _body(AstrologyServiceConfig.defaults),
-        data: (cfg) => _body(cfg),
+        error: (_, __) => _body(AstrologyServiceConfig.defaults, existing),
+        data: (cfg) => _body(cfg, existing),
       ),
-      bottomNavigationBar: _payBar(),
+      bottomNavigationBar: existing == null
+          ? _payBar(enabled: !gateLoading)
+          : _existingBar(existing),
     );
   }
 
-  Widget _body(AstrologyServiceConfig cfg) {
+  Widget _body(AstrologyServiceConfig cfg, AstrologerRequestModel? existing) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (existing != null) ...[
+          _alreadyRequestedCard(existing),
+          const SizedBox(height: 14),
+        ],
         _introCard(cfg),
         const SizedBox(height: 14),
         _includesCard(cfg),
@@ -187,8 +219,40 @@ class _HoroscopeReportServiceScreenState
     );
   }
 
+  /// "One report per profile" banner shown above the service details once a
+  /// request for this pair already exists.
+  Widget _alreadyRequestedCard(AstrologerRequestModel existing) {
+    final completed = existing.status == AstrologerRequestStatus.completed;
+    final color = completed ? AppColors.success : AppColors.warning;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(completed ? Icons.task_alt : Icons.hourglass_top,
+              size: 20, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              completed
+                  ? context.l10n.reportReadyMsg
+                  : context.l10n.compatAlreadyRequestedNote,
+              style: const TextStyle(fontSize: 12.5, height: 1.45),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── Sticky Pay bar ─────────────────────────────────────────────────────────
-  Widget _payBar() => Container(
+  Widget _payBar({required bool enabled}) => Container(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -204,8 +268,8 @@ class _HoroscopeReportServiceScreenState
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: _busy ? null : _payAndRequest,
-              icon: _busy
+              onPressed: (_busy || !enabled) ? null : _payAndRequest,
+              icon: (_busy || !enabled)
                   ? const SizedBox(
                       width: 20,
                       height: 20,
@@ -229,6 +293,66 @@ class _HoroscopeReportServiceScreenState
           ),
         ),
       );
+
+  /// Replaces the pay bar once a request for this pair exists: completed →
+  /// "View Horoscope Report"; otherwise a status chip that jumps to Reports.
+  Widget _existingBar(AstrologerRequestModel existing) {
+    final completed = existing.status == AstrologerRequestStatus.completed;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, -2)),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => _openExisting(existing),
+            icon: Icon(completed ? Icons.visibility_outlined : Icons.pending_actions,
+                size: 20),
+            label: Text(
+              completed
+                  ? context.l10n.viewHoroscopeReport
+                  : context.l10n.reportUnderAnalysisTitle,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  completed ? AppColors.success : AppColors.warning,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(54),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Completed + structured → the read-only A4 report; anything else → the
+  /// Reports tab, where the request's live status card lives.
+  void _openExisting(AstrologerRequestModel existing) {
+    final compat = CompatibilityReport.tryFrom(existing.compatReport);
+    if (existing.status == AstrologerRequestStatus.completed &&
+        compat != null &&
+        compat.isSubmitted) {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => CompatibilityReportScreen(
+            requestId: existing.id, request: existing),
+      ));
+      return;
+    }
+    ref.read(homeTabIndexProvider.notifier).state = kReportsTabIndex;
+    context.go('/home');
+  }
 
   Widget _introCard(AstrologyServiceConfig cfg) => Container(
         width: double.infinity,

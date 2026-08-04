@@ -66,6 +66,8 @@ class ConsultationService {
       'New consultation request',
       '${b.userName} requested a ${b.mode.label.toLowerCase()}.',
       'consultation_request',
+      id: 'consultation_request_$id',
+      route: '/astrologer-dashboard',
     );
     return id;
   }
@@ -91,12 +93,15 @@ class ConsultationService {
       'New paid booking',
       '${b.userName} paid ₹${b.amount} for a consultation. Accept or reject the request.',
       'consultation_request',
+      id: 'consultation_request_${ref.id}',
+      route: '/astrologer-dashboard',
     );
     await _notify(
       b.userId,
       'Payment Successful',
       'Your payment of ₹${b.amount} was successful. Waiting for ${b.astrologerName} to accept.',
       'payment_success',
+      id: 'payment_success_${ref.id}',
     );
     return ref.id;
   }
@@ -171,13 +176,13 @@ class ConsultationService {
           ? 'Your ${b.mode.label.toLowerCase()} request was declined. A refund will be processed shortly.'
           : 'Your ${b.mode.label.toLowerCase()} request was declined.';
       await _notify(b.userId, 'Consultation declined', body,
-          'consultation_rejected');
+          'consultation_rejected', id: 'consultation_rejected_${b.id}');
     } else {
       final msg = b.isInApp
           ? 'Your consultation was accepted. You can now chat with ${b.astrologerName}.'
           : 'Your visit is confirmed. See you at the scheduled time.';
       await _notify(b.userId, 'Consultation accepted', msg,
-          'consultation_accepted');
+          'consultation_accepted', id: 'consultation_accepted_${b.id}');
     }
   }
 
@@ -192,11 +197,13 @@ class ConsultationService {
     await _bumpBookingCount(b.astrologerId);
     await _notify(b.astrologerId, 'Payment received',
         '${b.userName} paid ₹${b.amount}. You can start the analysis.',
-        'consultation_paid');
+        'consultation_paid',
+        id: 'consultation_paid_${b.id}', route: '/astrologer-dashboard');
     // Confirm to the user that payment succeeded and the booking is confirmed.
     await _notify(b.userId, 'Payment Successful',
         'Your payment of ₹${b.amount} was successful. Your consultation is confirmed.',
-        'payment_success');
+        'payment_success',
+        id: 'payment_success_${b.id}');
   }
 
   /// Best-effort adjust of an astrologer's confirmed-booking counter (drives the
@@ -233,7 +240,7 @@ class ConsultationService {
     });
     await _notify(b.userId, 'Your report is ready',
         '${b.astrologerName} submitted your consultation report.',
-        'consultation_report');
+        'consultation_report', id: 'consultation_report_${b.id}');
   }
 
   /// Marks the consultation completed. A Direct-Visit booking is also flagged
@@ -249,7 +256,7 @@ class ConsultationService {
     });
     await _notify(b.userId, 'Consultation completed',
         'Your consultation with ${b.astrologerName} is complete.',
-        'consultation_completed');
+        'consultation_completed', id: 'consultation_completed_${b.id}');
   }
 
   /// User cancels a not-yet-accepted booking (frees the slot).
@@ -268,7 +275,8 @@ class ConsultationService {
     });
     await _bumpBookingCount(b.astrologerId, by: -1);
     await _notify(b.userId, 'Refund Processed',
-        'Your ₹${b.amount} payment has been refunded.', 'consultation_refunded');
+        'Your ₹${b.amount} payment has been refunded.', 'consultation_refunded',
+        id: 'consultation_refunded_${b.id}');
   }
 
   /// Admin pays out (settles) a set of delivered bookings to an astrologer —
@@ -316,6 +324,8 @@ class ConsultationService {
       '₹$amount has been settled to your account for ${due.length} '
           'consultation${due.length == 1 ? '' : 's'}.',
       'payout_settled',
+      id: 'payout_settled_${settlementRef.id}',
+      route: '/astrologer-dashboard',
     );
     return settlementRef.id;
   }
@@ -334,17 +344,26 @@ class ConsultationService {
   }
 
   /// Best-effort in-app notification (never throws).
+  ///
+  /// [id] is a DETERMINISTIC doc id derived from the triggering booking +
+  /// event, so a retried action rewrites the SAME document instead of adding a
+  /// duplicate — and the `notifications`-onCreate push gate fires at most once
+  /// per event. [route] (when a target exists) powers push-tap deep linking.
   Future<void> _notify(
-      String uid, String title, String body, String type) async {
+      String uid, String title, String body, String type,
+      {String id = '', String route = ''}) async {
     try {
-      await _db.collection(AppConstants.notificationsCollection).add({
+      final doc = <String, dynamic>{
         'userId': uid,
         'title': title,
         'body': body,
         'type': type,
+        if (route.isNotEmpty) 'data': {'route': route},
         'isRead': false,
         'createdAt': FieldValue.serverTimestamp(),
-      });
+      };
+      final col = _db.collection(AppConstants.notificationsCollection);
+      await (id.isEmpty ? col.add(doc) : col.doc(id).set(doc));
     } catch (e) {
       debugPrint('[ConsultationService] notify($uid) failed (non-fatal): $e');
     }

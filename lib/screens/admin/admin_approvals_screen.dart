@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
 import '../../providers/admin_provider.dart';
 import '../../widgets/common/data_states.dart';
+import '../../widgets/common/skeletons.dart';
 
 /// Admin → Profile Approvals (/admin/approvals).
 ///
@@ -29,7 +30,10 @@ class AdminApprovalsScreen extends ConsumerWidget {
         foregroundColor: Colors.white,
       ),
       body: profilesAsync.when(
-        loading: () => const LoadingState(message: 'Loading profiles...'),
+        loading: () => const Padding(
+          padding: EdgeInsets.only(top: 8),
+          child: SkeletonList(items: 5),
+        ),
         error: (e, _) {
           debugPrint('[AdminApprovals] load failed: $e');
           return ErrorStateView(
@@ -38,22 +42,10 @@ class AdminApprovalsScreen extends ConsumerWidget {
           );
         },
         data: (profiles) => profiles.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.check_circle_outline,
-                        size: 72, color: AppColors.success),
-                    const SizedBox(height: 16),
-                    const Text('No profiles waiting for review',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 6),
-                    Text('New submissions will appear here automatically.',
-                        style:
-                            TextStyle(fontSize: 13, color: Colors.grey[600])),
-                  ],
-                ),
+            ? const EmptyState(
+                icon: Icons.check_circle_outline,
+                message: 'No profiles waiting for review',
+                subtitle: 'New submissions will appear here automatically.',
               )
             : ListView.separated(
                 padding: const EdgeInsets.all(16),
@@ -77,8 +69,14 @@ class _ApprovalCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

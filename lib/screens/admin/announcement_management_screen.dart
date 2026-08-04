@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_dialogs.dart';
 import '../../models/announcement_model.dart';
 import '../../models/astrologer_team_member.dart';
 import '../../models/user_model.dart';
@@ -12,6 +13,8 @@ import '../../providers/announcement_provider.dart';
 import '../../providers/astrology_team_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/common/data_states.dart';
+import '../../widgets/common/skeletons.dart';
 
 /// Admin "Notification Management" — TWO fully independent systems (per spec):
 ///
@@ -581,9 +584,11 @@ class _AudienceTab extends ConsumerWidget {
     final isUsers = audience == AnnouncementAudience.users;
 
     return async.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) =>
-          Center(child: Text('Could not load notifications.\n$e')),
+      loading: () => const SkeletonList(items: 6, showAvatar: false),
+      error: (e, _) => ErrorStateView(
+        message: 'Unable to load notifications. Please try again.',
+        onRetry: () => ref.invalidate(allAnnouncementsProvider),
+      ),
       data: (items) {
         final mine =
             [for (final a in items) if (a.audienceEnum == audience) a];
@@ -623,25 +628,15 @@ class _AudienceTab extends ConsumerWidget {
             const SizedBox(height: 12),
             if (mine.isEmpty)
               Padding(
-                padding: const EdgeInsets.only(top: 60),
-                child: Column(
-                  children: [
-                    Icon(Icons.campaign_outlined,
-                        size: 64, color: Colors.grey[400]),
-                    const SizedBox(height: 12),
-                    Text(
-                        isUsers
-                            ? 'No user notifications yet'
-                            : 'No employee notifications yet',
-                        style: const TextStyle(
-                            fontSize: 15, color: Colors.grey)),
-                    const SizedBox(height: 4),
-                    Text(
-                        'Tap "${isUsers ? 'Notify Users' : 'Notify Employees'}" '
-                        'to send one.',
-                        style: TextStyle(
-                            color: Colors.grey[500], fontSize: 12.5)),
-                  ],
+                padding: const EdgeInsets.only(top: 40),
+                child: EmptyState(
+                  icon: Icons.campaign_outlined,
+                  message: isUsers
+                      ? 'No user notifications yet'
+                      : 'No employee notifications yet',
+                  subtitle:
+                      'Tap "${isUsers ? 'Notify Users' : 'Notify Employees'}" '
+                      'to send one.',
                 ),
               )
             else
@@ -667,11 +662,13 @@ class _AnnouncementCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final a = announcement;
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -889,8 +886,7 @@ class _AnnouncementCard extends ConsumerWidget {
     final title = titleC.text.trim();
     if (title.isEmpty) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Title is required')));
+        showAppSnack(context, 'Title is required', error: true);
       }
       return;
     }
@@ -904,37 +900,25 @@ class _AnnouncementCard extends ConsumerWidget {
         imageUrl: imageC.text.trim(),
         priority: highPriority ? 'high' : 'normal');
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Notification updated')));
+      showAppSnack(context, 'Notification updated.');
     }
   }
 
   Future<void> _confirmDelete(
       BuildContext context, WidgetRef ref, AnnouncementModel a) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Notification'),
-        content: Text('Delete "${a.title}"? This cannot be undone.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+    final ok = await showAppConfirmDialog(
+      context,
+      title: 'Delete Notification?',
+      message: 'Delete "${a.title}"? This cannot be undone.',
+      confirmLabel: 'Delete',
+      icon: Icons.delete_outline_rounded,
+      danger: true,
     );
-    if (ok != true) return;
+    if (!ok) return;
+    if (!context.mounted) return;
     await ref.read(announcementControllerProvider.notifier).delete(a.id);
     if (context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Notification deleted')));
+      showAppSnack(context, 'Notification deleted.');
     }
   }
 

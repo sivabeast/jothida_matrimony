@@ -5,9 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_dialogs.dart';
 import '../../models/banner_model.dart';
 import '../../providers/banner_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/common/data_states.dart';
+import '../../widgets/common/skeletons.dart';
 import '../../widgets/home/home_banner_slide.dart';
 
 /// Admin "Banner Management" — full control of the Home page banner carousel.
@@ -44,24 +47,27 @@ class BannerManagementScreen extends ConsumerWidget {
         label: const Text('Add Banner'),
       ),
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Could not load banners.\n$e')),
+        loading: () => ListView(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          children: const [
+            SkeletonCard(height: 200),
+            SkeletonCard(height: 200),
+            SkeletonCard(height: 200),
+          ],
+        ),
+        error: (e, _) => ErrorStateView(
+          message: 'Unable to load banners. Please try again.',
+          onRetry: () => ref.invalidate(allBannersProvider),
+        ),
         data: (banners) {
           if (banners.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.view_carousel_outlined,
-                      size: 72, color: Colors.grey[400]),
-                  const SizedBox(height: 12),
-                  const Text('No banners yet',
-                      style: TextStyle(fontSize: 16, color: Colors.grey)),
-                  const SizedBox(height: 4),
-                  Text('Tap "Add Banner" to create an image or text banner.',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 13)),
-                ],
-              ),
+            return EmptyState(
+              icon: Icons.view_carousel_outlined,
+              message: 'No banners yet',
+              subtitle: 'Create an image or text banner and it will appear '
+                  'in the Home page carousel.',
+              actionLabel: 'Add Banner',
+              onAction: () => _openForm(context, ref),
             );
           }
           return ListView.separated(
@@ -114,8 +120,10 @@ class _BannerCard extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8),
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -207,33 +215,18 @@ class _BannerCard extends ConsumerWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Banner'),
-        content: const Text(
-            'Delete this banner? It disappears from the Home page immediately. '
-            'This cannot be undone.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+    final ok = await showAppConfirmDialog(
+      context,
+      title: 'Delete Banner?',
+      message: 'It disappears from the Home page immediately. '
+          'This cannot be undone.',
+      confirmLabel: 'Delete',
+      icon: Icons.delete_outline_rounded,
+      danger: true,
     );
-    if (ok != true) return;
+    if (!ok) return;
     await ref.read(bannerControllerProvider.notifier).delete(banner.id);
-    if (context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Banner deleted')));
-    }
+    if (context.mounted) showAppSnack(context, 'Banner deleted.');
   }
 }
 
@@ -354,9 +347,8 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
         createdAt: widget.existing?.createdAt ?? DateTime.now(),
       );
 
-  void _snack(String m) => ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m, {bool error = false}) =>
+      showAppSnack(context, m, error: error);
 
   // ── Image upload with dimension validation ────────────────────────────────
 
@@ -377,15 +369,19 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
       final ratio = h / w;
       final off = (ratio - kBannerAspectRatio).abs() / kBannerAspectRatio;
       if (off > kBannerAspectTolerance) {
-        _snack('Image rejected: ${w}×$h is not the required banner shape. '
+        _snack(
+            'Image rejected: ${w}×$h is not the required banner shape. '
             'Please upload $kBannerRecommendedWidth × '
-            '$kBannerRecommendedHeight px (5:3).');
+            '$kBannerRecommendedHeight px (5:3).',
+            error: true);
         return;
       }
       if (w < kBannerMinUploadWidth) {
-        _snack('Image rejected: too small (${w}px wide). Upload at least '
+        _snack(
+            'Image rejected: too small (${w}px wide). Upload at least '
             '$kBannerMinUploadWidth px wide — recommended '
-            '$kBannerRecommendedWidth × $kBannerRecommendedHeight px.');
+            '$kBannerRecommendedWidth × $kBannerRecommendedHeight px.',
+            error: true);
         return;
       }
 
@@ -395,7 +391,11 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
       setState(() => _imageUrl = url);
       _snack('Image uploaded (${w}×$h)');
     } catch (e) {
-      if (mounted) _snack('Upload failed: $e');
+      debugPrint('[BannerForm] upload failed: $e');
+      if (mounted) {
+        _snack('Upload failed. Please check your connection and try again.',
+            error: true);
+      }
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
@@ -404,11 +404,11 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
   Future<void> _save() async {
     final isImage = _type == HomeBannerModel.typeImage;
     if (isImage && _imageUrl.trim().isEmpty) {
-      _snack('Please upload a banner image first');
+      _snack('Please upload a banner image first', error: true);
       return;
     }
     if (!isImage && _titleC.text.trim().isEmpty) {
-      _snack('Title is required for a text banner');
+      _snack('Title is required for a text banner', error: true);
       return;
     }
 
@@ -466,7 +466,10 @@ class _BannerFormScreenState extends ConsumerState<_BannerFormScreen> {
       if (!mounted) return;
       Navigator.of(context).pop();
     } catch (e) {
-      if (mounted) _snack('Could not save banner: $e');
+      debugPrint('[BannerForm] save failed: $e');
+      if (mounted) {
+        _snack('Could not save the banner. Please try again.', error: true);
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }

@@ -32,7 +32,6 @@ import '../screens/profile/my_profile_screen.dart';
 import '../screens/profile/profile_creation_screen.dart';
 import '../screens/profile/profile_success_screen.dart';
 import '../screens/profile/profile_view_screen.dart';
-import '../screens/match/match_details_screen.dart';
 import '../screens/privacy/privacy_settings_screen.dart';
 import '../screens/settings/language_screen.dart';
 import '../screens/admin/admin_shell.dart';
@@ -50,6 +49,7 @@ import '../screens/admin/admin_appointments_screen.dart';
 import '../screens/admin/astrologer_verification_screen.dart';
 import '../screens/admin/admin_activity_log_screen.dart';
 import '../screens/admin/admin_approvals_screen.dart';
+import '../screens/admin/admin_payments_screen.dart';
 import '../screens/admin/admin_management_screens.dart';
 import '../screens/admin/admin_reports_page.dart';
 import '../screens/admin/admin_report_management_screen.dart';
@@ -247,11 +247,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           editProfileId: state.pathParameters['id'],
           sectionStep: int.tryParse(state.pathParameters['step'] ?? ''),
         ),
-      ),
-      GoRoute(
-        path: '/match/:id',
-        builder: (_, state) =>
-            MatchDetailsScreen(profileId: state.pathParameters['id']!),
       ),
       // Report a profile (from the profile view screen).
       GoRoute(
@@ -519,6 +514,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/admin/settlements',
               builder: (_, __) => const AdminSettlementsScreen()),
+          // Paid transactions — every astrologer_requests booking with
+          // paid == true (drawer → Payments → Transactions).
+          GoRoute(
+              path: '/admin/payments',
+              builder: (_, __) => const AdminPaymentsScreen()),
           // Horoscope Requests → astrologer match-analysis request queue.
           GoRoute(
               path: '/admin/horoscope-requests',

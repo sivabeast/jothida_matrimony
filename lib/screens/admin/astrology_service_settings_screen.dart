@@ -7,12 +7,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_dialogs.dart';
 import '../../core/utils/firestore_write.dart';
 import '../../core/utils/slot_generator.dart';
 import '../../models/astrology_service_config.dart';
 import '../../providers/astrology_config_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/common/data_states.dart';
 import '../../widgets/common/network_photo.dart';
+import '../../widgets/common/skeletons.dart';
 
 /// Uploads an astrology media file (image or PDF) to Cloudinary and returns the
 /// secure URL. Reuses the generic attachment uploader (unique id per upload).
@@ -112,9 +115,8 @@ class _AstrologyServiceSettingsScreenState
     super.dispose();
   }
 
-  void _snack(String m) => ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m, {bool error = false}) =>
+      showAppSnack(context, m, error: error);
 
   int _int(String key, int fallback) =>
       int.tryParse(_ctrl(key).text.trim()) ?? fallback;
@@ -133,7 +135,7 @@ class _AstrologyServiceSettingsScreenState
       _snack('Photo uploaded. Tap "Save All Settings" to apply.');
     } catch (e) {
       debugPrint('[AstrologyManagement] photo upload failed: $e');
-      _snack('Photo upload failed: $e');
+      _snack('Photo upload failed. Please try again.', error: true);
     } finally {
       if (mounted) setState(() => _uploadingPhoto = false);
     }
@@ -161,7 +163,7 @@ class _AstrologyServiceSettingsScreenState
     // Guard against duplicate save requests (double-taps / rapid re-entry).
     if (_saving) return;
     if (_ctrl('expertName').text.trim().isEmpty) {
-      _snack('Astrologer name is required.');
+      _snack('Astrologer name is required.', error: true);
       return;
     }
     setState(() => _saving = true);
@@ -208,10 +210,12 @@ class _AstrologyServiceSettingsScreenState
       if (!mounted) return;
       final msg = e.toString().toLowerCase();
       if (msg.contains('permission-denied') || msg.contains('permission_denied')) {
-        _snack('Save blocked by security rules. Deploy Firestore rules '
-            '(firebase deploy --only firestore:rules) and try again.');
+        _snack(
+            'Save blocked by security rules. Deploy Firestore rules '
+            '(firebase deploy --only firestore:rules) and try again.',
+            error: true);
       } else {
-        _snack('Could not save: $e');
+        _snack('Could not save the settings. Please try again.', error: true);
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -240,7 +244,11 @@ class _AstrologyServiceSettingsScreenState
             news: List<AstrologyNews>.from(_news),
           )));
     } catch (e) {
-      if (mounted) _snack('Could not save media: $e');
+      debugPrint('[AstrologyManagement] media save failed: $e');
+      if (mounted) {
+        _snack('Could not save the media items. Please try again.',
+            error: true);
+      }
     }
   }
 
@@ -267,37 +275,22 @@ class _AstrologyServiceSettingsScreenState
       // stand-in values, so the defaults form is never shown here.
       body: async.when(
         skipError: true,
-        loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (e, __) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.cloud_off_outlined,
-                    size: 52, color: Colors.grey[400]),
-                const SizedBox(height: 14),
-                Text(
-                  'Could not load the astrology settings.\n$e',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey[700], fontSize: 13),
-                ),
-                const SizedBox(height: 18),
-                OutlinedButton.icon(
-                  onPressed: () =>
-                      ref.invalidate(astrologyServiceConfigProvider),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Try Again'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        loading: () => ListView(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          children: const [
+            SkeletonCard(height: 220),
+            SkeletonCard(height: 160),
+            SkeletonCard(height: 160),
+            SkeletonCard(height: 160),
+          ],
         ),
+        error: (e, __) {
+          debugPrint('[AstrologyManagement] config load failed: $e');
+          return ErrorStateView(
+            message: 'Unable to load the astrology settings. Please try again.',
+            onRetry: () => ref.invalidate(astrologyServiceConfigProvider),
+          );
+        },
         data: (cfg) => _form(cfg),
       ),
     );
@@ -646,27 +639,16 @@ class _AstrologyServiceSettingsScreenState
           ),
           _iconBtn(Icons.edit_outlined, () => _editCategory(i)),
           _iconBtn(Icons.delete_outline, () async {
-            final ok = await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('Delete Category'),
-                content: Text('Delete "${c.name}"? Users will no longer see '
-                    'it while booking.'),
-                actions: [
-                  TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Cancel')),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.error,
-                        foregroundColor: Colors.white),
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Delete'),
-                  ),
-                ],
-              ),
+            final ok = await showAppConfirmDialog(
+              context,
+              title: 'Delete Category?',
+              message: 'Delete "${c.name}"? Users will no longer see it '
+                  'while booking.',
+              confirmLabel: 'Delete',
+              icon: Icons.delete_outline_rounded,
+              danger: true,
             );
-            if (ok == true) setState(() => _categories.removeAt(i));
+            if (ok) setState(() => _categories.removeAt(i));
           }, color: AppColors.error),
         ],
       ),
@@ -985,8 +967,7 @@ class _CertificateEditorSheetState
   String _fileType = 'image';
   bool _busy = false;
 
-  void _snack(String m) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m) => showAppSnack(context, m, error: true);
 
   Future<void> _pickImage() async {
     final picked = await ImagePicker()
@@ -1117,8 +1098,7 @@ class _AwardEditorSheetState extends ConsumerState<_AwardEditorSheet> {
       setState(() => _img = url);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Upload failed.')));
+        showAppSnack(context, 'Upload failed. Please try again.', error: true);
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -1207,8 +1187,7 @@ class _NewsEditorSheetState extends ConsumerState<_NewsEditorSheet> {
       setState(() => _img = url);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Upload failed.')));
+        showAppSnack(context, 'Upload failed. Please try again.', error: true);
       }
     } finally {
       if (mounted) setState(() => _busy = false);

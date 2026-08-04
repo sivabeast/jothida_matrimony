@@ -6,6 +6,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../models/dashboard_analytics.dart';
 import '../../providers/admin_provider.dart';
 import '../../widgets/common/data_states.dart';
+import '../../widgets/common/skeletons.dart';
 import 'admin_export.dart';
 
 /// The admin "Reports" tab — all business analytics and charts live here so the
@@ -27,9 +28,19 @@ class AdminReportsPage extends ConsumerWidget {
           Text('Reports & Analytics', style: AppTextStyles.heading2),
           const SizedBox(height: 16),
           analyticsAsync.when(
-            loading: () => const Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: LoadingState(message: 'Crunching the numbers...')),
+            loading: () => const SkeletonShimmer(
+              child: Column(
+                children: [
+                  SkeletonBox(height: 100, radius: 16),
+                  SizedBox(height: 14),
+                  SkeletonBox(height: 240, radius: 16),
+                  SizedBox(height: 14),
+                  SkeletonBox(height: 100, radius: 16),
+                  SizedBox(height: 14),
+                  SkeletonBox(height: 100, radius: 16),
+                ],
+              ),
+            ),
             error: (e, _) {
               debugPrint('[AdminReports] analytics load failed: $e');
               return Padding(
@@ -153,8 +164,10 @@ class AdminReportsPage extends ConsumerWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,8 +247,10 @@ class _RevenueChartCardState extends State<_RevenueChartCard> {
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

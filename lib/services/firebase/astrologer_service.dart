@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../core/config/admin_config.dart';
@@ -17,6 +18,26 @@ class AppointmentSlotTakenException implements Exception {
   @override
   String toString() =>
       'That session has just filled up. Please pick another.';
+}
+
+/// Thrown when the admin tries to claim / analyze an `astrologer_requests`
+/// document that is already completed, or that someone ELSE is mid-analysis on
+/// (`workflowStatus == 'in_progress'` under a different astrologer).
+class RequestClaimException implements Exception {
+  /// Display name / email of whoever currently holds the request ('' when
+  /// unknown).
+  final String holder;
+
+  /// True when the claim failed because the request is already completed.
+  final bool alreadyCompleted;
+
+  const RequestClaimException({this.holder = '', this.alreadyCompleted = false});
+
+  @override
+  String toString() => alreadyCompleted
+      ? 'This request is already completed.'
+      : 'Already being analyzed by '
+          '${holder.isEmpty ? 'another astrologer' : holder}.';
 }
 
 /// Firestore CRUD + realtime streams for the astrologer side of the app:
@@ -151,7 +172,9 @@ class AstrologerService {
     await setVerificationStatus(uid, VerificationStatus.approved);
     await _notify(uid, 'Verification Approved',
         'Your astrologer profile has been verified successfully.',
-        'astrologer_verified');
+        'astrologer_verified',
+        id: 'astrologer_verified_$uid',
+        data: {'route': '/astrologer-dashboard'});
   }
 
   /// Reject an astrologer's application (optionally with a reason) and notify
@@ -162,7 +185,9 @@ class AstrologerService {
     final body = reason.trim().isEmpty
         ? 'Your astrologer verification request was rejected. Please update your details and submit again.'
         : 'Your astrologer verification request was rejected: ${reason.trim()}';
-    await _notify(uid, 'Verification Rejected', body, 'astrologer_rejected');
+    await _notify(uid, 'Verification Rejected', body, 'astrologer_rejected',
+        id: 'astrologer_rejected_$uid',
+        data: {'route': '/astrologer-dashboard'});
   }
 
   /// Suspend a previously-approved astrologer → moves them back to
@@ -188,11 +213,16 @@ class AstrologerService {
   /// Best-effort in-app notification to a user/astrologer. Admins may create
   /// notifications (security rules), and the recipient reads their own. Never
   /// throws — a notification hiccup must not fail the verification action.
+  ///
+  /// [id] is a DETERMINISTIC doc id derived from the triggering doc + event,
+  /// so a retried action rewrites the SAME document instead of adding a
+  /// duplicate — and the `notifications`-onCreate push gate fires at most
+  /// once per event.
   Future<void> _notify(
       String uid, String title, String body, String type,
-      {Map<String, dynamic>? data}) async {
+      {String id = '', Map<String, dynamic>? data}) async {
     try {
-      await _db.collection(AppConstants.notificationsCollection).add({
+      final doc = <String, dynamic>{
         'userId': uid,
         'title': title,
         'body': body,
@@ -200,7 +230,9 @@ class AstrologerService {
         if (data != null) 'data': data,
         'isRead': false,
         'createdAt': FieldValue.serverTimestamp(),
-      });
+      };
+      final col = _db.collection(AppConstants.notificationsCollection);
+      await (id.isEmpty ? col.add(doc) : col.doc(id).set(doc));
     } catch (e) {
       debugPrint('[AstrologerService] notify($uid) failed (non-fatal): $e');
     }
@@ -248,6 +280,7 @@ class AstrologerService {
                 'working hours.'
             : '${request.userName} has requested a ${request.type.label}.',
         'new_match_analysis',
+        id: 'new_match_analysis_${doc.id}',
         data: {
           'requestId': doc.id,
           'route': '/match-workspace/${doc.id}',
@@ -269,6 +302,7 @@ class AstrologerService {
             : 'Your ${request.type.label} request has been received by our '
                 'astrology team.',
         'booking_submitted',
+        id: 'booking_submitted_${doc.id}',
         data: {'requestId': doc.id, 'route': '/reports'},
       );
     }
@@ -312,6 +346,7 @@ class AstrologerService {
       '${request.userName} booked a ${AppointmentSession.shortLabel(session)} '
           'appointment for ${request.visitDateKey}.',
       'new_match_analysis',
+      id: 'new_match_analysis_$id',
       data: {
         'requestId': id,
         'route': '/match-workspace/$id',
@@ -324,6 +359,7 @@ class AstrologerService {
         'Appointment Confirmed',
         'Your appointment is confirmed. Booking ID: $id.',
         'booking_submitted',
+        id: 'booking_submitted_$id',
         data: {'requestId': id, 'route': '/my-appointments'},
       );
     }
@@ -402,6 +438,10 @@ class AstrologerService {
         'Appointment Update',
         '$label for ${r.visitDateKey}.',
         'appointment_status',
+        // Status is part of the id: each distinct transition (confirmed,
+        // completed, cancelled…) notifies once; retries of the SAME
+        // transition collapse.
+        id: 'appointment_status_${r.id}_${status.name}',
         data: {'requestId': r.id, 'route': '/my-appointments'},
       );
     }
@@ -444,6 +484,7 @@ class AstrologerService {
       await _notify(userId, 'Analysis In Progress',
           'Our astrology team has started your match analysis.',
           'analysis_started',
+          id: 'analysis_started_$requestId',
           data: {'requestId': requestId, 'route': '/reports'});
     }
   }
@@ -568,6 +609,7 @@ class AstrologerService {
                     '₹$amount to confirm.'
                 : 'Our astrology team accepted your request.',
             'booking_accepted',
+            id: 'booking_accepted_$requestId',
             data: {'requestId': requestId, 'route': '/reports'});
         break;
       case AstrologerRequestStatus.rejected:
@@ -576,11 +618,13 @@ class AstrologerService {
             'Booking Declined',
             'Our astrology team is unable to take your request right now.',
             'booking_rejected',
+            id: 'booking_rejected_$requestId',
             data: {'requestId': requestId, 'route': '/reports'});
         break;
       case AstrologerRequestStatus.completed:
         await _notify(userId, 'Report Ready',
             'Your analysis report is ready to view.', 'porutham_ready',
+            id: 'porutham_ready_$requestId',
             data: {'requestId': requestId, 'route': '/reports'});
         break;
       case AstrologerRequestStatus.pending:
@@ -624,6 +668,11 @@ class AstrologerService {
       return false;
     }
     if (flipped) {
+      // The deadline epoch keys the id: a booking reassigned after an expiry
+      // gets a FRESH expiresAt, so a later second expiry still notifies —
+      // while concurrent viewers of the SAME expiry collapse to one doc.
+      final expiryId =
+          'booking_expired_${r.id}_${r.expiresAt?.millisecondsSinceEpoch ?? 0}';
       if (r.reassignMode == BookingReassignMode.chooseLater) {
         await _notify(
           r.userId,
@@ -631,6 +680,8 @@ class AstrologerService {
           'The selected astrologer did not respond within the required time. '
               'Please choose another astrologer.',
           'booking_expired',
+          id: expiryId,
+          data: {'requestId': r.id, 'route': '/reports'},
         );
       } else if (r.reassignMode == BookingReassignMode.allowAdmin) {
         await _notify(
@@ -639,6 +690,8 @@ class AstrologerService {
           'The selected astrologer did not respond in time. An admin will '
               'assign another astrologer to your booking.',
           'booking_expired',
+          id: expiryId,
+          data: {'requestId': r.id, 'route': '/reports'},
         );
       }
     }
@@ -680,6 +733,8 @@ class AstrologerService {
         .update({
       'astrologerId': astrologerId,
       'astrologerName': astrologerName,
+      // The request now belongs to an astrologer again — never the admin.
+      'assignedToAdmin': false,
       'status': AstrologerRequestStatus.pending.name,
       'respondedAt': null,
       'reassigned': true,
@@ -698,7 +753,15 @@ class AstrologerService {
         byAdmin
             ? 'A horoscope request has been assigned to you by the admin.'
             : 'A horoscope request has been assigned to you.',
-        'request_reassigned');
+        'request_reassigned',
+        // Keyed per (request, assignee): a retry collapses, while a later
+        // reassignment to a DIFFERENT astrologer still notifies them.
+        id: 'request_reassigned_${requestId}_$astrologerId',
+        data: {
+          'requestId': requestId,
+          'route': '/match-workspace/$requestId',
+          'tab': 'matchAnalysis',
+        });
     if (userId.trim().isNotEmpty) {
       // Single-company service: the user never learns which team member the
       // booking moved to.
@@ -708,18 +771,102 @@ class AstrologerService {
           'Your booking has been reassigned within our astrology team and '
               'will be handled shortly.',
           'booking_reassigned',
-          data: {'route': '/reports'});
+          id: 'booking_reassigned_${requestId}_$astrologerId',
+          data: {'requestId': requestId, 'route': '/reports'});
     }
   }
 
   /// Admin nudge to an astrologer who hasn't acted on a pending request.
+  /// Day-scoped deterministic id: a double-tapped "remind" can't duplicate,
+  /// but the admin can still send a fresh reminder tomorrow.
   Future<void> sendRequestReminder(
     String astrologerId, {
     String message =
         'You have a pending horoscope request. Please accept or decline.',
-  }) =>
-      _notify(astrologerId, 'Pending Request Reminder', message,
-          'request_reminder');
+  }) {
+    final now = DateTime.now();
+    final day = '${now.year}'
+        '${now.month.toString().padLeft(2, '0')}'
+        '${now.day.toString().padLeft(2, '0')}';
+    return _notify(astrologerId, 'Pending Request Reminder', message,
+        'request_reminder',
+        id: 'request_reminder_${astrologerId}_$day',
+        data: {'route': '/astrologer-dashboard'});
+  }
+
+  /// ADMIN claims a request to analyze it personally (spec §11 "Assign to Me" /
+  /// "Analyze as Admin"). Runs as a TRANSACTION so two people can never hold
+  /// the same request: it throws [RequestClaimException] when the request is
+  /// already completed, or when someone ELSE is mid-analysis
+  /// (`workflowStatus == 'in_progress'` under a different astrologer).
+  /// Re-claiming a request the admin already holds is a harmless refresh, so
+  /// "Analyze" keeps working after "Assign to Me".
+  ///
+  /// On success the request is stamped: astrologerId/Uid = [adminUid],
+  /// astrologerEmail = lowercased [adminEmail], `assignedToAdmin: true`,
+  /// status `accepted`, `assignedAt`, plus an 'Assigned to Admin' audit entry.
+  /// With [startAnalysis] the same guarded write also moves the workflow to
+  /// `in_progress` (used right before opening the analysis form).
+  Future<void> claimRequestForAdmin({
+    required String requestId,
+    required String adminUid,
+    required String adminEmail,
+    bool startAnalysis = false,
+  }) async {
+    final email = adminEmail.trim().toLowerCase();
+    final ref = _db
+        .collection(AppConstants.astrologerRequestsCollection)
+        .doc(requestId);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) {
+        throw Exception('Request no longer exists.');
+      }
+      final d = snap.data() as Map<String, dynamic>;
+      if (d['status'] == AstrologerRequestStatus.completed.name) {
+        throw const RequestClaimException(alreadyCompleted: true);
+      }
+      final holderId = (d['astrologerId'] ?? '').toString();
+      final holderEmail =
+          (d['astrologerEmail'] ?? '').toString().trim().toLowerCase();
+      final isMine = holderId == adminUid ||
+          (holderEmail.isNotEmpty && holderEmail == email);
+      final alreadyInProgress = d['workflowStatus'] == 'in_progress';
+      if (alreadyInProgress && !isMine) {
+        final holderName = (d['astrologerName'] ?? '').toString().trim();
+        throw RequestClaimException(
+            holder: holderName.isNotEmpty ? holderName : holderEmail);
+      }
+      final alreadyMine = isMine && d['assignedToAdmin'] == true;
+      final entries = <Map<String, dynamic>>[
+        if (!alreadyMine) BookingHistoryEntry.now('Assigned to Admin').toMap(),
+        if (startAnalysis && !alreadyInProgress)
+          BookingHistoryEntry.now('Analysis in progress').toMap(),
+      ];
+      tx.update(ref, {
+        'astrologerId': adminUid,
+        'astrologerUid': adminUid,
+        'astrologerName': 'Admin',
+        'astrologerEmail': email,
+        'assignedToAdmin': true,
+        'assignedAt': FieldValue.serverTimestamp(),
+        'assignedBy': 'admin',
+        'assignmentStatus': 'assigned',
+        'status': AstrologerRequestStatus.accepted.name,
+        'respondedAt': FieldValue.serverTimestamp(),
+        // The admin holds it now — a lapsed acceptance window is moot.
+        'expired': false,
+        'expiredAt': null,
+        if (startAnalysis) ...{
+          'inProgress': true,
+          'workflowStatus': 'in_progress',
+          if (!alreadyInProgress) 'startedAt': FieldValue.serverTimestamp(),
+        } else if (!alreadyInProgress)
+          'workflowStatus': 'new',
+        if (entries.isNotEmpty) 'history': FieldValue.arrayUnion(entries),
+      });
+    });
+  }
 
   /// Uploads an analysis result file (image or PDF) for a match-analysis
   /// request and returns its public URL. PDFs use Cloudinary's `raw` delivery
@@ -787,6 +934,20 @@ class AstrologerService {
             [BookingHistoryEntry.now('Compatibility report draft saved').toMap()]),
       });
 
+  /// WHO-completed stamp added to every report submission (spec §11): the
+  /// signed-in submitter's uid + LOWERCASED email, with role 'admin' for the
+  /// privileged admin accounts and 'employee' for astrology-team members.
+  Map<String, dynamic> _completionStamp() {
+    final user = FirebaseAuth.instance.currentUser;
+    final email = (user?.email ?? '').trim().toLowerCase();
+    return {
+      'completedBy': user?.uid ?? '',
+      'completedByEmail': email,
+      'completedByRole':
+          AdminConfig.isPrivilegedEmail(email) ? 'admin' : 'employee',
+    };
+  }
+
   /// Stores the finished structured Marriage Compatibility Report and flips the
   /// request to `completed` (same completion stamps as [submitAnalysis]).
   Future<void> submitCompatReport({
@@ -802,6 +963,7 @@ class AstrologerService {
         'workflowStatus': 'completed',
         'completedAt': FieldValue.serverTimestamp(),
         'respondedAt': FieldValue.serverTimestamp(),
+        ..._completionStamp(),
         'history': FieldValue.arrayUnion(
             [BookingHistoryEntry.now('Compatibility report submitted').toMap()]),
       });
@@ -837,6 +999,7 @@ class AstrologerService {
         'workflowStatus': 'completed',
         'completedAt': FieldValue.serverTimestamp(),
         'respondedAt': FieldValue.serverTimestamp(),
+        ..._completionStamp(),
         'history': FieldValue.arrayUnion(
             [BookingHistoryEntry.now('Report submitted').toMap()]),
       });
@@ -867,7 +1030,9 @@ class AstrologerService {
     if (userId.trim().isNotEmpty) {
       await _notify(userId, 'Payment Successful',
           'Your payment was successful. Your booking is confirmed.',
-          'payment_success');
+          'payment_success',
+          id: 'payment_success_$requestId',
+          data: {'requestId': requestId, 'route': '/reports'});
     }
   }
 

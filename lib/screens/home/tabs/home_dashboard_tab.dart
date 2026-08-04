@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import '../../../core/data/muhurtham_dates.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../core/utils/profile_completion.dart';
+import '../../../core/utils/value_l10n.dart';
 import '../../../models/banner_model.dart';
 import '../../../models/interest_model.dart';
+import '../../../models/muhurtham_model.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/account_provider.dart';
 import '../../../providers/announcement_provider.dart';
@@ -24,7 +28,19 @@ import '../../../widgets/common/coming_soon.dart';
 import '../../../widgets/common/create_profile_cta.dart';
 import '../../../widgets/common/face_centered_photo.dart';
 import '../../../widgets/common/network_photo.dart';
+import '../../../widgets/common/skeletons.dart';
 import '../../../widgets/home/home_banner_slide.dart';
+
+// ── Shared card styling — every home card uses the SAME radius, shadow and
+//    padding so the page reads as one system (spec: home cards consistency).
+const double _kCardRadius = 16;
+const List<BoxShadow> _kCardShadow = [
+  BoxShadow(
+    color: Color(0x0D000000), // black @ 5%
+    blurRadius: 10,
+    offset: Offset(0, 4),
+  ),
+];
 
 /// Home dashboard tab. Clean, modern flow:
 ///   Header → Profile Completion · Find Your Life Partner · Upgrade To Premium
@@ -143,8 +159,10 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           const SizedBox(height: 18),
 
           // ── No profile yet → the premium Create Profile call-to-action, in
-          //    place of every matrimony profile section below. ──────────────
-          if (!hasProfile) ...[
+          //    place of every matrimony profile section below. Withheld while
+          //    the profile doc is still loading so it never flashes for
+          //    members who DO have a profile. ─────────────────────────────────
+          if (!hasProfile && !myProfileAsync.isLoading) ...[
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: CreateProfileCta(),
@@ -412,21 +430,15 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(_kCardRadius),
             // Soft, subtle gold hairline — a premium accent that frames the
             // banner without dominating it (spec §8). The artwork leads; a
             // gentle neutral elevation shadow does the lifting, not the border.
             border: Border.all(color: AppColors.gold.withOpacity(0.40), width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
+            boxShadow: _kCardShadow,
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(17),
+            borderRadius: BorderRadius.circular(_kCardRadius - 1),
             child: child,
           ),
         ),
@@ -439,23 +451,16 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   /// coloured circular icon.
   Widget _buildQuickActions(BuildContext context) {
     void goTab(int i) => ref.read(homeTabIndexProvider.notifier).state = i;
-    final unlocked = ref.watch(upcomingFeaturesUnlockedProvider);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(_kCardRadius),
+          boxShadow: _kCardShadow,
         ),
-        // `start` (not the default `center`) is what keeps all five icons on
+        // `start` (not the default `center`) is what keeps all four icons on
         // EXACTLY the same baseline: a two-line Tamil label used to make its
         // column taller, and centring then pushed that column's icon down
         // relative to the others.
@@ -492,17 +497,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
                 label: context.l10n.reports,
                 color: const Color(0xFF2F80ED),
                 onTap: () => goTab(kReportsTabIndex),
-              ),
-            ),
-            Expanded(
-              child: _quickAction(
-                icon: Icons.event_available,
-                label: context.l10n.muhurthamDay,
-                color: const Color(0xFF34A853),
-                onTap: () => unlocked
-                    ? context.push('/muhurtham-calendar')
-                    : showComingSoonDialog(context,
-                        featureName: context.l10n.featureMuhurthamCalendar),
               ),
             ),
           ],
@@ -672,11 +666,26 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     );
   }
 
-  /// Compact vertical Muhurtham card for the info row.
+  /// The next upcoming muhurtham from the curated dataset (today counts), or
+  /// null when the dataset has run out of future dates.
+  MuhurthamDate? get _nextMuhurtham {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    for (final m in kMuhurthamDates) {
+      if (!m.date.isBefore(today)) return m;
+    }
+    return null;
+  }
+
+  /// Compact vertical Muhurtham card for the info row. Shows the NEXT
+  /// auspicious date (day + month + nakshatra) instead of a "View" button —
+  /// the whole card remains the tap target for the full calendar.
   Widget _muhurthamMini(BuildContext context) {
     final unlocked = ref.watch(upcomingFeaturesUnlockedProvider);
+    final next = _nextMuhurtham;
+    final locale = Localizations.localeOf(context).toLanguageTag();
     return InkWell(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(_kCardRadius),
       onTap: () => unlocked
           ? context.push('/muhurtham-calendar')
           : showComingSoonDialog(context,
@@ -689,59 +698,143 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(_kCardRadius),
           border: Border.all(color: AppColors.gold.withOpacity(0.45)),
+          boxShadow: _kCardShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Tamil title wraps only between whole words, shrinking a little
-            // when a long word would otherwise be broken.
-            AutoFitLabel(context.l10n.muhurthamCalendarTitle,
-                maxLines: 2,
-                minFontSize: 10,
-                textAlign: TextAlign.start,
-                style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    height: 1.2,
-                    fontFamily: 'Poppins')),
-            const SizedBox(height: 12),
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: AppColors.gold.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: const Text('📅', style: TextStyle(fontSize: 22)),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: AppColors.gold.withOpacity(0.20),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.calendar_month,
+                      size: 18, color: AppColors.goldDark),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  // Tamil title wraps only between whole words, shrinking a
+                  // little when a long word would otherwise be broken.
+                  child: AutoFitLabel(context.l10n.muhurthamCalendarTitle,
+                      maxLines: 2,
+                      minFontSize: 10,
+                      textAlign: TextAlign.start,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          height: 1.2,
+                          fontFamily: 'Poppins')),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
-            if (unlocked)
+            if (unlocked && next != null) ...[
+              // Next auspicious date — day + month kept front and centre.
+              Center(
+                child: Column(
+                  children: [
+                    Text('${next.date.day}',
+                        style: const TextStyle(
+                            fontSize: 30,
+                            height: 1.0,
+                            fontWeight: FontWeight.w800,
+                            fontFamily: 'Poppins',
+                            color: AppColors.goldDark)),
+                    const SizedBox(height: 2),
+                    Text(
+                      DateFormat('MMMM yyyy', locale).format(next.date),
+                      style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.75),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        context.localizeValue(next.nakshatra),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.goldDark),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(context.l10n.muhurthamSubtitle,
+                  maxLines: 2,
+                  softWrap: true,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Colors.black54, fontSize: 11, height: 1.3)),
+            ] else if (unlocked) ...[
               Text(context.l10n.muhurthamSubtitle,
                   maxLines: 3,
                   softWrap: true,
                   style: const TextStyle(
-                      color: Colors.black54, fontSize: 11, height: 1.3))
-            else
+                      color: Colors.black54, fontSize: 11, height: 1.3)),
+            ] else ...[
               const ComingSoonBadge(compact: true),
+            ],
             const Spacer(),
-            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Trust / feature highlights (reference): verified profiles, safe
+  /// conversations, genuine matches, 24/7 support. Laid out as a 2×2 grid so
+  /// Tamil labels stay READABLE (11px, max 2 lines) instead of shrinking to
+  /// 7px in a cramped four-across row.
+  Widget _buildFeatureHighlights(BuildContext context) {
+    final l10n = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(_kCardRadius),
+          border: Border.all(color: AppColors.divider),
+          boxShadow: _kCardShadow,
+        ),
+        child: Column(
+          children: [
             Row(
               children: [
-                if (!unlocked) ...[
-                  const Icon(Icons.lock, size: 13, color: AppColors.goldDark),
-                  const SizedBox(width: 4),
-                ],
-                Text(context.l10n.viewCalendar,
-                    style: const TextStyle(
-                        color: AppColors.goldDark,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12.5)),
-                const SizedBox(width: 3),
-                const Icon(Icons.arrow_forward,
-                    size: 14, color: AppColors.goldDark),
+                _highlight(Icons.verified_user, AppColors.gold,
+                    l10n.trustVerifiedProfiles),
+                const SizedBox(width: 10),
+                _highlight(Icons.lock_outline_rounded, AppColors.primary,
+                    l10n.trustSafeConversations),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                _highlight(Icons.workspace_premium, const Color(0xFFE8590C),
+                    l10n.trustGenuineMatches),
+                const SizedBox(width: 10),
+                _highlight(Icons.headset_mic, const Color(0xFF2F80ED),
+                    l10n.trustSupport247),
               ],
             ),
           ],
@@ -750,68 +843,35 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     );
   }
 
-  /// Trust / feature highlights row (reference): verified profiles, safe
-  /// conversations, genuine matches, 24/7 support.
-  Widget _buildFeatureHighlights(BuildContext context) {
-    final l10n = context.l10n;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFFF3E0), Color(0xFFFDEAD2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _highlight(Icons.verified_user, const Color(0xFFD4AF37),
-                l10n.trustVerifiedProfiles),
-            _highlight(
-                Icons.lock, AppColors.primary, l10n.trustSafeConversations),
-            _highlight(Icons.workspace_premium, const Color(0xFFE8590C),
-                l10n.trustGenuineMatches),
-            _highlight(
-                Icons.headset_mic, AppColors.primary, l10n.trustSupport247),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// One trust/feature highlight cell. The icon row stays level across all four
-  /// cells (the label sits in a fixed-height box) and long Tamil labels such as
-  /// "சரிபார்க்கப்பட்ட சுயவிவரங்கள்" shrink slightly rather than being split
-  /// mid-word.
+  /// One trust/feature highlight cell: tinted icon bubble beside a label that
+  /// wraps between whole words (never mid-word) at a readable size.
   Widget _highlight(IconData icon, Color color, String label) => Expanded(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: color, size: 22),
-              const SizedBox(height: 6),
-              SizedBox(
-                height: 34,
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: AutoFitLabel(
-                    label,
-                    maxLines: 3,
-                    minFontSize: 7,
-                    style: const TextStyle(
-                        fontSize: 9.5,
-                        height: 1.15,
-                        fontWeight: FontWeight.w600),
-                  ),
-                ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                shape: BoxShape.circle,
               ),
-            ],
-          ),
+              alignment: Alignment.center,
+              child: Icon(icon, color: color, size: 19),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: AutoFitLabel(
+                label,
+                maxLines: 2,
+                minFontSize: 9,
+                textAlign: TextAlign.start,
+                style: const TextStyle(
+                    fontSize: 11,
+                    height: 1.2,
+                    fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
         ),
       );
 
@@ -826,10 +886,11 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   Widget _profileCompletionMini(BuildContext context, ProfileModel? profile) {
     final completion = computeProfileCompletion(profile);
     final pct = completion.percent.clamp(0, 100);
-    const ringColor = Color(0xFF7C4DFF);
+    final done = pct >= 100;
+    final ringColor = done ? AppColors.success : AppColors.primary;
 
     return InkWell(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(_kCardRadius),
       // With no matrimony profile yet there is nothing to "complete" — the card
       // opens the creation wizard instead of the section-by-section editor.
       onTap: () => context.push(
@@ -842,22 +903,43 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(_kCardRadius),
           border: Border.all(color: AppColors.primary.withOpacity(0.10)),
+          boxShadow: _kCardShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Tamil title wraps between whole words rather than truncating.
-            AutoFitLabel(context.l10n.profileCompletionTitle,
-                maxLines: 2,
-                minFontSize: 10,
-                textAlign: TextAlign.start,
-                style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    height: 1.2,
-                    fontFamily: 'Poppins')),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: ringColor.withOpacity(0.10),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(done ? Icons.verified : Icons.person_outline,
+                      size: 18, color: ringColor),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  // Tamil title wraps between whole words rather than
+                  // truncating.
+                  child: AutoFitLabel(context.l10n.profileCompletionTitle,
+                      maxLines: 2,
+                      minFontSize: 10,
+                      textAlign: TextAlign.start,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          height: 1.2,
+                          fontFamily: 'Poppins')),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             Center(
               child: SizedBox(
@@ -873,12 +955,12 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
                         value: pct / 100,
                         strokeWidth: 6,
                         strokeCap: StrokeCap.round,
-                        backgroundColor: ringColor.withOpacity(0.15),
-                        valueColor: const AlwaysStoppedAnimation(ringColor),
+                        backgroundColor: ringColor.withOpacity(0.12),
+                        valueColor: AlwaysStoppedAnimation(ringColor),
                       ),
                     ),
                     Text('$pct%',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             fontFamily: 'Poppins',
@@ -887,30 +969,32 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Text(context.l10n.completeProfile,
-                maxLines: 3,
+                maxLines: 2,
                 softWrap: true,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                     color: Colors.grey[600], fontSize: 11, height: 1.3)),
             const Spacer(),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Flexible(
-                  child: Text(context.l10n.completeNow,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12.5)),
-                ),
-                const SizedBox(width: 3),
-                const Icon(Icons.arrow_forward,
-                    size: 14, color: AppColors.primary),
-              ],
-            ),
+            const SizedBox(height: 10),
+            if (!done)
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(context.l10n.completeNow,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.5)),
+                  ),
+                  const SizedBox(width: 3),
+                  const Icon(Icons.arrow_forward,
+                      size: 14, color: AppColors.primary),
+                ],
+              ),
           ],
         ),
       ),
@@ -956,7 +1040,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(_kCardRadius),
           // Locked (non-admin) → Coming Soon dialog only. Unlocked:
           // fixed → open the workspace; still proposed → jump to the
           // Interests tab (Accepted), where the confirm button lives.
@@ -977,7 +1061,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(_kCardRadius),
+              boxShadow: _kCardShadow,
             ),
             child: Row(
               children: [
@@ -1083,19 +1168,17 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(_kCardRadius),
         child: InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(_kCardRadius),
           onTap: onTap,
           child: Container(
             constraints: const BoxConstraints(minHeight: 60),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(_kCardRadius),
               border: Border.all(color: Colors.grey.shade200),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
-              ],
+              boxShadow: _kCardShadow,
             ),
             child: Row(
               children: [
@@ -1324,10 +1407,11 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   Widget _buildNewProfiles(
       BuildContext context, AsyncValue<List<ProfileModel>> async) {
     return async.when(
+      // Skeleton cards in the exact rail layout — no spinner, no jump when
+      // the real cards arrive.
       loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 32),
-        child:
-            Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: SkeletonProfileRail(height: 274, cardWidth: 164),
       ),
       error: (_, __) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1377,11 +1461,14 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   // ── Recent Interests ───────────────────────────────────────────────────────
 
   Widget _buildRecentInterests(BuildContext context) {
-    final received =
-        [...(ref.watch(receivedInterestsProvider).valueOrNull ?? const [])]
-          ..sort((a, b) => b.sentAt.compareTo(a.sentAt));
+    final receivedAsync = ref.watch(receivedInterestsProvider);
+    final received = [...(receivedAsync.valueOrNull ?? const [])]
+      ..sort((a, b) => b.sentAt.compareTo(a.sentAt));
     // Home shows only the latest 5 — the full list lives behind "View All".
     final recent = received.take(5).toList();
+    // While the stream is still connecting show skeletons, not the empty
+    // state — "no interests yet" must never flash during a normal load.
+    final loading = receivedAsync.isLoading && recent.isEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1392,7 +1479,9 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
                 : () => ref.read(homeTabIndexProvider.notifier).state =
                     kInterestsTabIndex),
         const SizedBox(height: 12),
-        if (recent.isEmpty)
+        if (loading)
+          const SkeletonProfileRail(height: 256, cardWidth: 172)
+        else if (recent.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: _recentInterestsEmpty(context),
@@ -1438,11 +1527,12 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
                 size: 40, color: AppColors.primary),
           ),
           const SizedBox(height: 12),
-          const Text('No recent interests yet.',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
+          Text(context.l10n.recentInterestsEmptyTitle,
+              style:
+                  const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
           const SizedBox(height: 4),
           Text(
-            'When someone likes your profile, it shows up here.',
+            context.l10n.recentInterestsEmptySubtitle,
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 12.5, color: Colors.grey[600]),
           ),
@@ -1451,7 +1541,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             onPressed: () => ref.read(homeTabIndexProvider.notifier).state =
                 kMatchesTabIndex,
             icon: const Icon(Icons.search, size: 18),
-            label: const Text('Explore Matches'),
+            label: Text(context.l10n.exploreMatches),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
@@ -1513,7 +1603,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(_kCardRadius),
+        boxShadow: _kCardShadow,
       ),
       child: Column(
         children: [
@@ -1556,19 +1647,14 @@ class _BannerSlide extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          // Premium gold/yellow border around the banner (reference).
-          border: Border.all(color: AppColors.gold, width: 3),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.gold.withOpacity(0.35),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(_kCardRadius),
+          // Same soft gold hairline + shadow as the admin banner card, so
+          // fallback and remote banners are indistinguishable in framing.
+          border: Border.all(color: AppColors.gold.withOpacity(0.40), width: 1),
+          boxShadow: _kCardShadow,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(_kCardRadius - 1),
           child: Stack(
             fit: StackFit.expand,
             children: [

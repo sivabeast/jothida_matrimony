@@ -684,7 +684,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get consultation => 'ஆலோசனை';
 
   @override
-  String get bookConsultation => 'ஆலோசனை பதிவு செய்க';
+  String get bookConsultation => 'ஆலோசனை முன்பதிவு';
 
   @override
   String get contactDetails => 'தொடர்பு விவரங்கள்';
@@ -1598,6 +1598,16 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get recentInterests => 'சமீபத்திய ஆர்வங்கள்';
+
+  @override
+  String get recentInterestsEmptyTitle => 'இன்னும் ஆர்வங்கள் எதுவும் இல்லை.';
+
+  @override
+  String get recentInterestsEmptySubtitle =>
+      'யாராவது உங்கள் சுயவிவரத்தை விரும்பினால், அது இங்கே தோன்றும்.';
+
+  @override
+  String get exploreMatches => 'வரன்களைக் காணுங்கள்';
 
   @override
   String get noInterestsReceivedYet => 'இதுவரை ஆர்வங்கள் எதுவும் வரவில்லை.';
@@ -2995,6 +3005,45 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get contactNotProvided =>
       'இதுவரை தொடர்பு விவரங்கள் சேர்க்கப்படவில்லை.';
+
+  @override
+  String get contactPrivateMessage =>
+      'இந்த உறுப்பினரின் தொடர்பு விவரங்கள் தனிப்பட்டவை. இருவரும் ஆர்வத்தை ஏற்றுக்கொண்ட பிறகே பகிரப்படும்.';
+
+  @override
+  String get contactHiddenByOwnerMessage =>
+      'இந்த உறுப்பினர் தங்கள் தொடர்பு விவரங்களை மறைத்து வைத்துள்ளார்.';
+
+  @override
+  String get couldNotLoadContact =>
+      'தொடர்பு விவரங்களை ஏற்ற முடியவில்லை. இணைய இணைப்பை சரிபார்த்து மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get religiousDetails => 'மத விவரங்கள்';
+
+  @override
+  String get professionalDetails => 'தொழில் விவரங்கள்';
+
+  @override
+  String get astroConsultTitle => 'ஜோதிட ஆலோசனை';
+
+  @override
+  String get astroConsultBody =>
+      'உங்கள் ஆர்வம் ஏற்கப்பட்டது! இந்த பொருத்தத்திற்கான ஜாதகப் பொருத்தத்தை எங்கள் நிபுணர் ஜோதிடரிடம் பரிசோதிக்கலாம்.';
+
+  @override
+  String get reportUnderAnalysisTitle => 'அறிக்கை கோரப்பட்டது';
+
+  @override
+  String get reportUnderAnalysisBody =>
+      'இந்த சுயவிவரத்திற்கான உங்கள் ஜாதகப் பொருத்த அறிக்கை தயாராகி வருகிறது. தயாரானதும் உங்களுக்கு அறிவிப்போம்.';
+
+  @override
+  String get viewHoroscopeReport => 'ஜாதக அறிக்கையைப் பார்க்கவும்';
+
+  @override
+  String get compatAlreadyRequestedNote =>
+      'இந்த சுயவிவரத்திற்கான பொருத்த அறிக்கையை நீங்கள் ஏற்கனவே கோரியுள்ளீர்கள். ஒரு சுயவிவரத்திற்கு ஒரு அறிக்கை மட்டுமே — நிலை கீழே காட்டப்பட்டுள்ளது.';
 
   @override
   String pendingInterestTitle(String name) {

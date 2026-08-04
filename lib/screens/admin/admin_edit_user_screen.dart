@@ -7,13 +7,16 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_dialogs.dart';
 import '../../models/aadhaar_details.dart';
 import '../../models/profile_model.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/common/data_states.dart';
 import '../../widgets/common/location_picker_section.dart';
 import '../../widgets/common/network_photo.dart';
 import '../../widgets/common/searchable_field.dart';
+import '../../widgets/common/skeletons.dart';
 
 /// Admin → Edit User Profile — the admin-side editor whose changes flow
 /// straight to the user app (the user's own profile is a LIVE snapshot
@@ -127,17 +130,16 @@ class _AdminEditUserScreenState extends ConsumerState<AdminEditUserScreen> {
         _loading = false;
       });
     } catch (e) {
+      debugPrint('[AdminEditUser] load failed: $e');
       if (!mounted) return;
       setState(() => _loading = false);
-      _snack('Could not load the profile: $e');
+      _snack('Could not load the profile. Please try again.', error: true);
     }
   }
 
-  void _snack(String m) {
+  void _snack(String m, {bool error = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(m)));
+    showAppSnack(context, m, error: error);
   }
 
   // ── Media uploads ──────────────────────────────────────────────────────────
@@ -160,7 +162,8 @@ class _AdminEditUserScreenState extends ConsumerState<AdminEditUserScreen> {
       setState(() => _photoUrl = url);
       _snack('Profile photo updated.');
     } catch (e) {
-      _snack('Photo upload failed: $e');
+      debugPrint('[AdminEditUser] photo upload failed: $e');
+      _snack('Photo upload failed. Please try again.', error: true);
     } finally {
       if (mounted) setState(() => _uploadingPhoto = false);
     }
@@ -186,7 +189,8 @@ class _AdminEditUserScreenState extends ConsumerState<AdminEditUserScreen> {
       setState(() => _horoscopePdfUrl = url);
       _snack('Horoscope document uploaded.');
     } catch (e) {
-      _snack('Horoscope upload failed: $e');
+      debugPrint('[AdminEditUser] horoscope upload failed: $e');
+      _snack('Horoscope upload failed. Please try again.', error: true);
     } finally {
       if (mounted) setState(() => _uploadingPdf = false);
     }
@@ -211,7 +215,9 @@ class _AdminEditUserScreenState extends ConsumerState<AdminEditUserScreen> {
           ? 'Aadhaar verified — the profile now shows the Verified badge.'
           : 'Aadhaar verification removed.');
     } catch (e) {
-      _snack('Could not update verification: $e');
+      debugPrint('[AdminEditUser] verification update failed: $e');
+      _snack('Could not update the verification. Please try again.',
+          error: true);
     }
   }
 
@@ -277,7 +283,8 @@ class _AdminEditUserScreenState extends ConsumerState<AdminEditUserScreen> {
       _snack('Profile saved. Changes are live in the user app.');
       Navigator.of(context).pop();
     } catch (e) {
-      _snack('Save failed: $e');
+      debugPrint('[AdminEditUser] save failed: $e');
+      _snack('Could not save the profile. Please try again.', error: true);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -293,11 +300,23 @@ class _AdminEditUserScreenState extends ConsumerState<AdminEditUserScreen> {
         foregroundColor: Colors.white,
       ),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? ListView(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              children: const [
+                SkeletonCard(height: 230),
+                SkeletonCard(height: 180),
+                SkeletonCard(height: 140),
+                SkeletonCard(height: 140),
+              ],
+            )
           : _profile == null
-              ? const Center(
-                  child: Text('This user has no matrimony profile yet.'))
+              ? const EmptyState(
+                  icon: Icons.person_off_outlined,
+                  message: 'No matrimony profile yet',
+                  subtitle:
+                      'This user has not created a profile, so there is '
+                      'nothing to edit.',
+                )
               : ListView(
                   padding: const EdgeInsets.all(16),
                   children: [

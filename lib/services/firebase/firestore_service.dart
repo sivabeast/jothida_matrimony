@@ -1484,6 +1484,7 @@ class FirestoreService {
     final todayStart = DateTime(now.year, now.month, now.day);
     final weekStart = todayStart.subtract(Duration(days: now.weekday - 1));
     final monthStart = DateTime(now.year, now.month, 1);
+    final yearStart = DateTime(now.year, 1, 1);
 
     int toInt(dynamic v) => v is num ? v.toInt() : 0;
     DateTime? ts(dynamic v) => v is Timestamp ? v.toDate() : null;
@@ -1499,7 +1500,8 @@ class FirestoreService {
     const int activePremium = 0, expiredPremium = 0, cancelledSubs = 0;
     const int usersExpiringToday = 0;
     // Astrologer subscription revenue (from `astrologers.subscriptionAmount`).
-    int astroRevToday = 0, astroRevMonth = 0, astroRevTotal = 0;
+    int astroRevToday = 0, astroRevWeek = 0, astroRevMonth = 0,
+        astroRevYear = 0, astroRevTotal = 0;
     // Subscription-expiry alerts (astrologer plans only now).
     final next7 = todayStart.add(const Duration(days: 7));
     int astrosExpiringToday = 0, expiring7 = 0;
@@ -1513,7 +1515,8 @@ class FirestoreService {
     int cToday = 0, cWeek = 0, cMonth = 0, cCompleted = 0, cCancelled = 0;
     // PAID astrology-service revenue (horoscope reports + appointments) — the
     // app's real per-service income now that all matrimony features are free.
-    int svcRevToday = 0, svcRevMonth = 0, svcRevTotal = 0;
+    int svcRevToday = 0, svcRevWeek = 0, svcRevMonth = 0, svcRevYear = 0,
+        svcRevTotal = 0;
     final consultByAstro = <String, int>{};
     // Completed-report count + consultation revenue per astrologer (leaderboard).
     final completedByAstro = <String, int>{};
@@ -1537,7 +1540,21 @@ class FirestoreService {
           final paidAt = ts(m['paidAt']) ?? created;
           if (paidAt != null) {
             if (!paidAt.isBefore(todayStart)) svcRevToday += amount;
+            if (!paidAt.isBefore(weekStart)) svcRevWeek += amount;
             if (!paidAt.isBefore(monthStart)) svcRevMonth += amount;
+            if (!paidAt.isBefore(yearStart)) svcRevYear += amount;
+            // Feed the combined revenue-trend buckets (the buckets are meant to
+            // combine astrologer subs + paid services — see their declaration).
+            final paidDay = DateTime(paidAt.year, paidAt.month, paidAt.day);
+            final dayDiff = todayStart.difference(paidDay).inDays;
+            if (dayDiff >= 0 && dayDiff < 7) daily[6 - dayDiff] += amount;
+            final weekDiff = dayDiff ~/ 7;
+            if (weekDiff >= 0 && weekDiff < 6) weekly[5 - weekDiff] += amount;
+            final monthDiff =
+                (now.year - paidAt.year) * 12 + (now.month - paidAt.month);
+            if (monthDiff >= 0 && monthDiff < 6) monthly[5 - monthDiff] += amount;
+            final yearDiff = now.year - paidAt.year;
+            if (yearDiff >= 0 && yearDiff < 4) yearly[3 - yearDiff] += amount;
           }
         }
         final aid = (m['astrologerId'] ?? '') as String;
@@ -1585,7 +1602,9 @@ class FirestoreService {
           final act = ts(m['activatedAt']);
           if (act != null) {
             if (!act.isBefore(todayStart)) astroRevToday += subAmt;
+            if (!act.isBefore(weekStart)) astroRevWeek += subAmt;
             if (!act.isBefore(monthStart)) astroRevMonth += subAmt;
+            if (!act.isBefore(yearStart)) astroRevYear += subAmt;
             final actDay = DateTime(act.year, act.month, act.day);
             final dayDiff = todayStart.difference(actDay).inDays;
             if (dayDiff >= 0 && dayDiff < 7) daily[6 - dayDiff] += subAmt;
@@ -1727,9 +1746,9 @@ class FirestoreService {
       // Combined revenue = user subs + astrologer subs + PAID astrology
       // services (horoscope reports & appointments).
       revenueToday: revToday + astroRevToday + svcRevToday,
-      revenueWeek: revWeek,
+      revenueWeek: revWeek + astroRevWeek + svcRevWeek,
       revenueMonth: revMonth + astroRevMonth + svcRevMonth,
-      revenueYear: revYear,
+      revenueYear: revYear + astroRevYear + svcRevYear,
       revenueTotal: revTotal + astroRevTotal + svcRevTotal,
       revenueDaily: revenueDaily,
       revenueWeekly: revenueWeekly,

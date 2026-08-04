@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/admin_provider.dart';
+import '../../widgets/common/data_states.dart';
+import '../../widgets/common/skeletons.dart';
 
 /// Admin → Activity Log. Live view of the immutable `admin_logs` audit trail:
 /// who did what, to whom, when. Newest first.
@@ -61,21 +63,25 @@ class AdminActivityLogScreen extends ConsumerWidget {
         foregroundColor: Colors.white,
       ),
       body: logsAsync.isLoading && logs.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : logs.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.history, size: 64, color: Colors.grey[400]),
-                      const SizedBox(height: 12),
-                      const Text('No admin activity recorded yet',
-                          style: TextStyle(color: Colors.grey)),
-                    ],
-                  ),
+          ? const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: SkeletonList(items: 8, showAvatar: true),
+            )
+          : logsAsync.hasError && logs.isEmpty
+              ? ErrorStateView(
+                  message: 'Unable to load the activity log. Please try again.',
+                  onRetry: () => ref.invalidate(adminLogsProvider),
                 )
+              : logs.isEmpty
+                  ? const EmptyState(
+                      icon: Icons.history,
+                      message: 'No admin activity recorded yet',
+                      subtitle:
+                          'Approvals, rejections and other admin actions will '
+                          'be logged here automatically.',
+                    )
               : ListView.separated(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   itemCount: logs.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (_, i) {
@@ -85,11 +91,15 @@ class AdminActivityLogScreen extends ConsumerWidget {
                     final targetUid = (log['targetUid'] ?? '').toString();
                     final (icon, color) = _visual(action);
                     return Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade200),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 8),
+                        ],
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,

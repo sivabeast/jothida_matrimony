@@ -286,7 +286,24 @@ class AuthRepository {
 
   Future<UserModel?> getUserModel(String uid) => _firestore.getUser(uid);
 
-  Future<void> signOut() => _auth.signOut();
+  /// Signs out. The device's FCM token is deleted and cleared from
+  /// `users/{uid}` FIRST (while the session still satisfies the owner-only
+  /// rules) so a shared device stops receiving the previous account's pushes
+  /// the moment they log out — best-effort with a hard bound, because a push
+  /// hiccup must never block or delay signing out.
+  Future<void> signOut() async {
+    final uid = _auth.currentUserId;
+    if (uid != null) {
+      try {
+        await _fcm.deleteToken(uid).timeout(const Duration(seconds: 5));
+        debugPrint('[AuthRepository] signOut: FCM token cleared for $uid.');
+      } catch (e) {
+        debugPrint(
+            '[AuthRepository] signOut: FCM token cleanup skipped (non-fatal): $e');
+      }
+    }
+    await _auth.signOut();
+  }
 
   /// Immediately and permanently deletes the signed-in account — no admin
   /// approval, no waiting period.

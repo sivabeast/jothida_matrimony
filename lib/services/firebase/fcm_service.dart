@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/navigation/root_navigator.dart';
@@ -39,6 +40,32 @@ class FcmService {
   static String? _pendingRoute;
   static Timer? _pendingRouteTimer;
 
+  /// Renders REAL heads-up notifications for pushes that arrive while the app
+  /// is in the FOREGROUND — the OS only draws tray notifications itself when
+  /// the app is backgrounded/killed.
+  static final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
+
+  /// The app's single high-importance Android channel. The id MUST stay in
+  /// sync with:
+  ///  • android/app/src/main/AndroidManifest.xml
+  ///    (com.google.firebase.messaging.default_notification_channel_id), and
+  ///  • functions/index.js (channelId on every FCM android payload).
+  /// Creating it here at startup is what makes it safe for the server to name
+  /// it — a channelId pointing at a non-existent channel silently falls back
+  /// to the low-importance "Miscellaneous" channel.
+  static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
+    'high_importance_channel',
+    'Notifications',
+    description:
+        'Interests, messages, reports, payments and announcements.',
+    importance: Importance.high,
+  );
+
+  /// True once the local-notifications plugin initialized and the channel
+  /// exists; until then foreground pushes fall back to the SnackBar banner.
+  static bool _localNotificationsReady = false;
+
   Future<void> initialize() async {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
@@ -49,9 +76,14 @@ class FcmService {
     );
     debugPrint('FCM permission: ${settings.authorizationStatus}');
 
-    // Foreground messages → show an in-app banner; the OS does NOT show a tray
-    // notification while the app is open.
-    FirebaseMessaging.onMessage.listen(_showForegroundBanner);
+    // Local-notifications plugin + the high-importance channel — must exist
+    // BEFORE any push can arrive, both for foreground heads-up rendering and
+    // so the server-side channelId targets a real channel.
+    await _initLocalNotifications();
+
+    // Foreground messages → REAL heads-up notification (SnackBar fallback);
+    // the OS does NOT show a tray notification while the app is open.
+    FirebaseMessaging.onMessage.listen(_onForegroundMessage);
 
     // Tap on a tray notification while the app is backgrounded.
     FirebaseMessaging.onMessageOpenedApp.listen(_handleTap);
@@ -102,7 +134,98 @@ class FcmService {
     }
   }
 
+  /// Initializes flutter_local_notifications, creates the high-importance
+  /// channel, wires local-notification taps into the SAME deep-link handler as
+  /// push taps, and replays a launch-by-local-notification (the app was killed
+  /// after a foreground notification was shown, then the user tapped it).
+  /// Best-effort: on any failure the foreground path falls back to SnackBars.
+  Future<void> _initLocalNotifications() async {
+    try {
+      await _localNotifications.initialize(
+        const InitializationSettings(
+          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          iOS: DarwinInitializationSettings(),
+        ),
+        onDidReceiveNotificationResponse: (response) {
+          final route = response.payload;
+          if (route != null && route.isNotEmpty) _navigate(route);
+        },
+      );
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(_channel);
+      _localNotificationsReady = true;
+
+      // Cold start from tapping a still-visible foreground notification after
+      // the app was killed: replay its route through the stash-and-retry
+      // navigation (same contract as getInitialMessage).
+      final launch =
+          await _localNotifications.getNotificationAppLaunchDetails();
+      final launchRoute = launch?.notificationResponse?.payload;
+      if (launch?.didNotificationLaunchApp == true &&
+          launchRoute != null &&
+          launchRoute.isNotEmpty) {
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) => _navigate(launchRoute));
+      }
+    } catch (e) {
+      debugPrint(
+          'Local notifications init failed (SnackBar fallback active): $e');
+    }
+  }
+
+  /// Foreground push → heads-up local notification on the high-importance
+  /// channel, carrying the deep-link route as its payload. Falls back to the
+  /// SnackBar banner when the plugin is unavailable.
+  void _onForegroundMessage(RemoteMessage message) {
+    if (!_localNotificationsReady) {
+      _showForegroundBanner(message);
+      return;
+    }
+    final n = message.notification;
+    final title = n?.title ?? message.data['title']?.toString() ?? '';
+    final body = n?.body ?? message.data['body']?.toString() ?? '';
+    final route = message.data['route']?.toString() ?? '';
+    debugPrint('FCM foreground: $title');
+    if (title.isEmpty && body.isEmpty) return;
+    // Stable id per collapse key (e.g. one per chat thread) so a burst of
+    // messages REPLACES its notification instead of stacking dozens;
+    // uncollapsed events get a unique id each.
+    final collapse = message.collapseKey;
+    final id = (collapse != null && collapse.isNotEmpty)
+        ? collapse.hashCode
+        : DateTime.now().millisecondsSinceEpoch.remainder(1 << 31);
+    _localNotifications
+        .show(
+          id,
+          title.isEmpty ? null : title,
+          body.isEmpty ? null : body,
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              _channel.id,
+              _channel.name,
+              channelDescription: _channel.description,
+              importance: Importance.high,
+              priority: Priority.high,
+              icon: '@mipmap/ic_launcher',
+            ),
+            iOS: const DarwinNotificationDetails(
+              presentAlert: true,
+              presentSound: true,
+            ),
+          ),
+          payload: route,
+        )
+        .catchError((Object e) {
+      debugPrint('Foreground notification failed, showing banner: $e');
+      _showForegroundBanner(message);
+    });
+  }
+
   /// Shows a foreground banner with a "View" action that deep-links directly.
+  /// FALLBACK path only — used when the local-notifications plugin could not
+  /// initialize (so foreground pushes are still visible somewhere).
   void _showForegroundBanner(RemoteMessage message) {
     final n = message.notification;
     final title = n?.title ?? message.data['title']?.toString() ?? '';

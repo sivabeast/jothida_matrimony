@@ -299,6 +299,24 @@ class AstrologerRequestModel {
   final bool inProgress;
   final DateTime? startedAt;
 
+  // ── Admin self-analysis (spec §11: Admin Horoscope Analysis) ───────────────
+  /// True when the ADMIN has claimed this request to analyze it personally
+  /// ("Assign to Me" / "Analyze as Admin" on the admin Horoscope Requests
+  /// page) rather than routing it to an astrology-team employee. Cleared again
+  /// whenever the request is (re)assigned to an employee.
+  final bool assignedToAdmin;
+
+  // ── Completion stamp (WHO submitted the finished report) ───────────────────
+  /// Auth uid of whoever submitted the completed report ('' for legacy docs).
+  final String completedBy;
+
+  /// LOWERCASED email of the submitter ('' for legacy docs).
+  final String completedByEmail;
+
+  /// 'admin' when the report was completed by an admin account, 'employee' for
+  /// an astrology-team member ('' for legacy docs).
+  final String completedByRole;
+
   // ── In-person appointment (Horoscope Compatibility Report booking) ─────────
   /// The office-visit day (date-only). Null for non-appointment requests.
   final DateTime? visitDate;
@@ -367,6 +385,10 @@ class AstrologerRequestModel {
     this.paymentId = '',
     this.inProgress = false,
     this.startedAt,
+    this.assignedToAdmin = false,
+    this.completedBy = '',
+    this.completedByEmail = '',
+    this.completedByRole = '',
     this.visitDate,
     this.slotStartMinutes,
     this.session = '',
@@ -595,6 +617,10 @@ class AstrologerRequestModel {
       paymentId: (d['paymentId'] ?? '').toString(),
       inProgress: d['inProgress'] == true,
       startedAt: _toDate(d['startedAt']),
+      assignedToAdmin: d['assignedToAdmin'] == true,
+      completedBy: (d['completedBy'] ?? '').toString(),
+      completedByEmail: (d['completedByEmail'] ?? '').toString(),
+      completedByRole: (d['completedByRole'] ?? '').toString(),
       visitDate: _toDate(d['visitDate']),
       slotStartMinutes: (d['slotStartMinutes'] as num?)?.toInt(),
       session: (d['session'] ?? '').toString(),
@@ -656,6 +682,10 @@ class AstrologerRequestModel {
         'paymentId': paymentId,
         'inProgress': inProgress,
         'startedAt': startedAt != null ? Timestamp.fromDate(startedAt!) : null,
+        'assignedToAdmin': assignedToAdmin,
+        'completedBy': completedBy,
+        'completedByEmail': completedByEmail,
+        'completedByRole': completedByRole,
         'visitDate': visitDate != null ? Timestamp.fromDate(visitDate!) : null,
         'slotStartMinutes': slotStartMinutes,
         'session': session,
@@ -696,6 +726,10 @@ class AstrologerRequestModel {
     String? paymentId,
     bool? inProgress,
     DateTime? startedAt,
+    bool? assignedToAdmin,
+    String? completedBy,
+    String? completedByEmail,
+    String? completedByRole,
   }) =>
       AstrologerRequestModel(
         id: id,
@@ -748,6 +782,10 @@ class AstrologerRequestModel {
         inProgress: inProgress ?? this.inProgress,
         startedAt: startedAt ??
             (inProgress == true ? DateTime.now() : this.startedAt),
+        assignedToAdmin: assignedToAdmin ?? this.assignedToAdmin,
+        completedBy: completedBy ?? this.completedBy,
+        completedByEmail: completedByEmail ?? this.completedByEmail,
+        completedByRole: completedByRole ?? this.completedByRole,
         // Appointment details are fixed at booking time.
         visitDate: visitDate,
         slotStartMinutes: slotStartMinutes,

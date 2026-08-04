@@ -4,13 +4,18 @@ import 'package:go_router/go_router.dart';
 import '../../core/navigation/root_navigator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
+import '../../models/astrologer_request_model.dart';
+import '../../models/compatibility_report_model.dart';
 import '../../models/interest_model.dart';
 import '../../models/wedding_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/interest_provider.dart';
+import '../../providers/match_analysis_provider.dart';
+import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/wedding_provider.dart';
+import '../report/compatibility_report_screen.dart';
 import '../../widgets/common/coming_soon.dart';
 import '../../widgets/common/network_photo.dart';
 import '../../widgets/interest/match_celebration.dart';
@@ -687,6 +692,89 @@ class _InterestCard extends ConsumerWidget {
     }
   }
 
+  /// Report action for an accepted match, state-aware per spec §12 (one
+  /// request per partner profile — the paid button disappears after the first
+  /// request and never comes back).
+  Widget _compatReportAction(BuildContext context, WidgetRef ref,
+      String otherUserId, dynamic l10n) {
+    // Partner PROFILE id: prefer the live profile doc; fall back to the id
+    // stamped on the interest (older docs may carry a stale/missing id).
+    final amSender = interest.senderId == myUid;
+    final partnerProfileId =
+        ref.watch(profileByUserIdProvider(otherUserId)).valueOrNull?.id ??
+            (amSender ? interest.receiverProfileId : interest.senderProfileId);
+    final reqAsync = partnerProfileId.isEmpty
+        ? const AsyncValue<AstrologerRequestModel?>.data(null)
+        : ref.watch(compatRequestForPairProvider(partnerProfileId));
+    final req = reqAsync.valueOrNull;
+    // Withhold the action until the answer is known — a member who already
+    // requested must never see the paid CTA flash first.
+    if (reqAsync.isLoading && !reqAsync.hasValue) return const SizedBox.shrink();
+
+    if (req == null) {
+      return SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          // While the request stream is still loading the tap re-checks on
+          // the service screen itself, so a duplicate can never slip through.
+          onPressed: () {
+            if (otherUserId.isEmpty) {
+              _snack(context, l10n.horoscopeUnavailableMember);
+              return;
+            }
+            context.push('/horoscope-report/$otherUserId');
+          },
+          icon: const Icon(Icons.description_outlined, size: 18),
+          label: Text(l10n.getHoroscopeCompatibilityReport),
+          style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary)),
+        ),
+      );
+    }
+
+    if (req.status == AstrologerRequestStatus.completed) {
+      return SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: () {
+            final compat = CompatibilityReport.tryFrom(req.compatReport);
+            if (compat != null && compat.isSubmitted) {
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => CompatibilityReportScreen(
+                    requestId: req.id, request: req),
+              ));
+              return;
+            }
+            ref.read(homeTabIndexProvider.notifier).state = kReportsTabIndex;
+            context.go('/home');
+          },
+          icon: const Icon(Icons.visibility_outlined, size: 18),
+          label: Text(l10n.viewHoroscopeReport),
+          style: FilledButton.styleFrom(
+              backgroundColor: AppColors.success,
+              foregroundColor: Colors.white),
+        ),
+      );
+    }
+
+    // Pending / in-progress → a quiet status chip, tap = Reports tab.
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () {
+          ref.read(homeTabIndexProvider.notifier).state = kReportsTabIndex;
+          context.go('/home');
+        },
+        icon: const Icon(Icons.hourglass_top, size: 18),
+        label: Text(l10n.reportUnderAnalysisTitle),
+        style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.warning,
+            side: BorderSide(color: AppColors.warning.withOpacity(0.6))),
+      ),
+    );
+  }
+
   Widget _actions(BuildContext context, WidgetRef ref, String otherUserId,
       String name, String photo) {
     final l10n = context.l10n;
@@ -784,26 +872,10 @@ class _InterestCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 10),
-            // Get a professional Horoscope Compatibility Report — creates a paid
-            // report request that is auto-assigned to an employee and delivered
-            // to the user's Reports page.
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  if (otherUserId.isEmpty) {
-                    _snack(context, l10n.horoscopeUnavailableMember);
-                    return;
-                  }
-                  context.push('/horoscope-report/$otherUserId');
-                },
-                icon: const Icon(Icons.description_outlined, size: 18),
-                label: Text(context.l10n.getHoroscopeCompatibilityReport),
-                style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary)),
-              ),
-            ),
+            // Professional Horoscope Compatibility Report — ONE request per
+            // partner profile (spec §12): before any request → the paid CTA;
+            // pending → a status chip; completed → View Horoscope Report.
+            _compatReportAction(context, ref, otherUserId, l10n),
             const SizedBox(height: 10),
             // Marriage Fixed → mutual confirmation unlocks the shared
             // Wedding Workspace for the couple + invited family members.

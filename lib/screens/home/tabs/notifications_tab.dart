@@ -123,6 +123,15 @@ void _openNotificationTarget(
       // The member's profile went live — Home is where they see themselves
       // back in the flow. (Free-text admin notices have no destination.)
       'profile_approval' => '/home',
+      // Play Billing / booking payments confirm into the Reports tab.
+      'payment_success' => '/reports',
+      // Accepted interest unlocked the other member's contact details —
+      // targetId is their USER id (matches the /profile-user/:uid route).
+      'contact_available' => n.targetId.isNotEmpty
+          ? '/profile-user/${n.targetId}'
+          : '/interests?tab=accepted',
+      // Admin edited the member's profile — review it on My Profile.
+      'admin_update' => '/my-profile',
       _ => '',
     };
   }

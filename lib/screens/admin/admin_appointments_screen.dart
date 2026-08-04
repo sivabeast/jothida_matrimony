@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_dialogs.dart';
 import '../../core/utils/appointment_status.dart';
 import '../../core/utils/slot_generator.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../providers/appointment_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../widgets/common/data_states.dart';
 import '../../widgets/common/network_photo.dart';
+import '../../widgets/common/skeletons.dart';
 
 enum _ApptFilter { all, today, upcoming, confirmed, pending, completed, cancelled }
 
@@ -99,16 +102,28 @@ class _AdminAppointmentsScreenState
           _filterChips(),
           Expanded(
             child: async.when(
-              loading: () => const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary)),
-              error: (e, __) => _message('Could not load appointments.\n$e'),
+              loading: () => const SkeletonList(items: 5),
+              error: (e, __) => ErrorStateView(
+                message: 'Unable to load appointments. Please try again.',
+                onRetry: () => ref.invalidate(allAppointmentsProvider),
+              ),
               data: (all) {
                 final list = all
                     .where(_matchesFilter)
                     .where(_matchesQuery)
                     .toList();
                 if (list.isEmpty) {
-                  return _message('No appointments match this view.');
+                  final filtered =
+                      _filter != _ApptFilter.all || _query.trim().isNotEmpty;
+                  return EmptyState(
+                    icon: Icons.event_busy_outlined,
+                    message: filtered
+                        ? 'No appointments match this view'
+                        : 'No appointments yet',
+                    subtitle: filtered
+                        ? 'Try a different filter or clear the search.'
+                        : 'New bookings will appear here automatically.',
+                  );
                 }
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
@@ -176,22 +191,11 @@ class _AdminAppointmentsScreenState
         ),
       );
 
-  Widget _message(String m) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Text(m,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600], fontSize: 13.5)),
-        ),
-      );
 }
 
 class _AppointmentAdminCard extends ConsumerWidget {
   final AstrologerRequestModel appt;
   const _AppointmentAdminCard({required this.appt});
-
-  void _snack(BuildContext context, String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   Future<void> _setStatus(BuildContext context, WidgetRef ref,
       AstrologerRequestStatus status) async {
@@ -200,39 +204,35 @@ class _AppointmentAdminCard extends ConsumerWidget {
           .read(appointmentControllerProvider.notifier)
           .setStatus(appt, status);
       if (context.mounted) {
-        _snack(context, 'Appointment ${appointmentStatusLabel(status)}.');
+        showAppSnack(
+            context, 'Appointment ${appointmentStatusLabel(status)}.');
       }
     } catch (_) {
-      if (context.mounted) _snack(context, 'Action failed. Please try again.');
+      if (context.mounted) {
+        showAppSnack(context, 'Action failed. Please try again.', error: true);
+      }
     }
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete appointment?'),
-        content: const Text(
-            'This permanently removes the booking and frees its slot.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error, foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+    final ok = await showAppConfirmDialog(
+      context,
+      title: 'Delete Appointment?',
+      message: 'This permanently removes the booking and frees its slot. '
+          'This cannot be undone.',
+      confirmLabel: 'Delete',
+      icon: Icons.delete_outline_rounded,
+      danger: true,
     );
-    if (ok != true) return;
+    if (!ok) return;
+    if (!context.mounted) return;
     try {
       await ref.read(appointmentControllerProvider.notifier).delete(appt);
-      if (context.mounted) _snack(context, 'Appointment deleted.');
+      if (context.mounted) showAppSnack(context, 'Appointment deleted.');
     } catch (_) {
-      if (context.mounted) _snack(context, 'Delete failed. Please try again.');
+      if (context.mounted) {
+        showAppSnack(context, 'Delete failed. Please try again.', error: true);
+      }
     }
   }
 

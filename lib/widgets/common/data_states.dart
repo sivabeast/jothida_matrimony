@@ -26,10 +26,16 @@ class LoadingState extends StatelessWidget {
 class EmptyState extends StatelessWidget {
   final IconData icon;
   final String message;
+  final String? subtitle;
+  final String? actionLabel;
+  final VoidCallback? onAction;
   const EmptyState({
     super.key,
     this.icon = Icons.inbox_outlined,
     this.message = 'No Data Found',
+    this.subtitle,
+    this.actionLabel,
+    this.onAction,
   });
 
   @override
@@ -45,6 +51,24 @@ class EmptyState extends StatelessWidget {
             Text(message,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            if (subtitle != null) ...[
+              const SizedBox(height: 6),
+              Text(subtitle!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
+            ],
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: 16),
+              FilledButton.tonalIcon(
+                onPressed: onAction,
+                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                label: Text(actionLabel!),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.10),
+                  foregroundColor: AppColors.primary,
+                ),
+              ),
+            ],
           ],
         ),
       ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_dialogs.dart';
 import '../../models/app_update_config.dart';
 import '../../providers/app_update_provider.dart';
 
@@ -48,7 +49,6 @@ class _AppUpdateSettingsScreenState
   }
 
   Future<void> _save() async {
-    final messenger = ScaffoldMessenger.of(context);
     setState(() => _saving = true);
     try {
       final cfg = AppUpdateConfig(
@@ -63,12 +63,13 @@ class _AppUpdateSettingsScreenState
           .collection('app_settings')
           .doc('app_update')
           .set(cfg.toMap(), SetOptions(merge: true));
-      messenger.showSnackBar(
-          const SnackBar(content: Text('App update settings saved.')));
+      if (mounted) showAppSnack(context, 'App update settings saved.');
     } catch (e) {
       debugPrint('[AppUpdateSettings] save failed: $e');
-      messenger.showSnackBar(const SnackBar(
-          content: Text('Could not save settings. Please try again.')));
+      if (mounted) {
+        showAppSnack(context, 'Could not save settings. Please try again.',
+            error: true);
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }

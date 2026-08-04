@@ -75,12 +75,17 @@ class NotificationNotifier extends Notifier<void> {
       lang ??= ref.read(localeProvider)?.languageCode ?? 'en';
 
       final t = _template(event, lang == 'ta', name);
+      // Every notification ships a deep-link route: callers may override, but
+      // an omitted route falls back to the event's canonical screen so a PUSH
+      // tap always navigates (the in-app feed has its own type fallback; the
+      // FCM tap handler only understands data.route).
+      final resolvedRoute = route.isEmpty ? _defaultRoute(event) : route;
       await ref.read(firestoreServiceProvider).createNotification(
             userId: toUid,
             title: t.title,
             body: t.body,
             type: _typeKey(event),
-            data: route.isEmpty ? null : {'route': route},
+            data: resolvedRoute.isEmpty ? null : {'route': resolvedRoute},
             id: id,
             senderId:
                 ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ?? '',
@@ -91,6 +96,20 @@ class NotificationNotifier extends Notifier<void> {
       debugPrint('[Notifications] notify(${event.name}) failed: $e');
     }
   }
+
+  /// Canonical destination per event — used when the caller didn't pass an
+  /// explicit route. Kept aligned with the NotificationsTab type fallback and
+  /// the routes registered in app_router.dart.
+  static String _defaultRoute(AppNotificationEvent e) => switch (e) {
+        AppNotificationEvent.interestReceived => '/interests?tab=received',
+        AppNotificationEvent.interestAccepted => '/interests?tab=accepted',
+        AppNotificationEvent.interestRejected => '/interests?tab=rejected',
+        AppNotificationEvent.profileApproved => '/home',
+        AppNotificationEvent.reportReady => '/reports',
+        AppNotificationEvent.appointmentConfirmed => '/my-appointments',
+        AppNotificationEvent.adminProfileUpdate => '/my-profile',
+        AppNotificationEvent.reportAssigned => '/astrologer-dashboard',
+      };
 
   /// Stored `type` strings — kept aligned with the NotificationsTab visuals.
   static String _typeKey(AppNotificationEvent e) => switch (e) {

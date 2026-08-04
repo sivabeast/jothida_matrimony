@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/profile_completion.dart';
 import '../../models/profile_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/admin_provider.dart';
@@ -17,13 +18,17 @@ import '../../widgets/common/data_states.dart';
 
 /// Admin → Users. Manages MATRIMONY USERS only.
 ///
+/// - TABS: All / Male / Female / Incomplete (users doc without a joined
+///   matrimony profile), each with a LIVE count in its label.
 /// - SEARCH: one debounced field matching the user (name / email / phone /
 ///   uid) AND the joined matrimony profile (Tamil + English name, profile id,
 ///   religion, caste, city, district, state, education, occupation).
-/// - FILTERS: single-select chips with LIVE counts computed from the
-///   `allUsersProvider` / `profilesByUserIdProvider` streams (no one-shot
-///   stats dependency) — All · Male · Female · Approved · Pending · Rejected ·
-///   Suspended · Recently Joined · Recently Updated.
+/// - FILTERS: status chips with LIVE counts applied WITHIN the active tab —
+///   All · Approved · Pending · Rejected · Suspended · Recently Joined ·
+///   Recently Updated. (Male/Female moved up into the tab bar.)
+/// - SORT: Newest first (default) · Name A-Z · Last login · Completion %.
+/// - STICKY HEADER: the search row + tab bar + filter chips are a pinned
+///   SliverPersistentHeader; only the summary card and the list scroll.
 /// - BULK ACTIONS: a checklist toggle enters multi-select mode (checkboxes +
 ///   Select All) with a bottom bar: Approve / Reject / Delete / Export CSV /
 ///   Notify selected.
@@ -81,6 +86,7 @@ class _SummaryCard extends StatelessWidget {
                       color: Colors.white,
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
+                      fontFamily: 'Poppins',
                       height: 1.1)),
               Text(label,
                   style: const TextStyle(color: Colors.white70, fontSize: 13)),
@@ -138,6 +144,36 @@ Widget _chip(String label, Color color) => Container(
               color: color, fontSize: 9.5, fontWeight: FontWeight.bold)),
     );
 
+/// Display name resolution shared by the row card, sorting and CSV export:
+/// profile fullName > user displayName > email > uid.
+String _displayNameOf(UserModel u, ProfileModel? p) {
+  if (p != null && p.fullName.trim().isNotEmpty) return p.fullName.trim();
+  final dn = u.displayName?.trim() ?? '';
+  if (dn.isNotEmpty) return dn;
+  return u.email ?? u.uid;
+}
+
+// ── Date formatting (tiny local helpers — no intl dependency) ────────────────
+
+const _kMonths = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+String _shortDate(DateTime d) => '${d.day} ${_kMonths[d.month - 1]} ${d.year}';
+
+/// Compact relative time, e.g. "2d ago".
+String _relativeTime(DateTime d) {
+  final diff = DateTime.now().difference(d);
+  if (diff.inMinutes < 1) return 'just now';
+  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+  if (diff.inHours < 24) return '${diff.inHours}h ago';
+  if (diff.inDays < 7) return '${diff.inDays}d ago';
+  if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}w ago';
+  if (diff.inDays < 365) return '${(diff.inDays / 30).floor()}mo ago';
+  return '${(diff.inDays / 365).floor()}y ago';
+}
+
 // ── CSV helpers (mirrors admin_export.dart, whose helpers are private) ───────
 
 String _csvCell(Object? v) {
@@ -157,12 +193,26 @@ String _stamp() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Filters
+// Tabs / filters / sort
 // ─────────────────────────────────────────────────────────────────────────────
+
+/// Primary segmentation. "Incomplete" = logged-in users (users doc) with NO
+/// joined matrimony profile document.
+enum _UserTab {
+  all('All', Icons.people_outline),
+  male('Male', Icons.male),
+  female('Female', Icons.female),
+  incomplete('Incomplete', Icons.person_off_outlined);
+
+  final String label;
+  final IconData emptyIcon;
+  const _UserTab(this.label, this.emptyIcon);
+}
+
+/// Secondary status filter, applied within the active tab. (Male/Female were
+/// promoted to tabs.)
 enum _UserFilter {
   all('All'),
-  male('Male'),
-  female('Female'),
   approved('Approved'),
   pending('Pending'),
   rejected('Rejected'),
@@ -172,6 +222,16 @@ enum _UserFilter {
 
   final String label;
   const _UserFilter(this.label);
+}
+
+enum _UserSort {
+  newest('Newest first'),
+  nameAz('Name A-Z'),
+  lastLogin('Last login'),
+  completion('Completion %');
+
+  final String label;
+  const _UserSort(this.label);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -184,11 +244,20 @@ class _UsersTab extends ConsumerStatefulWidget {
 }
 
 class _UsersTabState extends ConsumerState<_UsersTab>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
+  // Pinned-header row heights (fixed so the SliverPersistentHeader extent is
+  // exact — each row is wrapped in a SizedBox of the same height).
+  static const double _kSearchRowH = 62; // 8 top pad + 48 row + 6 bottom pad
+  static const double _kTabBarH = 46; // kTextTabBarHeight
+  static const double _kChipsH = 46;
+  static const double _kSelectionH = 40;
+
   final _searchCtrl = TextEditingController();
+  late final TabController _tabCtrl;
   Timer? _debounce;
   String _query = '';
   _UserFilter _filter = _UserFilter.all;
+  _UserSort _sort = _UserSort.newest;
 
   // Multi-select mode.
   bool _selectMode = false;
@@ -199,13 +268,24 @@ class _UsersTabState extends ConsumerState<_UsersTab>
   bool get wantKeepAlive => true;
 
   @override
+  void initState() {
+    super.initState();
+    _tabCtrl = TabController(length: _UserTab.values.length, vsync: this);
+    // Rebuild on tap AND on swipe-settle so counts + list follow the tab.
+    _tabCtrl.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
   void dispose() {
     _debounce?.cancel();
+    _tabCtrl.dispose();
     _searchCtrl.dispose();
     super.dispose();
   }
 
-  // ── Search + filter predicates ─────────────────────────────────────────────
+  // ── Search + tab + filter predicates ───────────────────────────────────────
 
   void _onSearchChanged(String v) {
     _debounce?.cancel();
@@ -241,15 +321,18 @@ class _UsersTabState extends ConsumerState<_UsersTab>
         has(p.occupation);
   }
 
+  bool _tabMatches(_UserTab t, UserModel u, ProfileModel? p) => switch (t) {
+        _UserTab.all => true,
+        _UserTab.male => (p?.gender ?? '').trim().toLowerCase() == 'male',
+        _UserTab.female => (p?.gender ?? '').trim().toLowerCase() == 'female',
+        _UserTab.incomplete => p == null,
+      };
+
   bool _filterMatches(
       _UserFilter f, UserModel u, ProfileModel? p, DateTime cutoff) {
     switch (f) {
       case _UserFilter.all:
         return true;
-      case _UserFilter.male:
-        return (p?.gender ?? '').trim().toLowerCase() == 'male';
-      case _UserFilter.female:
-        return (p?.gender ?? '').trim().toLowerCase() == 'female';
       case _UserFilter.approved:
         return (p?.status ?? '').trim().toLowerCase() == 'approved';
       case _UserFilter.pending:
@@ -262,6 +345,31 @@ class _UsersTabState extends ConsumerState<_UsersTab>
         return u.createdAt.isAfter(cutoff);
       case _UserFilter.recentUpdated:
         return p != null && p.updatedAt.isAfter(cutoff);
+    }
+  }
+
+  /// In-place sort of the visible rows per the active [_sort] mode.
+  void _sortUsers(List<UserModel> list, Map<String, ProfileModel> profiles) {
+    switch (_sort) {
+      case _UserSort.newest:
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      case _UserSort.nameAz:
+        list.sort((a, b) => _displayNameOf(a, profiles[a.uid])
+            .toLowerCase()
+            .compareTo(_displayNameOf(b, profiles[b.uid]).toLowerCase()));
+      case _UserSort.lastLogin:
+        final epoch = DateTime.fromMillisecondsSinceEpoch(0);
+        list.sort((a, b) =>
+            (b.lastLoginAt ?? epoch).compareTo(a.lastLoginAt ?? epoch));
+      case _UserSort.completion:
+        // Profile-less rows sort last (-1 < 0%).
+        final pct = <String, int>{
+          for (final u in list)
+            u.uid: profiles[u.uid] == null
+                ? -1
+                : computeProfileCompletion(profiles[u.uid]).percent,
+        };
+        list.sort((a, b) => pct[b.uid]!.compareTo(pct[a.uid]!));
     }
   }
 
@@ -490,90 +598,128 @@ class _UsersTabState extends ConsumerState<_UsersTab>
   Widget build(BuildContext context) {
     super.build(context);
     final usersAsync = ref.watch(allUsersProvider);
-    final profiles = ref.watch(profilesByUserIdProvider).valueOrNull ??
-        const <String, ProfileModel>{};
+    final profilesAsync = ref.watch(profilesByUserIdProvider);
+    final profiles =
+        profilesAsync.valueOrNull ?? const <String, ProfileModel>{};
 
     final all = usersAsync.valueOrNull ?? const <UserModel>[];
     final cutoff = DateTime.now().subtract(const Duration(days: 7));
 
-    // Search first, then chip counts + the active filter on the searched set,
-    // so every chip shows a LIVE count of what selecting it would display.
+    // The users↔profiles join drives the tabs (Incomplete = no joined
+    // profile), so wait for BOTH streams before rendering rows — otherwise
+    // every user would flash through the Incomplete tab.
+    final loading = (usersAsync.isLoading && !usersAsync.hasValue) ||
+        (profilesAsync.isLoading && !profilesAsync.hasValue);
+
+    // Search first; tab counts are computed on the searched set so each tab
+    // label shows a LIVE count of what opening it would display.
     final searched =
         all.where((u) => _queryMatches(u, profiles[u.uid])).toList();
+    final tabCounts = <int>[
+      for (final t in _UserTab.values)
+        searched.where((u) => _tabMatches(t, u, profiles[u.uid])).length,
+    ];
+
+    final tab = _UserTab.values[_tabCtrl.index];
+    final inTab =
+        searched.where((u) => _tabMatches(tab, u, profiles[u.uid])).toList();
+
+    // Status-chip counts + the active filter, both within the active tab.
     final counts = <_UserFilter, int>{
       for (final f in _UserFilter.values)
-        f: searched
+        f: inTab
             .where((u) => _filterMatches(f, u, profiles[u.uid], cutoff))
             .length,
     };
-    final visible = searched
+    final visible = inTab
         .where((u) => _filterMatches(_filter, u, profiles[u.uid], cutoff))
         .toList();
+    _sortUsers(visible, profiles);
+
+    final headerH = _kSearchRowH +
+        _kTabBarH +
+        _kChipsH +
+        (_selectMode ? _kSelectionH : 0.0);
 
     return Column(
       children: [
-        _SummaryCard(
-            label: 'Total Users',
-            value: all.length,
-            icon: Icons.groups,
-            color: AppColors.primary),
-        _buildToolbar(),
-        SizedBox(
-          height: 46,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            children: [
-              for (final f in _UserFilter.values)
-                _CountChip(
-                    label: f.label,
-                    count: counts[f] ?? 0,
-                    selected: _filter == f,
-                    onTap: () => setState(() => _filter = f)),
-            ],
-          ),
-        ),
-        if (_selectMode) _buildSelectionHeader(visible),
         Expanded(
-          child: usersAsync.when(
-            loading: () => const LoadingState(message: 'Loading users…'),
-            error: (e, _) {
-              debugPrint('[AdminUsers] load failed: $e');
-              return ErrorStateView(
-                message: 'Connection Error — unable to load users.',
-                onRetry: () => ref.invalidate(allUsersProvider),
-              );
-            },
-            data: (_) {
-              if (visible.isEmpty) {
-                return const EmptyState(
-                    icon: Icons.people_outline,
-                    message: 'No users match this search / filter');
-              }
-              return ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                itemCount: visible.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (ctx, i) {
-                  final u = visible[i];
-                  return InkWell(
-                    onTap: _busy
-                        ? null
-                        : () => _selectMode
-                            ? _toggleUid(u.uid)
-                            : ctx.push('/admin/user/${u.uid}'),
-                    borderRadius: BorderRadius.circular(14),
-                    child: _UserCard(
-                      user: u,
-                      profile: profiles[u.uid],
-                      selectMode: _selectMode,
-                      selected: _selected.contains(u.uid),
-                      onToggle: _busy ? null : () => _toggleUid(u.uid),
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: _SummaryCard(
+                    label: 'Total Users',
+                    value: all.length,
+                    icon: Icons.groups,
+                    color: AppColors.primary),
+              ),
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _PinnedHeaderDelegate(
+                  height: headerH,
+                  child: Container(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    child: Column(
+                      children: [
+                        SizedBox(height: _kSearchRowH, child: _buildToolbar()),
+                        SizedBox(
+                            height: _kTabBarH, child: _buildTabBar(tabCounts)),
+                        SizedBox(
+                            height: _kChipsH, child: _buildFilterRow(counts)),
+                        if (_selectMode)
+                          SizedBox(
+                              height: _kSelectionH,
+                              child: _buildSelectionHeader(visible)),
+                      ],
                     ),
-                  );
-                },
-              );
-            },
+                  ),
+                ),
+              ),
+              if (loading)
+                _buildSkeletonSliver()
+              else if (usersAsync.hasError && !usersAsync.hasValue)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: ErrorStateView(
+                    message: 'Connection Error — unable to load users.',
+                    onRetry: () => ref.invalidate(allUsersProvider),
+                  ),
+                )
+              else if (visible.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: EmptyState(
+                    icon: _query.isNotEmpty ? Icons.search_off : tab.emptyIcon,
+                    message: _emptyMessage(tab),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                  sliver: SliverList.separated(
+                    itemCount: visible.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (ctx, i) {
+                      final u = visible[i];
+                      return InkWell(
+                        onTap: _busy
+                            ? null
+                            : () => _selectMode
+                                ? _toggleUid(u.uid)
+                                : ctx.push('/admin/user/${u.uid}'),
+                        borderRadius: BorderRadius.circular(16),
+                        child: _UserCard(
+                          user: u,
+                          profile: profiles[u.uid],
+                          selectMode: _selectMode,
+                          selected: _selected.contains(u.uid),
+                          onToggle: _busy ? null : () => _toggleUid(u.uid),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
           ),
         ),
         if (_selectMode)
@@ -590,10 +736,34 @@ class _UsersTabState extends ConsumerState<_UsersTab>
     );
   }
 
-  /// Search field + the multi-select mode toggle.
+  String _emptyMessage(_UserTab tab) {
+    if (_query.isNotEmpty || _filter != _UserFilter.all) {
+      return 'No users match this search / filter';
+    }
+    return switch (tab) {
+      _UserTab.all => 'No registered users yet',
+      _UserTab.male => 'No male profiles yet',
+      _UserTab.female => 'No female profiles yet',
+      _UserTab.incomplete => 'Every registered user has a profile',
+    };
+  }
+
+  /// Six static grey placeholder rows shown while the streams warm up.
+  Widget _buildSkeletonSliver() {
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+      sliver: SliverList.separated(
+        itemCount: 6,
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        itemBuilder: (_, __) => const _SkeletonCard(),
+      ),
+    );
+  }
+
+  /// Search field + sort menu + the multi-select mode toggle.
   Widget _buildToolbar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
       child: Row(
         children: [
           Expanded(
@@ -626,6 +796,8 @@ class _UsersTabState extends ConsumerState<_UsersTab>
             ),
           ),
           const SizedBox(width: 8),
+          _buildSortButton(),
+          const SizedBox(width: 8),
           IconButton(
             tooltip: _selectMode ? 'Exit selection' : 'Select multiple',
             onPressed: _busy ? null : _toggleSelectMode,
@@ -646,6 +818,90 @@ class _UsersTabState extends ConsumerState<_UsersTab>
     );
   }
 
+  Widget _buildSortButton() {
+    return PopupMenuButton<_UserSort>(
+      tooltip: 'Sort: ${_sort.label}',
+      position: PopupMenuPosition.under,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      onSelected: (s) => setState(() => _sort = s),
+      itemBuilder: (_) => [
+        for (final s in _UserSort.values)
+          PopupMenuItem<_UserSort>(
+            value: s,
+            height: 40,
+            child: Row(
+              children: [
+                Icon(
+                    s == _sort
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    size: 16,
+                    color: s == _sort ? AppColors.primary : Colors.grey[400]),
+                const SizedBox(width: 10),
+                Text(s.label,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight:
+                          s == _sort ? FontWeight.w600 : FontWeight.normal,
+                      color: s == _sort ? AppColors.primary : Colors.black87,
+                    )),
+              ],
+            ),
+          ),
+      ],
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: const Icon(Icons.sort_rounded,
+            color: AppColors.primary, size: 22),
+      ),
+    );
+  }
+
+  Widget _buildTabBar(List<int> tabCounts) {
+    return TabBar(
+      controller: _tabCtrl,
+      isScrollable: true,
+      tabAlignment: TabAlignment.start,
+      labelColor: AppColors.primary,
+      unselectedLabelColor: Colors.grey[600],
+      labelStyle: const TextStyle(
+          fontSize: 13.5, fontWeight: FontWeight.w600, fontFamily: 'Poppins'),
+      unselectedLabelStyle:
+          const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
+      indicatorColor: AppColors.primary,
+      indicatorWeight: 2.5,
+      indicatorSize: TabBarIndicatorSize.label,
+      dividerColor: Colors.grey[300],
+      dividerHeight: 1,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      tabs: [
+        for (var i = 0; i < _UserTab.values.length; i++)
+          Tab(text: '${_UserTab.values[i].label} (${tabCounts[i]})'),
+      ],
+    );
+  }
+
+  Widget _buildFilterRow(Map<_UserFilter, int> counts) {
+    return ListView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      children: [
+        for (final f in _UserFilter.values)
+          _CountChip(
+              label: f.label,
+              count: counts[f] ?? 0,
+              selected: _filter == f,
+              onTap: () => setState(() => _filter = f)),
+      ],
+    );
+  }
+
   /// "Select all" tristate + live selected count (multi-select mode only).
   Widget _buildSelectionHeader(List<UserModel> visible) {
     final selVisible =
@@ -654,15 +910,22 @@ class _UsersTabState extends ConsumerState<_UsersTab>
         ? false
         : (selVisible == visible.length ? true : null);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 2),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          Checkbox(
-            tristate: true,
-            value: allState,
-            activeColor: AppColors.primary,
-            onChanged: _busy ? null : (_) => _toggleSelectAll(visible),
+          SizedBox(
+            width: 28,
+            height: 28,
+            child: Checkbox(
+              tristate: true,
+              value: allState,
+              activeColor: AppColors.primary,
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              onChanged: _busy ? null : (_) => _toggleSelectAll(visible),
+            ),
           ),
+          const SizedBox(width: 6),
           const Text('Select all', style: TextStyle(fontSize: 13)),
           const Spacer(),
           Text('${_selected.length} selected',
@@ -674,6 +937,27 @@ class _UsersTabState extends ConsumerState<_UsersTab>
       ),
     );
   }
+}
+
+/// Fixed-extent pinned header for the search row + tab bar + filter chips.
+class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final double height;
+  final Widget child;
+  const _PinnedHeaderDelegate({required this.height, required this.child});
+
+  @override
+  double get minExtent => height;
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(
+          BuildContext context, double shrinkOffset, bool overlapsContent) =>
+      SizedBox.expand(child: child);
+
+  @override
+  bool shouldRebuild(covariant _PinnedHeaderDelegate oldDelegate) =>
+      oldDelegate.height != height || oldDelegate.child != child;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -692,14 +976,19 @@ class _UserCard extends ConsumerWidget {
       this.selected = false,
       this.onToggle});
 
-  String get _name {
-    final p = profile;
-    if (p != null && p.fullName.trim().isNotEmpty) return p.fullName.trim();
-    if (user.displayName?.trim().isNotEmpty ?? false) {
-      return user.displayName!.trim();
-    }
-    return user.email ?? user.uid;
+  String get _name => _displayNameOf(user, profile);
+
+  /// Prefer the matrimony profile photo, then the auth account photo.
+  String? get _photoUrl {
+    final pp = profile?.profilePhotoUrl;
+    if (pp != null && pp.isNotEmpty) return pp;
+    final up = user.photoUrl;
+    if (up != null && up.isNotEmpty) return up;
+    return null;
   }
+
+  String get _shortUid =>
+      user.uid.length <= 10 ? user.uid : '${user.uid.substring(0, 10)}…';
 
   Color _statusColor(String s) => switch (s) {
         'approved' => AppColors.success,
@@ -707,6 +996,13 @@ class _UserCard extends ConsumerWidget {
         'rejected' => AppColors.error,
         _ => AppColors.info,
       };
+
+  void _copyUid(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: user.uid));
+    final m = ScaffoldMessenger.of(context);
+    m.hideCurrentSnackBar();
+    m.showSnackBar(const SnackBar(content: Text('User ID copied')));
+  }
 
   Future<void> _act(BuildContext context, WidgetRef ref,
       Future<void> Function() action, String okMsg) async {
@@ -724,17 +1020,22 @@ class _UserCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = (profile?.status ?? '').trim().toLowerCase();
+    final completion =
+        profile == null ? null : computeProfileCompletion(profile).percent;
+    final photo = _photoUrl;
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: selectMode && selected
             ? Border.all(color: AppColors.primary, width: 1.4)
             : null,
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2))
         ],
       ),
       child: Row(
@@ -749,15 +1050,15 @@ class _UserCard extends ConsumerWidget {
               ),
             ),
           CircleAvatar(
-            radius: 22,
+            radius: 24,
             backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-            backgroundImage: (user.photoUrl?.isNotEmpty ?? false)
-                ? NetworkImage(user.photoUrl!)
-                : null,
-            child: (user.photoUrl?.isEmpty ?? true)
+            backgroundImage: photo != null ? NetworkImage(photo) : null,
+            child: photo == null
                 ? Text(_name.isNotEmpty ? _name[0].toUpperCase() : '?',
                     style: const TextStyle(
-                        color: AppColors.primary, fontWeight: FontWeight.bold))
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Poppins'))
                 : null,
           ),
           const SizedBox(width: 12),
@@ -769,26 +1070,86 @@ class _UserCard extends ConsumerWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 14)),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14.5,
+                        fontFamily: 'Poppins')),
                 const SizedBox(height: 2),
                 Text(user.email ?? user.phone ?? '—',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                    style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
                 const SizedBox(height: 5),
+                // Short uid — long-press copies the FULL uid.
+                GestureDetector(
+                  onLongPress: () => _copyUid(context),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.tag, size: 10, color: Colors.grey[500]),
+                        const SizedBox(width: 2),
+                        Text(_shortUid,
+                            style: TextStyle(
+                                fontSize: 10,
+                                letterSpacing: 0.3,
+                                color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
                   runSpacing: 4,
                   children: [
+                    // Membership — subscriptions were removed app-wide, every
+                    // member is on the free plan.
+                    _chip('FREE', AppColors.goldDark),
                     _chip(user.isBlocked ? 'SUSPENDED' : 'ACTIVE',
                         user.isBlocked ? AppColors.error : AppColors.success),
                     if (status.isNotEmpty)
                       _chip(status.toUpperCase(), _statusColor(status)),
                   ],
                 ),
+                const SizedBox(height: 7),
+                Row(
+                  children: [
+                    Icon(Icons.event_outlined,
+                        size: 11.5, color: Colors.grey[500]),
+                    const SizedBox(width: 3),
+                    Text('Joined ${_shortDate(user.createdAt)}',
+                        style:
+                            TextStyle(fontSize: 10.5, color: Colors.grey[600])),
+                    const SizedBox(width: 10),
+                    Icon(Icons.schedule_outlined,
+                        size: 11.5, color: Colors.grey[500]),
+                    const SizedBox(width: 3),
+                    Flexible(
+                      child: Text(
+                          user.lastLoginAt == null
+                              ? 'Never logged in'
+                              : 'Seen ${_relativeTime(user.lastLoginAt!)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: 10.5, color: Colors.grey[600])),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
+          const SizedBox(width: 8),
+          if (completion != null)
+            _CompletionRing(percent: completion)
+          else
+            _chip('No profile', Colors.blueGrey),
           if (!selectMode)
             PopupMenuButton<String>(
               onSelected: (v) async {
@@ -828,6 +1189,122 @@ class _UserCard extends ConsumerWidget {
                           contentPadding: EdgeInsets.zero)),
               ],
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Small circular profile-completion gauge with the percent in the middle.
+/// Uses the same [computeProfileCompletion] as the Home completion card, so
+/// admin and member always see the SAME number.
+class _CompletionRing extends StatelessWidget {
+  final int percent;
+  const _CompletionRing({required this.percent});
+
+  Color get _color => percent >= 80
+      ? AppColors.success
+      : (percent >= 40 ? AppColors.warning : AppColors.error);
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'Profile $percent% complete',
+      child: SizedBox(
+        width: 38,
+        height: 38,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox(
+              width: 38,
+              height: 38,
+              child: CircularProgressIndicator(
+                value: percent.clamp(0, 100) / 100,
+                strokeWidth: 3.5,
+                strokeCap: StrokeCap.round,
+                backgroundColor: Colors.grey[200],
+                color: _color,
+              ),
+            ),
+            Text('$percent%',
+                style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.bold,
+                    color: _color)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Loading skeleton
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Static grey placeholder row matching the shape of [_UserCard] (no shimmer
+/// package — plain rounded boxes).
+class _SkeletonCard extends StatelessWidget {
+  const _SkeletonCard();
+
+  Widget _bar(double w, double h, [double r = 6]) => Container(
+        width: w,
+        height: h,
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(r),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2))
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration:
+                BoxDecoration(color: Colors.grey[200], shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _bar(150, 12),
+                const SizedBox(height: 8),
+                _bar(110, 10),
+                const SizedBox(height: 10),
+                Row(children: [
+                  _bar(44, 16, 20),
+                  const SizedBox(width: 6),
+                  _bar(58, 16, 20),
+                ]),
+                const SizedBox(height: 10),
+                _bar(170, 9),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            width: 38,
+            height: 38,
+            decoration:
+                BoxDecoration(color: Colors.grey[200], shape: BoxShape.circle),
+          ),
         ],
       ),
     );

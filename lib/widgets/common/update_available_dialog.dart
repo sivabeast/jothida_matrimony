@@ -18,7 +18,7 @@ const String _kPromptedVersionKey = 'update_prompted_version';
 ///
 /// Shown when the admin's published [AppUpdateConfig.currentVersion] is newer
 /// than the running app, but the HARD force-update gate does not apply — that
-/// blocking case is handled elsewhere by `UpdateRequiredScreen`. The prompt is
+/// blocking case is handled by the force-update popup on Home. The prompt is
 /// per-version: once shown (or dismissed with "Later") it never reappears
 /// until the admin publishes a newer version.
 Future<void> maybeShowUpdateAvailableDialog(
@@ -37,7 +37,7 @@ Future<void> maybeShowUpdateAvailableDialog(
   } catch (_) {
     return; // unreachable backend / disposed scope — silently skip
   }
-  if (config == null || running == null) return;
+  if (config == null || running.isEmpty) return;
 
   // The blocking force-update gate already covers this case — don't double up.
   if (config.forceUpdate &&

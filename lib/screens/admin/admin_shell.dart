@@ -2,26 +2,85 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../widgets/common/app_logo.dart';
 
+/// One entry in the admin navigation drawer.
+class _NavItem {
+  final String label;
+  final IconData icon;
+  final String route;
+  const _NavItem(this.label, this.icon, this.route);
+}
+
+/// A titled group of drawer entries ([title] is null for the ungrouped
+/// Dashboard entry at the top).
+class _NavGroup {
+  final String? title;
+  final List<_NavItem> items;
+  const _NavGroup(this.title, this.items);
+}
+
+/// Admin navigation shell — a professional SaaS-style grouped
+/// [Drawer] (Material 3) opened from the AppBar menu icon. Every admin area is
+/// reachable from the drawer; the previously orphaned Analytics, Settlements,
+/// Married Members, Pricing and Test Data routes are all linked here.
 class AdminShell extends ConsumerWidget {
   final Widget child;
 
   const AdminShell({super.key, required this.child});
 
-  // Bottom-nav destinations. Notifications now live inside Settings; the bottom
-  // bar surfaces the five primary admin areas: Dashboard · Users · Employees
-  // (horoscope-analysis staff) · Horoscope Requests · Settings.
-  static const _routes = [
-    '/admin',
-    '/admin/users',
-    '/admin/astrologers',
-    '/admin/horoscope-requests',
-    '/admin/settings',
+  static const List<_NavGroup> _groups = [
+    _NavGroup(null, [
+      _NavItem('Dashboard', Icons.dashboard_outlined, '/admin'),
+    ]),
+    _NavGroup('User Management', [
+      _NavItem('All Users', Icons.people_outline, '/admin/users'),
+      _NavItem('Pending Approval', Icons.fact_check_outlined, '/admin/approvals'),
+      _NavItem('Married Members', Icons.favorite_outline, '/admin/married'),
+      _NavItem('Create Profile', Icons.person_add_alt_1, '/admin/create-profile'),
+    ]),
+    _NavGroup('Employee Management', [
+      _NavItem('Employees', Icons.badge_outlined, '/admin/astrologers'),
+      _NavItem('Commission', Icons.percent, '/admin/commission'),
+    ]),
+    _NavGroup('Horoscope', [
+      _NavItem('Requests', Icons.auto_stories_outlined, '/admin/horoscope-requests'),
+      _NavItem('Appointments', Icons.event_available, '/admin/appointments'),
+    ]),
+    _NavGroup('Payments', [
+      _NavItem('Transactions', Icons.receipt_long_outlined, '/admin/payments'),
+      _NavItem('Revenue & Analytics', Icons.insights, '/admin/analytics'),
+      _NavItem('Settlements', Icons.account_balance_outlined, '/admin/settlements'),
+    ]),
+    _NavGroup('Reports', [
+      _NavItem('User Reports', Icons.flag_outlined, '/admin/reports'),
+      _NavItem('Activity Log', Icons.history_outlined, '/admin/activity-log'),
+    ]),
+    _NavGroup('Content', [
+      _NavItem('Banners', Icons.image_outlined, '/admin/banners'),
+      _NavItem('Announcements', Icons.campaign_outlined, '/admin/notifications'),
+    ]),
+    _NavGroup('Settings', [
+      _NavItem('General', Icons.settings_outlined, '/admin/settings'),
+      _NavItem('Astrology Service', Icons.auto_awesome_outlined, '/admin/astrology-service'),
+      _NavItem('App Update', Icons.system_update, '/admin/app-update'),
+      _NavItem('Pricing', Icons.currency_rupee, '/admin/revenue-settings'),
+      _NavItem('Test Data', Icons.science_outlined, '/admin/test-data'),
+    ]),
   ];
 
-  int _indexForLocation(String loc) {
-    final i = _routes.indexOf(loc);
-    return i < 0 ? 0 : i;
+  /// The drawer route to highlight for the current location. Detail pages
+  /// highlight their parent list entry.
+  static String? _selectedRoute(String loc) {
+    for (final g in _groups) {
+      for (final item in g.items) {
+        if (item.route == loc) return item.route;
+      }
+    }
+    if (loc.startsWith('/admin/user/')) return '/admin/users';
+    // Covers /admin/astrologer/:id and /admin/astrologer-account/:id.
+    if (loc.startsWith('/admin/astrologer')) return '/admin/astrologers';
+    return null;
   }
 
   @override
@@ -53,30 +112,179 @@ class AdminShell extends ConsumerWidget {
             // that is ALSO a normal user, so there is NO Logout here. This
             // button simply returns to the user app and keeps the session fully
             // intact — no sign-out, no session clear.
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: TextButton.icon(
-                onPressed: () => context.go('/home'),
-                icon: const Icon(Icons.home_outlined,
-                    color: Colors.white, size: 20),
-                label: const Text('Return to User App',
-                    style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.w600)),
-              ),
+            IconButton(
+              tooltip: 'Return to User App',
+              onPressed: () => context.go('/home'),
+              icon: const Icon(Icons.home_outlined, color: Colors.white),
             ),
           ],
         ),
+        drawer: _AdminDrawer(selectedRoute: _selectedRoute(loc)),
         body: child,
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _indexForLocation(loc),
-          onDestinationSelected: (i) => context.go(_routes[i]),
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Dashboard'),
-            NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Users'),
-            NavigationDestination(icon: Icon(Icons.badge_outlined), selectedIcon: Icon(Icons.badge), label: 'Employees'),
-            NavigationDestination(icon: Icon(Icons.auto_stories_outlined), selectedIcon: Icon(Icons.auto_stories), label: 'Horoscope'),
-            NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
-          ],
+      ),
+    );
+  }
+}
+
+/// The grouped navigation drawer: brand header, labelled sections of nav items
+/// with a primary-tint highlight on the active route, and a pinned
+/// "Return to User App" action at the bottom.
+class _AdminDrawer extends StatelessWidget {
+  final String? selectedRoute;
+  const _AdminDrawer({required this.selectedRoute});
+
+  void _open(BuildContext context, String route) {
+    Navigator.of(context).pop(); // close the drawer first
+    if (route != GoRouterState.of(context).matchedLocation) {
+      context.go(route);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      backgroundColor: Colors.white,
+      child: Column(
+        children: [
+          _header(context),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.only(top: 6, bottom: 12),
+              children: [
+                for (final group in AdminShell._groups) ...[
+                  if (group.title != null) _SectionLabel(group.title!),
+                  for (final item in group.items)
+                    _DrawerItem(
+                      item: item,
+                      selected: item.route == selectedRoute,
+                      onTap: () => _open(context, item.route),
+                    ),
+                ],
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          SafeArea(
+            top: false,
+            child: _DrawerItem(
+              item: const _NavItem(
+                  'Return to User App', Icons.logout_outlined, '/home'),
+              selected: false,
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/home');
+              },
+            ),
+          ),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+
+  Widget _header(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+          20, MediaQuery.of(context).padding.top + 20, 20, 18),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Row(
+        children: [
+          const AppLogo(size: 46),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Jothida Matrimony',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15.5,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 2),
+                Text('Admin Panel',
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Uppercase 11px section label above each drawer group.
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
+      child: Text(text.toUpperCase(),
+          style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: Colors.grey[600])),
+    );
+  }
+}
+
+/// A single drawer row — compact, rounded, with a primary tint + w600 label
+/// when it is the active route.
+class _DrawerItem extends StatelessWidget {
+  final _NavItem item;
+  final bool selected;
+  final VoidCallback onTap;
+  const _DrawerItem(
+      {required this.item, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? AppColors.primary : Colors.grey[800]!;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
+      child: Material(
+        color: selected
+            ? AppColors.primary.withValues(alpha: 0.10)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Icon(item.icon, size: 20, color: color),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(item.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight:
+                              selected ? FontWeight.w600 : FontWeight.w500,
+                          color: selected ? AppColors.primary : Colors.black87)),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

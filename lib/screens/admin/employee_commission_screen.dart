@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_dialogs.dart';
 import '../../models/astrology_service_config.dart';
 import '../../providers/astrology_config_provider.dart';
+import '../../widgets/common/data_states.dart';
 
 /// Admin → Employee Commission Settings.
 ///
@@ -32,14 +34,13 @@ class _EmployeeCommissionScreenState
     super.dispose();
   }
 
-  void _snack(String m) => ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m, {bool error = false}) =>
+      showAppSnack(context, m, error: error);
 
   Future<void> _save(AstrologyServiceConfig base) async {
     final amount = int.tryParse(_ctrl.text.trim());
     if (amount == null || amount < 0) {
-      _snack('Enter a valid commission amount.');
+      _snack('Enter a valid commission amount.', error: true);
       return;
     }
     setState(() => _saving = true);
@@ -47,14 +48,17 @@ class _EmployeeCommissionScreenState
       await ref
           .read(astrologyConfigServiceProvider)
           .save(base.copyWith(analysisCommission: amount));
-      if (mounted) _snack('✅ Commission per report updated to ₹$amount.');
+      if (mounted) _snack('Commission per report updated to ₹$amount.');
     } catch (e) {
+      debugPrint('[EmployeeCommission] save failed: $e');
       final msg = e.toString().toLowerCase();
       if (msg.contains('permission')) {
-        _snack('Save blocked by security rules. Deploy Firestore rules and '
-            'try again.');
+        _snack(
+            'Save blocked by security rules. Deploy Firestore rules and '
+            'try again.',
+            error: true);
       } else {
-        _snack('Could not save: $e');
+        _snack('Could not save the commission. Please try again.', error: true);
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -72,8 +76,7 @@ class _EmployeeCommissionScreenState
         foregroundColor: Colors.white,
       ),
       body: async.when(
-        loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primary)),
+        loading: () => const LoadingState(message: 'Loading commission…'),
         error: (_, __) => _form(AstrologyServiceConfig.defaults),
         data: (cfg) => _form(cfg),
       ),

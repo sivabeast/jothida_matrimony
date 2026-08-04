@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:jothida_matrimony/l10n/app_localizations.dart';
@@ -11,10 +10,8 @@ import 'core/navigation/root_navigator.dart';
 import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'models/master_data.dart';
-import 'providers/app_update_provider.dart';
 import 'providers/locale_provider.dart';
 import 'router/app_router.dart';
-import 'screens/common/update_required_screen.dart';
 import 'screens/settings/language_screen.dart';
 import 'services/firebase/fcm_service.dart';
 import 'services/firebase/master_data_service.dart';
@@ -108,20 +105,9 @@ class JothidaMatrimonyApp extends ConsumerWidget {
       );
     }
 
-    // Force-update gate: when the admin has force update ON and this build is
-    // below the minimum supported version, the ONLY screen is "Update Now" —
-    // no router, no skip. A missing/unreadable config never blocks the app.
-    final updateRequired = ref.watch(forceUpdateRequiredProvider);
-    if (updateRequired != null) {
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        locale: locale,
-        localizationsDelegates: _localizationsDelegates,
-        supportedLocales: supportedLocales,
-        home: UpdateRequiredScreen(config: updateRequired),
-      );
-    }
+    // Force update no longer replaces the router with a blocking screen —
+    // the user lands on Home normally and a premium non-dismissible popup
+    // (force_update_dialog.dart, wired in HomeScreen) carries the store link.
 
     // Normal app, localized.
     final router = ref.watch(appRouterProvider);

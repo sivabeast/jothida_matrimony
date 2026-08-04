@@ -72,18 +72,23 @@ class AsyncStateView<T> extends StatelessWidget {
   }
 }
 
-/// A friendly centred empty/info state (icon + title + optional subtitle),
-/// shared by list pages so "no data" never looks like a hang.
+/// A friendly centred empty/info state (icon + title + optional subtitle +
+/// optional action button), shared by list pages so "no data" never looks
+/// like a hang.
 class EmptyStateView extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   const EmptyStateView({
     super.key,
     required this.icon,
     required this.title,
     this.subtitle,
+    this.actionLabel,
+    this.onAction,
   });
 
   @override
@@ -105,6 +110,18 @@ class EmptyStateView extends StatelessWidget {
               Text(subtitle!,
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
+            ],
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: 16),
+              FilledButton.tonalIcon(
+                onPressed: onAction,
+                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                label: Text(actionLabel!),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.10),
+                  foregroundColor: AppColors.primary,
+                ),
+              ),
             ],
           ],
         ),

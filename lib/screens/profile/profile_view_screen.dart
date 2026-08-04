@@ -7,21 +7,27 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/value_l10n.dart';
+import '../../models/astrologer_request_model.dart';
+import '../../models/compatibility_report_model.dart';
 import '../../models/profile_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/block_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/interest_provider.dart';
+import '../../providers/match_analysis_provider.dart';
+import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/auto_fit_label.dart';
-import '../../widgets/common/contact_reveal_card.dart';
 import '../../widgets/common/face_centered_photo.dart';
 import '../../widgets/common/fullscreen_photo_viewer.dart';
 import '../../widgets/common/gradient_button.dart';
 import '../../widgets/common/horoscope_documents_view.dart';
+import '../../widgets/common/skeletons.dart';
 import '../../widgets/interest/match_celebration.dart';
 import '../../widgets/interest/pending_interest_card.dart';
+import '../../widgets/profile/contact_details_dialog.dart';
+import '../report/compatibility_report_screen.dart';
 
 class ProfileViewScreen extends ConsumerStatefulWidget {
   /// Open by profile-document id — used from Discover / Matches, where the id
@@ -185,36 +191,11 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     }
   }
 
-  /// Whether this member's phone number may be shown to the viewer.
-  ///
-  /// "Hide Phone Number" is ON by default (§17) and an accepted interest does
-  /// NOT flip it — only the owner can, from Privacy Settings. So the contact
-  /// actions below are hidden entirely for a member who keeps their number
-  /// private, rather than offering a button that leads to a locked card.
-  bool _phoneVisible(ProfileModel profile) =>
-      _isOwner(profile) || !profile.hidesPhone;
-
+  /// The ONLY entry to contact information (spec §2): a popup that enforces
+  /// the accepted / public / private rules itself and always fetches the
+  /// LATEST saved contact record — nothing is ever rendered inline.
   void _showContact(ProfileModel profile) {
-    // Contact & WhatsApp viewing is FREE — no plan gate. (The privacy gate —
-    // contact unlocks only after a mutually-accepted interest — still lives in
-    // ContactRevealCard / the contacts security rules.)
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ContactRevealCard(
-                otherUserId: profile.userId,
-                otherName: profile.name,
-                contact: profile.contact,
-                hiddenByOwner: !_phoneVisible(profile)),
-          ],
-        ),
-      ),
-    );
+    showContactDetailsDialog(context, profile: profile);
   }
 
   Future<void> _acceptInterest(ProfileModel profile, String interestId) async {
@@ -265,38 +246,10 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     }
   }
 
-  /// The bottom action(s). Public profiles (§17/§18) expose contact to every
-  /// viewer, so a "View Contact" button is shown up-front — the accepted branch
-  /// already reveals contact, so this only prepends it for the other states.
-  Widget _interestAction(ProfileModel profile) {
-    final accepted = ref.watch(interestStatusForProfileProvider(profile.id)) ==
-        InterestUiStatus.accepted;
-    final action = _statusInterestAction(profile);
-    if (!profile.isContactPublic || accepted || !_phoneVisible(profile)) {
-      return action;
-    }
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () => _showContact(profile),
-            icon: const Icon(Icons.call),
-            label: Text(context.l10n.viewContact),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              side: const BorderSide(color: AppColors.primary),
-              minimumSize: const Size.fromHeight(52),
-              shape:
-                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        action,
-      ],
-    );
-  }
+  /// The bottom action(s). Contact never appears inline anywhere on this page
+  /// (spec §2) — every state goes through the Contact Details popup, which
+  /// enforces the accepted / public / private rules itself.
+  Widget _interestAction(ProfileModel profile) => _statusInterestAction(profile);
 
   /// Status-aware bottom action. Source of truth is the real Firestore interest
   /// status, so an accepted interest never shows "Send Interest" again, and an
@@ -360,28 +313,27 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          // Contact is offered ONLY when the member has not switched
-          // "Hide Phone Number" on. Acceptance alone never reveals it (§17).
-          if (_phoneVisible(profile)) ...[
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                // Reveal straight from the (readable) profile document — no
-                // connection/gated read.
-                onPressed: () => _showContact(profile),
-                icon: const Icon(Icons.call),
-                label: Text(context.l10n.viewContact),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(52),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
+          // Astrology Consultation (spec §6/§12) — offered ONLY after mutual
+          // acceptance; nothing is generated or shared automatically.
+          _astroConsultCard(profile),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              // The popup itself decides what may be shown (accepted /
+              // public / private / hidden-by-owner) — spec §2.
+              onPressed: () => _showContact(profile),
+              icon: const Icon(Icons.contact_phone_outlined),
+              label: Text(context.l10n.contactDetails),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(52),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
-            const SizedBox(height: 12),
-          ],
+          ),
+          const SizedBox(height: 12),
           // Chat — opens the conversation with this matched user. Shown ONLY
           // when the interest is accepted (this branch); the auto-created thread
           // is idempotent so this always opens the SAME conversation as the
@@ -440,6 +392,162 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     );
   }
 
+  /// Premium Astrology Consultation card — rendered ONLY inside the accepted
+  /// branch (spec §6). One request per partner profile (spec §12): before any
+  /// request → the booking CTA; while pending → a status card; completed →
+  /// "View Horoscope Report". The report is never generated automatically and
+  /// no horoscope data leaves the profile before an explicit booking.
+  Widget _astroConsultCard(ProfileModel profile) {
+    final l10n = context.l10n;
+    final reqAsync = ref.watch(compatRequestForPairProvider(profile.id));
+    final req = reqAsync.valueOrNull;
+    // While the request stream is still connecting, show nothing rather than
+    // flashing the "book now" CTA at a member who already paid.
+    if (reqAsync.isLoading) return const SizedBox.shrink();
+
+    final Widget inner;
+    if (req == null) {
+      inner = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                  gradient: AppColors.goldGradient,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: const Icon(Icons.auto_awesome,
+                    size: 22, color: Colors.white),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(l10n.astroConsultTitle,
+                    style: const TextStyle(
+                        fontSize: 15,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(l10n.astroConsultBody,
+              style: TextStyle(
+                  fontSize: 12.5, height: 1.45, color: Colors.grey[700])),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () =>
+                  context.push('/horoscope-report/${profile.userId}'),
+              icon: const Icon(Icons.description_outlined, size: 19),
+              label: Text(l10n.getHoroscopeCompatibilityReport,
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else if (req.status == AstrologerRequestStatus.completed) {
+      inner = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.task_alt, color: AppColors.success, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(l10n.reportReadyMsg,
+                    style: const TextStyle(
+                        fontSize: 13.5, fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => _viewCompatReport(req),
+              icon: const Icon(Icons.visibility_outlined, size: 19),
+              label: Text(l10n.viewHoroscopeReport),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.success,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else {
+      inner = Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.hourglass_top, color: AppColors.warning, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.reportUnderAnalysisTitle,
+                    style: const TextStyle(
+                        fontSize: 13.5, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 4),
+                Text(l10n.reportUnderAnalysisBody,
+                    style: TextStyle(
+                        fontSize: 12, height: 1.4, color: Colors.grey[700])),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFFF8EC), Color(0xFFFDEFD2)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.gold.withOpacity(0.45)),
+        ),
+        child: inner,
+      ),
+    );
+  }
+
+  /// Opens the completed report — the structured A4 compatibility report when
+  /// one was submitted, otherwise the Reports tab (legacy text/file reports).
+  void _viewCompatReport(AstrologerRequestModel req) {
+    final compat = CompatibilityReport.tryFrom(req.compatReport);
+    if (compat != null && compat.isSubmitted) {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) =>
+            CompatibilityReportScreen(requestId: req.id, request: req),
+      ));
+      return;
+    }
+    ref.read(homeTabIndexProvider.notifier).state = kReportsTabIndex;
+    context.go('/home');
+  }
+
   /// Re-fetch whichever lookup this screen was opened with.
   void _reloadProfile() {
     if (widget.userId != null) {
@@ -459,7 +567,34 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
 
     return Scaffold(
       body: profileAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        // Skeleton in the real page shape — photo header + text lines — so
+        // loading never means a bare spinner (spec: skeleton loaders).
+        loading: () => SafeArea(
+          child: SkeletonShimmer(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              physics: const NeverScrollableScrollPhysics(),
+              children: const [
+                SkeletonBox(height: 300, radius: 0),
+                Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SkeletonLine(width: 180, height: 20),
+                      SizedBox(height: 10),
+                      SkeletonLine(width: 120, height: 13),
+                      SizedBox(height: 24),
+                      SkeletonBox(height: 220, radius: 16),
+                      SizedBox(height: 20),
+                      SkeletonBox(height: 160, radius: 16),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
         error: (e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -562,8 +697,10 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                   style: TextStyle(color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 16),
-                // ── Basic Details — labels via l10n, stored values via the
-                // EN→TA value map so everything switches with the language. ──
+                // ── Premium information grouping (spec §4): the old 26-row
+                // monolith is split into Basic / Religious / Professional so
+                // a reader can scan straight to what they care about. Labels
+                // via l10n, stored values via the EN→TA value map. ───────────
                 _buildInfoSection(context.l10n.basicDetails, [
                   _InfoItem(Icons.person_outline, context.l10n.fullName,
                       profile.displayName(context.isTamil)),
@@ -580,23 +717,25 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                       profile.weight),
                   _InfoItem(Icons.wc, context.l10n.maritalStatus,
                       context.localizeValue(profile.maritalStatus)),
-                  // Education Level → Course/Degree and Employment Status →
-                  // Sector → Occupation (§13). The level/status/sector are
-                  // localized; degree + occupation titles stay English (§9).
-                  _InfoItem(Icons.school_outlined, context.l10n.education,
-                      profile.educationDisplay(context.localizeValue)),
-                  _InfoItem(Icons.work_outline, context.l10n.profession,
-                      profile.occupationDisplay(context.localizeValue)),
-                  // Salary is one of the four privacy switches (§16) — hidden
-                  // by default and never auto-revealed.
-                  _InfoItem(Icons.payments_outlined, context.l10n.annualIncome,
-                      hideSalary ? '' : context.localizeValue(profile.annualIncome)),
-                  _InfoItem(Icons.place_outlined, context.l10n.location,
-                      [profile.city, profile.state].where((s) => s.trim().isNotEmpty).join(', ')),
-                  _InfoItem(Icons.translate, context.l10n.motherTongue,
-                      context.localizeValue(profile.motherTongue)),
+                  _InfoItem(
+                      Icons.child_care_outlined,
+                      context.l10n.childrenCountLabel,
+                      profile.childrenCount > 0
+                          ? '${profile.childrenCount}'
+                          : ''),
                   _InfoItem(Icons.accessibility_new, context.l10n.physicalStatus,
                       context.localizeValue(profile.physicalStatus)),
+                  _InfoItem(Icons.translate, context.l10n.motherTongue,
+                      context.localizeValue(profile.motherTongue)),
+                  _InfoItem(Icons.place_outlined, context.l10n.location,
+                      [profile.city, profile.state].where((s) => s.trim().isNotEmpty).join(', ')),
+                  _InfoItem(Icons.location_city_outlined,
+                      context.l10n.nativePlace, profile.nativePlace ?? ''),
+                  _InfoItem(Icons.flag_outlined, context.l10n.citizenship,
+                      context.localizeValue(profile.citizenship ?? '')),
+                ], icon: Icons.badge_outlined),
+                const SizedBox(height: 20),
+                _buildInfoSection(context.l10n.religiousDetails, [
                   _InfoItem(Icons.church_outlined, context.l10n.religion,
                       context.localizeValue(profile.religion)),
                   _InfoItem(Icons.people_outline, context.l10n.caste,
@@ -607,27 +746,31 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                       profile.gothram),
                   _InfoItem(Icons.auto_awesome_outlined, context.l10n.kuladeivam,
                       profile.kuladeivam),
-                  _InfoItem(Icons.badge_outlined, context.l10n.employmentType,
-                      context.localizeValue(profile.employmentType)),
-                  _InfoItem(Icons.business_outlined, context.l10n.companyName,
-                      profile.companyName ?? ''),
-                  _InfoItem(Icons.account_balance, context.l10n.collegeName,
-                      profile.collegeName ?? ''),
-                  _InfoItem(Icons.location_city_outlined,
-                      context.l10n.nativePlace, profile.nativePlace ?? ''),
+                ], icon: Icons.temple_hindu_outlined),
+                const SizedBox(height: 20),
+                _buildInfoSection(context.l10n.professionalDetails, [
+                  // Education Level → Course/Degree and Employment Status →
+                  // Sector → Occupation (§13). The level/status/sector are
+                  // localized; degree + occupation titles stay English (§9).
+                  _InfoItem(Icons.school_outlined, context.l10n.education,
+                      profile.educationDisplay(context.localizeValue)),
                   _InfoItem(Icons.school, context.l10n.courseDegree,
                       profile.courseDegree ?? ''),
+                  _InfoItem(Icons.account_balance, context.l10n.collegeName,
+                      profile.collegeName ?? ''),
+                  _InfoItem(Icons.badge_outlined, context.l10n.employmentType,
+                      context.localizeValue(profile.employmentType)),
+                  _InfoItem(Icons.work_outline, context.l10n.profession,
+                      profile.occupationDisplay(context.localizeValue)),
+                  _InfoItem(Icons.business_outlined, context.l10n.companyName,
+                      profile.companyName ?? ''),
                   _InfoItem(Icons.place, context.l10n.workLocation,
                       profile.workLocation ?? ''),
-                  _InfoItem(Icons.flag_outlined, context.l10n.citizenship,
-                      context.localizeValue(profile.citizenship ?? '')),
-                  _InfoItem(
-                      Icons.child_care_outlined,
-                      context.l10n.childrenCountLabel,
-                      profile.childrenCount > 0
-                          ? '${profile.childrenCount}'
-                          : ''),
-                ]),
+                  // Salary is one of the four privacy switches (§16) — hidden
+                  // by default and never auto-revealed.
+                  _InfoItem(Icons.payments_outlined, context.l10n.annualIncome,
+                      hideSalary ? '' : context.localizeValue(profile.annualIncome)),
+                ], icon: Icons.work_outline),
                 if (profile.about.trim().isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Text(context.l10n.aboutMe, style: AppTextStyles.heading3),
@@ -883,86 +1026,61 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     ];
   }
 
-  /// Contact Details — ALWAYS the record written by the Contact Details step of
-  /// profile creation (`contacts/{userId}`), never any other source.
-  ///
-  /// It is STREAMED, so editing contact details updates this section
-  /// automatically. Visibility follows the member's own choice: the owner always
-  /// sees it; another member sees it when the profile is set to public contact
-  /// sharing or after a mutually-accepted interest (the Firestore rule is the
-  /// real gate — a denied read renders the locked card).
+  /// Contact Details entry (spec §2): the page NEVER renders contact person,
+  /// relationship, mobile, WhatsApp or email inline. This card only offers
+  /// the dedicated button; the popup enforces accepted / public / private and
+  /// always fetches the LATEST saved `contacts/{userId}` record.
   Widget _contactSection(ProfileModel profile) {
     final l10n = context.l10n;
-    final async = ref.watch(contactStreamByUserIdProvider(profile.userId));
-    return async.when(
-      loading: () => const SizedBox.shrink(),
-      // A denied read is the expected "not unlocked yet" state, not an error.
-      error: (_, __) => _lockedContactCard(),
-      data: (contact) {
-        if (contact == null) {
-          return _isOwner(profile)
-              ? _emptySectionCard(l10n.contactDetails, l10n.contactNotProvided)
-              : _lockedContactCard();
-        }
-        final whatsapp = (contact.whatsappNumber ?? '').trim();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildInfoSection(l10n.contactDetails, [
-              _InfoItem(Icons.person_outline, l10n.contactPersonName,
-                  contact.contactPersonName),
-              // Self / Father / Mother / Brother / Sister / Guardian /
-              // Relative / Friend — never hardcoded, always what was saved.
-              _InfoItem(Icons.family_restroom, l10n.relationship,
-                  context.localizeValue(contact.relationship)),
-              _InfoItem(Icons.call_outlined, l10n.mobileNumber,
-                  contact.mobileNumber),
-              _InfoItem(Icons.chat_outlined, l10n.whatsappNumber, whatsapp),
-              _InfoItem(Icons.email_outlined, l10n.email, contact.email),
-            ]),
-            const SizedBox(height: 6),
-            Text(l10n.contactDetailsFromProfile,
-                style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
-          ],
-        );
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle(l10n.contactDetails, icon: Icons.contact_phone_outlined),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey[200]!),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.contactDetailsFromProfile,
+                  style: TextStyle(
+                      fontSize: 12.5, height: 1.4, color: Colors.grey[600])),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showContact(profile),
+                  icon: const Icon(Icons.contact_phone_outlined, size: 19),
+                  label: Text(l10n.contactDetails),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                    minimumSize: const Size.fromHeight(46),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _lockedContactCard() => _emptySectionCard(
-      context.l10n.contactDetails, context.l10n.contactLockedNote,
-      icon: Icons.lock_outline);
-
-  /// A neutral card for a section that has no data (or is not unlocked).
-  Widget _emptySectionCard(String title, String message,
-          {IconData icon = Icons.info_outline}) =>
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: AppTextStyles.heading3),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(icon, size: 18, color: Colors.grey[600]),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(message,
-                      style: TextStyle(fontSize: 13, color: Colors.grey[700])),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
 
   /// Partner-preference COMPARISON — instead of just listing the viewer's
   /// preferences, compares each against THIS profile and shows whether it
@@ -1297,26 +1415,14 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                 ],
               ),
               const SizedBox(height: 6),
+              // No "Consult Astrologer" button here (spec §5): astrology
+              // consultation is offered ONLY after a mutually-accepted
+              // interest, via the consultation card — horoscopes are never
+              // shared automatically.
               Text(
                 context.l10n.horoscopePrivateNote,
                 style: TextStyle(color: Colors.grey[700], fontSize: 12.5),
               ),
-              if (hasHoroscope) ...[
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _consultAstrologer(profile),
-                    icon: const Icon(Icons.auto_awesome, size: 18),
-                    label: Text(context.l10n.consultAstrologer),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary),
-                      minimumSize: const Size.fromHeight(44),
-                    ),
-                  ),
-                ),
-              ],
             ],
           ),
         ),
@@ -1408,11 +1514,6 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     );
   }
 
-  /// Opens the Horoscope Compatibility Report service for this pairing.
-  void _consultAstrologer(ProfileModel profile) {
-    context.push('/horoscope-report/${profile.userId}');
-  }
-
   /// Opens the one shared conversation with this accepted match. [openChatWith]
   /// is idempotent (deterministic thread id), so it never creates a duplicate
   /// room — the Chats tab and this button always land on the same chat (§7).
@@ -1467,19 +1568,30 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
         ],
       );
 
-  Widget _buildInfoSection(String title, List<_InfoItem> items) {
+  /// One titled information card: a tinted icon bubble beside the section
+  /// title, then a white card of label/value rows — the premium section idiom
+  /// used by every group on this page (spec §4).
+  Widget _buildInfoSection(String title, List<_InfoItem> items,
+      {IconData? icon}) {
     final rows = items.where((item) => item.value.trim().isNotEmpty).toList();
     if (rows.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: AppTextStyles.heading3),
+        _sectionTitle(title, icon: icon),
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.grey[200]!),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: Column(
             children: [
@@ -1493,6 +1605,26 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       ],
     );
   }
+
+  /// Section heading with an optional tinted icon bubble.
+  Widget _sectionTitle(String title, {IconData? icon}) => Row(
+        children: [
+          if (icon != null) ...[
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, size: 16, color: AppColors.primary),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Expanded(child: Text(title, style: AppTextStyles.heading3)),
+        ],
+      );
 
   /// One label/value row.
   ///

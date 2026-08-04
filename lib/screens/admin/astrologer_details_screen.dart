@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_dialogs.dart';
 import '../../providers/astrology_team_stats_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/common/skeletons.dart';
 
 /// Admin → Astrologer Details (spec §5). Shows the astrologer's profile +
 /// live performance (assigned / pending / completed / revenue / commission /
@@ -36,8 +38,14 @@ class AstrologerDetailsScreen extends ConsumerWidget {
         ],
       ),
       body: stats == null
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? ListView(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              children: const [
+                SkeletonCard(height: 260),
+                SkeletonCard(height: 220),
+                SkeletonCard(height: 200),
+              ],
+            )
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -65,27 +73,20 @@ class AstrologerDetailsScreen extends ConsumerWidget {
   Future<void> _deleteAstrologer(
       BuildContext context, WidgetRef ref, AstrologerStats stats) async {
     final unfinished = stats.pending + stats.inProgress;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete employee?'),
-        content: Text(unfinished > 0
-            ? 'This removes the employee. Their $unfinished unfinished '
-                'report(s) will be automatically reassigned to another active '
-                'employee. This cannot be undone.'
-            : 'This removes the employee. This cannot be undone.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: TextButton.styleFrom(foregroundColor: AppColors.error),
-              child: const Text('Delete')),
-        ],
-      ),
+    final ok = await showAppConfirmDialog(
+      context,
+      title: 'Delete Employee?',
+      message: unfinished > 0
+          ? 'This removes the employee. Their $unfinished unfinished '
+              'report(s) will be automatically reassigned to another active '
+              'employee. This cannot be undone.'
+          : 'This removes the employee. This cannot be undone.',
+      confirmLabel: 'Delete',
+      icon: Icons.delete_outline_rounded,
+      danger: true,
     );
-    if (ok != true) return;
+    if (!ok) return;
+    if (!context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     final nav = Navigator.of(context);
     try {
@@ -93,10 +94,13 @@ class AstrologerDetailsScreen extends ConsumerWidget {
           .read(astrologyTeamServiceProvider)
           .deleteMemberAndReassign(stats.member);
       messenger.showSnackBar(const SnackBar(
-          content: Text('Astrologer deleted and requests reassigned.')));
+          content: Text('Employee deleted and requests reassigned.')));
       nav.pop();
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Could not delete: $e')));
+      debugPrint('[AstrologerDetails] delete failed: $e');
+      messenger.showSnackBar(const SnackBar(
+          content: Text('Could not delete the employee. Please try again.'),
+          backgroundColor: AppColors.error));
     }
   }
 
@@ -104,8 +108,8 @@ class AstrologerDetailsScreen extends ConsumerWidget {
       BuildContext context, WidgetRef ref, AstrologerStats stats) {
     final m = stats.member;
     final statusColor = !m.active
-        ? Colors.red
-        : (m.isLinked ? Colors.green : Colors.orange);
+        ? AppColors.error
+        : (m.isLinked ? AppColors.success : AppColors.warning);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: _boxDecoration,
@@ -214,7 +218,7 @@ class AstrologerDetailsScreen extends ConsumerWidget {
                     ? 'Nothing Due This Week'
                     : 'Mark As Paid · ₹${stats.cycleCommission}'),
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: AppColors.success,
                     foregroundColor: Colors.white,
                     minimumSize: const Size.fromHeight(44)),
               ),
@@ -227,28 +231,17 @@ class AstrologerDetailsScreen extends ConsumerWidget {
   /// `payroll_payments`) — the next week restarts from ₹0.
   Future<void> _markPaid(
       BuildContext context, WidgetRef ref, AstrologerStats stats) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Mark As Paid'),
-        content: Text('Pay ₹${stats.cycleCommission} for '
-            '${stats.cycleCompleted} completed report(s)? The next week '
-            'starts again from ₹0.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Mark As Paid'),
-          ),
-        ],
-      ),
+    final ok = await showAppConfirmDialog(
+      context,
+      title: 'Mark As Paid?',
+      message: 'Pay ₹${stats.cycleCommission} for '
+          '${stats.cycleCompleted} completed report(s)? The next week '
+          'starts again from ₹0.',
+      confirmLabel: 'Mark As Paid',
+      icon: Icons.task_alt_rounded,
     );
-    if (ok != true) return;
+    if (!ok) return;
+    if (!context.mounted) return;
     await ref.read(astrologyTeamServiceProvider).markPayrollPaid(
           stats.member,
           amount: stats.cycleCommission,
@@ -256,8 +249,7 @@ class AstrologerDetailsScreen extends ConsumerWidget {
           ratePerReport: stats.commissionPerReport,
         );
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Weekly payroll closed and recorded.')));
+      showAppSnack(context, 'Weekly payroll closed and recorded.');
     }
   }
 
@@ -292,13 +284,13 @@ class AstrologerDetailsScreen extends ConsumerWidget {
             .read(astrologyTeamServiceProvider)
             .updateMember(stats.member.id, {'displayName': nameCtrl.text.trim()});
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Astrologer details updated.')));
+          showAppSnack(context, 'Employee details updated.');
         }
       } catch (e) {
+        debugPrint('[AstrologerDetails] update failed: $e');
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Could not update: $e')));
+          showAppSnack(context, 'Could not update the details. Please try again.',
+              error: true);
         }
       }
     }

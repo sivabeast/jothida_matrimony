@@ -4,9 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_dialogs.dart';
 import '../../providers/astrology_team_stats_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/common/data_states.dart';
 import '../../widgets/common/payroll_history_tile.dart';
+import '../../widgets/common/skeletons.dart';
 
 /// The admin **Employees** page body:
 ///
@@ -32,20 +35,10 @@ class AstrologerPerformanceList extends ConsumerWidget {
     final unavailable = total - available;
 
     if (stats.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.insights_outlined, size: 56, color: AppColors.primary),
-              SizedBox(height: 12),
-              Text('No employee accounts yet.\n'
-                  'Add one by Gmail to see performance here.',
-                  textAlign: TextAlign.center),
-            ],
-          ),
-        ),
+      return const EmptyState(
+        icon: Icons.insights_outlined,
+        message: 'No employee accounts yet',
+        subtitle: 'Add one by Gmail to see performance here.',
       );
     }
     return ListView(
@@ -120,9 +113,9 @@ class AstrologerPerformanceList extends ConsumerWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8),
           ],
         ),
         child: Column(
@@ -163,9 +156,9 @@ class AstrologerPerformanceCard extends ConsumerWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8),
         ],
       ),
       child: Column(
@@ -310,32 +303,19 @@ class AstrologerPerformanceCard extends ConsumerWidget {
   /// and restarts the employee's commission from ₹0.
   Future<void> _confirmMarkPaid(BuildContext context, WidgetRef ref) async {
     final m = stats.member;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Mark As Paid'),
-        content: Text(
-            'Pay ₹${stats.cycleCommission} to '
-            '${m.displayName.isEmpty ? m.email : m.displayName} for '
-            '${stats.cycleCompleted} completed report(s)?\n\n'
-            'This closes the current week\'s payroll — the next week starts '
-            'again from ₹0.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Mark As Paid'),
-          ),
-        ],
-      ),
+    final ok = await showAppConfirmDialog(
+      context,
+      title: 'Mark As Paid?',
+      message: 'Pay ₹${stats.cycleCommission} to '
+          '${m.displayName.isEmpty ? m.email : m.displayName} for '
+          '${stats.cycleCompleted} completed report(s)?\n\n'
+          'This closes the current week\'s payroll — the next week starts '
+          'again from ₹0.',
+      confirmLabel: 'Mark As Paid',
+      icon: Icons.task_alt_rounded,
     );
-    if (ok != true) return;
+    if (!ok) return;
+    if (!context.mounted) return;
     try {
       await ref.read(astrologyTeamServiceProvider).markPayrollPaid(
             m,
@@ -344,16 +324,15 @@ class AstrologerPerformanceCard extends ConsumerWidget {
             ratePerReport: stats.commissionPerReport,
           );
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('₹${stats.cycleCommission} paid — next week starts '
-                'from ₹0.'),
-            backgroundColor: AppColors.success));
+        showAppSnack(context,
+            '₹${stats.cycleCommission} paid — next week starts from ₹0.');
       }
     } catch (e) {
+      debugPrint('[AstrologerPerformance] payroll payment failed: $e');
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Could not record payment: $e'),
-            backgroundColor: AppColors.error));
+        showAppSnack(
+            context, 'Could not record the payment. Please try again.',
+            error: true);
       }
     }
   }
@@ -422,21 +401,21 @@ class _PayrollHistorySheet extends ConsumerWidget {
             Flexible(
               child: async.when(
                 loading: () => const Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Center(child: CircularProgressIndicator()),
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: SkeletonList(items: 4, showAvatar: false),
                 ),
-                error: (e, _) => Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text('Could not load history.\n$e'),
+                error: (e, _) => ErrorStateView(
+                  message: 'Unable to load the payment history.',
+                  onRetry: () =>
+                      ref.invalidate(payrollHistoryProvider(emailKey)),
                 ),
                 data: (items) {
                   if (items.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Center(
-                        child: Text('No payments recorded yet.',
-                            style: TextStyle(color: Colors.grey[600])),
-                      ),
+                    return const EmptyState(
+                      icon: Icons.receipt_long_outlined,
+                      message: 'No payments recorded yet',
+                      subtitle:
+                          'Weekly payouts will appear here once recorded.',
                     );
                   }
                   return ListView.separated(

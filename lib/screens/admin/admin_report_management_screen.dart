@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_dialogs.dart';
 import '../../models/report_model.dart';
 import '../../providers/report_provider.dart';
+import '../../widgets/common/data_states.dart';
 import '../../widgets/common/network_photo.dart';
+import '../../widgets/common/skeletons.dart';
 
 /// Admin **Report Management** (spec §8).
 ///
@@ -38,15 +41,10 @@ class AdminReportManagementScreen extends ConsumerWidget {
           ),
         ),
         body: reportsAsync.when(
-          loading: () =>
-              const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-          error: (e, _) => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text('Could not load reports.\n$e',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey[600])),
-            ),
+          loading: () => const SkeletonList(items: 6, showAvatar: false),
+          error: (e, _) => ErrorStateView(
+            message: 'Unable to load reports. Please try again.',
+            onRetry: () => ref.invalidate(allReportsProvider),
           ),
           data: (reports) {
             final profileReports =
@@ -74,23 +72,14 @@ class _ReportList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (reports.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.inbox_outlined, size: 48, color: Colors.grey[400]),
-              const SizedBox(height: 12),
-              Text(isChat ? 'No chat reports.' : 'No profile reports.',
-                  style: TextStyle(color: Colors.grey[600])),
-            ],
-          ),
-        ),
+      return EmptyState(
+        icon: isChat ? Icons.chat_bubble_outline : Icons.flag_outlined,
+        message: isChat ? 'No chat reports' : 'No profile reports',
+        subtitle: 'Reports submitted by members will appear here for review.',
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       itemCount: reports.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (_, i) => _ReportCard(report: reports[i]),
@@ -106,14 +95,16 @@ class _ReportCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final date = DateFormat('dd MMM yyyy · hh:mm a').format(report.createdAt);
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-            color: report.status == 'pending'
-                ? AppColors.error.withOpacity(0.3)
-                : Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(16),
+        border: report.status == 'pending'
+            ? Border.all(color: AppColors.error.withValues(alpha: 0.3))
+            : null,
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,9 +145,7 @@ class _ReportCard extends ConsumerWidget {
 
   Widget _actions(BuildContext context, WidgetRef ref) {
     final ctrl = ref.read(reportAdminControllerProvider.notifier);
-    void snack(String m) => ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(m)));
+    void snack(String m) => showAppSnack(context, m);
 
     return Wrap(
       spacing: 8,
@@ -198,26 +187,15 @@ class _ReportCard extends ConsumerWidget {
     );
   }
 
-  Future<bool> _confirm(BuildContext context, String title, String body) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: Text(body),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
-    );
-    return ok ?? false;
-  }
+  Future<bool> _confirm(BuildContext context, String title, String body) =>
+      showAppConfirmDialog(
+        context,
+        title: title,
+        message: body,
+        confirmLabel: 'Confirm',
+        icon: Icons.gavel_rounded,
+        danger: true,
+      );
 
   void _viewScreenshot(BuildContext context, String url) {
     showDialog(

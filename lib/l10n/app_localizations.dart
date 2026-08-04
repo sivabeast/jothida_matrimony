@@ -3044,6 +3044,24 @@ abstract class AppLocalizations {
   /// **'Recent Interests'**
   String get recentInterests;
 
+  /// No description provided for @recentInterestsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent interests yet.'**
+  String get recentInterestsEmptyTitle;
+
+  /// No description provided for @recentInterestsEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When someone likes your profile, it shows up here.'**
+  String get recentInterestsEmptySubtitle;
+
+  /// No description provided for @exploreMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore Matches'**
+  String get exploreMatches;
+
   /// No description provided for @noInterestsReceivedYet.
   ///
   /// In en, this message translates to:
@@ -5479,6 +5497,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No contact details have been added yet.'**
   String get contactNotProvided;
+
+  /// No description provided for @contactPrivateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This member\'s contact details are private. They are shared only after both of you accept the interest.'**
+  String get contactPrivateMessage;
+
+  /// No description provided for @contactHiddenByOwnerMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This member keeps their contact details hidden.'**
+  String get contactHiddenByOwnerMessage;
+
+  /// No description provided for @couldNotLoadContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load contact details. Please check your connection and try again.'**
+  String get couldNotLoadContact;
+
+  /// No description provided for @religiousDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Religious Details'**
+  String get religiousDetails;
+
+  /// No description provided for @professionalDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Professional Details'**
+  String get professionalDetails;
+
+  /// No description provided for @astroConsultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Astrology Consultation'**
+  String get astroConsultTitle;
+
+  /// No description provided for @astroConsultBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your interest is accepted! Have our expert astrologer check the horoscope compatibility for this match.'**
+  String get astroConsultBody;
+
+  /// No description provided for @reportUnderAnalysisTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Requested'**
+  String get reportUnderAnalysisTitle;
+
+  /// No description provided for @reportUnderAnalysisBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your horoscope compatibility report for this profile is being prepared. We will notify you as soon as it is ready.'**
+  String get reportUnderAnalysisBody;
+
+  /// No description provided for @viewHoroscopeReport.
+  ///
+  /// In en, this message translates to:
+  /// **'View Horoscope Report'**
+  String get viewHoroscopeReport;
+
+  /// No description provided for @compatAlreadyRequestedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'You have already requested a compatibility report for this profile. One report per profile — its status is shown below.'**
+  String get compatAlreadyRequestedNote;
 
   /// No description provided for @pendingInterestTitle.
   ///

@@ -5,13 +5,19 @@ import '../../models/astrologer_request_model.dart';
 import '../../models/astrologer_team_member.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/astrology_team_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/match_analysis_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../services/firebase/astrologer_service.dart'
+    show RequestClaimException;
 import '../../widgets/common/data_states.dart';
+import '../report/compatibility_report_screen.dart';
 
 /// Admin → Horoscope Requests (bottom-nav). Manages the astrologer
 /// match-analysis / consultation request queue: summary counts, status
 /// filters, a "Need Attention" section for long-pending requests, and per-row
-/// admin actions (Send Reminder, Reassign Astrologer).
+/// admin actions (Send Reminder, Reassign Astrologer, plus the spec §11 admin
+/// self-analysis: Assign to Me / Analyze as Admin).
 class AdminHoroscopeRequestsScreen extends ConsumerStatefulWidget {
   const AdminHoroscopeRequestsScreen({super.key});
 
@@ -20,15 +26,27 @@ class AdminHoroscopeRequestsScreen extends ConsumerStatefulWidget {
       _AdminHoroscopeRequestsScreenState();
 }
 
+/// The FIVE display states an admin distinguishes (spec §11). `rejected`
+/// requests keep their red badge but bucket by assignment for the filters.
+enum _ReqState { pending, assignedEmployee, assignedAdmin, inProgress, completed }
+
+_ReqState _stateOf(AstrologerRequestModel r) {
+  if (r.status == AstrologerRequestStatus.completed) return _ReqState.completed;
+  if (r.workflowStatus == 'in_progress') return _ReqState.inProgress;
+  if (r.assignedToAdmin) return _ReqState.assignedAdmin;
+  if (r.isAssigned) return _ReqState.assignedEmployee;
+  return _ReqState.pending;
+}
+
 enum _ReqFilter {
   all,
-  // Paid requests that never reached an employee — auto-assignment found no
-  // active employee or was rejected. These are invisible on every employee's
-  // Pending Reports page until an admin assigns them, so they get their own
-  // filter rather than being buried in "All".
-  unassigned,
-  pendingAcceptance,
-  accepted,
+  // Truly unassigned requests — never reached an employee (auto-assignment
+  // found no one / was rejected) and not claimed by the admin. These are
+  // invisible on every employee's Pending Reports page until someone takes
+  // them, so they get their own filter rather than being buried in "All".
+  pending,
+  assignedEmployee,
+  assignedAdmin,
   inProgress,
   completed,
   reassigned,
@@ -37,9 +55,9 @@ enum _ReqFilter {
 extension on _ReqFilter {
   String get label => switch (this) {
         _ReqFilter.all => 'All',
-        _ReqFilter.unassigned => 'Unassigned',
-        _ReqFilter.pendingAcceptance => 'Pending Acceptance',
-        _ReqFilter.accepted => 'Accepted',
+        _ReqFilter.pending => 'Pending',
+        _ReqFilter.assignedEmployee => 'Assigned to Employee',
+        _ReqFilter.assignedAdmin => 'Assigned to Admin',
         _ReqFilter.inProgress => 'In Progress',
         _ReqFilter.completed => 'Completed',
         _ReqFilter.reassigned => 'Reassigned',
@@ -52,15 +70,12 @@ class _AdminHoroscopeRequestsScreenState
 
   bool _matches(AstrologerRequestModel r) => switch (_filter) {
         _ReqFilter.all => true,
-        _ReqFilter.unassigned =>
-          !r.isAssigned && r.status != AstrologerRequestStatus.completed,
-        _ReqFilter.pendingAcceptance =>
-          r.status == AstrologerRequestStatus.pending,
-        // Accepted & In Progress share the `accepted` status (the data model
-        // has no separate in-progress state).
-        _ReqFilter.accepted => r.status == AstrologerRequestStatus.accepted,
-        _ReqFilter.inProgress => r.status == AstrologerRequestStatus.accepted,
-        _ReqFilter.completed => r.status == AstrologerRequestStatus.completed,
+        _ReqFilter.pending => _stateOf(r) == _ReqState.pending,
+        _ReqFilter.assignedEmployee =>
+          _stateOf(r) == _ReqState.assignedEmployee,
+        _ReqFilter.assignedAdmin => _stateOf(r) == _ReqState.assignedAdmin,
+        _ReqFilter.inProgress => _stateOf(r) == _ReqState.inProgress,
+        _ReqFilter.completed => _stateOf(r) == _ReqState.completed,
         _ReqFilter.reassigned => r.reassigned,
       };
 
@@ -80,15 +95,25 @@ class _AdminHoroscopeRequestsScreenState
       data: (all) {
         final now = DateTime.now();
         final total = all.length;
-        final pending = all
-            .where((r) => r.status == AstrologerRequestStatus.pending)
-            .length;
-        final inProgress = all
-            .where((r) => r.status == AstrologerRequestStatus.accepted)
-            .length;
-        final completed = all
-            .where((r) => r.status == AstrologerRequestStatus.completed)
-            .length;
+        var pending = 0;
+        var assignedEmployee = 0;
+        var assignedAdmin = 0;
+        var inProgress = 0;
+        var completed = 0;
+        for (final r in all) {
+          switch (_stateOf(r)) {
+            case _ReqState.pending:
+              pending++;
+            case _ReqState.assignedEmployee:
+              assignedEmployee++;
+            case _ReqState.assignedAdmin:
+              assignedAdmin++;
+            case _ReqState.inProgress:
+              inProgress++;
+            case _ReqState.completed:
+              completed++;
+          }
+        }
 
         // Need-attention: pending > 24h, grouped by astrologer.
         final stale = all
@@ -120,7 +145,7 @@ class _AdminHoroscopeRequestsScreenState
                     fontWeight: FontWeight.bold)),
             const SizedBox(height: 14),
 
-            // Summary cards (2×2).
+            // Summary cards (2×3) — one per display state + total.
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
@@ -131,8 +156,13 @@ class _AdminHoroscopeRequestsScreenState
               children: [
                 _SummaryTile('Total Requests', total, Icons.list_alt,
                     AppColors.primary),
-                _SummaryTile('Pending Acceptance', pending,
+                _SummaryTile('Pending (Unassigned)', pending,
                     Icons.hourglass_top, AppColors.warning),
+                _SummaryTile('Assigned to Employee', assignedEmployee,
+                    Icons.group_outlined, Colors.deepPurple),
+                _SummaryTile('Assigned to Admin', assignedAdmin,
+                    Icons.admin_panel_settings_outlined,
+                    const Color(0xFF7C5CFC)),
                 _SummaryTile('In Progress', inProgress, Icons.sync,
                     const Color(0xFF2F80ED)),
                 _SummaryTile('Completed', completed, Icons.check_circle,
@@ -154,7 +184,7 @@ class _AdminHoroscopeRequestsScreenState
                         label: Text(f.label),
                         selected: _filter == f,
                         showCheckmark: false,
-                        selectedColor: AppColors.primary.withOpacity(0.14),
+                        selectedColor: AppColors.primary.withValues(alpha: 0.14),
                         backgroundColor: Colors.white,
                         labelStyle: TextStyle(
                           color: _filter == f
@@ -197,9 +227,9 @@ class _AdminHoroscopeRequestsScreenState
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.06),
+                    color: AppColors.error.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.error.withOpacity(0.25)),
+                    border: Border.all(color: AppColors.error.withValues(alpha: 0.25)),
                   ),
                   child: Row(
                     children: [
@@ -262,7 +292,7 @@ class _SummaryTile extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6)
         ],
       ),
       child: Row(
@@ -270,7 +300,7 @@ class _SummaryTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10)),
             child: Icon(icon, color: color, size: 18),
           ),
@@ -309,32 +339,54 @@ class _RequestCard extends ConsumerWidget {
     return request.type.label;
   }
 
-  ({Color color, String text}) get _statusBadge => switch (request.status) {
-        AstrologerRequestStatus.pending => (
-            color: AppColors.warning,
-            text: 'PENDING'
-          ),
-        AstrologerRequestStatus.accepted => (
-            color: const Color(0xFF2F80ED),
-            text: 'IN PROGRESS'
-          ),
-        AstrologerRequestStatus.completed => (
-            color: AppColors.success,
-            text: 'COMPLETED'
-          ),
-        AstrologerRequestStatus.rejected => (
-            color: AppColors.error,
-            text: 'REJECTED'
-          ),
-      };
+  ({Color color, String text}) get _statusBadge {
+    if (request.status == AstrologerRequestStatus.rejected) {
+      return (color: AppColors.error, text: 'REJECTED');
+    }
+    return switch (_stateOf(request)) {
+      _ReqState.pending => (color: AppColors.warning, text: 'PENDING'),
+      _ReqState.assignedEmployee => (
+          color: Colors.deepPurple,
+          text: 'ASSIGNED TO EMPLOYEE'
+        ),
+      _ReqState.assignedAdmin => (
+          color: const Color(0xFF7C5CFC),
+          text: 'ASSIGNED TO ADMIN'
+        ),
+      _ReqState.inProgress => (
+          color: const Color(0xFF2F80ED),
+          text: 'IN PROGRESS'
+        ),
+      _ReqState.completed => (
+          color: AppColors.success,
+          text: 'COMPLETED'
+        ),
+    };
+  }
 
   String _fmtDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}';
 
+  /// "Completed by Admin (email) on 02-08-2026 · 05:12 PM" — shown on
+  /// completed cards once the submit stamp exists (legacy docs show nothing).
+  String get _completedByText {
+    final who = request.completedByRole == 'admin' ? 'Admin' : 'Employee';
+    final email = request.completedByEmail.isNotEmpty
+        ? ' (${request.completedByEmail})'
+        : '';
+    final when = request.completedAt != null
+        ? ' on ${_fmtDateTime(request.completedAt!)}'
+        : '';
+    return 'Completed by $who$email$when';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final badge = _statusBadge;
+    final state = _stateOf(request);
+    final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid ?? '';
     final waiting = _waited(DateTime.now().difference(request.createdAt));
+    final actions = _actionRows(context, ref, state, myUid);
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -342,7 +394,7 @@ class _RequestCard extends ConsumerWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
         ],
       ),
       child: Column(
@@ -361,7 +413,7 @@ class _RequestCard extends ConsumerWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: badge.color.withOpacity(0.12),
+                  color: badge.color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(badge.text,
@@ -379,7 +431,12 @@ class _RequestCard extends ConsumerWidget {
           const SizedBox(height: 8),
           _line(Icons.favorite_border, 'Match', _matchName),
           if (request.isAssigned) ...[
-            _line(Icons.auto_awesome, 'Astrologer', request.astrologerName),
+            _line(
+                request.assignedToAdmin
+                    ? Icons.admin_panel_settings_outlined
+                    : Icons.auto_awesome,
+                request.assignedToAdmin ? 'Admin' : 'Astrologer',
+                request.astrologerName),
             _line(Icons.alternate_email, 'Gmail', request.astrologerEmail),
             if (request.assignedAt != null)
               _line(Icons.schedule, 'Assigned',
@@ -389,72 +446,147 @@ class _RequestCard extends ConsumerWidget {
           _line(Icons.info_outline, 'Status', badge.text),
           _line(Icons.event_outlined, 'Requested', _fmtDate(request.createdAt)),
           _line(Icons.timelapse, 'Waiting', waiting),
-          const SizedBox(height: 10),
-          // Reassign only appears once an astrologer is actually assigned;
-          // otherwise offer to (re)run auto-assignment / explain none exist.
-          if (request.isAssigned)
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _sendReminder(context, ref),
-                    icon: const Icon(Icons.notifications_active_outlined,
-                        size: 17),
-                    label: const Text('Reminder'),
-                    style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 9)),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _reassign(context, ref),
-                    icon: const Icon(Icons.swap_horiz, size: 17),
-                    label: const Text('Reassign'),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 9)),
-                  ),
-                ),
-              ],
-            )
-          else if (request.status == AstrologerRequestStatus.pending)
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _autoAssign(context, ref),
-                    icon: const Icon(Icons.autorenew, size: 17),
-                    label: const Text('Auto Assign'),
-                    style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 9)),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _reassign(context, ref),
-                    icon: const Icon(Icons.person_add_alt, size: 17),
-                    label: const Text('Assign'),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 9)),
-                  ),
-                ),
-              ],
+          if (state == _ReqState.completed &&
+              (request.completedBy.isNotEmpty ||
+                  request.completedByEmail.isNotEmpty)) ...[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(_completedByText,
+                  style: const TextStyle(
+                      fontSize: 11.5, fontWeight: FontWeight.w500)),
             ),
+          ],
+          if (actions.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            ...actions,
+          ],
         ],
       ),
     );
   }
+
+  /// Per-state action rows (spec §11):
+  ///  • Pending      → Auto Assign / Assign  +  Assign to Me / Analyze as Admin
+  ///  • Employee     → Reminder / Reassign   +  Assign to Me / Analyze as Admin
+  ///  • Admin        → Reassign / Analyze
+  ///  • In Progress  → (mine) Reassign / Analyze — (someone else) Reminder /
+  ///    Reassign; the claim transaction + dialog block a takeover mid-analysis.
+  ///  • Completed    → no actions.
+  List<Widget> _actionRows(
+      BuildContext context, WidgetRef ref, _ReqState state, String myUid) {
+    switch (state) {
+      case _ReqState.completed:
+        return const [];
+      case _ReqState.pending:
+        return [
+          Row(children: [
+            _outlinedBtn('Auto Assign', Icons.autorenew,
+                () => _autoAssign(context, ref)),
+            const SizedBox(width: 10),
+            _elevatedBtn(
+                'Assign', Icons.person_add_alt, () => _reassign(context, ref)),
+          ]),
+          const SizedBox(height: 8),
+          Row(children: [
+            _outlinedBtn('Assign to Me', Icons.how_to_reg_outlined,
+                () => _assignToMe(context, ref)),
+            const SizedBox(width: 10),
+            _elevatedBtn('Analyze as Admin', Icons.edit_note,
+                () => _analyzeAsAdmin(context, ref)),
+          ]),
+        ];
+      case _ReqState.assignedEmployee:
+        return [
+          Row(children: [
+            _outlinedBtn('Reminder', Icons.notifications_active_outlined,
+                () => _sendReminder(context, ref)),
+            const SizedBox(width: 10),
+            _elevatedBtn(
+                'Reassign', Icons.swap_horiz, () => _reassign(context, ref)),
+          ]),
+          const SizedBox(height: 8),
+          Row(children: [
+            _outlinedBtn('Assign to Me', Icons.how_to_reg_outlined,
+                () => _assignToMe(context, ref)),
+            const SizedBox(width: 10),
+            _elevatedBtn('Analyze as Admin', Icons.edit_note,
+                () => _analyzeAsAdmin(context, ref)),
+          ]),
+        ];
+      case _ReqState.assignedAdmin:
+        return [
+          Row(children: [
+            _outlinedBtn(
+                'Reassign', Icons.swap_horiz, () => _reassign(context, ref)),
+            const SizedBox(width: 10),
+            _elevatedBtn(
+                'Analyze', Icons.edit_note, () => _analyzeAsAdmin(context, ref)),
+          ]),
+        ];
+      case _ReqState.inProgress:
+        if (request.astrologerId.isNotEmpty && request.astrologerId == myUid) {
+          // The signed-in ADMIN is the one analyzing — continue the report.
+          return [
+            Row(children: [
+              _outlinedBtn(
+                  'Reassign', Icons.swap_horiz, () => _reassign(context, ref)),
+              const SizedBox(width: 10),
+              _elevatedBtn('Analyze', Icons.edit_note,
+                  () => _analyzeAsAdmin(context, ref)),
+            ]),
+          ];
+        }
+        return [
+          Row(children: [
+            _outlinedBtn('Reminder', Icons.notifications_active_outlined,
+                () => _sendReminder(context, ref)),
+            const SizedBox(width: 10),
+            _elevatedBtn(
+                'Reassign', Icons.swap_horiz, () => _reassign(context, ref)),
+          ]),
+        ];
+    }
+  }
+
+  Widget _outlinedBtn(String label, IconData icon, VoidCallback onTap) =>
+      Expanded(
+        child: OutlinedButton.icon(
+          onPressed: onTap,
+          icon: Icon(icon, size: 17),
+          label: Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12.5)),
+          style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary),
+              padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6)),
+        ),
+      );
+
+  Widget _elevatedBtn(String label, IconData icon, VoidCallback onTap) =>
+      Expanded(
+        child: ElevatedButton.icon(
+          onPressed: onTap,
+          icon: Icon(icon, size: 17),
+          label: Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12.5)),
+          style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6)),
+        ),
+      );
 
   String _fmtDateTime(DateTime d) {
     final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
@@ -482,6 +614,74 @@ class _RequestCard extends ConsumerWidget {
           ],
         ),
       );
+
+  /// "Assign to Me" — claims the request for the signed-in ADMIN via the
+  /// guarded transaction; a lost race / already-in-progress request surfaces a
+  /// friendly SnackBar naming whoever holds it.
+  Future<void> _assignToMe(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref
+          .read(matchAnalysisControllerProvider.notifier)
+          .claimRequestForAdmin(request);
+      messenger.showSnackBar(const SnackBar(
+          content: Text('Request assigned to you (Admin).')));
+    } on RequestClaimException catch (e) {
+      messenger.showSnackBar(SnackBar(
+          content: Text('$e'), backgroundColor: AppColors.error));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+          content: Text('Could not assign: $e'),
+          backgroundColor: AppColors.error));
+    }
+  }
+
+  /// "Analyze (as Admin)" — claims the request if needed, moves it to
+  /// In Progress (same guarded transaction) and opens the EXISTING structured
+  /// compat-report form the employee portal uses. If someone else is
+  /// mid-analysis the takeover is blocked with a dialog instead.
+  Future<void> _analyzeAsAdmin(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    try {
+      await ref
+          .read(matchAnalysisControllerProvider.notifier)
+          .claimRequestForAdmin(request, startAnalysis: true);
+    } on RequestClaimException catch (e) {
+      if (!context.mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Request Locked'),
+          content: Text(e.alreadyCompleted
+              ? 'This request is already completed.'
+              : 'This request is being analyzed by '
+                  '${e.holder.isEmpty ? 'another astrologer' : e.holder}.'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK')),
+          ],
+        ),
+      );
+      return;
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+          content: Text('Could not start analysis: $e'),
+          backgroundColor: AppColors.error));
+      return;
+    }
+    // Open the SAME analysis form the employee portal uses
+    // (astrologer_request_detail_page._compatReportCard) — employee mode makes
+    // it the editable structured A4 report with Save Draft + Submit.
+    navigator.push(MaterialPageRoute(
+      builder: (_) => CompatibilityReportScreen(
+        requestId: request.id,
+        request: request,
+        employee: true,
+      ),
+    ));
+  }
 
   Future<void> _sendReminder(BuildContext context, WidgetRef ref) async {
     if (request.astrologerId.isEmpty) {
@@ -578,7 +778,7 @@ class _RequestCard extends ConsumerWidget {
                           contentPadding: EdgeInsets.zero,
                           leading: CircleAvatar(
                             backgroundColor:
-                                const Color(0xFF7C5CFC).withOpacity(0.12),
+                                const Color(0xFF7C5CFC).withValues(alpha: 0.12),
                             backgroundImage: m.photoUrl.isNotEmpty
                                 ? NetworkImage(m.photoUrl)
                                 : null,
@@ -621,4 +821,3 @@ class _RequestCard extends ConsumerWidget {
     );
   }
 }
-
