@@ -52,9 +52,30 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       debugPrint('[Splash] resolved auth user=${user?.uid}');
 
       if (user == null) {
-        debugPrint('[Splash] No signed-in user → /login');
-        // Single common login for everyone (User / Admin / Employee).
-        context.go('/login');
+        // Spec §6 — a fresh install NEVER opens on the login page. Start a
+        // GUEST (anonymous) session so Home can read the public content, then
+        // land on Home. If anonymous sign-in is unavailable (provider off,
+        // offline) we still go to Home: the router treats "not authenticated"
+        // exactly like a guest, so the visitor browses instead of being
+        // bounced to /login.
+        debugPrint('[Splash] No signed-in user → starting Guest Mode → /home');
+        try {
+          await repo
+              .signInAsGuest()
+              .timeout(const Duration(seconds: 8));
+        } catch (e) {
+          debugPrint('[Splash] guest sign-in unavailable (non-fatal): $e');
+        }
+        if (!mounted) return;
+        context.go('/home');
+        return;
+      }
+
+      // An anonymous (Guest Mode) session has no `users/{uid}` document by
+      // design — never try to read one, just open Home.
+      if (repo.isGuest) {
+        debugPrint('[Splash] Guest session → /home');
+        context.go('/home');
         return;
       }
 
@@ -69,8 +90,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       if (!mounted) return;
 
       if (userModel == null) {
-        debugPrint('[Splash] No Firestore user doc found → /login');
-        context.go('/login');
+        debugPrint('[Splash] No Firestore user doc found → /home (browse)');
+        // Not a dead end: the router keeps a document-less session on the
+        // guest allow-list, so they can browse and sign in when ready.
+        context.go('/home');
         return;
       }
 
@@ -154,7 +177,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       // the spinner forever with no navigation and no visible error.
       debugPrint('[Splash] _navigate() failed: $e\n$st');
       if (!mounted) return;
-      context.go('/login');
+      // Never dead-end on the splash OR on the login page: Home is browsable
+      // for everyone (§6), and every personalized action gates itself.
+      context.go('/home');
     }
   }
 

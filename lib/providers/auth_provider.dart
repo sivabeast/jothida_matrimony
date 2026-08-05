@@ -13,9 +13,24 @@ final firebaseAuthStreamProvider = StreamProvider<User?>((ref) =>
 /// Watches [firebaseAuthStreamProvider] so it flips the instant a guest links
 /// their account and becomes a real member — screens gating on it update
 /// without a manual refresh.
+/// True while the app is in GUEST MODE.
+///
+/// This covers BOTH ways a visitor browses without an account (spec §6):
+///   • an anonymous Firebase session — the normal path, started by the splash
+///     so Home can read public content; and
+///   • no Firebase session at all — anonymous sign-in was unavailable
+///     (provider disabled, offline). The visitor still browses Home, so every
+///     member-only feature must gate exactly as it does for an anonymous one.
+///
+/// Watching [firebaseAuthStreamProvider] means this flips the instant a guest
+/// links their account and becomes a real member.
 final isGuestProvider = Provider<bool>((ref) {
-  final user = ref.watch(firebaseAuthStreamProvider).valueOrNull;
-  return user?.isAnonymous ?? false;
+  final auth = ref.watch(firebaseAuthStreamProvider);
+  // Before the first auth event resolves, fall back to Firebase's synchronous
+  // currentUser so the very first frame does not misreport a signed-in member
+  // as a guest.
+  final user = auth.valueOrNull ?? ref.watch(authRepositoryProvider).currentUser;
+  return user == null || user.isAnonymous;
 });
 
 // Current UserModel (loaded after auth).

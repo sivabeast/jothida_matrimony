@@ -13,6 +13,7 @@ import 'models/master_data.dart';
 import 'providers/locale_provider.dart';
 import 'router/app_router.dart';
 import 'screens/settings/language_screen.dart';
+import 'services/app_update_service.dart';
 import 'services/firebase/fcm_service.dart';
 import 'services/firebase/master_data_service.dart';
 
@@ -69,9 +70,16 @@ void main() async {
   runApp(const ProviderScope(child: JothidaMatrimonyApp()));
 }
 
-class JothidaMatrimonyApp extends ConsumerWidget {
+class JothidaMatrimonyApp extends ConsumerStatefulWidget {
   const JothidaMatrimonyApp({super.key});
 
+  @override
+  ConsumerState<JothidaMatrimonyApp> createState() =>
+      _JothidaMatrimonyAppState();
+}
+
+class _JothidaMatrimonyAppState extends ConsumerState<JothidaMatrimonyApp>
+    with WidgetsBindingObserver {
   // Shared localization config so both the first-launch language screen and the
   // main router app render correctly.
   static const _localizationsDelegates = [
@@ -82,7 +90,32 @@ class JothidaMatrimonyApp extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Google Play In-App Update (Immediate) — checked on COLD START, and again
+    // on every resume via didChangeAppLifecycleState. Fire-and-forget: the
+    // service never throws and never blocks first paint.
+    unawaited(AppUpdateService.instance.checkAndPromptImmediate());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // "Whenever the app opens" includes coming back from the background — a
+    // long-lived process would otherwise never see a new release.
+    if (state == AppLifecycleState.resumed) {
+      unawaited(AppUpdateService.instance.checkAndPromptImmediate());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final initial = ref.watch(initialLocaleProvider);
     final locale = ref.watch(localeProvider);
 
@@ -105,9 +138,10 @@ class JothidaMatrimonyApp extends ConsumerWidget {
       );
     }
 
-    // Force update no longer replaces the router with a blocking screen —
-    // the user lands on Home normally and a premium non-dismissible popup
-    // (force_update_dialog.dart, wired in HomeScreen) carries the store link.
+    // Updates are handled entirely by Google Play In-App Updates
+    // (AppUpdateService, checked in initState + on every resume above), so the
+    // router is never replaced by an update gate and no admin configuration
+    // exists to keep in sync.
 
     // Normal app, localized.
     final router = ref.watch(appRouterProvider);

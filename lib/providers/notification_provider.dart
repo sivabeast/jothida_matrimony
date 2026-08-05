@@ -16,15 +16,39 @@ final unreadNotificationCountProvider = Provider.autoDispose<int>((ref) {
   return notifs.where((n) => !n.isRead).length;
 });
 
-/// The event kinds the app generates in-app notifications for.
+/// Every event the app generates a notification for (spec §10).
+///
+/// One document per event is written to `notifications/{id}`; the
+/// `onNotificationCreated` Cloud Function turns each into a device push, so
+/// adding an event here is all it takes for it to reach the lock screen.
+/// Each event carries its own deep link (see [NotificationNotifier._defaultRoute])
+/// so a tap opens the related screen directly — never a notification-details
+/// page (§13/§16).
 enum AppNotificationEvent {
   interestReceived,
   interestAccepted,
   interestRejected,
+
+  /// A mutual match was created (both sides accepted) — sent to BOTH members.
+  newMatch,
+
   profileApproved,
   reportReady,
+
+  /// A new astrology appointment was booked (awaiting the office visit).
+  appointmentBooked,
   appointmentConfirmed,
+  appointmentCancelled,
+
+  /// Membership / plan lifecycle.
+  membershipActivated,
+  membershipExpired,
+
+  /// A payment completed successfully (Play Billing purchase or a booking fee).
+  paymentSuccess,
+
   adminProfileUpdate,
+
   /// A horoscope-analysis request was auto-assigned to an EMPLOYEE — sent to
   /// the employee's account so they see the new work immediately.
   reportAssigned,
@@ -104,9 +128,18 @@ class NotificationNotifier extends Notifier<void> {
         AppNotificationEvent.interestReceived => '/interests?tab=received',
         AppNotificationEvent.interestAccepted => '/interests?tab=accepted',
         AppNotificationEvent.interestRejected => '/interests?tab=rejected',
+        // A new match lands on the accepted list, where both profiles and the
+        // chat entry point live. Callers with the counterpart's uid pass
+        // '/profile-user/<uid>' instead.
+        AppNotificationEvent.newMatch => '/interests?tab=accepted',
         AppNotificationEvent.profileApproved => '/home',
         AppNotificationEvent.reportReady => '/reports',
+        AppNotificationEvent.appointmentBooked => '/my-appointments',
         AppNotificationEvent.appointmentConfirmed => '/my-appointments',
+        AppNotificationEvent.appointmentCancelled => '/my-appointments',
+        AppNotificationEvent.membershipActivated => '/home',
+        AppNotificationEvent.membershipExpired => '/home',
+        AppNotificationEvent.paymentSuccess => '/reports',
         AppNotificationEvent.adminProfileUpdate => '/my-profile',
         AppNotificationEvent.reportAssigned => '/astrologer-dashboard',
       };
@@ -116,9 +149,15 @@ class NotificationNotifier extends Notifier<void> {
         AppNotificationEvent.interestReceived => 'interest_received',
         AppNotificationEvent.interestAccepted => 'interest_accepted',
         AppNotificationEvent.interestRejected => 'interest_rejected',
+        AppNotificationEvent.newMatch => 'new_match',
         AppNotificationEvent.profileApproved => 'profile_approval',
         AppNotificationEvent.reportReady => 'porutham_ready',
+        AppNotificationEvent.appointmentBooked => 'appointment',
         AppNotificationEvent.appointmentConfirmed => 'appointment',
+        AppNotificationEvent.appointmentCancelled => 'appointment_cancelled',
+        AppNotificationEvent.membershipActivated => 'membership_activated',
+        AppNotificationEvent.membershipExpired => 'membership_expired',
+        AppNotificationEvent.paymentSuccess => 'payment_success',
         AppNotificationEvent.adminProfileUpdate => 'admin_update',
         AppNotificationEvent.reportAssigned => 'report_assigned',
       };
@@ -158,6 +197,77 @@ class NotificationNotifier extends Notifier<void> {
             : (
                 title: 'Interest Update',
                 body: '$who has declined your interest.'
+              );
+      case AppNotificationEvent.newMatch:
+        return ta
+            ? (
+                title: 'புதிய Match 🎊',
+                body: '$who உடன் நீங்கள் இணைந்துள்ளீர்கள். '
+                    'Profile-ஐ பார்த்து உரையாடலைத் தொடங்குங்கள்!'
+              )
+            : (
+                title: 'New Match 🎊',
+                body: 'You and $who are now connected. '
+                    'View the profile and start the conversation!'
+              );
+      case AppNotificationEvent.appointmentBooked:
+        return ta
+            ? (
+                title: 'Appointment பதிவு ஆனது 🗓️',
+                body: 'உங்கள் ஜோதிட appointment பதிவு செய்யப்பட்டது. '
+                    'My Appointments-இல் விவரங்களைப் பார்க்கவும்.'
+              )
+            : (
+                title: 'Appointment Booked 🗓️',
+                body: 'Your astrology appointment has been booked. '
+                    'See My Appointments for the details.'
+              );
+      case AppNotificationEvent.appointmentCancelled:
+        return ta
+            ? (
+                title: 'Appointment ரத்து ❌',
+                body: 'உங்கள் ஜோதிட appointment ரத்து செய்யப்பட்டது. '
+                    'விவரங்களுக்கு My Appointments-ஐ பார்க்கவும்.'
+              )
+            : (
+                title: 'Appointment Cancelled ❌',
+                body: 'Your astrology appointment has been cancelled. '
+                    'Open My Appointments for the details.'
+              );
+      case AppNotificationEvent.membershipActivated:
+        return ta
+            ? (
+                title: 'Membership செயல்படுத்தப்பட்டது ⭐',
+                body: 'உங்கள் membership இப்போது செயலில் உள்ளது. '
+                    'அனைத்து வசதிகளையும் பயன்படுத்துங்கள்!'
+              )
+            : (
+                title: 'Membership Activated ⭐',
+                body: 'Your membership is now active. '
+                    'Enjoy full access to every feature!'
+              );
+      case AppNotificationEvent.membershipExpired:
+        return ta
+            ? (
+                title: 'Membership காலாவதி ⌛',
+                body: 'உங்கள் membership காலாவதியாகிவிட்டது. '
+                    'தொடர்ந்து பயன்படுத்த புதுப்பிக்கவும்.'
+              )
+            : (
+                title: 'Membership Expired ⌛',
+                body: 'Your membership has expired. '
+                    'Renew it to keep using all the features.'
+              );
+      case AppNotificationEvent.paymentSuccess:
+        return ta
+            ? (
+                title: 'கட்டணம் வெற்றி ✅',
+                body: 'உங்கள் கட்டணம் வெற்றிகரமாக பெறப்பட்டது. '
+                    'நன்றி!'
+              )
+            : (
+                title: 'Payment Successful ✅',
+                body: 'Your payment was received successfully. Thank you!'
               );
       case AppNotificationEvent.profileApproved:
         return ta

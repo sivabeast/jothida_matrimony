@@ -215,7 +215,7 @@ final myAstrologerStatsProvider =
   final member = ref.watch(myAstrologerTeamMemberProvider).valueOrNull;
   if (member == null) return null;
   final requests =
-      ref.watch(myAssignedRequestsProvider).valueOrNull ?? const [];
+      ref.watch(myAssignedReportRequestsProvider).valueOrNull ?? const [];
   final cfg = ref.watch(astrologyServiceConfigValueProvider);
   return computeAstrologerStats(member, requests, cfg);
 });

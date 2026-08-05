@@ -5,12 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/config/dev_config.dart';
 import '../core/navigation/root_navigator.dart';
+import '../core/utils/member_access.dart';
 import '../providers/auth_provider.dart';
 import '../providers/service_providers.dart';
 import 'auth_redirect.dart';
 import '../models/astrologer_request_model.dart';
 import '../screens/astrology/horoscope_report_service_screen.dart';
-import '../screens/astrology/appointment_booking_screen.dart';
 import '../screens/astrology/astrology_appointment_screen.dart';
 import '../screens/astrology/appointment_confirmation_screen.dart';
 import '../screens/astrology/my_appointments_screen.dart';
@@ -20,7 +20,7 @@ import '../screens/astrologer/match_workspace_screen.dart';
 // employee/astrologer login).
 import '../screens/astrologer/portal/astrologer_shell.dart';
 import '../screens/astrologer/portal/astrologer_notifications_page.dart';
-import '../screens/astrologer/portal/astrologer_request_detail_page.dart';
+import '../screens/report/report_request_detail_page.dart';
 import '../screens/auth/splash_screen.dart';
 import '../screens/auth/login_required_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -58,7 +58,6 @@ import '../screens/admin/admin_test_data_screen.dart';
 import '../screens/admin/employee_commission_screen.dart';
 import '../screens/admin/account_admin_screens.dart';
 import '../screens/admin/announcement_management_screen.dart';
-import '../screens/admin/app_update_settings_screen.dart';
 import '../screens/admin/banner_management_screen.dart';
 import '../screens/horoscope/horoscope_details_screen.dart';
 import '../screens/horoscope/horoscope_files_screen.dart';
@@ -172,7 +171,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // old user and incorrectly return null (no redirect). `currentUser` is
       // read synchronously from Firebase and is always immediately accurate.
       final userAsync = ref.read(currentUserProvider);
-      return resolveAuthRedirect(
+      final pendingReturn = ref.read(pendingReturnRouteProvider);
+      final decision = resolveAuthRedirect(
         location: state.matchedLocation,
         bypassAuth: kBypassAuth,
         isAuthenticated: ref.read(authRepositoryProvider).currentUser != null,
@@ -183,16 +183,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         userDocLoading: userAsync.isLoading,
         user: userAsync.valueOrNull,
         familyLoginInProgress: ref.read(familyLoginInProgressProvider),
+        pendingReturnRoute: pendingReturn,
         log: (m) => debugPrint('[Router] $m'),
       );
+      // A consumed return-route must not fire again on the next redirect.
+      // Cleared out-of-band so the redirect callback itself stays side-effect
+      // free for GoRouter's synchronous evaluation.
+      if (pendingReturn != null && decision == pendingReturn) {
+        Future.microtask(
+            () => ref.read(pendingReturnRouteProvider.notifier).state = null);
+      }
+      return decision;
     },
     routes: [
       GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-      // Where Guest Mode sends anything personalized (§13).
+      // Where Guest Mode sends anything personalized (§6). `?returnTo=` carries
+      // the blocked location so signing in lands the member straight back on
+      // it instead of Home (§15).
       GoRoute(
           path: '/login-required',
-          builder: (_, __) => const LoginRequiredScreen()),
+          builder: (_, state) => LoginRequiredScreen(
+              returnTo: state.uri.queryParameters['returnTo'])),
       // ── Employee Portal (admin-provisioned staff; common login only) ─────
       GoRoute(
           path: '/astrologer-dashboard',
@@ -200,21 +212,36 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/astrologer-notifications',
           builder: (_, __) => const AstrologerNotificationsPage()),
+      // One assigned report request in the Employee Portal — the SAME detail
+      // page the admin opens (§3).
       GoRoute(
         path: '/astrologer-request/:id',
-        builder: (_, state) => AstrologerRequestDetailPage(
+        builder: (_, state) => ReportRequestDetailPage(
           requestId: state.pathParameters['id']!,
           initial: state.extra is AstrologerRequestModel
               ? state.extra as AstrologerRequestModel
               : null,
         ),
       ),
-      GoRoute(path: '/chats', builder: (_, __) => const ChatListScreen()),
+      // Chat is member-only (§7) — gated at the route so deep links and
+      // notification taps go through the same check as an in-app tap.
+      GoRoute(
+        path: '/chats',
+        builder: (_, __) => const MemberGate(
+          feature: MemberFeature.chat,
+          returnTo: '/chats',
+          child: ChatListScreen(),
+        ),
+      ),
       GoRoute(
         path: '/chat/:id',
-        builder: (_, state) => ChatScreen(
-          threadId: state.pathParameters['id']!,
-          extra: state.extra as Map<String, dynamic>?,
+        builder: (_, state) => MemberGate(
+          feature: MemberFeature.chat,
+          returnTo: state.uri.toString(),
+          child: ChatScreen(
+            threadId: state.pathParameters['id']!,
+            extra: state.extra as Map<String, dynamic>?,
+          ),
         ),
       ),
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
@@ -225,9 +252,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/profile/success',
           builder: (_, __) => const ProfileSuccessScreen()),
+      // Member profiles are the core member-only surface (§6/§7): wrapping the
+      // ROUTE gates every way in — a card tap, a deep link, a notification tap
+      // or a restored session — in one place.
       GoRoute(
         path: '/profile/:id',
-        builder: (_, state) => ProfileViewScreen(profileId: state.pathParameters['id']!),
+        builder: (_, state) => MemberGate(
+          feature: MemberFeature.viewProfiles,
+          returnTo: state.uri.toString(),
+          child:
+              ProfileViewScreen(profileId: state.pathParameters['id']!),
+        ),
       ),
       // Open a profile by the owner's USER id (UID). Used from accepted
       // interests, where senderId / receiverId is the reliable key — never an
@@ -235,8 +270,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // '/profile/:id' document-id route above.
       GoRoute(
         path: '/profile-user/:uid',
-        builder: (_, state) =>
-            ProfileViewScreen(userId: state.pathParameters['uid']!),
+        builder: (_, state) => MemberGate(
+          feature: MemberFeature.viewProfiles,
+          returnTo: state.uri.toString(),
+          child: ProfileViewScreen(userId: state.pathParameters['uid']!),
+        ),
       ),
       // My Profile — the member's own profile organised into categories, each
       // with its own Edit action (Menu → "My Profile").
@@ -289,11 +327,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/request-external-report',
         builder: (_, __) => const RequestExternalReportScreen(),
-      ),
-      GoRoute(
-        path: '/book-appointment/:userId',
-        builder: (_, state) => AppointmentBookingScreen(
-            otherUserId: state.pathParameters['userId']!),
       ),
       // Standalone "Book Your Appointment" from the Astrology page (not tied to
       // a matched partner). Distinct path so the /astrology exact-match
@@ -362,10 +395,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             'rejected' => 3,
             _ => 0, // received
           };
-          return InterestsCenterScreen(
-            initialTab: idx,
-            standalone: true,
-            highlightUid: state.uri.queryParameters['highlight'],
+          return MemberGate(
+            feature: MemberFeature.sendInterest,
+            returnTo: state.uri.toString(),
+            child: InterestsCenterScreen(
+              initialTab: idx,
+              standalone: true,
+              highlightUid: state.uri.queryParameters['highlight'],
+            ),
           );
         },
       ),
@@ -475,6 +512,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/admin/verification',
         builder: (_, __) => const AstrologerVerificationScreen(),
       ),
+      // One report request — Groom / Bride / Horoscope details + Fill Report.
+      // The SAME page the employee portal opens ('/astrologer-request/:id').
+      //
+      // Registered OUTSIDE the admin ShellRoute deliberately: it carries its
+      // own AppBar, and nesting it in the shell would stack two. Still
+      // admin-gated, by the '/admin/' rule in resolveAuthRedirect.
+      GoRoute(
+        path: '/admin/request/:id',
+        builder: (_, state) => ReportRequestDetailPage(
+          requestId: state.pathParameters['id']!,
+          initial: state.extra is AstrologerRequestModel
+              ? state.extra as AstrologerRequestModel
+              : null,
+          admin: true,
+        ),
+      ),
       // Admin
       ShellRoute(
         builder: (_, __, child) => AdminShell(child: child),
@@ -528,7 +581,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/admin/payments',
               builder: (_, __) => const AdminPaymentsScreen()),
-          // Horoscope Requests → astrologer match-analysis request queue.
+          // Requests → horoscope REPORT request queue (Pending / Completed).
+          // Astrology appointments are a separate module (§4).
           GoRoute(
               path: '/admin/horoscope-requests',
               builder: (_, __) => const AdminHoroscopeRequestsScreen()),
@@ -544,10 +598,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               builder: (_, __) => const AstrologyServiceSettingsScreen()),
           GoRoute(path: '/admin/analytics', builder: (_, __) => const AdminReportsPage()),
           GoRoute(path: '/admin/settings', builder: (_, __) => const AdminSettingsScreen()),
-          // Force App Update configuration (version gate + Play Store link).
-          GoRoute(
-              path: '/admin/app-update',
-              builder: (_, __) => const AppUpdateSettingsScreen()),
           GoRoute(path: '/admin/commission', builder: (_, __) => const EmployeeCommissionScreen()),
           GoRoute(path: '/admin/married', builder: (_, __) => const MarriedUsersScreen()),
           GoRoute(path: '/admin/test-data', builder: (_, __) => const AdminTestDataScreen()),

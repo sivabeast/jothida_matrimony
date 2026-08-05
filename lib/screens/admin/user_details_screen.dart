@@ -8,6 +8,7 @@ import '../../models/profile_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/export/profile_form_export.dart';
 
@@ -185,9 +186,73 @@ class UserDetailsScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                // Membership lifecycle notifications (spec §10). Every
+                // matrimony feature is currently free, so membership state is
+                // an OFFLINE arrangement — these send the member the same
+                // push/in-app notification a billing system would, in their
+                // own app language, deep-linked to Home.
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _notifyMembership(context, ref, user!,
+                            AppNotificationEvent.membershipActivated),
+                        icon: const Icon(Icons.workspace_premium_outlined,
+                            size: 18),
+                        label: const Text('Membership Activated',
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                        style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.success,
+                            side: const BorderSide(color: AppColors.success),
+                            minimumSize: const Size.fromHeight(48)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _notifyMembership(context, ref, user!,
+                            AppNotificationEvent.membershipExpired),
+                        icon: const Icon(Icons.hourglass_disabled, size: 18),
+                        label: const Text('Membership Expired',
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                        style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.deepOrange,
+                            side: const BorderSide(color: Colors.deepOrange),
+                            minimumSize: const Size.fromHeight(48)),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
     );
+  }
+
+  /// Sends one membership notification to [user]. Deterministic per (user,
+  /// event, day) so a double-tap can't spam them twice in the same day.
+  Future<void> _notifyMembership(BuildContext context, WidgetRef ref,
+      UserModel user, AppNotificationEvent event) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final today = DateTime.now();
+    final dayKey = '${today.year}${today.month.toString().padLeft(2, '0')}'
+        '${today.day.toString().padLeft(2, '0')}';
+    try {
+      await ref.read(notificationNotifierProvider.notifier).notify(
+            toUid: user.uid,
+            event: event,
+            name: user.displayName ?? '',
+            id: '${event.name}_${user.uid}_$dayKey',
+          );
+      messenger.showSnackBar(SnackBar(
+          content: Text(event == AppNotificationEvent.membershipActivated
+              ? 'Membership activation notification sent.'
+              : 'Membership expiry notification sent.')));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+          content: Text('Could not send the notification: $e'),
+          backgroundColor: AppColors.error));
+    }
   }
 
   /// EVERY field the member entered, grouped exactly like the profile wizard

@@ -218,6 +218,14 @@ class AstrologerRequestModel {
   /// extra profile read. Empty for older records.
   final String userPhone;
 
+  /// The booking user's date of birth as `dd/MM/yyyy`.
+  ///
+  /// Astrology appointments do NOT require a matrimony profile (spec §8), so
+  /// there may be no profile to read a DOB from — the booking flow asks for
+  /// Name / Mobile / Date of Birth itself and stores the answers here. Empty
+  /// for report requests and for older appointment records.
+  final String userDob;
+
   final AstrologerRequestType type;
   final AstrologerRequestStatus status;
   final String message;
@@ -356,6 +364,7 @@ class AstrologerRequestModel {
     this.userPhotoUrl = '',
     this.userLocation = '',
     this.userPhone = '',
+    this.userDob = '',
     required this.type,
     this.status = AstrologerRequestStatus.pending,
     this.message = '',
@@ -424,6 +433,18 @@ class AstrologerRequestModel {
   /// session booking or a legacy slot booking).
   bool get hasAppointment =>
       visitDate != null && (session.isNotEmpty || slotStartMinutes != null);
+
+  /// True for a **Horoscope Report Request** — the online compatibility-report
+  /// queue the admin and the employees work through.
+  ///
+  /// The two modules are strictly disjoint (spec §4): anything carrying an
+  /// office-visit booking is an ASTROLOGY APPOINTMENT and belongs ONLY to the
+  /// Admin Appointments module, even when it happens to be typed `matching`
+  /// (legacy "report booked as an in-person visit" documents). Everything the
+  /// Requests module shows must satisfy this predicate; everything the
+  /// Appointments module shows must satisfy [hasAppointment]. No document can
+  /// ever satisfy both.
+  bool get isReportRequest => isMatchAnalysis && !hasAppointment;
 
   /// Human label for the booked session incl. its time window.
   String get sessionLabel => AppointmentSession.label(session);
@@ -576,6 +597,7 @@ class AstrologerRequestModel {
       userPhotoUrl: d['userPhotoUrl'] ?? '',
       userLocation: d['userLocation'] ?? d['location'] ?? '',
       userPhone: (d['userPhone'] ?? '').toString(),
+      userDob: (d['userDob'] ?? '').toString(),
       type: AstrologerRequestType.values.firstWhere(
         (t) => t.name == (d['type'] ?? 'inquiry'),
         orElse: () => AstrologerRequestType.inquiry,
@@ -644,6 +666,7 @@ class AstrologerRequestModel {
         'userPhotoUrl': userPhotoUrl,
         'userLocation': userLocation,
         'userPhone': userPhone,
+        'userDob': userDob,
         'type': type.name,
         'status': status.name,
         'message': message,
@@ -746,6 +769,7 @@ class AstrologerRequestModel {
         userPhotoUrl: userPhotoUrl,
         userLocation: userLocation,
         userPhone: userPhone,
+        userDob: userDob,
         type: type,
         status: status ?? this.status,
         message: message,

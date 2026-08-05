@@ -49,3 +49,12 @@ class ConsultMatchContext {
 /// Set when "Consult Astrologer" is tapped; read (and cleared) by the
 /// Astrologers / booking flow. Null when no consultation is pending.
 final consultMatchProvider = StateProvider<ConsultMatchContext?>((ref) => null);
+
+/// Where to send the user back to once they finish signing in (spec §15,
+/// Case 1: "after successful login, return automatically to the Horoscope
+/// Report page").
+///
+/// Set by the Login Required screen with the location that was blocked; the
+/// router's post-login redirect consumes it INSTEAD of the default '/home',
+/// then clears it. Null when the normal Home landing applies.
+final pendingReturnRouteProvider = StateProvider<String?>((ref) => null);

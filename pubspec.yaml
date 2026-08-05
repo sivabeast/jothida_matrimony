@@ -1,7 +1,7 @@
 name: jothida_matrimony
 description: Jothida Matrimony - Tamil Matrimony App with Horoscope & Porutham Analysis
 publish_to: 'none'
-version: 1.4.0+8
+version: 1.5.0+9
 
 environment:
   # in_app_purchase_android 0.5.0+ (Play Billing Library 8.0.0) requires
@@ -95,7 +95,11 @@ dependencies:
   # PDF viewing (no dependency on an external PDF viewer app) ──
   pdf: ^3.11.1
   printing: ^5.13.4
-  # ── Force-update gate: read the running app version ──
+  # ── Google Play In-App Updates (Immediate flow) ──
+  # The ONLY update mechanism: checked on every app open, Play decides whether
+  # a newer build exists. There is no admin-managed version gate any more.
+  in_app_update: ^4.2.3
+  # Running app version — displayed in Settings / About.
   package_info_plus: ^8.1.2
   file_picker: ^8.1.7
   open_file: ^3.5.10
@@ -122,21 +126,25 @@ dev_dependencies:
   # crop screen); tool/gen_play_store_icon.dart still imports it from there.
 
 # ── Launcher icon generation ──────────────────────────────────────────────────
-# Master = assets/images/report_logo.png : the full 1024×1024 maroon branded
-# icon (couple + zodiac + "Jothida Matrimony"). app_logo.png is the yellow
-# in-app emblem and is intentionally NOT the launcher icon.
-# To regenerate:
-#   flutter pub get
-#   dart run flutter_launcher_icons
+# ONE logo for the whole project (spec §5): assets/images/app_logo.png is the
+# 1024×1024 master used by the launcher icon, the Play Store icon, the splash,
+# login, loading, every in-app logo placeholder and the exported PDFs
+# (lib/core/constants/brand_assets.dart → kAppLogoAsset). There is no second
+# "report" logo any more.
+# To apply a new logo:
+#   1. replace assets/images/app_logo.png with the new square 1024×1024 PNG
+#   2. flutter pub get
+#   3. dart run flutter_launcher_icons
+#   4. dart run tool/gen_play_store_icon.dart   (Play Console 512×512 icon)
 # NOTE: after generating, the adaptive foreground gets a 16% inset re-applied in
-# android/.../mipmap-anydpi-v26/ic_launcher.xml so the full design (incl. the
-# bottom text) stays inside the adaptive safe zone instead of being masked off.
+# android/.../mipmap-anydpi-v26/ic_launcher.xml so the full design stays inside
+# the adaptive safe zone instead of being masked off.
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: false
-  image_path: "assets/images/report_logo.png"
+  image_path: "assets/images/app_logo.png"
   adaptive_icon_background: "#8B0000"    # deep maroon — matches brand
-  adaptive_icon_foreground: "assets/images/report_logo.png"
+  adaptive_icon_foreground: "assets/images/app_logo.png"
   min_sdk_android: 21
 
 flutter:

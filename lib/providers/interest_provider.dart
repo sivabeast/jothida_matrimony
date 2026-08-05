@@ -153,7 +153,60 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
       // In-app "Interest Accepted" notification for the sender (best-effort).
       await _notifyInterestOutcome(
           interestId, AppNotificationEvent.interestAccepted);
+      // …and a "New Match" for BOTH sides — accepting an interest is exactly
+      // when a match comes into existence (spec §10).
+      await _notifyNewMatch(interestId);
     });
+  }
+
+  /// "New Match" for both members of a freshly accepted interest.
+  ///
+  /// Each side is told the OTHER's name and deep-links to that profile, so a
+  /// tap opens the person they just matched with. Deterministic ids
+  /// (`new_match_<interestId>_<uid>`) mean a retry can never double-notify.
+  /// Best-effort throughout — never fails the accept.
+  Future<void> _notifyNewMatch(String interestId) async {
+    try {
+      final interest =
+          await ref.read(interestRepositoryProvider).getInterestById(interestId);
+      if (interest == null) return;
+      final notifier = ref.read(notificationNotifierProvider.notifier);
+      final myName = ref.read(myProfileProvider).valueOrNull?.fullName ?? '';
+      // The interest document carries ids only, so the sender's display name
+      // comes from their profile. An unreadable profile just falls back to the
+      // generic "a member" wording inside notify().
+      String senderName = '';
+      try {
+        senderName = (await ref
+                    .read(profileRepositoryProvider)
+                    .getProfileByUserId(interest.senderId))
+                ?.fullName ??
+            '';
+      } catch (_) {/* generic wording is fine */}
+
+      // → the sender, about me (the receiver).
+      await notifier.notify(
+        toUid: interest.senderId,
+        event: AppNotificationEvent.newMatch,
+        name: myName,
+        route: '/profile-user/${interest.receiverId}',
+        id: 'new_match_${interestId}_${interest.senderId}',
+        targetScreen: 'profile',
+        targetId: interest.receiverId,
+      );
+      // → me, about the sender.
+      await notifier.notify(
+        toUid: interest.receiverId,
+        event: AppNotificationEvent.newMatch,
+        name: senderName,
+        route: '/profile-user/${interest.senderId}',
+        id: 'new_match_${interestId}_${interest.receiverId}',
+        targetScreen: 'profile',
+        targetId: interest.senderId,
+      );
+    } catch (e) {
+      debugPrint('[InterestNotifier] new-match notification failed: $e');
+    }
   }
 
   /// Notifies the ORIGINAL SENDER of [interestId] that their interest was

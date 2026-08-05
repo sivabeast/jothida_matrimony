@@ -198,12 +198,9 @@ class AdminSettingsScreen extends StatelessWidget {
           color: AppColors.gold,
           onTap: () => context.go('/admin/commission'),
         ),
-        _ActionTile(
-          icon: Icons.system_update_alt_outlined,
-          title: 'App Update Settings',
-          subtitle: 'Force update, minimum version & Play Store link',
-          onTap: () => context.go('/admin/app-update'),
-        ),
+        // App updates need NO admin action at all (spec §9): Google Play
+        // In-App Updates checks on every app open and shows the immediate
+        // update dialog by itself. There is deliberately no settings page.
         _ActionTile(
           icon: Icons.notifications_outlined,
           title: 'Notification Management',

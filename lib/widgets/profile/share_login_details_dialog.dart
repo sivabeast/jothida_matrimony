@@ -6,15 +6,14 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/phone_utils.dart';
-import '../../providers/app_update_provider.dart';
 
 /// Play Store listing for the app, included in the hand-over message so the
 /// member can install it straight from the WhatsApp text.
 ///
-/// The ADMIN-configured store URL (App Update Settings) wins when one is set —
-/// that is the single place the store link is maintained. This constant is only
-/// the fallback, built from the real applicationId.
-const String kDefaultPlayStoreUrl =
+/// Derived from the real applicationId, so it needs no configuration and can
+/// never drift out of date. (Updates themselves are handled by Google Play
+/// In-App Updates — there is no admin-managed store URL any more.)
+const String kPlayStoreUrl =
     'https://play.google.com/store/apps/details?id=com.jothida.jothida_matrimony';
 
 /// Shown to the admin right after a member's profile + login have been created.
@@ -115,9 +114,7 @@ class _ShareLoginDetailsDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final configured =
-        ref.watch(appUpdateConfigProvider).valueOrNull?.playStoreUrl.trim() ?? '';
-    final storeUrl = configured.isEmpty ? kDefaultPlayStoreUrl : configured;
+    const storeUrl = kPlayStoreUrl;
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       title: Row(

@@ -115,3 +115,15 @@ final myAssignedRequestsProvider =
   });
   return controller.stream;
 });
+
+/// The signed-in employee's assigned HOROSCOPE REPORT requests, newest first.
+///
+/// Astrology appointment bookings are excluded (spec §4): they belong to the
+/// Admin Appointments module alone and must never reach the Employee Requests
+/// module. This — not [myAssignedRequestsProvider] — is what the employee
+/// Pending / Completed pages and the request detail page read.
+final myAssignedReportRequestsProvider =
+    Provider.autoDispose<AsyncValue<List<AstrologerRequestModel>>>((ref) {
+  return ref.watch(myAssignedRequestsProvider).whenData(
+      (list) => list.where((r) => r.isReportRequest).toList());
+});

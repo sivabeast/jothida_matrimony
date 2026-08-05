@@ -27,8 +27,13 @@ final myProfileProvider = StreamProvider.autoDispose<ProfileModel?>((ref) {
   }
 
   final authAsync = ref.watch(firebaseAuthStreamProvider);
-  final userId = authAsync.valueOrNull?.uid;
-  if (userId == null) return Stream.value(null);
+  final user = authAsync.valueOrNull;
+  final userId = user?.uid;
+  // A GUEST (anonymous) session has no matrimony profile by design — skip the
+  // Firestore query entirely rather than firing one the rules will reject on
+  // every guest launch. Every member-only feature gates on "guest" first
+  // anyway (see MemberGate / requireMemberAccess).
+  if (userId == null || user!.isAnonymous) return Stream.value(null);
 
   // LIVE snapshot stream (was a one-shot get() converted to a stream). Admin
   // edits to the profile document now reach the user app in real time —

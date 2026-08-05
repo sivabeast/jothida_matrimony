@@ -283,7 +283,7 @@ class AstrologerService {
         id: 'new_match_analysis_${doc.id}',
         data: {
           'requestId': doc.id,
-          'route': '/match-workspace/${doc.id}',
+          'route': '/astrologer-request/${doc.id}',
           'tab': 'matchAnalysis',
         },
       );
@@ -340,26 +340,24 @@ class AstrologerService {
     });
     final id = ref.id;
     // Notify the internal astrology team of the new appointment booking.
+    // Appointments live ONLY in the admin Appointments module (spec §4), so the
+    // deep link opens that module — never the Requests queue.
     await _notify(
       request.astrologerId,
       'New Appointment Booking',
       '${request.userName} booked a ${AppointmentSession.shortLabel(session)} '
           'appointment for ${request.visitDateKey}.',
-      'new_match_analysis',
-      id: 'new_match_analysis_$id',
-      data: {
-        'requestId': id,
-        'route': '/match-workspace/$id',
-        'tab': 'matchAnalysis',
-      },
+      'appointment',
+      id: 'appointment_booked_$id',
+      data: {'requestId': id, 'route': '/admin/appointments'},
     );
     if (request.userId.trim().isNotEmpty) {
       await _notify(
         request.userId,
-        'Appointment Confirmed',
-        'Your appointment is confirmed. Booking ID: $id.',
-        'booking_submitted',
-        id: 'booking_submitted_$id',
+        'Appointment Booked',
+        'Your appointment request was received. Booking ID: $id.',
+        'appointment',
+        id: 'appointment_booked_user_$id',
         data: {'requestId': id, 'route': '/my-appointments'},
       );
     }
@@ -442,11 +440,31 @@ class AstrologerService {
       await _freeSlot(r);
     }
     if (r.userId.trim().isNotEmpty) {
+      // Each transition gets its OWN title/type so the push reads correctly on
+      // the lock screen and the in-app row shows the right icon (spec §10).
+      final (title, type) = switch (status) {
+        AstrologerRequestStatus.accepted => (
+            'Appointment Confirmed 📅',
+            'appointment'
+          ),
+        AstrologerRequestStatus.rejected => (
+            'Appointment Cancelled ❌',
+            'appointment_cancelled'
+          ),
+        AstrologerRequestStatus.completed => (
+            'Appointment Completed ✅',
+            'appointment'
+          ),
+        AstrologerRequestStatus.pending => (
+            'Appointment Update',
+            'appointment'
+          ),
+      };
       await _notify(
         r.userId,
-        'Appointment Update',
+        title,
         '$label for ${r.visitDateKey}.',
-        'appointment_status',
+        type,
         // Status is part of the id: each distinct transition (confirmed,
         // completed, cancelled…) notifies once; retries of the SAME
         // transition collapse.
@@ -824,7 +842,7 @@ class AstrologerService {
         id: 'request_reassigned_${requestId}_$astrologerId',
         data: {
           'requestId': requestId,
-          'route': '/match-workspace/$requestId',
+          'route': '/astrologer-request/$requestId',
           'tab': 'matchAnalysis',
         });
     if (userId.trim().isNotEmpty) {

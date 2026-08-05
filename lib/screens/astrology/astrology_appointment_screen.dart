@@ -9,8 +9,12 @@ import '../../core/utils/value_l10n.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../models/astrology_service_config.dart';
 import '../../providers/astrology_config_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/match_analysis_provider.dart';
+import '../../providers/navigation_provider.dart';
+import '../../providers/profile_provider.dart';
 import '../../services/firebase/astrologer_service.dart';
+import 'appointment_details_dialog.dart';
 
 /// Standalone "Book Your Appointment" flow opened from the Astrology page.
 ///
@@ -44,6 +48,11 @@ class _AstrologyAppointmentScreenState
   /// office visit can't use Google Play Billing (a real-world service), so there
   /// is no in-app charge — the session is reserved and the booking is
   /// auto-confirmed; any fee is settled at the office.
+  ///
+  /// Spec §8: booking needs a LOGIN only — never a completed matrimony
+  /// profile. Whatever the account cannot supply (a Google sign-in has no
+  /// phone number, an account without a matrimony profile has no name/DOB) is
+  /// asked for once, right before the booking is confirmed.
   Future<void> _confirm(AstrologyServiceConfig cfg) async {
     if (_category == null || _category!.trim().isEmpty) {
       _snack(context.l10n.pleaseSelectCategory);
@@ -53,6 +62,29 @@ class _AstrologyAppointmentScreenState
       _snack(context.l10n.pleaseSelectDateSession);
       return;
     }
+
+    // 1. Login is the ONLY hard requirement.
+    if (ref.read(isGuestProvider)) {
+      ref.read(pendingReturnRouteProvider.notifier).state =
+          '/astrology-appointment';
+      context.push('/login-required'
+          '?returnTo=${Uri.encodeComponent('/astrology-appointment')}');
+      return;
+    }
+
+    // 2. Name / Mobile / Date of Birth — prefilled from whatever IS known.
+    final profile = ref.read(myProfileProvider).valueOrNull;
+    final user = ref.read(currentUserProvider).valueOrNull;
+    final details = await showAppointmentDetailsDialog(
+      context,
+      initialName: profile?.fullName ?? user?.displayName ?? '',
+      initialPhone: (profile?.contact.mobileNumber.trim().isNotEmpty ?? false)
+          ? profile!.contact.mobileNumber.trim()
+          : (user?.phone ?? ''),
+      initialDob: profile?.dateOfBirth,
+    );
+    if (details == null || !mounted) return; // cancelled
+
     setState(() => _busy = true);
     try {
       final id = await ref
@@ -64,6 +96,9 @@ class _AstrologyAppointmentScreenState
             category: _category ?? '',
             amount: 0,
             paymentId: 'free',
+            contactName: details.name,
+            contactPhone: details.phone,
+            contactDob: details.dobText,
           );
       if (!mounted) return;
       context.pushReplacement('/appointment-confirmation/$id', extra: {

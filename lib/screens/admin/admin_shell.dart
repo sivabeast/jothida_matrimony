@@ -63,7 +63,8 @@ class AdminShell extends ConsumerWidget {
     _NavGroup('Settings', [
       _NavItem('General', Icons.settings_outlined, '/admin/settings'),
       _NavItem('Astrology Service', Icons.auto_awesome_outlined, '/admin/astrology-service'),
-      _NavItem('App Update', Icons.system_update, '/admin/app-update'),
+      // No "App Update" entry: updates are driven entirely by Google Play
+      // In-App Updates and need no admin action (spec §9).
       _NavItem('Pricing', Icons.currency_rupee, '/admin/revenue-settings'),
       _NavItem('Test Data', Icons.science_outlined, '/admin/test-data'),
     ]),

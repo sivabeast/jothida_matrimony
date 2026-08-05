@@ -38,7 +38,7 @@ class _AstrologerShellState extends ConsumerState<AstrologerShell> {
     // Badge count only — the pages themselves watch the provider with full
     // loading/error handling.
     final requests =
-        ref.watch(myAssignedRequestsProvider).valueOrNull ?? const [];
+        ref.watch(myAssignedReportRequestsProvider).valueOrNull ?? const [];
     final pendingCount = requests
         .where((r) => r.status != AstrologerRequestStatus.completed)
         .length;
@@ -157,7 +157,7 @@ class _DashboardPage extends ConsumerWidget {
         }
         final s = ref.watch(myAstrologerStatsProvider);
         final requests =
-            ref.watch(myAssignedRequestsProvider).valueOrNull ?? const [];
+            ref.watch(myAssignedReportRequestsProvider).valueOrNull ?? const [];
         // Most recently ASSIGNED reports, any status (per spec).
         final recentAssigned = [...requests]..sort((a, b) =>
             (b.assignedAt ?? b.createdAt).compareTo(a.assignedAt ?? a.createdAt));
@@ -445,14 +445,19 @@ class _SectionTitle extends StatelessWidget {
 
 // ── Requests tabs (Pending / Completed) ──────────────────────────────────────
 
-/// Pending or Completed reports, with explicit loading / error / empty states.
+/// Pending or Completed HOROSCOPE REPORT requests, with explicit loading /
+/// error / empty states.
+///
+/// Reads [myAssignedReportRequestsProvider], so astrology appointment bookings
+/// never appear in the Employee Requests module (spec §4) — they belong to the
+/// Admin Appointments module alone.
 class _RequestsTab extends ConsumerWidget {
   final bool completed;
   const _RequestsTab({required this.completed});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(myAssignedRequestsProvider);
+    final async = ref.watch(myAssignedReportRequestsProvider);
     return AsyncStateView<List<AstrologerRequestModel>>(
       value: async,
       errorTitle:
@@ -484,7 +489,8 @@ class _RequestsTab extends ConsumerWidget {
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (_, i) => _RequestCard(
                 request: requests[i],
-                trailing: completed ? 'View' : 'Open'),
+                trailing:
+                    completed ? 'View Submitted Report' : 'Fill Report'),
           ),
         );
       },
@@ -624,7 +630,7 @@ class _WorkReportPageState extends ConsumerState<_WorkReportPage> {
               child: CircularProgressIndicator(color: AppColors.primary));
         }
         final requests =
-            ref.watch(myAssignedRequestsProvider).valueOrNull ?? const [];
+            ref.watch(myAssignedReportRequestsProvider).valueOrNull ?? const [];
 
         return ListView(
           padding: const EdgeInsets.all(14),

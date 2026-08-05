@@ -202,6 +202,9 @@ class _AppointmentDetailsSheet extends ConsumerWidget {
             ('Name', appt.userName),
             ('User ID', appt.userId),
             ('Mobile Number', d.phone),
+            // Collected by the booking flow itself — an appointment never
+            // requires a matrimony profile to read a DOB from (spec §8).
+            ('Date of Birth', appt.userDob),
             ('Email', d.email),
             ('Location', appt.userLocation),
             ('Preferred Language', appt.userLanguage == 'ta' ? 'Tamil' : 'English'),

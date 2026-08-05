@@ -92,8 +92,10 @@ class FcmService {
     // the next login. (Invalid/expired tokens are additionally cleaned up
     // server-side when a send fails.)
     _messaging.onTokenRefresh.listen((token) async {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null || token.isEmpty) return;
+      final user = FirebaseAuth.instance.currentUser;
+      final uid = user?.uid;
+      // A guest has no user document to write the token to.
+      if (uid == null || (user?.isAnonymous ?? true) || token.isEmpty) return;
       try {
         await _db.collection(AppConstants.usersCollection).doc(uid).update({
           'fcmToken': token,
@@ -105,22 +107,23 @@ class FcmService {
       }
     });
 
-    // Existing signed-in session (no fresh login event): make sure the device
-    // is on its announcement topic and its token is registered.
-    final currentUid = FirebaseAuth.instance.currentUser?.uid;
-    if (currentUid != null) {
-      unawaited(saveTokenToFirestore(currentUid).catchError((e) {
-        debugPrint('FCM startup token registration failed (non-fatal): $e');
-      }));
-      // A crash / force-kill while a chat was open leaves a stale
-      // activeThreadId presence marker that would suppress that thread's
-      // pushes forever — clear it at every app start.
-      unawaited(_db
-          .collection(AppConstants.usersCollection)
-          .doc(currentUid)
-          .update({'activeThreadId': FieldValue.delete()}).catchError((e) {
-        debugPrint('FCM presence cleanup failed (non-fatal): $e');
-      }));
+    // Token registration is driven by AUTH, not by app start, so EVERY way in
+    // registers the device exactly once:
+    //   • a restored session on cold start (the stream replays it immediately);
+    //   • a fresh sign-in mid-session — Google, phone or e-mail alike — which
+    //     is now the common path, because the app opens in Guest Mode and the
+    //     member logs in later;
+    //   • a guest UPGRADING to a real account (same uid, new provider).
+    //
+    // GUESTS are skipped: an anonymous session has no `users/{uid}` document
+    // to write a token to, and it must never receive personalized pushes.
+    FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user == null || user.isAnonymous) return;
+      _registerDevice(user.uid);
+    });
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null && !currentUser.isAnonymous) {
+      _registerDevice(currentUser.uid);
     }
 
     // App opened from a terminated state by tapping a notification.
@@ -317,6 +320,32 @@ class FcmService {
         if (c != null) c.push(pending);
       });
     });
+  }
+
+  /// The uid this device is already registered for, so replayed auth events
+  /// don't re-run the write on every rebuild of the stream.
+  static String? _registeredUid;
+
+  /// Registers the device token + announcement topic for [uid] and clears any
+  /// stale chat-presence marker. Fire-and-forget: every step is best-effort and
+  /// a failure only means the next launch tries again.
+  void _registerDevice(String uid) {
+    if (_registeredUid == uid) return;
+    _registeredUid = uid;
+    unawaited(saveTokenToFirestore(uid).catchError((e) {
+      debugPrint('FCM token registration failed (non-fatal): $e');
+      // Let the next auth event retry.
+      if (_registeredUid == uid) _registeredUid = null;
+    }));
+    // A crash / force-kill while a chat was open leaves a stale activeThreadId
+    // presence marker that would suppress that thread's pushes forever — clear
+    // it whenever the session starts.
+    unawaited(_db
+        .collection(AppConstants.usersCollection)
+        .doc(uid)
+        .update({'activeThreadId': FieldValue.delete()}).catchError((e) {
+      debugPrint('FCM presence cleanup failed (non-fatal): $e');
+    }));
   }
 
   Future<String?> getToken() async {

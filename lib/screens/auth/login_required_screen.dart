@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/navigation_provider.dart';
 import '../../widgets/common/gradient_button.dart';
 
 /// Where a GUEST lands when they tap anything personalized (§13).
@@ -18,7 +19,21 @@ import '../../widgets/common/gradient_button.dart';
 /// Registering or logging in from here LINKS the anonymous account in place
 /// (same uid, no duplicate), so nothing about the session is lost.
 class LoginRequiredScreen extends ConsumerWidget {
-  const LoginRequiredScreen({super.key});
+  /// The location the visitor was blocked from. Stashed in
+  /// [pendingReturnRouteProvider] so the post-login redirect lands there
+  /// instead of Home (spec §15, Case 1).
+  final String? returnTo;
+
+  const LoginRequiredScreen({super.key, this.returnTo});
+
+  /// Records [returnTo] (when there is one) and opens [route].
+  void _goAuth(BuildContext context, WidgetRef ref, String route) {
+    final back = (returnTo ?? '').trim();
+    if (back.isNotEmpty) {
+      ref.read(pendingReturnRouteProvider.notifier).state = back;
+    }
+    context.go(route);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -85,7 +100,7 @@ class LoginRequiredScreen extends ConsumerWidget {
                 SizedBox(
                   width: double.infinity,
                   child: GradientButton(
-                    onPressed: () => context.go('/register'),
+                    onPressed: () => _goAuth(context, ref, '/register'),
                     text: l10n.createAccount,
                   ),
                 ),
@@ -93,7 +108,7 @@ class LoginRequiredScreen extends ConsumerWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: () => context.go('/login'),
+                    onPressed: () => _goAuth(context, ref, '/login'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
                       side: const BorderSide(color: AppColors.primary),

@@ -26,14 +26,28 @@ UserModel _user({
 
 void main() {
   group('signed out', () {
-    test('an anonymous visitor is pushed to /login from a gated route', () {
+    // Spec §6: a fresh install NEVER opens on the login page. A signed-out
+    // visitor browses Home exactly like an anonymous Guest session, and is
+    // only stopped at the routes outside the guest allow-list.
+    test('a signed-out visitor may browse Home', () {
       expect(
         resolveAuthRedirect(
             location: '/home',
             isAuthenticated: false,
             userDocLoading: false,
             user: null),
-        '/login',
+        isNull,
+      );
+    });
+
+    test('a signed-out visitor is blocked from personalized routes', () {
+      expect(
+        resolveAuthRedirect(
+            location: '/settings',
+            isAuthenticated: false,
+            userDocLoading: false,
+            user: null),
+        '/login-required',
       );
     });
 
@@ -378,15 +392,9 @@ void main() {
       // member data or write permanent records.
       for (final loc in const [
         '/matches',
-        '/interests',
-        '/chats',
-        '/chat/thread1',
         '/my-profile',
         '/profile/create',
-        '/profile/p1',
-        '/profile/p1/edit',
-        '/astrology-appointment',
-        '/book-appointment/u1',
+        '/complete-profile',
         '/horoscope-files',
         '/horoscope-report/u1',
         '/reports',
@@ -399,6 +407,28 @@ void main() {
         expect(guestAt(loc), '/login-required',
             reason: 'guest should be blocked from $loc');
       }
+    });
+
+    // Spec §6: attempting to open a member profile must show the Tamil
+    // "create your Matrimony Profile first" message, so the guest has to REACH
+    // the route — its `MemberGate` renders the message in place of the
+    // content and never the content itself.
+    test('member routes that gate themselves stay reachable', () {
+      for (final loc in const [
+        '/profile/p1',
+        '/profile-user/u1',
+        '/chats',
+        '/chat/thread1',
+        '/interests',
+      ]) {
+        expect(guestAt(loc), isNull, reason: '$loc gates itself');
+      }
+    });
+
+    // Spec §6/§8: astrology services are public content; the booking
+    // action inside asks for a login (never a matrimony profile).
+    test('a guest may browse astrology services', () {
+      expect(guestAt('/astrology-appointment'), isNull);
     });
 
     test('a guest never reaches the admin panel or the employee portal', () {
@@ -445,7 +475,11 @@ void main() {
       );
     });
 
-    test('a signed-out visitor is unaffected by the guest branch', () {
+    // Spec §6: anonymous sign-in may be unavailable (provider off, offline).
+    // A signed-out visitor must browse exactly like a guest rather than being
+    // bounced to /login — otherwise a fresh install still opens on the login
+    // page whenever anonymous auth fails.
+    test('a signed-out visitor takes the same branch as a guest', () {
       expect(
         resolveAuthRedirect(
           location: '/home',
@@ -454,7 +488,43 @@ void main() {
           userDocLoading: false,
           user: null,
         ),
-        '/login',
+        isNull,
+      );
+      expect(
+        resolveAuthRedirect(
+          location: '/settings',
+          isAuthenticated: false,
+          isGuest: false,
+          userDocLoading: false,
+          user: null,
+        ),
+        '/login-required',
+      );
+    });
+
+    // Spec §15, Case 1: after signing in from a gated feature the member
+    // returns to that feature instead of landing on Home.
+    test('a pending return route wins over the default /home landing', () {
+      expect(
+        resolveAuthRedirect(
+          location: '/login',
+          isAuthenticated: true,
+          userDocLoading: false,
+          user: _user(isProfileComplete: true),
+          pendingReturnRoute: '/reports',
+        ),
+        '/reports',
+      );
+      // A self-referential value can never trap the member on the login page.
+      expect(
+        resolveAuthRedirect(
+          location: '/login',
+          isAuthenticated: true,
+          userDocLoading: false,
+          user: _user(isProfileComplete: true),
+          pendingReturnRoute: '/login',
+        ),
+        '/home',
       );
     });
   });

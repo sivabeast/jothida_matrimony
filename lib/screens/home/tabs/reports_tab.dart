@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../widgets/common/app_logo.dart';
 import '../../../core/utils/file_actions.dart';
+import '../../../core/utils/member_access.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../core/utils/report_pdf.dart';
 import '../../../models/astrologer_request_model.dart';
@@ -81,13 +83,30 @@ class ReportsTab extends ConsumerWidget {
           ),
           // Request a NEW compatibility report for someone who is NOT on the app
           // (spec §4). Distinct from the internal accepted-match report flow.
+          //
+          // Spec §15 — the "+" validates before the form opens:
+          //   Case 1: not logged in      → Login, then back here automatically.
+          //   Case 2: profile incomplete → the Tamil message + a
+          //           "Complete Profile" button; finishing pops straight back
+          //           to this page.
+          // The form itself then auto-fills the signed-in member's own details,
+          // so they only enter the other person's.
           Container(
             color: Colors.white,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () => context.push('/request-external-report'),
+                onPressed: () async {
+                  if (!await requireMemberAccess(
+                      context, ref, MemberFeature.reportRequest,
+                      returnTo: '/reports')) {
+                    return;
+                  }
+                  if (context.mounted) {
+                    context.push('/request-external-report');
+                  }
+                },
                 icon: const Icon(Icons.add_circle_outline, size: 18),
                 label: const Text('Request New Horoscope Report'),
                 style: OutlinedButton.styleFrom(
@@ -571,16 +590,7 @@ class ReportViewScreen extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.asset('assets/images/app_logo.png',
-                          width: 44,
-                          height: 44,
-                          errorBuilder: (_, __, ___) => const Icon(
-                              Icons.auto_awesome,
-                              color: AppColors.primary,
-                              size: 36)),
-                    ),
+                    const AppLogo(size: 44, circle: false),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(

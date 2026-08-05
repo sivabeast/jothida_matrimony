@@ -15,6 +15,10 @@ const Set<String> kGuestAllowedRoutes = {
   '/login-required',
   '/home', // browse + explore (personalized cards gate themselves)
   '/muhurtham-calendar', // public almanac
+  // Astrology services are public content a guest may browse (§6). BOOKING an
+  // appointment is gated separately — it needs a login (but NOT a matrimony
+  // profile, §8) — inside the booking screen itself.
+  '/astrology-appointment',
   '/help',
   '/language',
   '/privacy-policy',
@@ -22,11 +26,39 @@ const Set<String> kGuestAllowedRoutes = {
   '/child-safety',
 };
 
+/// Routes that a guest may REACH even though the feature behind them is
+/// member-only, because the screen wraps itself in a `MemberGate` (see
+/// `lib/core/utils/member_access.dart`).
+///
+/// Bouncing these to /login-required would hide the very thing the spec asks
+/// for: the Tamil "create your Matrimony Profile first" message, shown in
+/// place of the content, with a one-tap way to fix it. The gate — not the
+/// router — decides what the guest actually sees, and it never renders the
+/// protected content.
+const List<String> kSelfGatedRoutePrefixes = [
+  '/profile/', // member profile view (…/edit is a member-only sub-route too)
+  '/profile-user/',
+  '/chats',
+  '/chat/',
+  '/interests',
+];
+
+/// Onboarding routes a GUEST must not reach: a guest has no account to attach
+/// a profile to, and the security rules reject every anonymous write. The
+/// gate's guest branch sends them to Login / Register first instead.
+const List<String> kGuestBlockedOnboardingRoutes = [
+  '/profile/create',
+  '/complete-profile',
+];
+
 /// True when a guest may open [location].
-bool isGuestAllowedRoute(String location) =>
-    kGuestAllowedRoutes.contains(location) ||
-    // Admin broadcasts are public read-only content.
-    location.startsWith('/announcement/');
+bool isGuestAllowedRoute(String location) {
+  if (kGuestBlockedOnboardingRoutes.contains(location)) return false;
+  return kGuestAllowedRoutes.contains(location) ||
+      // Admin broadcasts are public read-only content.
+      location.startsWith('/announcement/') ||
+      kSelfGatedRoutePrefixes.any(location.startsWith);
+}
 
 /// The routing decision the GoRouter `redirect` callback makes, as a pure
 /// function of the app's auth state.
@@ -45,6 +77,8 @@ bool isGuestAllowedRoute(String location) =>
 /// [isGuest] is `true` for an anonymous (Guest Mode) session. A guest is
 /// authenticated as far as Firebase is concerned but has NO `users/{uid}`
 /// document and may never reach a personalized screen.
+/// [pendingReturnRoute] is where a just-signed-in member should land instead of
+/// Home — the location they were blocked from before logging in (spec §15).
 String? resolveAuthRedirect({
   required String location,
   required bool isAuthenticated,
@@ -53,6 +87,7 @@ String? resolveAuthRedirect({
   bool isGuest = false,
   bool bypassAuth = false,
   bool familyLoginInProgress = false,
+  String? pendingReturnRoute,
   void Function(String message)? log,
 }) {
   final loc = location;
@@ -65,22 +100,23 @@ String? resolveAuthRedirect({
   if (bypassAuth) return null;
 
   log?.call('redirect: loc=$loc, isAuthenticated=$isAuthenticated');
-  if (!isAuthenticated) {
-    // Single common login — unauthenticated users always land on /login.
-    return (onAuthPage || onSplash) ? null : '/login';
-  }
 
-  // ── Guest (anonymous) session ────────────────────────────────────────────
-  // Guest Mode signs in anonymously so the app can be explored before
-  // registering. A guest has NO `users/{uid}` document BY DESIGN — nothing
-  // permanent is ever written for them — so this has to be decided here,
-  // ahead of both the "wait for the user doc" and "no user document" branches
-  // below. Falling through would leave a guest bouncing to /login forever.
+  // ── Guest browsing (spec §6) ─────────────────────────────────────────────
+  // A fresh install NEVER sees the login page: the splash starts an anonymous
+  // Guest session and lands on Home. Two states are treated identically here:
   //
-  // Firestore rules enforce the same boundary server-side (an anonymous
-  // sign-in provider cannot write anything), so this redirect is the UX, not
-  // the security.
-  if (isGuest) {
+  //   • `isGuest`        — the anonymous session succeeded (the normal path;
+  //     the anonymous credential is what lets Home read public content);
+  //   • `!isAuthenticated` — anonymous sign-in was unavailable (provider off,
+  //     offline, App Check hiccup). The visitor STILL browses Home rather than
+  //     being bounced to /login; the public sections simply render their empty
+  //     states until they sign in.
+  //
+  // Everything outside the allow-list routes to /login-required, so a
+  // personalized feature added later is locked down by default. Firestore
+  // rules enforce the same boundary server-side (an anonymous session cannot
+  // write anything), so this redirect is the UX, not the security.
+  if (isGuest || !isAuthenticated) {
     if (isGuestAllowedRoute(loc)) return null;
     log?.call('guest blocked from "$loc" → /login-required');
     return '/login-required';
@@ -103,6 +139,8 @@ String? resolveAuthRedirect({
     log?.call('authenticated but no user document — holding at "$loc"');
     return onAuthPage || onSplash ? null : '/login';
   }
+  // Account deleted / signed out mid-session is covered above; from here the
+  // visitor is a real, documented account.
   log?.call('redirect check: loc=$loc, uid=${user.uid}, role=${user.role}, '
       'isAdmin=${user.isAdmin}, '
       'isProfileComplete=${user.isProfileComplete}');
@@ -178,10 +216,17 @@ String? resolveAuthRedirect({
 
   if (onAuthPage) {
     // (A pure admin account already returned above — it can only be on /admin.)
-    // EVERY authenticated account lands on Home. Profile creation is NEVER
-    // forced: signing in (or creating an account) goes straight to the Home
-    // page, which shows a "Create Profile" call-to-action while the member has
-    // no matrimony profile. Only tapping that CTA opens the wizard.
+    // A member who was sent to log in from a gated feature goes straight BACK
+    // to that feature (spec §15, Case 1); everyone else lands on Home.
+    //
+    // Profile creation is NEVER forced: signing in (or creating an account)
+    // goes to Home, which shows a "Create Profile" call-to-action while the
+    // member has no matrimony profile. Only tapping that CTA opens the wizard.
+    final back = (pendingReturnRoute ?? '').trim();
+    if (back.isNotEmpty && back != '/login' && back != '/login-required') {
+      log?.call('authenticated on an auth page → returning to "$back"');
+      return back;
+    }
     log?.call('authenticated on an auth page → /home');
     return '/home';
   }

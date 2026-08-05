@@ -9,6 +9,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 
+import '../../core/constants/brand_assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/file_actions.dart';
 import '../../models/compatibility_report_model.dart';
@@ -112,17 +113,12 @@ Widget _a4Page({
 Widget _reportLogo(double size) => ClipRRect(
       borderRadius: BorderRadius.circular(size * 0.22),
       child: Image.asset(
-        'assets/images/report_logo.png',
+        kAppLogoAsset,
         width: size,
         height: size,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Image.asset(
-          'assets/images/app_logo.png',
-          width: size,
-          height: size,
-          errorBuilder: (_, __, ___) =>
-              Icon(Icons.auto_awesome, color: _maroon, size: size * 0.8),
-        ),
+        errorBuilder: (_, __, ___) =>
+            Icon(Icons.auto_awesome, color: _maroon, size: size * 0.8),
       ),
     );
 
@@ -375,29 +371,6 @@ Widget _doshamTable(List<String> names, List<DoshamRow> rows) => Table(
       ],
     );
 
-Widget _dasaTable(CompatibilityReport r) => Table(
-      border: _tableBorder,
-      columnWidths: const {
-        0: FlexColumnWidth(1.5),
-        1: FlexColumnWidth(1),
-        2: FlexColumnWidth(1),
-      },
-      children: [
-        TableRow(children: [
-          _headCell('விவரம்'),
-          _headCell('பெண்'),
-          _headCell('ஆண்'),
-        ]),
-        for (var i = 0; i < CompatibilityReport.dasaNames.length; i++)
-          _zebra(i, [
-            _bodyCell(CompatibilityReport.dasaNames[i],
-                bold: true, align: TextAlign.left),
-            _bodyCell(r.dasaAt(i).bride),
-            _bodyCell(r.dasaAt(i).groom),
-          ]),
-      ],
-    );
-
 Widget _explanationBlock(String text) => Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -574,7 +547,10 @@ class _CompatReportCaptureScreenState extends State<CompatReportCaptureScreen> {
           'பிற தோஷங்கள்',
           _doshamTable(CompatibilityReport.otherDoshamNames,
               [for (var i = 0; i < 2; i++) r.otherDoshamAt(i)])),
-      _titledGroup('திசா சந்தி', _dasaTable(r)),
+      _titledGroup(
+          'திசா சந்தி',
+          _doshamTable(CompatibilityReport.dasaNames,
+              [for (var i = 0; i < 2; i++) r.dasaAt(i)])),
       // Explanation is handled separately (splittable); final result is atomic.
       _titledGroup('இறுதி முடிவு', _finalResultBand(r.finalResult)),
     ];

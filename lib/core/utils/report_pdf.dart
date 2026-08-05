@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
+import '../constants/brand_assets.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
@@ -58,8 +59,7 @@ class ReportPdfBuilder {
 
     Uint8List? logoBytes;
     try {
-      logoBytes =
-          (await rootBundle.load('assets/images/app_logo.png')).buffer.asUint8List();
+      logoBytes = (await rootBundle.load(kAppLogoAsset)).buffer.asUint8List();
     } catch (_) {
       logoBytes = null; // logo missing must never block report generation
     }

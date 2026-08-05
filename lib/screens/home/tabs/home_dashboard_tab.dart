@@ -682,9 +682,19 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     return null;
   }
 
-  /// Compact vertical Muhurtham card for the info row. Shows the NEXT
-  /// auspicious date (day + month + nakshatra) instead of a "View" button —
-  /// the whole card remains the tap target for the full calendar.
+  /// Marriage Muhurtham Calendar card (spec §12).
+  ///
+  /// Requirements this layout satisfies:
+  ///  • the FULL title is always shown — it wraps onto as many lines as it
+  ///    needs and is never truncated with an ellipsis (no `maxLines`, no
+  ///    `TextOverflow.ellipsis`, no auto-shrinking);
+  ///  • while the feature is locked, a LARGE CENTRED "Coming Soon" fills the
+  ///    body instead of the old small badge;
+  ///  • it reads as the twin of the Profile Completion card beside it — same
+  ///    radius, shadow, icon bubble and title treatment, with the equal height
+  ///    coming from the row's `IntrinsicHeight`;
+  ///  • it stays responsive: everything is fluid width, so it holds up from
+  ///    320 px phones to tablets.
   Widget _muhurthamMini(BuildContext context) {
     final unlocked = ref.watch(upcomingFeaturesUnlockedProvider);
     final next = _nextMuhurtham;
@@ -726,17 +736,19 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  // Tamil title wraps only between whole words, shrinking a
-                  // little when a long word would otherwise be broken.
-                  child: AutoFitLabel(context.l10n.muhurthamCalendarTitle,
-                      maxLines: 2,
-                      minFontSize: 10,
-                      textAlign: TextAlign.start,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                          height: 1.2,
-                          fontFamily: 'Poppins')),
+                  // The COMPLETE title, wrapped over as many lines as it takes.
+                  // Never clipped, never "…" — in either language.
+                  child: Text(
+                    context.l10n.muhurthamCalendarTitle,
+                    softWrap: true,
+                    overflow: TextOverflow.visible,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      height: 1.25,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -784,21 +796,22 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
               ),
               const SizedBox(height: 10),
               Text(context.l10n.muhurthamSubtitle,
-                  maxLines: 2,
                   softWrap: true,
-                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                       color: Colors.black54, fontSize: 11, height: 1.3)),
+              const Spacer(),
             ] else if (unlocked) ...[
               Text(context.l10n.muhurthamSubtitle,
-                  maxLines: 3,
                   softWrap: true,
                   style: const TextStyle(
                       color: Colors.black54, fontSize: 11, height: 1.3)),
+              const Spacer(),
             ] else ...[
-              const ComingSoonBadge(compact: true),
+              // LOCKED — a large, centred "Coming Soon" owns the card body
+              // (Expanded, so it centres in whatever height the twin cards
+              // settle on) instead of a small corner badge.
+              const Expanded(child: _ComingSoonPanel()),
             ],
-            const Spacer(),
           ],
         ),
       ),
@@ -2068,4 +2081,53 @@ class _HeaderCurveClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+// ── "Coming Soon" panel (Muhurtham card, §12) ────────────────────────────────
+
+/// A large, CENTRED "Coming Soon" that fills a locked feature card's body.
+///
+/// Replaces the small corner badge the Muhurtham card used to carry: the label
+/// is the card's message while the feature is locked, so it gets the space and
+/// weight to read as one. `FittedBox(scaleDown)` keeps it on a single line on
+/// the narrowest phones without ever clipping it.
+class _ComingSoonPanel extends StatelessWidget {
+  const _ComingSoonPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.7),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.lock_clock,
+                size: 22, color: AppColors.goldDark),
+          ),
+          const SizedBox(height: 10),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              context.l10n.comingSoon,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 19,
+                height: 1.15,
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w800,
+                color: AppColors.goldDark,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

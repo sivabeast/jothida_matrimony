@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../widgets/common/app_logo.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../models/compatibility_report_model.dart';
@@ -63,8 +64,10 @@ class _CompatibilityReportScreenState
   final List<String> _sevvaiGroom = List.filled(_nSevvai, '');
   final List<String> _otherBride = List.filled(_nOther, '');
   final List<String> _otherGroom = List.filled(_nOther, '');
-  final List<TextEditingController> _dasaBride = [];
-  final List<TextEditingController> _dasaGroom = [];
+  // திசா சந்தி is a உண்டு / இல்லை selection per side (same contract as the
+  // dosham sections) — never typed text.
+  final List<String> _dasaBride = List.filled(_nDasa, '');
+  final List<String> _dasaGroom = List.filled(_nDasa, '');
   final _explanation = TextEditingController();
   String _finalResult = '';
 
@@ -79,10 +82,6 @@ class _CompatibilityReportScreenState
       _porBride.add(TextEditingController());
       _porGroom.add(TextEditingController());
     }
-    for (var i = 0; i < _nDasa; i++) {
-      _dasaBride.add(TextEditingController());
-      _dasaGroom.add(TextEditingController());
-    }
     if (widget.autoDownload) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _showDownloadSheet();
@@ -92,7 +91,7 @@ class _CompatibilityReportScreenState
 
   @override
   void dispose() {
-    for (final c in [..._porBride, ..._porGroom, ..._dasaBride, ..._dasaGroom]) {
+    for (final c in [..._porBride, ..._porGroom]) {
       c.dispose();
     }
     _explanation.dispose();
@@ -116,8 +115,8 @@ class _CompatibilityReportScreenState
       _otherGroom[i] = saved.otherDoshamAt(i).groom;
     }
     for (var i = 0; i < _nDasa; i++) {
-      _dasaBride[i].text = saved.dasaAt(i).bride;
-      _dasaGroom[i].text = saved.dasaAt(i).groom;
+      _dasaBride[i] = saved.dasaAt(i).bride;
+      _dasaGroom[i] = saved.dasaAt(i).groom;
     }
     _explanation.text = saved.explanation;
     _finalResult = saved.finalResult;
@@ -127,7 +126,7 @@ class _CompatibilityReportScreenState
 
   AstrologerRequestModel get _request {
     final list = widget.employee
-        ? ref.watch(myAssignedRequestsProvider).valueOrNull
+        ? ref.watch(myAssignedReportRequestsProvider).valueOrNull
         : ref.watch(myMatchAnalysisRequestsProvider).valueOrNull;
     for (final r in list ?? const <AstrologerRequestModel>[]) {
       if (r.id == widget.requestId) return r;
@@ -201,9 +200,7 @@ class _CompatibilityReportScreenState
       ],
       dasa: [
         for (var i = 0; i < _nDasa; i++)
-          DasaRow(
-              bride: _dasaBride[i].text.trim(),
-              groom: _dasaGroom[i].text.trim()),
+          DoshamRow(bride: _dasaBride[i], groom: _dasaGroom[i]),
       ],
       explanation: _explanation.text.trim(),
       finalResult: _finalResult,
@@ -229,6 +226,9 @@ class _CompatibilityReportScreenState
     if (_otherBride.any((m) => m.isEmpty) ||
         _otherGroom.any((m) => m.isEmpty)) {
       return 'பிற தோஷங்கள்: select உண்டு / இல்லை for both பெண் and ஆண்.';
+    }
+    if (_dasaBride.any((m) => m.isEmpty) || _dasaGroom.any((m) => m.isEmpty)) {
+      return 'திசா சந்தி: select உண்டு / இல்லை for both பெண் and ஆண்.';
     }
     if (_explanation.text.trim().isEmpty) {
       return 'பொருத்தம் குறிப்பு / விளக்கம் is required.';
@@ -528,7 +528,13 @@ class _CompatibilityReportScreenState
           const SizedBox(height: 12),
           _sectionCard(
             title: 'திசா சந்தி',
-            child: _dasaTable(editable),
+            legend: editable,
+            child: _doshamTable(
+              names: CompatibilityReport.dasaNames,
+              bride: _dasaBride,
+              groom: _dasaGroom,
+              editable: editable,
+            ),
           ),
           const SizedBox(height: 12),
           _sectionCard(
@@ -576,22 +582,7 @@ class _CompatibilityReportScreenState
         padding: const EdgeInsets.all(14),
         child: Column(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                'assets/images/report_logo.png',
-                width: 54,
-                height: 54,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Image.asset(
-                  'assets/images/app_logo.png',
-                  width: 54,
-                  height: 54,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.auto_awesome,
-                      color: _maroon, size: 44),
-                ),
-              ),
-            ),
+            const AppLogo(size: 54, circle: false),
             const SizedBox(height: 8),
             const Text('Jothida Matrimony',
                 textAlign: TextAlign.center,
@@ -908,32 +899,6 @@ class _CompatibilityReportScreenState
                   ? _triToggle(
                       groom[i], (v) => setState(() => groom[i] = v))
                   : _answerView(groom[i]),
-            ]),
-        ],
-      );
-
-  Widget _dasaTable(bool editable) => Table(
-        border: _border,
-        columnWidths: const {
-          0: FlexColumnWidth(1.2),
-          1: FlexColumnWidth(1),
-          2: FlexColumnWidth(1),
-        },
-        children: [
-          TableRow(children: [
-            _headCell('விவரம்'),
-            _headCell('பெண்'),
-            _headCell('ஆண்'),
-          ]),
-          for (var i = 0; i < _nDasa; i++)
-            _zebra(i, [
-              _textCell(CompatibilityReport.dasaNames[i], bold: true),
-              editable
-                  ? _fieldCell(_dasaBride[i])
-                  : _textCell(_dasaBride[i].text),
-              editable
-                  ? _fieldCell(_dasaGroom[i])
-                  : _textCell(_dasaGroom[i].text),
             ]),
         ],
       );

@@ -10,7 +10,9 @@
 import 'dart:io';
 import 'package:image/image.dart' as img;
 
-const _src = 'assets/images/report_logo.png';
+// The ONE project logo — same master the launcher icon and every in-app logo
+// use (lib/core/constants/brand_assets.dart).
+const _src = 'assets/images/app_logo.png';
 const _outDir = 'branding';
 const _out = '$_outDir/play_store_icon_512.png';
 

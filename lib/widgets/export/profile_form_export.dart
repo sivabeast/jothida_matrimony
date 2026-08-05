@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
+import '../../core/constants/brand_assets.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
@@ -273,18 +274,12 @@ Widget _a4Page({
 Widget _brandLogo(double size) => ClipRRect(
       borderRadius: BorderRadius.circular(size * 0.18),
       child: Image.asset(
-        'assets/images/report_logo.png',
+        kAppLogoAsset,
         width: size,
         height: size,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Image.asset(
-          'assets/images/app_logo.png',
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) =>
-              Icon(Icons.favorite, color: _maroon, size: size * 0.7),
-        ),
+        errorBuilder: (_, __, ___) =>
+            Icon(Icons.favorite, color: _maroon, size: size * 0.7),
       ),
     );
 

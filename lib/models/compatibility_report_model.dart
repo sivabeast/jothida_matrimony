@@ -6,6 +6,16 @@ class CompatAnswer {
   static const String none = '';
   static const String yes = 'yes'; // உண்டு
   static const String no = 'no'; // இல்லை
+
+  /// Coerces a stored value to one of the three keys. Anything else — most
+  /// notably the FREE TEXT older drafts wrote into the திசா சந்தி rows before
+  /// they became உண்டு / இல்லை selections — reads back as "not answered", so a
+  /// legacy draft can never render as a bogus verdict and the employee is
+  /// asked to pick one before submitting.
+  static String normalize(Object? raw) {
+    final v = (raw ?? '').toString().trim().toLowerCase();
+    return (v == yes || v == no) ? v : none;
+  }
 }
 
 /// The bride's / groom's details snapshotted INTO the report at save time so
@@ -65,7 +75,9 @@ class PoruthamRow {
       {'bride': bride, 'groom': groom, 'match': match};
 }
 
-/// One dosham table row (செவ்வாய் / பிற தோஷங்கள்): உண்டு / இல்லை for each side.
+/// One உண்டு / இல்லை table row — used by செவ்வாய் தோஷம், பிற தோஷங்கள் AND
+/// திசா சந்தி (all three sections answer the same yes/no question per side, so
+/// they share one row type and one renderer).
 class DoshamRow {
   final String bride; // CompatAnswer
   final String groom; // CompatAnswer
@@ -73,23 +85,8 @@ class DoshamRow {
   const DoshamRow({this.bride = '', this.groom = ''});
 
   factory DoshamRow.fromMap(Map<String, dynamic>? m) => DoshamRow(
-        bride: (m?['bride'] ?? '').toString(),
-        groom: (m?['groom'] ?? '').toString(),
-      );
-
-  Map<String, dynamic> toMap() => {'bride': bride, 'groom': groom};
-}
-
-/// One திசா சந்தி table row: free-text values for each side.
-class DasaRow {
-  final String bride;
-  final String groom;
-
-  const DasaRow({this.bride = '', this.groom = ''});
-
-  factory DasaRow.fromMap(Map<String, dynamic>? m) => DasaRow(
-        bride: (m?['bride'] ?? '').toString(),
-        groom: (m?['groom'] ?? '').toString(),
+        bride: CompatAnswer.normalize(m?['bride']),
+        groom: CompatAnswer.normalize(m?['groom']),
       );
 
   Map<String, dynamic> toMap() => {'bride': bride, 'groom': groom};
@@ -128,6 +125,8 @@ class CompatibilityReport {
     'மாங்கல்ய தோஷம்',
   ];
 
+  /// திசா சந்தி rows. Answered உண்டு / இல்லை per side, exactly like the
+  /// dosham sections — never free text.
   static const List<String> dasaNames = [
     'திசா சந்தி',
     'நடப்பு திசாபுத்தி',
@@ -142,7 +141,7 @@ class CompatibilityReport {
   final List<PoruthamRow> porutham; // 11, aligned with [poruthamNames]
   final List<DoshamRow> sevvai; // 3, aligned with [sevvaiNames]
   final List<DoshamRow> otherDosham; // 2, aligned with [otherDoshamNames]
-  final List<DasaRow> dasa; // 2, aligned with [dasaNames]
+  final List<DoshamRow> dasa; // 2, aligned with [dasaNames]
   final String explanation; // பொருத்தம் குறிப்பு / விளக்கம்
   final String finalResult; // CompatAnswer — பொருத்தம் உண்டு / இல்லை
   final String employeeName;
@@ -173,7 +172,7 @@ class CompatibilityReport {
       i < sevvai.length ? sevvai[i] : const DoshamRow();
   DoshamRow otherDoshamAt(int i) =>
       i < otherDosham.length ? otherDosham[i] : const DoshamRow();
-  DasaRow dasaAt(int i) => i < dasa.length ? dasa[i] : const DasaRow();
+  DoshamRow dasaAt(int i) => i < dasa.length ? dasa[i] : const DoshamRow();
 
   /// Stable user-facing report number derived from the booking id.
   static String reportNumber(String requestId) {
@@ -209,7 +208,7 @@ class CompatibilityReport {
       porutham: rows(m['porutham'], PoruthamRow.fromMap),
       sevvai: rows(m['sevvai'], DoshamRow.fromMap),
       otherDosham: rows(m['otherDosham'], DoshamRow.fromMap),
-      dasa: rows(m['dasa'], DasaRow.fromMap),
+      dasa: rows(m['dasa'], DoshamRow.fromMap),
       explanation: (m['explanation'] ?? '').toString(),
       finalResult: (m['finalResult'] ?? '').toString(),
       employeeName: (m['employeeName'] ?? '').toString(),

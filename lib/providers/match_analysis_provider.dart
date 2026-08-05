@@ -497,125 +497,6 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     }
   }
 
-  /// Books an in-person **Horoscope Compatibility Report** appointment after a
-  /// successful (Google Play Billing) payment. Creates ONE paid match-analysis request
-  /// addressed to the internal astrology service — carrying the chosen
-  /// [date]/[slotMinutes] and an office-details snapshot — using the
-  /// slot-locking deterministic-id create (throws [AppointmentSlotTakenException]
-  /// if the slot was just taken). It then **pre-creates the Astrology Analysis
-  /// Chat** thread to the internal account so the user can open it immediately
-  /// (spec §12). Returns the new request id (the user-facing Booking ID).
-  Future<String> bookAppointment({
-    required ProfileModel groom,
-    required ProfileModel bride,
-    required DateTime date,
-    required int slotMinutes,
-    required int amount,
-    required String paymentId,
-    required AstrologyServiceConfig config,
-    String note = '',
-  }) async {
-    state = const AsyncLoading();
-    try {
-      final me = ref.read(myProfileProvider).valueOrNull;
-      final user = ref.read(currentUserProvider).valueOrNull;
-      final uid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ??
-          user?.uid ??
-          '';
-      final location = me == null
-          ? ''
-          : [me.city, me.state].where((s) => s.trim().isNotEmpty).join(', ');
-      final lang = ref.read(localeProvider)?.languageCode ?? 'en';
-      final now = DateTime.now();
-      final visitDay = DateTime(date.year, date.month, date.day);
-
-      final request = AstrologerRequestModel(
-        id: 'new',
-        astrologerId: kInternalAstrologyId,
-        astrologerName: kInternalAstrologyName,
-        userId: uid,
-        userName: me?.fullName ?? user?.displayName ?? 'User',
-        userPhotoUrl: me?.profilePhotoUrl ?? '',
-        userLocation: location,
-        type: AstrologerRequestType.matching,
-        status: AstrologerRequestStatus.pending,
-        message: note.trim(),
-        amount: amount,
-        profileAId: groom.id,
-        profileAName: groom.fullName,
-        profileBId: bride.id,
-        profileBName: bride.fullName,
-        createdAt: now,
-        userLanguage: lang,
-        // Appointments are FREE (§12): there is no charge and nothing to
-        // collect, so the booking is recorded as settled from the start and is
-        // never payment-locked anywhere in the app or the admin panel.
-        paid: true,
-        paidAt: now,
-        paymentId: paymentId,
-        visitDate: visitDay,
-        session: slotMinutes < AppointmentSession.afternoonStart
-            ? AppointmentSession.morning
-            : AppointmentSession.afternoon,
-        slotStartMinutes: slotMinutes,
-        officeAddress: config.officeAddress,
-        officeContact: config.officeContactNumber,
-        history: [
-          BookingHistoryEntry(at: now, label: 'Appointment booked'),
-          if (amount > 0)
-            BookingHistoryEntry(at: now, label: 'Payment received ($paymentId)')
-          else
-            BookingHistoryEntry(at: now, label: 'Free booking — no charge'),
-        ],
-      );
-
-      final session = slotMinutes < AppointmentSession.afternoonStart
-          ? AppointmentSession.morning
-          : AppointmentSession.afternoon;
-      final String id;
-      if (kBypassAuth) {
-        id = 'appt_${now.millisecondsSinceEpoch}';
-        ref.read(demoAstrologerRequestsProvider.notifier).add(request);
-      } else {
-        id = await ref.read(astrologerServiceProvider).createAppointmentRequest(
-            request,
-            capacity: config.capacityForSession(session));
-      }
-
-      // Pre-create the Astrology Analysis Chat to the internal account's real
-      // uid so the user can open it immediately and the team shares one thread
-      // (idempotent → no duplicate). Best-effort: a chat hiccup never fails the
-      // booking. If internalUid isn't known yet, the thread is created when the
-      // team accepts (existing astrologerUid path).
-      if (config.internalUid.isNotEmpty) {
-        try {
-          await ref.read(chatControllerProvider).openChatWith(
-                otherUid: config.internalUid,
-                otherName: config.expertName.trim().isEmpty
-                    ? kInternalAstrologyName
-                    : config.expertName.trim(),
-                otherPhoto: config.expertPhotoUrl,
-              );
-        } catch (_) {}
-      }
-
-      // In-app "Appointment Confirmed" notification (best-effort).
-      final myUid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
-      if (myUid != null) {
-        await ref.read(notificationNotifierProvider.notifier).notify(
-              toUid: myUid,
-              event: AppNotificationEvent.appointmentConfirmed,
-              route: '/my-appointments',
-            );
-      }
-
-      state = const AsyncData(null);
-      return id;
-    } catch (e, st) {
-      state = AsyncError(e, st);
-      rethrow;
-    }
-  }
 
   /// Books a standalone **in-person Astrology appointment** from the Astrology
   /// page's "Book Your Appointment" flow. Writes ONE appointment request to the
@@ -623,6 +504,12 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
   /// The session's admin-configured capacity is enforced atomically at the
   /// backend — a session that is already full throws
   /// [AppointmentSlotTakenException]. Returns the new booking id.
+  ///
+  /// A matrimony profile is NOT required (spec §8): only a login is. The
+  /// booking screen asks for [contactName] / [contactPhone] / [contactDob]
+  /// whenever they cannot be derived (a Google sign-in with no phone number,
+  /// or an account with no matrimony profile), and those answers are what get
+  /// stored — a profile, when there is one, only supplies the defaults.
   Future<String> bookServiceAppointment({
     required DateTime date,
     required String session,
@@ -631,6 +518,9 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     String note = '',
     int amount = 0,
     String? paymentId,
+    String contactName = '',
+    String contactPhone = '',
+    String contactDob = '',
   }) async {
     state = const AsyncLoading();
     try {
@@ -645,10 +535,18 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
       final lang = ref.read(localeProvider)?.languageCode ?? 'en';
       final now = DateTime.now();
       final visitDay = DateTime(date.year, date.month, date.day);
-      final userName = me?.fullName ?? user?.displayName ?? 'User';
-      final userPhone = (me?.contact.mobileNumber.trim().isNotEmpty ?? false)
-          ? me!.contact.mobileNumber.trim()
-          : (user?.phone ?? '');
+      // What the user entered wins; the profile / account is only a fallback.
+      final userName = contactName.trim().isNotEmpty
+          ? contactName.trim()
+          : (me?.fullName ?? user?.displayName ?? 'User');
+      final userPhone = contactPhone.trim().isNotEmpty
+          ? contactPhone.trim()
+          : ((me?.contact.mobileNumber.trim().isNotEmpty ?? false)
+              ? me!.contact.mobileNumber.trim()
+              : (user?.phone ?? ''));
+      final userDob = contactDob.trim().isNotEmpty
+          ? contactDob.trim()
+          : (me == null ? '' : _fmtDayMonthYear(me.dateOfBirth));
 
       final request = AstrologerRequestModel(
         id: 'new',
@@ -659,6 +557,7 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         userPhotoUrl: me?.profilePhotoUrl ?? '',
         userLocation: location,
         userPhone: userPhone,
+        userDob: userDob,
         // Standalone office-visit appointment — independent of the online
         // Horoscope Analysis report.
         type: AstrologerRequestType.consultation,
@@ -1081,3 +980,7 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
 final matchAnalysisControllerProvider =
     NotifierProvider<MatchAnalysisController, AsyncValue<void>>(
         MatchAnalysisController.new);
+
+/// `dd/MM/yyyy` — the format appointment DOBs are stored and displayed in.
+String _fmtDayMonthYear(DateTime d) =>
+    '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';

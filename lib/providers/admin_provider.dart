@@ -57,11 +57,24 @@ final adminContactByUserIdProvider =
   }
 });
 
-/// Live stream of every astrologer request (consultations + match-analysis /
-/// horoscope bookings). Powers the admin Horoscope Requests page.
+/// Live stream of EVERY astrologer request document — report requests AND
+/// appointment bookings. Only cross-cutting screens (payments, per-user
+/// history, analytics) should read this directly.
 final allAstrologerRequestsProvider =
     StreamProvider.autoDispose<List<AstrologerRequestModel>>(
         (ref) => ref.read(astrologerServiceProvider).watchAllRequests());
+
+/// Horoscope REPORT requests only, newest first — the single source for the
+/// admin Requests module (spec §2/§4). Astrology appointment bookings are
+/// filtered out here and surface exclusively in the Appointments module.
+final allReportRequestsProvider =
+    Provider.autoDispose<AsyncValue<List<AstrologerRequestModel>>>((ref) {
+  return ref.watch(allAstrologerRequestsProvider).whenData((list) {
+    final reports = list.where((r) => r.isReportRequest).toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return reports;
+  });
+});
 
 /// Paid astrology-service transactions — every `astrologer_requests` booking
 /// with `paid == true`, newest payment first (`paidAt`, falling back to
