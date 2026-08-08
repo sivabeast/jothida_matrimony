@@ -14,7 +14,7 @@ Code பகுதி முழுவதும் முடிந்துவி�
 
 | # | வேலை | ஏன் தேவை | கட்டாயமா? |
 |---|------|-----------|-----------|
-| 1 | புதிய Logo file-ஐ project-இல் வைப்பது | ஒரே logo எல்லா இடத்திலும் (§5) | ஆம் |
+| 1 | ~~புதிய Logo file-ஐ project-இல் வைப்பது~~ | ஒரே logo எல்லா இடத்திலும் (§5) | **முடிந்தது** ✅ |
 | 2 | Firebase → Anonymous Sign-in ஐ Enable செய்வது | Guest Mode (§6) | ஆம் |
 | 3 | Firebase → Blaze Plan-க்கு Upgrade | Push Notifications (§10) | ஆம் |
 | 4 | `google-services.json` download + சரியான இடத்தில் வைப்பது | FCM வேலை செய்ய | ஆம் |
@@ -25,39 +25,38 @@ Code பகுதி முழுவதும் முடிந்துவி�
 
 ---
 
-## 1. புதிய Logo-ஐ Project-இல் வைப்பது (§5)
+## 1. புதிய Logo (§5) — ✅ முடிந்துவிட்டது, நீங்கள் எதுவும் செய்ய வேண்டாம்
 
-Code இப்போது **ஒரே ஒரு logo file-ஐ மட்டும்** பயன்படுத்துகிறது:
-`assets/images/app_logo.png`. பழைய `report_logo.png` நீக்கப்பட்டுவிட்டது.
+நீங்கள் அனுப்பிய புதிய logo (சிவப்பு பின்னணி + தங்க நிற ஜோடி + ராசி சக்கரம்)
+project-இல் **ஏற்கனவே ஏற்றப்பட்டுவிட்டது**. பழைய **இரண்டு** logo-க்களும்
+நீக்கப்பட்டன:
 
-### படிகள்
+| நீக்கப்பட்ட பழைய logo | எங்கே இருந்தது |
+|---|---|
+| தங்க/மஞ்சள் பின்னணி logo | `assets/images/app_logo.png` |
+| "Jothida Matrimony" எழுத்துடன் இருந்த logo | `branding/play_store_icon_512.png` |
 
-1. நீங்கள் அனுப்பிய புதிய logo படத்தை (சிவப்பு பின்னணி + தங்க நிற ஜோடி +
-   ராசி சக்கரம்) **1024 × 1024 pixel PNG** ஆக சேமிக்கவும்.
-   - சதுரமாக (square) இருக்க வேண்டும்.
-   - கோப்பு பெயர் சரியாக: **`app_logo.png`**
-2. அதை இந்த இடத்தில் **replace** செய்யவும் (பழைய file-ஐ மேலெழுதவும்):
-   ```
-   jothida_matrimony/assets/images/app_logo.png
-   ```
-3. Terminal-ஐ project folder-இல் திறந்து கீழே உள்ள commands-ஐ **வரிசையாக**
-   ஓட்டவும்:
+இப்போது **ஒரே ஒரு** logo file மட்டும்: `assets/images/app_logo.png`.
+Home screen icon, Play Store icon, Splash, Login, Drawer, App bar, Report PDF —
+**எல்லாமே** இதே ஒரு file-இல் இருந்துதான் வருகிறது.
 
-   ```bash
-   flutter pub get
-   ```
+### எதிர்காலத்தில் logo-ஐ மாற்ற வேண்டுமானால்
 
-   ```bash
-   dart run flutter_launcher_icons
-   ```
+ஒரே ஒரு command போதும் (Python + Pillow தேவை):
 
-   ```bash
-   dart run tool/gen_play_store_icon.dart
-   ```
+```bash
+python tool/generate_brand_icons.py path/to/new_logo.png --write-master
+```
 
-   - இரண்டாவது command → Android launcher icon (App Icon) உருவாக்கும்.
-   - மூன்றாவது command → `branding/play_store_icon_512.png` உருவாக்கும்.
-     இதை Play Console-இல் ஏற்ற வேண்டும் (கீழே step 7).
+இது தானாகவே: master file-ஐ மாற்றும் → Android-இன் 10 icon file-களையும் மீண்டும்
+உருவாக்கும் → `branding/play_store_icon_512.png`-ஐயும் உருவாக்கும்.
+கடைசியில் அது ஒரு நிறத்தை (colour code) print செய்யும் — அதை
+`android/app/src/main/res/values/colors.xml` → `ic_launcher_background`-இல்
+ஒட்டவும்.
+
+> `dart run flutter_launcher_icons` — இனி **பயன்படுத்த வேண்டாம்**. அது logo-ஐ
+> முழுமையாக விரித்து வைப்பதால், ராசி சக்கரத்தின் வெளிப்புற நட்சத்திரங்கள்
+> Android-இன் icon mask-இல் வெட்டுப்பட்டுவிடும்.
 
 ### சரிபார்ப்பு
 
@@ -65,7 +64,8 @@ Code இப்போது **ஒரே ஒரு logo file-ஐ மட்டு�
 - Splash screen, Login page, Report PDF header — எல்லாவற்றிலும் **அதே** logo.
 
 > **முக்கியம்:** Play Store-இல் தெரியும் icon **AAB-இல் இருந்து வராது**.
-> அதை Play Console → Store listing-இல் தனியாக upload செய்ய வேண்டும் (step 7).
+> `branding/play_store_icon_512.png`-ஐ Play Console → Store listing-இல் தனியாக
+> upload செய்ய வேண்டும் (step 7).
 
 ---
 
@@ -281,8 +281,10 @@ Admin panel-இல் இருந்த "App Update" page **முழுவத�
      `+8` ஐ `+9` ஆக அதிகரிக்க வேண்டும்** (எ.கா. `version: 1.5.0+9`).
      Version code அதிகரிக்காவிட்டால் Play "update உள்ளது" என்று சொல்லாது.
 4. **Store listing** page → **App icon** பகுதியில்
-   `branding/play_store_icon_512.png` file-ஐ upload செய்யவும் (step 1-இல்
-   உருவாக்கியது).
+   `branding/play_store_icon_512.png` file-ஐ upload செய்யவும். இது **புதிய
+   logo**-வுடன் ஏற்கனவே தயாராக உள்ளது (§1). பழைய, "Jothida Matrimony" எழுத்து
+   இருந்த icon-ஐ இது மாற்றிவிடும் — Play Console-இல் upload செய்தால்தான் Store-இல்
+   புதிய icon தெரியும்.
 5. **Review release** → **Start rollout to Production**.
 
 ### சரிபார்ப்பு (மிக முக்கியம்)

@@ -121,31 +121,25 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^4.0.0
   mockito: ^5.4.4
-  flutter_launcher_icons: ^0.14.3
-  # NOTE: `image` moved to the main dependencies (used at runtime by the 1:1
-  # crop screen); tool/gen_play_store_icon.dart still imports it from there.
 
-# ── Launcher icon generation ──────────────────────────────────────────────────
-# ONE logo for the whole project (spec §5): assets/images/app_logo.png is the
-# 1024×1024 master used by the launcher icon, the Play Store icon, the splash,
-# login, loading, every in-app logo placeholder and the exported PDFs
+# ── Branding: ONE logo, one command ───────────────────────────────────────────
+# assets/images/app_logo.png is the 1024×1024 master behind EVERYTHING that
+# shows the brand mark: the home-screen icon, the Play Store listing icon, the
+# splash, login, drawer, app bars and the exported PDFs
 # (lib/core/constants/brand_assets.dart → kAppLogoAsset). There is no second
-# "report" logo any more.
-# To apply a new logo:
-#   1. replace assets/images/app_logo.png with the new square 1024×1024 PNG
-#   2. flutter pub get
-#   3. dart run flutter_launcher_icons
-#   4. dart run tool/gen_play_store_icon.dart   (Play Console 512×512 icon)
-# NOTE: after generating, the adaptive foreground gets a 16% inset re-applied in
-# android/.../mipmap-anydpi-v26/ic_launcher.xml so the full design stays inside
-# the adaptive safe zone instead of being masked off.
-flutter_launcher_icons:
-  android: "ic_launcher"
-  ios: false
-  image_path: "assets/images/app_logo.png"
-  adaptive_icon_background: "#8B0000"    # deep maroon — matches brand
-  adaptive_icon_foreground: "assets/images/app_logo.png"
-  min_sdk_android: 21
+# "report", "launcher" or "store" variant — that is what let two different
+# logos ship side by side before.
+#
+# To apply a NEW logo, one command does all of it:
+#   python tool/generate_brand_icons.py path/to/new_logo.png --write-master
+#
+# It trims the master, rewrites all ten Android icon bitmaps and the Play
+# Console 512×512, and prints the plate colour to copy into
+# android/app/src/main/res/values/colors.xml → ic_launcher_background.
+#
+# flutter_launcher_icons is deliberately NOT used: it can only scale the master
+# full-bleed, and this artwork fills 85% of its plate, so the zodiac wheel's
+# outer stars land under the adaptive-icon mask and get cut off.
 
 flutter:
   uses-material-design: true
@@ -157,6 +151,10 @@ flutter:
     - assets/master_data/
     - assets/master_data/location/
     - assets/master_data/astrology/
+    # Bilingual Education / Employment catalogues, generated from
+    # lib/core/data/*_catalog.dart by tool/export_master_data.dart. Bundled so
+    # they can be seeded into master_data/{key} the same way castes are.
+    - assets/master_data/career/
     - .env
 
   fonts:

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../core/data/career_data.dart';
+import '../core/data/education_catalog.dart';
+import '../core/data/occupation_catalog.dart';
 
 /// Safely coerce a dynamic value into a List<String>.
 ///
@@ -111,18 +112,31 @@ class ProfileModel {
   final String? subCaste;
   final String? subCasteId;
 
-  /// Education LEVEL — one of [CareerData.educationLevels] (§5). The grouping
+  /// Education LEVEL — one of [EducationCatalog.levels] (§3). The grouping
   /// layer above [education]; empty on documents written before the hierarchy
-  /// existed, in which case [CareerData.levelForDegree] recovers it.
+  /// existed, in which case [EducationCatalog.levelForDegree] recovers it.
   final String educationLevel;
 
-  /// The course / degree itself. Storage is unchanged from the flat-list era
-  /// (and identical to the website's `education`), so matching, filters and the
-  /// admin panel keep working.
+  /// The member's PRIMARY qualification. Storage is unchanged from the
+  /// flat-list era (and identical to the website's `education`), so matching,
+  /// filters and the admin panel keep working. When several degrees are held
+  /// this mirrors the first entry of [displayDegrees].
   final String education;
 
-  /// Employment STATUS — one of [CareerData.employmentStatuses] (§6). Empty on
-  /// legacy documents; [CareerData.statusForOccupation] recovers it.
+  /// EVERY qualification the member holds (§4) — B.Sc *and* MBA *and* M.Phil.
+  /// Empty on documents written before multi-degree support, where [education]
+  /// alone is the whole answer; [allDegrees] papers over that difference.
+  final List<String> degrees;
+
+  /// The one or two degrees chosen for the profile card (§4).
+  ///
+  /// Only asked for when the member holds THREE or more — with one or two
+  /// there is nothing to choose, so the wizard shows them both and leaves this
+  /// empty. [profileDegrees] resolves it either way.
+  final List<String> displayDegrees;
+
+  /// Employment STATUS — one of [OccupationCatalog.statuses] (§5). Empty on
+  /// legacy documents; [OccupationCatalog.statusForOccupation] recovers it.
   final String employmentStatus;
   final String occupation;
   final String annualIncome;
@@ -234,6 +248,8 @@ class ProfileModel {
     this.subCasteId,
     this.educationLevel = '',
     required this.education,
+    this.degrees = const [],
+    this.displayDegrees = const [],
     this.employmentStatus = '',
     required this.occupation,
     required this.annualIncome,
@@ -306,6 +322,8 @@ class ProfileModel {
       subCasteId: d['subCasteId'],
       educationLevel: d['educationLevel'] ?? '',
       education: d['education'] ?? '',
+      degrees: toStringList(d['degrees']),
+      displayDegrees: toStringList(d['displayDegrees']),
       employmentStatus: d['employmentStatus'] ?? '',
       occupation: d['occupation'] ?? '',
       annualIncome: d['annualIncome'] ?? '',
@@ -378,6 +396,8 @@ class ProfileModel {
         'subCasteId': subCasteId,
         'educationLevel': educationLevel,
         'education': education,
+        'degrees': degrees,
+        'displayDegrees': displayDegrees,
         'employmentStatus': employmentStatus,
         'occupation': occupation,
         'annualIncome': annualIncome,
@@ -451,46 +471,81 @@ class ProfileModel {
   // from the flat value, so a profile written before the hierarchy existed
   // still renders "Level → Course" and "Status → Sector → Occupation".
 
-  String get effectiveEducationLevel => educationLevel.trim().isNotEmpty
-      ? educationLevel.trim()
-      : (CareerData.levelForDegree(education) ?? '');
+  String get effectiveEducationLevel {
+    final stored = educationLevel.trim();
+    if (stored.isNotEmpty) {
+      // Normalises the retired "Doctorate" bucket onto Ph.D (§3).
+      return EducationCatalog.canonicalLevel(stored) ?? stored;
+    }
+    return EducationCatalog.levelForDegree(
+            allDegrees.isEmpty ? education : allDegrees.first) ??
+        '';
+  }
 
   String get effectiveEmploymentStatus => employmentStatus.trim().isNotEmpty
       ? employmentStatus.trim()
-      : (CareerData.statusForOccupation(occupation,
+      : (OccupationCatalog.statusForOccupation(occupation,
               employmentType: employmentType) ??
           '');
 
+  /// The employment TYPE (§5, field 2) — "sector" in the pre-§5 vocabulary.
   String get effectiveSector =>
-      CareerData.sectorForOccupation(occupation, employmentType: employmentType) ??
+      OccupationCatalog.typeForOccupation(occupation,
+          employmentType: employmentType) ??
       '';
 
-  /// "UG · B.E" — the education LEVEL (localized) followed by the course /
-  /// degree, which stays in English exactly as the website presents it (§9).
-  /// [localize] is normally `context.localizeValue`.
-  String educationDisplay(String Function(String) localize) {
-    final level = effectiveEducationLevel;
-    final degree = education.trim();
-    if (level.isEmpty) return degree;
-    if (degree.isEmpty || degree.toLowerCase() == level.toLowerCase()) {
-      return localize(level);
-    }
-    return '${localize(level)} · $degree';
+  /// Every qualification this member holds (§4), oldest storage format
+  /// included: a profile written before multi-degree support only has
+  /// [education], and one written after has the full [degrees] list.
+  List<String> get allDegrees {
+    if (degrees.isNotEmpty) return degrees;
+    final single = education.trim();
+    return single.isEmpty ? const [] : [single];
   }
 
-  /// "Employed · Private · Software Engineer" — the employment STATUS and
-  /// SECTOR are localized; the occupation title stays English (§9). Statuses
-  /// without an occupation (Student / Job Seeker / Homemaker / Retired) render
-  /// as just the status.
+  /// The one or two qualifications that belong on the profile card (§4).
+  ///
+  ///  * one or two held  → show them, nothing to choose;
+  ///  * three or more    → show the member's [displayDegrees] pick;
+  ///  * three or more but nothing picked (an older profile, or a draft that
+  ///    skipped the question) → fall back to the first two, so a card is never
+  ///    blank just because a choice was not recorded.
+  List<String> get profileDegrees {
+    final all = allDegrees;
+    if (all.length <= 2) return all;
+    final picked = [for (final d in displayDegrees) if (all.contains(d)) d];
+    if (picked.isNotEmpty) return picked.take(2).toList();
+    return all.take(2).toList();
+  }
+
+  /// "UG · B.E, MBA" — the education LEVEL followed by the qualifications
+  /// chosen for the card. [localize] is normally `context.localizeValue`, which
+  /// renders a degree as "இளங்கலை பொறியியல் (B.E)" in Tamil.
+  String educationDisplay(String Function(String) localize) {
+    final level = effectiveEducationLevel;
+    final shown = [for (final d in profileDegrees) localize(d)];
+    if (level.isEmpty) return shown.join(', ');
+    if (shown.isEmpty ||
+        (shown.length == 1 &&
+            profileDegrees.first.toLowerCase() == level.toLowerCase())) {
+      return localize(level);
+    }
+    return '${localize(level)} · ${shown.join(', ')}';
+  }
+
+  /// "Employed · Private · Software Engineer" — status, type and occupation,
+  /// each rendered through [localize]. Statuses with no occupation of their own
+  /// (Student / Job Seeker / Homemaker / Retired / Others) render as just the
+  /// status.
   String occupationDisplay(String Function(String) localize) {
     final status = effectiveEmploymentStatus;
     final occ = occupation.trim();
-    if (status.isEmpty) return occ;
+    if (status.isEmpty) return localize(occ);
     final parts = <String>[localize(status)];
-    if (CareerData.statusHasOccupation(status)) {
-      final sector = effectiveSector;
-      if (sector.isNotEmpty) parts.add(localize(sector));
-      if (occ.isNotEmpty) parts.add(occ);
+    if (OccupationCatalog.statusHasOccupation(status)) {
+      final type = effectiveSector;
+      if (type.isNotEmpty) parts.add(localize(type));
+      if (occ.isNotEmpty) parts.add(localize(occ));
     }
     return parts.join(' · ');
   }
@@ -552,6 +607,8 @@ class ProfileModel {
       subCasteId: d['subCasteId'],
       educationLevel: d['educationLevel'] ?? '',
       education: d['education'] ?? '',
+      degrees: toStringList(d['degrees']),
+      displayDegrees: toStringList(d['displayDegrees']),
       employmentStatus: d['employmentStatus'] ?? '',
       occupation: d['occupation'] ?? '',
       annualIncome: d['annualIncome'] ?? '',
@@ -617,6 +674,8 @@ class ProfileModel {
         'subCasteId': subCasteId,
         'educationLevel': educationLevel,
         'education': education,
+        'degrees': degrees,
+        'displayDegrees': displayDegrees,
         'employmentStatus': employmentStatus,
         'occupation': occupation,
         'annualIncome': annualIncome,
@@ -674,6 +733,8 @@ class ProfileModel {
     String? subCasteId,
     String? educationLevel,
     String? education,
+    List<String>? degrees,
+    List<String>? displayDegrees,
     String? employmentStatus,
     String? occupation,
     String? annualIncome,
@@ -740,6 +801,8 @@ class ProfileModel {
         subCasteId: subCasteId ?? this.subCasteId,
         educationLevel: educationLevel ?? this.educationLevel,
         education: education ?? this.education,
+        degrees: degrees ?? this.degrees,
+        displayDegrees: displayDegrees ?? this.displayDegrees,
         employmentStatus: employmentStatus ?? this.employmentStatus,
         occupation: occupation ?? this.occupation,
         annualIncome: annualIncome ?? this.annualIncome,
@@ -811,6 +874,8 @@ class ProfileModel {
         subCasteId: subCasteId,
         educationLevel: educationLevel,
         education: education,
+        degrees: degrees,
+        displayDegrees: displayDegrees,
         employmentStatus: employmentStatus,
         occupation: occupation,
         annualIncome: annualIncome,
@@ -1177,7 +1242,11 @@ class PartnerPreferences {
   final String? district;
   final String? country;
   final String motherTongue; // language preference; 'Any' or a language
-  final bool horoscopeMatchRequired;
+  // NOTE: `horoscopeMatchRequired` was removed (§11). The app shows every
+  // profile and a member can check compatibility on any of them whenever they
+  // want, so a stored "I require a horoscope match" flag decided nothing and
+  // only added a question to the form. Old documents may still carry the
+  // field; it is simply ignored on read.
   // Extended & lifestyle preferences ('Any' = no preference).
   final String physicalStatus;
   final String employmentType;
@@ -1208,7 +1277,6 @@ class PartnerPreferences {
     this.district,
     this.country,
     this.motherTongue = 'Any',
-    this.horoscopeMatchRequired = true,
     this.physicalStatus = 'Any',
     this.employmentType = 'Any',
     this.subCaste,
@@ -1239,7 +1307,6 @@ class PartnerPreferences {
         district: map['district'],
         country: map['country'],
         motherTongue: map['motherTongue'] ?? 'Any',
-        horoscopeMatchRequired: map['horoscopeMatchRequired'] ?? true,
         physicalStatus: map['physicalStatus'] ?? 'Any',
         employmentType: map['employmentType'] ?? 'Any',
         subCaste: map['subCaste'],
@@ -1270,7 +1337,6 @@ class PartnerPreferences {
         'district': district,
         'country': country,
         'motherTongue': motherTongue,
-        'horoscopeMatchRequired': horoscopeMatchRequired,
         'physicalStatus': physicalStatus,
         'employmentType': employmentType,
         'subCaste': subCaste,
@@ -1301,7 +1367,6 @@ class PartnerPreferences {
     String? district,
     String? country,
     String? motherTongue,
-    bool? horoscopeMatchRequired,
     String? physicalStatus,
     String? employmentType,
     String? subCaste,
@@ -1331,8 +1396,6 @@ class PartnerPreferences {
         district: district ?? this.district,
         country: country ?? this.country,
         motherTongue: motherTongue ?? this.motherTongue,
-        horoscopeMatchRequired:
-            horoscopeMatchRequired ?? this.horoscopeMatchRequired,
         physicalStatus: physicalStatus ?? this.physicalStatus,
         employmentType: employmentType ?? this.employmentType,
         subCaste: subCaste ?? this.subCaste,

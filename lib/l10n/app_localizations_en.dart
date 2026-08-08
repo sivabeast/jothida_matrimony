@@ -2006,9 +2006,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get doesntMatter => 'Doesn\'t Matter';
 
   @override
-  String get horoscopeMatchRequired => 'Horoscope Match Required';
-
-  @override
   String get profilePhoto => 'Profile Photo';
 
   @override
@@ -3124,4 +3121,118 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get later => 'Later';
+
+  @override
+  String get anyTapToSelect => 'Any — tap to select';
+
+  @override
+  String countSelected(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String doneCount(int count) {
+    return 'Done ($count)';
+  }
+
+  @override
+  String selectUpTo(int count) {
+    return 'Select up to $count';
+  }
+
+  @override
+  String get haveChildren => 'Do you have children?';
+
+  @override
+  String get degreesLabel => 'Course / Degree';
+
+  @override
+  String get degreesHint => 'You can add more than one';
+
+  @override
+  String get profileDisplayQualification => 'Profile Display Qualification';
+
+  @override
+  String get profileDisplayQualificationHelp =>
+      'Choose up to two qualifications to show on your profile card';
+
+  @override
+  String get locationPreference => 'Location Preference';
+
+  @override
+  String get locationPreferenceHint =>
+      'State → District → City, from the master data';
+
+  @override
+  String get educationPreference => 'Education Preference';
+
+  @override
+  String get educationPreferenceHint =>
+      'Search and select any number of qualifications';
+
+  @override
+  String get professionPreference => 'Profession Preference';
+
+  @override
+  String get professionPreferenceHint =>
+      'Search and select any number of professions';
+
+  @override
+  String get salaryPreference => 'Salary Preference';
+
+  @override
+  String get minimumAnnualIncome => 'Minimum annual income';
+
+  @override
+  String get maritalStatusPreference => 'Marital Status Preference';
+
+  @override
+  String get horoscopePreferences => 'Horoscope Preferences';
+
+  @override
+  String get languagePreference => 'Language Preference';
+
+  @override
+  String get religionPreference => 'Religion / Community Preference';
+
+  @override
+  String get savePreferences => 'Save Preferences';
+
+  @override
+  String get preferencesSaved => 'Preferences saved';
+
+  @override
+  String get preferencesResetDone => 'Preferences reset to defaults';
+
+  @override
+  String get couldNotSavePreferences =>
+      'Could not save preferences. Please try again.';
+
+  @override
+  String get createProfileFirstToSave =>
+      'Create your profile first to save preferences.';
+
+  @override
+  String get contactSharingQuestion =>
+      'How should your contact information be shared?';
+
+  @override
+  String get contactPrivateTitle => 'Private';
+
+  @override
+  String get contactPrivateDesc =>
+      'Share only after I accept an interest request.';
+
+  @override
+  String get contactPublicTitle => 'Public';
+
+  @override
+  String get contactPublicDesc =>
+      'Anyone viewing your profile can see your contact.';
+
+  @override
+  String get minSixCharacters => 'Min. 6 characters';
+
+  @override
+  String get reEnterPassword => 'Re-enter password';
 }

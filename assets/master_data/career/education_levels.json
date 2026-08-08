@@ -1,0 +1,99 @@
+[
+  {
+    "id": "edu_below10",
+    "en": "Below 10th",
+    "ta": "10ஆம் வகுப்புக்குக் கீழ்",
+    "aliases": [
+      "below 10",
+      "below sslc",
+      "school"
+    ]
+  },
+  {
+    "id": "edu_10th",
+    "en": "10th",
+    "ta": "10ஆம் வகுப்பு",
+    "aliases": [
+      "sslc",
+      "matric"
+    ]
+  },
+  {
+    "id": "edu_12th",
+    "en": "12th",
+    "ta": "12ஆம் வகுப்பு",
+    "aliases": [
+      "hsc",
+      "plus two",
+      "+2"
+    ]
+  },
+  {
+    "id": "edu_iti",
+    "en": "ITI",
+    "ta": "தொழிற்பயிற்சி",
+    "aliases": [
+      "industrial training"
+    ]
+  },
+  {
+    "id": "edu_diploma",
+    "en": "Diploma",
+    "ta": "பட்டயப் படிப்பு",
+    "aliases": [
+      "polytechnic"
+    ]
+  },
+  {
+    "id": "edu_ug",
+    "en": "UG",
+    "ta": "இளங்கலை",
+    "aliases": [
+      "under graduate",
+      "undergraduate",
+      "bachelor",
+      "degree"
+    ]
+  },
+  {
+    "id": "edu_pg",
+    "en": "PG",
+    "ta": "முதுகலை",
+    "aliases": [
+      "post graduate",
+      "postgraduate",
+      "master"
+    ]
+  },
+  {
+    "id": "edu_mphil",
+    "en": "M.Phil",
+    "ta": "எம்.ஃபில்",
+    "aliases": [
+      "mphil",
+      "philosophy"
+    ]
+  },
+  {
+    "id": "edu_phd",
+    "en": "Ph.D",
+    "ta": "முனைவர் பட்டம்",
+    "aliases": [
+      "phd",
+      "doctorate",
+      "doctoral"
+    ]
+  },
+  {
+    "id": "edu_professional",
+    "en": "Professional Qualification",
+    "ta": "தொழில்முறைத் தகுதி",
+    "aliases": [
+      "ca",
+      "cs",
+      "cma",
+      "cfa",
+      "professional"
+    ]
+  }
+]

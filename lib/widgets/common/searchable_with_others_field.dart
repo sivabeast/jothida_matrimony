@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/data/master_option.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/value_l10n.dart';
 import 'app_text_field.dart';
@@ -41,6 +42,12 @@ class SearchableWithOthersField extends StatefulWidget {
   /// dropdown, or the custom textbox while "Others" is selected (§10).
   final String? errorText;
 
+  /// Bilingual catalogue backing [items] (§7/§9).
+  final List<MasterOption>? options;
+
+  /// Append the English name in brackets in Tamil mode (degrees, occupations).
+  final bool showEnglishInBrackets;
+
   const SearchableWithOthersField({
     super.key,
     required this.label,
@@ -53,7 +60,26 @@ class SearchableWithOthersField extends StatefulWidget {
     this.popupMode = SearchablePopupMode.menu,
     this.customLabel,
     this.errorText,
+    this.options,
+    this.showEnglishInBrackets = false,
   });
+
+  /// Builds the field straight from a bilingual catalogue.
+  SearchableWithOthersField.fromOptions({
+    super.key,
+    required this.label,
+    required List<MasterOption> options,
+    required this.value,
+    required this.onChanged,
+    this.isRequired = false,
+    this.enabled = true,
+    this.prefixIcon,
+    this.popupMode = SearchablePopupMode.menu,
+    this.customLabel,
+    this.errorText,
+    this.showEnglishInBrackets = false,
+  })  : options = options,
+        items = options.values;
 
   @override
   State<SearchableWithOthersField> createState() =>
@@ -125,9 +151,17 @@ class _SearchableWithOthersFieldState extends State<SearchableWithOthersField> {
           // below, not under the dropdown.
           errorText: othersMode ? null : widget.errorText,
           items: items,
-          itemLabel: (item) => item == kOthersSentinel
-              ? l10n.othersOption
-              : context.localizeValue(item),
+          options: widget.options,
+          showEnglishInBrackets: widget.showEnglishInBrackets,
+          itemLabel: (item) {
+            if (item == kOthersSentinel) return l10n.othersOption;
+            final option = widget.options?.byValue(item);
+            return option?.display(
+                  tamil: context.isTamil,
+                  withEnglish: widget.showEnglishInBrackets,
+                ) ??
+                context.localizeValue(item);
+          },
           selectedItem: othersMode
               ? kOthersSentinel
               : (_isKnown(widget.value) ? widget.value : null),

@@ -1,0 +1,1529 @@
+[
+  {
+    "id": "occ_software_engineer",
+    "en": "Software Engineer",
+    "ta": "மென்பொருள் பொறியாளர்",
+    "aliases": [
+      "it",
+      "developer"
+    ],
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_software_developer",
+    "en": "Software Developer",
+    "ta": "மென்பொருள் உருவாக்குநர்",
+    "aliases": [
+      "it",
+      "programmer"
+    ],
+    "types": [
+      "Freelance",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_web_developer",
+    "en": "Web Developer",
+    "ta": "இணையதள உருவாக்குநர்",
+    "types": [
+      "Freelance",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_mobile_dev",
+    "en": "Mobile App Developer",
+    "ta": "செயலி உருவாக்குநர்",
+    "types": [
+      "Freelance",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_data_scientist",
+    "en": "Data Scientist",
+    "ta": "தரவு அறிவியலாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_data_analyst",
+    "en": "Data Analyst",
+    "ta": "தரவு ஆய்வாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_business_analyst",
+    "en": "Business Analyst",
+    "ta": "வணிக ஆய்வாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_qa_engineer",
+    "en": "QA / Test Engineer",
+    "ta": "தர சோதனைப் பொறியாளர்",
+    "aliases": [
+      "testing",
+      "qa"
+    ],
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_devops",
+    "en": "DevOps Engineer",
+    "ta": "டெவ்ஆப்ஸ் பொறியாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_cloud_architect",
+    "en": "Cloud Architect",
+    "ta": "கிளவுட் கட்டமைப்பாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_cybersecurity",
+    "en": "Cybersecurity Analyst",
+    "ta": "இணையப் பாதுகாப்பு ஆய்வாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_network_engineer",
+    "en": "Network Engineer",
+    "ta": "வலையமைப்புப் பொறியாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_dba",
+    "en": "Database Administrator",
+    "ta": "தரவுத்தள நிர்வாகி",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_sysadmin",
+    "en": "System Administrator",
+    "ta": "கணினி அமைப்பு நிர்வாகி",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_it_support",
+    "en": "IT Support Engineer",
+    "ta": "தகவல் தொழில்நுட்ப உதவிப் பொறியாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_it_consultant",
+    "en": "IT Consultant",
+    "ta": "தகவல் தொழில்நுட்ப ஆலோசகர்",
+    "types": [
+      "Freelance",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_uiux",
+    "en": "UI / UX Designer",
+    "ta": "இடைமுக வடிவமைப்பாளர்",
+    "aliases": [
+      "ui ux",
+      "designer"
+    ],
+    "types": [
+      "Freelance",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_product_manager",
+    "en": "Product Manager",
+    "ta": "தயாரிப்பு மேலாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_project_manager",
+    "en": "Project Manager",
+    "ta": "திட்ட மேலாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_civil_engineer",
+    "en": "Civil Engineer",
+    "ta": "கட்டுமானப் பொறியாளர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_mech_engineer",
+    "en": "Mechanical Engineer",
+    "ta": "இயந்திரப் பொறியாளர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_elec_engineer",
+    "en": "Electrical Engineer",
+    "ta": "மின் பொறியாளர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_electronics_engineer",
+    "en": "Electronics Engineer",
+    "ta": "மின்னணுப் பொறியாளர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_chemical_engineer",
+    "en": "Chemical Engineer",
+    "ta": "வேதியியல் பொறியாளர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_aero_engineer",
+    "en": "Aeronautical Engineer",
+    "ta": "வானூர்திப் பொறியாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_auto_engineer",
+    "en": "Automobile Engineer",
+    "ta": "வாகனப் பொறியாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_marine_engineer",
+    "en": "Marine Engineer",
+    "ta": "கடல்சார் பொறியாளர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_site_engineer",
+    "en": "Site Engineer",
+    "ta": "பணியிடப் பொறியாளர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_architect",
+    "en": "Architect",
+    "ta": "கட்டிடக் கலைஞர்",
+    "types": [
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_doctor",
+    "en": "Doctor",
+    "ta": "மருத்துவர்",
+    "types": [
+      "Government",
+      "Private",
+      "Profession",
+      "Public Sector"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_surgeon",
+    "en": "Surgeon",
+    "ta": "அறுவை சிகிச்சை மருத்துவர்",
+    "types": [
+      "Government",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_dentist",
+    "en": "Dentist",
+    "ta": "பல் மருத்துவர்",
+    "types": [
+      "Government",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_medical_officer",
+    "en": "Medical Officer",
+    "ta": "மருத்துவ அலுவலர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_ayurvedic_doctor",
+    "en": "Ayurvedic Doctor",
+    "ta": "ஆயுர்வேத மருத்துவர்",
+    "types": [
+      "Government",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_veterinary",
+    "en": "Veterinary Doctor",
+    "ta": "கால்நடை மருத்துவர்",
+    "types": [
+      "Government",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_radiologist",
+    "en": "Radiologist",
+    "ta": "கதிரியக்க மருத்துவர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_nurse",
+    "en": "Nurse",
+    "ta": "செவிலியர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_pharmacist",
+    "en": "Pharmacist",
+    "ta": "மருந்தாளர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_physiotherapist",
+    "en": "Physiotherapist",
+    "ta": "இயன்முறை மருத்துவர்",
+    "types": [
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_lab_technician",
+    "en": "Lab Technician",
+    "ta": "ஆய்வக உதவியாளர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_optometrist",
+    "en": "Optometrist",
+    "ta": "கண் பரிசோதகர்",
+    "types": [
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_nutritionist",
+    "en": "Nutritionist",
+    "ta": "ஊட்டச்சத்து நிபுணர்",
+    "types": [
+      "Freelance",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_psychologist",
+    "en": "Psychologist",
+    "ta": "உளவியலாளர்",
+    "types": [
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_teacher",
+    "en": "Teacher",
+    "ta": "ஆசிரியர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_lecturer",
+    "en": "Lecturer",
+    "ta": "விரிவுரையாளர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_asst_professor",
+    "en": "Assistant Professor",
+    "ta": "உதவிப் பேராசிரியர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_professor",
+    "en": "Professor",
+    "ta": "பேராசிரியர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_principal",
+    "en": "School Principal",
+    "ta": "பள்ளித் தலைமையாசிரியர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_scientist",
+    "en": "Scientist",
+    "ta": "அறிவியலாளர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_research_scholar",
+    "en": "Research Scholar",
+    "ta": "ஆய்வு மாணவர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_tutor",
+    "en": "Tutor",
+    "ta": "பயிற்றுநர்",
+    "types": [
+      "Freelance",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_librarian",
+    "en": "Librarian",
+    "ta": "நூலகர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_civil_servant",
+    "en": "Civil Servant (IAS / IPS / IFS)",
+    "ta": "குடிமைப் பணி அலுவலர்",
+    "aliases": [
+      "ias",
+      "ips",
+      "ifs",
+      "collector"
+    ],
+    "types": [
+      "Government",
+      "Public Sector"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_govt_employee",
+    "en": "Government Employee",
+    "ta": "அரசு ஊழியர்",
+    "types": [
+      "Government",
+      "Public Sector"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_police",
+    "en": "Police Officer",
+    "ta": "காவல் அலுவலர்",
+    "types": [
+      "Government",
+      "Public Sector"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_army",
+    "en": "Army Personnel",
+    "ta": "இராணுவப் பணியாளர்",
+    "types": [
+      "Government",
+      "Public Sector"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_navy",
+    "en": "Navy Personnel",
+    "ta": "கடற்படைப் பணியாளர்",
+    "types": [
+      "Government",
+      "Public Sector"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_airforce",
+    "en": "Air Force Personnel",
+    "ta": "விமானப்படைப் பணியாளர்",
+    "types": [
+      "Government",
+      "Public Sector"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_fire_officer",
+    "en": "Fire & Rescue Officer",
+    "ta": "தீயணைப்பு அலுவலர்",
+    "types": [
+      "Government",
+      "Public Sector"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_railway",
+    "en": "Railway Employee",
+    "ta": "இரயில்வே ஊழியர்",
+    "types": [
+      "Government",
+      "Public Sector"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_postal",
+    "en": "Postal Employee",
+    "ta": "அஞ்சல் ஊழியர்",
+    "types": [
+      "Government",
+      "Public Sector"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_admin_officer",
+    "en": "Administrative Officer",
+    "ta": "நிர்வாக அலுவலர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_judge",
+    "en": "Judge",
+    "ta": "நீதிபதி",
+    "types": [
+      "Government",
+      "Public Sector"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_advocate",
+    "en": "Advocate",
+    "ta": "வழக்கறிஞர்",
+    "types": [
+      "Government",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_lawyer",
+    "en": "Lawyer",
+    "ta": "வழக்குரைஞர்",
+    "types": [
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_legal_advisor",
+    "en": "Legal Advisor",
+    "ta": "சட்ட ஆலோசகர்",
+    "types": [
+      "Government",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_ca",
+    "en": "Chartered Accountant",
+    "ta": "பட்டயக் கணக்கர்",
+    "aliases": [
+      "ca"
+    ],
+    "types": [
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_cost_accountant",
+    "en": "Cost Accountant",
+    "ta": "செலவுக் கணக்கர்",
+    "types": [
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_company_secretary",
+    "en": "Company Secretary",
+    "ta": "நிறுவனச் செயலர்",
+    "types": [
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_accountant",
+    "en": "Accountant",
+    "ta": "கணக்காளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_auditor",
+    "en": "Auditor",
+    "ta": "தணிக்கையாளர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_bank_employee",
+    "en": "Bank Employee",
+    "ta": "வங்கி ஊழியர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_bank_officer",
+    "en": "Bank Officer",
+    "ta": "வங்கி அலுவலர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_financial_analyst",
+    "en": "Financial Analyst",
+    "ta": "நிதி ஆய்வாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_investment_banker",
+    "en": "Investment Banker",
+    "ta": "முதலீட்டு வங்கியாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_stock_broker",
+    "en": "Stock Broker",
+    "ta": "பங்கு தரகர்",
+    "types": [
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_tax_consultant",
+    "en": "Tax Consultant",
+    "ta": "வரி ஆலோசகர்",
+    "types": [
+      "Freelance",
+      "Profession"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_insurance_agent",
+    "en": "Insurance Agent",
+    "ta": "காப்பீட்டு முகவர்",
+    "types": [
+      "Private",
+      "Profession",
+      "Services"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_business_owner",
+    "en": "Business Owner",
+    "ta": "வணிக உரிமையாளர்",
+    "types": [
+      "Import & Export",
+      "Manufacturing",
+      "Retail",
+      "Services",
+      "Trading",
+      "Wholesale"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_shop_owner",
+    "en": "Shop Owner",
+    "ta": "கடை உரிமையாளர்",
+    "types": [
+      "Retail",
+      "Services"
+    ],
+    "educationTier": 0
+  },
+  {
+    "id": "occ_trader",
+    "en": "Trader",
+    "ta": "வர்த்தகர்",
+    "types": [
+      "Import & Export",
+      "Trading",
+      "Wholesale"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_entrepreneur",
+    "en": "Entrepreneur",
+    "ta": "தொழில்முனைவோர்",
+    "types": [
+      "Manufacturing",
+      "Online Business",
+      "Services",
+      "Trading"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_startup_founder",
+    "en": "Startup Founder",
+    "ta": "ஸ்டார்ட்அப் நிறுவனர்",
+    "types": [
+      "Manufacturing",
+      "Online Business",
+      "Services"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_contractor",
+    "en": "Contractor",
+    "ta": "ஒப்பந்ததாரர்",
+    "types": [
+      "Contract",
+      "Manufacturing",
+      "Services"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_civil_contractor",
+    "en": "Civil Contractor",
+    "ta": "கட்டுமான ஒப்பந்ததாரர்",
+    "types": [
+      "Manufacturing",
+      "Services"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_real_estate",
+    "en": "Real Estate Agent",
+    "ta": "அசையா சொத்து முகவர்",
+    "types": [
+      "Profession",
+      "Services",
+      "Trading"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_hr_manager",
+    "en": "HR Manager",
+    "ta": "மனிதவள மேலாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_marketing_exec",
+    "en": "Marketing Executive",
+    "ta": "சந்தைப்படுத்தல் அலுவலர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_sales_exec",
+    "en": "Sales Executive",
+    "ta": "விற்பனை அலுவலர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_logistics_manager",
+    "en": "Logistics Manager",
+    "ta": "சரக்கு மேலாண்மையாளர்",
+    "types": [
+      "Import & Export",
+      "Private",
+      "Services"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_hotel_manager",
+    "en": "Hotel Manager",
+    "ta": "விடுதி மேலாளர்",
+    "types": [
+      "Private",
+      "Services"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_event_manager",
+    "en": "Event Manager",
+    "ta": "நிகழ்ச்சி மேலாளர்",
+    "types": [
+      "Private",
+      "Profession",
+      "Services"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_travel_agent",
+    "en": "Travel Agent",
+    "ta": "பயண முகவர்",
+    "types": [
+      "Online Business",
+      "Private",
+      "Services"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_consultant",
+    "en": "Consultant",
+    "ta": "ஆலோசகர்",
+    "types": [
+      "Freelance",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 3
+  },
+  {
+    "id": "occ_journalist",
+    "en": "Journalist",
+    "ta": "பத்திரிகையாளர்",
+    "types": [
+      "Freelance",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_news_anchor",
+    "en": "News Anchor",
+    "ta": "செய்தி வாசிப்பாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_editor",
+    "en": "Editor",
+    "ta": "ஆசிரியர் (பதிப்பு)",
+    "types": [
+      "Freelance",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_writer",
+    "en": "Writer",
+    "ta": "எழுத்தாளர்",
+    "types": [
+      "Freelance",
+      "Profession"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_content_creator",
+    "en": "Content Creator",
+    "ta": "உள்ளடக்க உருவாக்குநர்",
+    "types": [
+      "Freelance",
+      "Online Business"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_graphic_designer",
+    "en": "Graphic Designer",
+    "ta": "வரைகலை வடிவமைப்பாளர்",
+    "types": [
+      "Freelance",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_photographer",
+    "en": "Photographer",
+    "ta": "ஒளிப்படக் கலைஞர்",
+    "types": [
+      "Freelance",
+      "Profession"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_video_editor",
+    "en": "Video Editor",
+    "ta": "காணொளி தொகுப்பாளர்",
+    "types": [
+      "Freelance",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_animator",
+    "en": "Animator",
+    "ta": "அசைவூட்டக் கலைஞர்",
+    "types": [
+      "Freelance",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_film_director",
+    "en": "Film Director",
+    "ta": "திரைப்பட இயக்குநர்",
+    "types": [
+      "Freelance",
+      "Profession"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_actor",
+    "en": "Actor",
+    "ta": "நடிகர்",
+    "types": [
+      "Freelance",
+      "Profession"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_singer",
+    "en": "Singer",
+    "ta": "பாடகர்",
+    "types": [
+      "Freelance",
+      "Profession"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_musician",
+    "en": "Musician",
+    "ta": "இசைக்கலைஞர்",
+    "types": [
+      "Freelance",
+      "Profession"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_dancer",
+    "en": "Dancer",
+    "ta": "நடனக் கலைஞர்",
+    "types": [
+      "Freelance",
+      "Profession"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_artist",
+    "en": "Artist",
+    "ta": "ஓவியர்",
+    "types": [
+      "Freelance",
+      "Profession"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_fashion_designer",
+    "en": "Fashion Designer",
+    "ta": "ஆடை வடிவமைப்பாளர்",
+    "types": [
+      "Freelance",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_interior_designer",
+    "en": "Interior Designer",
+    "ta": "உள்ளக வடிவமைப்பாளர்",
+    "types": [
+      "Freelance",
+      "Private",
+      "Profession"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_electrician",
+    "en": "Electrician",
+    "ta": "மின் பணியாளர்",
+    "types": [
+      "Contract",
+      "Private",
+      "Profession",
+      "Services"
+    ],
+    "educationTier": 0
+  },
+  {
+    "id": "occ_plumber",
+    "en": "Plumber",
+    "ta": "குழாய் பணியாளர்",
+    "types": [
+      "Contract",
+      "Private",
+      "Profession",
+      "Services"
+    ],
+    "educationTier": 0
+  },
+  {
+    "id": "occ_carpenter",
+    "en": "Carpenter",
+    "ta": "தச்சர்",
+    "types": [
+      "Contract",
+      "Private",
+      "Profession",
+      "Services"
+    ],
+    "educationTier": 0
+  },
+  {
+    "id": "occ_welder",
+    "en": "Welder",
+    "ta": "பற்றவைப்புத் தொழிலாளி",
+    "types": [
+      "Contract",
+      "Manufacturing",
+      "Private"
+    ],
+    "educationTier": 0
+  },
+  {
+    "id": "occ_mechanic",
+    "en": "Mechanic",
+    "ta": "இயந்திர பழுதுநீக்குநர்",
+    "types": [
+      "Private",
+      "Profession",
+      "Services"
+    ],
+    "educationTier": 0
+  },
+  {
+    "id": "occ_technician",
+    "en": "Technician",
+    "ta": "தொழில்நுட்ப உதவியாளர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_driver",
+    "en": "Driver",
+    "ta": "ஓட்டுநர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Services"
+    ],
+    "educationTier": 0
+  },
+  {
+    "id": "occ_tailor",
+    "en": "Tailor",
+    "ta": "தையல் கலைஞர்",
+    "types": [
+      "Private",
+      "Profession",
+      "Retail"
+    ],
+    "educationTier": 0
+  },
+  {
+    "id": "occ_goldsmith",
+    "en": "Goldsmith",
+    "ta": "பொற்கொல்லர்",
+    "types": [
+      "Private",
+      "Profession",
+      "Retail"
+    ],
+    "educationTier": 0
+  },
+  {
+    "id": "occ_beautician",
+    "en": "Beautician",
+    "ta": "அழகுக் கலைஞர்",
+    "types": [
+      "Private",
+      "Profession",
+      "Services"
+    ],
+    "educationTier": 0
+  },
+  {
+    "id": "occ_chef",
+    "en": "Chef",
+    "ta": "சமையல் கலைஞர்",
+    "types": [
+      "Private",
+      "Profession",
+      "Services"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_delivery",
+    "en": "Delivery Executive",
+    "ta": "விநியோகப் பணியாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 0
+  },
+  {
+    "id": "occ_receptionist",
+    "en": "Receptionist",
+    "ta": "வரவேற்பாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_clerk",
+    "en": "Clerk",
+    "ta": "எழுத்தர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_data_entry",
+    "en": "Data Entry Operator",
+    "ta": "தரவு பதிவாளர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_social_worker",
+    "en": "Social Worker",
+    "ta": "சமூக சேவகர்",
+    "types": [
+      "Contract",
+      "Government",
+      "Private",
+      "Public Sector"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_pilot",
+    "en": "Pilot",
+    "ta": "விமானி",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_flight_attendant",
+    "en": "Flight Attendant",
+    "ta": "விமானப் பணிப்பெண்/பணியாளர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_ship_captain",
+    "en": "Ship Captain",
+    "ta": "கப்பல் தலைவர்",
+    "types": [
+      "Contract",
+      "Private"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_farmer",
+    "en": "Farmer",
+    "ta": "விவசாயி",
+    "types": [
+      "Agriculture"
+    ],
+    "educationTier": 0
+  },
+  {
+    "id": "occ_agriculturist",
+    "en": "Agriculturist",
+    "ta": "வேளாண் நிபுணர்",
+    "types": [
+      "Agriculture",
+      "Government"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_horticulturist",
+    "en": "Horticulturist",
+    "ta": "தோட்டக்கலை நிபுணர்",
+    "types": [
+      "Agriculture",
+      "Government"
+    ],
+    "educationTier": 2
+  },
+  {
+    "id": "occ_dairy_farmer",
+    "en": "Dairy Farmer",
+    "ta": "பால் பண்ணையாளர்",
+    "types": [
+      "Agriculture"
+    ],
+    "educationTier": 0
+  },
+  {
+    "id": "occ_poultry_farmer",
+    "en": "Poultry Farmer",
+    "ta": "கோழிப் பண்ணையாளர்",
+    "types": [
+      "Agriculture"
+    ],
+    "educationTier": 0
+  },
+  {
+    "id": "occ_fisherman",
+    "en": "Fisherman",
+    "ta": "மீனவர்",
+    "types": [
+      "Agriculture"
+    ],
+    "educationTier": 0
+  },
+  {
+    "id": "occ_freelancer",
+    "en": "Freelancer",
+    "ta": "தன்னார்வப் பணியாளர்",
+    "types": [
+      "Freelance"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_online_seller",
+    "en": "Online Seller",
+    "ta": "இணையவழி விற்பனையாளர்",
+    "types": [
+      "Online Business"
+    ],
+    "educationTier": 0
+  },
+  {
+    "id": "occ_digital_marketer",
+    "en": "Digital Marketer",
+    "ta": "இணைய சந்தைப்படுத்துநர்",
+    "types": [
+      "Freelance",
+      "Online Business",
+      "Private"
+    ],
+    "educationTier": 1
+  },
+  {
+    "id": "occ_self_employed",
+    "en": "Self Employed",
+    "ta": "சுயதொழில் செய்பவர்",
+    "types": [
+      "Profession",
+      "Services"
+    ],
+    "educationTier": 0
+  }
+]

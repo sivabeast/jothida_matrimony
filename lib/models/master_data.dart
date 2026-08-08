@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/data/master_option.dart';
+
 /// Master-data records — **Firestore is the single source of truth**
 /// (`master_data/{key}`, seeded from the website's canonical bilingual JSON);
 /// the bundled `assets/master_data/*.json` are the offline / not-yet-seeded
@@ -11,19 +13,35 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// `context.localizeValue`.
 ///
 /// Firestore item shape (inside `master_data/{key}.items[]` or a chunk):
-///   religions  { id, name, nameTamil }
-///   castes     { id, religionId, name, nameTamil }
-///   subcastes  { id, casteId, name, nameTamil }
+///   religions  { id, name, nameTamil, aliases[] }
+///   castes     { id, religionId, name, nameTamil, aliases[] }
+///   subcastes  { id, casteId, name, nameTamil, aliases[] }
+///
+/// `aliases` are search-only spellings (§9) — "marakkayar" also answering to
+/// "marakayar". They are never displayed. [asOption] converts any record into
+/// the shared [MasterOption] the pickers search against.
 
 class Religion {
   final String id;
   final String name;
   final String nameTamil;
-  const Religion({required this.id, required this.name, this.nameTamil = ''});
+
+  /// Search-only spellings (§9); never rendered.
+  final List<String> aliases;
+  const Religion({
+    required this.id,
+    required this.name,
+    this.nameTamil = '',
+    this.aliases = const [],
+  });
 
   /// Tamil label in Tamil mode (when present), else the English name.
   String localizedName(bool tamil) =>
       tamil && nameTamil.trim().isNotEmpty ? nameTamil : name;
+
+  /// The shared searchable form (English + Tamil + aliases).
+  MasterOption get asOption =>
+      MasterOption(id: id, en: name, ta: nameTamil, aliases: aliases);
 
   factory Religion.fromDoc(DocumentSnapshot doc) {
     final d = doc.data() as Map<String, dynamic>? ?? const {};
@@ -34,6 +52,7 @@ class Religion {
         id: (m['id'] ?? '').toString(),
         name: (m['name'] ?? '').toString(),
         nameTamil: (m['nameTamil'] ?? '').toString(),
+        aliases: [for (final a in (m['aliases'] as List? ?? const [])) a.toString()],
       );
 }
 
@@ -42,15 +61,23 @@ class Caste {
   final String religionId;
   final String name;
   final String nameTamil;
+
+  /// Search-only spellings (§9); never rendered.
+  final List<String> aliases;
   const Caste({
     required this.id,
     required this.religionId,
     required this.name,
     this.nameTamil = '',
+    this.aliases = const [],
   });
 
   String localizedName(bool tamil) =>
       tamil && nameTamil.trim().isNotEmpty ? nameTamil : name;
+
+  /// The shared searchable form (English + Tamil + aliases).
+  MasterOption get asOption => MasterOption(
+      id: id, en: name, ta: nameTamil, aliases: aliases, parentId: religionId);
 
   factory Caste.fromDoc(DocumentSnapshot doc) {
     final d = doc.data() as Map<String, dynamic>? ?? const {};
@@ -62,6 +89,7 @@ class Caste {
         religionId: (m['religionId'] ?? '').toString(),
         name: (m['name'] ?? '').toString(),
         nameTamil: (m['nameTamil'] ?? '').toString(),
+        aliases: [for (final a in (m['aliases'] as List? ?? const [])) a.toString()],
       );
 }
 
@@ -70,15 +98,23 @@ class Subcaste {
   final String casteId;
   final String name;
   final String nameTamil;
+
+  /// Search-only spellings (§9); never rendered.
+  final List<String> aliases;
   const Subcaste({
     required this.id,
     required this.casteId,
     required this.name,
     this.nameTamil = '',
+    this.aliases = const [],
   });
 
   String localizedName(bool tamil) =>
       tamil && nameTamil.trim().isNotEmpty ? nameTamil : name;
+
+  /// The shared searchable form (English + Tamil + aliases).
+  MasterOption get asOption => MasterOption(
+      id: id, en: name, ta: nameTamil, aliases: aliases, parentId: casteId);
 
   factory Subcaste.fromDoc(DocumentSnapshot doc) {
     final d = doc.data() as Map<String, dynamic>? ?? const {};
@@ -90,5 +126,6 @@ class Subcaste {
         casteId: (m['casteId'] ?? '').toString(),
         name: (m['name'] ?? '').toString(),
         nameTamil: (m['nameTamil'] ?? '').toString(),
+        aliases: [for (final a in (m['aliases'] as List? ?? const [])) a.toString()],
       );
 }

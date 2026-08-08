@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/config/dev_config.dart';
 import '../../core/constants/app_constants.dart';
-import '../../core/data/career_data.dart';
+import '../../core/data/education_catalog.dart';
+import '../../core/data/master_option.dart';
+import '../../core/data/occupation_catalog.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
 import '../../providers/demo_data_provider.dart';
@@ -663,9 +665,9 @@ class _CareerSheetState extends ConsumerState<_CareerSheet> {
   late String _income = widget.profile.annualIncome;
   bool _saving = false;
 
-  bool get _needsCourse => CareerData.levelHasCourses(_educationLevel);
+  bool get _needsCourse => EducationCatalog.levelHasDegrees(_educationLevel);
   bool get _needsOccupation =>
-      CareerData.statusHasOccupation(_employmentStatus);
+      OccupationCatalog.statusHasOccupation(_employmentStatus);
 
   Future<void> _save() async {
     final messenger = ScaffoldMessenger.of(context);
@@ -673,7 +675,7 @@ class _CareerSheetState extends ConsumerState<_CareerSheet> {
     final navigator = Navigator.of(context);
     setState(() => _saving = true);
     final occupation =
-        CareerData.occupationValueFor(_employmentStatus, _occupation);
+        OccupationCatalog.occupationValueFor(_employmentStatus, _occupation);
     final sector = _needsOccupation ? _sector : '';
     final income = _needsOccupation ? _income : '';
     final data = {
@@ -712,20 +714,24 @@ class _CareerSheetState extends ConsumerState<_CareerSheet> {
       saving: _saving,
       onSave: _save,
       children: [
-        _drop('Education Level', _educationLevel,
-            _optsWith(CareerData.educationLevels, _educationLevel),
+        _drop(context.l10n.educationLevel, _educationLevel,
+            _optsWith(EducationCatalog.levels.values, _educationLevel),
             (v) => setState(() {
                   _educationLevel = v!;
-                  _education = CareerData.defaultCourseFor(v) ?? '';
+                  // A schooling level IS the qualification (§3).
+                  _education = EducationCatalog.implicitDegreeFor(v) ?? '';
                 })),
+        // Hidden for Below 10th / 10th / 12th (§3).
         if (_needsCourse)
           _drop(
-              'Course / Degree',
+              context.l10n.degreesLabel,
               _education,
-              _optsWith(CareerData.coursesFor(_educationLevel), _education),
+              _optsWith(
+                  EducationCatalog.degreesFor(_educationLevel).values,
+                  _education),
               (v) => setState(() => _education = v!)),
-        _drop('Employment Status', _employmentStatus,
-            _optsWith(CareerData.employmentStatuses, _employmentStatus),
+        _drop(context.l10n.employmentStatus, _employmentStatus,
+            _optsWith(OccupationCatalog.statuses.values, _employmentStatus),
             (v) => setState(() {
                   _employmentStatus = v!;
                   _sector = '';
@@ -733,21 +739,23 @@ class _CareerSheetState extends ConsumerState<_CareerSheet> {
                 })),
         if (_needsOccupation) ...[
           _drop(
-              _employmentStatus == CareerData.statusSelfEmployed
-                  ? 'Business / Profession'
-                  : 'Government / Private',
+              context.l10n.employmentType,
               _sector,
-              _optsWith(CareerData.sectorsFor(_employmentStatus), _sector),
+              _optsWith(
+                  OccupationCatalog.typesFor(_employmentStatus).values, _sector),
               (v) => setState(() {
                     _sector = v!;
                     _occupation = '';
                   })),
           _drop(
-              'Occupation',
+              context.l10n.occupation,
               _occupation,
               _optsWith(
-                  CareerData.occupationsFor(
-                      status: _employmentStatus, sector: _sector),
+                  OccupationCatalog.occupationsFor(
+                    status: _employmentStatus,
+                    type: _sector,
+                    educationLevel: _educationLevel,
+                  ).values,
                   _occupation),
               (v) => setState(() => _occupation = v!)),
           // Annual income is OPTIONAL (§8).

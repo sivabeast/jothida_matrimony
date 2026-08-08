@@ -27,7 +27,10 @@
   {
     "id": "rel_buddhist",
     "name": "Buddhist",
-    "nameTamil": "பௌத்தர்"
+    "nameTamil": "பௌத்தர்",
+    "aliases": [
+      "buddist"
+    ]
   },
   {
     "id": "rel_parsi",
@@ -37,6 +40,9 @@
   {
     "id": "rel_others",
     "name": "Others",
-    "nameTamil": "மற்றவை"
+    "nameTamil": "மற்றவை",
+    "aliases": [
+      "oters"
+    ]
   }
 ]

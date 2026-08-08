@@ -173,7 +173,7 @@ class _StepLoginCredentialsState extends ConsumerState<StepLoginCredentials> {
             AppTextField(
               controller: _passwordController,
               label: '${l10n.password} *',
-              hint: 'Min. 6 characters',
+              hint: context.l10n.minSixCharacters,
               obscureText: _obscurePassword,
               validator: Validators.password,
               suffixIcon: IconButton(
@@ -188,7 +188,7 @@ class _StepLoginCredentialsState extends ConsumerState<StepLoginCredentials> {
             AppTextField(
               controller: _confirmController,
               label: '${l10n.confirmPassword} *',
-              hint: 'Re-enter password',
+              hint: context.l10n.reEnterPassword,
               obscureText: true,
               validator: (val) =>
                   Validators.confirmPassword(val, _passwordController.text),

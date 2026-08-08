@@ -1159,7 +1159,6 @@ List<Widget> buildProfileFormSections({
             'தாய் மொழி: ${_pref(pp.motherTongue)}',
           if (_pref(pp.physicalStatus).isNotEmpty)
             'உடல் நிலை: ${_pref(pp.physicalStatus)}',
-          if (pp.horoscopeMatchRequired) 'ஜாதகப் பொருத்தம் அவசியம்',
         ]),
         labelW: 118,
       ),

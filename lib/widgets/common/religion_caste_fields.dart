@@ -118,6 +118,14 @@ class _ReligionCasteFieldsState extends ConsumerState<ReligionCasteFields> {
         customValues(ref, MasterOptionsService.subcaste,
             parent: widget.casteName ?? ''));
 
+    // The bilingual/alias catalogue behind each list (§9), so a member reading
+    // "மரைக்காயர்" can type "marakayar" and one reading "Marakkayar" can type
+    // Tamil. A custom ("Others") value has no record, so it simply matches on
+    // its own text.
+    final religionOptions = [for (final r in religions) r.asOption];
+    final casteOptions = [for (final c in castes) c.asOption];
+    final subcasteOptions = [for (final s in subcastes) s.asOption];
+
     final l10n = context.l10n;
 
     return Column(
@@ -130,6 +138,7 @@ class _ReligionCasteFieldsState extends ConsumerState<ReligionCasteFields> {
           enabled: !religionsAsync.isLoading,
           errorText: widget.religionError,
           items: religionItems,
+          options: religionOptions,
           value: widget.religionName,
           onChanged: (name) {
             final r = _byName(religions, name, (x) => x.name);
@@ -156,6 +165,7 @@ class _ReligionCasteFieldsState extends ConsumerState<ReligionCasteFields> {
           enabled: _hasReligion && !castesAsync.isLoading,
           errorText: widget.casteError,
           items: casteItems,
+          options: casteOptions,
           value: widget.casteName,
           onChanged: (name) {
             final c = _byName(castes, name, (x) => x.name);
@@ -181,6 +191,7 @@ class _ReligionCasteFieldsState extends ConsumerState<ReligionCasteFields> {
             enabled: _hasCaste && !subcastesAsync.isLoading,
             errorText: widget.subCasteError,
             items: subcasteItems,
+            options: subcasteOptions,
             value: widget.subCasteName,
             onChanged: (name) {
               final s = _byName(subcastes, name, (x) => x.name);

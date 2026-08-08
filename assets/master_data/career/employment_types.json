@@ -1,0 +1,139 @@
+[
+  {
+    "id": "emp_employed__typ_government",
+    "en": "Government",
+    "ta": "அரசு",
+    "aliases": [
+      "govt",
+      "government job"
+    ],
+    "parentId": "emp_employed"
+  },
+  {
+    "id": "emp_employed__typ_private",
+    "en": "Private",
+    "ta": "தனியார்",
+    "aliases": [
+      "private job",
+      "company"
+    ],
+    "parentId": "emp_employed"
+  },
+  {
+    "id": "emp_employed__typ_public_sector",
+    "en": "Public Sector",
+    "ta": "பொதுத்துறை",
+    "aliases": [
+      "psu",
+      "public"
+    ],
+    "parentId": "emp_employed"
+  },
+  {
+    "id": "emp_employed__typ_contract",
+    "en": "Contract",
+    "ta": "ஒப்பந்த பணி",
+    "aliases": [
+      "contract job",
+      "temporary"
+    ],
+    "parentId": "emp_employed"
+  },
+  {
+    "id": "emp_self__typ_profession",
+    "en": "Profession",
+    "ta": "தொழில்முறை",
+    "aliases": [
+      "practice",
+      "consultant"
+    ],
+    "parentId": "emp_self"
+  },
+  {
+    "id": "emp_self__typ_freelance",
+    "en": "Freelance",
+    "ta": "தன்னார்வப் பணி",
+    "aliases": [
+      "freelancer",
+      "freelancing"
+    ],
+    "parentId": "emp_self"
+  },
+  {
+    "id": "emp_self__typ_online",
+    "en": "Online Business",
+    "ta": "இணையவழி வணிகம்",
+    "aliases": [
+      "online",
+      "ecommerce"
+    ],
+    "parentId": "emp_self"
+  },
+  {
+    "id": "emp_self__typ_agriculture",
+    "en": "Agriculture",
+    "ta": "விவசாயம்",
+    "aliases": [
+      "farming",
+      "agri"
+    ],
+    "parentId": "emp_self"
+  },
+  {
+    "id": "emp_business__typ_retail",
+    "en": "Retail",
+    "ta": "சில்லறை வணிகம்",
+    "aliases": [
+      "shop",
+      "store"
+    ],
+    "parentId": "emp_business"
+  },
+  {
+    "id": "emp_business__typ_wholesale",
+    "en": "Wholesale",
+    "ta": "மொத்த வணிகம்",
+    "aliases": [
+      "bulk"
+    ],
+    "parentId": "emp_business"
+  },
+  {
+    "id": "emp_business__typ_manufacturing",
+    "en": "Manufacturing",
+    "ta": "உற்பத்தி",
+    "aliases": [
+      "factory",
+      "industry"
+    ],
+    "parentId": "emp_business"
+  },
+  {
+    "id": "emp_business__typ_trading",
+    "en": "Trading",
+    "ta": "வர்த்தகம்",
+    "aliases": [
+      "trade"
+    ],
+    "parentId": "emp_business"
+  },
+  {
+    "id": "emp_business__typ_services",
+    "en": "Services",
+    "ta": "சேவைகள்",
+    "aliases": [
+      "service"
+    ],
+    "parentId": "emp_business"
+  },
+  {
+    "id": "emp_business__typ_import_export",
+    "en": "Import & Export",
+    "ta": "இறக்குமதி மற்றும் ஏற்றுமதி",
+    "aliases": [
+      "import",
+      "export"
+    ],
+    "parentId": "emp_business"
+  }
+]

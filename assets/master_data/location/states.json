@@ -1,0 +1,279 @@
+[
+  {
+    "id": "st_tn",
+    "en": "Tamil Nadu",
+    "ta": "தமிழ்நாடு",
+    "aliases": [
+      "tamilnadu",
+      "tn"
+    ],
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_kerala",
+    "en": "Kerala",
+    "ta": "கேரளா",
+    "aliases": [
+      "keralam"
+    ],
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_karnataka",
+    "en": "Karnataka",
+    "ta": "கர்நாடகா",
+    "aliases": [
+      "bangalore",
+      "mysore"
+    ],
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_ap",
+    "en": "Andhra Pradesh",
+    "ta": "ஆந்திரப் பிரதேசம்",
+    "aliases": [
+      "ap"
+    ],
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_telangana",
+    "en": "Telangana",
+    "ta": "தெலங்கானா",
+    "aliases": [
+      "hyderabad"
+    ],
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_puducherry",
+    "en": "Puducherry",
+    "ta": "புதுச்சேரி",
+    "aliases": [
+      "pondicherry",
+      "pondy"
+    ],
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_maharashtra",
+    "en": "Maharashtra",
+    "ta": "மகாராஷ்டிரா",
+    "aliases": [
+      "mumbai",
+      "pune"
+    ],
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_gujarat",
+    "en": "Gujarat",
+    "ta": "குஜராத்",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_rajasthan",
+    "en": "Rajasthan",
+    "ta": "ராஜஸ்தான்",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_up",
+    "en": "Uttar Pradesh",
+    "ta": "உத்தரப் பிரதேசம்",
+    "aliases": [
+      "up"
+    ],
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_mp",
+    "en": "Madhya Pradesh",
+    "ta": "மத்தியப் பிரதேசம்",
+    "aliases": [
+      "mp"
+    ],
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_wb",
+    "en": "West Bengal",
+    "ta": "மேற்கு வங்காளம்",
+    "aliases": [
+      "kolkata",
+      "bengal"
+    ],
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_bihar",
+    "en": "Bihar",
+    "ta": "பீகார்",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_odisha",
+    "en": "Odisha",
+    "ta": "ஒடிசா",
+    "aliases": [
+      "orissa"
+    ],
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_punjab",
+    "en": "Punjab",
+    "ta": "பஞ்சாப்",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_haryana",
+    "en": "Haryana",
+    "ta": "ஹரியானா",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_delhi",
+    "en": "Delhi",
+    "ta": "டெல்லி",
+    "aliases": [
+      "new delhi",
+      "ncr"
+    ],
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_hp",
+    "en": "Himachal Pradesh",
+    "ta": "இமாசலப் பிரதேசம்",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_uttarakhand",
+    "en": "Uttarakhand",
+    "ta": "உத்தராகண்ட்",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_goa",
+    "en": "Goa",
+    "ta": "கோவா",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_chhattisgarh",
+    "en": "Chhattisgarh",
+    "ta": "சத்தீஸ்கர்",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_jharkhand",
+    "en": "Jharkhand",
+    "ta": "ஜார்க்கண்ட்",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_assam",
+    "en": "Assam",
+    "ta": "அசாம்",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_jk",
+    "en": "Jammu and Kashmir",
+    "ta": "ஜம்மு காஷ்மீர்",
+    "aliases": [
+      "kashmir",
+      "jk"
+    ],
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_ladakh",
+    "en": "Ladakh",
+    "ta": "லடாக்",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_arunachal",
+    "en": "Arunachal Pradesh",
+    "ta": "அருணாசலப் பிரதேசம்",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_manipur",
+    "en": "Manipur",
+    "ta": "மணிப்பூர்",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_meghalaya",
+    "en": "Meghalaya",
+    "ta": "மேகாலயா",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_mizoram",
+    "en": "Mizoram",
+    "ta": "மிசோரம்",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_nagaland",
+    "en": "Nagaland",
+    "ta": "நாகாலாந்து",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_sikkim",
+    "en": "Sikkim",
+    "ta": "சிக்கிம்",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_tripura",
+    "en": "Tripura",
+    "ta": "திரிபுரா",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_andaman",
+    "en": "Andaman and Nicobar Islands",
+    "ta": "அந்தமான் நிக்கோபார் தீவுகள்",
+    "aliases": [
+      "andaman",
+      "nicobar"
+    ],
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_chandigarh",
+    "en": "Chandigarh",
+    "ta": "சண்டிகர்",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_dnh",
+    "en": "Dadra and Nagar Haveli and Daman and Diu",
+    "ta": "தாத்ரா நகர் ஹவேலி மற்றும் தாமன் தியூ",
+    "aliases": [
+      "daman",
+      "diu",
+      "dadra"
+    ],
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_lakshadweep",
+    "en": "Lakshadweep",
+    "ta": "லட்சத்தீவு",
+    "parentId": "ctry_india"
+  },
+  {
+    "id": "st_other",
+    "en": "Other",
+    "ta": "மற்றவை",
+    "parentId": "ctry_india"
+  }
+]

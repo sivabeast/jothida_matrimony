@@ -3,147 +3,15 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 
 /// Decorative illustrations for the role-based [LoginScreen], built as vector
-/// widgets/CustomPainters rather than raster assets — a zodiac-ring couple
-/// emblem, a Taj Mahal skyline silhouette, corner ribbon badges, and circular
-/// couple/family "photo" illustrations with floating hearts. This keeps the
-/// premium look from the reference design without shipping new image assets.
-
-// ── Zodiac couple logo (Welcome screen) ─────────────────────────────────────
-
-class ZodiacCoupleLogo extends StatelessWidget {
-  final double size;
-  const ZodiacCoupleLogo({super.key, this.size = 120});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          CustomPaint(size: Size(size, size), painter: _ZodiacRingPainter()),
-          Container(
-            width: size * 0.64,
-            height: size * 0.64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const RadialGradient(
-                colors: [Color(0xFF8A0F26), Color(0xFF4A0512)],
-              ),
-              border: Border.all(color: AppColors.gold, width: 1.4),
-            ),
-          ),
-          SizedBox(
-            width: size * 0.5,
-            height: size * 0.5,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Align(
-                  alignment: const Alignment(-0.55, -0.05),
-                  child: Icon(Icons.person,
-                      color: AppColors.gold.withOpacity(0.95),
-                      size: size * 0.22),
-                ),
-                Align(
-                  alignment: const Alignment(0.55, -0.05),
-                  child: Icon(Icons.person,
-                      color: AppColors.goldLight.withOpacity(0.95),
-                      size: size * 0.22),
-                ),
-                Align(
-                  alignment: const Alignment(0, 0.5),
-                  child: Icon(Icons.favorite,
-                      color: AppColors.gold, size: size * 0.15),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ZodiacRingPainter extends CustomPainter {
-  static const _symbols = [
-    '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓',
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final r = size.width / 2;
-
-    canvas.drawCircle(
-      center,
-      r - 1.5,
-      Paint()
-        ..color = AppColors.gold
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
-    );
-    canvas.drawCircle(
-      center,
-      r - 9,
-      Paint()
-        ..color = AppColors.gold
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1,
-    );
-
-    for (var i = 0; i < 12; i++) {
-      final angle = i * 30 * math.pi / 180;
-      final dir = Offset(math.cos(angle), math.sin(angle));
-      canvas.drawLine(
-        center + dir * (r - 3),
-        center + dir * (r - 9),
-        Paint()
-          ..color = AppColors.gold
-          ..strokeWidth = 1.2,
-      );
-      final tp = TextPainter(
-        text: TextSpan(
-          text: _symbols[i],
-          style: TextStyle(
-              color: AppColors.gold,
-              fontSize: r * 0.15,
-              fontWeight: FontWeight.w600),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      final gp = center + dir * (r - 19);
-      tp.paint(canvas, gp - Offset(tp.width / 2, tp.height / 2));
-    }
-
-    for (final o in [
-      Offset(-r * 0.72, -r * 0.62),
-      Offset(r * 0.78, -r * 0.5),
-      Offset(-r * 0.8, r * 0.58),
-      Offset(r * 0.7, r * 0.68),
-    ]) {
-      _star(canvas, center + o, r * 0.05, AppColors.goldLight.withOpacity(0.9));
-    }
-  }
-
-  void _star(Canvas canvas, Offset c, double s, Color color) {
-    final path = Path()
-      ..moveTo(c.dx, c.dy - s)
-      ..lineTo(c.dx + s * 0.28, c.dy - s * 0.28)
-      ..lineTo(c.dx + s, c.dy)
-      ..lineTo(c.dx + s * 0.28, c.dy + s * 0.28)
-      ..lineTo(c.dx, c.dy + s)
-      ..lineTo(c.dx - s * 0.28, c.dy + s * 0.28)
-      ..lineTo(c.dx - s, c.dy)
-      ..lineTo(c.dx - s * 0.28, c.dy - s * 0.28)
-      ..close();
-    canvas.drawPath(path, Paint()..color = color);
-  }
-
-  @override
-  bool shouldRepaint(covariant _ZodiacRingPainter oldDelegate) => false;
-}
+/// widgets/CustomPainters rather than raster assets — a Taj Mahal skyline
+/// silhouette, corner ribbon badges, and circular couple/family "photo"
+/// illustrations with floating hearts. This keeps the premium look from the
+/// reference design without shipping new image assets.
+///
+/// Deliberately NOT here: a brand mark. This file used to also carry a
+/// hand-painted `ZodiacCoupleLogo` — a second, slightly different version of
+/// the company logo. The real logo is the one asset behind
+/// `AppLogo`/`AppLauncherLogo` (lib/widgets/common/app_logo.dart); use those.
 
 // ── Taj Mahal skyline silhouette (Welcome screen footer) ────────────────────
 

@@ -2035,9 +2035,6 @@ class AppLocalizationsTa extends AppLocalizations {
   String get doesntMatter => 'பரவாயில்லை';
 
   @override
-  String get horoscopeMatchRequired => 'ஜாதகப் பொருத்தம் தேவை';
-
-  @override
   String get profilePhoto => 'சுயவிவரப் புகைப்படம்';
 
   @override
@@ -3162,4 +3159,118 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get later => 'பின்னர்';
+
+  @override
+  String get anyTapToSelect => 'ஏதேனும் — தேர்ந்தெடுக்க தட்டவும்';
+
+  @override
+  String countSelected(int count) {
+    return '$count தேர்ந்தெடுக்கப்பட்டது';
+  }
+
+  @override
+  String doneCount(int count) {
+    return 'முடிந்தது ($count)';
+  }
+
+  @override
+  String selectUpTo(int count) {
+    return 'அதிகபட்சம் $count தேர்ந்தெடுக்கலாம்';
+  }
+
+  @override
+  String get haveChildren => 'உங்களுக்கு குழந்தைகள் உள்ளனவா?';
+
+  @override
+  String get degreesLabel => 'படிப்பு / பட்டம்';
+
+  @override
+  String get degreesHint => 'ஒன்றுக்கு மேற்பட்ட படிப்புகளைச் சேர்க்கலாம்';
+
+  @override
+  String get profileDisplayQualification =>
+      'சுயவிவரத்தில் காட்ட வேண்டிய படிப்பு';
+
+  @override
+  String get profileDisplayQualificationHelp =>
+      'உங்கள் சுயவிவர அட்டையில் காட்ட அதிகபட்சம் இரண்டு படிப்புகளைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get locationPreference => 'இட விருப்பம்';
+
+  @override
+  String get locationPreferenceHint => 'மாநிலம் → மாவட்டம் → நகரம்';
+
+  @override
+  String get educationPreference => 'கல்வி விருப்பம்';
+
+  @override
+  String get educationPreferenceHint =>
+      'தேவையான அளவு படிப்புகளைத் தேடித் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get professionPreference => 'தொழில் விருப்பம்';
+
+  @override
+  String get professionPreferenceHint =>
+      'தேவையான அளவு தொழில்களைத் தேடித் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get salaryPreference => 'ஊதிய விருப்பம்';
+
+  @override
+  String get minimumAnnualIncome => 'குறைந்தபட்ச ஆண்டு வருமானம்';
+
+  @override
+  String get maritalStatusPreference => 'திருமண நிலை விருப்பம்';
+
+  @override
+  String get horoscopePreferences => 'ஜாதக விருப்பங்கள்';
+
+  @override
+  String get languagePreference => 'மொழி விருப்பம்';
+
+  @override
+  String get religionPreference => 'மதம் / சமூக விருப்பம்';
+
+  @override
+  String get savePreferences => 'விருப்பங்களைச் சேமி';
+
+  @override
+  String get preferencesSaved => 'விருப்பங்கள் சேமிக்கப்பட்டன';
+
+  @override
+  String get preferencesResetDone =>
+      'விருப்பங்கள் இயல்பு நிலைக்கு மீட்டமைக்கப்பட்டன';
+
+  @override
+  String get couldNotSavePreferences =>
+      'விருப்பங்களைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get createProfileFirstToSave =>
+      'விருப்பங்களைச் சேமிக்க முதலில் உங்கள் சுயவிவரத்தை உருவாக்கவும்.';
+
+  @override
+  String get contactSharingQuestion => 'உங்கள் தொடர்பு தகவலை யார் பார்க்கலாம்?';
+
+  @override
+  String get contactPrivateTitle => 'தனிப்பட்டது';
+
+  @override
+  String get contactPrivateDesc =>
+      'விருப்ப கோரிக்கையை ஏற்ற பிறகே தொடர்பு பகிரப்படும்.';
+
+  @override
+  String get contactPublicTitle => 'பொது';
+
+  @override
+  String get contactPublicDesc =>
+      'உங்கள் சுயவிவரத்தைப் பார்க்கும் எவரும் தொடர்பைப் பார்க்கலாம்.';
+
+  @override
+  String get minSixCharacters => 'குறைந்தது 6 எழுத்துகள்';
+
+  @override
+  String get reEnterPassword => 'கடவுச்சொல்லை மீண்டும் உள்ளிடவும்';
 }

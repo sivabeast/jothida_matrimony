@@ -3,3787 +3,4119 @@
     "id": "sub_hindu_adi_dravidar_adi_dravida",
     "casteId": "cas_hindu_adi_dravidar",
     "name": "Adi Dravida",
-    "nameTamil": "அதி ட்ரவித",
-    "nameTamilAuto": true
+    "nameTamil": "ஆதி திராவிடா",
+    "aliases": [
+      "adidravida"
+    ]
   },
   {
     "id": "sub_hindu_adi_dravidar_paraiyar",
     "casteId": "cas_hindu_adi_dravidar",
     "name": "Paraiyar",
-    "nameTamil": "பரையர்",
-    "nameTamilAuto": true
+    "nameTamil": "பறையர்"
   },
   {
     "id": "sub_hindu_adi_dravidar_sambavar",
     "casteId": "cas_hindu_adi_dravidar",
     "name": "Sambavar",
-    "nameTamil": "சம்பவர்",
-    "nameTamilAuto": true
+    "nameTamil": "சாம்பவர்"
   },
   {
     "id": "sub_hindu_adi_dravidar_valluvan",
     "casteId": "cas_hindu_adi_dravidar",
     "name": "Valluvan",
-    "nameTamil": "வல்லுவன்",
-    "nameTamilAuto": true
+    "nameTamil": "வள்ளுவன்"
   },
   {
     "id": "sub_hindu_adi_dravidar_pallan",
     "casteId": "cas_hindu_adi_dravidar",
     "name": "Pallan",
-    "nameTamil": "பல்லன்",
-    "nameTamilAuto": true
+    "nameTamil": "பள்ளன்"
   },
   {
     "id": "sub_hindu_agamudayar_agamudayar",
     "casteId": "cas_hindu_agamudayar",
     "name": "Agamudayar",
-    "nameTamil": "அகமுதயர்",
-    "nameTamilAuto": true
+    "nameTamil": "அகமுடையார்"
   },
   {
     "id": "sub_hindu_agamudayar_arcot",
     "casteId": "cas_hindu_agamudayar",
     "name": "Arcot",
-    "nameTamil": "அர்கோட்",
-    "nameTamilAuto": true
+    "nameTamil": "ஆற்காடு"
   },
   {
     "id": "sub_hindu_agamudayar_thuluva_vellala",
     "casteId": "cas_hindu_agamudayar",
     "name": "Thuluva Vellala",
-    "nameTamil": "துலுவ வெல்லல",
-    "nameTamilAuto": true
+    "nameTamil": "துளுவ வேளாள",
+    "aliases": [
+      "thuluvavellala",
+      "tuluva vellala"
+    ]
   },
   {
     "id": "sub_hindu_agamudayar_rajakula_agamudayar",
     "casteId": "cas_hindu_agamudayar",
     "name": "Rajakula Agamudayar",
-    "nameTamil": "ராஜகுல அகமுதயர்",
-    "nameTamilAuto": true
+    "nameTamil": "ராஜகுல அகமுடையார்",
+    "aliases": [
+      "rajakulaagamudayar"
+    ]
   },
   {
     "id": "sub_hindu_agamudayar_servai",
     "casteId": "cas_hindu_agamudayar",
     "name": "Servai",
-    "nameTamil": "சேர்வை",
-    "nameTamilAuto": true
+    "nameTamil": "சேர்வை"
   },
   {
     "id": "sub_hindu_agamudayar_maniyakaarar",
     "casteId": "cas_hindu_agamudayar",
     "name": "Maniyakaarar",
-    "nameTamil": "மனியகாரர்",
-    "nameTamilAuto": true
+    "nameTamil": "மணியக்காரர்"
   },
   {
     "id": "sub_hindu_agamudayar_agamudaya_mudaliar",
     "casteId": "cas_hindu_agamudayar",
     "name": "Agamudaya Mudaliar",
-    "nameTamil": "அகமுதய முதலிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "அகமுடைய முதலியார்",
+    "aliases": [
+      "agamudayamudaliar"
+    ]
   },
   {
     "id": "sub_hindu_ambalakarar_ambalakarar",
     "casteId": "cas_hindu_ambalakarar",
     "name": "Ambalakarar",
-    "nameTamil": "அம்பலகரர்",
-    "nameTamilAuto": true
+    "nameTamil": "அம்பலக்காரர்"
   },
   {
     "id": "sub_hindu_ambalakarar_ambalakaran",
     "casteId": "cas_hindu_ambalakarar",
     "name": "Ambalakaran",
-    "nameTamil": "அம்பலகரன்",
-    "nameTamilAuto": true
+    "nameTamil": "அம்பலக்காரன்"
   },
   {
     "id": "sub_hindu_ambalakarar_servai",
     "casteId": "cas_hindu_ambalakarar",
     "name": "Servai",
-    "nameTamil": "சேர்வை",
-    "nameTamilAuto": true
+    "nameTamil": "சேர்வை"
   },
   {
     "id": "sub_hindu_arunthathiyar_arunthathiyar",
     "casteId": "cas_hindu_arunthathiyar",
     "name": "Arunthathiyar",
-    "nameTamil": "அருன்ததியர்",
-    "nameTamilAuto": true
+    "nameTamil": "அருந்ததியர்",
+    "aliases": [
+      "aruntatiyar"
+    ]
   },
   {
     "id": "sub_hindu_arunthathiyar_chakkiliyan",
     "casteId": "cas_hindu_arunthathiyar",
     "name": "Chakkiliyan",
-    "nameTamil": "சக்கிலியன்",
-    "nameTamilAuto": true
+    "nameTamil": "சக்கிலியன்"
   },
   {
     "id": "sub_hindu_arunthathiyar_madari",
     "casteId": "cas_hindu_arunthathiyar",
     "name": "Madari",
-    "nameTamil": "மதரி",
-    "nameTamilAuto": true
+    "nameTamil": "மாதாரி"
   },
   {
     "id": "sub_hindu_arunthathiyar_madiga",
     "casteId": "cas_hindu_arunthathiyar",
     "name": "Madiga",
-    "nameTamil": "மதிக",
-    "nameTamilAuto": true
+    "nameTamil": "மாதிக"
   },
   {
     "id": "sub_hindu_arunthathiyar_pagadai",
     "casteId": "cas_hindu_arunthathiyar",
     "name": "Pagadai",
-    "nameTamil": "பகதை",
-    "nameTamilAuto": true
+    "nameTamil": "பகடை"
   },
   {
     "id": "sub_hindu_arunthathiyar_thoti",
     "casteId": "cas_hindu_arunthathiyar",
     "name": "Thoti",
-    "nameTamil": "தோடி",
-    "nameTamilAuto": true
+    "nameTamil": "தோட்டி",
+    "aliases": [
+      "toti"
+    ]
   },
   {
     "id": "sub_hindu_arunthathiyar_adi_andhra",
     "casteId": "cas_hindu_arunthathiyar",
     "name": "Adi Andhra",
-    "nameTamil": "அதி அன்த்ர",
-    "nameTamilAuto": true
+    "nameTamil": "ஆதி ஆந்திர",
+    "aliases": [
+      "adi andra",
+      "adiandhra"
+    ]
   },
   {
     "id": "sub_hindu_arya_vysya_komati",
     "casteId": "cas_hindu_arya_vysya",
     "name": "Komati",
-    "nameTamil": "கோமடி",
-    "nameTamilAuto": true
+    "nameTamil": "கோமட்டி"
   },
   {
     "id": "sub_hindu_arya_vysya_vaisya",
     "casteId": "cas_hindu_arya_vysya",
     "name": "Vaisya",
-    "nameTamil": "வைச்ய",
-    "nameTamilAuto": true
+    "nameTamil": "வைசிய"
   },
   {
     "id": "sub_hindu_arya_vysya_aryavysya",
     "casteId": "cas_hindu_arya_vysya",
     "name": "Aryavysya",
-    "nameTamil": "அர்யவ்ய்ச்ய",
-    "nameTamilAuto": true
+    "nameTamil": "ஆரிய வைசிய"
   },
   {
     "id": "sub_hindu_arya_vysya_vysya",
     "casteId": "cas_hindu_arya_vysya",
     "name": "Vysya",
-    "nameTamil": "வ்ய்ச்ய",
-    "nameTamilAuto": true
+    "nameTamil": "வைசிய"
   },
   {
     "id": "sub_hindu_arya_vysya_gavara_komati",
     "casteId": "cas_hindu_arya_vysya",
     "name": "Gavara Komati",
-    "nameTamil": "கவர கோமடி",
-    "nameTamilAuto": true
+    "nameTamil": "கவர கோமட்டி",
+    "aliases": [
+      "gavarakomati"
+    ]
   },
   {
     "id": "sub_hindu_badaga_badaga",
     "casteId": "cas_hindu_badaga",
     "name": "Badaga",
-    "nameTamil": "பதக",
-    "nameTamilAuto": true
+    "nameTamil": "படக"
   },
   {
     "id": "sub_hindu_badaga_lingayat_badaga",
     "casteId": "cas_hindu_badaga",
     "name": "Lingayat Badaga",
-    "nameTamil": "லிங்கயட் பதக",
-    "nameTamilAuto": true
+    "nameTamil": "லிங்காயத் படக",
+    "aliases": [
+      "lingayatbadaga"
+    ]
   },
   {
     "id": "sub_hindu_badaga_wodeya",
     "casteId": "cas_hindu_badaga",
     "name": "Wodeya",
-    "nameTamil": "வோதேய",
-    "nameTamilAuto": true
+    "nameTamil": "வொடேய"
   },
   {
     "id": "sub_hindu_balija_naidu_balija",
     "casteId": "cas_hindu_balija_naidu",
     "name": "Balija",
-    "nameTamil": "பலிஜ",
-    "nameTamilAuto": true
+    "nameTamil": "பலிஜ"
   },
   {
     "id": "sub_hindu_balija_naidu_balija_naidu",
     "casteId": "cas_hindu_balija_naidu",
     "name": "Balija Naidu",
-    "nameTamil": "பலிஜ நைது",
-    "nameTamilAuto": true
+    "nameTamil": "பலிஜ நாயுடு",
+    "aliases": [
+      "balijanaidu"
+    ]
   },
   {
     "id": "sub_hindu_balija_naidu_gajula_balija",
     "casteId": "cas_hindu_balija_naidu",
     "name": "Gajula Balija",
     "nameTamil": "கஜுல பலிஜ",
-    "nameTamilAuto": true
+    "aliases": [
+      "gajulabalija"
+    ]
   },
   {
     "id": "sub_hindu_balija_naidu_vada_balija",
     "casteId": "cas_hindu_balija_naidu",
     "name": "Vada Balija",
     "nameTamil": "வட பலிஜ",
-    "nameTamilAuto": true
+    "aliases": [
+      "vadabalija"
+    ]
   },
   {
     "id": "sub_hindu_balija_naidu_setti_balija",
     "casteId": "cas_hindu_balija_naidu",
     "name": "Setti Balija",
     "nameTamil": "செட்டி பலிஜ",
-    "nameTamilAuto": true
+    "aliases": [
+      "settibalija"
+    ]
   },
   {
     "id": "sub_hindu_balija_naidu_kavarai",
     "casteId": "cas_hindu_balija_naidu",
     "name": "Kavarai",
-    "nameTamil": "கவரை",
-    "nameTamilAuto": true
+    "nameTamil": "கவரை"
   },
   {
     "id": "sub_hindu_bestha_bestha",
     "casteId": "cas_hindu_bestha",
     "name": "Bestha",
-    "nameTamil": "பேச்த",
-    "nameTamilAuto": true
+    "nameTamil": "பெஸ்த",
+    "aliases": [
+      "besta"
+    ]
   },
   {
     "id": "sub_hindu_bestha_besta",
     "casteId": "cas_hindu_bestha",
     "name": "Besta",
-    "nameTamil": "பேச்ட",
-    "nameTamilAuto": true
+    "nameTamil": "பெஸ்த"
   },
   {
     "id": "sub_hindu_bestha_siviar",
     "casteId": "cas_hindu_bestha",
     "name": "Siviar",
-    "nameTamil": "சிவிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "சிவியார்"
   },
   {
     "id": "sub_hindu_bestha_gangaputra",
     "casteId": "cas_hindu_bestha",
     "name": "Gangaputra",
-    "nameTamil": "கங்கபுட்ர",
-    "nameTamilAuto": true
+    "nameTamil": "கங்காபுத்ர"
   },
   {
     "id": "sub_hindu_bestha_boya_bestha",
     "casteId": "cas_hindu_bestha",
     "name": "Boya Bestha",
-    "nameTamil": "போய பேச்த",
-    "nameTamilAuto": true
+    "nameTamil": "பொய பெஸ்த",
+    "aliases": [
+      "boya besta",
+      "boyabestha"
+    ]
   },
   {
     "id": "sub_hindu_bhandari_bhandari",
     "casteId": "cas_hindu_bhandari",
     "name": "Bhandari",
-    "nameTamil": "பன்டரி",
-    "nameTamilAuto": true
+    "nameTamil": "பண்டாரி"
   },
   {
     "id": "sub_hindu_bhandari_bandari",
     "casteId": "cas_hindu_bhandari",
     "name": "Bandari",
-    "nameTamil": "பன்டரி",
-    "nameTamilAuto": true
+    "nameTamil": "பண்டாரி"
   },
   {
     "id": "sub_hindu_bhandari_nayee_brahmin",
     "casteId": "cas_hindu_bhandari",
     "name": "Nayee Brahmin",
-    "nameTamil": "நயீ ப்ரஹ்மின்",
-    "nameTamilAuto": true
+    "nameTamil": "நாயீ பிராமணர்",
+    "aliases": [
+      "nayeebrahmin",
+      "nayi brahmin"
+    ]
   },
   {
     "id": "sub_hindu_bhandari_pronopokari",
     "casteId": "cas_hindu_bhandari",
     "name": "Pronopokari",
-    "nameTamil": "ப்ரோனோபோகரி",
-    "nameTamilAuto": true
+    "nameTamil": "பிரணோபகாரி"
   },
   {
     "id": "sub_hindu_boyar_boyar",
     "casteId": "cas_hindu_boyar",
     "name": "Boyar",
-    "nameTamil": "போயர்",
-    "nameTamilAuto": true
+    "nameTamil": "பொயர்"
   },
   {
     "id": "sub_hindu_boyar_boyer",
     "casteId": "cas_hindu_boyar",
     "name": "Boyer",
-    "nameTamil": "போயேர்",
-    "nameTamilAuto": true
+    "nameTamil": "பொயர்"
   },
   {
     "id": "sub_hindu_boyar_boya",
     "casteId": "cas_hindu_boyar",
     "name": "Boya",
-    "nameTamil": "போய",
-    "nameTamilAuto": true
+    "nameTamil": "பொய"
   },
   {
     "id": "sub_hindu_boyar_oddar",
     "casteId": "cas_hindu_boyar",
     "name": "Oddar",
-    "nameTamil": "ஓட்டர்",
-    "nameTamilAuto": true
+    "nameTamil": "ஒட்டர்"
   },
   {
     "id": "sub_hindu_boyar_naika",
     "casteId": "cas_hindu_boyar",
     "name": "Naika",
-    "nameTamil": "நைக",
-    "nameTamilAuto": true
+    "nameTamil": "நாயக்கா"
   },
   {
     "id": "sub_hindu_brahmin_iyer",
     "casteId": "cas_hindu_brahmin",
     "name": "Iyer",
-    "nameTamil": "இயேர்",
-    "nameTamilAuto": true
+    "nameTamil": "ஐயர்"
   },
   {
     "id": "sub_hindu_brahmin_iyengar",
     "casteId": "cas_hindu_brahmin",
     "name": "Iyengar",
-    "nameTamil": "இயேங்கர்",
-    "nameTamilAuto": true
+    "nameTamil": "ஐயங்கார்"
   },
   {
     "id": "sub_hindu_brahmin_vadakalai",
     "casteId": "cas_hindu_brahmin",
     "name": "Vadakalai",
-    "nameTamil": "வடகலை",
-    "nameTamilAuto": true
+    "nameTamil": "வடகலை"
   },
   {
     "id": "sub_hindu_brahmin_thenkalai",
     "casteId": "cas_hindu_brahmin",
     "name": "Thenkalai",
-    "nameTamil": "தேன்கலை",
-    "nameTamilAuto": true
+    "nameTamil": "தென்கலை",
+    "aliases": [
+      "tenkalai"
+    ]
   },
   {
     "id": "sub_hindu_brahmin_gurukkal",
     "casteId": "cas_hindu_brahmin",
     "name": "Gurukkal",
-    "nameTamil": "குருக்கல்",
-    "nameTamilAuto": true
+    "nameTamil": "குருக்கள்"
   },
   {
     "id": "sub_hindu_brahmin_smartha",
     "casteId": "cas_hindu_brahmin",
     "name": "Smartha",
-    "nameTamil": "ச்மர்த",
-    "nameTamilAuto": true
+    "nameTamil": "ஸ்மார்த்த",
+    "aliases": [
+      "smarta"
+    ]
   },
   {
     "id": "sub_hindu_brahmin_madhwa",
     "casteId": "cas_hindu_brahmin",
     "name": "Madhwa",
-    "nameTamil": "மத்வ",
-    "nameTamilAuto": true
+    "nameTamil": "மாத்வ",
+    "aliases": [
+      "madwa"
+    ]
   },
   {
     "id": "sub_hindu_brahmin_vadama",
     "casteId": "cas_hindu_brahmin",
     "name": "Vadama",
-    "nameTamil": "வடம",
-    "nameTamilAuto": true
+    "nameTamil": "வடமா"
   },
   {
     "id": "sub_hindu_brahmin_brahacharanam",
     "casteId": "cas_hindu_brahmin",
     "name": "Brahacharanam",
-    "nameTamil": "ப்ரஹசரனம்",
-    "nameTamilAuto": true
+    "nameTamil": "பிரகச்சரணம்"
   },
   {
     "id": "sub_hindu_brahmin_vathima",
     "casteId": "cas_hindu_brahmin",
     "name": "Vathima",
-    "nameTamil": "வதிம",
-    "nameTamilAuto": true
+    "nameTamil": "வாத்திமா",
+    "aliases": [
+      "vatima"
+    ]
   },
   {
     "id": "sub_hindu_brahmin_ashtasahasram",
     "casteId": "cas_hindu_brahmin",
     "name": "Ashtasahasram",
-    "nameTamil": "அஷ்டசஹச்ரம்",
-    "nameTamilAuto": true
+    "nameTamil": "அஷ்டசகஸ்ரம்"
   },
   {
     "id": "sub_hindu_brahmin_mukkani",
     "casteId": "cas_hindu_brahmin",
     "name": "Mukkani",
-    "nameTamil": "முக்கனி",
-    "nameTamilAuto": true
+    "nameTamil": "முக்காணி"
   },
   {
     "id": "sub_hindu_brahmin_sri_vaishnava",
     "casteId": "cas_hindu_brahmin",
     "name": "Sri Vaishnava",
-    "nameTamil": "ஸ்ரீ வைஷ்னவ",
-    "nameTamilAuto": true
+    "nameTamil": "ஸ்ரீ வைஷ்ணவ",
+    "aliases": [
+      "srivaishnava"
+    ]
   },
   {
     "id": "sub_hindu_brahmin_sankethi",
     "casteId": "cas_hindu_brahmin",
     "name": "Sankethi",
-    "nameTamil": "சன்கேதி",
-    "nameTamilAuto": true
+    "nameTamil": "சங்கேதி",
+    "aliases": [
+      "sanketi"
+    ]
   },
   {
     "id": "sub_hindu_brahmin_saiva_brahmin",
     "casteId": "cas_hindu_brahmin",
     "name": "Saiva Brahmin",
-    "nameTamil": "சைவ ப்ரஹ்மின்",
-    "nameTamilAuto": true
+    "nameTamil": "சைவ பிராமணர்",
+    "aliases": [
+      "saivabrahmin"
+    ]
   },
   {
     "id": "sub_hindu_brahmin_dravida",
     "casteId": "cas_hindu_brahmin",
     "name": "Dravida",
-    "nameTamil": "ட்ரவித",
-    "nameTamilAuto": true
+    "nameTamil": "திராவிடா"
   },
   {
     "id": "sub_hindu_brahmin_deshastha",
     "casteId": "cas_hindu_brahmin",
     "name": "Deshastha",
-    "nameTamil": "டேஷச்த",
-    "nameTamilAuto": true
+    "nameTamil": "தேசஸ்த",
+    "aliases": [
+      "deshasta"
+    ]
   },
   {
     "id": "sub_hindu_brahmin_kannada_brahmin",
     "casteId": "cas_hindu_brahmin",
     "name": "Kannada Brahmin",
-    "nameTamil": "கன்னத ப்ரஹ்மின்",
-    "nameTamilAuto": true
+    "nameTamil": "கன்னட பிராமணர்",
+    "aliases": [
+      "kannadabrahmin"
+    ]
   },
   {
     "id": "sub_hindu_brahmin_telugu_brahmin",
     "casteId": "cas_hindu_brahmin",
     "name": "Telugu Brahmin",
-    "nameTamil": "தேலுகு ப்ரஹ்மின்",
-    "nameTamilAuto": true
+    "nameTamil": "தெலுங்கு பிராமணர்",
+    "aliases": [
+      "telugubrahmin"
+    ]
   },
   {
     "id": "sub_hindu_brahmin_niyogi",
     "casteId": "cas_hindu_brahmin",
     "name": "Niyogi",
-    "nameTamil": "நியோகி",
-    "nameTamilAuto": true
+    "nameTamil": "நியோகி"
   },
   {
     "id": "sub_hindu_brahmin_vaidiki",
     "casteId": "cas_hindu_brahmin",
     "name": "Vaidiki",
-    "nameTamil": "வைதிகி",
-    "nameTamilAuto": true
+    "nameTamil": "வைதிகி"
   },
   {
     "id": "sub_hindu_brahmin_marathi_brahmin",
     "casteId": "cas_hindu_brahmin",
     "name": "Marathi Brahmin",
-    "nameTamil": "மரதி ப்ரஹ்மின்",
-    "nameTamilAuto": true
+    "nameTamil": "மராத்தி பிராமணர்",
+    "aliases": [
+      "marathibrahmin",
+      "marati brahmin"
+    ]
   },
   {
     "id": "sub_hindu_brahmin_gujarati_brahmin",
     "casteId": "cas_hindu_brahmin",
     "name": "Gujarati Brahmin",
-    "nameTamil": "குஜரடி ப்ரஹ்மின்",
-    "nameTamilAuto": true
+    "nameTamil": "குஜராத்தி பிராமணர்",
+    "aliases": [
+      "gujaratibrahmin"
+    ]
   },
   {
     "id": "sub_hindu_brahmin_saraswat",
     "casteId": "cas_hindu_brahmin",
     "name": "Saraswat",
-    "nameTamil": "சரச்வட்",
-    "nameTamilAuto": true
+    "nameTamil": "சரஸ்வத்"
   },
   {
     "id": "sub_hindu_brahmin_tuluva",
     "casteId": "cas_hindu_brahmin",
     "name": "Tuluva",
-    "nameTamil": "துலுவ",
-    "nameTamilAuto": true
+    "nameTamil": "துளுவ"
   },
   {
     "id": "sub_hindu_brahmin_havyaka",
     "casteId": "cas_hindu_brahmin",
     "name": "Havyaka",
-    "nameTamil": "ஹவ்யக",
-    "nameTamilAuto": true
+    "nameTamil": "ஹவ்யக"
   },
   {
     "id": "sub_hindu_brahmin_embranthiri",
     "casteId": "cas_hindu_brahmin",
     "name": "Embranthiri",
-    "nameTamil": "ஏம்ப்ரன்திரி",
-    "nameTamilAuto": true
+    "nameTamil": "எம்பிராந்திரி",
+    "aliases": [
+      "embrantiri"
+    ]
   },
   {
     "id": "sub_hindu_brahmin_nambudiri",
     "casteId": "cas_hindu_brahmin",
     "name": "Nambudiri",
-    "nameTamil": "நம்புதிரி",
-    "nameTamilAuto": true
+    "nameTamil": "நம்பூதிரி"
   },
   {
     "id": "sub_hindu_brahmin_kongu_brahmin",
     "casteId": "cas_hindu_brahmin",
     "name": "Kongu Brahmin",
-    "nameTamil": "கோங்கு ப்ரஹ்மின்",
-    "nameTamilAuto": true
+    "nameTamil": "கொங்கு பிராமணர்",
+    "aliases": [
+      "kongubrahmin"
+    ]
   },
   {
     "id": "sub_hindu_brahmin_goswami",
     "casteId": "cas_hindu_brahmin",
     "name": "Goswami",
-    "nameTamil": "கோச்வமி",
-    "nameTamilAuto": true
+    "nameTamil": "கோஸ்வாமி"
   },
   {
     "id": "sub_hindu_brahmin_anavil",
     "casteId": "cas_hindu_brahmin",
     "name": "Anavil",
-    "nameTamil": "அனவில்",
-    "nameTamilAuto": true
+    "nameTamil": "அனாவில்"
   },
   {
     "id": "sub_hindu_chettiar_nagarathar",
     "casteId": "cas_hindu_chettiar",
     "name": "Nagarathar",
-    "nameTamil": "நகரதர்",
-    "nameTamilAuto": true
+    "nameTamil": "நகரத்தார்",
+    "aliases": [
+      "nagaratar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_nattukottai_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "Nattukottai Chettiar",
-    "nameTamil": "நட்டுகோட்டை செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "நாட்டுக்கோட்டை செட்டியார்",
+    "aliases": [
+      "nattukottaichettiar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_vaniya_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "Vaniya Chettiar",
-    "nameTamil": "வனிய செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "வாணிய செட்டியார்",
+    "aliases": [
+      "vaniyachettiar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_devanga_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "Devanga Chettiar",
-    "nameTamil": "டேவங்க செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "தேவாங்க செட்டியார்",
+    "aliases": [
+      "devangachettiar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_sozhia_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "Sozhia Chettiar",
-    "nameTamil": "சோழிஅ செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "சோழிய செட்டியார்",
+    "aliases": [
+      "sozhiachettiar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_vellan_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "Vellan Chettiar",
-    "nameTamil": "வெல்லன் செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "வெள்ளான் செட்டியார்",
+    "aliases": [
+      "vellanchettiar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_acharapakkam_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "Acharapakkam Chettiar",
-    "nameTamil": "அசரபாக்கம் செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "ஆச்சாரப்பாக்கம் செட்டியார்",
+    "aliases": [
+      "acharapakkamchettiar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_beri_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "Beri Chettiar",
-    "nameTamil": "ப்ஏரி செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "பேரி செட்டியார்",
+    "aliases": [
+      "berichettiar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_elur_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "Elur Chettiar",
-    "nameTamil": "ஏலூர் செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "ஏலூர் செட்டியார்",
+    "aliases": [
+      "elurchettiar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_kasukara_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "Kasukara Chettiar",
-    "nameTamil": "கசுகர செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "காசுக்கார செட்டியார்",
+    "aliases": [
+      "kasukarachettiar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_manjaputhur_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "Manjaputhur Chettiar",
-    "nameTamil": "மஞ்சபுதூர் செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "மஞ்சபுத்தூர் செட்டியார்",
+    "aliases": [
+      "manjaputhurchettiar",
+      "manjaputur chettiar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_pattinavar_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "Pattinavar Chettiar",
-    "nameTamil": "பட்டினவர் செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "பட்டினவர் செட்டியார்",
+    "aliases": [
+      "pattinavarchettiar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_pannirandam_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "Pannirandam Chettiar",
-    "nameTamil": "பன்னிரன்டம் செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "பன்னிரண்டாம் செட்டியார்",
+    "aliases": [
+      "pannirandamchettiar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_pudukkadai_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "Pudukkadai Chettiar",
-    "nameTamil": "புதுக்கதை செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "புதுக்கடை செட்டியார்",
+    "aliases": [
+      "pudukkadaichettiar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_saiva_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "Saiva Chettiar",
-    "nameTamil": "சைவ செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "சைவ செட்டியார்",
+    "aliases": [
+      "saivachettiar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_telugu_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "Telugu Chettiar",
-    "nameTamil": "தேலுகு செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "தெலுங்கு செட்டியார்",
+    "aliases": [
+      "teluguchettiar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_kongu_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "Kongu Chettiar",
-    "nameTamil": "கோங்கு செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "கொங்கு செட்டியார்",
+    "aliases": [
+      "konguchettiar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_parvatha_rajakulam",
     "casteId": "cas_hindu_chettiar",
     "name": "Parvatha Rajakulam",
-    "nameTamil": "பர்வத ராஜகுளம்",
-    "nameTamilAuto": true
+    "nameTamil": "பர்வத ராஜகுலம்",
+    "aliases": [
+      "parvata rajakulam",
+      "parvatharajakulam"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_ayira_vaisya",
     "casteId": "cas_hindu_chettiar",
     "name": "Ayira Vaisya",
-    "nameTamil": "அயிர வைச்ய",
-    "nameTamilAuto": true
+    "nameTamil": "ஆயிர வைசிய",
+    "aliases": [
+      "ayiravaisya"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_gandla",
     "casteId": "cas_hindu_chettiar",
     "name": "Gandla",
-    "nameTamil": "கன்ட்ல",
-    "nameTamilAuto": true
+    "nameTamil": "கந்தல"
   },
   {
     "id": "sub_hindu_chettiar_24_manai_telugu_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "24 Manai Telugu Chettiar",
-    "nameTamil": "மனை தேலுகு செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "24 மனை தெலுங்கு செட்டியார்",
+    "aliases": [
+      "24manaiteluguchettiar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_karpoora_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "Karpoora Chettiar",
-    "nameTamil": "கர்பூர செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "கற்பூர செட்டியார்",
+    "aliases": [
+      "karpoorachettiar",
+      "karpura chettiar"
+    ]
   },
   {
     "id": "sub_hindu_chettiar_senaikudaiyar",
     "casteId": "cas_hindu_chettiar",
     "name": "Senaikudaiyar",
-    "nameTamil": "சேனைகுதையர்",
-    "nameTamilAuto": true
+    "nameTamil": "சேனைக்குடையார்"
   },
   {
     "id": "sub_hindu_chettiar_kasukkara_chettiar",
     "casteId": "cas_hindu_chettiar",
     "name": "Kasukkara Chettiar",
-    "nameTamil": "கசுக்கர செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "காசுக்கார செட்டியார்",
+    "aliases": [
+      "kasukkarachettiar"
+    ]
   },
   {
     "id": "sub_hindu_devandra_kula_vellalar_pallar",
     "casteId": "cas_hindu_devandra_kula_vellalar",
     "name": "Pallar",
-    "nameTamil": "பல்லர்",
-    "nameTamilAuto": true
+    "nameTamil": "பள்ளர்"
   },
   {
     "id": "sub_hindu_devandra_kula_vellalar_devendrakulathan",
     "casteId": "cas_hindu_devandra_kula_vellalar",
     "name": "Devendrakulathan",
-    "nameTamil": "டேவேன்ட்ரகுலதன்",
-    "nameTamilAuto": true
+    "nameTamil": "தேவேந்திரகுலத்தான்",
+    "aliases": [
+      "devendrakulatan"
+    ]
   },
   {
     "id": "sub_hindu_devandra_kula_vellalar_kudumban",
     "casteId": "cas_hindu_devandra_kula_vellalar",
     "name": "Kudumban",
-    "nameTamil": "குதும்பன்",
-    "nameTamilAuto": true
+    "nameTamil": "குடும்பன்"
   },
   {
     "id": "sub_hindu_devandra_kula_vellalar_kadaiyan",
     "casteId": "cas_hindu_devandra_kula_vellalar",
     "name": "Kadaiyan",
-    "nameTamil": "கதையன்",
-    "nameTamilAuto": true
+    "nameTamil": "கடையன்"
   },
   {
     "id": "sub_hindu_devandra_kula_vellalar_kaladi",
     "casteId": "cas_hindu_devandra_kula_vellalar",
     "name": "Kaladi",
-    "nameTamil": "கலதி",
-    "nameTamilAuto": true
+    "nameTamil": "களடி"
   },
   {
     "id": "sub_hindu_devandra_kula_vellalar_pannadi",
     "casteId": "cas_hindu_devandra_kula_vellalar",
     "name": "Pannadi",
-    "nameTamil": "பன்னதி",
-    "nameTamilAuto": true
+    "nameTamil": "பன்னாடி"
   },
   {
     "id": "sub_hindu_devandra_kula_vellalar_vathiriyan",
     "casteId": "cas_hindu_devandra_kula_vellalar",
     "name": "Vathiriyan",
-    "nameTamil": "வதிரியன்",
-    "nameTamilAuto": true
+    "nameTamil": "வாத்திரியன்",
+    "aliases": [
+      "vatiriyan"
+    ]
   },
   {
     "id": "sub_hindu_devandra_kula_vellalar_devendra_kula_vellalan",
     "casteId": "cas_hindu_devandra_kula_vellalar",
     "name": "Devendra Kula Vellalan",
-    "nameTamil": "டேவேன்ட்ர குல வெல்லலன்",
-    "nameTamilAuto": true
+    "nameTamil": "தேவேந்திர குல வேளாளன்",
+    "aliases": [
+      "devendrakulavellalan"
+    ]
   },
   {
     "id": "sub_hindu_devanga_devanga",
     "casteId": "cas_hindu_devanga",
     "name": "Devanga",
-    "nameTamil": "டேவங்க",
-    "nameTamilAuto": true
+    "nameTamil": "தேவாங்க"
   },
   {
     "id": "sub_hindu_devanga_devanga_chettiar",
     "casteId": "cas_hindu_devanga",
     "name": "Devanga Chettiar",
-    "nameTamil": "டேவங்க செட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "தேவாங்க செட்டியார்",
+    "aliases": [
+      "devangachettiar"
+    ]
   },
   {
     "id": "sub_hindu_devanga_sedar",
     "casteId": "cas_hindu_devanga",
     "name": "Sedar",
-    "nameTamil": "சேதர்",
-    "nameTamilAuto": true
+    "nameTamil": "சேடர்"
   },
   {
     "id": "sub_hindu_devanga_settukkarar",
     "casteId": "cas_hindu_devanga",
     "name": "Settukkarar",
-    "nameTamil": "செட்டுக்கரர்",
-    "nameTamilAuto": true
+    "nameTamil": "செட்டுக்காரர்"
   },
   {
     "id": "sub_hindu_devanga_dhevanga",
     "casteId": "cas_hindu_devanga",
     "name": "Dhevanga",
-    "nameTamil": "தேவங்க",
-    "nameTamilAuto": true
+    "nameTamil": "தேவாங்க",
+    "aliases": [
+      "devanga"
+    ]
   },
   {
     "id": "sub_hindu_gounder_kongu_vellala_gounder",
     "casteId": "cas_hindu_gounder",
     "name": "Kongu Vellala Gounder",
-    "nameTamil": "கோங்கு வெல்லல கௌன்டேர்",
-    "nameTamilAuto": true
+    "nameTamil": "கொங்கு வேளாள கவுண்டர்",
+    "aliases": [
+      "konguvellalagounder"
+    ]
   },
   {
     "id": "sub_hindu_gounder_vanniya_kula_kshatriya_gounder",
     "casteId": "cas_hindu_gounder",
     "name": "Vanniya Kula Kshatriya Gounder",
-    "nameTamil": "வன்னிய குல க்ஷட்ரிய கௌன்டேர்",
-    "nameTamilAuto": true
+    "nameTamil": "வன்னிய குல க்ஷத்திரிய கவுண்டர்",
+    "aliases": [
+      "vanniyakulakshatriyagounder"
+    ]
   },
   {
     "id": "sub_hindu_gounder_vettuva_gounder",
     "casteId": "cas_hindu_gounder",
     "name": "Vettuva Gounder",
-    "nameTamil": "வெட்டுவ கௌன்டேர்",
-    "nameTamilAuto": true
+    "nameTamil": "வேட்டுவ கவுண்டர்",
+    "aliases": [
+      "vettuvagounder"
+    ]
   },
   {
     "id": "sub_hindu_gounder_nattu_gounder",
     "casteId": "cas_hindu_gounder",
     "name": "Nattu Gounder",
-    "nameTamil": "நட்டு கௌன்டேர்",
-    "nameTamilAuto": true
+    "nameTamil": "நாட்டு கவுண்டர்",
+    "aliases": [
+      "nattugounder"
+    ]
   },
   {
     "id": "sub_hindu_gounder_urali_gounder",
     "casteId": "cas_hindu_gounder",
     "name": "Urali Gounder",
-    "nameTamil": "உரலி கௌன்டேர்",
-    "nameTamilAuto": true
+    "nameTamil": "ஊராளி கவுண்டர்",
+    "aliases": [
+      "uraligounder"
+    ]
   },
   {
     "id": "sub_hindu_gounder_kurumba_gounder",
     "casteId": "cas_hindu_gounder",
     "name": "Kurumba Gounder",
-    "nameTamil": "குரும்ப கௌன்டேர்",
-    "nameTamilAuto": true
+    "nameTamil": "குறும்ப கவுண்டர்",
+    "aliases": [
+      "kurumbagounder"
+    ]
   },
   {
     "id": "sub_hindu_gounder_anuppa_vellala_gounder",
     "casteId": "cas_hindu_gounder",
     "name": "Anuppa Vellala Gounder",
-    "nameTamil": "அனுப்ப வெல்லல கௌன்டேர்",
-    "nameTamilAuto": true
+    "nameTamil": "அனுப்ப வேளாள கவுண்டர்",
+    "aliases": [
+      "anuppavellalagounder"
+    ]
   },
   {
     "id": "sub_hindu_gounder_padaithalai_gounder",
     "casteId": "cas_hindu_gounder",
     "name": "Padaithalai Gounder",
-    "nameTamil": "பதைதலை கௌன்டேர்",
-    "nameTamilAuto": true
+    "nameTamil": "படைத்தலை கவுண்டர்",
+    "aliases": [
+      "padaitalai gounder",
+      "padaithalaigounder"
+    ]
   },
   {
     "id": "sub_hindu_gounder_sanku_gounder",
     "casteId": "cas_hindu_gounder",
     "name": "Sanku Gounder",
-    "nameTamil": "சன்கு கௌன்டேர்",
-    "nameTamilAuto": true
+    "nameTamil": "சங்கு கவுண்டர்",
+    "aliases": [
+      "sankugounder"
+    ]
   },
   {
     "id": "sub_hindu_gounder_pala_gounder",
     "casteId": "cas_hindu_gounder",
     "name": "Pala Gounder",
-    "nameTamil": "பல கௌன்டேர்",
-    "nameTamilAuto": true
+    "nameTamil": "பால கவுண்டர்",
+    "aliases": [
+      "palagounder"
+    ]
   },
   {
     "id": "sub_hindu_gounder_poosari_gounder",
     "casteId": "cas_hindu_gounder",
     "name": "Poosari Gounder",
-    "nameTamil": "பூசரி கௌன்டேர்",
-    "nameTamilAuto": true
+    "nameTamil": "பூசாரி கவுண்டர்",
+    "aliases": [
+      "poosarigounder",
+      "pusari gounder"
+    ]
   },
   {
     "id": "sub_hindu_gounder_kongu_gounder",
     "casteId": "cas_hindu_gounder",
     "name": "Kongu Gounder",
-    "nameTamil": "கோங்கு கௌன்டேர்",
-    "nameTamilAuto": true
+    "nameTamil": "கொங்கு கவுண்டர்",
+    "aliases": [
+      "kongugounder"
+    ]
   },
   {
     "id": "sub_hindu_gounder_vokkaliga_gounder",
     "casteId": "cas_hindu_gounder",
     "name": "Vokkaliga Gounder",
-    "nameTamil": "வொக்கலிக கௌன்டேர்",
-    "nameTamilAuto": true
+    "nameTamil": "வொக்கலிக கவுண்டர்",
+    "aliases": [
+      "vokkaligagounder"
+    ]
   },
   {
     "id": "sub_hindu_gramani_gramani",
     "casteId": "cas_hindu_gramani",
     "name": "Gramani",
-    "nameTamil": "க்ரமனி",
-    "nameTamilAuto": true
+    "nameTamil": "கிராமணி"
   },
   {
     "id": "sub_hindu_gramani_sanar",
     "casteId": "cas_hindu_gramani",
     "name": "Sanar",
-    "nameTamil": "சனர்",
-    "nameTamilAuto": true
+    "nameTamil": "சாணார்"
   },
   {
     "id": "sub_hindu_gramani_hindu_nadar",
     "casteId": "cas_hindu_gramani",
     "name": "Hindu Nadar",
-    "nameTamil": "ஹின்டு நதர்",
-    "nameTamilAuto": true
+    "nameTamil": "இந்து நாடார்",
+    "aliases": [
+      "hindunadar"
+    ]
   },
   {
     "id": "sub_hindu_isai_vellalar_isai_vellalar",
     "casteId": "cas_hindu_isai_vellalar",
     "name": "Isai Vellalar",
-    "nameTamil": "இசை வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "இசை வேளாளர்",
+    "aliases": [
+      "isaivellalar"
+    ]
   },
   {
     "id": "sub_hindu_isai_vellalar_melakkarar",
     "casteId": "cas_hindu_isai_vellalar",
     "name": "Melakkarar",
-    "nameTamil": "மேல்அக்கரர்",
-    "nameTamilAuto": true
+    "nameTamil": "மேளக்காரர்"
   },
   {
     "id": "sub_hindu_isai_vellalar_nattuvar",
     "casteId": "cas_hindu_isai_vellalar",
     "name": "Nattuvar",
-    "nameTamil": "நட்டுவர்",
-    "nameTamilAuto": true
+    "nameTamil": "நட்டுவர்"
   },
   {
     "id": "sub_hindu_isai_vellalar_thavil",
     "casteId": "cas_hindu_isai_vellalar",
     "name": "Thavil",
     "nameTamil": "தவில்",
-    "nameTamilAuto": true
+    "aliases": [
+      "tavil"
+    ]
   },
   {
     "id": "sub_hindu_isai_vellalar_nagaswaram",
     "casteId": "cas_hindu_isai_vellalar",
     "name": "Nagaswaram",
-    "nameTamil": "நகச்வரம்",
-    "nameTamilAuto": true
+    "nameTamil": "நாகஸ்வரம்"
   },
   {
     "id": "sub_hindu_jangam_jangam",
     "casteId": "cas_hindu_jangam",
     "name": "Jangam",
-    "nameTamil": "ஜங்கம்",
-    "nameTamilAuto": true
+    "nameTamil": "ஜங்கம்"
   },
   {
     "id": "sub_hindu_jangam_lingayat",
     "casteId": "cas_hindu_jangam",
     "name": "Lingayat",
-    "nameTamil": "லிங்கயட்",
-    "nameTamilAuto": true
+    "nameTamil": "லிங்காயத்"
   },
   {
     "id": "sub_hindu_jangam_veerasaiva",
     "casteId": "cas_hindu_jangam",
     "name": "Veerasaiva",
     "nameTamil": "வீரசைவ",
-    "nameTamilAuto": true
+    "aliases": [
+      "virasaiva"
+    ]
   },
   {
     "id": "sub_hindu_kaikolar_sengunthar",
     "casteId": "cas_hindu_kaikolar",
     "name": "Sengunthar",
-    "nameTamil": "சேங்குன்தர்",
-    "nameTamilAuto": true
+    "nameTamil": "செங்குந்தர்",
+    "aliases": [
+      "senguntar"
+    ]
   },
   {
     "id": "sub_hindu_kaikolar_kaikolar",
     "casteId": "cas_hindu_kaikolar",
     "name": "Kaikolar",
-    "nameTamil": "கைகோலர்",
-    "nameTamilAuto": true
+    "nameTamil": "கைக்கோளர்"
   },
   {
     "id": "sub_hindu_kaikolar_senguntha_mudaliyar",
     "casteId": "cas_hindu_kaikolar",
     "name": "Senguntha Mudaliyar",
-    "nameTamil": "சேங்குன்த முதலியர்",
-    "nameTamilAuto": true
+    "nameTamil": "செங்குந்த முதலியார்",
+    "aliases": [
+      "sengunta mudaliyar",
+      "sengunthamudaliyar"
+    ]
   },
   {
     "id": "sub_hindu_kaikolar_senguntha_mudaliar",
     "casteId": "cas_hindu_kaikolar",
     "name": "Senguntha Mudaliar",
-    "nameTamil": "சேங்குன்த முதலிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "செங்குந்த முதலியார்",
+    "aliases": [
+      "sengunta mudaliar",
+      "sengunthamudaliar"
+    ]
   },
   {
     "id": "sub_hindu_kallar_piramalai_kallar",
     "casteId": "cas_hindu_kallar",
     "name": "Piramalai Kallar",
-    "nameTamil": "பிரமலை கல்லர்",
-    "nameTamilAuto": true
+    "nameTamil": "பிரமலை கள்ளர்",
+    "aliases": [
+      "piramalaikallar"
+    ]
   },
   {
     "id": "sub_hindu_kallar_esanattu_kallar",
     "casteId": "cas_hindu_kallar",
     "name": "Esanattu Kallar",
-    "nameTamil": "ஏசனட்டு கல்லர்",
-    "nameTamilAuto": true
+    "nameTamil": "ஈசநாட்டு கள்ளர்",
+    "aliases": [
+      "esanattukallar"
+    ]
   },
   {
     "id": "sub_hindu_kallar_kallar",
     "casteId": "cas_hindu_kallar",
     "name": "Kallar",
-    "nameTamil": "கல்லர்",
-    "nameTamilAuto": true
+    "nameTamil": "கள்ளர்"
   },
   {
     "id": "sub_hindu_kallar_gandarvakottai_kallar",
     "casteId": "cas_hindu_kallar",
     "name": "Gandarvakottai Kallar",
-    "nameTamil": "கன்டர்வகோட்டை கல்லர்",
-    "nameTamilAuto": true
+    "nameTamil": "கந்தர்வக்கோட்டை கள்ளர்",
+    "aliases": [
+      "gandarvakottaikallar"
+    ]
   },
   {
     "id": "sub_hindu_kallar_kootappal_kallar",
     "casteId": "cas_hindu_kallar",
     "name": "Kootappal Kallar",
-    "nameTamil": "கூடப்பல் கல்லர்",
-    "nameTamilAuto": true
+    "nameTamil": "கூட்டப்பால் கள்ளர்",
+    "aliases": [
+      "kootappalkallar",
+      "kutappal kallar"
+    ]
   },
   {
     "id": "sub_hindu_kallar_periya_suriyur_kallar",
     "casteId": "cas_hindu_kallar",
     "name": "Periya Suriyur Kallar",
-    "nameTamil": "பெரிய சுரியூர் கல்லர்",
-    "nameTamilAuto": true
+    "nameTamil": "பெரிய சூரியூர் கள்ளர்",
+    "aliases": [
+      "periyasuriyurkallar"
+    ]
   },
   {
     "id": "sub_hindu_kallar_ambalakarar",
     "casteId": "cas_hindu_kallar",
     "name": "Ambalakarar",
-    "nameTamil": "அம்பலகரர்",
-    "nameTamilAuto": true
+    "nameTamil": "அம்பலக்காரர்"
   },
   {
     "id": "sub_hindu_kallar_thanjavur_kallar",
     "casteId": "cas_hindu_kallar",
     "name": "Thanjavur Kallar",
-    "nameTamil": "தஞ்சவூர் கல்லர்",
-    "nameTamilAuto": true
+    "nameTamil": "தஞ்சாவூர் கள்ளர்",
+    "aliases": [
+      "tanjavur kallar",
+      "thanjavurkallar"
+    ]
   },
   {
     "id": "sub_hindu_kamma_naidu_kamma",
     "casteId": "cas_hindu_kamma_naidu",
     "name": "Kamma",
-    "nameTamil": "கம்ம",
-    "nameTamilAuto": true
+    "nameTamil": "கம்ம"
   },
   {
     "id": "sub_hindu_kamma_naidu_kammavar_naidu",
     "casteId": "cas_hindu_kamma_naidu",
     "name": "Kammavar Naidu",
-    "nameTamil": "கம்மவர் நைது",
-    "nameTamilAuto": true
+    "nameTamil": "கம்மவார் நாயுடு",
+    "aliases": [
+      "kammavarnaidu"
+    ]
   },
   {
     "id": "sub_hindu_kamma_naidu_kamma_naidu",
     "casteId": "cas_hindu_kamma_naidu",
     "name": "Kamma Naidu",
-    "nameTamil": "கம்ம நைது",
-    "nameTamilAuto": true
+    "nameTamil": "கம்ம நாயுடு",
+    "aliases": [
+      "kammanaidu"
+    ]
   },
   {
     "id": "sub_hindu_kamma_naidu_choudary",
     "casteId": "cas_hindu_kamma_naidu",
     "name": "Choudary",
-    "nameTamil": "சௌதர்ய்",
-    "nameTamilAuto": true
+    "nameTamil": "சௌத்ரி"
   },
   {
     "id": "sub_hindu_kamma_naidu_kammavar",
     "casteId": "cas_hindu_kamma_naidu",
     "name": "Kammavar",
-    "nameTamil": "கம்மவர்",
-    "nameTamilAuto": true
+    "nameTamil": "கம்மவார்"
   },
   {
     "id": "sub_hindu_kannadiyar_kannadiyan",
     "casteId": "cas_hindu_kannadiyar",
     "name": "Kannadiyan",
-    "nameTamil": "கன்னதியன்",
-    "nameTamilAuto": true
+    "nameTamil": "கன்னடியன்"
   },
   {
     "id": "sub_hindu_kannadiyar_kannada_saineegar",
     "casteId": "cas_hindu_kannadiyar",
     "name": "Kannada Saineegar",
-    "nameTamil": "கன்னத சைனீகர்",
-    "nameTamilAuto": true
+    "nameTamil": "கன்னட சைநீகர்",
+    "aliases": [
+      "kannada sainigar",
+      "kannadasaineegar"
+    ]
   },
   {
     "id": "sub_hindu_kannadiyar_dasapalanji",
     "casteId": "cas_hindu_kannadiyar",
     "name": "Dasapalanji",
-    "nameTamil": "டசபலஞ்சி",
-    "nameTamilAuto": true
+    "nameTamil": "தசபளஞ்சி"
   },
   {
     "id": "sub_hindu_karuneegar_karuneegar",
     "casteId": "cas_hindu_karuneegar",
     "name": "Karuneegar",
-    "nameTamil": "கருனீகர்",
-    "nameTamilAuto": true
+    "nameTamil": "கருணீகர்",
+    "aliases": [
+      "karunigar"
+    ]
   },
   {
     "id": "sub_hindu_karuneegar_kanakkar",
     "casteId": "cas_hindu_karuneegar",
     "name": "Kanakkar",
-    "nameTamil": "கனக்கர்",
-    "nameTamilAuto": true
+    "nameTamil": "கணக்கர்"
   },
   {
     "id": "sub_hindu_karuneegar_sozhia_karuneegar",
     "casteId": "cas_hindu_karuneegar",
     "name": "Sozhia Karuneegar",
-    "nameTamil": "சோழிஅ கருனீகர்",
-    "nameTamilAuto": true
+    "nameTamil": "சோழிய கருணீகர்",
+    "aliases": [
+      "sozhia karunigar",
+      "sozhiakaruneegar"
+    ]
   },
   {
     "id": "sub_hindu_karuneegar_kaikkattu_karuneegar",
     "casteId": "cas_hindu_karuneegar",
     "name": "Kaikkattu Karuneegar",
-    "nameTamil": "கைக்கட்டு கருனீகர்",
-    "nameTamilAuto": true
+    "nameTamil": "கைக்காட்டு கருணீகர்",
+    "aliases": [
+      "kaikkattu karunigar",
+      "kaikkattukaruneegar"
+    ]
   },
   {
     "id": "sub_hindu_konar_konar",
     "casteId": "cas_hindu_konar",
     "name": "Konar",
-    "nameTamil": "கோனர்",
-    "nameTamilAuto": true
+    "nameTamil": "கோனார்"
   },
   {
     "id": "sub_hindu_konar_idaiyar",
     "casteId": "cas_hindu_konar",
     "name": "Idaiyar",
-    "nameTamil": "இதையர்",
-    "nameTamilAuto": true
+    "nameTamil": "இடையர்"
   },
   {
     "id": "sub_hindu_konar_ayar",
     "casteId": "cas_hindu_konar",
     "name": "Ayar",
-    "nameTamil": "அயர்",
-    "nameTamilAuto": true
+    "nameTamil": "ஆயர்"
   },
   {
     "id": "sub_hindu_konar_yadava",
     "casteId": "cas_hindu_konar",
     "name": "Yadava",
-    "nameTamil": "யதவ",
-    "nameTamilAuto": true
+    "nameTamil": "யாதவ"
   },
   {
     "id": "sub_hindu_konar_golla",
     "casteId": "cas_hindu_konar",
     "name": "Golla",
-    "nameTamil": "கொல்ல",
-    "nameTamilAuto": true
+    "nameTamil": "கொல்ல"
   },
   {
     "id": "sub_hindu_konar_krishnan_vagaiyara",
     "casteId": "cas_hindu_konar",
     "name": "Krishnan Vagaiyara",
-    "nameTamil": "க்ரிஷ்னன் வகையர",
-    "nameTamilAuto": true
+    "nameTamil": "கிருஷ்ணன் வகையற",
+    "aliases": [
+      "krishnanvagaiyara"
+    ]
   },
   {
     "id": "sub_hindu_konar_pillai_konar",
     "casteId": "cas_hindu_konar",
     "name": "Pillai Konar",
-    "nameTamil": "பில்லை கோனர்",
-    "nameTamilAuto": true
+    "nameTamil": "பிள்ளை கோனார்",
+    "aliases": [
+      "pillaikonar"
+    ]
   },
   {
     "id": "sub_hindu_koteyar_koteyar",
     "casteId": "cas_hindu_koteyar",
     "name": "Koteyar",
-    "nameTamil": "கோடேயர்",
-    "nameTamilAuto": true
+    "nameTamil": "கோட்டேயர்"
   },
   {
     "id": "sub_hindu_koteyar_kotegara",
     "casteId": "cas_hindu_koteyar",
     "name": "Kotegara",
-    "nameTamil": "கோடேகர",
-    "nameTamilAuto": true
+    "nameTamil": "கோட்டேகார"
   },
   {
     "id": "sub_hindu_kshatriya_raju_raju",
     "casteId": "cas_hindu_kshatriya_raju",
     "name": "Raju",
-    "nameTamil": "ரஜு",
-    "nameTamilAuto": true
+    "nameTamil": "ராஜு"
   },
   {
     "id": "sub_hindu_kshatriya_raju_kshatriya_raju",
     "casteId": "cas_hindu_kshatriya_raju",
     "name": "Kshatriya Raju",
-    "nameTamil": "க்ஷட்ரிய ரஜு",
-    "nameTamilAuto": true
+    "nameTamil": "க்ஷத்திரிய ராஜு",
+    "aliases": [
+      "kshatriyaraju"
+    ]
   },
   {
     "id": "sub_hindu_kshatriya_raju_rajaka",
     "casteId": "cas_hindu_kshatriya_raju",
     "name": "Rajaka",
-    "nameTamil": "ராஜக",
-    "nameTamilAuto": true
+    "nameTamil": "ரஜக"
   },
   {
     "id": "sub_hindu_kshatriya_raju_razu",
     "casteId": "cas_hindu_kshatriya_raju",
     "name": "Razu",
-    "nameTamil": "ரஜு",
-    "nameTamilAuto": true
+    "nameTamil": "ராஜு"
   },
   {
     "id": "sub_hindu_kshatriya_raju_surya_vamsam",
     "casteId": "cas_hindu_kshatriya_raju",
     "name": "Surya Vamsam",
-    "nameTamil": "சுர்ய வம்சம்",
-    "nameTamilAuto": true
+    "nameTamil": "சூர்ய வம்சம்",
+    "aliases": [
+      "suryavamsam"
+    ]
   },
   {
     "id": "sub_hindu_kulalar_kulalar",
     "casteId": "cas_hindu_kulalar",
     "name": "Kulalar",
-    "nameTamil": "குலலர்",
-    "nameTamilAuto": true
+    "nameTamil": "குலாலர்"
   },
   {
     "id": "sub_hindu_kulalar_kuyavar",
     "casteId": "cas_hindu_kulalar",
     "name": "Kuyavar",
-    "nameTamil": "குயவர்",
-    "nameTamilAuto": true
+    "nameTamil": "குயவர்"
   },
   {
     "id": "sub_hindu_kulalar_velar",
     "casteId": "cas_hindu_kulalar",
     "name": "Velar",
-    "nameTamil": "வேலர்",
-    "nameTamilAuto": true
+    "nameTamil": "வேளார்"
   },
   {
     "id": "sub_hindu_kulalar_odde",
     "casteId": "cas_hindu_kulalar",
     "name": "Odde",
-    "nameTamil": "ஓட்டே",
-    "nameTamilAuto": true
+    "nameTamil": "ஒட்டே"
   },
   {
     "id": "sub_hindu_kulalar_kummara",
     "casteId": "cas_hindu_kulalar",
     "name": "Kummara",
-    "nameTamil": "கும்மர",
-    "nameTamilAuto": true
+    "nameTamil": "கும்மார"
   },
   {
     "id": "sub_hindu_kulalar_kusavan",
     "casteId": "cas_hindu_kulalar",
     "name": "Kusavan",
-    "nameTamil": "குசவன்",
-    "nameTamilAuto": true
+    "nameTamil": "குசவன்"
   },
   {
     "id": "sub_hindu_kuravar_kuravan",
     "casteId": "cas_hindu_kuravar",
     "name": "Kuravan",
-    "nameTamil": "குரவன்",
-    "nameTamilAuto": true
+    "nameTamil": "குறவன்"
   },
   {
     "id": "sub_hindu_kuravar_sidhanar",
     "casteId": "cas_hindu_kuravar",
     "name": "Sidhanar",
-    "nameTamil": "சிதனர்",
-    "nameTamilAuto": true
+    "nameTamil": "சிதனார்",
+    "aliases": [
+      "sidanar"
+    ]
   },
   {
     "id": "sub_hindu_kuravar_narikuravar",
     "casteId": "cas_hindu_kuravar",
     "name": "Narikuravar",
-    "nameTamil": "நரிகுரவர்",
-    "nameTamilAuto": true
+    "nameTamil": "நரிக்குறவர்"
   },
   {
     "id": "sub_hindu_kuravar_kurava",
     "casteId": "cas_hindu_kuravar",
     "name": "Kurava",
-    "nameTamil": "குரவ",
-    "nameTamilAuto": true
+    "nameTamil": "குறவ"
   },
   {
     "id": "sub_hindu_kuravar_koravar",
     "casteId": "cas_hindu_kuravar",
     "name": "Koravar",
-    "nameTamil": "கோரவர்",
-    "nameTamilAuto": true
+    "nameTamil": "கொறவர்"
   },
   {
     "id": "sub_hindu_kurumbar_kurumba",
     "casteId": "cas_hindu_kurumbar",
     "name": "Kurumba",
-    "nameTamil": "குரும்ப",
-    "nameTamilAuto": true
+    "nameTamil": "குறும்ப"
   },
   {
     "id": "sub_hindu_kurumbar_kuruba_gowda",
     "casteId": "cas_hindu_kurumbar",
     "name": "Kuruba Gowda",
-    "nameTamil": "குருப கோவ்ட",
-    "nameTamilAuto": true
+    "nameTamil": "குறுப கவுடா",
+    "aliases": [
+      "kurubagowda"
+    ]
   },
   {
     "id": "sub_hindu_kurumbar_halumatha",
     "casteId": "cas_hindu_kurumbar",
     "name": "Halumatha",
-    "nameTamil": "ஹலுமத",
-    "nameTamilAuto": true
+    "nameTamil": "ஹாலுமத",
+    "aliases": [
+      "halumata"
+    ]
   },
   {
     "id": "sub_hindu_kurumbar_kurumba_gounder",
     "casteId": "cas_hindu_kurumbar",
     "name": "Kurumba Gounder",
-    "nameTamil": "குரும்ப கௌன்டேர்",
-    "nameTamilAuto": true
+    "nameTamil": "குறும்ப கவுண்டர்",
+    "aliases": [
+      "kurumbagounder"
+    ]
   },
   {
     "id": "sub_hindu_kurumbar_pal_kuruba",
     "casteId": "cas_hindu_kurumbar",
     "name": "Pal Kuruba",
-    "nameTamil": "பல் குருப",
-    "nameTamilAuto": true
+    "nameTamil": "பால் குறுப",
+    "aliases": [
+      "palkuruba"
+    ]
   },
   {
     "id": "sub_hindu_maravar_maravar",
     "casteId": "cas_hindu_maravar",
     "name": "Maravar",
-    "nameTamil": "மரவர்",
-    "nameTamilAuto": true
+    "nameTamil": "மறவர்"
   },
   {
     "id": "sub_hindu_maravar_agamudaya_maravar",
     "casteId": "cas_hindu_maravar",
     "name": "Agamudaya Maravar",
-    "nameTamil": "அகமுதய மரவர்",
-    "nameTamilAuto": true
+    "nameTamil": "அகமுடைய மறவர்",
+    "aliases": [
+      "agamudayamaravar"
+    ]
   },
   {
     "id": "sub_hindu_maravar_easanattu_maravar",
     "casteId": "cas_hindu_maravar",
     "name": "Easanattu Maravar",
-    "nameTamil": "ஏஅசனட்டு மரவர்",
-    "nameTamilAuto": true
+    "nameTamil": "ஈசநாட்டு மறவர்",
+    "aliases": [
+      "easanattumaravar"
+    ]
   },
   {
     "id": "sub_hindu_maravar_kondaiyankottai_maravar",
     "casteId": "cas_hindu_maravar",
     "name": "Kondaiyankottai Maravar",
-    "nameTamil": "கோன்டையன்கோட்டை மரவர்",
-    "nameTamilAuto": true
+    "nameTamil": "கொண்டையங்கோட்டை மறவர்",
+    "aliases": [
+      "kondaiyankottaimaravar"
+    ]
   },
   {
     "id": "sub_hindu_maravar_sembanad_maravar",
     "casteId": "cas_hindu_maravar",
     "name": "Sembanad Maravar",
-    "nameTamil": "சேம்பனட் மரவர்",
-    "nameTamilAuto": true
+    "nameTamil": "செம்பநாடு மறவர்",
+    "aliases": [
+      "sembanadmaravar"
+    ]
   },
   {
     "id": "sub_hindu_meenavar_meenavar",
     "casteId": "cas_hindu_meenavar",
     "name": "Meenavar",
     "nameTamil": "மீனவர்",
-    "nameTamilAuto": true
+    "aliases": [
+      "minavar"
+    ]
   },
   {
     "id": "sub_hindu_meenavar_pattinavar",
     "casteId": "cas_hindu_meenavar",
     "name": "Pattinavar",
-    "nameTamil": "பட்டினவர்",
-    "nameTamilAuto": true
+    "nameTamil": "பட்டினவர்"
   },
   {
     "id": "sub_hindu_meenavar_parvatharajakulam",
     "casteId": "cas_hindu_meenavar",
     "name": "Parvatharajakulam",
-    "nameTamil": "பர்வதரஜகுளம்",
-    "nameTamilAuto": true
+    "nameTamil": "பர்வதராஜகுலம்",
+    "aliases": [
+      "parvatarajakulam"
+    ]
   },
   {
     "id": "sub_hindu_meenavar_sembadavar",
     "casteId": "cas_hindu_meenavar",
     "name": "Sembadavar",
-    "nameTamil": "சேம்பதவர்",
-    "nameTamilAuto": true
+    "nameTamil": "செம்படவர்"
   },
   {
     "id": "sub_hindu_meenavar_mukkuvar",
     "casteId": "cas_hindu_meenavar",
     "name": "Mukkuvar",
-    "nameTamil": "முக்குவர்",
-    "nameTamilAuto": true
+    "nameTamil": "முக்குவர்"
   },
   {
     "id": "sub_hindu_meenavar_karaiyar",
     "casteId": "cas_hindu_meenavar",
     "name": "Karaiyar",
-    "nameTamil": "கரையர்",
-    "nameTamilAuto": true
+    "nameTamil": "கரையார்"
   },
   {
     "id": "sub_hindu_meenavar_nulayar",
     "casteId": "cas_hindu_meenavar",
     "name": "Nulayar",
-    "nameTamil": "நுலயர்",
-    "nameTamilAuto": true
+    "nameTamil": "நுளையர்"
   },
   {
     "id": "sub_hindu_meenavar_mogaveera",
     "casteId": "cas_hindu_meenavar",
     "name": "Mogaveera",
-    "nameTamil": "மோகவீர",
-    "nameTamilAuto": true
+    "nameTamil": "மொகவீர",
+    "aliases": [
+      "mogavira"
+    ]
   },
   {
     "id": "sub_hindu_meenavar_besta_meenavar",
     "casteId": "cas_hindu_meenavar",
     "name": "Besta Meenavar",
-    "nameTamil": "பேச்ட மீனவர்",
-    "nameTamilAuto": true
+    "nameTamil": "பெஸ்த மீனவர்",
+    "aliases": [
+      "besta minavar",
+      "bestameenavar"
+    ]
   },
   {
     "id": "sub_hindu_moopanar_moopanar",
     "casteId": "cas_hindu_moopanar",
     "name": "Moopanar",
-    "nameTamil": "மூபனர்",
-    "nameTamilAuto": true
+    "nameTamil": "மூப்பனார்",
+    "aliases": [
+      "mupanar"
+    ]
   },
   {
     "id": "sub_hindu_moopanar_mooppanar",
     "casteId": "cas_hindu_moopanar",
     "name": "Mooppanar",
-    "nameTamil": "மூப்பனர்",
-    "nameTamilAuto": true
+    "nameTamil": "மூப்பனார்",
+    "aliases": [
+      "muppanar"
+    ]
   },
   {
     "id": "sub_hindu_moopanar_nattaman",
     "casteId": "cas_hindu_moopanar",
     "name": "Nattaman",
-    "nameTamil": "நட்டமன்",
-    "nameTamilAuto": true
+    "nameTamil": "நாட்டாமான்"
   },
   {
     "id": "sub_hindu_moopanar_malayaman",
     "casteId": "cas_hindu_moopanar",
     "name": "Malayaman",
-    "nameTamil": "மலயமன்",
-    "nameTamilAuto": true
+    "nameTamil": "மலையமான்"
   },
   {
     "id": "sub_hindu_mudaliar_arcot_mudaliar",
     "casteId": "cas_hindu_mudaliar",
     "name": "Arcot Mudaliar",
-    "nameTamil": "அர்கோட் முதலிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "ஆற்காடு முதலியார்",
+    "aliases": [
+      "arcotmudaliar"
+    ]
   },
   {
     "id": "sub_hindu_mudaliar_thuluva_vellala",
     "casteId": "cas_hindu_mudaliar",
     "name": "Thuluva Vellala",
-    "nameTamil": "துலுவ வெல்லல",
-    "nameTamilAuto": true
+    "nameTamil": "துளுவ வேளாள",
+    "aliases": [
+      "thuluvavellala",
+      "tuluva vellala"
+    ]
   },
   {
     "id": "sub_hindu_mudaliar_saiva_mudaliar",
     "casteId": "cas_hindu_mudaliar",
     "name": "Saiva Mudaliar",
-    "nameTamil": "சைவ முதலிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "சைவ முதலியார்",
+    "aliases": [
+      "saivamudaliar"
+    ]
   },
   {
     "id": "sub_hindu_mudaliar_senguntha_mudaliar",
     "casteId": "cas_hindu_mudaliar",
     "name": "Senguntha Mudaliar",
-    "nameTamil": "சேங்குன்த முதலிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "செங்குந்த முதலியார்",
+    "aliases": [
+      "sengunta mudaliar",
+      "sengunthamudaliar"
+    ]
   },
   {
     "id": "sub_hindu_mudaliar_isai_vellala_mudaliar",
     "casteId": "cas_hindu_mudaliar",
     "name": "Isai Vellala Mudaliar",
-    "nameTamil": "இசை வெல்லல முதலிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "இசை வேளாள முதலியார்",
+    "aliases": [
+      "isaivellalamudaliar"
+    ]
   },
   {
     "id": "sub_hindu_mudaliar_mudaliar_vellalar",
     "casteId": "cas_hindu_mudaliar",
     "name": "Mudaliar Vellalar",
-    "nameTamil": "முதலிஅர் வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "முதலியார் வேளாளர்",
+    "aliases": [
+      "mudaliarvellalar"
+    ]
   },
   {
     "id": "sub_hindu_mudaliar_agamudaya_mudaliar",
     "casteId": "cas_hindu_mudaliar",
     "name": "Agamudaya Mudaliar",
-    "nameTamil": "அகமுதய முதலிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "அகமுடைய முதலியார்",
+    "aliases": [
+      "agamudayamudaliar"
+    ]
   },
   {
     "id": "sub_hindu_mudaliar_kongu_mudaliar",
     "casteId": "cas_hindu_mudaliar",
     "name": "Kongu Mudaliar",
-    "nameTamil": "கோங்கு முதலிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "கொங்கு முதலியார்",
+    "aliases": [
+      "kongumudaliar"
+    ]
   },
   {
     "id": "sub_hindu_mudaliar_sozhia_vellalar",
     "casteId": "cas_hindu_mudaliar",
     "name": "Sozhia Vellalar",
-    "nameTamil": "சோழிஅ வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "சோழிய வேளாளர்",
+    "aliases": [
+      "sozhiavellalar"
+    ]
   },
   {
     "id": "sub_hindu_mudaliar_karkathar",
     "casteId": "cas_hindu_mudaliar",
     "name": "Karkathar",
-    "nameTamil": "கர்கதர்",
-    "nameTamilAuto": true
+    "nameTamil": "கார்காத்தார்",
+    "aliases": [
+      "karkatar"
+    ]
   },
   {
     "id": "sub_hindu_mudaliar_thondaimandala_mudaliar",
     "casteId": "cas_hindu_mudaliar",
     "name": "Thondaimandala Mudaliar",
-    "nameTamil": "தோன்டைமன்டல முதலிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "தொண்டைமண்டல முதலியார்",
+    "aliases": [
+      "thondaimandalamudaliar",
+      "tondaimandala mudaliar"
+    ]
   },
   {
     "id": "sub_hindu_mukkulathor_agamudayar",
     "casteId": "cas_hindu_mukkulathor",
     "name": "Agamudayar",
-    "nameTamil": "அகமுதயர்",
-    "nameTamilAuto": true
+    "nameTamil": "அகமுடையார்"
   },
   {
     "id": "sub_hindu_mukkulathor_kallar",
     "casteId": "cas_hindu_mukkulathor",
     "name": "Kallar",
-    "nameTamil": "கல்லர்",
-    "nameTamilAuto": true
+    "nameTamil": "கள்ளர்"
   },
   {
     "id": "sub_hindu_mukkulathor_maravar",
     "casteId": "cas_hindu_mukkulathor",
     "name": "Maravar",
-    "nameTamil": "மரவர்",
-    "nameTamilAuto": true
+    "nameTamil": "மறவர்"
   },
   {
     "id": "sub_hindu_mukkulathor_thevar",
     "casteId": "cas_hindu_mukkulathor",
     "name": "Thevar",
     "nameTamil": "தேவர்",
-    "nameTamilAuto": true
+    "aliases": [
+      "tevar"
+    ]
   },
   {
     "id": "sub_hindu_mukkulathor_mukkulathor",
     "casteId": "cas_hindu_mukkulathor",
     "name": "Mukkulathor",
-    "nameTamil": "முக்குலதோர்",
-    "nameTamilAuto": true
+    "nameTamil": "முக்குலத்தோர்",
+    "aliases": [
+      "mukkulator"
+    ]
   },
   {
     "id": "sub_hindu_mutharaiyar_muthuraja",
     "casteId": "cas_hindu_mutharaiyar",
     "name": "Muthuraja",
-    "nameTamil": "முதுரஜ",
-    "nameTamilAuto": true
+    "nameTamil": "முத்துராஜா",
+    "aliases": [
+      "muturaja"
+    ]
   },
   {
     "id": "sub_hindu_mutharaiyar_mutharaiyar",
     "casteId": "cas_hindu_mutharaiyar",
     "name": "Mutharaiyar",
-    "nameTamil": "முதரையர்",
-    "nameTamilAuto": true
+    "nameTamil": "முத்தரையர்",
+    "aliases": [
+      "mutaraiyar"
+    ]
   },
   {
     "id": "sub_hindu_mutharaiyar_muthuraiyar",
     "casteId": "cas_hindu_mutharaiyar",
     "name": "Muthuraiyar",
-    "nameTamil": "முதுரையர்",
-    "nameTamilAuto": true
+    "nameTamil": "முத்துராயர்",
+    "aliases": [
+      "muturaiyar"
+    ]
   },
   {
     "id": "sub_hindu_mutharaiyar_mutracha",
     "casteId": "cas_hindu_mutharaiyar",
     "name": "Mutracha",
-    "nameTamil": "முட்ரச",
-    "nameTamilAuto": true
+    "nameTamil": "முத்ராச"
   },
   {
     "id": "sub_hindu_mutharaiyar_ambalakarar",
     "casteId": "cas_hindu_mutharaiyar",
     "name": "Ambalakarar",
-    "nameTamil": "அம்பலகரர்",
-    "nameTamilAuto": true
+    "nameTamil": "அம்பலக்காரர்"
   },
   {
     "id": "sub_hindu_mutharaiyar_servai",
     "casteId": "cas_hindu_mutharaiyar",
     "name": "Servai",
-    "nameTamil": "சேர்வை",
-    "nameTamilAuto": true
+    "nameTamil": "சேர்வை"
   },
   {
     "id": "sub_hindu_mutharaiyar_thuraiyar",
     "casteId": "cas_hindu_mutharaiyar",
     "name": "Thuraiyar",
     "nameTamil": "துரையர்",
-    "nameTamilAuto": true
+    "aliases": [
+      "turaiyar"
+    ]
   },
   {
     "id": "sub_hindu_nadar_hindu_nadar",
     "casteId": "cas_hindu_nadar",
     "name": "Hindu Nadar",
-    "nameTamil": "ஹின்டு நதர்",
-    "nameTamilAuto": true
+    "nameTamil": "இந்து நாடார்",
+    "aliases": [
+      "hindunadar"
+    ]
   },
   {
     "id": "sub_hindu_nadar_gramani",
     "casteId": "cas_hindu_nadar",
     "name": "Gramani",
-    "nameTamil": "க்ரமனி",
-    "nameTamilAuto": true
+    "nameTamil": "கிராமணி"
   },
   {
     "id": "sub_hindu_nadar_shanar",
     "casteId": "cas_hindu_nadar",
     "name": "Shanar",
-    "nameTamil": "ஷனர்",
-    "nameTamilAuto": true
+    "nameTamil": "சாணார்"
   },
   {
     "id": "sub_hindu_nadar_nadar",
     "casteId": "cas_hindu_nadar",
     "name": "Nadar",
-    "nameTamil": "நதர்",
-    "nameTamilAuto": true
+    "nameTamil": "நாடார்"
   },
   {
     "id": "sub_hindu_nadar_kongu_nadar",
     "casteId": "cas_hindu_nadar",
     "name": "Kongu Nadar",
-    "nameTamil": "கோங்கு நதர்",
-    "nameTamilAuto": true
+    "nameTamil": "கொங்கு நாடார்",
+    "aliases": [
+      "kongunadar"
+    ]
   },
   {
     "id": "sub_hindu_nadar_karukku_pattayam",
     "casteId": "cas_hindu_nadar",
     "name": "Karukku Pattayam",
     "nameTamil": "கருக்கு பட்டயம்",
-    "nameTamilAuto": true
+    "aliases": [
+      "karukkupattayam"
+    ]
   },
   {
     "id": "sub_hindu_nadar_mel_nadar",
     "casteId": "cas_hindu_nadar",
     "name": "Mel Nadar",
-    "nameTamil": "மேல் நதர்",
-    "nameTamilAuto": true
+    "nameTamil": "மேல் நாடார்",
+    "aliases": [
+      "melnadar"
+    ]
   },
   {
     "id": "sub_hindu_nadar_nattathi_nadar",
     "casteId": "cas_hindu_nadar",
     "name": "Nattathi Nadar",
-    "nameTamil": "நட்டதி நதர்",
-    "nameTamilAuto": true
+    "nameTamil": "நாட்டாத்தி நாடார்",
+    "aliases": [
+      "nattathinadar",
+      "nattati nadar"
+    ]
   },
   {
     "id": "sub_hindu_nadar_santror",
     "casteId": "cas_hindu_nadar",
     "name": "Santror",
-    "nameTamil": "சன்ட்ரோர்",
-    "nameTamilAuto": true
+    "nameTamil": "சான்றோர்"
   },
   {
     "id": "sub_hindu_naicker_vanniya_naicker",
     "casteId": "cas_hindu_naicker",
     "name": "Vanniya Naicker",
-    "nameTamil": "வன்னிய நைக்கேர்",
-    "nameTamilAuto": true
+    "nameTamil": "வன்னிய நாயக்கர்",
+    "aliases": [
+      "vanniyanaicker"
+    ]
   },
   {
     "id": "sub_hindu_naicker_telugu_naicker",
     "casteId": "cas_hindu_naicker",
     "name": "Telugu Naicker",
-    "nameTamil": "தேலுகு நைக்கேர்",
-    "nameTamilAuto": true
+    "nameTamil": "தெலுங்கு நாயக்கர்",
+    "aliases": [
+      "telugunaicker"
+    ]
   },
   {
     "id": "sub_hindu_naicker_kannada_naicker",
     "casteId": "cas_hindu_naicker",
     "name": "Kannada Naicker",
-    "nameTamil": "கன்னத நைக்கேர்",
-    "nameTamilAuto": true
+    "nameTamil": "கன்னட நாயக்கர்",
+    "aliases": [
+      "kannadanaicker"
+    ]
   },
   {
     "id": "sub_hindu_naicker_vaduga_naicker",
     "casteId": "cas_hindu_naicker",
     "name": "Vaduga Naicker",
-    "nameTamil": "வதுக நைக்கேர்",
-    "nameTamilAuto": true
+    "nameTamil": "வடுக நாயக்கர்",
+    "aliases": [
+      "vaduganaicker"
+    ]
   },
   {
     "id": "sub_hindu_naicker_tottiya_naicker",
     "casteId": "cas_hindu_naicker",
     "name": "Tottiya Naicker",
-    "nameTamil": "தொட்டிய நைக்கேர்",
-    "nameTamilAuto": true
+    "nameTamil": "தொட்டிய நாயக்கர்",
+    "aliases": [
+      "tottiyanaicker"
+    ]
   },
   {
     "id": "sub_hindu_naicker_urali_naicker",
     "casteId": "cas_hindu_naicker",
     "name": "Urali Naicker",
-    "nameTamil": "உரலி நைக்கேர்",
-    "nameTamilAuto": true
+    "nameTamil": "ஊராளி நாயக்கர்",
+    "aliases": [
+      "uralinaicker"
+    ]
   },
   {
     "id": "sub_hindu_naicker_palayakkara_naicker",
     "casteId": "cas_hindu_naicker",
     "name": "Palayakkara Naicker",
-    "nameTamil": "பலயக்கர நைக்கேர்",
-    "nameTamilAuto": true
+    "nameTamil": "பாளையக்கார நாயக்கர்",
+    "aliases": [
+      "palayakkaranaicker"
+    ]
   },
   {
     "id": "sub_hindu_naidu_balija_naidu",
     "casteId": "cas_hindu_naidu",
     "name": "Balija Naidu",
-    "nameTamil": "பலிஜ நைது",
-    "nameTamilAuto": true
+    "nameTamil": "பலிஜ நாயுடு",
+    "aliases": [
+      "balijanaidu"
+    ]
   },
   {
     "id": "sub_hindu_naidu_gavara_naidu",
     "casteId": "cas_hindu_naidu",
     "name": "Gavara Naidu",
-    "nameTamil": "கவர நைது",
-    "nameTamilAuto": true
+    "nameTamil": "கவர நாயுடு",
+    "aliases": [
+      "gavaranaidu"
+    ]
   },
   {
     "id": "sub_hindu_naidu_kamma_naidu",
     "casteId": "cas_hindu_naidu",
     "name": "Kamma Naidu",
-    "nameTamil": "கம்ம நைது",
-    "nameTamilAuto": true
+    "nameTamil": "கம்ம நாயுடு",
+    "aliases": [
+      "kammanaidu"
+    ]
   },
   {
     "id": "sub_hindu_naidu_kapu_naidu",
     "casteId": "cas_hindu_naidu",
     "name": "Kapu Naidu",
-    "nameTamil": "கபு நைது",
-    "nameTamilAuto": true
+    "nameTamil": "காபு நாயுடு",
+    "aliases": [
+      "kapunaidu"
+    ]
   },
   {
     "id": "sub_hindu_naidu_velama_naidu",
     "casteId": "cas_hindu_naidu",
     "name": "Velama Naidu",
-    "nameTamil": "வேலம நைது",
-    "nameTamilAuto": true
+    "nameTamil": "வேலம நாயுடு",
+    "aliases": [
+      "velamanaidu"
+    ]
   },
   {
     "id": "sub_hindu_naidu_telaga",
     "casteId": "cas_hindu_naidu",
     "name": "Telaga",
-    "nameTamil": "தேலக",
-    "nameTamilAuto": true
+    "nameTamil": "தெலக"
   },
   {
     "id": "sub_hindu_naidu_yadava_naidu",
     "casteId": "cas_hindu_naidu",
     "name": "Yadava Naidu",
-    "nameTamil": "யதவ நைது",
-    "nameTamilAuto": true
+    "nameTamil": "யாதவ நாயுடு",
+    "aliases": [
+      "yadavanaidu"
+    ]
   },
   {
     "id": "sub_hindu_naidu_ediga",
     "casteId": "cas_hindu_naidu",
     "name": "Ediga",
-    "nameTamil": "ஏதிக",
-    "nameTamilAuto": true
+    "nameTamil": "எடிக"
   },
   {
     "id": "sub_hindu_naidu_tottiyan",
     "casteId": "cas_hindu_naidu",
     "name": "Tottiyan",
-    "nameTamil": "தொட்டியன்",
-    "nameTamilAuto": true
+    "nameTamil": "தொட்டியன்"
   },
   {
     "id": "sub_hindu_naidu_munnuru_kapu",
     "casteId": "cas_hindu_naidu",
     "name": "Munnuru Kapu",
-    "nameTamil": "முன்னுரு கபு",
-    "nameTamilAuto": true
+    "nameTamil": "முன்னூறு காபு",
+    "aliases": [
+      "munnurukapu"
+    ]
   },
   {
     "id": "sub_hindu_naidu_perika_naidu",
     "casteId": "cas_hindu_naidu",
     "name": "Perika Naidu",
-    "nameTamil": "பேரிக நைது",
-    "nameTamilAuto": true
+    "nameTamil": "பெரிக நாயுடு",
+    "aliases": [
+      "perikanaidu"
+    ]
   },
   {
     "id": "sub_hindu_nair_nair",
     "casteId": "cas_hindu_nair",
     "name": "Nair",
-    "nameTamil": "நைர்",
-    "nameTamilAuto": true
+    "nameTamil": "நாயர்"
   },
   {
     "id": "sub_hindu_nair_menon",
     "casteId": "cas_hindu_nair",
     "name": "Menon",
-    "nameTamil": "மேனோன்",
-    "nameTamilAuto": true
+    "nameTamil": "மேனோன்"
   },
   {
     "id": "sub_hindu_nair_kurup",
     "casteId": "cas_hindu_nair",
     "name": "Kurup",
-    "nameTamil": "குருப்",
-    "nameTamilAuto": true
+    "nameTamil": "குருப்"
   },
   {
     "id": "sub_hindu_nair_nambiar",
     "casteId": "cas_hindu_nair",
     "name": "Nambiar",
-    "nameTamil": "நம்பிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "நம்பியார்"
   },
   {
     "id": "sub_hindu_nair_pillai",
     "casteId": "cas_hindu_nair",
     "name": "Pillai",
-    "nameTamil": "பில்லை",
-    "nameTamilAuto": true
+    "nameTamil": "பிள்ளை"
   },
   {
     "id": "sub_hindu_nair_kartha",
     "casteId": "cas_hindu_nair",
     "name": "Kartha",
-    "nameTamil": "கர்த",
-    "nameTamilAuto": true
+    "nameTamil": "கர்த்தா",
+    "aliases": [
+      "karta"
+    ]
   },
   {
     "id": "sub_hindu_pandaram_pandaram",
     "casteId": "cas_hindu_pandaram",
     "name": "Pandaram",
-    "nameTamil": "பன்டரம்",
-    "nameTamilAuto": true
+    "nameTamil": "பண்டாரம்"
   },
   {
     "id": "sub_hindu_pandaram_andi_pandaram",
     "casteId": "cas_hindu_pandaram",
     "name": "Andi Pandaram",
-    "nameTamil": "அன்டி பன்டரம்",
-    "nameTamilAuto": true
+    "nameTamil": "ஆண்டி பண்டாரம்",
+    "aliases": [
+      "andipandaram"
+    ]
   },
   {
     "id": "sub_hindu_pandaram_pandaaram",
     "casteId": "cas_hindu_pandaram",
     "name": "Pandaaram",
-    "nameTamil": "பன்டாரம்",
-    "nameTamilAuto": true
+    "nameTamil": "பண்டாரம்"
   },
   {
     "id": "sub_hindu_pandithar_pandithar",
     "casteId": "cas_hindu_pandithar",
     "name": "Pandithar",
-    "nameTamil": "பன்டிதர்",
-    "nameTamilAuto": true
+    "nameTamil": "பண்டிதர்",
+    "aliases": [
+      "panditar"
+    ]
   },
   {
     "id": "sub_hindu_pandithar_vaidyar",
     "casteId": "cas_hindu_pandithar",
     "name": "Vaidyar",
-    "nameTamil": "வைட்யர்",
-    "nameTamilAuto": true
+    "nameTamil": "வைத்தியர்"
   },
   {
     "id": "sub_hindu_pandithar_navithar",
     "casteId": "cas_hindu_pandithar",
     "name": "Navithar",
-    "nameTamil": "நவிதர்",
-    "nameTamilAuto": true
+    "nameTamil": "நாவிதர்",
+    "aliases": [
+      "navitar"
+    ]
   },
   {
     "id": "sub_hindu_pandithar_ambattar",
     "casteId": "cas_hindu_pandithar",
     "name": "Ambattar",
-    "nameTamil": "அம்பட்டர்",
-    "nameTamilAuto": true
+    "nameTamil": "அம்பட்டர்"
   },
   {
     "id": "sub_hindu_parkavakulam_udayar",
     "casteId": "cas_hindu_parkavakulam",
     "name": "Udayar",
-    "nameTamil": "உதயர்",
-    "nameTamilAuto": true
+    "nameTamil": "உடையார்"
   },
   {
     "id": "sub_hindu_parkavakulam_malayaman",
     "casteId": "cas_hindu_parkavakulam",
     "name": "Malayaman",
-    "nameTamil": "மலயமன்",
-    "nameTamilAuto": true
+    "nameTamil": "மலையமான்"
   },
   {
     "id": "sub_hindu_parkavakulam_surutiman",
     "casteId": "cas_hindu_parkavakulam",
     "name": "Surutiman",
-    "nameTamil": "சுருடிமன்",
-    "nameTamilAuto": true
+    "nameTamil": "சுருதிமான்"
   },
   {
     "id": "sub_hindu_parkavakulam_nattaman",
     "casteId": "cas_hindu_parkavakulam",
     "name": "Nattaman",
-    "nameTamil": "நட்டமன்",
-    "nameTamilAuto": true
+    "nameTamil": "நாட்டாமான்"
   },
   {
     "id": "sub_hindu_parkavakulam_moopanar",
     "casteId": "cas_hindu_parkavakulam",
     "name": "Moopanar",
-    "nameTamil": "மூபனர்",
-    "nameTamilAuto": true
+    "nameTamil": "மூப்பனார்",
+    "aliases": [
+      "mupanar"
+    ]
   },
   {
     "id": "sub_hindu_pillai_saiva_pillai",
     "casteId": "cas_hindu_pillai",
     "name": "Saiva Pillai",
-    "nameTamil": "சைவ பில்லை",
-    "nameTamilAuto": true
+    "nameTamil": "சைவ பிள்ளை",
+    "aliases": [
+      "saivapillai"
+    ]
   },
   {
     "id": "sub_hindu_pillai_karkartha_vellalar",
     "casteId": "cas_hindu_pillai",
     "name": "Karkartha Vellalar",
-    "nameTamil": "கர்கர்த வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "கர்க்கர்த்தா வேளாளர்",
+    "aliases": [
+      "karkarta vellalar",
+      "karkarthavellalar"
+    ]
   },
   {
     "id": "sub_hindu_pillai_thondaimandala_vellalar",
     "casteId": "cas_hindu_pillai",
     "name": "Thondaimandala Vellalar",
-    "nameTamil": "தோன்டைமன்டல வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "தொண்டைமண்டல வேளாளர்",
+    "aliases": [
+      "thondaimandalavellalar",
+      "tondaimandala vellalar"
+    ]
   },
   {
     "id": "sub_hindu_pillai_arunattu_vellalar",
     "casteId": "cas_hindu_pillai",
     "name": "Arunattu Vellalar",
-    "nameTamil": "அருனட்டு வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "அறுநாட்டு வேளாளர்",
+    "aliases": [
+      "arunattuvellalar"
+    ]
   },
   {
     "id": "sub_hindu_pillai_kodikal_pillai",
     "casteId": "cas_hindu_pillai",
     "name": "Kodikal Pillai",
-    "nameTamil": "கோதிகல் பில்லை",
-    "nameTamilAuto": true
+    "nameTamil": "கொடிக்கால் பிள்ளை",
+    "aliases": [
+      "kodikalpillai"
+    ]
   },
   {
     "id": "sub_hindu_pillai_nanjil_vellalar",
     "casteId": "cas_hindu_pillai",
     "name": "Nanjil Vellalar",
-    "nameTamil": "நஞ்சில் வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "நாஞ்சில் வேளாளர்",
+    "aliases": [
+      "nanjilvellalar"
+    ]
   },
   {
     "id": "sub_hindu_pillai_sozhia_vellalar",
     "casteId": "cas_hindu_pillai",
     "name": "Sozhia Vellalar",
-    "nameTamil": "சோழிஅ வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "சோழிய வேளாளர்",
+    "aliases": [
+      "sozhiavellalar"
+    ]
   },
   {
     "id": "sub_hindu_pillai_karaikattu_vellalar",
     "casteId": "cas_hindu_pillai",
     "name": "Karaikattu Vellalar",
-    "nameTamil": "கரைகட்டு வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "காரைக்காட்டு வேளாளர்",
+    "aliases": [
+      "karaikattuvellalar"
+    ]
   },
   {
     "id": "sub_hindu_pillai_agamudaya_vellalar",
     "casteId": "cas_hindu_pillai",
     "name": "Agamudaya Vellalar",
-    "nameTamil": "அகமுதய வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "அகமுடைய வேளாளர்",
+    "aliases": [
+      "agamudayavellalar"
+    ]
   },
   {
     "id": "sub_hindu_pillai_pandya_vellalar",
     "casteId": "cas_hindu_pillai",
     "name": "Pandya Vellalar",
-    "nameTamil": "பன்ட்ய வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "பாண்டிய வேளாளர்",
+    "aliases": [
+      "pandyavellalar"
+    ]
   },
   {
     "id": "sub_hindu_pillai_illaththu_pillai",
     "casteId": "cas_hindu_pillai",
     "name": "Illaththu Pillai",
-    "nameTamil": "இல்லத்து பில்லை",
-    "nameTamilAuto": true
+    "nameTamil": "இல்லத்து பிள்ளை",
+    "aliases": [
+      "illaththupillai",
+      "illattu pillai"
+    ]
   },
   {
     "id": "sub_hindu_pillai_vellala_pillai",
     "casteId": "cas_hindu_pillai",
     "name": "Vellala Pillai",
-    "nameTamil": "வெல்லல பில்லை",
-    "nameTamilAuto": true
+    "nameTamil": "வேளாள பிள்ளை",
+    "aliases": [
+      "vellalapillai"
+    ]
   },
   {
     "id": "sub_hindu_reddiar_reddy",
     "casteId": "cas_hindu_reddiar",
     "name": "Reddy",
-    "nameTamil": "ரெட்ட்ய்",
-    "nameTamilAuto": true
+    "nameTamil": "ரெட்டி"
   },
   {
     "id": "sub_hindu_reddiar_reddiar",
     "casteId": "cas_hindu_reddiar",
     "name": "Reddiar",
-    "nameTamil": "ரெட்டிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "ரெட்டியார்"
   },
   {
     "id": "sub_hindu_reddiar_ganjam_reddy",
     "casteId": "cas_hindu_reddiar",
     "name": "Ganjam Reddy",
-    "nameTamil": "கஞ்சம் ரெட்ட்ய்",
-    "nameTamilAuto": true
+    "nameTamil": "கஞ்சம் ரெட்டி",
+    "aliases": [
+      "ganjamreddy"
+    ]
   },
   {
     "id": "sub_hindu_reddiar_motati_reddy",
     "casteId": "cas_hindu_reddiar",
     "name": "Motati Reddy",
-    "nameTamil": "மோடடி ரெட்ட்ய்",
-    "nameTamilAuto": true
+    "nameTamil": "மோட்டாடி ரெட்டி",
+    "aliases": [
+      "motatireddy"
+    ]
   },
   {
     "id": "sub_hindu_reddiar_palli_reddy",
     "casteId": "cas_hindu_reddiar",
     "name": "Palli Reddy",
-    "nameTamil": "பல்லி ரெட்ட்ய்",
-    "nameTamilAuto": true
+    "nameTamil": "பள்ளி ரெட்டி",
+    "aliases": [
+      "pallireddy"
+    ]
   },
   {
     "id": "sub_hindu_reddiar_pakanati",
     "casteId": "cas_hindu_reddiar",
     "name": "Pakanati",
-    "nameTamil": "பகனடி",
-    "nameTamilAuto": true
+    "nameTamil": "பாகநாடு"
   },
   {
     "id": "sub_hindu_reddiar_velnati",
     "casteId": "cas_hindu_reddiar",
     "name": "Velnati",
-    "nameTamil": "வேல்னடி",
-    "nameTamilAuto": true
+    "nameTamil": "வேல்நாடு"
   },
   {
     "id": "sub_hindu_reddiar_desuru_reddy",
     "casteId": "cas_hindu_reddiar",
     "name": "Desuru Reddy",
-    "nameTamil": "டேசுரு ரெட்ட்ய்",
-    "nameTamilAuto": true
+    "nameTamil": "தேசூரு ரெட்டி",
+    "aliases": [
+      "desurureddy"
+    ]
   },
   {
     "id": "sub_hindu_reddiar_gandla",
     "casteId": "cas_hindu_reddiar",
     "name": "Gandla",
-    "nameTamil": "கன்ட்ல",
-    "nameTamilAuto": true
+    "nameTamil": "கந்தல"
   },
   {
     "id": "sub_hindu_reddiar_desai",
     "casteId": "cas_hindu_reddiar",
     "name": "Desai",
-    "nameTamil": "டேசை",
-    "nameTamilAuto": true
+    "nameTamil": "தேசாய்"
   },
   {
     "id": "sub_hindu_saliyar_saliyar",
     "casteId": "cas_hindu_saliyar",
     "name": "Saliyar",
-    "nameTamil": "சலியர்",
-    "nameTamilAuto": true
+    "nameTamil": "சாலியர்"
   },
   {
     "id": "sub_hindu_saliyar_sali",
     "casteId": "cas_hindu_saliyar",
     "name": "Sali",
-    "nameTamil": "சலி",
-    "nameTamilAuto": true
+    "nameTamil": "சாலி"
   },
   {
     "id": "sub_hindu_saliyar_pattariyar",
     "casteId": "cas_hindu_saliyar",
     "name": "Pattariyar",
-    "nameTamil": "பட்டரியர்",
-    "nameTamilAuto": true
+    "nameTamil": "பட்டறியார்"
   },
   {
     "id": "sub_hindu_saliyar_karaikattu_saliyar",
     "casteId": "cas_hindu_saliyar",
     "name": "Karaikattu Saliyar",
-    "nameTamil": "கரைகட்டு சலியர்",
-    "nameTamilAuto": true
+    "nameTamil": "காரைக்காட்டு சாலியர்",
+    "aliases": [
+      "karaikattusaliyar"
+    ]
   },
   {
     "id": "sub_hindu_saliyar_padmasaliyar",
     "casteId": "cas_hindu_saliyar",
     "name": "Padmasaliyar",
-    "nameTamil": "பட்மசலியர்",
-    "nameTamilAuto": true
+    "nameTamil": "பத்மசாலியர்"
   },
   {
     "id": "sub_hindu_saliyar_sourashtra_sali",
     "casteId": "cas_hindu_saliyar",
     "name": "Sourashtra Sali",
-    "nameTamil": "சௌரஷ்ட்ர சலி",
-    "nameTamilAuto": true
+    "nameTamil": "சௌராஷ்டிர சாலி",
+    "aliases": [
+      "sourashtrasali"
+    ]
   },
   {
     "id": "sub_hindu_saliyar_sale",
     "casteId": "cas_hindu_saliyar",
     "name": "Sale",
-    "nameTamil": "சலே",
-    "nameTamilAuto": true
+    "nameTamil": "சாலே"
   },
   {
     "id": "sub_hindu_senaithalaivar_senaithalaivar",
     "casteId": "cas_hindu_senaithalaivar",
     "name": "Senaithalaivar",
-    "nameTamil": "சேனைதலைவர்",
-    "nameTamilAuto": true
+    "nameTamil": "சேனைத்தலைவர்",
+    "aliases": [
+      "senaitalaivar"
+    ]
   },
   {
     "id": "sub_hindu_senaithalaivar_senaikudaiyar",
     "casteId": "cas_hindu_senaithalaivar",
     "name": "Senaikudaiyar",
-    "nameTamil": "சேனைகுதையர்",
-    "nameTamilAuto": true
+    "nameTamil": "சேனைக்குடையார்"
   },
   {
     "id": "sub_hindu_senaithalaivar_illaivaniar",
     "casteId": "cas_hindu_senaithalaivar",
     "name": "Illaivaniar",
-    "nameTamil": "இல்லைவனிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "இளைவாணியர்"
   },
   {
     "id": "sub_hindu_senaithalaivar_anuppan",
     "casteId": "cas_hindu_senaithalaivar",
     "name": "Anuppan",
-    "nameTamil": "அனுப்பன்",
-    "nameTamilAuto": true
+    "nameTamil": "அனுப்பன்"
   },
   {
     "id": "sub_hindu_sourashtra_sourashtra",
     "casteId": "cas_hindu_sourashtra",
     "name": "Sourashtra",
-    "nameTamil": "சௌரஷ்ட்ர",
-    "nameTamilAuto": true
+    "nameTamil": "சௌராஷ்டிர"
   },
   {
     "id": "sub_hindu_sourashtra_patnulkaran",
     "casteId": "cas_hindu_sourashtra",
     "name": "Patnulkaran",
-    "nameTamil": "பட்னுல்கரன்",
-    "nameTamilAuto": true
+    "nameTamil": "பட்டுநூல்காரன்"
   },
   {
     "id": "sub_hindu_sourashtra_pattunoolkarar",
     "casteId": "cas_hindu_sourashtra",
     "name": "Pattunoolkarar",
-    "nameTamil": "பட்டுனூல்கரர்",
-    "nameTamilAuto": true
+    "nameTamil": "பட்டுநூல்காரர்",
+    "aliases": [
+      "pattunulkarar"
+    ]
   },
   {
     "id": "sub_hindu_sourashtra_khatri",
     "casteId": "cas_hindu_sourashtra",
     "name": "Khatri",
-    "nameTamil": "கட்ரி",
-    "nameTamilAuto": true
+    "nameTamil": "கத்ரி"
   },
   {
     "id": "sub_hindu_sourashtra_saurashtra",
     "casteId": "cas_hindu_sourashtra",
     "name": "Saurashtra",
-    "nameTamil": "சௌரஷ்ட்ர",
-    "nameTamilAuto": true
+    "nameTamil": "சௌராஷ்டிர"
   },
   {
     "id": "sub_hindu_udayar_udayar",
     "casteId": "cas_hindu_udayar",
     "name": "Udayar",
-    "nameTamil": "உதயர்",
-    "nameTamilAuto": true
+    "nameTamil": "உடையார்"
   },
   {
     "id": "sub_hindu_udayar_vellala_udayar",
     "casteId": "cas_hindu_udayar",
     "name": "Vellala Udayar",
-    "nameTamil": "வெல்லல உதயர்",
-    "nameTamilAuto": true
+    "nameTamil": "வேளாள உடையார்",
+    "aliases": [
+      "vellalaudayar"
+    ]
   },
   {
     "id": "sub_hindu_udayar_moopanar",
     "casteId": "cas_hindu_udayar",
     "name": "Moopanar",
-    "nameTamil": "மூபனர்",
-    "nameTamilAuto": true
+    "nameTamil": "மூப்பனார்",
+    "aliases": [
+      "mupanar"
+    ]
   },
   {
     "id": "sub_hindu_udayar_gangai_vamsam",
     "casteId": "cas_hindu_udayar",
     "name": "Gangai Vamsam",
     "nameTamil": "கங்கை வம்சம்",
-    "nameTamilAuto": true
+    "aliases": [
+      "gangaivamsam"
+    ]
   },
   {
     "id": "sub_hindu_vannar_vannar",
     "casteId": "cas_hindu_vannar",
     "name": "Vannar",
-    "nameTamil": "வன்னர்",
-    "nameTamilAuto": true
+    "nameTamil": "வண்ணார்"
   },
   {
     "id": "sub_hindu_vannar_ekali",
     "casteId": "cas_hindu_vannar",
     "name": "Ekali",
-    "nameTamil": "ஏகலி",
-    "nameTamilAuto": true
+    "nameTamil": "ஏகாலி"
   },
   {
     "id": "sub_hindu_vannar_salavai_thozhilalar",
     "casteId": "cas_hindu_vannar",
     "name": "Salavai Thozhilalar",
-    "nameTamil": "சலவை தோழிலலர்",
-    "nameTamilAuto": true
+    "nameTamil": "சலவை தொழிலாளர்",
+    "aliases": [
+      "salavai tozhilalar",
+      "salavaithozhilalar"
+    ]
   },
   {
     "id": "sub_hindu_vannar_puthirai_vannan",
     "casteId": "cas_hindu_vannar",
     "name": "Puthirai Vannan",
-    "nameTamil": "புதிரை வன்னன்",
-    "nameTamilAuto": true
+    "nameTamil": "புதிரை வண்ணான்",
+    "aliases": [
+      "puthiraivannan",
+      "putirai vannan"
+    ]
   },
   {
     "id": "sub_hindu_vannar_rajaka",
     "casteId": "cas_hindu_vannar",
     "name": "Rajaka",
-    "nameTamil": "ராஜக",
-    "nameTamilAuto": true
+    "nameTamil": "ரஜக"
   },
   {
     "id": "sub_hindu_vannar_dhobi",
     "casteId": "cas_hindu_vannar",
     "name": "Dhobi",
-    "nameTamil": "தோபி",
-    "nameTamilAuto": true
+    "nameTamil": "சலவைத் தொழிலாளி",
+    "aliases": [
+      "dobi"
+    ]
   },
   {
     "id": "sub_hindu_vanniyar_vanniyar",
     "casteId": "cas_hindu_vanniyar",
     "name": "Vanniyar",
-    "nameTamil": "வன்னியர்",
-    "nameTamilAuto": true
+    "nameTamil": "வன்னியர்"
   },
   {
     "id": "sub_hindu_vanniyar_vanniya_kula_kshatriyar",
     "casteId": "cas_hindu_vanniyar",
     "name": "Vanniya Kula Kshatriyar",
-    "nameTamil": "வன்னிய குல க்ஷட்ரியர்",
-    "nameTamilAuto": true
+    "nameTamil": "வன்னிய குல க்ஷத்திரியர்",
+    "aliases": [
+      "vanniyakulakshatriyar"
+    ]
   },
   {
     "id": "sub_hindu_vanniyar_padayachi",
     "casteId": "cas_hindu_vanniyar",
     "name": "Padayachi",
-    "nameTamil": "பதயசி",
-    "nameTamilAuto": true
+    "nameTamil": "படையாச்சி"
   },
   {
     "id": "sub_hindu_vanniyar_palli",
     "casteId": "cas_hindu_vanniyar",
     "name": "Palli",
-    "nameTamil": "பல்லி",
-    "nameTamilAuto": true
+    "nameTamil": "பள்ளி"
   },
   {
     "id": "sub_hindu_vanniyar_naicker",
     "casteId": "cas_hindu_vanniyar",
     "name": "Naicker",
-    "nameTamil": "நைக்கேர்",
-    "nameTamilAuto": true
+    "nameTamil": "நாயக்கர்"
   },
   {
     "id": "sub_hindu_vanniyar_gounder",
     "casteId": "cas_hindu_vanniyar",
     "name": "Gounder",
-    "nameTamil": "கௌன்டேர்",
-    "nameTamilAuto": true
+    "nameTamil": "கவுண்டர்"
   },
   {
     "id": "sub_hindu_vanniyar_agnikula_kshatriya",
     "casteId": "cas_hindu_vanniyar",
     "name": "Agnikula Kshatriya",
-    "nameTamil": "அக்னிகுல க்ஷட்ரிய",
-    "nameTamilAuto": true
+    "nameTamil": "அக்னிகுல க்ஷத்திரிய",
+    "aliases": [
+      "agnikulakshatriya"
+    ]
   },
   {
     "id": "sub_hindu_vanniyar_vanniar",
     "casteId": "cas_hindu_vanniyar",
     "name": "Vanniar",
-    "nameTamil": "வன்னிஅர்",
-    "nameTamilAuto": true
+    "nameTamil": "வன்னியர்"
   },
   {
     "id": "sub_hindu_vellalar_karkathar",
     "casteId": "cas_hindu_vellalar",
     "name": "Karkathar",
-    "nameTamil": "கர்கதர்",
-    "nameTamilAuto": true
+    "nameTamil": "கார்காத்தார்",
+    "aliases": [
+      "karkatar"
+    ]
   },
   {
     "id": "sub_hindu_vellalar_thondaimandala_saiva_vellalar",
     "casteId": "cas_hindu_vellalar",
     "name": "Thondaimandala Saiva Vellalar",
-    "nameTamil": "தோன்டைமன்டல சைவ வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "தொண்டைமண்டல சைவ வேளாளர்",
+    "aliases": [
+      "thondaimandalasaivavellalar",
+      "tondaimandala saiva vellalar"
+    ]
   },
   {
     "id": "sub_hindu_vellalar_arunattu_vellalar",
     "casteId": "cas_hindu_vellalar",
     "name": "Arunattu Vellalar",
-    "nameTamil": "அருனட்டு வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "அறுநாட்டு வேளாளர்",
+    "aliases": [
+      "arunattuvellalar"
+    ]
   },
   {
     "id": "sub_hindu_vellalar_kongu_vellalar",
     "casteId": "cas_hindu_vellalar",
     "name": "Kongu Vellalar",
-    "nameTamil": "கோங்கு வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "கொங்கு வேளாளர்",
+    "aliases": [
+      "konguvellalar"
+    ]
   },
   {
     "id": "sub_hindu_vellalar_nanjil_vellalar",
     "casteId": "cas_hindu_vellalar",
     "name": "Nanjil Vellalar",
-    "nameTamil": "நஞ்சில் வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "நாஞ்சில் வேளாளர்",
+    "aliases": [
+      "nanjilvellalar"
+    ]
   },
   {
     "id": "sub_hindu_vellalar_sozhia_vellalar",
     "casteId": "cas_hindu_vellalar",
     "name": "Sozhia Vellalar",
-    "nameTamil": "சோழிஅ வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "சோழிய வேளாளர்",
+    "aliases": [
+      "sozhiavellalar"
+    ]
   },
   {
     "id": "sub_hindu_vellalar_karaikattu_vellalar",
     "casteId": "cas_hindu_vellalar",
     "name": "Karaikattu Vellalar",
-    "nameTamil": "கரைகட்டு வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "காரைக்காட்டு வேளாளர்",
+    "aliases": [
+      "karaikattuvellalar"
+    ]
   },
   {
     "id": "sub_hindu_vellalar_pandya_vellalar",
     "casteId": "cas_hindu_vellalar",
     "name": "Pandya Vellalar",
-    "nameTamil": "பன்ட்ய வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "பாண்டிய வேளாளர்",
+    "aliases": [
+      "pandyavellalar"
+    ]
   },
   {
     "id": "sub_hindu_vellalar_saiva_vellalar",
     "casteId": "cas_hindu_vellalar",
     "name": "Saiva Vellalar",
-    "nameTamil": "சைவ வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "சைவ வேளாளர்",
+    "aliases": [
+      "saivavellalar"
+    ]
   },
   {
     "id": "sub_hindu_vellalar_sirukudi_vellalar",
     "casteId": "cas_hindu_vellalar",
     "name": "Sirukudi Vellalar",
-    "nameTamil": "சிருகுடி வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "சிறுகுடி வேளாளர்",
+    "aliases": [
+      "sirukudivellalar"
+    ]
   },
   {
     "id": "sub_hindu_vellalar_panneeru_vellalar",
     "casteId": "cas_hindu_vellalar",
     "name": "Panneeru Vellalar",
-    "nameTamil": "பன்னீரு வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "பன்னீரு வேளாளர்",
+    "aliases": [
+      "panneeruvellalar",
+      "panniru vellalar"
+    ]
   },
   {
     "id": "sub_hindu_vellalar_vellan",
     "casteId": "cas_hindu_vellalar",
     "name": "Vellan",
-    "nameTamil": "வெல்லன்",
-    "nameTamilAuto": true
+    "nameTamil": "வெள்ளான்"
   },
   {
     "id": "sub_hindu_vellalar_chozhia_vellalar",
     "casteId": "cas_hindu_vellalar",
     "name": "Chozhia Vellalar",
-    "nameTamil": "சோழிஅ வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "சோழிய வேளாளர்",
+    "aliases": [
+      "chozhiavellalar"
+    ]
   },
   {
     "id": "sub_hindu_vettuva_gounder_vettuvar",
     "casteId": "cas_hindu_vettuva_gounder",
     "name": "Vettuvar",
-    "nameTamil": "வெட்டுவர்",
-    "nameTamilAuto": true
+    "nameTamil": "வேட்டுவர்"
   },
   {
     "id": "sub_hindu_vettuva_gounder_vettuva_gounder",
     "casteId": "cas_hindu_vettuva_gounder",
     "name": "Vettuva Gounder",
-    "nameTamil": "வெட்டுவ கௌன்டேர்",
-    "nameTamilAuto": true
+    "nameTamil": "வேட்டுவ கவுண்டர்",
+    "aliases": [
+      "vettuvagounder"
+    ]
   },
   {
     "id": "sub_hindu_vettuva_gounder_vettuva",
     "casteId": "cas_hindu_vettuva_gounder",
     "name": "Vettuva",
-    "nameTamil": "வெட்டுவ",
-    "nameTamilAuto": true
+    "nameTamil": "வேட்டுவ"
   },
   {
     "id": "sub_hindu_vishwakarma_achari",
     "casteId": "cas_hindu_vishwakarma",
     "name": "Achari",
-    "nameTamil": "அசரி",
-    "nameTamilAuto": true
+    "nameTamil": "ஆசாரி"
   },
   {
     "id": "sub_hindu_vishwakarma_asari",
     "casteId": "cas_hindu_vishwakarma",
     "name": "Asari",
-    "nameTamil": "அசரி",
-    "nameTamilAuto": true
+    "nameTamil": "ஆசாரி"
   },
   {
     "id": "sub_hindu_vishwakarma_kammalar",
     "casteId": "cas_hindu_vishwakarma",
     "name": "Kammalar",
-    "nameTamil": "கம்மலர்",
-    "nameTamilAuto": true
+    "nameTamil": "கம்மாளர்"
   },
   {
     "id": "sub_hindu_vishwakarma_kannar",
     "casteId": "cas_hindu_vishwakarma",
     "name": "Kannar",
-    "nameTamil": "கன்னர்",
-    "nameTamilAuto": true
+    "nameTamil": "கன்னார்"
   },
   {
     "id": "sub_hindu_vishwakarma_kollar",
     "casteId": "cas_hindu_vishwakarma",
     "name": "Kollar",
-    "nameTamil": "கொல்லர்",
-    "nameTamilAuto": true
+    "nameTamil": "கொல்லர்"
   },
   {
     "id": "sub_hindu_vishwakarma_thattar",
     "casteId": "cas_hindu_vishwakarma",
     "name": "Thattar",
-    "nameTamil": "தட்டர்",
-    "nameTamilAuto": true
+    "nameTamil": "தட்டார்",
+    "aliases": [
+      "tattar"
+    ]
   },
   {
     "id": "sub_hindu_vishwakarma_thatchar",
     "casteId": "cas_hindu_vishwakarma",
     "name": "Thatchar",
     "nameTamil": "தச்சர்",
-    "nameTamilAuto": true
+    "aliases": [
+      "tatchar"
+    ]
   },
   {
     "id": "sub_hindu_vishwakarma_sirpi",
     "casteId": "cas_hindu_vishwakarma",
     "name": "Sirpi",
-    "nameTamil": "சிர்பி",
-    "nameTamilAuto": true
+    "nameTamil": "சிற்பி"
   },
   {
     "id": "sub_hindu_vishwakarma_pancha_kammalar",
     "casteId": "cas_hindu_vishwakarma",
     "name": "Pancha Kammalar",
-    "nameTamil": "பன்ச கம்மலர்",
-    "nameTamilAuto": true
+    "nameTamil": "பஞ்ச கம்மாளர்",
+    "aliases": [
+      "panchakammalar"
+    ]
   },
   {
     "id": "sub_hindu_vishwakarma_vishwabrahmin",
     "casteId": "cas_hindu_vishwakarma",
     "name": "Vishwabrahmin",
-    "nameTamil": "விஷ்வப்ரஹ்மின்",
-    "nameTamilAuto": true
+    "nameTamil": "விஸ்வபிராமணர்"
   },
   {
     "id": "sub_hindu_vishwakarma_viswakarma",
     "casteId": "cas_hindu_vishwakarma",
     "name": "Viswakarma",
-    "nameTamil": "விச்வகர்ம",
-    "nameTamilAuto": true
+    "nameTamil": "விஸ்வகர்மா"
   },
   {
     "id": "sub_hindu_yadava_yadava",
     "casteId": "cas_hindu_yadava",
     "name": "Yadava",
-    "nameTamil": "யதவ",
-    "nameTamilAuto": true
+    "nameTamil": "யாதவ"
   },
   {
     "id": "sub_hindu_yadava_konar",
     "casteId": "cas_hindu_yadava",
     "name": "Konar",
-    "nameTamil": "கோனர்",
-    "nameTamilAuto": true
+    "nameTamil": "கோனார்"
   },
   {
     "id": "sub_hindu_yadava_idaiyar",
     "casteId": "cas_hindu_yadava",
     "name": "Idaiyar",
-    "nameTamil": "இதையர்",
-    "nameTamilAuto": true
+    "nameTamil": "இடையர்"
   },
   {
     "id": "sub_hindu_yadava_ayar",
     "casteId": "cas_hindu_yadava",
     "name": "Ayar",
-    "nameTamil": "அயர்",
-    "nameTamilAuto": true
+    "nameTamil": "ஆயர்"
   },
   {
     "id": "sub_hindu_yadava_golla",
     "casteId": "cas_hindu_yadava",
     "name": "Golla",
-    "nameTamil": "கொல்ல",
-    "nameTamilAuto": true
+    "nameTamil": "கொல்ல"
   },
   {
     "id": "sub_hindu_yadava_asthathra_golla",
     "casteId": "cas_hindu_yadava",
     "name": "Asthathra Golla",
-    "nameTamil": "அச்தத்ர கொல்ல",
-    "nameTamilAuto": true
+    "nameTamil": "அஸ்தத்ர கொல்ல",
+    "aliases": [
+      "astatra golla",
+      "asthathragolla"
+    ]
   },
   {
     "id": "sub_hindu_yadava_pakanati_golla",
     "casteId": "cas_hindu_yadava",
     "name": "Pakanati Golla",
-    "nameTamil": "பகனடி கொல்ல",
-    "nameTamilAuto": true
+    "nameTamil": "பாகநாடு கொல்ல",
+    "aliases": [
+      "pakanatigolla"
+    ]
   },
   {
     "id": "sub_hindu_yogeeswarar_yogi",
     "casteId": "cas_hindu_yogeeswarar",
     "name": "Yogi",
-    "nameTamil": "யோகி",
-    "nameTamilAuto": true
+    "nameTamil": "யோகி"
   },
   {
     "id": "sub_hindu_yogeeswarar_yogeeswarar",
     "casteId": "cas_hindu_yogeeswarar",
     "name": "Yogeeswarar",
-    "nameTamil": "யோகீச்வரர்",
-    "nameTamilAuto": true
+    "nameTamil": "யோகீஸ்வரர்",
+    "aliases": [
+      "yogiswarar"
+    ]
   },
   {
     "id": "sub_hindu_yogeeswarar_jogi",
     "casteId": "cas_hindu_yogeeswarar",
     "name": "Jogi",
-    "nameTamil": "ஜோகி",
-    "nameTamilAuto": true
+    "nameTamil": "ஜோகி"
   },
   {
     "id": "sub_hindu_yogeeswarar_yogeeswara",
     "casteId": "cas_hindu_yogeeswarar",
     "name": "Yogeeswara",
-    "nameTamil": "யோகீச்வர",
-    "nameTamilAuto": true
+    "nameTamil": "யோகீஸ்வர",
+    "aliases": [
+      "yogiswara"
+    ]
   },
   {
     "id": "sub_hindu_veerasaiva_lingayat_lingayat",
     "casteId": "cas_hindu_veerasaiva_lingayat",
     "name": "Lingayat",
-    "nameTamil": "லிங்கயட்",
-    "nameTamilAuto": true
+    "nameTamil": "லிங்காயத்"
   },
   {
     "id": "sub_hindu_veerasaiva_lingayat_veerasaiva",
     "casteId": "cas_hindu_veerasaiva_lingayat",
     "name": "Veerasaiva",
     "nameTamil": "வீரசைவ",
-    "nameTamilAuto": true
+    "aliases": [
+      "virasaiva"
+    ]
   },
   {
     "id": "sub_hindu_veerasaiva_lingayat_jangam",
     "casteId": "cas_hindu_veerasaiva_lingayat",
     "name": "Jangam",
-    "nameTamil": "ஜங்கம்",
-    "nameTamilAuto": true
+    "nameTamil": "ஜங்கம்"
   },
   {
     "id": "sub_hindu_veerasaiva_lingayat_banajiga",
     "casteId": "cas_hindu_veerasaiva_lingayat",
     "name": "Banajiga",
-    "nameTamil": "பனஜிக",
-    "nameTamilAuto": true
+    "nameTamil": "பனஜிக"
   },
   {
     "id": "sub_hindu_veerasaiva_lingayat_sadar_lingayat",
     "casteId": "cas_hindu_veerasaiva_lingayat",
     "name": "Sadar Lingayat",
-    "nameTamil": "சதர் லிங்கயட்",
-    "nameTamilAuto": true
+    "nameTamil": "சாதர் லிங்காயத்",
+    "aliases": [
+      "sadarlingayat"
+    ]
   },
   {
     "id": "sub_hindu_other_hindu_caste_no_bar",
     "casteId": "cas_hindu_other_hindu",
     "name": "Caste No Bar",
-    "nameTamil": "கச்டே நோ பர்",
-    "nameTamilAuto": true
+    "nameTamil": "சாதி இல்லை வேறுபாடு",
+    "aliases": [
+      "castenobar"
+    ]
   },
   {
     "id": "sub_hindu_other_hindu_other",
     "casteId": "cas_hindu_other_hindu",
     "name": "Other",
-    "nameTamil": "ஓதேர்",
-    "nameTamilAuto": true
+    "nameTamil": "மற்றவை",
+    "aliases": [
+      "oter"
+    ]
   },
   {
     "id": "sub_muslim_sunni_sunni",
     "casteId": "cas_muslim_sunni",
     "name": "Sunni",
-    "nameTamil": "சுன்னி",
-    "nameTamilAuto": true
+    "nameTamil": "சுன்னி"
   },
   {
     "id": "sub_muslim_sunni_hanafi",
     "casteId": "cas_muslim_sunni",
     "name": "Hanafi",
-    "nameTamil": "ஹனபி",
-    "nameTamilAuto": true
+    "nameTamil": "ஹனஃபி"
   },
   {
     "id": "sub_muslim_sunni_shafi",
     "casteId": "cas_muslim_sunni",
     "name": "Shafi",
-    "nameTamil": "ஷபி",
-    "nameTamilAuto": true
+    "nameTamil": "ஷாஃபி"
   },
   {
     "id": "sub_muslim_sunni_sunni_hanafi",
     "casteId": "cas_muslim_sunni",
     "name": "Sunni Hanafi",
-    "nameTamil": "சுன்னி ஹனபி",
-    "nameTamilAuto": true
+    "nameTamil": "சுன்னி ஹனஃபி",
+    "aliases": [
+      "sunnihanafi"
+    ]
   },
   {
     "id": "sub_muslim_sunni_sunni_shafi",
     "casteId": "cas_muslim_sunni",
     "name": "Sunni Shafi",
-    "nameTamil": "சுன்னி ஷபி",
-    "nameTamilAuto": true
+    "nameTamil": "சுன்னி ஷாஃபி",
+    "aliases": [
+      "sunnishafi"
+    ]
   },
   {
     "id": "sub_muslim_shia_shia",
     "casteId": "cas_muslim_shia",
     "name": "Shia",
-    "nameTamil": "ஷிஅ",
-    "nameTamilAuto": true
+    "nameTamil": "ஷியா"
   },
   {
     "id": "sub_muslim_shia_ithna_ashari",
     "casteId": "cas_muslim_shia",
     "name": "Ithna Ashari",
-    "nameTamil": "இத்ன அஷரி",
-    "nameTamilAuto": true
+    "nameTamil": "இஸ்னா ஆசாரி",
+    "aliases": [
+      "ithnaashari",
+      "itna ashari"
+    ]
   },
   {
     "id": "sub_muslim_shia_bohra",
     "casteId": "cas_muslim_shia",
     "name": "Bohra",
-    "nameTamil": "போஹ்ர",
-    "nameTamilAuto": true
+    "nameTamil": "போரா"
   },
   {
     "id": "sub_muslim_shia_ismaili",
     "casteId": "cas_muslim_shia",
     "name": "Ismaili",
-    "nameTamil": "இச்மைலி",
-    "nameTamilAuto": true
+    "nameTamil": "இஸ்மாயிலி"
   },
   {
     "id": "sub_muslim_shia_dawoodi_bohra",
     "casteId": "cas_muslim_shia",
     "name": "Dawoodi Bohra",
-    "nameTamil": "டவூதி போஹ்ர",
-    "nameTamilAuto": true
+    "nameTamil": "தாவூதி போரா",
+    "aliases": [
+      "dawoodibohra",
+      "dawudi bohra"
+    ]
   },
   {
     "id": "sub_muslim_sheikh_sheikh",
     "casteId": "cas_muslim_sheikh",
     "name": "Sheikh",
-    "nameTamil": "ஷேஇக்",
-    "nameTamilAuto": true
+    "nameTamil": "ஷேக்"
   },
   {
     "id": "sub_muslim_sheikh_shaik",
     "casteId": "cas_muslim_sheikh",
     "name": "Shaik",
-    "nameTamil": "ஷைக்",
-    "nameTamilAuto": true
+    "nameTamil": "ஷேக்"
   },
   {
     "id": "sub_muslim_syed_syed",
     "casteId": "cas_muslim_syed",
     "name": "Syed",
-    "nameTamil": "ச்யேட்",
-    "nameTamilAuto": true
+    "nameTamil": "சையது"
   },
   {
     "id": "sub_muslim_syed_sayyad",
     "casteId": "cas_muslim_syed",
     "name": "Sayyad",
-    "nameTamil": "சய்யட்",
-    "nameTamilAuto": true
+    "nameTamil": "சையது"
   },
   {
     "id": "sub_muslim_syed_sayyid",
     "casteId": "cas_muslim_syed",
     "name": "Sayyid",
-    "nameTamil": "சய்யிட்",
-    "nameTamilAuto": true
+    "nameTamil": "சையது"
   },
   {
     "id": "sub_muslim_pathan_pathan",
     "casteId": "cas_muslim_pathan",
     "name": "Pathan",
-    "nameTamil": "பதன்",
-    "nameTamilAuto": true
+    "nameTamil": "பதான்",
+    "aliases": [
+      "patan"
+    ]
   },
   {
     "id": "sub_muslim_pathan_khan",
     "casteId": "cas_muslim_pathan",
     "name": "Khan",
-    "nameTamil": "கன்",
-    "nameTamilAuto": true
+    "nameTamil": "கான்"
   },
   {
     "id": "sub_muslim_pathan_pashtun",
     "casteId": "cas_muslim_pathan",
     "name": "Pashtun",
-    "nameTamil": "பஷ்டுன்",
-    "nameTamilAuto": true
+    "nameTamil": "பஷ்தூன்"
   },
   {
     "id": "sub_muslim_mughal_mughal",
     "casteId": "cas_muslim_mughal",
     "name": "Mughal",
-    "nameTamil": "முகல்",
-    "nameTamilAuto": true
+    "nameTamil": "முகலாய"
   },
   {
     "id": "sub_muslim_mughal_mogal",
     "casteId": "cas_muslim_mughal",
     "name": "Mogal",
-    "nameTamil": "மோகல்",
-    "nameTamilAuto": true
+    "nameTamil": "முகலாய"
   },
   {
     "id": "sub_muslim_labbai_labbai",
     "casteId": "cas_muslim_labbai",
     "name": "Labbai",
-    "nameTamil": "லப்பை",
-    "nameTamilAuto": true
+    "nameTamil": "லப்பை"
   },
   {
     "id": "sub_muslim_labbai_lebbai",
     "casteId": "cas_muslim_labbai",
     "name": "Lebbai",
-    "nameTamil": "லெப்பை",
-    "nameTamilAuto": true
+    "nameTamil": "லப்பை"
   },
   {
     "id": "sub_muslim_labbai_labba",
     "casteId": "cas_muslim_labbai",
     "name": "Labba",
-    "nameTamil": "லப்ப",
-    "nameTamilAuto": true
+    "nameTamil": "லப்பை"
   },
   {
     "id": "sub_muslim_labbai_sunni_labbai",
     "casteId": "cas_muslim_labbai",
     "name": "Sunni Labbai",
     "nameTamil": "சுன்னி லப்பை",
-    "nameTamilAuto": true
+    "aliases": [
+      "sunnilabbai"
+    ]
   },
   {
     "id": "sub_muslim_marakayar_marakayar",
     "casteId": "cas_muslim_marakayar",
     "name": "Marakayar",
-    "nameTamil": "மரகயர்",
-    "nameTamilAuto": true
+    "nameTamil": "மரைக்காயர்"
   },
   {
     "id": "sub_muslim_marakayar_marakkayar",
     "casteId": "cas_muslim_marakayar",
     "name": "Marakkayar",
-    "nameTamil": "மரக்கயர்",
-    "nameTamilAuto": true
+    "nameTamil": "மரைக்காயர்"
   },
   {
     "id": "sub_muslim_marakayar_maraikkayar",
     "casteId": "cas_muslim_marakayar",
     "name": "Maraikkayar",
-    "nameTamil": "மரைக்கயர்",
-    "nameTamilAuto": true
+    "nameTamil": "மரைக்காயர்"
   },
   {
     "id": "sub_muslim_marakayar_marakkar",
     "casteId": "cas_muslim_marakayar",
     "name": "Marakkar",
-    "nameTamil": "மரக்கர்",
-    "nameTamilAuto": true
+    "nameTamil": "மரைக்கார்"
   },
   {
     "id": "sub_muslim_rowther_rowther",
     "casteId": "cas_muslim_rowther",
     "name": "Rowther",
-    "nameTamil": "ரோவ்தேர்",
-    "nameTamilAuto": true
+    "nameTamil": "ராவுத்தர்",
+    "aliases": [
+      "rowter"
+    ]
   },
   {
     "id": "sub_muslim_rowther_ravuthar",
     "casteId": "cas_muslim_rowther",
     "name": "Ravuthar",
-    "nameTamil": "ரவுதர்",
-    "nameTamilAuto": true
+    "nameTamil": "ராவுத்தர்",
+    "aliases": [
+      "ravutar"
+    ]
   },
   {
     "id": "sub_muslim_rowther_rawther",
     "casteId": "cas_muslim_rowther",
     "name": "Rawther",
-    "nameTamil": "ரவ்தேர்",
-    "nameTamilAuto": true
+    "nameTamil": "ராவுத்தர்",
+    "aliases": [
+      "rawter"
+    ]
   },
   {
     "id": "sub_muslim_rowther_ravuther",
     "casteId": "cas_muslim_rowther",
     "name": "Ravuther",
-    "nameTamil": "ரவுதேர்",
-    "nameTamilAuto": true
+    "nameTamil": "ராவுத்தர்",
+    "aliases": [
+      "ravuter"
+    ]
   },
   {
     "id": "sub_muslim_kayalar_kayalar",
     "casteId": "cas_muslim_kayalar",
     "name": "Kayalar",
-    "nameTamil": "கயலர்",
-    "nameTamilAuto": true
+    "nameTamil": "கயலார்"
   },
   {
     "id": "sub_muslim_kayalar_kayal",
     "casteId": "cas_muslim_kayalar",
     "name": "Kayal",
-    "nameTamil": "கயல்",
-    "nameTamilAuto": true
+    "nameTamil": "கயல்"
   },
   {
     "id": "sub_muslim_kayalar_kayalan",
     "casteId": "cas_muslim_kayalar",
     "name": "Kayalan",
-    "nameTamil": "கயலன்",
-    "nameTamilAuto": true
+    "nameTamil": "கயலான்"
   },
   {
     "id": "sub_muslim_dudekula_dudekula",
     "casteId": "cas_muslim_dudekula",
     "name": "Dudekula",
-    "nameTamil": "டுதேகுல",
-    "nameTamilAuto": true
+    "nameTamil": "துடேகுல"
   },
   {
     "id": "sub_muslim_dudekula_pinjari",
     "casteId": "cas_muslim_dudekula",
     "name": "Pinjari",
-    "nameTamil": "பிஞ்சரி",
-    "nameTamilAuto": true
+    "nameTamil": "பிஞ்சாரி"
   },
   {
     "id": "sub_muslim_dudekula_laddaf",
     "casteId": "cas_muslim_dudekula",
     "name": "Laddaf",
-    "nameTamil": "லட்டப்",
-    "nameTamilAuto": true
+    "nameTamil": "லத்தாஃப்"
   },
   {
     "id": "sub_muslim_ansari_ansari",
     "casteId": "cas_muslim_ansari",
     "name": "Ansari",
-    "nameTamil": "அன்சரி",
-    "nameTamilAuto": true
+    "nameTamil": "அன்சாரி"
   },
   {
     "id": "sub_muslim_ansari_julaha",
     "casteId": "cas_muslim_ansari",
     "name": "Julaha",
-    "nameTamil": "ஜுலஹ",
-    "nameTamilAuto": true
+    "nameTamil": "ஜுலாஹா"
   },
   {
     "id": "sub_muslim_ansari_momin",
     "casteId": "cas_muslim_ansari",
     "name": "Momin",
-    "nameTamil": "மோமின்",
-    "nameTamilAuto": true
+    "nameTamil": "மோமின்"
   },
   {
     "id": "sub_muslim_mappila_mappila",
     "casteId": "cas_muslim_mappila",
     "name": "Mappila",
-    "nameTamil": "மப்பில",
-    "nameTamilAuto": true
+    "nameTamil": "மாப்பிள்ளை"
   },
   {
     "id": "sub_muslim_mappila_mapilla",
     "casteId": "cas_muslim_mappila",
     "name": "Mapilla",
-    "nameTamil": "மபில்ல",
-    "nameTamilAuto": true
+    "nameTamil": "மாப்பிள்ளை"
   },
   {
     "id": "sub_muslim_mappila_moplah",
     "casteId": "cas_muslim_mappila",
     "name": "Moplah",
-    "nameTamil": "மோப்லஹ்",
-    "nameTamilAuto": true
+    "nameTamil": "மாப்பிள்ளை"
   },
   {
     "id": "sub_muslim_memon_memon",
     "casteId": "cas_muslim_memon",
     "name": "Memon",
-    "nameTamil": "மேமோன்",
-    "nameTamilAuto": true
+    "nameTamil": "மேமன்"
   },
   {
     "id": "sub_muslim_memon_kutchi_memon",
     "casteId": "cas_muslim_memon",
     "name": "Kutchi Memon",
-    "nameTamil": "குச்சி மேமோன்",
-    "nameTamilAuto": true
+    "nameTamil": "கச்சி மேமன்",
+    "aliases": [
+      "kutchimemon"
+    ]
   },
   {
     "id": "sub_muslim_dekkani_dekkani",
     "casteId": "cas_muslim_dekkani",
     "name": "Dekkani",
-    "nameTamil": "டெக்கனி",
-    "nameTamilAuto": true
+    "nameTamil": "தக்காணி"
   },
   {
     "id": "sub_muslim_dekkani_deccani",
     "casteId": "cas_muslim_dekkani",
     "name": "Deccani",
-    "nameTamil": "டெக்கனி",
-    "nameTamilAuto": true
+    "nameTamil": "தக்காணி"
   },
   {
     "id": "sub_muslim_dekkani_urdu_muslim",
     "casteId": "cas_muslim_dekkani",
     "name": "Urdu Muslim",
-    "nameTamil": "உர்டு முச்லிம்",
-    "nameTamilAuto": true
+    "nameTamil": "உருது முஸ்லிம்",
+    "aliases": [
+      "urdumuslim"
+    ]
   },
   {
     "id": "sub_muslim_other_muslim_tamil_muslim",
     "casteId": "cas_muslim_other_muslim",
     "name": "Tamil Muslim",
-    "nameTamil": "தமில் முச்லிம்",
-    "nameTamilAuto": true
+    "nameTamil": "தமிழ் முஸ்லிம்",
+    "aliases": [
+      "tamilmuslim"
+    ]
   },
   {
     "id": "sub_muslim_other_muslim_caste_no_bar",
     "casteId": "cas_muslim_other_muslim",
     "name": "Caste No Bar",
-    "nameTamil": "கச்டே நோ பர்",
-    "nameTamilAuto": true
+    "nameTamil": "சாதி இல்லை வேறுபாடு",
+    "aliases": [
+      "castenobar"
+    ]
   },
   {
     "id": "sub_muslim_other_muslim_other",
     "casteId": "cas_muslim_other_muslim",
     "name": "Other",
-    "nameTamil": "ஓதேர்",
-    "nameTamilAuto": true
+    "nameTamil": "மற்றவை",
+    "aliases": [
+      "oter"
+    ]
   },
   {
     "id": "sub_christian_roman_catholic_roman_catholic",
     "casteId": "cas_christian_roman_catholic",
     "name": "Roman Catholic",
-    "nameTamil": "ரோமன் கதோலிக்",
-    "nameTamilAuto": true
+    "nameTamil": "ரோமன் கத்தோலிக்கர்",
+    "aliases": [
+      "roman catolic",
+      "romancatholic"
+    ]
   },
   {
     "id": "sub_christian_roman_catholic_latin_catholic",
     "casteId": "cas_christian_roman_catholic",
     "name": "Latin Catholic",
-    "nameTamil": "லடின் கதோலிக்",
-    "nameTamilAuto": true
+    "nameTamil": "லத்தீன் கத்தோலிக்கர்",
+    "aliases": [
+      "latin catolic",
+      "latincatholic"
+    ]
   },
   {
     "id": "sub_christian_roman_catholic_syrian_catholic",
     "casteId": "cas_christian_roman_catholic",
     "name": "Syrian Catholic",
-    "nameTamil": "ச்ய்ரிஅன் கதோலிக்",
-    "nameTamilAuto": true
+    "nameTamil": "சிரிய கத்தோலிக்கர்",
+    "aliases": [
+      "syrian catolic",
+      "syriancatholic"
+    ]
   },
   {
     "id": "sub_christian_roman_catholic_rc",
     "casteId": "cas_christian_roman_catholic",
     "name": "RC",
-    "nameTamil": "ர்க்",
-    "nameTamilAuto": true
+    "nameTamil": "ரோமன் கத்தோலிக்க"
   },
   {
     "id": "sub_christian_church_of_south_india_csi",
     "casteId": "cas_christian_church_of_south_india",
     "name": "CSI",
-    "nameTamil": "க்சி",
-    "nameTamilAuto": true
+    "nameTamil": "தென்னிந்திய திருச்சபை"
   },
   {
     "id": "sub_christian_church_of_south_india_church_of_south_india",
     "casteId": "cas_christian_church_of_south_india",
     "name": "Church Of South India",
-    "nameTamil": "சுர்ச் ஓப் தெற்கு இன்டிஅ",
-    "nameTamilAuto": true
+    "nameTamil": "தென்னிந்திய திருச்சபை",
+    "aliases": [
+      "church of sout india",
+      "churchofsouthindia"
+    ]
   },
   {
     "id": "sub_christian_church_of_south_india_anglican",
     "casteId": "cas_christian_church_of_south_india",
     "name": "Anglican",
-    "nameTamil": "அங்க்லிகன்",
-    "nameTamilAuto": true
+    "nameTamil": "ஆங்கிலிக்கன்"
   },
   {
     "id": "sub_christian_protestant_protestant",
     "casteId": "cas_christian_protestant",
     "name": "Protestant",
-    "nameTamil": "ப்ரோடேச்டன்ட்",
-    "nameTamilAuto": true
+    "nameTamil": "புராட்டஸ்டன்ட்"
   },
   {
     "id": "sub_christian_protestant_lutheran",
     "casteId": "cas_christian_protestant",
     "name": "Lutheran",
-    "nameTamil": "லுதேரன்",
-    "nameTamilAuto": true
+    "nameTamil": "லூத்தரன்",
+    "aliases": [
+      "luteran"
+    ]
   },
   {
     "id": "sub_christian_protestant_methodist",
     "casteId": "cas_christian_protestant",
     "name": "Methodist",
-    "nameTamil": "மேதோதிச்ட்",
-    "nameTamilAuto": true
+    "nameTamil": "மெதடிஸ்ட்",
+    "aliases": [
+      "metodist"
+    ]
   },
   {
     "id": "sub_christian_protestant_reformed",
     "casteId": "cas_christian_protestant",
     "name": "Reformed",
-    "nameTamil": "ரேபோர்மேட்",
-    "nameTamilAuto": true
+    "nameTamil": "சீர்திருத்த"
   },
   {
     "id": "sub_christian_protestant_presbyterian",
     "casteId": "cas_christian_protestant",
     "name": "Presbyterian",
-    "nameTamil": "ப்ரேச்ப்ய்டேரிஅன்",
-    "nameTamilAuto": true
+    "nameTamil": "பிரஸ்பிட்டீரியன்"
   },
   {
     "id": "sub_christian_pentecostal_pentecostal",
     "casteId": "cas_christian_pentecostal",
     "name": "Pentecostal",
-    "nameTamil": "பேன்டேகோச்டல்",
-    "nameTamilAuto": true
+    "nameTamil": "பெந்தேகோஸ்தே"
   },
   {
     "id": "sub_christian_pentecostal_assembly_of_god",
     "casteId": "cas_christian_pentecostal",
     "name": "Assembly Of God",
-    "nameTamil": "அஸ்ஸேம்ப்ல்ய் ஓப் கோட்",
-    "nameTamilAuto": true
+    "nameTamil": "அசெம்பிளி ஆஃப் காட்",
+    "aliases": [
+      "assemblyofgod"
+    ]
   },
   {
     "id": "sub_christian_pentecostal_the_pentecostal_mission",
     "casteId": "cas_christian_pentecostal",
     "name": "The Pentecostal Mission",
-    "nameTamil": "தே பேன்டேகோச்டல் மிஸ்ஸிஓன்",
-    "nameTamilAuto": true
+    "nameTamil": "பெந்தேகோஸ்தே மிஷன்",
+    "aliases": [
+      "te pentecostal mission",
+      "thepentecostalmission"
+    ]
   },
   {
     "id": "sub_christian_pentecostal_indian_pentecostal_church",
     "casteId": "cas_christian_pentecostal",
     "name": "Indian Pentecostal Church",
-    "nameTamil": "இன்டிஅன் பேன்டேகோச்டல் சுர்ச்",
-    "nameTamilAuto": true
+    "nameTamil": "இந்திய பெந்தேகோஸ்தே திருச்சபை",
+    "aliases": [
+      "indianpentecostalchurch"
+    ]
   },
   {
     "id": "sub_christian_pentecostal_charismatic",
     "casteId": "cas_christian_pentecostal",
     "name": "Charismatic",
-    "nameTamil": "சரிச்மடிக்",
-    "nameTamilAuto": true
+    "nameTamil": "கரிஸ்மாட்டிக்"
   },
   {
     "id": "sub_christian_baptist_baptist",
     "casteId": "cas_christian_baptist",
     "name": "Baptist",
-    "nameTamil": "பப்டிச்ட்",
-    "nameTamilAuto": true
+    "nameTamil": "பாப்டிஸ்ட்"
   },
   {
     "id": "sub_christian_baptist_evangelical_baptist",
     "casteId": "cas_christian_baptist",
     "name": "Evangelical Baptist",
-    "nameTamil": "ஏவங்கேலிகல் பப்டிச்ட்",
-    "nameTamilAuto": true
+    "nameTamil": "சுவிசேஷ பாப்டிஸ்ட்",
+    "aliases": [
+      "evangelicalbaptist"
+    ]
   },
   {
     "id": "sub_christian_seventh_day_adventist_seventh_day_adventist",
     "casteId": "cas_christian_seventh_day_adventist",
     "name": "Seventh Day Adventist",
-    "nameTamil": "சேவேன்த் டய் அட்வேன்டிச்ட்",
-    "nameTamilAuto": true
+    "nameTamil": "ஏழாம் நாள் அட்வென்டிஸ்ட்",
+    "aliases": [
+      "sevent day adventist",
+      "seventhdayadventist"
+    ]
   },
   {
     "id": "sub_christian_seventh_day_adventist_adventist",
     "casteId": "cas_christian_seventh_day_adventist",
     "name": "Adventist",
-    "nameTamil": "அட்வேன்டிச்ட்",
-    "nameTamilAuto": true
+    "nameTamil": "அட்வென்டிஸ்ட்"
   },
   {
     "id": "sub_christian_born_again_born_again",
     "casteId": "cas_christian_born_again",
     "name": "Born Again",
-    "nameTamil": "போர்ன் அகைன்",
-    "nameTamilAuto": true
+    "nameTamil": "மறுபிறப்பு கிறிஸ்தவர்",
+    "aliases": [
+      "bornagain"
+    ]
   },
   {
     "id": "sub_christian_born_again_non_denominational",
     "casteId": "cas_christian_born_again",
     "name": "Non Denominational",
-    "nameTamil": "நோன் டேனோமினடிஓனல்",
-    "nameTamilAuto": true
+    "nameTamil": "அல்லாத பிரிவுசாரா",
+    "aliases": [
+      "nondenominational"
+    ]
   },
   {
     "id": "sub_christian_evangelical_evangelical",
     "casteId": "cas_christian_evangelical",
     "name": "Evangelical",
-    "nameTamil": "ஏவங்கேலிகல்",
-    "nameTamilAuto": true
+    "nameTamil": "சுவிசேஷ"
   },
   {
     "id": "sub_christian_evangelical_brethren",
     "casteId": "cas_christian_evangelical",
     "name": "Brethren",
-    "nameTamil": "ப்ரேத்ரேன்",
-    "nameTamilAuto": true
+    "nameTamil": "சகோதரத்துவ",
+    "aliases": [
+      "bretren"
+    ]
   },
   {
     "id": "sub_christian_marthoma_marthoma",
     "casteId": "cas_christian_marthoma",
     "name": "Marthoma",
-    "nameTamil": "மர்தோம",
-    "nameTamilAuto": true
+    "nameTamil": "மார்த்தோமா",
+    "aliases": [
+      "martoma"
+    ]
   },
   {
     "id": "sub_christian_marthoma_mar_thoma",
     "casteId": "cas_christian_marthoma",
     "name": "Mar Thoma",
-    "nameTamil": "மர் தோம",
-    "nameTamilAuto": true
+    "nameTamil": "மார் தோமா",
+    "aliases": [
+      "mar toma",
+      "marthoma"
+    ]
   },
   {
     "id": "sub_christian_jacobite_jacobite",
     "casteId": "cas_christian_jacobite",
     "name": "Jacobite",
-    "nameTamil": "ஜகோபிடே",
-    "nameTamilAuto": true
+    "nameTamil": "யாக்கோபாய"
   },
   {
     "id": "sub_christian_jacobite_syrian_jacobite",
     "casteId": "cas_christian_jacobite",
     "name": "Syrian Jacobite",
-    "nameTamil": "ச்ய்ரிஅன் ஜகோபிடே",
-    "nameTamilAuto": true
+    "nameTamil": "சிரிய யாக்கோபாய",
+    "aliases": [
+      "syrianjacobite"
+    ]
   },
   {
     "id": "sub_christian_orthodox_orthodox",
     "casteId": "cas_christian_orthodox",
     "name": "Orthodox",
-    "nameTamil": "ஓர்தோதோக்ஸ்",
-    "nameTamilAuto": true
+    "nameTamil": "ஆர்த்தடாக்ஸ்",
+    "aliases": [
+      "ortodox"
+    ]
   },
   {
     "id": "sub_christian_orthodox_syrian_orthodox",
     "casteId": "cas_christian_orthodox",
     "name": "Syrian Orthodox",
-    "nameTamil": "ச்ய்ரிஅன் ஓர்தோதோக்ஸ்",
-    "nameTamilAuto": true
+    "nameTamil": "சிரிய ஆர்த்தடாக்ஸ்",
+    "aliases": [
+      "syrian ortodox",
+      "syrianorthodox"
+    ]
   },
   {
     "id": "sub_christian_orthodox_malankara_orthodox",
     "casteId": "cas_christian_orthodox",
     "name": "Malankara Orthodox",
-    "nameTamil": "மலன்கர ஓர்தோதோக்ஸ்",
-    "nameTamilAuto": true
+    "nameTamil": "மலங்கரை ஆர்த்தடாக்ஸ்",
+    "aliases": [
+      "malankara ortodox",
+      "malankaraorthodox"
+    ]
   },
   {
     "id": "sub_christian_syro_malabar_syro_malabar",
     "casteId": "cas_christian_syro_malabar",
     "name": "Syro Malabar",
-    "nameTamil": "ச்ய்ரோ மலபர்",
-    "nameTamilAuto": true
+    "nameTamil": "சிரோ மலபார்",
+    "aliases": [
+      "syromalabar"
+    ]
   },
   {
     "id": "sub_christian_syro_malankara_syro_malankara",
     "casteId": "cas_christian_syro_malankara",
     "name": "Syro Malankara",
-    "nameTamil": "ச்ய்ரோ மலன்கர",
-    "nameTamilAuto": true
+    "nameTamil": "சிரோ மலங்கரை",
+    "aliases": [
+      "syromalankara"
+    ]
   },
   {
     "id": "sub_christian_knanaya_knanaya",
     "casteId": "cas_christian_knanaya",
     "name": "Knanaya",
-    "nameTamil": "க்னனய",
-    "nameTamilAuto": true
+    "nameTamil": "கனானய"
   },
   {
     "id": "sub_christian_knanaya_knanaya_catholic",
     "casteId": "cas_christian_knanaya",
     "name": "Knanaya Catholic",
-    "nameTamil": "க்னனய கதோலிக்",
-    "nameTamilAuto": true
+    "nameTamil": "கனானய கத்தோலிக்கர்",
+    "aliases": [
+      "knanaya catolic",
+      "knanayacatholic"
+    ]
   },
   {
     "id": "sub_christian_knanaya_knanaya_jacobite",
     "casteId": "cas_christian_knanaya",
     "name": "Knanaya Jacobite",
-    "nameTamil": "க்னனய ஜகோபிடே",
-    "nameTamilAuto": true
+    "nameTamil": "கனானய யாக்கோபாய",
+    "aliases": [
+      "knanayajacobite"
+    ]
   },
   {
     "id": "sub_christian_salvation_army_salvation_army",
     "casteId": "cas_christian_salvation_army",
     "name": "Salvation Army",
-    "nameTamil": "சல்வடிஓன் அர்ம்ய்",
-    "nameTamilAuto": true
+    "nameTamil": "இரட்சண்ய சேனை",
+    "aliases": [
+      "salvationarmy"
+    ]
   },
   {
     "id": "sub_christian_nadar_christian_nadar_christian",
     "casteId": "cas_christian_nadar_christian",
     "name": "Nadar Christian",
-    "nameTamil": "நதர் ச்ரிச்டிஅன்",
-    "nameTamilAuto": true
+    "nameTamil": "நாடார் கிறிஸ்தவர்",
+    "aliases": [
+      "nadarchristian"
+    ]
   },
   {
     "id": "sub_christian_nadar_christian_christian_nadar",
     "casteId": "cas_christian_nadar_christian",
     "name": "Christian Nadar",
-    "nameTamil": "ச்ரிச்டிஅன் நதர்",
-    "nameTamilAuto": true
+    "nameTamil": "கிறிஸ்தவர் நாடார்",
+    "aliases": [
+      "christiannadar"
+    ]
   },
   {
     "id": "sub_christian_adi_dravida_christian_adi_dravida_christian",
     "casteId": "cas_christian_adi_dravida_christian",
     "name": "Adi Dravida Christian",
-    "nameTamil": "அதி ட்ரவித ச்ரிச்டிஅன்",
-    "nameTamilAuto": true
+    "nameTamil": "ஆதி திராவிடா கிறிஸ்தவர்",
+    "aliases": [
+      "adidravidachristian"
+    ]
   },
   {
     "id": "sub_christian_adi_dravida_christian_dalit_christian",
     "casteId": "cas_christian_adi_dravida_christian",
     "name": "Dalit Christian",
-    "nameTamil": "டலிட் ச்ரிச்டிஅன்",
-    "nameTamilAuto": true
+    "nameTamil": "தலித் கிறிஸ்தவர்",
+    "aliases": [
+      "dalitchristian"
+    ]
   },
   {
     "id": "sub_christian_paravar_paravar",
     "casteId": "cas_christian_paravar",
     "name": "Paravar",
-    "nameTamil": "பரவர்",
-    "nameTamilAuto": true
+    "nameTamil": "பரவர்"
   },
   {
     "id": "sub_christian_paravar_bharathar",
     "casteId": "cas_christian_paravar",
     "name": "Bharathar",
     "nameTamil": "பரதர்",
-    "nameTamilAuto": true
+    "aliases": [
+      "bharatar"
+    ]
   },
   {
     "id": "sub_christian_paravar_mukkuvar_christian",
     "casteId": "cas_christian_paravar",
     "name": "Mukkuvar Christian",
-    "nameTamil": "முக்குவர் ச்ரிச்டிஅன்",
-    "nameTamilAuto": true
+    "nameTamil": "முக்குவர் கிறிஸ்தவர்",
+    "aliases": [
+      "mukkuvarchristian"
+    ]
   },
   {
     "id": "sub_christian_paravar_fernando",
     "casteId": "cas_christian_paravar",
     "name": "Fernando",
-    "nameTamil": "பேர்னன்டோ",
-    "nameTamilAuto": true
+    "nameTamil": "பெர்னாண்டோ"
   },
   {
     "id": "sub_christian_vellalar_christian_vellalar_christian",
     "casteId": "cas_christian_vellalar_christian",
     "name": "Vellalar Christian",
-    "nameTamil": "வெல்லலர் ச்ரிச்டிஅன்",
-    "nameTamilAuto": true
+    "nameTamil": "வேளாளர் கிறிஸ்தவர்",
+    "aliases": [
+      "vellalarchristian"
+    ]
   },
   {
     "id": "sub_christian_vellalar_christian_christian_vellalar",
     "casteId": "cas_christian_vellalar_christian",
     "name": "Christian Vellalar",
-    "nameTamil": "ச்ரிச்டிஅன் வெல்லலர்",
-    "nameTamilAuto": true
+    "nameTamil": "கிறிஸ்தவர் வேளாளர்",
+    "aliases": [
+      "christianvellalar"
+    ]
   },
   {
     "id": "sub_christian_other_christian_caste_no_bar",
     "casteId": "cas_christian_other_christian",
     "name": "Caste No Bar",
-    "nameTamil": "கச்டே நோ பர்",
-    "nameTamilAuto": true
+    "nameTamil": "சாதி இல்லை வேறுபாடு",
+    "aliases": [
+      "castenobar"
+    ]
   },
   {
     "id": "sub_christian_other_christian_other",
     "casteId": "cas_christian_other_christian",
     "name": "Other",
-    "nameTamil": "ஓதேர்",
-    "nameTamilAuto": true
+    "nameTamil": "மற்றவை",
+    "aliases": [
+      "oter"
+    ]
   },
   {
     "id": "sub_jain_digambar_digambar",
     "casteId": "cas_jain_digambar",
     "name": "Digambar",
-    "nameTamil": "டிகம்பர்",
-    "nameTamilAuto": true
+    "nameTamil": "திகம்பர்"
   },
   {
     "id": "sub_jain_digambar_digambara",
     "casteId": "cas_jain_digambar",
     "name": "Digambara",
-    "nameTamil": "டிகம்பர",
-    "nameTamilAuto": true
+    "nameTamil": "திகம்பர"
   },
   {
     "id": "sub_jain_svetambar_svetambar",
     "casteId": "cas_jain_svetambar",
     "name": "Svetambar",
-    "nameTamil": "ச்வேடம்பர்",
-    "nameTamilAuto": true
+    "nameTamil": "ஸ்வேதாம்பர்"
   },
   {
     "id": "sub_jain_svetambar_shwetambar",
     "casteId": "cas_jain_svetambar",
     "name": "Shwetambar",
-    "nameTamil": "ஷ்வேடம்பர்",
-    "nameTamilAuto": true
+    "nameTamil": "ஸ்வேதாம்பர்"
   },
   {
     "id": "sub_jain_svetambar_swetambar",
     "casteId": "cas_jain_svetambar",
     "name": "Swetambar",
-    "nameTamil": "ச்வேடம்பர்",
-    "nameTamilAuto": true
+    "nameTamil": "ஸ்வேதாம்பர்"
   },
   {
     "id": "sub_jain_tamil_jain_tamil_jain",
     "casteId": "cas_jain_tamil_jain",
     "name": "Tamil Jain",
-    "nameTamil": "தமில் ஜைன்",
-    "nameTamilAuto": true
+    "nameTamil": "தமிழ் சமணர்",
+    "aliases": [
+      "tamiljain"
+    ]
   },
   {
     "id": "sub_jain_tamil_jain_samanar",
     "casteId": "cas_jain_tamil_jain",
     "name": "Samanar",
-    "nameTamil": "சமனர்",
-    "nameTamilAuto": true
+    "nameTamil": "சமணர்"
   },
   {
     "id": "sub_jain_tamil_jain_nainar",
     "casteId": "cas_jain_tamil_jain",
     "name": "Nainar",
-    "nameTamil": "நைனர்",
-    "nameTamilAuto": true
+    "nameTamil": "நயினார்"
   },
   {
     "id": "sub_jain_oswal_oswal",
     "casteId": "cas_jain_oswal",
     "name": "Oswal",
-    "nameTamil": "ஓச்வல்",
-    "nameTamilAuto": true
+    "nameTamil": "ஓஸ்வால்"
   },
   {
     "id": "sub_jain_oswal_osval",
     "casteId": "cas_jain_oswal",
     "name": "Osval",
-    "nameTamil": "ஓச்வல்",
-    "nameTamilAuto": true
+    "nameTamil": "ஓஸ்வால்"
   },
   {
     "id": "sub_jain_bania_jain_bania",
     "casteId": "cas_jain_bania_jain",
     "name": "Bania",
-    "nameTamil": "பனிஅ",
-    "nameTamilAuto": true
+    "nameTamil": "பனியா"
   },
   {
     "id": "sub_jain_bania_jain_vania",
     "casteId": "cas_jain_bania_jain",
     "name": "Vania",
-    "nameTamil": "வனிஅ",
-    "nameTamilAuto": true
+    "nameTamil": "வாணிய"
   },
   {
     "id": "sub_jain_bania_jain_vaishya_jain",
     "casteId": "cas_jain_bania_jain",
     "name": "Vaishya Jain",
-    "nameTamil": "வைஷ்ய ஜைன்",
-    "nameTamilAuto": true
+    "nameTamil": "வைசிய சமணர்",
+    "aliases": [
+      "vaishyajain"
+    ]
   },
   {
     "id": "sub_jain_marwari_jain_marwari_jain",
     "casteId": "cas_jain_marwari_jain",
     "name": "Marwari Jain",
-    "nameTamil": "மர்வரி ஜைன்",
-    "nameTamilAuto": true
+    "nameTamil": "மார்வாரி சமணர்",
+    "aliases": [
+      "marwarijain"
+    ]
   },
   {
     "id": "sub_jain_marwari_jain_marwadi",
     "casteId": "cas_jain_marwari_jain",
     "name": "Marwadi",
-    "nameTamil": "மர்வாடி",
-    "nameTamilAuto": true
+    "nameTamil": "மார்வாடி"
   },
   {
     "id": "sub_jain_gujarati_jain_gujarati_jain",
     "casteId": "cas_jain_gujarati_jain",
     "name": "Gujarati Jain",
-    "nameTamil": "குஜரடி ஜைன்",
-    "nameTamilAuto": true
+    "nameTamil": "குஜராத்தி சமணர்",
+    "aliases": [
+      "gujaratijain"
+    ]
   },
   {
     "id": "sub_jain_other_jain_sarak",
     "casteId": "cas_jain_other_jain",
     "name": "Sarak",
-    "nameTamil": "சரக்",
-    "nameTamilAuto": true
+    "nameTamil": "சரக்"
   },
   {
     "id": "sub_jain_other_jain_caste_no_bar",
     "casteId": "cas_jain_other_jain",
     "name": "Caste No Bar",
-    "nameTamil": "கச்டே நோ பர்",
-    "nameTamilAuto": true
+    "nameTamil": "சாதி இல்லை வேறுபாடு",
+    "aliases": [
+      "castenobar"
+    ]
   },
   {
     "id": "sub_jain_other_jain_other",
     "casteId": "cas_jain_other_jain",
     "name": "Other",
-    "nameTamil": "ஓதேர்",
-    "nameTamilAuto": true
+    "nameTamil": "மற்றவை",
+    "aliases": [
+      "oter"
+    ]
   },
   {
     "id": "sub_sikh_jat_sikh_jat_sikh",
     "casteId": "cas_sikh_jat_sikh",
     "name": "Jat Sikh",
-    "nameTamil": "ஜட் சிக்",
-    "nameTamilAuto": true
+    "nameTamil": "ஜாட் சீக்கியர்",
+    "aliases": [
+      "jatsikh"
+    ]
   },
   {
     "id": "sub_sikh_jat_sikh_jat",
     "casteId": "cas_sikh_jat_sikh",
     "name": "Jat",
-    "nameTamil": "ஜட்",
-    "nameTamilAuto": true
+    "nameTamil": "ஜாட்"
   },
   {
     "id": "sub_sikh_khatri_sikh_khatri",
     "casteId": "cas_sikh_khatri_sikh",
     "name": "Khatri",
-    "nameTamil": "கட்ரி",
-    "nameTamilAuto": true
+    "nameTamil": "கத்ரி"
   },
   {
     "id": "sub_sikh_khatri_sikh_khatri_sikh",
     "casteId": "cas_sikh_khatri_sikh",
     "name": "Khatri Sikh",
-    "nameTamil": "கட்ரி சிக்",
-    "nameTamilAuto": true
+    "nameTamil": "கத்ரி சீக்கியர்",
+    "aliases": [
+      "khatrisikh"
+    ]
   },
   {
     "id": "sub_sikh_arora_arora",
     "casteId": "cas_sikh_arora",
     "name": "Arora",
-    "nameTamil": "அரோர",
-    "nameTamilAuto": true
+    "nameTamil": "அரோரா"
   },
   {
     "id": "sub_sikh_arora_arora_sikh",
     "casteId": "cas_sikh_arora",
     "name": "Arora Sikh",
-    "nameTamil": "அரோர சிக்",
-    "nameTamilAuto": true
+    "nameTamil": "அரோரா சீக்கியர்",
+    "aliases": [
+      "arorasikh"
+    ]
   },
   {
     "id": "sub_sikh_ramgarhia_ramgarhia",
     "casteId": "cas_sikh_ramgarhia",
     "name": "Ramgarhia",
-    "nameTamil": "ரம்கர்ஹிஅ",
-    "nameTamilAuto": true
+    "nameTamil": "ராம்கரியா"
   },
   {
     "id": "sub_sikh_ramgarhia_ramgharia",
     "casteId": "cas_sikh_ramgarhia",
     "name": "Ramgharia",
-    "nameTamil": "ரம்கரிஅ",
-    "nameTamilAuto": true
+    "nameTamil": "ராம்கரியா"
   },
   {
     "id": "sub_sikh_ahluwalia_ahluwalia",
     "casteId": "cas_sikh_ahluwalia",
     "name": "Ahluwalia",
-    "nameTamil": "அஹ்லுவலிஅ",
-    "nameTamilAuto": true
+    "nameTamil": "அலுவாலியா"
   },
   {
     "id": "sub_sikh_ahluwalia_kalal",
     "casteId": "cas_sikh_ahluwalia",
     "name": "Kalal",
-    "nameTamil": "கலல்",
-    "nameTamilAuto": true
+    "nameTamil": "கலால்"
   },
   {
     "id": "sub_sikh_saini_saini",
     "casteId": "cas_sikh_saini",
     "name": "Saini",
-    "nameTamil": "சைனி",
-    "nameTamilAuto": true
+    "nameTamil": "சைனி"
   },
   {
     "id": "sub_sikh_mazhabi_mazhabi",
     "casteId": "cas_sikh_mazhabi",
     "name": "Mazhabi",
-    "nameTamil": "மழபி",
-    "nameTamilAuto": true
+    "nameTamil": "மஸ்ஹபி"
   },
   {
     "id": "sub_sikh_mazhabi_majhabi",
     "casteId": "cas_sikh_mazhabi",
     "name": "Majhabi",
-    "nameTamil": "மஜ்ஹபி",
-    "nameTamilAuto": true
+    "nameTamil": "மஸ்ஹபி"
   },
   {
     "id": "sub_sikh_mazhabi_ramdasia",
     "casteId": "cas_sikh_mazhabi",
     "name": "Ramdasia",
-    "nameTamil": "ரம்டசிஅ",
-    "nameTamilAuto": true
+    "nameTamil": "ராம்தாசியா"
   },
   {
     "id": "sub_sikh_other_sikh_caste_no_bar",
     "casteId": "cas_sikh_other_sikh",
     "name": "Caste No Bar",
-    "nameTamil": "கச்டே நோ பர்",
-    "nameTamilAuto": true
+    "nameTamil": "சாதி இல்லை வேறுபாடு",
+    "aliases": [
+      "castenobar"
+    ]
   },
   {
     "id": "sub_sikh_other_sikh_other",
     "casteId": "cas_sikh_other_sikh",
     "name": "Other",
-    "nameTamil": "ஓதேர்",
-    "nameTamilAuto": true
+    "nameTamil": "மற்றவை",
+    "aliases": [
+      "oter"
+    ]
   },
   {
     "id": "sub_buddhist_navayana_navayana",
     "casteId": "cas_buddhist_navayana",
     "name": "Navayana",
-    "nameTamil": "நவயன",
-    "nameTamilAuto": true
+    "nameTamil": "நவயான"
   },
   {
     "id": "sub_buddhist_navayana_neo_buddhist",
     "casteId": "cas_buddhist_navayana",
     "name": "Neo Buddhist",
-    "nameTamil": "நேஓ புட்ட்ஹிச்ட்",
-    "nameTamilAuto": true
+    "nameTamil": "நவ பௌத்தர்",
+    "aliases": [
+      "neo buddist",
+      "neobuddhist"
+    ]
   },
   {
     "id": "sub_buddhist_navayana_ambedkarite_buddhist",
     "casteId": "cas_buddhist_navayana",
     "name": "Ambedkarite Buddhist",
-    "nameTamil": "அம்பேட்கரிடே புட்ட்ஹிச்ட்",
-    "nameTamilAuto": true
+    "nameTamil": "அம்பேத்கரிய பௌத்தர்",
+    "aliases": [
+      "ambedkarite buddist",
+      "ambedkaritebuddhist"
+    ]
   },
   {
     "id": "sub_buddhist_theravada_theravada",
     "casteId": "cas_buddhist_theravada",
     "name": "Theravada",
-    "nameTamil": "தேரவத",
-    "nameTamilAuto": true
+    "nameTamil": "தேரவாத",
+    "aliases": [
+      "teravada"
+    ]
   },
   {
     "id": "sub_buddhist_theravada_hinayana",
     "casteId": "cas_buddhist_theravada",
     "name": "Hinayana",
-    "nameTamil": "ஹினயன",
-    "nameTamilAuto": true
+    "nameTamil": "ஹீனயான"
   },
   {
     "id": "sub_buddhist_mahayana_mahayana",
     "casteId": "cas_buddhist_mahayana",
     "name": "Mahayana",
-    "nameTamil": "மகாயன",
-    "nameTamilAuto": true
+    "nameTamil": "மகாயான"
   },
   {
     "id": "sub_buddhist_tamil_buddhist_tamil_buddhist",
     "casteId": "cas_buddhist_tamil_buddhist",
     "name": "Tamil Buddhist",
-    "nameTamil": "தமில் புட்ட்ஹிச்ட்",
-    "nameTamilAuto": true
+    "nameTamil": "தமிழ் பௌத்தர்",
+    "aliases": [
+      "tamil buddist",
+      "tamilbuddhist"
+    ]
   },
   {
     "id": "sub_buddhist_other_buddhist_caste_no_bar",
     "casteId": "cas_buddhist_other_buddhist",
     "name": "Caste No Bar",
-    "nameTamil": "கச்டே நோ பர்",
-    "nameTamilAuto": true
+    "nameTamil": "சாதி இல்லை வேறுபாடு",
+    "aliases": [
+      "castenobar"
+    ]
   },
   {
     "id": "sub_buddhist_other_buddhist_other",
     "casteId": "cas_buddhist_other_buddhist",
     "name": "Other",
-    "nameTamil": "ஓதேர்",
-    "nameTamilAuto": true
+    "nameTamil": "மற்றவை",
+    "aliases": [
+      "oter"
+    ]
   },
   {
     "id": "sub_parsi_parsi_parsi",
     "casteId": "cas_parsi_parsi",
     "name": "Parsi",
-    "nameTamil": "பர்சி",
-    "nameTamilAuto": true
+    "nameTamil": "பார்சி"
   },
   {
     "id": "sub_parsi_parsi_zoroastrian",
     "casteId": "cas_parsi_parsi",
     "name": "Zoroastrian",
-    "nameTamil": "ஜோரோஅச்ட்ரிஅன்",
-    "nameTamilAuto": true
+    "nameTamil": "ஜொராஸ்ட்ரிய"
   },
   {
     "id": "sub_parsi_irani_irani",
     "casteId": "cas_parsi_irani",
     "name": "Irani",
-    "nameTamil": "இரனி",
-    "nameTamilAuto": true
+    "nameTamil": "ஈரானி"
   },
   {
     "id": "sub_others_inter_caste_inter_caste",
     "casteId": "cas_others_inter_caste",
     "name": "Inter Caste",
-    "nameTamil": "இன்டேர் கச்டே",
-    "nameTamilAuto": true
+    "nameTamil": "சாதி வேறுபாடு இல்லை",
+    "aliases": [
+      "intercaste"
+    ]
   },
   {
     "id": "sub_others_spiritual_spiritual",
     "casteId": "cas_others_spiritual",
     "name": "Spiritual",
-    "nameTamil": "ச்பிரிடுஅல்",
-    "nameTamilAuto": true
+    "nameTamil": "ஆன்மீக"
   },
   {
     "id": "sub_others_spiritual_believer_in_god",
     "casteId": "cas_others_spiritual",
     "name": "Believer In God",
-    "nameTamil": "பேலிஏவேர் இன் கோட்",
-    "nameTamilAuto": true
+    "nameTamil": "நம்பிக்கையாளர் கடவுள்",
+    "aliases": [
+      "believeringod"
+    ]
   },
   {
     "id": "sub_others_no_religion_no_religion",
     "casteId": "cas_others_no_religion",
     "name": "No Religion",
-    "nameTamil": "நோ ரேலிகிஓன்",
-    "nameTamilAuto": true
+    "nameTamil": "இல்லை மதம்",
+    "aliases": [
+      "noreligion"
+    ]
   },
   {
     "id": "sub_others_no_religion_atheist",
     "casteId": "cas_others_no_religion",
     "name": "Atheist",
-    "nameTamil": "அதேஇச்ட்",
-    "nameTamilAuto": true
+    "nameTamil": "நாத்திகர்",
+    "aliases": [
+      "ateist"
+    ]
   },
   {
     "id": "sub_others_no_religion_agnostic",
     "casteId": "cas_others_no_religion",
     "name": "Agnostic",
-    "nameTamil": "அக்னோச்டிக்",
-    "nameTamilAuto": true
+    "nameTamil": "அஞ்ஞேயவாதி"
   },
   {
     "id": "sub_others_brahmo_brahmo_samaj",
     "casteId": "cas_others_brahmo",
     "name": "Brahmo Samaj",
-    "nameTamil": "ப்ரஹ்மோ சமஜ்",
-    "nameTamilAuto": true
+    "nameTamil": "பிரம்ம சமாஜ்",
+    "aliases": [
+      "brahmosamaj"
+    ]
   },
   {
     "id": "sub_others_other_caste_no_bar",
     "casteId": "cas_others_other",
     "name": "Caste No Bar",
-    "nameTamil": "கச்டே நோ பர்",
-    "nameTamilAuto": true
+    "nameTamil": "சாதி இல்லை வேறுபாடு",
+    "aliases": [
+      "castenobar"
+    ]
   },
   {
     "id": "sub_others_other_other",
     "casteId": "cas_others_other",
     "name": "Other",
-    "nameTamil": "ஓதேர்",
-    "nameTamilAuto": true
+    "nameTamil": "மற்றவை",
+    "aliases": [
+      "oter"
+    ]
   }
 ]

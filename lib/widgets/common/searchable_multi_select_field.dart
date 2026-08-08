@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
+import '../../core/data/master_option.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
+import '../../core/utils/value_l10n.dart';
 
-/// A searchable **multi-select** field (replaces plain dropdowns wherever more
-/// than one value can be chosen — e.g. Education / Profession preferences).
+/// A searchable **multi-select** field (used wherever more than one value can
+/// be chosen — Education / Profession preferences, and the multiple degrees a
+/// member holds, §4).
 ///
-/// Behaviour (per spec):
+/// Behaviour:
 ///  • Selected values appear as deletable chips ABOVE the field;
 ///  • tapping the field opens a modal bottom sheet with a search box —
 ///    type to filter, tap an item to toggle it, keep searching and adding;
 ///  • removing a chip (✕) deselects instantly;
-///  • Material look consistent with [SearchableField].
+///  • [maxSelection] caps how many can be on at once (the rest grey out).
+///
+/// Every string here is localized and every row is rendered through the
+/// bilingual catalogue when one is supplied, so nothing English leaks into
+/// Tamil mode (§8/§12) and search works in either language (§9).
 class SearchableMultiSelectField extends StatelessWidget {
   final String label;
   final List<String> items;
@@ -18,8 +26,19 @@ class SearchableMultiSelectField extends StatelessWidget {
   final IconData? prefixIcon;
   final bool enabled;
 
-  /// Placeholder shown inside the field while nothing is selected.
+  /// Placeholder shown inside the field while nothing is selected. Defaults to
+  /// the localized "Any — tap to select".
   final String? hint;
+
+  /// Bilingual catalogue backing [items] — drives both the displayed text and
+  /// alias-aware search.
+  final List<MasterOption>? options;
+
+  /// Append the English name in brackets in Tamil mode (degrees, occupations).
+  final bool showEnglishInBrackets;
+
+  /// Maximum number of simultaneously selected values; null means unlimited.
+  final int? maxSelection;
 
   const SearchableMultiSelectField({
     super.key,
@@ -30,10 +49,38 @@ class SearchableMultiSelectField extends StatelessWidget {
     this.prefixIcon,
     this.enabled = true,
     this.hint,
+    this.options,
+    this.showEnglishInBrackets = false,
+    this.maxSelection,
   });
+
+  /// Builds the field straight from a bilingual catalogue.
+  SearchableMultiSelectField.fromOptions({
+    super.key,
+    required this.label,
+    required List<MasterOption> options,
+    required this.selected,
+    required this.onChanged,
+    this.prefixIcon,
+    this.enabled = true,
+    this.hint,
+    this.showEnglishInBrackets = false,
+    this.maxSelection,
+  })  : options = options,
+        items = options.values;
 
   void _remove(String value) =>
       onChanged(selected.where((v) => v != value).toList());
+
+  /// Display text for a stored value.
+  String _display(BuildContext context, String value) {
+    final option = options?.byValue(value);
+    if (option != null) {
+      return option.display(
+          tamil: context.isTamil, withEnglish: showEnglishInBrackets);
+    }
+    return context.localizeValue(value);
+  }
 
   Future<void> _openSheet(BuildContext context) async {
     final result = await showModalBottomSheet<List<String>>(
@@ -47,6 +94,9 @@ class SearchableMultiSelectField extends StatelessWidget {
         label: label,
         items: items,
         initiallySelected: selected,
+        options: options,
+        showEnglishInBrackets: showEnglishInBrackets,
+        maxSelection: maxSelection,
       ),
     );
     if (result != null) onChanged(result);
@@ -54,6 +104,7 @@ class SearchableMultiSelectField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -64,7 +115,7 @@ class SearchableMultiSelectField extends StatelessWidget {
             runSpacing: 6,
             children: selected
                 .map((v) => Chip(
-                      label: Text(v,
+                      label: Text(_display(context, v),
                           style: const TextStyle(
                               fontSize: 12.5,
                               color: AppColors.primary,
@@ -102,8 +153,8 @@ class SearchableMultiSelectField extends StatelessWidget {
             ),
             child: Text(
               selected.isEmpty
-                  ? (hint ?? 'Any — tap to select')
-                  : '${selected.length} selected',
+                  ? (hint ?? l10n.anyTapToSelect)
+                  : l10n.countSelected(selected.length),
               style: TextStyle(
                 fontSize: 14,
                 color: selected.isEmpty ? Colors.grey[600] : Colors.black87,
@@ -123,11 +174,17 @@ class _MultiSelectSheet extends StatefulWidget {
   final String label;
   final List<String> items;
   final List<String> initiallySelected;
+  final List<MasterOption>? options;
+  final bool showEnglishInBrackets;
+  final int? maxSelection;
 
   const _MultiSelectSheet({
     required this.label,
     required this.items,
     required this.initiallySelected,
+    required this.options,
+    required this.showEnglishInBrackets,
+    required this.maxSelection,
   });
 
   @override
@@ -138,16 +195,36 @@ class _MultiSelectSheetState extends State<_MultiSelectSheet> {
   late final Set<String> _selected = {...widget.initiallySelected};
   String _query = '';
 
+  bool get _atCap =>
+      widget.maxSelection != null && _selected.length >= widget.maxSelection!;
+
+  String _display(String value) {
+    final option = widget.options?.byValue(value);
+    if (option != null) {
+      return option.display(
+          tamil: context.isTamil, withEnglish: widget.showEnglishInBrackets);
+    }
+    return context.localizeValue(value);
+  }
+
+  /// Bilingual + alias matching (§9), falling back to plain text for a field
+  /// that has no catalogue behind it.
   List<String> get _filtered {
-    final q = _query.trim().toLowerCase();
+    final q = _query.trim();
     if (q.isEmpty) return widget.items;
-    return widget.items.where((i) => i.toLowerCase().contains(q)).toList();
+    return widget.items.where((i) {
+      final option = widget.options?.byValue(i);
+      if (option != null) return option.matches(q);
+      return i.toLowerCase().contains(q.toLowerCase()) ||
+          _display(i).toLowerCase().contains(q.toLowerCase());
+    }).toList();
   }
 
   void _done() => Navigator.of(context).pop(_selected.toList());
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final maxH = MediaQuery.of(context).size.height * 0.75;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     return PopScope(
@@ -170,7 +247,7 @@ class _MultiSelectSheetState extends State<_MultiSelectSheet> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Select ${widget.label}',
+                        l10n.selectFieldTitle(widget.label),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -181,19 +258,31 @@ class _MultiSelectSheetState extends State<_MultiSelectSheet> {
                     TextButton.icon(
                       onPressed: _done,
                       icon: const Icon(Icons.check, size: 18),
-                      label: Text('Done (${_selected.length})'),
+                      label: Text(l10n.doneCount(_selected.length)),
                       style: TextButton.styleFrom(
                           foregroundColor: AppColors.primary),
                     ),
                   ],
                 ),
               ),
+              if (widget.maxSelection != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      l10n.selectUpTo(widget.maxSelection!),
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ),
+                ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                 child: TextField(
                   autofocus: true,
                   decoration: InputDecoration(
-                    hintText: 'Search ${widget.label}…',
+                    hintText: l10n.searchFieldHint(widget.label),
                     prefixIcon: const Icon(Icons.search),
                     isDense: true,
                     border: OutlineInputBorder(
@@ -204,9 +293,9 @@ class _MultiSelectSheetState extends State<_MultiSelectSheet> {
               ),
               Flexible(
                 child: _filtered.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Center(child: Text('No options found')),
+                    ? Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Center(child: Text(l10n.noOptionsFound)),
                       )
                     : ListView.builder(
                         shrinkWrap: true,
@@ -214,16 +303,26 @@ class _MultiSelectSheetState extends State<_MultiSelectSheet> {
                         itemBuilder: (_, i) {
                           final item = _filtered[i];
                           final on = _selected.contains(item);
+                          // At the cap, unticked rows go inert rather than
+                          // disappearing, so the limit is visible not magic.
+                          final locked = !on && _atCap;
                           return CheckboxListTile(
                             dense: true,
                             value: on,
+                            enabled: !locked,
                             activeColor: AppColors.primary,
                             controlAffinity: ListTileControlAffinity.leading,
-                            title: Text(item,
-                                style: const TextStyle(fontSize: 14)),
-                            onChanged: (_) => setState(() {
-                              on ? _selected.remove(item) : _selected.add(item);
-                            }),
+                            title: Text(_display(item),
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: locked ? Colors.grey : null)),
+                            onChanged: locked
+                                ? null
+                                : (_) => setState(() {
+                                      on
+                                          ? _selected.remove(item)
+                                          : _selected.add(item);
+                                    }),
                           );
                         },
                       ),

@@ -389,7 +389,6 @@ class UserDetailsScreen extends ConsumerWidget {
         _row('Rasi', s(pp.rasi)),
         _row('Nakshatra', s(pp.nakshatra)),
         _row('Chevvai Dosham', s(pp.chevvaiDosham)),
-        _row('Horoscope Match Required', yn(pp.horoscopeMatchRequired)),
       ]),
       const SizedBox(height: 14),
       _card([

@@ -1,0 +1,661 @@
+[
+  {
+    "id": "deg_no_formal",
+    "en": "No Formal Education",
+    "ta": "முறையான கல்வி இல்லை",
+    "parentId": "edu_below10"
+  },
+  {
+    "id": "deg_below_sslc",
+    "en": "Below SSLC",
+    "ta": "எஸ்எஸ்எல்சிக்குக் கீழ்",
+    "parentId": "edu_below10"
+  },
+  {
+    "id": "deg_sslc",
+    "en": "SSLC",
+    "ta": "எஸ்எஸ்எல்சி",
+    "parentId": "edu_10th"
+  },
+  {
+    "id": "deg_hsc",
+    "en": "HSC",
+    "ta": "ஹெச்எஸ்சி",
+    "parentId": "edu_12th"
+  },
+  {
+    "id": "deg_iti",
+    "en": "ITI",
+    "ta": "தொழிற்பயிற்சி",
+    "parentId": "edu_iti"
+  },
+  {
+    "id": "deg_iti_fitter",
+    "en": "ITI Fitter",
+    "ta": "ஐடிஐ ஃபிட்டர்",
+    "parentId": "edu_iti"
+  },
+  {
+    "id": "deg_iti_electrician",
+    "en": "ITI Electrician",
+    "ta": "ஐடிஐ மின் தொழில்நுட்பம்",
+    "parentId": "edu_iti"
+  },
+  {
+    "id": "deg_iti_welder",
+    "en": "ITI Welder",
+    "ta": "ஐடிஐ பற்றவைப்பு",
+    "parentId": "edu_iti"
+  },
+  {
+    "id": "deg_iti_mechanic",
+    "en": "ITI Mechanic",
+    "ta": "ஐடிஐ இயந்திரவியல்",
+    "parentId": "edu_iti"
+  },
+  {
+    "id": "deg_iti_turner",
+    "en": "ITI Turner",
+    "ta": "ஐடிஐ டர்னர்",
+    "parentId": "edu_iti"
+  },
+  {
+    "id": "deg_iti_copa",
+    "en": "ITI COPA",
+    "ta": "ஐடிஐ கணினி இயக்குநர்",
+    "parentId": "edu_iti"
+  },
+  {
+    "id": "deg_diploma",
+    "en": "Diploma",
+    "ta": "பட்டயப் படிப்பு",
+    "parentId": "edu_diploma"
+  },
+  {
+    "id": "deg_polytechnic",
+    "en": "Polytechnic",
+    "ta": "பாலிடெக்னிக்",
+    "parentId": "edu_diploma"
+  },
+  {
+    "id": "deg_dpharm",
+    "en": "D.Pharm",
+    "ta": "மருந்தியல் பட்டயம்",
+    "aliases": [
+      "pharmacy"
+    ],
+    "parentId": "edu_diploma"
+  },
+  {
+    "id": "deg_dmlt",
+    "en": "DMLT",
+    "ta": "மருத்துவ ஆய்வகத் தொழில்நுட்பம்",
+    "parentId": "edu_diploma"
+  },
+  {
+    "id": "deg_gnm",
+    "en": "GNM",
+    "ta": "பொது செவிலியம் மற்றும் மகப்பேறு",
+    "aliases": [
+      "nursing"
+    ],
+    "parentId": "edu_diploma"
+  },
+  {
+    "id": "deg_anm",
+    "en": "ANM",
+    "ta": "துணை செவிலியர்",
+    "aliases": [
+      "nursing"
+    ],
+    "parentId": "edu_diploma"
+  },
+  {
+    "id": "deg_deled",
+    "en": "D.El.Ed",
+    "ta": "தொடக்கக் கல்வி பட்டயம்",
+    "aliases": [
+      "teacher"
+    ],
+    "parentId": "edu_diploma"
+  },
+  {
+    "id": "deg_ttc",
+    "en": "TTC",
+    "ta": "ஆசிரியர் பயிற்சி",
+    "aliases": [
+      "teacher training"
+    ],
+    "parentId": "edu_diploma"
+  },
+  {
+    "id": "deg_certificate",
+    "en": "Certificate Course",
+    "ta": "சான்றிதழ் படிப்பு",
+    "parentId": "edu_diploma"
+  },
+  {
+    "id": "deg_vocational",
+    "en": "Vocational Training",
+    "ta": "தொழிற்கல்வி பயிற்சி",
+    "parentId": "edu_diploma"
+  },
+  {
+    "id": "deg_ba",
+    "en": "B.A",
+    "ta": "இளங்கலை கலை",
+    "aliases": [
+      "arts"
+    ],
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bsc",
+    "en": "B.Sc",
+    "ta": "இளங்கலை அறிவியல்",
+    "aliases": [
+      "science"
+    ],
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bcom",
+    "en": "B.Com",
+    "ta": "இளங்கலை வணிகவியல்",
+    "aliases": [
+      "commerce"
+    ],
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bsc_cs",
+    "en": "B.Sc Computer Science",
+    "ta": "இளங்கலை கணினி அறிவியல்",
+    "aliases": [
+      "bsc cs",
+      "computer"
+    ],
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bsc_it",
+    "en": "B.Sc IT",
+    "ta": "இளங்கலை தகவல் தொழில்நுட்பம்",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bsc_nursing",
+    "en": "B.Sc Nursing",
+    "ta": "இளங்கலை செவிலியம்",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bsc_agri",
+    "en": "B.Sc Agriculture",
+    "ta": "இளங்கலை வேளாண்மை",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bsc_fashion",
+    "en": "B.Sc Fashion Design",
+    "ta": "இளங்கலை ஆடை வடிவமைப்பு",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bfa",
+    "en": "BFA",
+    "ta": "இளங்கலை நுண்கலை",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bsw",
+    "en": "BSW",
+    "ta": "இளங்கலை சமூகப் பணி",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bjmc",
+    "en": "BJMC",
+    "ta": "இளங்கலை பத்திரிகையியல்",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_blibsc",
+    "en": "B.Lib.Sc",
+    "ta": "இளங்கலை நூலகவியல்",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bms",
+    "en": "BMS",
+    "ta": "இளங்கலை மேலாண்மை அறிவியல்",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bdes",
+    "en": "B.Des",
+    "ta": "இளங்கலை வடிவமைப்பு",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bba",
+    "en": "BBA",
+    "ta": "இளங்கலை வணிக நிர்வாகம்",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bca",
+    "en": "BCA",
+    "ta": "இளங்கலை கணினி பயன்பாடுகள்",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bhm",
+    "en": "BHM",
+    "ta": "இளங்கலை விடுதி மேலாண்மை",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_be",
+    "en": "B.E",
+    "ta": "இளங்கலை பொறியியல்",
+    "aliases": [
+      "engineering"
+    ],
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_btech",
+    "en": "B.Tech",
+    "ta": "இளங்கலை தொழில்நுட்பம்",
+    "aliases": [
+      "engineering"
+    ],
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_barch",
+    "en": "B.Arch",
+    "ta": "இளங்கலை கட்டிடக்கலை",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bplan",
+    "en": "B.Plan",
+    "ta": "இளங்கலை நகரத் திட்டமிடல்",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_mbbs",
+    "en": "MBBS",
+    "ta": "மருத்துவப் பட்டம்",
+    "aliases": [
+      "doctor"
+    ],
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bds",
+    "en": "BDS",
+    "ta": "பல் மருத்துவம்",
+    "aliases": [
+      "dental"
+    ],
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bams",
+    "en": "BAMS",
+    "ta": "ஆயுர்வேத மருத்துவம்",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bhms",
+    "en": "BHMS",
+    "ta": "ஹோமியோபதி மருத்துவம்",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bums",
+    "en": "BUMS",
+    "ta": "யுனானி மருத்துவம்",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bsms",
+    "en": "BSMS",
+    "ta": "சித்த மருத்துவம்",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bnys",
+    "en": "BNYS",
+    "ta": "இயற்கை மருத்துவம்",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bvsc",
+    "en": "B.V.Sc",
+    "ta": "கால்நடை மருத்துவம்",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bpharm",
+    "en": "B.Pharm",
+    "ta": "இளங்கலை மருந்தியல்",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bpt",
+    "en": "BPT",
+    "ta": "இளங்கலை இயன்முறை மருத்துவம்",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bed",
+    "en": "B.Ed",
+    "ta": "இளங்கலை கல்வியியல்",
+    "aliases": [
+      "teacher"
+    ],
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_beled",
+    "en": "B.El.Ed",
+    "ta": "இளங்கலை தொடக்கக் கல்வி",
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_llb",
+    "en": "LLB",
+    "ta": "சட்டப் பட்டம்",
+    "aliases": [
+      "law"
+    ],
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_ba_llb",
+    "en": "BA LLB",
+    "ta": "கலை மற்றும் சட்டப் பட்டம்",
+    "aliases": [
+      "law"
+    ],
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bba_llb",
+    "en": "BBA LLB",
+    "ta": "வணிக நிர்வாகம் மற்றும் சட்டம்",
+    "aliases": [
+      "law"
+    ],
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_bcom_llb",
+    "en": "B.Com LLB",
+    "ta": "வணிகவியல் மற்றும் சட்டம்",
+    "aliases": [
+      "law"
+    ],
+    "parentId": "edu_ug"
+  },
+  {
+    "id": "deg_ma",
+    "en": "M.A",
+    "ta": "முதுகலை கலை",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_msc",
+    "en": "M.Sc",
+    "ta": "முதுகலை அறிவியல்",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_mcom",
+    "en": "M.Com",
+    "ta": "முதுகலை வணிகவியல்",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_msc_cs",
+    "en": "M.Sc Computer Science",
+    "ta": "முதுகலை கணினி அறிவியல்",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_msc_it",
+    "en": "M.Sc IT",
+    "ta": "முதுகலை தகவல் தொழில்நுட்பம்",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_msc_nursing",
+    "en": "M.Sc Nursing",
+    "ta": "முதுகலை செவிலியம்",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_msc_agri",
+    "en": "M.Sc Agriculture",
+    "ta": "முதுகலை வேளாண்மை",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_mfa",
+    "en": "MFA",
+    "ta": "முதுகலை நுண்கலை",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_msw",
+    "en": "MSW",
+    "ta": "முதுகலை சமூகப் பணி",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_mlibsc",
+    "en": "M.Lib.Sc",
+    "ta": "முதுகலை நூலகவியல்",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_mba",
+    "en": "MBA",
+    "ta": "வணிக நிர்வாகவியல் முதுகலை",
+    "aliases": [
+      "management"
+    ],
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_pg_diploma",
+    "en": "PG Diploma",
+    "ta": "முதுகலை பட்டயம்",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_mca",
+    "en": "MCA",
+    "ta": "முதுகலை கணினி பயன்பாடுகள்",
+    "aliases": [
+      "computer"
+    ],
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_me",
+    "en": "M.E",
+    "ta": "முதுகலை பொறியியல்",
+    "aliases": [
+      "engineering"
+    ],
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_mtech",
+    "en": "M.Tech",
+    "ta": "முதுகலை தொழில்நுட்பம்",
+    "aliases": [
+      "engineering"
+    ],
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_march",
+    "en": "M.Arch",
+    "ta": "முதுகலை கட்டிடக்கலை",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_mdes",
+    "en": "M.Des",
+    "ta": "முதுகலை வடிவமைப்பு",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_md",
+    "en": "MD",
+    "ta": "மருத்துவ முதுகலை",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_ms",
+    "en": "MS",
+    "ta": "அறுவை மருத்துவ முதுகலை",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_mds",
+    "en": "MDS",
+    "ta": "பல் மருத்துவ முதுகலை",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_mpharm",
+    "en": "M.Pharm",
+    "ta": "முதுகலை மருந்தியல்",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_mpt",
+    "en": "MPT",
+    "ta": "முதுகலை இயன்முறை மருத்துவம்",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_med",
+    "en": "M.Ed",
+    "ta": "முதுகலை கல்வியியல்",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_llm",
+    "en": "LLM",
+    "ta": "முதுகலை சட்டம்",
+    "aliases": [
+      "law"
+    ],
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_int_msc",
+    "en": "Integrated M.Sc",
+    "ta": "ஒருங்கிணைந்த முதுகலை அறிவியல்",
+    "parentId": "edu_pg"
+  },
+  {
+    "id": "deg_mphil",
+    "en": "M.Phil",
+    "ta": "எம்.ஃபில்",
+    "parentId": "edu_mphil"
+  },
+  {
+    "id": "deg_phd",
+    "en": "Ph.D",
+    "ta": "முனைவர் பட்டம்",
+    "aliases": [
+      "phd",
+      "doctorate"
+    ],
+    "parentId": "edu_phd"
+  },
+  {
+    "id": "deg_dm",
+    "en": "DM",
+    "ta": "மருத்துவ முனைவர்",
+    "parentId": "edu_phd"
+  },
+  {
+    "id": "deg_mch",
+    "en": "M.Ch",
+    "ta": "அறுவை மருத்துவ முனைவர்",
+    "parentId": "edu_phd"
+  },
+  {
+    "id": "deg_dlitt",
+    "en": "D.Litt",
+    "ta": "இலக்கிய முனைவர்",
+    "parentId": "edu_phd"
+  },
+  {
+    "id": "deg_post_doc",
+    "en": "Post Doctorate",
+    "ta": "முனைவருக்குப் பிந்தைய ஆய்வு",
+    "parentId": "edu_phd"
+  },
+  {
+    "id": "deg_pharmd",
+    "en": "Pharm.D",
+    "ta": "மருந்தியல் முனைவர்",
+    "parentId": "edu_phd"
+  },
+  {
+    "id": "deg_ca",
+    "en": "CA",
+    "ta": "பட்டயக் கணக்கர்",
+    "aliases": [
+      "chartered accountant"
+    ],
+    "parentId": "edu_professional"
+  },
+  {
+    "id": "deg_cma",
+    "en": "CMA",
+    "ta": "செலவுக் கணக்கியல்",
+    "aliases": [
+      "cost accountant"
+    ],
+    "parentId": "edu_professional"
+  },
+  {
+    "id": "deg_cs",
+    "en": "CS",
+    "ta": "நிறுவனச் செயலர்",
+    "aliases": [
+      "company secretary"
+    ],
+    "parentId": "edu_professional"
+  },
+  {
+    "id": "deg_cfa",
+    "en": "CFA",
+    "ta": "பட்டய நிதி ஆய்வாளர்",
+    "parentId": "edu_professional"
+  },
+  {
+    "id": "deg_acca",
+    "en": "ACCA",
+    "ta": "சான்றளிக்கப்பட்ட கணக்கர்",
+    "parentId": "edu_professional"
+  },
+  {
+    "id": "deg_actuary",
+    "en": "Actuarial Science",
+    "ta": "ஆயுள் கணிப்பியல்",
+    "parentId": "edu_professional"
+  }
+]

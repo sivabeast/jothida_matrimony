@@ -11,12 +11,17 @@ import '../../../core/utils/validators.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
+import '../../../widgets/common/number_stepper_field.dart';
 import '../../../widgets/common/searchable_field.dart';
 
-/// Step 1 — Basic Details. Mirrors the website's "Basic" step exactly:
-/// Profile For, Full Name, Gender, Date of Birth, Height, Weight (optional),
-/// Marital Status, Physical Status, and — when the marital status implies
-/// children — the children count + living status.
+/// Step 1 — Basic Details: Profile For, Full Name (English required, Tamil
+/// optional per §1), Gender, Date of Birth, Height, Weight, Marital Status,
+/// Physical Status, Family Type / Status, and the children question.
+///
+/// Children are asked DIRECTLY (§2) — "உங்களுக்கு குழந்தைகள் உள்ளனவா?" — not
+/// inferred from marital status. The old rule only offered the field to
+/// divorced/widowed members, which both missed people who have children and
+/// forced the question on people who do not.
 class StepBasic extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   const StepBasic({super.key, required this.onNext});
@@ -31,9 +36,7 @@ class _StepBasicState extends ConsumerState<StepBasic> {
   final _nameTamilController = TextEditingController();
   final _dobController = TextEditingController();
   final _weightController = TextEditingController();
-  final _childrenController = TextEditingController();
   final _nameFocus = FocusNode();
-  final _nameTamilFocus = FocusNode();
 
   // Who this profile is for — matches the website PROFILE_FOR list.
   static const _profileForOptions = [
@@ -50,11 +53,13 @@ class _StepBasicState extends ConsumerState<StepBasic> {
   String? _familyType;
   String? _familyStatus;
 
-  bool get _showChildren =>
-      _maritalStatus != null &&
-      AppConstants.maritalStatusesWithChildren.contains(_maritalStatus);
+  /// §2 — asked outright, independent of marital status. Null until answered,
+  /// which is what makes the question required.
+  bool? _hasChildren;
 
-  int get _childrenCount => int.tryParse(_childrenController.text) ?? 0;
+  /// Only meaningful while [_hasChildren] is true. Starts at 1 because that is
+  /// the answer for anyone who just said "yes" (§2).
+  int _childrenCount = 1;
 
   @override
   void initState() {
@@ -78,8 +83,17 @@ class _StepBasicState extends ConsumerState<StepBasic> {
         AppConstants.normalizeMaritalStatus(data['maritalStatus'] as String?);
     _physicalStatus = data['physicalStatus'] as String?;
     _childrenLivingStatus = data['childrenLivingStatus'] as String?;
+    // `hasChildren` is the new explicit answer; a draft written before it
+    // existed is recovered from the count it already stored, so reopening an
+    // old draft does not silently re-ask a question the member answered.
     final count = data['childrenCount'];
-    if (count is int && count > 0) _childrenController.text = '$count';
+    final savedHas = data['hasChildren'];
+    if (savedHas is bool) {
+      _hasChildren = savedHas;
+    } else if (count is int) {
+      _hasChildren = count > 0;
+    }
+    if (count is int && count > 0) _childrenCount = count;
     // Family Type / Family Status live inside the familyDetails map (kept in
     // sync with the Edit Profile → Family section).
     final fam = data['familyDetails'];
@@ -97,9 +111,7 @@ class _StepBasicState extends ConsumerState<StepBasic> {
     _nameTamilController.dispose();
     _dobController.dispose();
     _weightController.dispose();
-    _childrenController.dispose();
     _nameFocus.dispose();
-    _nameTamilFocus.dispose();
     super.dispose();
   }
 
@@ -133,7 +145,7 @@ class _StepBasicState extends ConsumerState<StepBasic> {
     final l10n = context.l10n;
     // One consistent validation style (§10): an inline red message under each
     // invalid field, and the page scrolls to + focuses the FIRST of them.
-    // BOTH names are mandatory (§14).
+    // Only the ENGLISH name is mandatory — the Tamil one is optional (§1).
     final nameError = Validators.name(_nameController.text);
     final checks = <FieldCheck>[
       FieldCheck.notEmpty('profileFor', _profileFor,
@@ -144,9 +156,6 @@ class _StepBasicState extends ConsumerState<StepBasic> {
         message: nameError ?? l10n.pleaseEnterField(l10n.fullName),
         focusNode: _nameFocus,
       ),
-      FieldCheck.notEmpty('nameTamil', _nameTamilController.text,
-          l10n.pleaseEnterField('${l10n.fullName} (தமிழ்)'),
-          focusNode: _nameTamilFocus),
       FieldCheck(
           id: 'gender',
           valid: _gender != null,
@@ -164,8 +173,13 @@ class _StepBasicState extends ConsumerState<StepBasic> {
           'familyType', _familyType, l10n.pleaseSelect(l10n.familyType)),
       FieldCheck.notEmpty(
           'familyStatus', _familyStatus, l10n.pleaseSelect(l10n.familyStatus)),
-      // Living status is required only when there actually are children.
-      if (_showChildren && _childrenCount > 0)
+      // §2 — the yes/no answer itself is required…
+      FieldCheck(
+          id: 'hasChildren',
+          valid: _hasChildren != null,
+          message: l10n.pleaseSelect(l10n.haveChildren)),
+      // …and the living status only matters once the answer is yes.
+      if (_hasChildren == true)
         FieldCheck.notEmpty('childrenLivingStatus', _childrenLivingStatus,
             l10n.pleaseSelect(l10n.childrenLivingStatus)),
     ];
@@ -192,9 +206,10 @@ class _StepBasicState extends ConsumerState<StepBasic> {
       'weight': _weightController.text.trim(),
       'maritalStatus': _maritalStatus,
       'physicalStatus': _physicalStatus,
-      'childrenCount': _showChildren ? _childrenCount : 0,
+      'hasChildren': _hasChildren ?? false,
+      'childrenCount': _hasChildren == true ? _childrenCount : 0,
       'childrenLivingStatus':
-          _showChildren && _childrenCount > 0 ? _childrenLivingStatus : null,
+          _hasChildren == true ? _childrenLivingStatus : null,
     });
     widget.onNext();
   }
@@ -240,21 +255,15 @@ class _StepBasicState extends ConsumerState<StepBasic> {
               },
             ),
             const SizedBox(height: 16),
-            // Tamil-script name (§10) — required, mirroring the website's Basic
-            // step (which validates fullNameTamil). Shown in place of the
-            // English name in Tamil mode; the English name stays canonical.
+            // Tamil-script name — OPTIONAL (§1): no asterisk and no check, so
+            // a member who cannot type Tamil is never blocked. When given it is
+            // shown in place of the English name in Tamil mode; the English
+            // name stays the canonical one.
             AppTextField(
-              key: _v.anchor('nameTamil'),
               controller: _nameTamilController,
-              focusNode: _nameTamilFocus,
-              label: '${context.l10n.fullName} (தமிழ்) *',
-              errorText: _v.errorOf('nameTamil'),
+              label: '${context.l10n.fullName} (தமிழ்)',
+              hint: context.l10n.optional,
               textCapitalization: TextCapitalization.words,
-              onChanged: (_) {
-                if (_v.errorOf('nameTamil') != null) {
-                  setState(() => _v.clear('nameTamil'));
-                }
-              },
             ),
             const SizedBox(height: 20),
             Text('${context.l10n.gender} *',
@@ -393,39 +402,95 @@ class _StepBasicState extends ConsumerState<StepBasic> {
                 _v.clear('familyStatus');
               }),
             ),
-            if (_showChildren) ...[
-              const SizedBox(height: 16),
-              AppTextField(
-                controller: _childrenController,
-                label: context.l10n.numberOfChildren,
-                hint: '0',
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(2),
-                ],
-                onChanged: (_) => setState(() {}),
-              ),
-              if (_childrenCount > 0) ...[
-                const SizedBox(height: 16),
-                SearchableField(
-                  key: _v.anchor('childrenLivingStatus'),
-                  label: context.l10n.childrenLivingStatus,
-                  isRequired: true,
-                  items: AppConstants.childrenLivingStatusList,
-                  selectedItem: _childrenLivingStatus,
-                  prefixIcon: Icons.home_outlined,
-                  errorText: _v.errorOf('childrenLivingStatus'),
-                  onChanged: (v) => setState(() {
-                    _childrenLivingStatus = v;
-                    _v.clear('childrenLivingStatus');
-                  }),
-                ),
+            // ── §2 Children — asked directly, never inferred ───────────────
+            const SizedBox(height: 20),
+            Text('${context.l10n.haveChildren} *',
+                key: _v.anchor('hasChildren'),
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(child: _yesNoCard(true, context.l10n.yes)),
+                const SizedBox(width: 16),
+                Expanded(child: _yesNoCard(false, context.l10n.no)),
               ],
+            ),
+            InlineFieldError(_v.errorOf('hasChildren')),
+            // "No" hides the count entirely (§2) — the stepper only exists
+            // once there is something to count.
+            if (_hasChildren == true) ...[
+              const SizedBox(height: 16),
+              NumberStepperField(
+                label: context.l10n.numberOfChildren,
+                value: _childrenCount,
+                min: 1,
+                max: 15,
+                prefixIcon: Icons.child_care_outlined,
+                onChanged: (v) => setState(() => _childrenCount = v),
+              ),
+              const SizedBox(height: 16),
+              SearchableField(
+                key: _v.anchor('childrenLivingStatus'),
+                label: context.l10n.childrenLivingStatus,
+                isRequired: true,
+                items: AppConstants.childrenLivingStatusList,
+                selectedItem: _childrenLivingStatus,
+                prefixIcon: Icons.home_outlined,
+                errorText: _v.errorOf('childrenLivingStatus'),
+                onChanged: (v) => setState(() {
+                  _childrenLivingStatus = v;
+                  _v.clear('childrenLivingStatus');
+                }),
+              ),
             ],
             const SizedBox(height: 36),
             GradientButton(
                 onPressed: _saveAndNext, text: context.l10n.continueLabel),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// One half of the ஆம் / இல்லை pair (§2). Styled like [_genderCard] so the
+  /// two choice rows on this step read as the same control.
+  Widget _yesNoCard(bool answer, String label) {
+    final selected = _hasChildren == answer;
+    return GestureDetector(
+      onTap: () => setState(() {
+        _hasChildren = answer;
+        _v.clear('hasChildren');
+        if (!answer) {
+          // Answering "no" must not leave a stale count or living status
+          // behind for the save to pick up.
+          _childrenCount = 1;
+          _childrenLivingStatus = null;
+          _v.clear('childrenLivingStatus');
+        }
+      }),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : Colors.grey[100],
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected ? AppColors.primary : Colors.grey[300]!,
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(answer ? Icons.check_circle_outline : Icons.cancel_outlined,
+                size: 20, color: selected ? Colors.white : Colors.grey[600]),
+            const SizedBox(width: 8),
+            Text(label,
+                style: TextStyle(
+                  color: selected ? Colors.white : Colors.black87,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 15,
+                )),
           ],
         ),
       ),

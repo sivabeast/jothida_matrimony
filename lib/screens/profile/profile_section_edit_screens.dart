@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_constants.dart';
-import '../../core/data/career_data.dart';
+import '../../core/data/education_catalog.dart';
+import '../../core/data/occupation_catalog.dart';
+import '../../widgets/common/searchable_multi_select_field.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/inline_validation.dart';
 import '../../core/utils/l10n_ext.dart';
@@ -205,7 +207,13 @@ class _EducationFormState extends ConsumerState<_EducationForm> {
   final _v = InlineValidation();
 
   late String? _educationLevel = _orNull(widget.profile.effectiveEducationLevel);
-  late String? _education = _orNull(widget.profile.education);
+  /// Every qualification held (§4) — seeded from the list, or from the single
+  /// legacy `education` value when the profile predates multi-degree support.
+  late final List<String> _degrees = [...widget.profile.allDegrees];
+  late final List<String> _displayDegrees = [
+    for (final d in widget.profile.displayDegrees)
+      if (_degrees.contains(d)) d,
+  ];
   late String? _employmentStatus =
       _orNull(widget.profile.effectiveEmploymentStatus);
   late String? _sector = _orNull(widget.profile.effectiveSector);
@@ -220,9 +228,17 @@ class _EducationFormState extends ConsumerState<_EducationForm> {
 
   static String? _orNull(String s) => s.trim().isEmpty ? null : s;
 
-  bool get _needsCourse => CareerData.levelHasCourses(_educationLevel);
+  bool get _needsCourse => EducationCatalog.levelHasDegrees(_educationLevel);
   bool get _needsOccupation =>
-      CareerData.statusHasOccupation(_employmentStatus);
+      OccupationCatalog.statusHasOccupation(_employmentStatus);
+
+  /// §4 — the card chooser only appears from the third degree onwards.
+  bool get _needsDisplayChoice => _degrees.length > 2;
+
+  List<String> get _effectiveDisplayDegrees =>
+      _needsDisplayChoice && _displayDegrees.isNotEmpty
+          ? _displayDegrees
+          : _degrees.take(2).toList();
 
   @override
   void dispose() {
@@ -232,23 +248,21 @@ class _EducationFormState extends ConsumerState<_EducationForm> {
     super.dispose();
   }
 
-  String get _sectorLabel => _employmentStatus == CareerData.statusSelfEmployed
-      ? context.l10n.businessOrProfession
-      : context.l10n.governmentOrPrivate;
-
   void _save() {
     final l10n = context.l10n;
     final checks = <FieldCheck>[
       FieldCheck.notEmpty('educationLevel', _educationLevel,
           l10n.pleaseEnterField(l10n.educationLevel)),
       if (_needsCourse)
-        FieldCheck.notEmpty(
-            'education', _education, l10n.pleaseEnterField(l10n.courseDegree)),
+        FieldCheck(
+            id: 'degrees',
+            valid: _degrees.isNotEmpty,
+            message: l10n.pleaseSelect(l10n.degreesLabel)),
       FieldCheck.notEmpty('employmentStatus', _employmentStatus,
           l10n.pleaseEnterField(l10n.employmentStatus)),
       if (_needsOccupation)
         FieldCheck.notEmpty(
-            'sector', _sector, l10n.pleaseEnterField(_sectorLabel)),
+            'sector', _sector, l10n.pleaseSelect(l10n.employmentType)),
       if (_needsOccupation)
         FieldCheck.notEmpty(
             'occupation', _occupation, l10n.pleaseEnterField(l10n.occupation)),
@@ -256,14 +270,20 @@ class _EducationFormState extends ConsumerState<_EducationForm> {
     if (!_v.validate(context, checks, onChanged: () => setState(() {}))) return;
 
     final occupation =
-        CareerData.occupationValueFor(_employmentStatus, _occupation);
+        OccupationCatalog.occupationValueFor(_employmentStatus, _occupation);
     final sector = _needsOccupation ? (_sector ?? '') : '';
     // Annual income stays OPTIONAL (§8).
     final income = _needsOccupation ? (_income ?? '') : '';
+    final display = _effectiveDisplayDegrees;
+    final primary = display.isNotEmpty
+        ? display.first
+        : (_degrees.isNotEmpty ? _degrees.first : '');
 
     final patch = {
       'educationLevel': _educationLevel,
-      'education': _education ?? '',
+      'education': primary,
+      'degrees': _degrees,
+      'displayDegrees': display,
       'employmentStatus': _employmentStatus,
       'employmentType': sector,
       'occupation': occupation,
@@ -275,7 +295,9 @@ class _EducationFormState extends ConsumerState<_EducationForm> {
     _persistSection(context, ref,
         updated: widget.profile.copyWith(
           educationLevel: _educationLevel,
-          education: _education ?? '',
+          education: primary,
+          degrees: _degrees,
+          displayDegrees: display,
           employmentStatus: _employmentStatus,
           employmentType: sector,
           occupation: occupation,
@@ -293,45 +315,74 @@ class _EducationFormState extends ConsumerState<_EducationForm> {
     return _FormBody(
       onSave: _save,
       children: [
-        SearchableField(
+        SearchableField.fromOptions(
           key: _v.anchor('educationLevel'),
           label: l10n.educationLevel,
           isRequired: true,
-          items: CareerData.educationLevels,
+          options: EducationCatalog.levels,
           selectedItem: _educationLevel,
           prefixIcon: Icons.school_outlined,
           errorText: _v.errorOf('educationLevel'),
           onChanged: (v) => setState(() {
             _educationLevel = v;
             _v.clear('educationLevel');
-            _v.clear('education');
-            _education = CareerData.defaultCourseFor(v);
+            _v.clear('degrees');
+            _degrees.clear();
+            _displayDegrees.clear();
+            // A schooling level IS the qualification (§3).
+            final implicit = EducationCatalog.implicitDegreeFor(v);
+            if (implicit != null) _degrees.add(implicit);
           }),
         ),
+        // Hidden for Below 10th / 10th / 12th (§3); multi-select (§4).
         if (_needsCourse) ...[
           const SizedBox(height: 16),
-          SearchableWithOthersField(
-            key: _v.anchor('education'),
-            label: l10n.courseDegree,
-            isRequired: true,
-            items: CareerData.coursesFor(_educationLevel),
-            value: _education,
+          SearchableMultiSelectField.fromOptions(
+            key: _v.anchor('degrees'),
+            label: l10n.degreesLabel,
+            options: EducationCatalog.degreesFor(_educationLevel),
+            selected: _degrees,
             prefixIcon: Icons.menu_book_outlined,
-            errorText: _v.errorOf('education'),
+            showEnglishInBrackets: true,
+            hint: l10n.degreesHint,
             onChanged: (v) => setState(() {
-              _education = v;
-              _v.clear('education');
+              _degrees
+                ..clear()
+                ..addAll(v);
+              _displayDegrees.removeWhere((d) => !_degrees.contains(d));
+              if (!_needsDisplayChoice) _displayDegrees.clear();
+              _v.clear('degrees');
             }),
           ),
+          InlineFieldError(_v.errorOf('degrees')),
+          if (_needsDisplayChoice) ...[
+            const SizedBox(height: 16),
+            SearchableMultiSelectField.fromOptions(
+              label: l10n.profileDisplayQualification,
+              options: EducationCatalog.degreesFor(_educationLevel)
+                  .where((o) => _degrees.contains(o.en))
+                  .toList(),
+              selected: _displayDegrees,
+              prefixIcon: Icons.star_outline,
+              showEnglishInBrackets: true,
+              maxSelection: 2,
+              hint: l10n.profileDisplayQualificationHelp,
+              onChanged: (v) => setState(() {
+                _displayDegrees
+                  ..clear()
+                  ..addAll(v);
+              }),
+            ),
+          ],
         ],
         const SizedBox(height: 16),
         AppTextField(controller: _college, label: l10n.collegeName),
         const SizedBox(height: 24),
-        SearchableField(
+        SearchableField.fromOptions(
           key: _v.anchor('employmentStatus'),
           label: l10n.employmentStatus,
           isRequired: true,
-          items: CareerData.employmentStatuses,
+          options: OccupationCatalog.statuses,
           selectedItem: _employmentStatus,
           prefixIcon: Icons.badge_outlined,
           errorText: _v.errorOf('employmentStatus'),
@@ -342,16 +393,16 @@ class _EducationFormState extends ConsumerState<_EducationForm> {
             _v.clear('occupation');
             _sector = null;
             _occupation = null;
-            if (!CareerData.statusHasOccupation(v)) _income = null;
+            if (!OccupationCatalog.statusHasOccupation(v)) _income = null;
           }),
         ),
         if (_needsOccupation) ...[
           const SizedBox(height: 16),
-          SearchableField(
+          SearchableField.fromOptions(
             key: _v.anchor('sector'),
-            label: _sectorLabel,
+            label: l10n.employmentType,
             isRequired: true,
-            items: CareerData.sectorsFor(_employmentStatus),
+            options: OccupationCatalog.typesFor(_employmentStatus),
             selectedItem: _sector,
             prefixIcon: Icons.account_balance_outlined,
             errorText: _v.errorOf('sector'),
@@ -363,15 +414,20 @@ class _EducationFormState extends ConsumerState<_EducationForm> {
             }),
           ),
           const SizedBox(height: 16),
-          SearchableWithOthersField(
+          SearchableWithOthersField.fromOptions(
             key: _v.anchor('occupation'),
             label: l10n.occupation,
             isRequired: true,
             enabled: (_sector ?? '').isNotEmpty,
-            items: CareerData.occupationsFor(
-                status: _employmentStatus, sector: _sector),
+            // Ordered by what they studied (§6), never filtered.
+            options: OccupationCatalog.occupationsFor(
+              status: _employmentStatus,
+              type: _sector,
+              educationLevel: _educationLevel,
+            ),
             value: _occupation,
             prefixIcon: Icons.work_outline,
+            showEnglishInBrackets: true,
             errorText: _v.errorOf('occupation'),
             onChanged: (v) => setState(() {
               _occupation = v;

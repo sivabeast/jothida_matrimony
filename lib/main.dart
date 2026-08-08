@@ -11,6 +11,7 @@ import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'models/master_data.dart';
 import 'providers/locale_provider.dart';
+import 'core/data/catalog_registry.dart';
 import 'router/app_router.dart';
 import 'screens/settings/language_screen.dart';
 import 'services/app_update_service.dart';
@@ -55,6 +56,11 @@ void main() async {
         .catchError((Object e) =>
             debugPrint('FCM initialize skipped (non-fatal): $e')),
   );
+  // The bilingual Education / Employment / Location catalogues are `const`, so
+  // registering their Tamil names costs nothing and must happen before the
+  // first frame — otherwise a stored degree or occupation would flash in
+  // English on a Tamil device (§8).
+  registerCatalogTamilNames();
   // Warm the Religion/Caste/Subcaste master data (Firestore-first) in the
   // background so its Tamil names are registered with the value localizer
   // before any stored caste is rendered — a caste then displays in Tamil

@@ -1322,8 +1322,6 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       _InfoItem(Icons.smoke_free, l10n.smokingHabit, value(p.smokingHabit)),
       _InfoItem(
           Icons.no_drinks_outlined, l10n.drinkingHabit, value(p.drinkingHabit)),
-      _InfoItem(Icons.auto_awesome_outlined, l10n.horoscopeMatchRequired,
-          p.horoscopeMatchRequired ? l10n.yes : ''),
     ];
     if (items.every((i) => i.value.trim().isEmpty)) return const [];
     return [

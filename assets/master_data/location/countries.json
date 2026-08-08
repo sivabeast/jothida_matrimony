@@ -1,0 +1,153 @@
+[
+  {
+    "id": "ctry_india",
+    "en": "India",
+    "ta": "இந்தியா",
+    "aliases": [
+      "bharat",
+      "hindustan"
+    ]
+  },
+  {
+    "id": "ctry_usa",
+    "en": "USA",
+    "ta": "அமெரிக்கா",
+    "aliases": [
+      "united states",
+      "america",
+      "us"
+    ]
+  },
+  {
+    "id": "ctry_uk",
+    "en": "UK",
+    "ta": "இங்கிலாந்து",
+    "aliases": [
+      "united kingdom",
+      "britain",
+      "england"
+    ]
+  },
+  {
+    "id": "ctry_canada",
+    "en": "Canada",
+    "ta": "கனடா"
+  },
+  {
+    "id": "ctry_australia",
+    "en": "Australia",
+    "ta": "ஆஸ்திரேலியா"
+  },
+  {
+    "id": "ctry_uae",
+    "en": "UAE",
+    "ta": "ஐக்கிய அரபு அமீரகம்",
+    "aliases": [
+      "dubai",
+      "abu dhabi",
+      "emirates"
+    ]
+  },
+  {
+    "id": "ctry_singapore",
+    "en": "Singapore",
+    "ta": "சிங்கப்பூர்"
+  },
+  {
+    "id": "ctry_malaysia",
+    "en": "Malaysia",
+    "ta": "மலேசியா"
+  },
+  {
+    "id": "ctry_srilanka",
+    "en": "Sri Lanka",
+    "ta": "இலங்கை",
+    "aliases": [
+      "ceylon",
+      "eelam"
+    ]
+  },
+  {
+    "id": "ctry_qatar",
+    "en": "Qatar",
+    "ta": "கத்தார்"
+  },
+  {
+    "id": "ctry_saudi",
+    "en": "Saudi Arabia",
+    "ta": "சவூதி அரேபியா"
+  },
+  {
+    "id": "ctry_kuwait",
+    "en": "Kuwait",
+    "ta": "குவைத்"
+  },
+  {
+    "id": "ctry_oman",
+    "en": "Oman",
+    "ta": "ஓமான்"
+  },
+  {
+    "id": "ctry_bahrain",
+    "en": "Bahrain",
+    "ta": "பஹ்ரைன்"
+  },
+  {
+    "id": "ctry_germany",
+    "en": "Germany",
+    "ta": "ஜெர்மனி"
+  },
+  {
+    "id": "ctry_france",
+    "en": "France",
+    "ta": "பிரான்ஸ்"
+  },
+  {
+    "id": "ctry_switzerland",
+    "en": "Switzerland",
+    "ta": "சுவிட்சர்லாந்து"
+  },
+  {
+    "id": "ctry_netherlands",
+    "en": "Netherlands",
+    "ta": "நெதர்லாந்து",
+    "aliases": [
+      "holland"
+    ]
+  },
+  {
+    "id": "ctry_ireland",
+    "en": "Ireland",
+    "ta": "அயர்லாந்து"
+  },
+  {
+    "id": "ctry_newzealand",
+    "en": "New Zealand",
+    "ta": "நியூசிலாந்து"
+  },
+  {
+    "id": "ctry_southafrica",
+    "en": "South Africa",
+    "ta": "தென்னாப்பிரிக்கா"
+  },
+  {
+    "id": "ctry_japan",
+    "en": "Japan",
+    "ta": "ஜப்பான்"
+  },
+  {
+    "id": "ctry_china",
+    "en": "China",
+    "ta": "சீனா"
+  },
+  {
+    "id": "ctry_hongkong",
+    "en": "Hong Kong",
+    "ta": "ஹாங்காங்"
+  },
+  {
+    "id": "ctry_other",
+    "en": "Other",
+    "ta": "மற்றவை"
+  }
+]

@@ -2,17 +2,22 @@
 ///
 /// Everything that shows the brand mark — launcher icon, Play Store icon,
 /// splash, login, loading, app bars, drawer, report headers, exported PDFs —
-/// renders THIS asset. There is deliberately no second "report" or "launcher"
-/// variant any more: one file, one look, everywhere.
+/// renders THIS asset. There is deliberately no second "report", "launcher" or
+/// "store" variant any more: one file, one look, everywhere.
 ///
-/// To change the logo, replace `assets/images/app_logo.png` with a square
-/// 1024×1024 PNG and regenerate the Android launcher icons:
+/// The artwork is a full-bleed square: the red plate reaches all four edges
+/// (only its rounded corners are transparent), because every render site feeds
+/// it through `BoxFit.cover` and clips to a circle or squircle. A version with
+/// a transparent margin would shrink inside those clips and, on
+/// [AppLauncherLogo]'s white plate, ring the logo in white.
+///
+/// To change the logo, run ONE command with the new artwork — it trims the
+/// margin, rewrites this master and regenerates every Android and Play icon:
 ///
 /// ```
-/// flutter pub get
-/// dart run flutter_launcher_icons
+/// python tool/generate_brand_icons.py path/to/new_logo.png --write-master
 /// ```
 ///
-/// (`pubspec.yaml` → `flutter_launcher_icons.image_path` already points here,
-/// so the launcher icon and the in-app logo can never drift apart.)
+/// Do not hand-replace this file alone: the Android bitmaps under
+/// `android/app/src/main/res/` are separate copies and would keep the old mark.
 const String kAppLogoAsset = 'assets/images/app_logo.png';

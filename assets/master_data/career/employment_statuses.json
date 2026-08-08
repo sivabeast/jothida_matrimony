@@ -1,0 +1,73 @@
+[
+  {
+    "id": "emp_employed",
+    "en": "Employed",
+    "ta": "பணியாளர்",
+    "aliases": [
+      "job",
+      "salaried",
+      "working"
+    ]
+  },
+  {
+    "id": "emp_self",
+    "en": "Self Employed",
+    "ta": "சுயதொழில்",
+    "aliases": [
+      "self employed",
+      "own work"
+    ]
+  },
+  {
+    "id": "emp_business",
+    "en": "Businessman",
+    "ta": "வணிகர்",
+    "aliases": [
+      "business",
+      "trader",
+      "merchant"
+    ]
+  },
+  {
+    "id": "emp_student",
+    "en": "Student",
+    "ta": "மாணவர்",
+    "aliases": [
+      "studying"
+    ]
+  },
+  {
+    "id": "emp_jobseeker",
+    "en": "Job Seeker",
+    "ta": "வேலை தேடுபவர்",
+    "aliases": [
+      "unemployed",
+      "not working"
+    ]
+  },
+  {
+    "id": "emp_homemaker",
+    "en": "Homemaker",
+    "ta": "இல்லத்தரசி",
+    "aliases": [
+      "housewife",
+      "home maker"
+    ]
+  },
+  {
+    "id": "emp_retired",
+    "en": "Retired",
+    "ta": "ஓய்வு பெற்றவர்",
+    "aliases": [
+      "pensioner"
+    ]
+  },
+  {
+    "id": "emp_others",
+    "en": "Others",
+    "ta": "மற்றவை",
+    "aliases": [
+      "other"
+    ]
+  }
+]

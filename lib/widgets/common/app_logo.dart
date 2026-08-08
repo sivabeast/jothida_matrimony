@@ -44,8 +44,8 @@ class AppLogo extends StatelessWidget {
 }
 
 /// The same single logo presented as a premium rounded-square medallion — soft
-/// maroon glow, hairline gold rim, white plate behind the artwork — for the
-/// surfaces where the app introduces *itself* (splash, login header).
+/// maroon glow, hairline gold rim, brand-maroon plate behind the artwork — for
+/// the surfaces where the app introduces *itself* (splash, login header).
 class AppLauncherLogo extends StatelessWidget {
   final double size;
 
@@ -61,7 +61,11 @@ class AppLauncherLogo extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: Colors.white,
+        // Sits directly under the logo's own rounded corners, which are
+        // transparent, so this must be the plate's maroon and NOT white —
+        // white showed as four pale slivers once the gold logo was replaced
+        // by the red one.
+        color: AppColors.primary,
         borderRadius: BorderRadius.circular(radius),
         border: elevated
             ? Border.all(

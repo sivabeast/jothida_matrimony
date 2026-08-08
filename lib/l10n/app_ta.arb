@@ -1,15 +1,12 @@
 {
   "@@locale": "ta",
-
   "appTitle": "ஜோதிட மேட்ரிமோனி",
   "appTagline": "உங்கள் சரியான ஜோடியைக் கண்டறியுங்கள்",
-
   "chooseLanguage": "உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்",
   "languageEnglish": "English",
   "languageTamil": "தமிழ்",
   "continueLabel": "தொடரவும்",
   "language": "மொழி",
-
   "save": "சேமி",
   "submit": "சமர்ப்பி",
   "next": "அடுத்து",
@@ -41,8 +38,7 @@
   "optional": "விருப்பத்தேர்வு",
   "notSpecified": "குறிப்பிடப்படவில்லை",
   "notAvailable": "கிடைக்கவில்லை",
-
-  "fieldRequired": "இந்த புலம் அவசியம்",
+  "fieldRequired": "{label} தேவை",
   "invalidEmail": "சரியான மின்னஞ்சல் முகவரியை உள்ளிடவும்",
   "invalidPhone": "சரியான கைபேசி எண்ணை உள்ளிடவும்",
   "invalidOtp": "சரியான OTP ஐ உள்ளிடவும்",
@@ -51,7 +47,6 @@
   "noInternet": "இணைய இணைப்பு இல்லை",
   "savedSuccessfully": "வெற்றிகரமாக சேமிக்கப்பட்டது",
   "updatedSuccessfully": "வெற்றிகரமாக புதுப்பிக்கப்பட்டது",
-
   "welcomeBack": "மீண்டும் வரவேற்கிறோம்",
   "signInToContinue": "தொடர உள்நுழையவும்",
   "phone": "தொலைபேசி",
@@ -76,13 +71,11 @@
   "alreadyHaveAccount": "ஏற்கனவே கணக்கு உள்ளதா? ",
   "astrologerPortal": "ஜோதிடர் போர்டல்",
   "orLabel": "அல்லது",
-
   "chooseAccountType": "கணக்கு வகையைத் தேர்ந்தெடுக்கவும்",
   "matrimonyUser": "திருமணப் பயனர்",
   "findLifePartner": "உங்கள் வாழ்க்கைத் துணையைக் கண்டறியுங்கள்",
   "astrologerAccount": "ஜோதிடர்",
   "offerConsultations": "உறுப்பினர்களுக்கு ஆலோசனை வழங்குங்கள்",
-
   "home": "முகப்பு",
   "discover": "கண்டறி",
   "matches": "பொருத்தங்கள்",
@@ -90,7 +83,6 @@
   "interests": "விருப்பங்கள்",
   "alerts": "அறிவிப்புகள்",
   "profile": "சுயவிவரம்",
-
   "brides": "மணமகள்கள்",
   "grooms": "மணமகன்கள்",
   "sendInterest": "விருப்பம் அனுப்பு",
@@ -116,7 +108,6 @@
   "city": "நகரம்",
   "state": "மாநிலம்",
   "country": "நாடு",
-
   "received": "பெறப்பட்டவை",
   "sent": "அனுப்பியவை",
   "accept": "ஏற்கவும்",
@@ -135,7 +126,6 @@
   "interestRejected": "விருப்பம் நிராகரிக்கப்பட்டது",
   "noInterestsYet": "இன்னும் விருப்பங்கள் இல்லை",
   "interestSentSuccess": "விருப்பம் வெற்றிகரமாக அனுப்பப்பட்டது!",
-
   "matchDetails": "பொருத்த விவரங்கள்",
   "match": "பொருத்தம்",
   "compatibilitySummary": "பொருத்த சுருக்கம்",
@@ -145,7 +135,6 @@
   "compatibilityLocked": "பொருத்தம் பூட்டப்பட்டுள்ளது",
   "viewContact": "தொடர்பைப் பார்",
   "horoscopeMatch": "ஜாதகப் பொருத்தம்",
-
   "myProfile": "எனது சுயவிவரம்",
   "editProfile": "சுயவிவரத்தைத் திருத்து",
   "createProfile": "சுயவிவரத்தை உருவாக்கு",
@@ -187,7 +176,6 @@
   "basicInformation": "அடிப்படை தகவல்",
   "religionCommunity": "மதம் & சமூகம்",
   "educationCareer": "கல்வி & தொழில்",
-
   "familyTree": "குடும்ப மரம்",
   "father": "தந்தை",
   "mother": "தாய்",
@@ -199,7 +187,6 @@
   "nuclearFamily": "தனிக் குடும்பம்",
   "familyDetailsNotAdded": "குடும்ப விவரங்கள் சேர்க்கப்படவில்லை",
   "addFamilyDetails": "குடும்ப விவரங்களைச் சேர்",
-
   "horoscope": "ஜாதகம்",
   "rasi": "ராசி",
   "nakshatra": "நட்சத்திரம்",
@@ -207,7 +194,6 @@
   "birthTime": "பிறந்த நேரம்",
   "birthPlace": "பிறந்த இடம்",
   "dosham": "தோஷம்",
-
   "freePlan": "இலவச திட்டம்",
   "premiumPlan": "பிரீமியம் திட்டம்",
   "basicPlan": "அடிப்படை திட்டம்",
@@ -217,7 +203,6 @@
   "choosePlan": "ஒரு திட்டத்தைத் தேர்ந்தெடுக்கவும்",
   "subscribe": "சந்தா சேர்",
   "daysRemaining": "{days} நாட்கள் மீதம்",
-
   "rating": "மதிப்பீடு",
   "experience": "அனுபவம்",
   "reviews": "விமர்சனங்கள்",
@@ -239,17 +224,14 @@
   "about": "பற்றி",
   "verifiedAstrologer": "சரிபார்க்கப்பட்ட ஜோதிடர்",
   "consultation": "ஆலோசனை",
-  "bookConsultation": "ஆலோசனை பதிவு செய்க",
-
+  "bookConsultation": "ஆலோசனை முன்பதிவு",
   "contactDetails": "தொடர்பு விவரங்கள்",
   "name": "பெயர்",
   "call": "அழைக்கவும்",
   "whatsapp": "வாட்ஸ்அப்",
   "contactLocked": "உங்கள் விருப்பம் ஏற்கப்பட்ட பிறகு தொடர்பு திறக்கப்படும்",
-
   "notifications": "அறிவிப்புகள்",
   "noNotifications": "இன்னும் அறிவிப்புகள் இல்லை",
-
   "settings": "அமைப்புகள்",
   "privacy": "தனியுரிமை",
   "privacySettings": "தனியுரிமை அமைப்புகள்",
@@ -266,7 +248,6 @@
   "deleteAccountSubtitle": "உங்கள் கணக்கையும் அனைத்து தரவையும் நிரந்தரமாக நீக்கு",
   "deleteAccountWarning": "இந்தச் செயல் நிரந்தரமானது, மீட்க முடியாது.\nஉங்கள் சுயவிவரத் தரவு, புகைப்படங்கள், விருப்பங்கள், ஜாதக விவரங்கள் மற்றும் கணக்குத் தகவல் அனைத்தும் நிரந்தரமாக நீக்கப்படும்.",
   "couldNotDeleteAccount": "உங்கள் கணக்கை நீக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
-
   "viewPhoto": "புகைப்படத்தைப் பார்",
   "changePhoto": "புகைப்படத்தை மாற்று",
   "uploadPhoto": "புகைப்படத்தைப் பதிவேற்று",
@@ -276,7 +257,6 @@
   "photoRemoved": "புகைப்படம் அகற்றப்பட்டது",
   "couldNotUpdatePhoto": "புகைப்படத்தைப் புதுப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
   "couldNotRemovePhoto": "புகைப்படத்தை அகற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
-
   "family": "குடும்பம்",
   "noProfileYet": "இன்னும் சுயவிவரம் இல்லை",
   "profileUnavailable": "சுயவிவரம் கிடைக்கவில்லை",
@@ -289,19 +269,15 @@
   "familyStatusMiddle": "நடுத்தர வர்க்கம்",
   "familyStatusLowerMiddle": "கீழ் நடுத்தர வர்க்கம்",
   "familyStatusLower": "கீழ் வர்க்கம்",
-
   "whoCreatingAccountFor": "யாருக்காக\nகணக்கை உருவாக்குகிறீர்கள்?",
   "chooseHowToUseApp": "செயலியை எவ்வாறு பயன்படுத்த விரும்புகிறீர்கள் என்பதைத் தேர்ந்தெடுக்கவும்",
   "pressBackToExit": "வெளியேற மீண்டும் பின் செல்லவும்",
-
   "signInFailed": "உள்நுழைவு தோல்வியடைந்தது. உங்கள் விவரங்களைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.",
   "googleSignInFailed": "Google உள்நுழைவு தோல்வியடைந்தது. மீண்டும் முயற்சிக்கவும்.",
   "astrologerSignInHere": "நீங்கள் ஜோதிடரா? இங்கே உள்நுழையவும்",
-
   "couldNotLoadReviews": "விமர்சனங்களை ஏற்ற முடியவில்லை.",
   "certificates": "சான்றிதழ்கள்",
   "astrologerNotFound": "ஜோதிடர் கிடைக்கவில்லை",
-
   "member": "உறுப்பினர்",
   "noReceivedInterests": "இன்னும் விருப்பங்கள் எதுவும் பெறப்படவில்லை",
   "noSentInterests": "நீங்கள் இன்னும் எந்த விருப்பத்தையும் அனுப்பவில்லை",
@@ -311,13 +287,12 @@
   "checkConnectionRetry": "உங்கள் இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.",
   "interestStartHint": "தொடங்க ஒரு விருப்பத்தை அனுப்பவும் அல்லது பெறவும்.",
   "interestDeclined": "விருப்பம் நிராகரிக்கப்பட்டது",
-  "interestAcceptedMatch": "இது ஒரு பொருத்தம்! விருப்பம் ஏற்கப்பட்டது 🎉",
+  "interestAcceptedMatch": "விருப்பம் ஏற்கப்பட்டது — இது ஒரு பொருத்தம்!",
   "profileUnavailableMatch": "இந்தப் பொருத்தத்திற்கு சுயவிவரம் கிடைக்கவில்லை.",
   "horoscopeUnavailableMember": "இந்த உறுப்பினருக்கு ஜாதகப் பொருத்தம் கிடைக்கவில்லை.",
   "sentAcceptedHint": "ஏற்கப்பட்டது — தொடர்பைப் பார்க்க ஏற்கப்பட்டது தாவலைத் திறக்கவும்.",
   "interestDeclinedStatus": "இந்த விருப்பம் நிராகரிக்கப்பட்டது.",
   "waitingForResponse": "பதிலுக்காகக் காத்திருக்கிறது…",
-
   "bookMatchAnalysis": "பொருத்தப் பகுப்பாய்வு பதிவு",
   "submitRequest": "கோரிக்கையை சமர்ப்பிக்கவும்",
   "sending": "அனுப்புகிறது…",
@@ -345,10 +320,8 @@
   "onLeave": "விடுப்பில்",
   "available": "கிடைக்கிறது",
   "unavailable": "கிடைக்கவில்லை",
-
   "reports": "அறிக்கைகள்",
   "astrology": "ஜோதிடம்",
-
   "compatibleMatches": "பொருத்தமான Matches",
   "allMatches": "அனைத்து Matches",
   "viewMatchingStars": "பொருந்தும் நட்சத்திரங்கள்",
@@ -360,30 +333,44 @@
   "profession": "தொழில்",
   "refresh": "புதுப்பிக்கவும்",
   "goBack": "பின் செல்லவும்",
-
   "noMatchingProfilesTitle": "உங்களுக்கான பொருத்தமான Profiles இன்னும் கிடைக்கவில்லை",
   "noMatchingProfilesBody": "தற்போது Profiles எதுவும் கிடைக்கவில்லை. புதிய உறுப்பினர்கள் தொடர்ந்து இணைந்து கொண்டிருக்கிறார்கள் — கிடைக்கும் அனைத்து Profiles-ும் இங்கு தோன்றும்; உங்கள் வாழ்க்கைத்துணை விருப்பங்களுக்கு பொருந்துபவை சிறந்த பொருத்தம் அடையாளத்துடன் காட்டப்படும்.",
   "couldNotLoadMatches": "Matches-ஐ ஏற்ற முடியவில்லை",
-
   "expressInterest": "விருப்பம் தெரிவிக்கவும்",
   "matchedLabel": "பொருந்தியது",
   "notInterested": "விருப்பம் இல்லை",
   "createProfileFirst": "விருப்பம் அனுப்ப முதலில் உங்கள் Profile-ஐ உருவாக்கவும்",
   "interestSentTo": "{name}-க்கு விருப்பம் அனுப்பப்பட்டது",
-  "@interestSentTo": { "placeholders": { "name": { "type": "String" } } },
+  "@interestSentTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "couldNotSendInterest": "விருப்பத்தை அனுப்ப முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
   "youMatchedWith": "{name} உடன் நீங்கள் பொருந்தினீர்கள்",
-  "@youMatchedWith": { "placeholders": { "name": { "type": "String" } } },
+  "@youMatchedWith": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "couldNotAcceptInterest": "விருப்பத்தை ஏற்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
   "dailyInterestLimitTitle": "இன்றைய விருப்ப வரம்பு முடிந்தது",
   "dailyInterestLimitMessage": "இலவச உறுப்பினர்கள் ஒரு நாளைக்கு {count} விருப்பங்கள் மட்டுமே அனுப்ப முடியும். வரம்பில்லா விருப்பங்களுக்கு Basic அல்லது Premium-க்கு மேம்படுத்தவும்.",
-  "@dailyInterestLimitMessage": { "placeholders": { "count": { "type": "int" } } },
-
+  "@dailyInterestLimitMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "newProfiles": "புதிய சுயவிவரங்கள்",
   "noNewProfilesYet": "புதிய சுயவிவரங்கள் இன்னும் இல்லை.",
   "nakshatraMatch": "நட்சத்திரப் பொருத்தம்",
   "matchingProfile": "சிறந்த பொருத்தம்",
-
   "comingSoonBody": "இந்த வசதி இன்னும் கிடைக்கவில்லை. நாங்கள் இதில் பணியாற்றி வருகிறோம்; விரைவில் வரவிருக்கும் புதுப்பிப்பில் திறக்கப்படும். காத்திருங்கள்!",
   "featureMarriageFixed": "திருமணம் நிச்சயம்",
   "featureWeddingWorkspace": "திருமண Workspace",
@@ -392,7 +379,6 @@
   "viewCalendar": "பார்க்க",
   "adminSignIn": "நிர்வாகி உள்நுழைவு",
   "signOut": "வெளியேறு",
-
   "bookYourAppointment": "சந்திப்பை முன்பதிவு செய்யுங்கள்",
   "bookingCurrentlyClosed": "முன்பதிவு தற்போது மூடப்பட்டுள்ளது",
   "selectConsultationCategory": "ஆலோசனை வகையைத் தேர்ந்தெடுக்கவும்",
@@ -424,7 +410,6 @@
   "completeOwnProfileFirst": "சந்திப்பு முன்பதிவு செய்யும் முன் உங்கள் சுயவிவரத்தை முடிக்கவும்.",
   "morningSessionWindow": "காலை அமர்வு (காலை 9:00 – மதியம் 1:00)",
   "eveningSessionWindow": "மாலை அமர்வு (மதியம் 2:00 – மாலை 5:00)",
-
   "appointmentConfirmed": "சந்திப்பு உறுதிப்படுத்தப்பட்டது",
   "appointmentBookedTitle": "உங்கள் சந்திப்பு முன்பதிவு செய்யப்பட்டது!",
   "visitOfficeAtScheduled": "குறிப்பிட்ட தேதி மற்றும் நேரத்தில் எங்கள் அலுவலகத்திற்கு வருகை தரவும்.",
@@ -438,7 +423,6 @@
   "viewMyBookings": "என் முன்பதிவுகளைப் பார்க்கவும்",
   "backToHome": "முகப்புக்குத் திரும்பு",
   "myBookings": "என் முன்பதிவுகள்",
-
   "viewReport": "அறிக்கையைப் பார்க்கவும்",
   "downloadReport": "அறிக்கையைப் பதிவிறக்கவும்",
   "underAnalysisTab": "பகுப்பாய்வில் ({count})",
@@ -460,7 +444,6 @@
   "reportDate": "அறிக்கை தேதி",
   "descriptionLabel": "விளக்கம்",
   "attachedAsFile": "ஜோதிடர் பகுப்பாய்வை கீழே கோப்பாக இணைத்துள்ளார்.",
-
   "partnerPreferenceMatch": "வாழ்க்கைத் துணை விருப்பப் பொருத்தம்",
   "overallPreferenceMatch": "மொத்த விருப்பப் பொருத்தம்",
   "chat": "அரட்டை",
@@ -480,11 +463,9 @@
   "profileNotFound": "சுயவிவரம் கிடைக்கவில்லை",
   "couldNotLoadProfile": "இந்த சுயவிவரத்தை இப்போது ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
   "reportLabel": "புகார்",
-
-  "updateAvailableTitle": "புதிய புதுப்பிப்பு உள்ளது",
+  "updateAvailableTitle": "புதிய Update உள்ளது",
   "updateRequiredMessage": "தொடர உங்கள் பயன்பாட்டைப் புதுப்பிக்கவும்.",
   "updateNow": "இப்போது புதுப்பிக்கவும்",
-
   "welcomeExclaim": "வரவேற்கிறோம்!",
   "howContinue": "நீங்கள் எப்படித் தொடர விரும்புகிறீர்கள்?",
   "roleMatrimonyTitle": "திருமணப் பயனர்",
@@ -500,27 +481,49 @@
   "featureFamilyWorkspace": "குடும்பப் பணியிடம்",
   "featureVerifiedProfiles": "சரிபார்க்கப்பட்ட சுயவிவரங்கள்",
   "featurePerfectMatch": "சரியான ஜோடியைக் கண்டறியுங்கள்",
-  "orLabel": "அல்லது",
   "agreeToTermsPrefix": "தொடர்வதன் மூலம், நீங்கள் எங்கள்",
   "termsAndPrivacy": "விதிமுறைகள் & தனியுரிமைக் கொள்கையை ஏற்கிறீர்கள்",
   "familyInviteOnlyNote": "மணமகன் அல்லது மணமகளால் அழைக்கப்பட்ட Gmail முகவரிகள் மட்டுமே திருமணப் பணியிடத்தைத் திறக்க முடியும்.",
-
   "guest": "விருந்தினர்",
   "muhurthamCalendarTitle": "திருமண முகூர்த்த நாட்காட்டி",
   "muhurthamSubtitle": "சுபமான திருமண & நிச்சயதார்த்த நாட்கள்",
   "weddingWorkspaceTitle": "திருமணப் பணியிடம்",
   "weddingPlanTogether": "இரு குடும்பங்களுடன் இணைந்து திருமணத்தைத் திட்டமிடுங்கள்",
   "weddingDaysToGo": "இன்னும் {days} நாட்கள் — ஏற்பாடுகளைத் தொடருங்கள்!",
-  "@weddingDaysToGo": { "placeholders": { "days": { "type": "int" } } },
+  "@weddingDaysToGo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "weddingToday": "இன்று திருமணம்! 🎊",
   "weddingCongrats": "உங்கள் திருமணத்திற்கு வாழ்த்துகள்! 🎉",
   "weddingWaitingConfirm": "திருமணம் நிச்சயம் என்பதை {name} உறுதிப்படுத்த காத்திருக்கிறது",
-  "@weddingWaitingConfirm": { "placeholders": { "name": { "type": "String" } } },
+  "@weddingWaitingConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "weddingPartnerConfirmed": "{name} உறுதிப்படுத்தினார் — திருமண நிச்சயத்தை உறுதிப்படுத்தத் தட்டவும்",
-  "@weddingPartnerConfirmed": { "placeholders": { "name": { "type": "String" } } },
+  "@weddingPartnerConfirmed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "profileCompletionTitle": "சுயவிவர நிறைவு",
   "profileCompletionSubtitle": "{percent}% நிறைவு · உங்கள் சுயவிவரத்தை முடிக்கவும்",
-  "@profileCompletionSubtitle": { "placeholders": { "percent": { "type": "int" } } },
+  "@profileCompletionSubtitle": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "marriedLeftMatchmaking": "சுயவிவரம் பொருத்தத்திலிருந்து விலகியது · மாற்ற தட்டவும்",
   "foundLifePartnerQ": "உங்கள் வாழ்க்கைத் துணையைக் கண்டீர்களா?",
   "markProfileMarried": "உங்கள் சுயவிவரத்தைத் திருமணமானதாகக் குறிக்கவும்",
@@ -554,7 +557,6 @@
   "specialization": "நிபுணத்துவம்",
   "ratings": "மதிப்பீடுகள்",
   "servicesLabel": "சேவைகள்",
-
   "menuSectionProfile": "சுயவிவரம்",
   "menuSectionMatches": "பொருத்தங்கள்",
   "menuSectionAstrology": "ஜோதிடம்",
@@ -564,7 +566,6 @@
   "messages": "செய்திகள்",
   "horoscopeMatching": "ஜாதகப் பொருத்தம்",
   "myReports": "எனது அறிக்கைகள்",
-
   "career": "தொழில்",
   "photos": "புகைப்படங்கள்",
   "contact": "தொடர்பு",
@@ -572,71 +573,169 @@
   "uploadHoroscope": "ஜாதகத்தைப் பதிவேற்று",
   "skip": "தவிர்",
   "stepXofY": "படி {current} / {total}",
-  "@stepXofY": { "placeholders": { "current": { "type": "int" }, "total": { "type": "int" } } },
+  "@stepXofY": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "percentComplete": "{percent}% நிறைவு",
-  "@percentComplete": { "placeholders": { "percent": { "type": "int" } } },
+  "@percentComplete": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "editSection": "{title} திருத்து",
-  "@editSection": { "placeholders": { "title": { "type": "String" } } },
+  "@editSection": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "editProfileSection": "சுயவிவரம் திருத்து · {title}",
-  "@editProfileSection": { "placeholders": { "title": { "type": "String" } } },
-
+  "@editProfileSection": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "physicalStatus": "உடல் நிலை",
   "profileCreatedFor": "யாருக்காக சுயவிவரம்",
   "letsStartEssentials": "அடிப்படை விவரங்களுடன் தொடங்குவோம்.",
   "required": "தேவை",
   "ageYears": "வயது: {age}",
-  "@ageYears": { "placeholders": { "age": { "type": "int" } } },
+  "@ageYears": {
+    "placeholders": {
+      "age": {
+        "type": "int"
+      }
+    }
+  },
   "numberOfChildren": "குழந்தைகளின் எண்ணிக்கை",
   "weightKg": "எடை (கிலோ)",
   "childrenLivingStatus": "குழந்தைகள் வசிக்கும் நிலை",
   "noOptionsFound": "விருப்பங்கள் எதுவும் இல்லை",
   "searchFieldHint": "{label} தேடு…",
-  "@searchFieldHint": { "placeholders": { "label": { "type": "String" } } },
-  "selectFieldTitle": "{label} தேர்ந்தெடுக்கவும்",
-  "@selectFieldTitle": { "placeholders": { "label": { "type": "String" } } },
+  "@searchFieldHint": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "selectFieldTitle": "{field} தேர்ந்தெடுக்கவும்",
+  "@selectFieldTitle": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
   "addFieldTitle": "{label} சேர்",
-  "@addFieldTitle": { "placeholders": { "label": { "type": "String" } } },
+  "@addFieldTitle": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "enterNewField": "புதிய {label} உள்ளிடவும்",
-  "@enterNewField": { "placeholders": { "label": { "type": "String" } } },
-  "fieldRequired": "{label} தேவை",
-  "@fieldRequired": { "placeholders": { "label": { "type": "String" } } },
+  "@enterNewField": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "@fieldRequired": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "pleaseSelect": "{field} தேர்ந்தெடுக்கவும்",
-  "@pleaseSelect": { "placeholders": { "field": { "type": "String" } } },
+  "@pleaseSelect": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
   "pleaseEnterField": "உங்கள் {field} உள்ளிடவும்",
-  "@pleaseEnterField": { "placeholders": { "field": { "type": "String" } } },
-
+  "@pleaseEnterField": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
   "othersOption": "மற்றவை",
   "customField": "{label} (பிற)",
-  "@customField": { "placeholders": { "label": { "type": "String" } } },
+  "@customField": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "typeHere": "இங்கே தட்டச்சு செய்யவும்",
   "anyOption": "ஏதேனும்",
   "loadingField": "{label} ஏற்றப்படுகிறது…",
-  "@loadingField": { "placeholders": { "label": { "type": "String" } } },
+  "@loadingField": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "couldNotLoadField": "{label} ஏற்ற முடியவில்லை",
-  "@couldNotLoadField": { "placeholders": { "label": { "type": "String" } } },
-
+  "@couldNotLoadField": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "district": "மாவட்டம்",
   "useMyLocation": "என் இடத்தைப் பயன்படுத்து",
   "detectingLocation": "கண்டறிகிறது…",
   "onlyTamilNaduSupported": "\"{state}\" கண்டறியப்பட்டது — தற்போது தமிழ்நாடு மட்டுமே ஆதரிக்கப்படுகிறது. கீழே தேர்ந்தெடுக்கவும்.",
-  "@onlyTamilNaduSupported": { "placeholders": { "state": { "type": "String" } } },
+  "@onlyTamilNaduSupported": {
+    "placeholders": {
+      "state": {
+        "type": "String"
+      }
+    }
+  },
   "cityNotInListPickNearest": "\"{city}\" பட்டியலில் இல்லை — அருகிலுள்ள நகரத்தைத் தேர்ந்தெடுக்கவும்.",
-  "@cityNotInListPickNearest": { "placeholders": { "city": { "type": "String" } } },
+  "@cityNotInListPickNearest": {
+    "placeholders": {
+      "city": {
+        "type": "String"
+      }
+    }
+  },
   "couldNotMatchLocation": "உங்கள் இடத்தைப் பொருத்த முடியவில்லை — கீழே தேர்ந்தெடுக்கவும்.",
   "locationAccessDenied": "இட அணுகல் மறுக்கப்பட்டது. உங்கள் இடத்தைக் கைமுறையாகத் தேர்ந்தெடுக்கவும்.",
-
   "locationDetails": "இட விவரங்கள்",
   "locationStepSubtitle": "நீங்கள் எங்கு வசிக்கிறீர்கள்?",
   "nativePlace": "சொந்த ஊர்",
   "citizenship": "குடியுரிமை",
-  "selectStateDistrictCity": "உங்கள் மாநிலம், மாவட்டம் மற்றும் நகரத்தைத் தேர்ந்தெடுக்கவும்",
-
+  "selectStateDistrictCity": "மாநிலம், மாவட்டம் மற்றும் ஊரைத் தேர்ந்தெடுக்கவும்.",
   "educationCareerSubtitle": "உங்கள் கல்வித் தகுதி மற்றும் பணி விவரங்கள்.",
   "highestEducation": "உயர்கல்வித் தகுதி",
   "employmentType": "பணி வகை",
   "courseDegree": "படிப்பு / பட்டம்",
   "courseDegreeHint": "எ.கா. பி.இ கணினி அறிவியல்",
-
   "swipeToBrowse": "சுயவிவரங்களைப் பார்க்க இடம் / வலம் ஸ்வைப் செய்யுங்கள்",
   "educationLevel": "கல்வி நிலை",
   "employmentStatus": "வேலை நிலை",
@@ -653,10 +752,8 @@
   "photoPreviewHint": "மற்ற உறுப்பினர்கள் உங்கள் புகைப்படத்தை இப்படித்தான் பார்ப்பார்கள்.",
   "usePhoto": "இந்தப் புகைப்படத்தைப் பயன்படுத்து",
   "adjustAgain": "மீண்டும் சரிசெய்",
-
   "religiousInformation": "சமூக விவரங்கள்",
   "religiousInfoSubtitle": "உங்கள் சமூகத்திற்குள் பொருத்தமானவர்களைக் கண்டறிய உதவும்.",
-
   "horoscopeStepSubtitle": "உங்கள் பிறந்த தேதி, நேரம் மற்றும் இடத்திலிருந்து ராசி, நட்சத்திரம் மற்றும் லக்னம் தானாகக் கணக்கிடப்படும். கைமுறையாக அமைக்க மேலெழுதலை இயக்கவும்.",
   "timeOfBirth": "பிறந்த நேரம்",
   "selectDateHint": "தேதியைத் தேர்ந்தெடுக்கவும்",
@@ -677,7 +774,6 @@
   "pleaseSelectTimeOfBirth": "உங்கள் பிறந்த நேரத்தைத் தேர்ந்தெடுக்கவும்",
   "pleaseSelectBirthPlace": "உங்கள் பிறந்த இடத்தைத் தேர்ந்தெடுக்கவும்",
   "unableToGenerateHoroscope": "ஜாதக விவரங்களை உருவாக்க முடியவில்லை. தேதி, நேரம் மற்றும் பிறந்த இடத்தைச் சரிபார்க்கவும்.",
-
   "partnerPreferenceTitle": "துணை விருப்பம்",
   "partnerPrefSubtitle": "அனைத்தும் விருப்பத்தேர்வு — உங்களுக்குத் தேவையானதை மட்டும் அமைக்கவும். எப்போது வேண்டுமானாலும் மாற்றலாம்.",
   "basicPreference": "அடிப்படை விருப்பம்",
@@ -686,50 +782,74 @@
   "ageRangeLabel": "வயது வரம்பு",
   "heightRangeLabel": "உயர வரம்பு",
   "ageRangeValue": "{min} – {max} வயது",
-  "@ageRangeValue": { "placeholders": { "min": { "type": "int" }, "max": { "type": "int" } } },
+  "@ageRangeValue": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "rangeValue": "{min} – {max}",
-  "@rangeValue": { "placeholders": { "min": { "type": "String" }, "max": { "type": "String" } } },
+  "@rangeValue": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
   "minimumAge": "குறைந்தபட்ச வயது",
   "maximumAge": "அதிகபட்ச வயது",
   "minimumHeight": "குறைந்தபட்ச உயரம்",
   "maximumHeight": "அதிகபட்ச உயரம்",
   "chevvaiDosham": "செவ்வாய் தோஷம்",
   "doesntMatter": "பரவாயில்லை",
-  "horoscopeMatchRequired": "ஜாதகப் பொருத்தம் அவசியம்",
-
   "profilePhoto": "சுயவிவரப் புகைப்படம்",
   "profilePhotoSubtitle": "உங்களின் ஒரு தெளிவான புகைப்படத்தைச் சேர்க்கவும் — அதுவே உங்கள் சுயவிவரப் படமாக இருக்கும்.",
   "addPhoto": "புகைப்படம் சேர்",
   "photoVisibilityTip": "புகைப்படம் சேர்ப்பது உங்கள் சுயவிவரத்தின் கவனத்தை 3 மடங்கு அதிகரிக்கும்.",
-
   "uploadHoroscopeSubtitle": "விரும்பினால் உங்கள் ஜாதகத்தை PDF ஆக இணைக்கலாம். இதைத் தவிர்த்துவிட்டு பின்னர் சுயவிவரத்தில் சேர்க்கவும் முடியும்.",
   "tapToSelectPdf": "PDF தேர்ந்தெடுக்க தட்டவும்",
   "horoscopePdfAttached": "ஜாதக PDF இணைக்கப்பட்டது",
   "changePdf": "PDF மாற்று",
-
   "contactStepSubtitle": "விருப்பம் இருதரப்பிலும் ஏற்கப்பட்ட பிறகே தொடர்பு விவரங்கள் பகிரப்படும்.",
   "contactPersonName": "தொடர்பு நபரின் பெயர்",
   "relationship": "உறவுமுறை",
   "whatsappNumber": "வாட்ஸ்அப் எண்",
   "whatsappSameAsMobile": "வாட்ஸ்அப் எண் கைபேசி எண்ணைப் போலவே",
   "contactPrivacyNote": "உங்கள் தொலைபேசி எண் மற்றும் முகவரி இயல்பாகவே மறைக்கப்பட்டிருக்கும். இருதரப்பும் விருப்பத்தை ஏற்றுக்கொண்ட பிறகே அவை வெளிப்படுத்தப்படும்.",
-
   "reviewSubmit": "சரிபார்த்து சமர்ப்பிக்கவும்",
   "reviewSubtitle": "சமர்ப்பிக்கும் முன் உங்கள் விவரங்களைச் சரிபார்க்கவும்.",
   "submitProfile": "சுயவிவரத்தைச் சமர்ப்பி",
   "saveChanges": "மாற்றங்களைச் சேமி",
-  "submittingLabel": "சமர்ப்பிக்கப்படுகிறது…",
+  "submittingLabel": "சமர்ப்பிக்கிறது...",
   "employmentLabel": "பணி",
   "contactPerson": "தொடர்பு நபர்",
   "mobileLabel": "கைபேசி",
-
   "horoscopeDocuments": "ஜாதக ஆவணங்கள்",
   "horoscopeImages": "ஜாதகப் படங்கள்",
   "horoscopePdfs": "ஜாதக PDF கோப்புகள்",
   "horoscopeImageN": "ஜாதகப் படம் {n}",
-  "@horoscopeImageN": { "placeholders": { "n": { "type": "int" } } },
+  "@horoscopeImageN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "horoscopePdfN": "ஜாதக PDF {n}",
-  "@horoscopePdfN": { "placeholders": { "n": { "type": "int" } } },
+  "@horoscopePdfN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "noHoroscopeFiles": "இந்தச் சுயவிவரத்திற்கு ஜாதக ஆவணங்கள் எதுவும் பதிவேற்றப்படவில்லை.",
   "viewFull": "முழுமையாகப் பார்",
   "viewLabel": "பார்",
@@ -739,18 +859,22 @@
   "addPdf": "PDF சேர்",
   "uploadHoroscopeHint": "உங்கள் ஜாதகத்தைப் படங்களாக (JPG / PNG) அல்லது PDF கோப்புகளாக இணைக்கவும். ஒன்றுக்கு மேற்பட்டவை சேர்க்கலாம்; இதைத் தவிர்த்துவிட்டு பின்னர் சுயவிவரத்தில் சேர்க்கவும் முடியும்.",
   "filesSelected": "{count} கோப்பு(கள்) தேர்ந்தெடுக்கப்பட்டன",
-  "@filesSelected": { "placeholders": { "count": { "type": "int" } } },
+  "@filesSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "uploadingHoroscopeFiles": "ஜாதகக் கோப்புகள் பதிவேற்றப்படுகின்றன…",
   "couldNotPickFile": "தேர்ந்தெடுத்த கோப்பைப் படிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
   "horoscopeLockedTitle": "ஜாதகம் பூட்டப்பட்டுள்ளது",
   "horoscopeLockedBody": "இருதரப்பும் விருப்பத்தை ஏற்றுக்கொண்ட பிறகே இந்த உறுப்பினரின் ஜாதக ஆவணங்களைப் பார்க்க முடியும்.",
   "horoscopeUnlockedNote": "உங்கள் விருப்பம் ஏற்கப்பட்டது — இந்த உறுப்பினரின் ஜாதகத்தை கீழே பார்க்கவும் பதிவிறக்கவும் முடியும்.",
-
   "logoutDraftMessage": "வெளியேற விரும்புகிறீர்களா? சேமிக்கப்படாத முன்னேற்றம் வரைவாகப் பாதுகாக்கப்படும்.",
   "mustBeSignedInToCreateProfile": "சுயவிவரம் உருவாக்க நீங்கள் உள்நுழைந்திருக்க வேண்டும்.",
   "profileUpdatedSuccess": "சுயவிவரம் வெற்றிகரமாகப் புதுப்பிக்கப்பட்டது.",
   "failedToCreateProfile": "சுயவிவரத்தை உருவாக்க முடியவில்லை",
-
   "reportProfileTitle": "சுயவிவரத்தைப் புகாரளி",
   "reportChatTitle": "அரட்டையைப் புகாரளி",
   "reportProfileAction": "சுயவிவரத்தைப் புகாரளி",
@@ -763,7 +887,6 @@
   "whyReportChat": "இந்த அரட்டையை ஏன் புகாரளிக்கிறீர்கள்?",
   "additionalDetailsOptional": "கூடுதல் விவரங்கள் (விருப்பம்)",
   "submitReport": "புகாரைச் சமர்ப்பி",
-  "submittingLabel": "சமர்ப்பிக்கிறது...",
   "reportSubmittedProfile": "புகார் சமர்ப்பிக்கப்பட்டது. எங்கள் குழு அதை மதிப்பாய்வு செய்யும்.",
   "reportSubmittedChat": "புகார் சமர்ப்பிக்கப்பட்டது. எங்கள் குழு இந்த உரையாடலை மதிப்பாய்வு செய்யும்.",
   "couldNotSubmitReport": "புகாரைச் சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
@@ -772,22 +895,63 @@
   "attachScreenshot": "திரைப்பிடிப்பை இணை",
   "screenshotAttached": "திரைப்பிடிப்பு இணைக்கப்பட்டது",
   "reportingProfileWarning": "நீங்கள் {name} ஐப் புகாரளிக்கிறீர்கள். தவறான புகார்கள் உங்கள் கணக்கைப் பாதிக்கலாம்.",
-  "@reportingProfileWarning": { "placeholders": { "name": { "type": "String" } } },
+  "@reportingProfileWarning": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "reportingChatInfo": "நீங்கள் {name} உடனான உங்கள் உரையாடலைப் புகாரளிக்கிறீர்கள். எங்கள் குழு அதை மதிப்பாய்வு செய்யும்.",
-  "@reportingChatInfo": { "placeholders": { "name": { "type": "String" } } },
+  "@reportingChatInfo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "blockUserQuestion": "{name} ஐத் தடுக்கவா?",
-  "@blockUserQuestion": { "placeholders": { "name": { "type": "String" } } },
+  "@blockUserQuestion": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "blockUserBody": "அவர்கள் உங்கள் பொருத்தங்கள் மற்றும் தேடலில் இருந்து மறைந்துவிடுவார்கள்; இருவரும் அரட்டை அடிக்கவோ விருப்பம் அனுப்பவோ முடியாது. எப்போது வேண்டுமானாலும் தடையை நீக்கலாம்.",
   "userBlockedToast": "{name} தடுக்கப்பட்டார்.",
-  "@userBlockedToast": { "placeholders": { "name": { "type": "String" } } },
+  "@userBlockedToast": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "userUnblockedToast": "{name} இன் தடை நீக்கப்பட்டது.",
-  "@userUnblockedToast": { "placeholders": { "name": { "type": "String" } } },
+  "@userUnblockedToast": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "youBlockedUnblockToChat": "நீங்கள் {name} ஐத் தடுத்துள்ளீர்கள். மீண்டும் அரட்டை அடிக்க தடையை நீக்கவும்.",
-  "@youBlockedUnblockToChat": { "placeholders": { "name": { "type": "String" } } },
+  "@youBlockedUnblockToChat": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "canNoLongerMessage": "{name} க்கு நீங்கள் இனி செய்தி அனுப்ப முடியாது.",
-  "@canNoLongerMessage": { "placeholders": { "name": { "type": "String" } } },
+  "@canNoLongerMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "cannotSendInterestBlocked": "நீங்கள் தடுத்த பயனருக்கு விருப்பம் அனுப்ப முடியாது.",
-
   "cropPhotoTitle": "புகைப்படத்தை வெட்டவும்",
   "cropPhotoHint": "பெரிதாக்க இரு விரல்களால் இழுக்கவும்; இடத்தை மாற்ற நகர்த்தவும். சட்டத்திற்குள் உள்ள சதுரப் பகுதி மட்டுமே சேமிக்கப்படும்.",
   "cropAndSave": "வெட்டி சேமி",
@@ -795,7 +959,6 @@
   "profilePhotoOneOnly": "உங்களுக்கு ஒரே ஒரு சுயவிவரப் புகைப்படம் மட்டுமே. புதிய படத்தைப் பதிவேற்றினால் தற்போதைய படம் மாற்றப்படும்.",
   "photoCropRequired": "சேமிப்பதற்கு முன் உங்கள் புகைப்படத்தை வெட்டவும்.",
   "tapPhotoToEnlarge": "முழுத் திரையில் பார்க்க புகைப்படத்தைத் தட்டவும்",
-
   "privacyIntro": "மற்ற உறுப்பினர்கள் என்ன பார்க்கலாம் என்பதைத் தேர்ந்தெடுங்கள். உங்கள் பெயர், வயது மற்றும் அடிப்படை விவரங்கள் எப்போதும் தெரியும்.",
   "hidePhoneNumber": "தொலைபேசி எண்ணை மறை",
   "hidePhoneNumberDesc": "உங்கள் தொலைபேசி எண் சுயவிவரத்தில் காட்டப்படாது.",
@@ -813,36 +976,55 @@
   "privacySettingsSaveFailed": "தனியுரிமை அமைப்புகளைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
   "hiddenByMember": "உறுப்பினரால் மறைக்கப்பட்டது",
   "photoHiddenByMember": "இந்த உறுப்பினர் புகைப்படத்தை மறைத்துள்ளார்",
-
   "childSafety": "குழந்தைப் பாதுகாப்பு",
   "childSafetyStandards": "குழந்தைப் பாதுகாப்புத் தரநிலைகள்",
   "deleteAccountPageTitle": "கணக்கை நீக்கு",
   "lastUpdatedOn": "கடைசியாகப் புதுப்பிக்கப்பட்டது: {date}",
-  "@lastUpdatedOn": { "placeholders": { "date": { "type": "String" } } },
+  "@lastUpdatedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "legalContactHeading": "தொடர்பு",
-
   "emailUs": "மின்னஞ்சல் அனுப்பு",
   "callUs": "அழைக்கவும்",
   "chatWithSupport": "ஆதரவுக் குழுவுடன் அரட்டை",
   "faqTitle": "அடிக்கடி கேட்கப்படும் கேள்விகள்",
   "weAreHereToHelp": "நாங்கள் உதவ இங்கே இருக்கிறோம்",
   "reachSupportTeam": "{app} ஆதரவுக் குழுவைத் தொடர்பு கொள்ளுங்கள்",
-  "@reachSupportTeam": { "placeholders": { "app": { "type": "String" } } },
+  "@reachSupportTeam": {
+    "placeholders": {
+      "app": {
+        "type": "String"
+      }
+    }
+  },
   "couldNotOpenScheme": "{scheme} ஐத் திறக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
-  "@couldNotOpenScheme": { "placeholders": { "scheme": { "type": "String" } } },
-
+  "@couldNotOpenScheme": {
+    "placeholders": {
+      "scheme": {
+        "type": "String"
+      }
+    }
+  },
   "generalSection": "பொது",
   "aboutSection": "பற்றி",
   "allProfiles": "அனைத்து சுயவிவரங்கள்",
   "profilesShown": "{count} சுயவிவரங்கள்",
-  "@profilesShown": { "placeholders": { "count": { "type": "int" } } },
+  "@profilesShown": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "loadingMoreProfiles": "மேலும் சுயவிவரங்கள் ஏற்றப்படுகின்றன…",
   "noMoreProfiles": "பட்டியலின் இறுதியை அடைந்துவிட்டீர்கள்.",
   "latestProfiles": "சமீபத்திய சுயவிவரங்கள்",
-
   "partnerAgeRequired": "தொடர விரும்பிய துணையின் வயது வரம்பைத் தேர்ந்தெடுக்கவும்.",
   "partnerAgeMandatoryNote": "துணையின் வயது வரம்பு கட்டாயம் — பொருத்தங்கள் இதன் அடிப்படையில் வடிகட்டப்படும்.",
-
   "gothram": "கோத்திரம்",
   "kuladeivam": "குலதெய்வம்",
   "companyName": "நிறுவனம்",
@@ -858,37 +1040,46 @@
   "rahuKethuDosham": "ராகு / கேது தோஷம்",
   "kalasarpaDosham": "காலசர்ப்ப தோஷம்",
   "workLocation": "பணியிடம்",
-  "courseDegree": "படிப்பு / பட்டம்",
-  "citizenship": "குடியுரிமை",
-  "profileNotFound": "சுயவிவரம் கிடைக்கவில்லை",
   "couldNotLoadProfileRetry": "இந்தச் சுயவிவரத்தை இப்போது ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
   "createProfileFirstInterest": "விருப்பம் அனுப்ப முதலில் உங்கள் சுயவிவரத்தை உருவாக்கவும்.",
-  "interestSentSuccess": "விருப்பம் வெற்றிகரமாக அனுப்பப்பட்டது!",
-  "interestAcceptedMatch": "விருப்பம் ஏற்கப்பட்டது — இது ஒரு பொருத்தம்!",
   "couldNotOpenChatRetry": "அரட்டையைத் திறக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
   "contactDetailsTitle": "தொடர்பு விவரங்கள்",
   "contactLockedTitle": "தொடர்பு பூட்டப்பட்டுள்ளது",
   "contactUnlocksAfterAccept": "இருதரப்பும் விருப்பத்தை ஏற்றுக்கொண்ட பிறகே தொடர்பு விவரங்கள் திறக்கப்படும்.",
   "contactHiddenByMember": "இந்த உறுப்பினர் தனது தொலைபேசி எண்ணைத் தனிப்பட்டதாக வைத்திருக்கத் தேர்ந்தெடுத்துள்ளார்.",
-  "notAvailable": "கிடைக்கவில்லை",
   "callAction": "அழை",
   "youMatchedConnectNow": "{name} உடன் நீங்கள் பொருந்தினீர்கள் — இப்போது நேரடியாகத் தொடர்பு கொள்ளலாம்.",
-  "@youMatchedConnectNow": { "placeholders": { "name": { "type": "String" } } },
+  "@youMatchedConnectNow": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "mobileNumberExactly10": "சரியான 10 இலக்க கைபேசி எண்ணை உள்ளிடவும் (இலக்கங்கள் மட்டும்).",
   "mobileNumberRequired": "கைபேசி எண் அவசியம்.",
   "photoUploadNotInDemo": "டெமோ முறையில் புகைப்படப் பதிவேற்றம் கிடைக்காது.",
   "couldNotLoadYourProfile": "உங்கள் சுயவிவரத்தை ஏற்ற முடியவில்லை.",
   "createYourProfileFirst": "முதலில் உங்கள் சுயவிவரத்தை உருவாக்கவும்.",
-
   "tapFieldToEdit": "ஒரு புலத்தைத் தட்டினால் அந்தப் புலத்தை மட்டும் திருத்தலாம்.",
   "notAddedYet": "சேர்க்கப்படவில்லை",
   "notAddedTapToFill": "இன்னும் சேர்க்கப்படவில்லை — நிரப்ப ✎ ஐத் தட்டவும்.",
   "editFieldTitle": "{field} திருத்து",
-  "@editFieldTitle": { "placeholders": { "field": { "type": "String" } } },
-  "selectFieldTitle": "{field} தேர்ந்தெடுக்கவும்",
-  "@selectFieldTitle": { "placeholders": { "field": { "type": "String" } } },
+  "@editFieldTitle": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
   "editSectionTooltip": "{section} திருத்து",
-  "@editSectionTooltip": { "placeholders": { "section": { "type": "String" } } },
+  "@editSectionTooltip": {
+    "placeholders": {
+      "section": {
+        "type": "String"
+      }
+    }
+  },
   "searchHint": "தேடு…",
   "savedToast": "சேமிக்கப்பட்டது",
   "couldNotSaveRetry": "சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
@@ -909,21 +1100,17 @@
   "profileForLabel": "சுயவிவரம் யாருக்காக",
   "childrenLabel": "குழந்தைகள்",
   "contactPersonLabel": "தொடர்பு நபர்",
-  "mobileLabel": "கைபேசி",
   "horoscopePdfLabel": "ஜாதக PDF",
   "weightKgLabel": "எடை (கிலோ)",
-
   "bookAppointment": "சந்திப்பை முன்பதிவு செய்",
   "freeLabel": "இலவசம்",
   "appointmentFreeTitle": "முன்பதிவு இலவசம்",
   "appointmentFreeNote": "எந்தக் கட்டணமும் இல்லை. தேதி மற்றும் நேரத்தைத் தேர்ந்தெடுத்து உங்கள் சந்திப்பை உறுதிப்படுத்துங்கள்.",
-
   "savingLabel": "சேமிக்கிறது…",
   "fatherName": "தந்தையின் பெயர்",
   "motherName": "தாயின் பெயர்",
   "aboutMeHint": "உங்களைப் பற்றியும், உங்கள் குடும்பம், ஆர்வங்கள் மற்றும் நீங்கள் எதிர்பார்ப்பது பற்றியும் சில வரிகள் எழுதுங்கள்.",
   "educationOccupationRequired": "கல்வி மற்றும் தொழில் அவசியம்.",
-  "selectStateDistrictCity": "மாநிலம், மாவட்டம் மற்றும் ஊரைத் தேர்ந்தெடுக்கவும்.",
   "religionCasteRequired": "மதம் மற்றும் சாதி அவசியம்.",
   "hobbiesHint": "எ.கா. வாசிப்பு, இசை, சமையல்",
   "interestsHint": "எ.கா. பயணம், விளையாட்டு",
@@ -933,20 +1120,37 @@
   "almostThere": "கிட்டத்தட்ட முடிந்துவிட்டது!",
   "finishSectionsHint": "அதிக பதில்களைப் பெற கீழே உள்ள பகுதிகளை நிரப்புங்கள்.",
   "pendingSections": "நிலுவையில் உள்ள பகுதிகள் ({count})",
-  "@pendingSections": { "placeholders": { "count": { "type": "int" } } },
+  "@pendingSections": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "tapToComplete": "நிரப்ப தட்டவும்",
   "couldNotLoadProfileError": "சுயவிவரத்தை ஏற்ற முடியவில்லை: {error}",
-  "@couldNotLoadProfileError": { "placeholders": { "error": { "type": "String" } } },
+  "@couldNotLoadProfileError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "findMatches": "வரன்களைத் தேடு",
   "profileCompletionPercent": "சுயவிவர நிறைவு: {percent}%",
-  "@profileCompletionPercent": { "placeholders": { "percent": { "type": "int" } } },
+  "@profileCompletionPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "completeLabel": "முழுமை",
   "basicInformationUpdated": "அடிப்படைத் தகவல் புதுப்பிக்கப்பட்டது",
   "communityDetailsUpdated": "சமூக விவரங்கள் புதுப்பிக்கப்பட்டன",
   "careerDetailsUpdated": "தொழில் விவரங்கள் புதுப்பிக்கப்பட்டன",
   "locationUpdated": "இருப்பிடம் புதுப்பிக்கப்பட்டது",
   "aboutMeUpdated": "என்னைப் பற்றி புதுப்பிக்கப்பட்டது",
-
   "getHoroscopeCompatibilityReport": "ஜாதகப் பொருத்த அறிக்கையைப் பெறுங்கள்",
   "openWeddingWorkspace": "திருமண பணியிடத்தைத் திற",
   "marriageFixedTitle": "திருமணம் நிச்சயம் 💍",
@@ -958,8 +1162,13 @@
   "attachmentNotSent": "இணைப்பை அனுப்ப முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
   "couldNotPickFileRetry": "அந்தக் கோப்பைத் தேர்ந்தெடுக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
   "sayHelloTo": "{name} க்கு வணக்கம் சொல்லுங்கள் 👋",
-  "@sayHelloTo": { "placeholders": { "name": { "type": "String" } } },
-  "tapToOpen": "திறக்க தட்டவும்",
+  "@sayHelloTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "resetPreferences": "விருப்பங்களை மீட்டமை",
   "linkCouldNotBeOpened": "இந்த இணைப்பைத் திறக்க முடியவில்லை.",
   "notificationTitle": "அறிவிப்பு",
@@ -968,10 +1177,15 @@
   "marriageCompatibilityPorutham": "திருமணப் பொருத்தம் (பொருத்தம்)",
   "notEnoughHoroscopeData": "இந்த ஜோடிக்குப் பொருத்தம் கணக்கிட போதுமான ஜாதகத் தகவல் இல்லை. இரு சுயவிவரங்களிலும் நட்சத்திர விவரங்களைச் சேர்க்கவும்.",
   "compatibilityUnlocksAfterAccept": "{name} உங்கள் விருப்பத்தை ஏற்ற பிறகே பொருத்த முடிவுகளும் ஜாதகப் பொருத்தமும் திறக்கப்படும்.",
-  "@compatibilityUnlocksAfterAccept": { "placeholders": { "name": { "type": "String" } } },
+  "@compatibilityUnlocksAfterAccept": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "thisPerson": "இந்த நபர்",
   "interestSentShort": "விருப்பம் அனுப்பப்பட்டது",
-
   "signInToYourAccount": "உங்கள் கணக்கில் உள்நுழையவும்",
   "phoneOrEmail": "தொலைபேசி எண் அல்லது மின்னஞ்சல்",
   "phoneOrEmailHint": "9876543210 அல்லது you@email.com",
@@ -987,7 +1201,6 @@
   "pleaseSelectDob": "பிறந்த தேதியைத் தேர்ந்தெடுக்கவும்",
   "accountCreatedWelcome": "கணக்கு உருவாக்கப்பட்டது. வரவேற்கிறோம்!",
   "registrationFailed": "கணக்கை உருவாக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
-
   "resetViaEmail": "மின்னஞ்சல்",
   "resetViaPhone": "கைபேசி எண்",
   "resetPasswordIntroEmail": "பதிவு செய்த மின்னஞ்சல் முகவரியை உள்ளிடவும். கடவுச்சொல்லை மீட்டமைக்கும் இணைப்பை அனுப்புவோம்.",
@@ -996,23 +1209,32 @@
   "sendVerificationCode": "சரிபார்ப்புக் குறியீட்டை அனுப்பு",
   "otpVerification": "OTP சரிபார்ப்பு",
   "enterCodeSentTo": "{number} எண்ணுக்கு அனுப்பப்பட்ட 6 இலக்கக் குறியீட்டை உள்ளிடவும்",
-  "@enterCodeSentTo": { "placeholders": { "number": { "type": "String" } } },
+  "@enterCodeSentTo": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "newPassword": "புதிய கடவுச்சொல்",
   "verifyAndReset": "சரிபார்த்து கடவுச்சொல்லை மாற்று",
   "passwordResetSuccess": "கடவுச்சொல் புதுப்பிக்கப்பட்டது. புதிய கடவுச்சொல்லுடன் உள்நுழையவும்.",
   "resetLinkSentTo": "{email} முகவரிக்கு அனுப்பிய மீட்டமைப்பு இணைப்பைச் சரிபார்க்கவும்.",
-  "@resetLinkSentTo": { "placeholders": { "email": { "type": "String" } } },
+  "@resetLinkSentTo": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "backToLogin": "உள்நுழைவுக்குத் திரும்பு",
   "phoneResetUnavailable": "கைபேசி வழி கடவுச்சொல் மீட்டமைப்பு இந்தப் பதிப்பில் இன்னும் இல்லை. மின்னஞ்சல் வழியாக மீட்டமைக்கவும் அல்லது ஆதரவைத் தொடர்பு கொள்ளவும்.",
-
   "createProfileCtaTitle": "பொருத்தமான சுயவிவரங்களைக் காண உங்கள் சுயவிவரத்தை உருவாக்குங்கள்",
   "createProfileCtaBody": "உங்கள் திருமணச் சுயவிவரம் தயாரானதும் பொருத்தங்கள், விருப்பங்கள், அரட்டை மற்றும் தொடர்பு விவரங்கள் திறக்கப்படும்.",
   "matchesLockedTitle": "பொருத்தமான சுயவிவரங்களைக் காண உங்கள் சுயவிவரத்தை உருவாக்குங்கள்",
   "unlockAfterProfile": "சுயவிவரம் உருவாக்கிய பிறகு திறக்கும்",
-
   "previousProfile": "முந்தைய சுயவிவரம்",
   "nextProfile": "அடுத்த சுயவிவரம்",
-
   "loginCredentials": "உள்நுழைவு விவரங்கள்",
   "loginCredentialsHint": "உறுப்பினர் உள்நுழைய இந்த விவரங்களைப் பயன்படுத்துவார். இரண்டும் சுயவிவரத்திலிருந்து நிரப்பப்படும், திருத்தலாம்.",
   "createMatrimonyProfile": "திருமணச் சுயவிவரத்தை உருவாக்கு",
@@ -1023,7 +1245,6 @@
   "createAccountAndProfile": "கணக்கு மற்றும் சுயவிவரத்தை உருவாக்கு",
   "profileCreatedForMember": "சுயவிவரம் உருவாக்கப்பட்டது. உறுப்பினர் இப்போது உள்நுழையலாம்.",
   "adminProfileIntro": "உறுப்பினர் சார்பாக முழுமையான திருமணச் சுயவிவரத்தை உருவாக்கி, உள்நுழைவு விவரங்களை அவர்களுக்கு வழங்குங்கள்.",
-
   "childrenCountLabel": "குழந்தைகள்",
   "dasaBalance": "தசா பாக்கி",
   "yogam": "யோகம்",
@@ -1038,7 +1259,6 @@
   "preferredOccupation": "விரும்பும் பணி",
   "preferredIncome": "விரும்பும் வருமானம்",
   "preferredLocation": "விரும்பும் இடம்",
-  "horoscopeMatchRequired": "ஜாதகப் பொருத்தம் தேவை",
   "contactDetailsFromProfile": "சுயவிவரம் உருவாக்கும் தொடர்பு படிநிலையில் உள்ளிட்டவை.",
   "contactLockedNote": "உங்கள் விருப்பம் ஏற்கப்பட்ட பிறகு தொடர்பு விவரங்கள் திறக்கும்.",
   "contactNotProvided": "இதுவரை தொடர்பு விவரங்கள் சேர்க்கப்படவில்லை.",
@@ -1049,24 +1269,41 @@
   "professionalDetails": "தொழில் விவரங்கள்",
   "astroConsultTitle": "ஜோதிட ஆலோசனை",
   "astroConsultBody": "உங்கள் ஆர்வம் ஏற்கப்பட்டது! இந்த பொருத்தத்திற்கான ஜாதகப் பொருத்தத்தை எங்கள் நிபுணர் ஜோதிடரிடம் பரிசோதிக்கலாம்.",
-  "bookConsultation": "ஆலோசனை முன்பதிவு",
   "reportUnderAnalysisTitle": "அறிக்கை கோரப்பட்டது",
   "reportUnderAnalysisBody": "இந்த சுயவிவரத்திற்கான உங்கள் ஜாதகப் பொருத்த அறிக்கை தயாராகி வருகிறது. தயாரானதும் உங்களுக்கு அறிவிப்போம்.",
   "viewHoroscopeReport": "ஜாதக அறிக்கையைப் பார்க்கவும்",
   "compatAlreadyRequestedNote": "இந்த சுயவிவரத்திற்கான பொருத்த அறிக்கையை நீங்கள் ஏற்கனவே கோரியுள்ளீர்கள். ஒரு சுயவிவரத்திற்கு ஒரு அறிக்கை மட்டுமே — நிலை கீழே காட்டப்பட்டுள்ளது.",
   "pendingInterestTitle": "{name} உங்கள் மீது விருப்பம் தெரிவித்துள்ளார்!",
-  "@pendingInterestTitle": { "placeholders": { "name": { "type": "String" } } },
+  "@pendingInterestTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "pendingInterestTitleGeneric": "ஒருவர் உங்கள் மீது விருப்பம் தெரிவித்துள்ளார்!",
   "pendingInterestBody": "ஏற்றுக்கொண்டு உடனே இணைந்து உரையாடத் தொடங்குங்கள் — அல்லது மரியாதையுடன் நிராகரிக்கலாம்.",
   "matchCelebrationTitle": "பொருத்தம் கிடைத்தது!",
   "matchCelebrationBody": "நீங்களும் {name} அவர்களும் இப்போது இணைக்கப்பட்டுள்ளீர்கள். வணக்கம் சொல்லுங்கள்!",
-  "@matchCelebrationBody": { "placeholders": { "name": { "type": "String" } } },
+  "@matchCelebrationBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "startChatting": "உரையாடலைத் தொடங்கு",
-  "keepBrowsing": "தொடர்ந்து பார்க்கவும்",
+  "keepBrowsing": "விருந்தினராகவே தொடரவும்",
   "awaitingYourResponse": "உங்கள் பதிலுக்காக காத்திருக்கிறது",
   "interestRejectedConfirmTitle": "இந்த விருப்பத்தை நிராகரிக்கவா?",
   "interestRejectedConfirmBody": "நீங்கள் நிராகரித்தது {name} அவர்களுக்கு தெரிவிக்கப்படும்.",
-  "@interestRejectedConfirmBody": { "placeholders": { "name": { "type": "String" } } },
+  "@interestRejectedConfirmBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "profileUnderReviewTitle": "Profile பரிசீலனையில் உள்ளது",
   "profileUnderReviewBody": "உங்கள் Profile எங்கள் குழுவால் பரிசீலிக்கப்படுகிறது. அங்கீகரிக்கப்பட்டு Matches-க்கு தெரியும் உடனேயே உங்களுக்கு தெரிவிக்கப்படும்.",
   "profileRejectedTitle": "Profile அங்கீகரிக்கப்படவில்லை",
@@ -1075,7 +1312,6 @@
   "couldNotContinueAsGuest": "விருந்தினர் பயன்முறையை தொடங்க முடியவில்லை. மீண்டும் முயற்சிக்கவும் அல்லது உள்நுழையவும்.",
   "loginRequiredTitle": "உள்நுழைவு தேவை",
   "loginRequiredBody": "நீங்கள் விருந்தினராக பார்வையிடுகிறீர்கள். Matches, விருப்பங்கள், அரட்டை, ஜோதிடம் மற்றும் உங்கள் Profile-ஐ பயன்படுத்த இலவச கணக்கை உருவாக்கவும் அல்லது உள்நுழையவும்.",
-  "keepBrowsing": "விருந்தினராகவே தொடரவும்",
   "guestUpgradeNote": "உங்கள் விருந்தினர் அமர்வு பாதுகாக்கப்படும் — பதிவு செய்தால் அதுவே முழு கணக்காக மாறும், எதுவும் இழக்கப்படாது, நகல் கணக்கும் உருவாகாது.",
   "guestModeBanner": "நீங்கள் விருந்தினராக பார்வையிடுகிறீர்கள். Matches, விருப்பங்கள், அரட்டையை திறக்க பதிவு செய்யுங்கள்.",
   "guestActionNeedsLogin": "இந்த வசதியை பயன்படுத்த உள்நுழையவும்.",
@@ -1085,7 +1321,39 @@
   "downloadAsImages": "படமாக பதிவிறக்கவும்",
   "downloadProfileLocked": "விருப்பம் ஏற்கப்பட்ட பிறகுதான் Profile-ஐ பதிவிறக்க முடியும்.",
   "downloadProfileFailed": "Profile-ஐ தயாரிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
-  "updateAvailableTitle": "புதிய Update உள்ளது",
   "updateAvailableBody": "Google Play-இல் App-இன் புதிய பதிப்பு உள்ளது. புதிய அம்சங்களுக்கும் திருத்தங்களுக்கும் இப்போதே Update செய்யுங்கள்.",
-  "later": "பின்னர்"
+  "later": "பின்னர்",
+  "anyTapToSelect": "ஏதேனும் — தேர்ந்தெடுக்க தட்டவும்",
+  "countSelected": "{count} தேர்ந்தெடுக்கப்பட்டது",
+  "doneCount": "முடிந்தது ({count})",
+  "selectUpTo": "அதிகபட்சம் {count} தேர்ந்தெடுக்கலாம்",
+  "haveChildren": "உங்களுக்கு குழந்தைகள் உள்ளனவா?",
+  "degreesLabel": "படிப்பு / பட்டம்",
+  "degreesHint": "ஒன்றுக்கு மேற்பட்ட படிப்புகளைச் சேர்க்கலாம்",
+  "profileDisplayQualification": "சுயவிவரத்தில் காட்ட வேண்டிய படிப்பு",
+  "profileDisplayQualificationHelp": "உங்கள் சுயவிவர அட்டையில் காட்ட அதிகபட்சம் இரண்டு படிப்புகளைத் தேர்ந்தெடுக்கவும்",
+  "locationPreference": "இட விருப்பம்",
+  "locationPreferenceHint": "மாநிலம் → மாவட்டம் → நகரம்",
+  "educationPreference": "கல்வி விருப்பம்",
+  "educationPreferenceHint": "தேவையான அளவு படிப்புகளைத் தேடித் தேர்ந்தெடுக்கவும்",
+  "professionPreference": "தொழில் விருப்பம்",
+  "professionPreferenceHint": "தேவையான அளவு தொழில்களைத் தேடித் தேர்ந்தெடுக்கவும்",
+  "salaryPreference": "ஊதிய விருப்பம்",
+  "minimumAnnualIncome": "குறைந்தபட்ச ஆண்டு வருமானம்",
+  "maritalStatusPreference": "திருமண நிலை விருப்பம்",
+  "horoscopePreferences": "ஜாதக விருப்பங்கள்",
+  "languagePreference": "மொழி விருப்பம்",
+  "religionPreference": "மதம் / சமூக விருப்பம்",
+  "savePreferences": "விருப்பங்களைச் சேமி",
+  "preferencesSaved": "விருப்பங்கள் சேமிக்கப்பட்டன",
+  "preferencesResetDone": "விருப்பங்கள் இயல்பு நிலைக்கு மீட்டமைக்கப்பட்டன",
+  "couldNotSavePreferences": "விருப்பங்களைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
+  "createProfileFirstToSave": "விருப்பங்களைச் சேமிக்க முதலில் உங்கள் சுயவிவரத்தை உருவாக்கவும்.",
+  "contactSharingQuestion": "உங்கள் தொடர்பு தகவலை யார் பார்க்கலாம்?",
+  "contactPrivateTitle": "தனிப்பட்டது",
+  "contactPrivateDesc": "விருப்ப கோரிக்கையை ஏற்ற பிறகே தொடர்பு பகிரப்படும்.",
+  "contactPublicTitle": "பொது",
+  "contactPublicDesc": "உங்கள் சுயவிவரத்தைப் பார்க்கும் எவரும் தொடர்பைப் பார்க்கலாம்.",
+  "minSixCharacters": "குறைந்தது 6 எழுத்துகள்",
+  "reEnterPassword": "கடவுச்சொல்லை மீண்டும் உள்ளிடவும்"
 }

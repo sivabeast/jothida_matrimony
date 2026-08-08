@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_constants.dart';
-import '../../core/data/career_data.dart';
+import '../../core/data/occupation_catalog.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/value_l10n.dart';
@@ -175,8 +175,6 @@ class MyProfileScreen extends ConsumerWidget {
     String s(Object? v) => (v == null) ? '' : v.toString().trim();
     // Localized display of a stored English value (Male → ஆண், etc.).
     String lv(Object? v) => context.localizeValue(s(v));
-    // "ஆம் / இல்லை" for a yes/no flag.
-    String yn(bool v) => context.localizeValue(v ? 'Yes' : 'No');
     // Translate a field label for the current language.
     String l(String en) => _label(context, en);
 
@@ -244,23 +242,23 @@ class MyProfileScreen extends ConsumerWidget {
           // field — picking a level/status changes what the next field offers.
           onEdit: () => context.push('/edit/education'),
           rows: [
-            // Education Level -> Course / Degree (§13). The level is localized;
-            // the degree stays in English exactly like the website (§9).
+            // Education Level -> Degree(s). Both are localized; a degree
+            // renders as "இளங்கலை பொறியியல் (B.E)" in Tamil (§8).
             [l('Education Level'), lv(p.effectiveEducationLevel)],
-            [l('Course / Degree'), p.education],
-            // Employment Status -> Government/Private -> Occupation (§13).
+            // Every qualification held, not just the primary one (§4).
+            [
+              context.l10n.degreesLabel,
+              [for (final d in p.allDegrees) lv(d)].join(', ')
+            ],
+            // Employment Status -> Employment Type -> Occupation (§5).
             [l('Employment Status'), lv(p.effectiveEmploymentStatus)],
-            if (CareerData.statusHasOccupation(p.effectiveEmploymentStatus)) ...[
-              [
-                p.effectiveEmploymentStatus == CareerData.statusSelfEmployed
-                    ? l('Business / Profession')
-                    : l('Government / Private'),
-                lv(p.effectiveSector)
-              ],
-              [l('Occupation'), p.occupation],
+            if (OccupationCatalog.statusHasOccupation(
+                p.effectiveEmploymentStatus)) ...[
+              [context.l10n.employmentType, lv(p.effectiveSector)],
+              [l('Occupation'), lv(p.occupation)],
               [l('Annual Income'), lv(p.annualIncome)],
             ],
-            if (p.effectiveEmploymentStatus == CareerData.statusStudent)
+            if (p.effectiveEmploymentStatus == OccupationCatalog.statusStudent)
               [l('Course / Degree'), lv(p.courseDegree)],
           ],
         ),
@@ -325,7 +323,6 @@ class MyProfileScreen extends ConsumerWidget {
             [l('Income'), lv(pp.income)],
             [l('Marital Status'), lv(pp.maritalStatus)],
             [l('Mother Tongue'), lv(pp.motherTongue)],
-            [l('Horoscope Match Required'), yn(pp.horoscopeMatchRequired)],
           ],
         ),
         _SectionCard(

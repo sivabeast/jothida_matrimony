@@ -311,28 +311,22 @@ class _Step7State extends ConsumerState<Step7Contact> {
             const SizedBox(height: 24),
             // ── Contact-sharing privacy choice (§17). Default Private. ──
             Text(
-              context.isTamil
-                  ? 'உங்கள் தொடர்பு தகவலை யார் பார்க்கலாம்?'
-                  : 'How should your contact information be shared?',
+              context.l10n.contactSharingQuestion,
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
             ),
             const SizedBox(height: 10),
             _privacyOption(
               value: 'private',
               icon: Icons.lock_outline,
-              title: context.isTamil ? 'தனிப்பட்டது' : 'Private',
-              subtitle: context.isTamil
-                  ? 'விருப்ப கோரிக்கையை ஏற்ற பிறகே தொடர்பு பகிரப்படும்.'
-                  : 'Share only after I accept an interest request.',
+              title: context.l10n.contactPrivateTitle,
+              subtitle: context.l10n.contactPrivateDesc,
             ),
             const SizedBox(height: 10),
             _privacyOption(
               value: 'public',
               icon: Icons.public,
-              title: context.isTamil ? 'பொது' : 'Public',
-              subtitle: context.isTamil
-                  ? 'உங்கள் சுயவிவரத்தைப் பார்க்கும் எவரும் தொடர்பைப் பார்க்கலாம்.'
-                  : 'Anyone viewing your profile can see your contact.',
+              title: context.l10n.contactPublicTitle,
+              subtitle: context.l10n.contactPublicDesc,
             ),
             const SizedBox(height: 12),
             Row(

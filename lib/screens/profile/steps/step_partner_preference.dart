@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/data/career_data.dart';
+import '../../../core/data/education_catalog.dart';
+import '../../../core/data/occupation_catalog.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/inline_validation.dart';
@@ -68,7 +69,6 @@ class _StepPartnerPreferenceState
   String? _motherTongue;
   String? _physicalStatus;
   String? _chevvai;
-  bool _horoscopeMatchRequired = true;
 
   List<String> get _heights => AppConstants.heightList;
 
@@ -102,7 +102,6 @@ class _StepPartnerPreferenceState
       _motherTongue = _orNull(pref['motherTongue'] as String?);
       _physicalStatus = _orNull(pref['physicalStatus'] as String?);
       _chevvai = _orNull(pref['chevvaiDosham'] as String?);
-      _horoscopeMatchRequired = pref['horoscopeMatchRequired'] as bool? ?? true;
     }
   }
 
@@ -157,7 +156,6 @@ class _StepPartnerPreferenceState
         'motherTongue': _orAny(_motherTongue),
         'physicalStatus': _orAny(_physicalStatus),
         'chevvaiDosham': _orAny(_chevvai),
-        'horoscopeMatchRequired': _horoscopeMatchRequired,
       },
     });
     widget.onNext();
@@ -263,36 +261,30 @@ class _StepPartnerPreferenceState
           _sectionTitle(l10n.educationIncomePreference),
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
-            child: SearchableMultiSelectField(
+            child: SearchableMultiSelectField.fromOptions(
               label: l10n.education,
-              items: CareerData.allDegrees,
+              options: EducationCatalog.allDegrees,
               selected: _education,
+              showEnglishInBrackets: true,
               onChanged: (v) => setState(() => _education = v),
             ),
           ),
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
-            child: SearchableMultiSelectField(
+            child: SearchableMultiSelectField.fromOptions(
               label: l10n.occupation,
-              items: CareerData.allOccupations,
+              options: OccupationCatalog.allOccupations,
               selected: _occupation,
+              showEnglishInBrackets: true,
               onChanged: (v) => setState(() => _occupation = v),
             ),
           ),
           _pref(l10n.annualIncome, AppConstants.incomeRanges, _income,
               (v) => _income = v),
 
-          const SizedBox(height: 8),
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            value: _horoscopeMatchRequired,
-            activeColor: AppColors.primary,
-            onChanged: (v) => setState(() => _horoscopeMatchRequired = v),
-            title: Text(l10n.horoscopeMatchRequired,
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w600)),
-          ),
-
+          // The "ஜாதகப் பொருத்தம் தேவை" switch was removed (§11): every
+          // profile is shown regardless, and compatibility can be checked on
+          // any of them at any time, so the answer changed nothing.
           const SizedBox(height: 20),
           GradientButton(onPressed: _saveAndNext, text: l10n.continueLabel),
         ],

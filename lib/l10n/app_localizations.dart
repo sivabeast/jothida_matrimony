@@ -3806,12 +3806,6 @@ abstract class AppLocalizations {
   /// **'Doesn\'t Matter'**
   String get doesntMatter;
 
-  /// No description provided for @horoscopeMatchRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Horoscope Match Required'**
-  String get horoscopeMatchRequired;
-
   /// No description provided for @profilePhoto.
   ///
   /// In en, this message translates to:
@@ -5761,6 +5755,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Later'**
   String get later;
+
+  /// No description provided for @anyTapToSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Any — tap to select'**
+  String get anyTapToSelect;
+
+  /// No description provided for @countSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String countSelected(int count);
+
+  /// No description provided for @doneCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Done ({count})'**
+  String doneCount(int count);
+
+  /// No description provided for @selectUpTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Select up to {count}'**
+  String selectUpTo(int count);
+
+  /// No description provided for @haveChildren.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you have children?'**
+  String get haveChildren;
+
+  /// No description provided for @degreesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Course / Degree'**
+  String get degreesLabel;
+
+  /// No description provided for @degreesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add more than one'**
+  String get degreesHint;
+
+  /// No description provided for @profileDisplayQualification.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Display Qualification'**
+  String get profileDisplayQualification;
+
+  /// No description provided for @profileDisplayQualificationHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose up to two qualifications to show on your profile card'**
+  String get profileDisplayQualificationHelp;
+
+  /// No description provided for @locationPreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Location Preference'**
+  String get locationPreference;
+
+  /// No description provided for @locationPreferenceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'State → District → City, from the master data'**
+  String get locationPreferenceHint;
+
+  /// No description provided for @educationPreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Education Preference'**
+  String get educationPreference;
+
+  /// No description provided for @educationPreferenceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search and select any number of qualifications'**
+  String get educationPreferenceHint;
+
+  /// No description provided for @professionPreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Profession Preference'**
+  String get professionPreference;
+
+  /// No description provided for @professionPreferenceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search and select any number of professions'**
+  String get professionPreferenceHint;
+
+  /// No description provided for @salaryPreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Salary Preference'**
+  String get salaryPreference;
+
+  /// No description provided for @minimumAnnualIncome.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum annual income'**
+  String get minimumAnnualIncome;
+
+  /// No description provided for @maritalStatusPreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Marital Status Preference'**
+  String get maritalStatusPreference;
+
+  /// No description provided for @horoscopePreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope Preferences'**
+  String get horoscopePreferences;
+
+  /// No description provided for @languagePreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Language Preference'**
+  String get languagePreference;
+
+  /// No description provided for @religionPreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Religion / Community Preference'**
+  String get religionPreference;
+
+  /// No description provided for @savePreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Preferences'**
+  String get savePreferences;
+
+  /// No description provided for @preferencesSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences saved'**
+  String get preferencesSaved;
+
+  /// No description provided for @preferencesResetDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences reset to defaults'**
+  String get preferencesResetDone;
+
+  /// No description provided for @couldNotSavePreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save preferences. Please try again.'**
+  String get couldNotSavePreferences;
+
+  /// No description provided for @createProfileFirstToSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your profile first to save preferences.'**
+  String get createProfileFirstToSave;
+
+  /// No description provided for @contactSharingQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'How should your contact information be shared?'**
+  String get contactSharingQuestion;
+
+  /// No description provided for @contactPrivateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get contactPrivateTitle;
+
+  /// No description provided for @contactPrivateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Share only after I accept an interest request.'**
+  String get contactPrivateDesc;
+
+  /// No description provided for @contactPublicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Public'**
+  String get contactPublicTitle;
+
+  /// No description provided for @contactPublicDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone viewing your profile can see your contact.'**
+  String get contactPublicDesc;
+
+  /// No description provided for @minSixCharacters.
+  ///
+  /// In en, this message translates to:
+  /// **'Min. 6 characters'**
+  String get minSixCharacters;
+
+  /// No description provided for @reEnterPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-enter password'**
+  String get reEnterPassword;
 }
 
 class _AppLocalizationsDelegate

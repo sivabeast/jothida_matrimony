@@ -2,6 +2,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config/dev_config.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/data/education_catalog.dart';
+import '../../core/data/occupation_catalog.dart';
+import '../../core/utils/value_l10n.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
 import '../../providers/demo_data_provider.dart';
@@ -51,7 +54,6 @@ class _PartnerPreferencesScreenState
   String _maritalStatus = _any;
   String _rasi = _any;
   String _nakshatra = _any;
-  bool _horoMatch = true;
   String _language = _any;
   String _religion = _any;
   String? _religionId;
@@ -95,7 +97,6 @@ class _PartnerPreferencesScreenState
         AppConstants.normalizeMaritalStatus(p.maritalStatus), _maritalOpts);
     _rasi = _safe(p.rasi, _rasiOpts);
     _nakshatra = _safe(p.nakshatra, _nakshatraOpts);
-    _horoMatch = p.horoscopeMatchRequired;
     _language = _safe(p.motherTongue, _languageOpts);
     _religion = p.religion.isEmpty ? _any : p.religion;
     _religionId = p.religionId;
@@ -125,14 +126,13 @@ class _PartnerPreferencesScreenState
         nakshatra: _nakshatra == _any ? null : _nakshatra,
         maritalStatus: _maritalStatus,
         motherTongue: _language,
-        horoscopeMatchRequired: _horoMatch,
       );
 
   Future<void> _save() async {
     final profile = ref.read(myProfileProvider).valueOrNull;
     debugPrint('[PartnerPreferences] save tapped (profile=${profile?.id})');
     if (profile == null) {
-      _toast('Create your profile first to save preferences.');
+      _toast(context.l10n.createProfileFirstToSave);
       return;
     }
     setState(() => _saving = true);
@@ -148,10 +148,10 @@ class _PartnerPreferencesScreenState
             .updateProfile(profile.id, {'partnerPreferences': prefs.toMap()});
         ref.invalidate(myProfileProvider);
       }
-      if (mounted) _toast('Preferences saved');
+      if (mounted) _toast(context.l10n.preferencesSaved);
     } catch (e) {
       debugPrint('[PartnerPreferences] save error: $e');
-      if (mounted) _toast('Could not save preferences. Please try again.');
+      if (mounted) _toast(context.l10n.couldNotSavePreferences);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -163,7 +163,7 @@ class _PartnerPreferencesScreenState
       _loaded = true;
       _locationEpoch++; // recreate the location picker with the defaults
     });
-    _toast('Preferences reset to defaults');
+    _toast(context.l10n.preferencesResetDone);
   }
 
   void _toast(String msg) {
@@ -257,8 +257,8 @@ class _PartnerPreferencesScreenState
           ),
           _card(
             icon: Icons.location_on_outlined,
-            title: 'Location Preference',
-            subtitle: 'State → District → City, from the master data',
+            title: context.l10n.locationPreference,
+            subtitle: context.l10n.locationPreferenceHint,
             child: LocationPickerSection(
               key: ValueKey('pref-location-$_locationEpoch'),
               // Tamil Nadu is pre-selected for a fresh preference; a saved
@@ -276,12 +276,13 @@ class _PartnerPreferencesScreenState
           ),
           _card(
             icon: Icons.school_outlined,
-            title: 'Education Preference',
-            subtitle: 'Search and select any number of qualifications',
-            child: SearchableMultiSelectField(
-              label: 'Education',
-              items: AppConstants.educationList,
+            title: context.l10n.educationPreference,
+            subtitle: context.l10n.educationPreferenceHint,
+            child: SearchableMultiSelectField.fromOptions(
+              label: context.l10n.education,
+              options: EducationCatalog.allDegrees,
               selected: _education.toList(),
+              showEnglishInBrackets: true,
               onChanged: (v) => setState(() {
                 _education
                   ..clear()
@@ -291,12 +292,13 @@ class _PartnerPreferencesScreenState
           ),
           _card(
             icon: Icons.work_outline,
-            title: 'Profession Preference',
-            subtitle: 'Search and select any number of professions',
-            child: SearchableMultiSelectField(
-              label: 'Profession',
-              items: AppConstants.occupationList,
+            title: context.l10n.professionPreference,
+            subtitle: context.l10n.professionPreferenceHint,
+            child: SearchableMultiSelectField.fromOptions(
+              label: context.l10n.profession,
+              options: OccupationCatalog.allOccupations,
               selected: _occupation.toList(),
+              showEnglishInBrackets: true,
               onChanged: (v) => setState(() {
                 _occupation
                   ..clear()
@@ -306,49 +308,39 @@ class _PartnerPreferencesScreenState
           ),
           _card(
             icon: Icons.currency_rupee,
-            title: 'Salary Preference',
-            child: _dropdown('Minimum annual income', _income, _incomeOpts,
-                (v) => setState(() => _income = v!)),
+            title: context.l10n.salaryPreference,
+            child: _dropdown(context.l10n.minimumAnnualIncome, _income,
+                _incomeOpts, (v) => setState(() => _income = v!)),
           ),
           _card(
             icon: Icons.favorite_border,
-            title: 'Marital Status Preference',
-            child: _dropdown('Marital status', _maritalStatus, _maritalOpts,
-                (v) => setState(() => _maritalStatus = v!)),
+            title: context.l10n.maritalStatusPreference,
+            child: _dropdown(context.l10n.maritalStatus, _maritalStatus,
+                _maritalOpts, (v) => setState(() => _maritalStatus = v!)),
           ),
           _card(
             icon: Icons.auto_awesome_outlined,
-            title: 'Horoscope Preferences',
+            title: context.l10n.horoscopePreferences,
+            // The "Horoscope Match Required" switch was removed here (§11).
             child: Column(
               children: [
-                _dropdown('Rasi', _rasi, _rasiOpts,
+                _dropdown(context.l10n.rasi, _rasi, _rasiOpts,
                     (v) => setState(() => _rasi = v!)),
                 const SizedBox(height: 12),
-                _dropdown('Natchathiram (Nakshatra)', _nakshatra, _nakshatraOpts,
+                _dropdown(context.l10n.nakshatra, _nakshatra, _nakshatraOpts,
                     (v) => setState(() => _nakshatra = v!)),
-                const SizedBox(height: 4),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  activeColor: AppColors.primary,
-                  title: Text(context.l10n.horoscopeMatchRequired,
-                      style: TextStyle(fontSize: 14)),
-                  subtitle: Text(_horoMatch ? 'Yes' : 'No',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                  value: _horoMatch,
-                  onChanged: (v) => setState(() => _horoMatch = v),
-                ),
               ],
             ),
           ),
           _card(
             icon: Icons.translate,
-            title: 'Language Preference',
-            child: _dropdown('Mother tongue', _language, _languageOpts,
-                (v) => setState(() => _language = v!)),
+            title: context.l10n.languagePreference,
+            child: _dropdown(context.l10n.motherTongue, _language,
+                _languageOpts, (v) => setState(() => _language = v!)),
           ),
           _card(
             icon: Icons.diversity_3_outlined,
-            title: 'Religion / Community Preference',
+            title: context.l10n.religionPreference,
             child: ReligionCasteFields(
               religionId: _religionId,
               religionName: _religion == _any ? null : _religion,
@@ -384,7 +376,9 @@ class _PartnerPreferencesScreenState
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.check),
-              label: Text(_saving ? 'Saving...' : 'Save Preferences'),
+              label: Text(_saving
+                  ? context.l10n.savingLabel
+                  : context.l10n.savePreferences),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -478,6 +472,8 @@ class _PartnerPreferencesScreenState
         ),
       );
 
+  /// Every row renders through [ValueL10nX.localizeValue], so a stored English
+  /// value (including the "Any" sentinel) reads in Tamil (§12).
   Widget _dropdown(String label, String value, List<String> options,
       ValueChanged<String?> onChanged) {
     final safeValue = options.contains(value) ? value : options.first;
@@ -488,7 +484,8 @@ class _PartnerPreferencesScreenState
       items: options
           .map((o) => DropdownMenuItem(
                 value: o,
-                child: Text(o, overflow: TextOverflow.ellipsis),
+                child: Text(context.localizeValue(o),
+                    overflow: TextOverflow.ellipsis),
               ))
           .toList(),
       onChanged: onChanged,

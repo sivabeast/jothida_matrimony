@@ -1,5 +1,6 @@
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
+import '../../core/data/master_option.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/value_l10n.dart';
@@ -32,6 +33,17 @@ class SearchableField extends StatelessWidget {
   final bool enabled;
   final IconData? prefixIcon;
 
+  /// Bilingual catalogue backing [items] (§7/§9). When supplied, each row is
+  /// rendered with its Tamil name and searched across English, Tamil AND its
+  /// aliases — so "விருதுநகர்" on screen still answers to "viru", and "B.Sc"
+  /// still answers to "bsc". Pass [items] alone for a plain list of values.
+  final List<MasterOption>? options;
+
+  /// Append the English name in brackets in Tamil mode — "இளங்கலை அறிவியல்
+  /// (B.Sc)". On for degrees and occupations, where the English term is what
+  /// people actually say; off for ordinary vocabulary.
+  final bool showEnglishInBrackets;
+
   /// Presentation mode for the options popup. Defaults to the anchored [menu].
   /// Pass [SearchablePopupMode.modalBottomSheet] to avoid overlapping
   /// surrounding widgets.
@@ -58,7 +70,26 @@ class SearchableField extends StatelessWidget {
     this.popupMode = SearchablePopupMode.menu,
     this.itemLabel,
     this.errorText,
+    this.options,
+    this.showEnglishInBrackets = false,
   });
+
+  /// Builds the field straight from a bilingual catalogue.
+  SearchableField.fromOptions({
+    super.key,
+    required this.label,
+    required List<MasterOption> options,
+    required this.selectedItem,
+    required this.onChanged,
+    this.isRequired = false,
+    this.enabled = true,
+    this.prefixIcon,
+    this.popupMode = SearchablePopupMode.menu,
+    this.errorText,
+    this.showEnglishInBrackets = false,
+  })  : options = options,
+        items = options.values,
+        itemLabel = null;
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +109,9 @@ class SearchableField extends StatelessWidget {
       filterFn: (item, query) {
         final q = query.trim().toLowerCase();
         if (q.isEmpty) return true;
+        // A catalogue-backed field searches English + Tamil + aliases (§9).
+        final option = options?.byValue(item);
+        if (option != null) return option.matches(query);
         return item.toLowerCase().contains(q) ||
             _display(context, item).toLowerCase().contains(q);
       },
@@ -122,10 +156,17 @@ class SearchableField extends StatelessWidget {
     );
   }
 
-  /// Display text for [item]: the [itemLabel] override first, then the standard
-  /// English-value → Tamil display mapping.
-  String _display(BuildContext context, String item) =>
-      itemLabel != null ? itemLabel!(item) : context.localizeValue(item);
+  /// Display text for [item]: the [itemLabel] override first, then the
+  /// catalogue's own bilingual name, then the standard value → Tamil mapping.
+  String _display(BuildContext context, String item) {
+    if (itemLabel != null) return itemLabel!(item);
+    final option = options?.byValue(item);
+    if (option != null) {
+      return option.display(
+          tamil: context.isTamil, withEnglish: showEnglishInBrackets);
+    }
+    return context.localizeValue(item);
+  }
 
   PopupProps<String> _buildPopupProps(BuildContext context) {
     final searchField = TextFieldProps(

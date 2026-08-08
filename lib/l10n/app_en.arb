@@ -1,15 +1,12 @@
 {
   "@@locale": "en",
-
   "appTitle": "Jothida Matrimony",
   "appTagline": "Find Your Perfect Match",
-
   "chooseLanguage": "Choose your language",
   "languageEnglish": "English",
   "languageTamil": "தமிழ்",
   "continueLabel": "Continue",
   "language": "Language",
-
   "save": "Save",
   "submit": "Submit",
   "next": "Next",
@@ -41,8 +38,7 @@
   "optional": "Optional",
   "notSpecified": "Not specified",
   "notAvailable": "Not Available",
-
-  "fieldRequired": "This field is required",
+  "fieldRequired": "{label} is required",
   "invalidEmail": "Enter a valid email address",
   "invalidPhone": "Enter a valid mobile number",
   "invalidOtp": "Enter a valid OTP",
@@ -51,7 +47,6 @@
   "noInternet": "No internet connection",
   "savedSuccessfully": "Saved successfully",
   "updatedSuccessfully": "Updated successfully",
-
   "welcomeBack": "Welcome Back",
   "signInToContinue": "Sign in to continue",
   "phone": "Phone",
@@ -63,7 +58,13 @@
   "verifyOtp": "Verify OTP",
   "enterOtp": "Enter OTP",
   "otpSentTo": "OTP sent to {number}",
-  "@otpSentTo": { "placeholders": { "number": { "type": "String" } } },
+  "@otpSentTo": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "resendOtp": "Resend OTP",
   "signIn": "Sign In",
   "login": "Login",
@@ -76,14 +77,12 @@
   "dontHaveAccount": "Don't have an account? ",
   "alreadyHaveAccount": "Already have an account? ",
   "astrologerPortal": "Astrologer Portal",
-  "orLabel": "OR",
-
+  "orLabel": "or",
   "chooseAccountType": "Choose Account Type",
   "matrimonyUser": "Matrimony User",
   "findLifePartner": "Find your life partner",
   "astrologerAccount": "Astrologer",
   "offerConsultations": "Offer consultations to members",
-
   "home": "Home",
   "discover": "Discover",
   "matches": "Matches",
@@ -91,7 +90,6 @@
   "interests": "Interests",
   "alerts": "Alerts",
   "profile": "Profile",
-
   "brides": "Brides",
   "grooms": "Grooms",
   "sendInterest": "Send Interest",
@@ -117,7 +115,6 @@
   "city": "City",
   "state": "State",
   "country": "Country",
-
   "received": "Received",
   "sent": "Sent",
   "accept": "Accept",
@@ -136,20 +133,25 @@
   "interestRejected": "Interest Rejected",
   "noInterestsYet": "No interests yet",
   "interestSentSuccess": "Interest sent successfully!",
-
   "matchDetails": "Match Details",
   "match": "Match",
   "compatibilitySummary": "Compatibility Summary",
   "marriageCompatibility": "Marriage Compatibility (Porutham)",
   "poruthamMatched": "{matched} / {total} Poruthams matched",
   "@poruthamMatched": {
-    "placeholders": { "matched": { "type": "int" }, "total": { "type": "int" } }
+    "placeholders": {
+      "matched": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   },
   "connectAstrologer": "Connect Astrologer",
   "compatibilityLocked": "Compatibility is locked",
   "viewContact": "View Contact",
   "horoscopeMatch": "Horoscope Match",
-
   "myProfile": "My Profile",
   "editProfile": "Edit Profile",
   "createProfile": "Create Profile",
@@ -191,7 +193,6 @@
   "basicInformation": "Basic Information",
   "religionCommunity": "Religion & Community",
   "educationCareer": "Education & Career",
-
   "familyTree": "Family Tree",
   "father": "Father",
   "mother": "Mother",
@@ -203,7 +204,6 @@
   "nuclearFamily": "Nuclear Family",
   "familyDetailsNotAdded": "Family details not added",
   "addFamilyDetails": "Add Family Details",
-
   "horoscope": "Horoscope",
   "rasi": "Rasi",
   "nakshatra": "Nakshatra",
@@ -211,7 +211,6 @@
   "birthTime": "Birth Time",
   "birthPlace": "Birth Place",
   "dosham": "Dosham",
-
   "freePlan": "Free Plan",
   "premiumPlan": "Premium Plan",
   "basicPlan": "Basic Plan",
@@ -221,8 +220,13 @@
   "choosePlan": "Choose a Plan",
   "subscribe": "Subscribe",
   "daysRemaining": "{days} days remaining",
-  "@daysRemaining": { "placeholders": { "days": { "type": "int" } } },
-
+  "@daysRemaining": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "rating": "Rating",
   "experience": "Experience",
   "reviews": "Reviews",
@@ -245,16 +249,13 @@
   "verifiedAstrologer": "Verified Astrologer",
   "consultation": "Consultation",
   "bookConsultation": "Book Consultation",
-
   "contactDetails": "Contact Details",
   "name": "Name",
   "call": "Call",
   "whatsapp": "WhatsApp",
   "contactLocked": "Contact unlocks after your interest is accepted",
-
   "notifications": "Notifications",
   "noNotifications": "No notifications yet",
-
   "settings": "Settings",
   "privacy": "Privacy",
   "privacySettings": "Privacy Settings",
@@ -271,7 +272,6 @@
   "deleteAccountSubtitle": "Permanently delete your account and all data",
   "deleteAccountWarning": "This action is permanent and cannot be undone.\nAll your profile data, photos, interests, horoscope details and account information will be permanently deleted.",
   "couldNotDeleteAccount": "Could not delete your account. Please try again.",
-
   "viewPhoto": "View Photo",
   "changePhoto": "Change Photo",
   "uploadPhoto": "Upload Photo",
@@ -281,7 +281,6 @@
   "photoRemoved": "Photo removed",
   "couldNotUpdatePhoto": "Could not update photo. Please try again.",
   "couldNotRemovePhoto": "Could not remove photo. Please try again.",
-
   "family": "Family",
   "noProfileYet": "No profile yet",
   "profileUnavailable": "Profile unavailable",
@@ -289,25 +288,27 @@
   "couldNotLoadFamilyDetails": "Could not load family details",
   "addFamilyFromPersonalDetails": "Add your family details from Personal Details to see your family tree here.",
   "memberNoFamilyDetails": "{name} hasn't shared family details yet.",
-  "@memberNoFamilyDetails": { "placeholders": { "name": { "type": "String" } } },
+  "@memberNoFamilyDetails": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "familyStatusRich": "Rich",
   "familyStatusUpperMiddle": "Upper Middle Class",
   "familyStatusMiddle": "Middle Class",
   "familyStatusLowerMiddle": "Lower Middle Class",
   "familyStatusLower": "Lower Class",
-
   "whoCreatingAccountFor": "Who are you creating\nan account for?",
   "chooseHowToUseApp": "Choose how you want to use the app",
   "pressBackToExit": "Press back again to exit",
-
   "signInFailed": "Sign in failed. Please check your credentials and try again.",
   "googleSignInFailed": "Google Sign-In failed. Please try again.",
   "astrologerSignInHere": "Are you an Astrologer? Sign in here",
-
   "couldNotLoadReviews": "Could not load reviews.",
   "certificates": "Certificates",
   "astrologerNotFound": "Astrologer not found",
-
   "member": "Member",
   "noReceivedInterests": "No interests received yet",
   "noSentInterests": "You haven't sent any interests yet",
@@ -317,13 +318,12 @@
   "checkConnectionRetry": "Please check your connection and try again.",
   "interestStartHint": "Send or receive an interest to get started.",
   "interestDeclined": "Interest declined",
-  "interestAcceptedMatch": "It's a match! Interest accepted 🎉",
+  "interestAcceptedMatch": "Interest accepted — it's a match!",
   "profileUnavailableMatch": "Profile unavailable for this match.",
   "horoscopeUnavailableMember": "Horoscope match unavailable for this member.",
   "sentAcceptedHint": "Accepted — open the Accepted tab to view contact.",
   "interestDeclinedStatus": "This interest was declined.",
   "waitingForResponse": "Waiting for a response…",
-
   "bookMatchAnalysis": "Book Match Analysis",
   "submitRequest": "Submit Request",
   "sending": "Sending…",
@@ -351,10 +351,8 @@
   "onLeave": "On Leave",
   "available": "Available",
   "unavailable": "Unavailable",
-
   "reports": "Reports",
   "astrology": "Astrology",
-
   "compatibleMatches": "Compatible Matches",
   "allMatches": "All Matches",
   "viewMatchingStars": "View Matching Stars",
@@ -366,30 +364,44 @@
   "profession": "Profession",
   "refresh": "Refresh",
   "goBack": "Go Back",
-
   "noMatchingProfilesTitle": "No Matching Profiles Yet",
   "noMatchingProfilesBody": "No profiles are available right now. New members are continuously joining — every available profile will appear here, and the ones that satisfy your partner preferences are highlighted with a Best Match badge.",
   "couldNotLoadMatches": "Could not load matches",
-
   "expressInterest": "Express Interest",
   "matchedLabel": "Matched",
   "notInterested": "Not Interested",
   "createProfileFirst": "Create your profile first to send interest",
   "interestSentTo": "Interest sent to {name}",
-  "@interestSentTo": { "placeholders": { "name": { "type": "String" } } },
+  "@interestSentTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "couldNotSendInterest": "Could not send interest. Please try again.",
   "youMatchedWith": "You matched with {name}",
-  "@youMatchedWith": { "placeholders": { "name": { "type": "String" } } },
+  "@youMatchedWith": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "couldNotAcceptInterest": "Could not accept interest. Please try again.",
   "dailyInterestLimitTitle": "Daily interest limit reached",
   "dailyInterestLimitMessage": "Free members can send {count} interests per day. Upgrade to Basic or Premium for unlimited interests.",
-  "@dailyInterestLimitMessage": { "placeholders": { "count": { "type": "int" } } },
-
+  "@dailyInterestLimitMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "newProfiles": "New Profiles",
   "noNewProfilesYet": "No new profiles yet.",
   "nakshatraMatch": "Nakshatra Match",
   "matchingProfile": "Best Match",
-
   "comingSoonBody": "This feature is not available yet. We are working on it and it will be unlocked in an upcoming update. Stay tuned!",
   "featureMarriageFixed": "Marriage Fixed",
   "featureWeddingWorkspace": "Marriage Workspace",
@@ -398,7 +410,6 @@
   "viewCalendar": "View Calendar",
   "adminSignIn": "Admin sign-in",
   "signOut": "Sign Out",
-
   "bookYourAppointment": "Book Your Appointment",
   "bookingCurrentlyClosed": "Booking Currently Closed",
   "selectConsultationCategory": "Select Consultation Category",
@@ -416,9 +427,21 @@
   "serviceCharge": "Service Charge",
   "processing": "Processing…",
   "payAndConfirmAppointment": "Pay ₹{amount} & Confirm Appointment",
-  "@payAndConfirmAppointment": { "placeholders": { "amount": { "type": "int" } } },
+  "@payAndConfirmAppointment": {
+    "placeholders": {
+      "amount": {
+        "type": "int"
+      }
+    }
+  },
   "payAndConfirm": "Pay ₹{amount} & Confirm",
-  "@payAndConfirm": { "placeholders": { "amount": { "type": "int" } } },
+  "@payAndConfirm": {
+    "placeholders": {
+      "amount": {
+        "type": "int"
+      }
+    }
+  },
   "inPersonVisitNote": "This is an in-person office visit. Choose your preferred date and session below.",
   "bookingClosedMessage": "Appointment booking is currently closed. Please check back later.",
   "noWorkingDaysThisWeek": "No working days available this week.",
@@ -432,7 +455,6 @@
   "completeOwnProfileFirst": "Complete your own profile before booking an appointment.",
   "morningSessionWindow": "Morning Session (9:00 AM – 1:00 PM)",
   "eveningSessionWindow": "Evening Session (2:00 PM – 5:00 PM)",
-
   "appointmentConfirmed": "Appointment Confirmed",
   "appointmentBookedTitle": "Your appointment is booked!",
   "visitOfficeAtScheduled": "Please visit our office at the scheduled date and time.",
@@ -446,13 +468,24 @@
   "viewMyBookings": "View My Bookings",
   "backToHome": "Back to Home",
   "myBookings": "My Bookings",
-
   "viewReport": "View Report",
   "downloadReport": "Download Report",
   "underAnalysisTab": "Under Analysis ({count})",
-  "@underAnalysisTab": { "placeholders": { "count": { "type": "int" } } },
+  "@underAnalysisTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "completedTab": "Completed ({count})",
-  "@completedTab": { "placeholders": { "count": { "type": "int" } } },
+  "@completedTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "reportReadyMsg": "Your report is ready.",
   "reportPreparingMsg": "Your report is being prepared by our astrologer.",
   "requestDate": "Request Date",
@@ -466,12 +499,17 @@
   "pdfReportsLabel": "PDF Reports",
   "horoscopeAnalysisReport": "Horoscope Analysis Report",
   "reportFor": "Report for {name}",
-  "@reportFor": { "placeholders": { "name": { "type": "String" } } },
+  "@reportFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "preparedBy": "Prepared by",
   "reportDate": "Report Date",
   "descriptionLabel": "Description",
   "attachedAsFile": "The astrologer attached the analysis as a file below.",
-
   "partnerPreferenceMatch": "Partner Preference Match",
   "overallPreferenceMatch": "Overall Preference Match",
   "chat": "Chat",
@@ -485,18 +523,25 @@
   "thisProfileHeader": "This Profile",
   "statusHeader": "Status",
   "matchedCount": "{matched} of {total} Matched",
-  "@matchedCount": { "placeholders": { "matched": { "type": "int" }, "total": { "type": "int" } } },
+  "@matchedCount": {
+    "placeholders": {
+      "matched": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "matchWord": "Match",
   "noMatchWord": "Doesn't",
   "horoscopePrivateNote": "The full horoscope is private. For detailed horoscope matching, consult a verified astrologer.",
   "profileNotFound": "Profile not found",
   "couldNotLoadProfile": "Couldn't load this profile right now. Please try again.",
   "reportLabel": "Report",
-
-  "updateAvailableTitle": "New Update Available",
+  "updateAvailableTitle": "Update Available",
   "updateRequiredMessage": "Update your application to continue.",
   "updateNow": "Update Now",
-
   "welcomeExclaim": "Welcome!",
   "howContinue": "How would you like to continue?",
   "roleMatrimonyTitle": "Matrimony User",
@@ -512,27 +557,49 @@
   "featureFamilyWorkspace": "Family Workspace",
   "featureVerifiedProfiles": "Verified Profiles",
   "featurePerfectMatch": "Find Your Perfect Match",
-  "orLabel": "or",
   "agreeToTermsPrefix": "By continuing, you agree to our",
   "termsAndPrivacy": "Terms & Privacy Policy",
   "familyInviteOnlyNote": "Only Gmail addresses invited by the Bride or Groom can open the Wedding Workspace.",
-
   "guest": "Guest",
   "muhurthamCalendarTitle": "Marriage Muhurtham Calendar",
   "muhurthamSubtitle": "Auspicious marriage & engagement dates",
   "weddingWorkspaceTitle": "Wedding Workspace",
   "weddingPlanTogether": "Plan the wedding together with both families",
   "weddingDaysToGo": "{days} days to go — keep the preparation moving!",
-  "@weddingDaysToGo": { "placeholders": { "days": { "type": "int" } } },
+  "@weddingDaysToGo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "weddingToday": "The wedding is today! 🎊",
   "weddingCongrats": "Congratulations on your wedding! 🎉",
   "weddingWaitingConfirm": "Waiting for {name} to confirm Marriage Fixed",
-  "@weddingWaitingConfirm": { "placeholders": { "name": { "type": "String" } } },
+  "@weddingWaitingConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "weddingPartnerConfirmed": "{name} confirmed — tap to confirm Marriage Fixed",
-  "@weddingPartnerConfirmed": { "placeholders": { "name": { "type": "String" } } },
+  "@weddingPartnerConfirmed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "profileCompletionTitle": "Profile Completion",
   "profileCompletionSubtitle": "{percent}% complete · Complete your profile",
-  "@profileCompletionSubtitle": { "placeholders": { "percent": { "type": "int" } } },
+  "@profileCompletionSubtitle": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "marriedLeftMatchmaking": "Profile left matchmaking · Tap to undo",
   "foundLifePartnerQ": "Found Your Life Partner?",
   "markProfileMarried": "Mark your profile as married",
@@ -566,7 +633,6 @@
   "specialization": "Specialization",
   "ratings": "Ratings",
   "servicesLabel": "Services",
-
   "menuSectionProfile": "PROFILE",
   "menuSectionMatches": "MATCHES",
   "menuSectionAstrology": "ASTROLOGY",
@@ -576,7 +642,6 @@
   "messages": "Messages",
   "horoscopeMatching": "Horoscope Matching",
   "myReports": "My Reports",
-
   "career": "Career",
   "photos": "Photos",
   "contact": "Contact",
@@ -584,71 +649,169 @@
   "uploadHoroscope": "Upload Horoscope",
   "skip": "Skip",
   "stepXofY": "Step {current} of {total}",
-  "@stepXofY": { "placeholders": { "current": { "type": "int" }, "total": { "type": "int" } } },
+  "@stepXofY": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "percentComplete": "{percent}% Complete",
-  "@percentComplete": { "placeholders": { "percent": { "type": "int" } } },
+  "@percentComplete": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "editSection": "Edit {title}",
-  "@editSection": { "placeholders": { "title": { "type": "String" } } },
+  "@editSection": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "editProfileSection": "Edit Profile · {title}",
-  "@editProfileSection": { "placeholders": { "title": { "type": "String" } } },
-
+  "@editProfileSection": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "physicalStatus": "Physical Status",
   "profileCreatedFor": "Profile Created For",
   "letsStartEssentials": "Let’s start with the essentials.",
   "required": "Required",
   "ageYears": "Age: {age} years",
-  "@ageYears": { "placeholders": { "age": { "type": "int" } } },
+  "@ageYears": {
+    "placeholders": {
+      "age": {
+        "type": "int"
+      }
+    }
+  },
   "numberOfChildren": "Number of Children",
   "weightKg": "Weight (kg)",
   "childrenLivingStatus": "Children Living Status",
   "noOptionsFound": "No options found",
   "searchFieldHint": "Search {label}…",
-  "@searchFieldHint": { "placeholders": { "label": { "type": "String" } } },
-  "selectFieldTitle": "Select {label}",
-  "@selectFieldTitle": { "placeholders": { "label": { "type": "String" } } },
+  "@searchFieldHint": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "selectFieldTitle": "Select {field}",
+  "@selectFieldTitle": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
   "addFieldTitle": "Add {label}",
-  "@addFieldTitle": { "placeholders": { "label": { "type": "String" } } },
+  "@addFieldTitle": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "enterNewField": "Enter new {label}",
-  "@enterNewField": { "placeholders": { "label": { "type": "String" } } },
-  "fieldRequired": "{label} is required",
-  "@fieldRequired": { "placeholders": { "label": { "type": "String" } } },
+  "@enterNewField": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "@fieldRequired": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "pleaseSelect": "Please select {field}",
-  "@pleaseSelect": { "placeholders": { "field": { "type": "String" } } },
+  "@pleaseSelect": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
   "pleaseEnterField": "Please enter your {field}",
-  "@pleaseEnterField": { "placeholders": { "field": { "type": "String" } } },
-
+  "@pleaseEnterField": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
   "othersOption": "Others",
   "customField": "Custom {label}",
-  "@customField": { "placeholders": { "label": { "type": "String" } } },
+  "@customField": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "typeHere": "Type here",
   "anyOption": "Any",
   "loadingField": "Loading {label}…",
-  "@loadingField": { "placeholders": { "label": { "type": "String" } } },
+  "@loadingField": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "couldNotLoadField": "Couldn't load {label}",
-  "@couldNotLoadField": { "placeholders": { "label": { "type": "String" } } },
-
+  "@couldNotLoadField": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "district": "District",
   "useMyLocation": "Use My Location",
   "detectingLocation": "Detecting…",
   "onlyTamilNaduSupported": "Detected \"{state}\" — only Tamil Nadu is supported right now. Please pick below.",
-  "@onlyTamilNaduSupported": { "placeholders": { "state": { "type": "String" } } },
+  "@onlyTamilNaduSupported": {
+    "placeholders": {
+      "state": {
+        "type": "String"
+      }
+    }
+  },
   "cityNotInListPickNearest": "\"{city}\" isn't in the list — please pick the nearest city.",
-  "@cityNotInListPickNearest": { "placeholders": { "city": { "type": "String" } } },
+  "@cityNotInListPickNearest": {
+    "placeholders": {
+      "city": {
+        "type": "String"
+      }
+    }
+  },
   "couldNotMatchLocation": "Couldn't match your location — please pick below.",
   "locationAccessDenied": "Location access denied. Please select your location manually.",
-
   "locationDetails": "Location Details",
   "locationStepSubtitle": "Where are you located?",
   "nativePlace": "Native Place",
   "citizenship": "Citizenship",
-  "selectStateDistrictCity": "Please select your state, district and city",
-
+  "selectStateDistrictCity": "Please select state, district and city.",
   "educationCareerSubtitle": "Your qualifications and work.",
   "highestEducation": "Highest Education",
   "employmentType": "Employment Type",
   "courseDegree": "Course / Degree",
   "courseDegreeHint": "e.g. B.E Computer Science",
-
   "swipeToBrowse": "Swipe left or right to browse profiles",
   "educationLevel": "Education Level",
   "employmentStatus": "Employment Status",
@@ -665,10 +828,8 @@
   "photoPreviewHint": "This is how other members will see your photo.",
   "usePhoto": "Use this photo",
   "adjustAgain": "Adjust again",
-
   "religiousInformation": "Religious Information",
   "religiousInfoSubtitle": "Helps find matches within your community.",
-
   "horoscopeStepSubtitle": "Rasi, Nakshatra and Lagnam are calculated automatically from your birth date, time and place. Enable override to set them manually.",
   "timeOfBirth": "Time of Birth",
   "selectDateHint": "Select date",
@@ -689,7 +850,6 @@
   "pleaseSelectTimeOfBirth": "Please select your time of birth",
   "pleaseSelectBirthPlace": "Please select your birth place",
   "unableToGenerateHoroscope": "Unable to generate horoscope details. Please verify date, time and birth place.",
-
   "partnerPreferenceTitle": "Partner Preference",
   "partnerPrefSubtitle": "All optional — set what matters, skip the rest. You can refine these anytime.",
   "basicPreference": "Basic Preference",
@@ -698,50 +858,74 @@
   "ageRangeLabel": "Age Range",
   "heightRangeLabel": "Height Range",
   "ageRangeValue": "{min} – {max} Years",
-  "@ageRangeValue": { "placeholders": { "min": { "type": "int" }, "max": { "type": "int" } } },
+  "@ageRangeValue": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "rangeValue": "{min} – {max}",
-  "@rangeValue": { "placeholders": { "min": { "type": "String" }, "max": { "type": "String" } } },
+  "@rangeValue": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
   "minimumAge": "Minimum Age",
   "maximumAge": "Maximum Age",
   "minimumHeight": "Minimum Height",
   "maximumHeight": "Maximum Height",
   "chevvaiDosham": "Chevvai Dosham",
   "doesntMatter": "Doesn't Matter",
-  "horoscopeMatchRequired": "Horoscope match required",
-
   "profilePhoto": "Profile Photo",
   "profilePhotoSubtitle": "Add ONE clear photo of yourself — it becomes your profile picture.",
   "addPhoto": "Add Photo",
   "photoVisibilityTip": "Adding a photo increases your profile visibility by 3x.",
-
   "uploadHoroscopeSubtitle": "Optionally attach your horoscope as a PDF. You can also skip this and add it later from your profile.",
   "tapToSelectPdf": "Tap to select a PDF",
   "horoscopePdfAttached": "Horoscope PDF attached",
   "changePdf": "Change PDF",
-
   "contactStepSubtitle": "Contact details are only shared after interest is mutually accepted.",
   "contactPersonName": "Contact Person Name",
   "relationship": "Relationship",
   "whatsappNumber": "WhatsApp Number",
   "whatsappSameAsMobile": "WhatsApp same as mobile",
   "contactPrivacyNote": "Your phone number and address are hidden by default. They are only revealed when both parties accept each other's interest.",
-
   "reviewSubmit": "Review & Submit",
   "reviewSubtitle": "Please review your details before submitting.",
   "submitProfile": "Submit Profile",
   "saveChanges": "Save Changes",
-  "submittingLabel": "Submitting…",
+  "submittingLabel": "Submitting...",
   "employmentLabel": "Employment",
   "contactPerson": "Contact Person",
   "mobileLabel": "Mobile",
-
   "horoscopeDocuments": "Horoscope Documents",
   "horoscopeImages": "Horoscope Images",
   "horoscopePdfs": "Horoscope PDFs",
   "horoscopeImageN": "Horoscope Image {n}",
-  "@horoscopeImageN": { "placeholders": { "n": { "type": "int" } } },
+  "@horoscopeImageN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "horoscopePdfN": "Horoscope PDF {n}",
-  "@horoscopePdfN": { "placeholders": { "n": { "type": "int" } } },
+  "@horoscopePdfN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "noHoroscopeFiles": "No horoscope documents uploaded for this profile.",
   "viewFull": "View Full",
   "viewLabel": "View",
@@ -751,18 +935,22 @@
   "addPdf": "Add PDF",
   "uploadHoroscopeHint": "Attach your horoscope as images (JPG / PNG) or PDF files. You can add more than one, and you can skip this and add them later from your profile.",
   "filesSelected": "{count} file(s) selected",
-  "@filesSelected": { "placeholders": { "count": { "type": "int" } } },
+  "@filesSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "uploadingHoroscopeFiles": "Uploading horoscope files…",
   "couldNotPickFile": "Could not read the selected file. Please try again.",
   "horoscopeLockedTitle": "Horoscope is locked",
   "horoscopeLockedBody": "You can view this member's horoscope documents once your interest has been accepted by both sides.",
   "horoscopeUnlockedNote": "Your interest was accepted — you can view and download this member's horoscope below.",
-
   "logoutDraftMessage": "Are you sure you want to logout? Unsaved progress will be kept as a draft.",
   "mustBeSignedInToCreateProfile": "You must be signed in to create a profile.",
   "profileUpdatedSuccess": "Profile updated successfully.",
   "failedToCreateProfile": "Failed to create profile",
-
   "reportProfileTitle": "Report Profile",
   "reportChatTitle": "Report Chat",
   "reportProfileAction": "Report profile",
@@ -775,7 +963,6 @@
   "whyReportChat": "Why are you reporting this chat?",
   "additionalDetailsOptional": "Additional details (optional)",
   "submitReport": "Submit Report",
-  "submittingLabel": "Submitting...",
   "reportSubmittedProfile": "Report submitted. Our team will review it.",
   "reportSubmittedChat": "Report submitted. Our team will review this conversation.",
   "couldNotSubmitReport": "Could not submit report. Please try again.",
@@ -784,22 +971,63 @@
   "attachScreenshot": "Attach screenshot",
   "screenshotAttached": "Screenshot attached",
   "reportingProfileWarning": "You are reporting {name}. False reports may affect your account.",
-  "@reportingProfileWarning": { "placeholders": { "name": { "type": "String" } } },
+  "@reportingProfileWarning": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "reportingChatInfo": "You are reporting your conversation with {name}. Our team will review it.",
-  "@reportingChatInfo": { "placeholders": { "name": { "type": "String" } } },
+  "@reportingChatInfo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "blockUserQuestion": "Block {name}?",
-  "@blockUserQuestion": { "placeholders": { "name": { "type": "String" } } },
+  "@blockUserQuestion": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "blockUserBody": "They will disappear from your matches and search, and neither of you can chat or send interests. You can unblock them anytime.",
   "userBlockedToast": "{name} has been blocked.",
-  "@userBlockedToast": { "placeholders": { "name": { "type": "String" } } },
+  "@userBlockedToast": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "userUnblockedToast": "{name} has been unblocked.",
-  "@userUnblockedToast": { "placeholders": { "name": { "type": "String" } } },
+  "@userUnblockedToast": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "youBlockedUnblockToChat": "You blocked {name}. Unblock to chat again.",
-  "@youBlockedUnblockToChat": { "placeholders": { "name": { "type": "String" } } },
+  "@youBlockedUnblockToChat": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "canNoLongerMessage": "You can no longer message {name}.",
-  "@canNoLongerMessage": { "placeholders": { "name": { "type": "String" } } },
+  "@canNoLongerMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "cannotSendInterestBlocked": "You cannot send an interest to a user you have blocked.",
-
   "cropPhotoTitle": "Crop Photo",
   "cropPhotoHint": "Pinch to zoom and drag to position. Only the square area inside the frame is saved.",
   "cropAndSave": "Crop & Save",
@@ -807,7 +1035,6 @@
   "profilePhotoOneOnly": "You have one profile photo. Uploading a new one replaces the current photo.",
   "photoCropRequired": "Crop your photo before saving.",
   "tapPhotoToEnlarge": "Tap the photo to view it full screen",
-
   "privacyIntro": "Choose what other members can see. Your name, age and basic details are always visible.",
   "hidePhoneNumber": "Hide Phone Number",
   "hidePhoneNumberDesc": "Your phone number is never shown on your profile.",
@@ -825,36 +1052,55 @@
   "privacySettingsSaveFailed": "Could not save your privacy settings. Please try again.",
   "hiddenByMember": "Hidden by member",
   "photoHiddenByMember": "Photo hidden by this member",
-
   "childSafety": "Child Safety",
   "childSafetyStandards": "Child Safety Standards",
   "deleteAccountPageTitle": "Delete Account",
   "lastUpdatedOn": "Last updated: {date}",
-  "@lastUpdatedOn": { "placeholders": { "date": { "type": "String" } } },
+  "@lastUpdatedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "legalContactHeading": "Contact",
-
   "emailUs": "Email Us",
   "callUs": "Call Us",
   "chatWithSupport": "Chat with support",
   "faqTitle": "Frequently Asked Questions",
   "weAreHereToHelp": "We are here to help",
   "reachSupportTeam": "Reach the {app} support team",
-  "@reachSupportTeam": { "placeholders": { "app": { "type": "String" } } },
+  "@reachSupportTeam": {
+    "placeholders": {
+      "app": {
+        "type": "String"
+      }
+    }
+  },
   "couldNotOpenScheme": "Could not open {scheme}. Please try again.",
-  "@couldNotOpenScheme": { "placeholders": { "scheme": { "type": "String" } } },
-
+  "@couldNotOpenScheme": {
+    "placeholders": {
+      "scheme": {
+        "type": "String"
+      }
+    }
+  },
   "generalSection": "General",
   "aboutSection": "About",
   "allProfiles": "All Profiles",
   "profilesShown": "{count} profiles",
-  "@profilesShown": { "placeholders": { "count": { "type": "int" } } },
+  "@profilesShown": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "loadingMoreProfiles": "Loading more profiles…",
   "noMoreProfiles": "You have reached the end of the list.",
   "latestProfiles": "Latest Profiles",
-
   "partnerAgeRequired": "Select your preferred partner age range to continue.",
   "partnerAgeMandatoryNote": "Partner age range is required — matches are filtered by it.",
-
   "gothram": "Gothram",
   "kuladeivam": "Kuladeivam",
   "companyName": "Company",
@@ -870,37 +1116,46 @@
   "rahuKethuDosham": "Rahu / Kethu Dosham",
   "kalasarpaDosham": "Kalasarpa Dosham",
   "workLocation": "Work Location",
-  "courseDegree": "Course / Degree",
-  "citizenship": "Citizenship",
-  "profileNotFound": "Profile not found",
   "couldNotLoadProfileRetry": "Couldn't load this profile right now. Please try again.",
   "createProfileFirstInterest": "Create your profile first to send an interest.",
-  "interestSentSuccess": "Interest sent successfully!",
-  "interestAcceptedMatch": "Interest accepted — it's a match!",
   "couldNotOpenChatRetry": "Could not open chat. Please try again.",
   "contactDetailsTitle": "Contact details",
   "contactLockedTitle": "Contact locked",
   "contactUnlocksAfterAccept": "Contact details unlock once your interest is mutually accepted.",
   "contactHiddenByMember": "This member has chosen to keep their phone number private.",
-  "notAvailable": "Not Available",
   "callAction": "Call",
   "youMatchedConnectNow": "You matched with {name} — you can now connect directly.",
-  "@youMatchedConnectNow": { "placeholders": { "name": { "type": "String" } } },
+  "@youMatchedConnectNow": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "mobileNumberExactly10": "Enter a valid 10-digit mobile number (digits only).",
   "mobileNumberRequired": "Mobile number is required.",
   "photoUploadNotInDemo": "Photo upload is not available in demo mode.",
   "couldNotLoadYourProfile": "Could not load your profile.",
   "createYourProfileFirst": "Create your profile first.",
-
   "tapFieldToEdit": "Tap a field to edit only that field.",
   "notAddedYet": "Not added",
   "notAddedTapToFill": "Not added yet — tap ✎ to fill this in.",
   "editFieldTitle": "Edit {field}",
-  "@editFieldTitle": { "placeholders": { "field": { "type": "String" } } },
-  "selectFieldTitle": "Select {field}",
-  "@selectFieldTitle": { "placeholders": { "field": { "type": "String" } } },
+  "@editFieldTitle": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
   "editSectionTooltip": "Edit {section}",
-  "@editSectionTooltip": { "placeholders": { "section": { "type": "String" } } },
+  "@editSectionTooltip": {
+    "placeholders": {
+      "section": {
+        "type": "String"
+      }
+    }
+  },
   "searchHint": "Search…",
   "savedToast": "Saved",
   "couldNotSaveRetry": "Could not save. Please try again.",
@@ -921,21 +1176,17 @@
   "profileForLabel": "Profile For",
   "childrenLabel": "Children",
   "contactPersonLabel": "Contact Person",
-  "mobileLabel": "Mobile",
   "horoscopePdfLabel": "Horoscope PDF",
   "weightKgLabel": "Weight (kg)",
-
   "bookAppointment": "Book Appointment",
   "freeLabel": "FREE",
   "appointmentFreeTitle": "Booking is free",
   "appointmentFreeNote": "There are no booking charges. Pick a date and session and confirm your appointment.",
-
   "savingLabel": "Saving…",
   "fatherName": "Father Name",
   "motherName": "Mother Name",
   "aboutMeHint": "Write a few lines about yourself, your family, interests and what you are looking for.",
   "educationOccupationRequired": "Education and occupation are required.",
-  "selectStateDistrictCity": "Please select state, district and city.",
   "religionCasteRequired": "Religion and caste are required.",
   "hobbiesHint": "e.g. Reading, Music, Cooking",
   "interestsHint": "e.g. Travel, Sports",
@@ -945,20 +1196,37 @@
   "almostThere": "Almost there!",
   "finishSectionsHint": "Finish the sections below to get more responses.",
   "pendingSections": "Pending sections ({count})",
-  "@pendingSections": { "placeholders": { "count": { "type": "int" } } },
+  "@pendingSections": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "tapToComplete": "Tap to complete",
   "couldNotLoadProfileError": "Could not load profile: {error}",
-  "@couldNotLoadProfileError": { "placeholders": { "error": { "type": "String" } } },
+  "@couldNotLoadProfileError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "findMatches": "Find Matches",
   "profileCompletionPercent": "Profile Completion: {percent}%",
-  "@profileCompletionPercent": { "placeholders": { "percent": { "type": "int" } } },
+  "@profileCompletionPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "completeLabel": "Complete",
   "basicInformationUpdated": "Basic information updated",
   "communityDetailsUpdated": "Community details updated",
   "careerDetailsUpdated": "Career details updated",
   "locationUpdated": "Location updated",
   "aboutMeUpdated": "About Me updated",
-
   "getHoroscopeCompatibilityReport": "Get Horoscope Compatibility Report",
   "openWeddingWorkspace": "Open Wedding Workspace",
   "marriageFixedTitle": "Marriage Fixed 💍",
@@ -970,8 +1238,13 @@
   "attachmentNotSent": "Attachment couldn't be sent. Please try again.",
   "couldNotPickFileRetry": "Could not pick that file. Please try again.",
   "sayHelloTo": "Say hello to {name} 👋",
-  "@sayHelloTo": { "placeholders": { "name": { "type": "String" } } },
-  "tapToOpen": "Tap to open",
+  "@sayHelloTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "resetPreferences": "Reset Preferences",
   "linkCouldNotBeOpened": "This link could not be opened.",
   "notificationTitle": "Notification",
@@ -980,10 +1253,15 @@
   "marriageCompatibilityPorutham": "Marriage Compatibility (Porutham)",
   "notEnoughHoroscopeData": "Not enough horoscope data to calculate the poruthams for this pair. Add birth-star details to both profiles.",
   "compatibilityUnlocksAfterAccept": "Porutham results and horoscope compatibility unlock only after {name} accepts your interest.",
-  "@compatibilityUnlocksAfterAccept": { "placeholders": { "name": { "type": "String" } } },
+  "@compatibilityUnlocksAfterAccept": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "thisPerson": "this person",
   "interestSentShort": "Interest sent",
-
   "signInToYourAccount": "Sign in to your account",
   "phoneOrEmail": "Phone Number or Email",
   "phoneOrEmailHint": "9876543210 or you@email.com",
@@ -999,7 +1277,6 @@
   "pleaseSelectDob": "Please select your date of birth",
   "accountCreatedWelcome": "Account created. Welcome to Jothida Matrimony!",
   "registrationFailed": "Could not create your account. Please try again.",
-
   "resetViaEmail": "Email",
   "resetViaPhone": "Mobile Number",
   "resetPasswordIntroEmail": "Enter your registered email address. We will send you a link to reset your password.",
@@ -1008,23 +1285,32 @@
   "sendVerificationCode": "Send Verification Code",
   "otpVerification": "OTP Verification",
   "enterCodeSentTo": "Enter the 6-digit code sent to {number}",
-  "@enterCodeSentTo": { "placeholders": { "number": { "type": "String" } } },
+  "@enterCodeSentTo": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "newPassword": "New Password",
   "verifyAndReset": "Verify & Reset Password",
   "passwordResetSuccess": "Password updated. Please sign in with your new password.",
   "resetLinkSentTo": "Check your inbox at {email} for a password reset link.",
-  "@resetLinkSentTo": { "placeholders": { "email": { "type": "String" } } },
+  "@resetLinkSentTo": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "backToLogin": "Back to Login",
   "phoneResetUnavailable": "Mobile password reset is not available yet on this build. Please reset using your email address, or contact support.",
-
   "createProfileCtaTitle": "Complete your profile to discover matching profiles",
   "createProfileCtaBody": "Matches, interests, chat and contact details unlock as soon as your matrimony profile is ready.",
   "matchesLockedTitle": "Complete your profile to view matching profiles",
   "unlockAfterProfile": "Unlocks after you create your profile",
-
   "previousProfile": "Previous profile",
   "nextProfile": "Next profile",
-
   "loginCredentials": "Login Credentials",
   "loginCredentialsHint": "These are the details the member will use to sign in. Both are pre-filled from the profile and can be edited.",
   "createMatrimonyProfile": "Create Matrimony Profile",
@@ -1035,7 +1321,6 @@
   "createAccountAndProfile": "Create Account & Profile",
   "profileCreatedForMember": "Profile created. The member can now sign in.",
   "adminProfileIntro": "Create a complete matrimony profile on behalf of a member, then hand them their login details.",
-
   "childrenCountLabel": "Children",
   "dasaBalance": "Dasa Balance",
   "yogam": "Yogam",
@@ -1050,7 +1335,6 @@
   "preferredOccupation": "Preferred Occupation",
   "preferredIncome": "Preferred Income",
   "preferredLocation": "Preferred Location",
-  "horoscopeMatchRequired": "Horoscope Match Required",
   "contactDetailsFromProfile": "Entered in the Contact Details step of profile creation.",
   "contactLockedNote": "Contact details unlock once your interest is accepted.",
   "contactNotProvided": "No contact details have been added yet.",
@@ -1061,24 +1345,41 @@
   "professionalDetails": "Professional Details",
   "astroConsultTitle": "Astrology Consultation",
   "astroConsultBody": "Your interest is accepted! Have our expert astrologer check the horoscope compatibility for this match.",
-  "bookConsultation": "Book Consultation",
   "reportUnderAnalysisTitle": "Report Requested",
   "reportUnderAnalysisBody": "Your horoscope compatibility report for this profile is being prepared. We will notify you as soon as it is ready.",
   "viewHoroscopeReport": "View Horoscope Report",
   "compatAlreadyRequestedNote": "You have already requested a compatibility report for this profile. One report per profile — its status is shown below.",
   "pendingInterestTitle": "{name} has shown interest in you!",
-  "@pendingInterestTitle": { "placeholders": { "name": { "type": "String" } } },
+  "@pendingInterestTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "pendingInterestTitleGeneric": "Someone has shown interest in you!",
   "pendingInterestBody": "Accept to connect instantly and start chatting — or politely decline.",
   "matchCelebrationTitle": "It's a Match!",
   "matchCelebrationBody": "You and {name} are now connected. Say hello!",
-  "@matchCelebrationBody": { "placeholders": { "name": { "type": "String" } } },
+  "@matchCelebrationBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "startChatting": "Start Chatting",
-  "keepBrowsing": "Keep Browsing",
+  "keepBrowsing": "Keep browsing as guest",
   "awaitingYourResponse": "Awaiting your response",
   "interestRejectedConfirmTitle": "Decline this interest?",
   "interestRejectedConfirmBody": "{name} will be notified that you declined their interest.",
-  "@interestRejectedConfirmBody": { "placeholders": { "name": { "type": "String" } } },
+  "@interestRejectedConfirmBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "profileUnderReviewTitle": "Profile Under Review",
   "profileUnderReviewBody": "Your profile is being reviewed by our team. You will be notified the moment it is approved and visible to matches.",
   "profileRejectedTitle": "Profile Not Approved",
@@ -1087,7 +1388,6 @@
   "couldNotContinueAsGuest": "Could not start guest browsing. Please try again, or log in instead.",
   "loginRequiredTitle": "Login Required",
   "loginRequiredBody": "You are browsing as a guest. Create a free account or log in to use matches, interests, chat, astrology and your profile.",
-  "keepBrowsing": "Keep browsing as guest",
   "guestUpgradeNote": "Your guest session is kept — signing up upgrades it to a full account, so nothing is lost and no duplicate account is created.",
   "guestModeBanner": "You are browsing as a guest. Sign up to unlock matches, interests and chat.",
   "guestActionNeedsLogin": "Please log in to use this feature.",
@@ -1097,7 +1397,60 @@
   "downloadAsImages": "Download as Images",
   "downloadProfileLocked": "You can download a profile only after the interest is accepted.",
   "downloadProfileFailed": "Could not prepare the profile. Please try again.",
-  "updateAvailableTitle": "Update Available",
   "updateAvailableBody": "A new version of the app is available on Google Play. Update now for the latest features and fixes.",
-  "later": "Later"
+  "later": "Later",
+  "anyTapToSelect": "Any — tap to select",
+  "countSelected": "{count} selected",
+  "@countSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "doneCount": "Done ({count})",
+  "@doneCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectUpTo": "Select up to {count}",
+  "@selectUpTo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "haveChildren": "Do you have children?",
+  "degreesLabel": "Course / Degree",
+  "degreesHint": "You can add more than one",
+  "profileDisplayQualification": "Profile Display Qualification",
+  "profileDisplayQualificationHelp": "Choose up to two qualifications to show on your profile card",
+  "locationPreference": "Location Preference",
+  "locationPreferenceHint": "State → District → City, from the master data",
+  "educationPreference": "Education Preference",
+  "educationPreferenceHint": "Search and select any number of qualifications",
+  "professionPreference": "Profession Preference",
+  "professionPreferenceHint": "Search and select any number of professions",
+  "salaryPreference": "Salary Preference",
+  "minimumAnnualIncome": "Minimum annual income",
+  "maritalStatusPreference": "Marital Status Preference",
+  "horoscopePreferences": "Horoscope Preferences",
+  "languagePreference": "Language Preference",
+  "religionPreference": "Religion / Community Preference",
+  "savePreferences": "Save Preferences",
+  "preferencesSaved": "Preferences saved",
+  "preferencesResetDone": "Preferences reset to defaults",
+  "couldNotSavePreferences": "Could not save preferences. Please try again.",
+  "createProfileFirstToSave": "Create your profile first to save preferences.",
+  "contactSharingQuestion": "How should your contact information be shared?",
+  "contactPrivateTitle": "Private",
+  "contactPrivateDesc": "Share only after I accept an interest request.",
+  "contactPublicTitle": "Public",
+  "contactPublicDesc": "Anyone viewing your profile can see your contact.",
+  "minSixCharacters": "Min. 6 characters",
+  "reEnterPassword": "Re-enter password"
 }
