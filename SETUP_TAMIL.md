@@ -277,9 +277,11 @@ Admin panel-இல் இருந்த "App Update" page **முழுவத�
 1. **https://play.google.com/console** → உங்கள் app.
 2. **Release → Production** (அல்லது Internal testing) → **Create new release**.
 3. AAB file-ஐ upload செய்யவும்.
-   - `pubspec.yaml`-இல் `version: 1.4.0+8` உள்ளது. **அடுத்த release-இல்
-     `+8` ஐ `+9` ஆக அதிகரிக்க வேண்டும்** (எ.கா. `version: 1.5.0+9`).
-     Version code அதிகரிக்காவிட்டால் Play "update உள்ளது" என்று சொல்லாது.
+   - `pubspec.yaml`-இல் இப்போது `version: 1.6.0+10` உள்ளது. **ஒவ்வொரு
+     release-க்கும் `+` க்குப் பின் உள்ள எண்ணை (version code) ஒன்று
+     அதிகரிக்க வேண்டும்** — அடுத்தது `+11`.
+     Version code அதிகரிக்காவிட்டால் Play அந்த AAB-ஐ ஏற்காது; ஏற்கனவே
+     உள்ள அதே எண்ணுடன் upload செய்ய முடியாது.
 4. **Store listing** page → **App icon** பகுதியில்
    `branding/play_store_icon_512.png` file-ஐ upload செய்யவும். இது **புதிய
    logo**-வுடன் ஏற்கனவே தயாராக உள்ளது (§1). பழைய, "Jothida Matrimony" எழுத்து
