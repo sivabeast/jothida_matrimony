@@ -3235,4 +3235,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reEnterPassword => 'Re-enter password';
+
+  @override
+  String profileSavedTo(String location) {
+    return 'Saved to $location';
+  }
 }

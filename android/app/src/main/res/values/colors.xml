@@ -7,5 +7,5 @@
     <color name="brandGold">#D4A843</color>
 	<!-- The logo plate's rim colour, sampled by tool/generate_brand_icons.py.
 	     Only a fallback: the adaptive foreground is opaque and full-bleed. -->
-	<color name="ic_launcher_background">#8B0315</color>
+	<color name="ic_launcher_background">#71010C</color>
 </resources>

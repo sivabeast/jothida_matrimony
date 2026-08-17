@@ -75,8 +75,8 @@
     "semantic_hash": ""
   },
   "lib/main.dart": {
-    "mtime": 1786108944.3951,
-    "ast_hash": "ee67b1d595ab00a55a1eda5010164449",
+    "mtime": 1786112425.7565298,
+    "ast_hash": "34d0a02018c1eedb1c82b14625d4223e",
     "semantic_hash": ""
   },
   "lib/models/astrologer_account_model.dart": {
@@ -115,8 +115,8 @@
     "semantic_hash": ""
   },
   "lib/models/profile_model.dart": {
-    "mtime": 1786108944.4084086,
-    "ast_hash": "2acc833b7d47d8733bfaec0a12002f61",
+    "mtime": 1786114228.0761745,
+    "ast_hash": "1b6ed4028cc8810925aa645166b02632",
     "semantic_hash": ""
   },
   "lib/models/report_model.dart": {
@@ -310,8 +310,8 @@
     "semantic_hash": ""
   },
   "lib/screens/profile/profile_view_screen.dart": {
-    "mtime": 1786108944.57746,
-    "ast_hash": "430e7b56bd1104796b52d4e60fbd6364",
+    "mtime": 1786973498.1318028,
+    "ast_hash": "8d37242f173ddd1111fdf79e8f91a429",
     "semantic_hash": ""
   },
   "lib/screens/profile/steps/step3_horoscope.dart": {
@@ -325,8 +325,8 @@
     "semantic_hash": ""
   },
   "lib/screens/profile/steps/step7_contact.dart": {
-    "mtime": 1786108944.5844631,
-    "ast_hash": "a415df55adcdc80f20a1d1af47871e1f",
+    "mtime": 1786168054.6982505,
+    "ast_hash": "bfa8a0d32f648bb494907c88a0b24515",
     "semantic_hash": ""
   },
   "lib/screens/settings/language_screen.dart": {
@@ -375,8 +375,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/common/searchable_field.dart": {
-    "mtime": 1786108944.653886,
-    "ast_hash": "324afe5280a47b9519c3a090604268f0",
+    "mtime": 1786111943.2008297,
+    "ast_hash": "a82402c5a89700b21222ff210b89edc0",
     "semantic_hash": ""
   },
   "push_to_github.ps1": {
@@ -410,8 +410,8 @@
     "semantic_hash": ""
   },
   "pubspec.yaml": {
-    "mtime": 1786109739.6523974,
-    "ast_hash": "fbd3d5677938bbcd31dc7af71f59984e",
+    "mtime": 1786973833.160483,
+    "ast_hash": "cab51cef297a3d0c102b02edf6b674b7",
     "semantic_hash": ""
   },
   "android/app/build.gradle": {
@@ -425,8 +425,8 @@
     "semantic_hash": ""
   },
   "android/app/src/main/kotlin/com/jothida/jothida_matrimony/MainActivity.kt": {
-    "mtime": 1785655543.4054656,
-    "ast_hash": "a871fdc61a5749b8048a80a7f3aee83b",
+    "mtime": 1786973285.2756774,
+    "ast_hash": "fa774df45a19e9b356b129898af9f9a9",
     "semantic_hash": ""
   },
   "android/build.gradle": {
@@ -510,58 +510,58 @@
     "semantic_hash": ""
   },
   "android/app/src/main/res/drawable-hdpi/ic_launcher_foreground.png": {
-    "mtime": 1786110538.1417277,
-    "ast_hash": "d00575eb5ef89781b1f543221527465e",
+    "mtime": 1786973107.5166566,
+    "ast_hash": "cf5c1a187949f0665e457cffd0610480",
     "semantic_hash": ""
   },
   "android/app/src/main/res/drawable-mdpi/ic_launcher_foreground.png": {
-    "mtime": 1786110537.8966374,
-    "ast_hash": "fadd89f3c582323d56eb8bfbcb4b33e0",
+    "mtime": 1786973107.295279,
+    "ast_hash": "54e7eeeeae8b141129a9beba2a753144",
     "semantic_hash": ""
   },
   "android/app/src/main/res/drawable-xhdpi/ic_launcher_foreground.png": {
-    "mtime": 1786110538.411817,
-    "ast_hash": "ab44930e487b57bbf9e6623ca414a829",
+    "mtime": 1786973107.7557967,
+    "ast_hash": "bd0bf5ff45745094f50837cf4dfd123a",
     "semantic_hash": ""
   },
   "android/app/src/main/res/drawable-xxhdpi/ic_launcher_foreground.png": {
-    "mtime": 1786110538.7267075,
-    "ast_hash": "de258b5617e65c58607457075fa0f475",
+    "mtime": 1786973108.047002,
+    "ast_hash": "5e8f84cba3c63b59358aac1ee1310561",
     "semantic_hash": ""
   },
   "android/app/src/main/res/drawable-xxxhdpi/ic_launcher_foreground.png": {
-    "mtime": 1786110539.1190932,
-    "ast_hash": "f180a01275e16139ef2dc7c6ba9c1e8a",
+    "mtime": 1786973108.4009516,
+    "ast_hash": "c7f347e81b068849e9f20c58b4af558a",
     "semantic_hash": ""
   },
   "android/app/src/main/res/mipmap-hdpi/ic_launcher.png": {
-    "mtime": 1786110537.5540972,
-    "ast_hash": "b4f289265379cc8acc54c99e12057583",
+    "mtime": 1786973107.0210328,
+    "ast_hash": "69faa0991ab37eeb20ea24acbbeff773",
     "semantic_hash": ""
   },
   "android/app/src/main/res/mipmap-mdpi/ic_launcher.png": {
-    "mtime": 1786110537.5371366,
-    "ast_hash": "90928b017dfcebeebe5f3611c44e3be2",
+    "mtime": 1786973107.0040312,
+    "ast_hash": "5dae9b5a7e86e61e1044bad2b9f3b576",
     "semantic_hash": ""
   },
   "android/app/src/main/res/mipmap-xhdpi/ic_launcher.png": {
-    "mtime": 1786110537.5751193,
-    "ast_hash": "bb0200a6dcab3d9c167e4156bb78b545",
+    "mtime": 1786973107.0380454,
+    "ast_hash": "e8e26fe8d14dafe9055439200bf5deca",
     "semantic_hash": ""
   },
   "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png": {
-    "mtime": 1786110537.6060948,
-    "ast_hash": "3a06126a9d90d686e26f227f95304d1a",
+    "mtime": 1786973107.0580456,
+    "ast_hash": "b4c537cb58ea9db0e35c2002d1ee57da",
     "semantic_hash": ""
   },
   "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
-    "mtime": 1786110537.649096,
-    "ast_hash": "bdc9d6f64b8bad66429fe892226b69a2",
+    "mtime": 1786973107.0802915,
+    "ast_hash": "fd273af78c5dacc0bad27fb997621eb9",
     "semantic_hash": ""
   },
   "assets/images/app_logo.png": {
-    "mtime": 1786110535.719705,
-    "ast_hash": "22fbe05898b9e6ae40a5726f9908dd09",
+    "mtime": 1786973105.2268467,
+    "ast_hash": "6e192b4439f68f5a47d0a67d127b6761",
     "semantic_hash": ""
   },
   ".claude/settings.local.json": {
@@ -570,18 +570,18 @@
     "semantic_hash": ""
   },
   "assets/master_data/master_castes.json": {
-    "mtime": 1786108943.555737,
-    "ast_hash": "0405ceffbfaf6ed1d3d9a0aad5168d0e",
+    "mtime": 1786167807.261618,
+    "ast_hash": "d340a53c556a5b3686d00d52a65804aa",
     "semantic_hash": ""
   },
   "assets/master_data/master_religions.json": {
-    "mtime": 1786108943.557738,
-    "ast_hash": "b99748a2bc2a853c110dde3f9e52ed18",
+    "mtime": 1786167807.258618,
+    "ast_hash": "28a32232cfef0ddd2f2c4744257e5136",
     "semantic_hash": ""
   },
   "assets/master_data/master_subcastes.json": {
-    "mtime": 1786108943.5617518,
-    "ast_hash": "9924434dc79cb67bd05898c3a9dd3560",
+    "mtime": 1786167807.2726047,
+    "ast_hash": "c1d7d14f41773881688aab8ee5ef114b",
     "semantic_hash": ""
   },
   "lib/core/config/admin_config.dart": {
@@ -605,8 +605,8 @@
     "semantic_hash": ""
   },
   "lib/models/master_data.dart": {
-    "mtime": 1786108944.4046462,
-    "ast_hash": "e44bd95437aeccd1d2ad29639a2781bb",
+    "mtime": 1786167864.9302719,
+    "ast_hash": "1929a9fedfa144c824171a802bc21218",
     "semantic_hash": ""
   },
   "lib/providers/account_provider.dart": {
@@ -725,8 +725,8 @@
     "semantic_hash": ""
   },
   "lib/screens/preferences/partner_preferences_screen.dart": {
-    "mtime": 1786108944.5595982,
-    "ast_hash": "cbffb2c05c66f131e7cf5aa7ec3bb53f",
+    "mtime": 1786114875.7575095,
+    "ast_hash": "432e91e9e0c31af2a6acd836c9f7a439",
     "semantic_hash": ""
   },
   "lib/screens/profile/complete_profile_screen.dart": {
@@ -735,8 +735,8 @@
     "semantic_hash": ""
   },
   "lib/screens/profile/personal_details_screen.dart": {
-    "mtime": 1786108944.5684693,
-    "ast_hash": "68020e097fa6e34fa1db0011dd1ee399",
+    "mtime": 1786113663.2070367,
+    "ast_hash": "216678a2104d78f8acf3873571ea2cff",
     "semantic_hash": ""
   },
   "lib/screens/report/report_profile_screen.dart": {
@@ -760,8 +760,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/common/app_logo.dart": {
-    "mtime": 1786110265.9788992,
-    "ast_hash": "46c3ce2cbee0063d36e290d369f242ca",
+    "mtime": 1786973159.1822278,
+    "ast_hash": "35e857ef4b1f0078d21be347a34a7d12",
     "semantic_hash": ""
   },
   "lib/widgets/common/data_states.dart": {
@@ -775,8 +775,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/common/religion_caste_fields.dart": {
-    "mtime": 1786108944.6528826,
-    "ast_hash": "409f34d560b801d204599f2c42769faa",
+    "mtime": 1786167914.1472375,
+    "ast_hash": "43231aad262147b53b428b2c1f43f3e6",
     "semantic_hash": ""
   },
   "lib/widgets/common/use_my_location_button.dart": {
@@ -930,18 +930,18 @@
     "semantic_hash": ""
   },
   "lib/l10n/app_localizations.dart": {
-    "mtime": 1786108944.3853745,
-    "ast_hash": "f5d1592d62a0402a7ff223f1c3fcb7cf",
+    "mtime": 1786973531.8897517,
+    "ast_hash": "d81acb5d948f4ad05ac535a49818944a",
     "semantic_hash": ""
   },
   "lib/l10n/app_localizations_en.dart": {
-    "mtime": 1786108944.3873744,
-    "ast_hash": "f640b4b0a27c1e85cc95872dffbfe36a",
+    "mtime": 1786973531.817737,
+    "ast_hash": "c317e50f485b5a3def9267f4237ce5d4",
     "semantic_hash": ""
   },
   "lib/l10n/app_localizations_ta.dart": {
-    "mtime": 1786108944.3900917,
-    "ast_hash": "8cfb0249d0c14cb87eb326c7a47639a5",
+    "mtime": 1786973531.852775,
+    "ast_hash": "bfabd175ecc7cd378646a9c49d679445",
     "semantic_hash": ""
   },
   "lib/screens/family/family_tree_screen.dart": {
@@ -1015,8 +1015,8 @@
     "semantic_hash": ""
   },
   "lib/screens/profile/steps/step_education.dart": {
-    "mtime": 1786108944.5881486,
-    "ast_hash": "57a00d9e32f4ea943802b1c99f2afc7f",
+    "mtime": 1786113234.7495143,
+    "ast_hash": "d3289ff787b7b6abdfa21bf0701317f5",
     "semantic_hash": ""
   },
   "lib/screens/profile/steps/step_location.dart": {
@@ -1025,8 +1025,8 @@
     "semantic_hash": ""
   },
   "lib/screens/profile/steps/step_partner_preference.dart": {
-    "mtime": 1786108944.5929706,
-    "ast_hash": "ec5fa31f51c3bcce5a9adf4374668bfd",
+    "mtime": 1786114416.8881166,
+    "ast_hash": "f8f6b435493525b9ce9f415036b14a44",
     "semantic_hash": ""
   },
   "lib/screens/profile/steps/step_religious.dart": {
@@ -1045,8 +1045,8 @@
     "semantic_hash": ""
   },
   "lib/screens/profile/profile_section_edit_screens.dart": {
-    "mtime": 1786108944.5744543,
-    "ast_hash": "d1372acadf4d496a155d50c9bea16cbb",
+    "mtime": 1786113580.4330938,
+    "ast_hash": "528d9372367cc01d7f549aa82a9166a4",
     "semantic_hash": ""
   },
   "test/discover_card_test.dart": {
@@ -1335,8 +1335,8 @@
     "semantic_hash": ""
   },
   "lib/screens/admin/user_details_screen.dart": {
-    "mtime": 1786108944.503083,
-    "ast_hash": "d23a000f00c6cb12e4552b062b34bba7",
+    "mtime": 1786973620.7858384,
+    "ast_hash": "cd872a069c67dfa94cf4f4a523b963ab",
     "semantic_hash": ""
   },
   "lib/screens/astrologer/portal/astrologer_shell.dart": {
@@ -1480,8 +1480,8 @@
     "semantic_hash": ""
   },
   "lib/providers/matches_prefs_provider.dart": {
-    "mtime": 1785655549.8887582,
-    "ast_hash": "1368a030b9573b653d2cc1bad397be69",
+    "mtime": 1786973680.442835,
+    "ast_hash": "dcbc1c4ae6c9f9d1da4e33a6df2d3710",
     "semantic_hash": ""
   },
   "lib/widgets/auth/login_illustrations.dart": {
@@ -1520,8 +1520,8 @@
     "semantic_hash": ""
   },
   "lib/screens/profile/steps/step_basic.dart": {
-    "mtime": 1786108944.5871394,
-    "ast_hash": "5b3be3a6bfd3cc7365cb67d6ff0f8d15",
+    "mtime": 1786112635.0739014,
+    "ast_hash": "22c9d4a81fcb63ac7837735e4d695641",
     "semantic_hash": ""
   },
   "lib/screens/profile/steps/step_horoscope_upload.dart": {
@@ -1550,13 +1550,13 @@
     "semantic_hash": ""
   },
   "lib/screens/profile/my_profile_screen.dart": {
-    "mtime": 1786108944.5651166,
-    "ast_hash": "3968dd901026e5c87ddf35caac8b4021",
+    "mtime": 1786114984.6253726,
+    "ast_hash": "f88f49e14109eb9812d0c9548bbff0c4",
     "semantic_hash": ""
   },
   "lib/widgets/common/searchable_multi_select_field.dart": {
-    "mtime": 1785655550.3567638,
-    "ast_hash": "2e3a0e543f045ce168af758c1cabbd0d",
+    "mtime": 1786112015.824585,
+    "ast_hash": "d0cf16ef80c86816c05946ee45a2d2df",
     "semantic_hash": ""
   },
   "lib/widgets/common/async_state_view.dart": {
@@ -1617,11 +1617,6 @@
   "lib/core/config/app_check_config.dart": {
     "mtime": 1786108944.347685,
     "ast_hash": "d0f37fadd3c91add836dc421ca2700aa",
-    "semantic_hash": ""
-  },
-  "lib/core/data/career_data.dart": {
-    "mtime": 1786108944.3543448,
-    "ast_hash": "3cadd376c5fa66d51149c26bfa552d06",
     "semantic_hash": ""
   },
   "lib/core/data/dummy_profiles.dart": {
@@ -1820,8 +1815,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/common/searchable_with_others_field.dart": {
-    "mtime": 1786108944.6548865,
-    "ast_hash": "d70e61e478cca11e4984fd95976a5ad6",
+    "mtime": 1786112043.1989074,
+    "ast_hash": "0c832b05d9c1f78b01931a886d9f46c0",
     "semantic_hash": ""
   },
   "lib/widgets/profile/field_edit_sheet.dart": {
@@ -1839,11 +1834,6 @@
     "ast_hash": "0edb98ebfe99220c8b09610ea57d67bd",
     "semantic_hash": ""
   },
-  "test/career_data_test.dart": {
-    "mtime": 1786108944.679182,
-    "ast_hash": "9ed60d557926e83e20b7581269e28004",
-    "semantic_hash": ""
-  },
   "test/google_sign_in_test.dart": {
     "mtime": 1785655550.415761,
     "ast_hash": "6a880bb93ebd8f285218090d765249e2",
@@ -1855,8 +1845,8 @@
     "semantic_hash": ""
   },
   "test/matching_rules_test.dart": {
-    "mtime": 1785655550.4187527,
-    "ast_hash": "6cac974b8101e9df04f2b025e9581045",
+    "mtime": 1786973745.1558616,
+    "ast_hash": "f8c1f2e54ec884a610eb6463709d218f",
     "semantic_hash": ""
   },
   "test/user_model_parse_test.dart": {
@@ -1890,8 +1880,8 @@
     "semantic_hash": ""
   },
   "branding/play_store_icon_512.png": {
-    "mtime": 1786110539.1838799,
-    "ast_hash": "3ba825ef9eb03e46b854e8aaec926fe2",
+    "mtime": 1786973108.455933,
+    "ast_hash": "2dbc35537847b09376bf8b9f37b91dd8",
     "semantic_hash": ""
   },
   "lib/screens/admin/admin_activity_log_screen.dart": {
@@ -1955,8 +1945,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/export/profile_form_export.dart": {
-    "mtime": 1786108944.6585143,
-    "ast_hash": "2409d39f34767f11636c043ca222c00b",
+    "mtime": 1786973620.7828283,
+    "ast_hash": "c5b11de93fac7643837cd454e8dec970",
     "semantic_hash": ""
   },
   "test/profile_form_export_test.dart": {
@@ -2005,8 +1995,93 @@
     "semantic_hash": ""
   },
   "SETUP_TAMIL.md": {
-    "mtime": 1786109937.9943569,
-    "ast_hash": "925e476c4c171d38c19e2baca2909170",
+    "mtime": 1786973838.9245799,
+    "ast_hash": "e0fa03af268200aa046a79bb84f1b1eb",
+    "semantic_hash": ""
+  },
+  "assets/master_data/career/degrees.json": {
+    "mtime": 1786112351.5700624,
+    "ast_hash": "cb427d5b78653a637f8e179b747a90cb",
+    "semantic_hash": ""
+  },
+  "assets/master_data/career/education_levels.json": {
+    "mtime": 1786112351.5580592,
+    "ast_hash": "c038c5a077adeeb513eb299da2c3e151",
+    "semantic_hash": ""
+  },
+  "assets/master_data/career/employment_statuses.json": {
+    "mtime": 1786112351.5720615,
+    "ast_hash": "b1457a7dfe1a1ccc35ca083f1665f4a9",
+    "semantic_hash": ""
+  },
+  "assets/master_data/career/employment_types.json": {
+    "mtime": 1786112351.5750623,
+    "ast_hash": "a9fcd7ac5e961a96ae5267478ff2e86b",
+    "semantic_hash": ""
+  },
+  "assets/master_data/career/occupations.json": {
+    "mtime": 1786112351.5870633,
+    "ast_hash": "20a79b8281db684f5f3ea0a3e6369f55",
+    "semantic_hash": ""
+  },
+  "assets/master_data/location/countries.json": {
+    "mtime": 1786112351.5900664,
+    "ast_hash": "f0354c91a780ffc4246a10c231f1c0a3",
+    "semantic_hash": ""
+  },
+  "assets/master_data/location/states.json": {
+    "mtime": 1786112351.5920641,
+    "ast_hash": "c074b1b8ac05440c233f4a776905cba7",
+    "semantic_hash": ""
+  },
+  "lib/core/data/catalog_registry.dart": {
+    "mtime": 1786112400.4283142,
+    "ast_hash": "d5de456f8c08d986aca93ced721287e0",
+    "semantic_hash": ""
+  },
+  "lib/core/data/education_catalog.dart": {
+    "mtime": 1786111661.1532502,
+    "ast_hash": "27bbf28775ba865ead51b0027b7bddec",
+    "semantic_hash": ""
+  },
+  "lib/core/data/location_catalog.dart": {
+    "mtime": 1786112301.8338654,
+    "ast_hash": "e077989277bff2f377100f2976fe2614",
+    "semantic_hash": ""
+  },
+  "lib/core/data/master_option.dart": {
+    "mtime": 1786111511.36978,
+    "ast_hash": "a5042ecfab49364cca411d0d01b60568",
+    "semantic_hash": ""
+  },
+  "lib/core/data/occupation_catalog.dart": {
+    "mtime": 1786112212.2399564,
+    "ast_hash": "581e11d88a50150c80ed7db0ede4ecd7",
+    "semantic_hash": ""
+  },
+  "lib/core/utils/device_files.dart": {
+    "mtime": 1786973326.2640934,
+    "ast_hash": "685a0be4d8c27fd8f94666dfc580193a",
+    "semantic_hash": ""
+  },
+  "lib/widgets/common/number_stepper_field.dart": {
+    "mtime": 1786112512.778774,
+    "ast_hash": "6a08adae93fb46320cd63a9fc8d741e1",
+    "semantic_hash": ""
+  },
+  "test/career_catalog_test.dart": {
+    "mtime": 1786114079.7202783,
+    "ast_hash": "4a733236850f1ac2909cd956f42625ef",
+    "semantic_hash": ""
+  },
+  "tool/export_master_data.dart": {
+    "mtime": 1786112334.9162917,
+    "ast_hash": "e89d3ee6b2bb937dcdf3e03480344f41",
+    "semantic_hash": ""
+  },
+  "tool/fix_caste_tamil.py": {
+    "mtime": 1786167796.0088823,
+    "ast_hash": "28ec474a2b7bd585a26b06b69d5b662e",
     "semantic_hash": ""
   }
 }

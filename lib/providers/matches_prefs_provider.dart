@@ -139,11 +139,30 @@ int resolveResumeIndex({
   String? lastViewed,
 }) {
   if (profileIds.isEmpty) return 0;
+
+  // Resume on the NEXT profile, not the one already read. Someone who browsed
+  // 1 → 2 → 3 and came back tomorrow wants profile 4; re-opening on 3 makes the
+  // app feel like it forgot where they were.
   if (lastViewed != null) {
     final at = profileIds.indexOf(lastViewed);
-    if (at >= 0) return at;
+    if (at >= 0) {
+      for (var i = at + 1; i < profileIds.length; i++) {
+        if (!viewed.contains(profileIds[i])) return i;
+      }
+      // Everything after it has been seen — fall through to look for anything
+      // unseen earlier in the list (the feed may have grown at the top, or the
+      // filters may have changed), and otherwise stay put rather than
+      // restarting at profile 1.
+      final earlier = profileIds.indexWhere((id) => !viewed.contains(id));
+      return earlier >= 0 ? earlier : at;
+    }
   }
+
+  // The saved profile is gone — removed, filtered out or reordered away. The
+  // viewed-history is keyed by profile ID, so it still tells us what is new.
   final firstUnseen = profileIds.indexWhere((id) => !viewed.contains(id));
   if (firstUnseen >= 0) return firstUnseen;
+
+  // Nothing new at all: land on the last profile so a swipe back still works.
   return profileIds.length - 1;
 }

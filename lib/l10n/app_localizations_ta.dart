@@ -3273,4 +3273,9 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get reEnterPassword => 'கடவுச்சொல்லை மீண்டும் உள்ளிடவும்';
+
+  @override
+  String profileSavedTo(String location) {
+    return '$location இல் சேமிக்கப்பட்டது';
+  }
 }

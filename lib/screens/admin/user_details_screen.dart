@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../models/astrologer_request_model.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../models/profile_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/admin_provider.dart';
@@ -481,7 +482,9 @@ class UserDetailsScreen extends ConsumerWidget {
         ref.read(currentUserProvider).valueOrNull?.email?.trim() ?? '';
     final options = ProfileFormExportOptions.admin(adminEmail: adminEmail);
     final base = profileExportBaseName(profile);
-    final ok = asPdf
+    final l10n = context.l10n;
+    // Written straight to the device (Downloads / Pictures) — no share sheet.
+    final result = asPdf
         ? await exportProfileFormPdf(context,
             profile: profile,
             user: user,
@@ -494,11 +497,11 @@ class UserDetailsScreen extends ConsumerWidget {
             contact: contact,
             options: options,
             baseName: base);
-    if (!ok) {
-      messenger.showSnackBar(const SnackBar(
-          content:
-              Text('Could not prepare the profile export. Please try again.')));
-    }
+    messenger.showSnackBar(SnackBar(
+      content: Text(result == null
+          ? l10n.downloadProfileFailed
+          : l10n.profileSavedTo(result.location)),
+    ));
   }
 
   String _photo(ProfileModel? profile, UserModel user) {

@@ -52,6 +52,10 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
   /// Guards the one-time view-count increment for this screen instance.
   bool _viewCounted = false;
 
+  /// True while the profile form is being captured and written to the phone,
+  /// so the Download button can show progress instead of looking unresponsive.
+  bool _downloading = false;
+
   /// True when the signed-in user is looking at their OWN profile — the owner
   /// always sees everything, privacy switches only apply to other members.
   bool _isOwner(ProfileModel profile) {
@@ -233,20 +237,37 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     }
     if (!mounted) return;
 
+    // The capture + PDF encode takes a moment, so the button shows a spinner
+    // rather than looking dead.
+    setState(() => _downloading = true);
     final options = ProfileFormExportOptions.forMatch(profile);
     final base = profileExportBaseName(profile);
-    final ok = asPdf
-        ? await exportProfileFormPdf(context,
-            profile: profile,
-            contact: contact,
-            options: options,
-            fileName: '$base.pdf')
-        : await exportProfileFormImages(context,
-            profile: profile,
-            contact: contact,
-            options: options,
-            baseName: base);
-    if (!ok) messenger.showSnackBar(SnackBar(content: Text(l10n.downloadProfileFailed)));
+    ExportResult? result;
+    try {
+      result = asPdf
+          ? await exportProfileFormPdf(context,
+              profile: profile,
+              contact: contact,
+              options: options,
+              fileName: '$base.pdf')
+          : await exportProfileFormImages(context,
+              profile: profile,
+              contact: contact,
+              options: options,
+              baseName: base);
+    } catch (e) {
+      debugPrint('[ProfileDownload] export failed: $e');
+    } finally {
+      if (mounted) setState(() => _downloading = false);
+    }
+
+    // The file is already on the phone at this point — no share sheet is
+    // opened, so the message is the only confirmation the member gets.
+    messenger.showSnackBar(SnackBar(
+      content: Text(result == null
+          ? l10n.downloadProfileFailed
+          : l10n.profileSavedTo(result.location)),
+    ));
   }
 
   /// Format picker for the connected-member download — PDF or images, the
@@ -558,9 +579,20 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () => _chooseDownloadFormat(profile),
-                  icon: const Icon(Icons.download_outlined, size: 19),
-                  label: Text(l10n.downloadProfile,
+                  onPressed: _downloading
+                      ? null
+                      : () => _chooseDownloadFormat(profile),
+                  icon: _downloading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: AppColors.primary))
+                      : const Icon(Icons.download_outlined, size: 19),
+                  label: Text(
+                      _downloading
+                          ? l10n.savingLabel
+                          : l10n.downloadProfile,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -1092,10 +1124,16 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                 // no heading, no card, no button, nothing that hints a phone or
                 // e-mail exists. Only the owner, a connected member, or a
                 // member whose owner published their contact ever sees it.
+                //
+                // NOT rendered once the interest is accepted: the connected
+                // card below already leads with "View Contact Details", and
+                // showing both put the same heading and the same button on the
+                // page twice, opening the identical dialog.
                 if (isOwner ||
-                    ref.watch(interestStatusForProfileProvider(profile.id)) ==
-                        InterestUiStatus.accepted ||
-                    profile.isContactPublic) ...[
+                    (profile.isContactPublic &&
+                        ref.watch(
+                                interestStatusForProfileProvider(profile.id)) !=
+                            InterestUiStatus.accepted)) ...[
                   _contactSection(profile),
                   const SizedBox(height: 32),
                 ],

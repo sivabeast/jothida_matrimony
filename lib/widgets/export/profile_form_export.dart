@@ -1,20 +1,17 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:path_provider/path_provider.dart';
 import '../../core/constants/brand_assets.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:share_plus/share_plus.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../core/utils/file_actions.dart';
+import '../../core/utils/device_files.dart';
 import '../../core/utils/value_l10n.dart';
 import '../../models/profile_model.dart';
 import '../../models/user_model.dart';
@@ -1272,9 +1269,22 @@ Widget buildProfileFormPreview({
 // Export entry points
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Captures the profile form and shares it as ONE A4 PDF via the system sheet.
-/// Returns true on success.
-Future<bool> exportProfileFormPdf(
+/// Where a completed export ended up, for the success message.
+class ExportResult {
+  /// Human-readable destination, e.g. "Download/Priya_profile.pdf".
+  final String location;
+
+  /// How many files were written (one PDF, or one PNG per page).
+  final int fileCount;
+
+  const ExportResult(this.location, this.fileCount);
+}
+
+/// Captures the profile form and writes it to the phone as ONE A4 PDF.
+///
+/// Saved DIRECTLY to the device Downloads folder — no share sheet, no app
+/// picker. Returns null when the capture or the write failed.
+Future<ExportResult?> exportProfileFormPdf(
   BuildContext context, {
   required ProfileModel profile,
   UserModel? user,
@@ -1284,7 +1294,7 @@ Future<bool> exportProfileFormPdf(
 }) async {
   final pngs = await ProfileFormCaptureScreen.capture(context,
       profile: profile, user: user, contact: contact, options: options);
-  if (pngs == null || pngs.isEmpty) return false;
+  if (pngs == null || pngs.isEmpty) return null;
   final doc = pw.Document();
   for (final png in pngs) {
     doc.addPage(pw.Page(
@@ -1293,13 +1303,19 @@ Future<bool> exportProfileFormPdf(
       build: (_) => pw.Image(pw.MemoryImage(png), fit: pw.BoxFit.fill),
     ));
   }
-  await sharePdfBytes(await doc.save(), fileName: fileName);
-  return true;
+  final saved = await DeviceFiles.saveToDownloads(
+    await doc.save(),
+    fileName: fileName,
+    mimeType: 'application/pdf',
+  );
+  return saved == null ? null : ExportResult(saved, 1);
 }
 
-/// Captures the profile form and shares it as PNG page image(s) via the system
-/// sheet. Returns true on success.
-Future<bool> exportProfileFormImages(
+/// Captures the profile form and writes each page to the phone's gallery.
+///
+/// Saved DIRECTLY to Pictures/Jothida Matrimony — no share sheet. Returns null
+/// when the capture failed or no page could be written.
+Future<ExportResult?> exportProfileFormImages(
   BuildContext context, {
   required ProfileModel profile,
   UserModel? user,
@@ -1309,16 +1325,21 @@ Future<bool> exportProfileFormImages(
 }) async {
   final pngs = await ProfileFormCaptureScreen.capture(context,
       profile: profile, user: user, contact: contact, options: options);
-  if (pngs == null || pngs.isEmpty) return false;
-  final dir = await getTemporaryDirectory();
-  final files = <XFile>[];
+  if (pngs == null || pngs.isEmpty) return null;
+  String? last;
+  var written = 0;
   for (var i = 0; i < pngs.length; i++) {
-    final f = File('${dir.path}/${baseName}_page${i + 1}.png');
-    await f.writeAsBytes(pngs[i]);
-    files.add(XFile(f.path));
+    final saved = await DeviceFiles.saveToPictures(
+      pngs[i],
+      fileName: '${baseName}_page${i + 1}.png',
+      mimeType: 'image/png',
+    );
+    if (saved != null) {
+      last = saved;
+      written++;
+    }
   }
-  await Share.shareXFiles(files);
-  return true;
+  return last == null ? null : ExportResult(last, written);
 }
 
 /// A filesystem-safe base name for this member's export

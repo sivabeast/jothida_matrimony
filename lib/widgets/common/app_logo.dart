@@ -12,11 +12,13 @@ import '../../core/theme/app_colors.dart';
 class AppLogo extends StatelessWidget {
   final double size;
 
-  /// When true (default) the logo is clipped to a circle; otherwise a rounded
-  /// "squircle" is used (handy for app-bar chips).
+  /// Clip shape. Defaults to a **rounded square** with a moderate radius —
+  /// never a sharp square, never a full circle — because the brand mark now
+  /// carries a wordmark under the emblem, and a circular clip cuts the text
+  /// off. Pass `circle: true` only where a round avatar is genuinely wanted.
   final bool circle;
 
-  const AppLogo({super.key, this.size = 40, this.circle = true});
+  const AppLogo({super.key, this.size = 40, this.circle = false});
 
   @override
   Widget build(BuildContext context) {

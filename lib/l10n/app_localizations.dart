@@ -5953,6 +5953,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Re-enter password'**
   String get reEnterPassword;
+
+  /// No description provided for @profileSavedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to {location}'**
+  String profileSavedTo(String location);
 }
 
 class _AppLocalizationsDelegate

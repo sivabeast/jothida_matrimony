@@ -1452,5 +1452,13 @@
   "contactPublicTitle": "Public",
   "contactPublicDesc": "Anyone viewing your profile can see your contact.",
   "minSixCharacters": "Min. 6 characters",
-  "reEnterPassword": "Re-enter password"
+  "reEnterPassword": "Re-enter password",
+  "profileSavedTo": "Saved to {location}",
+  "@profileSavedTo": {
+    "placeholders": {
+      "location": {
+        "type": "String"
+      }
+    }
+  }
 }

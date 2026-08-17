@@ -10,6 +10,12 @@
          The in_app_purchase_android plugin also merges this permission, but it
          is declared explicitly here for clarity. -->
     <uses-permission android:name="com.android.vending.BILLING"/>
+    <!-- Saving a downloaded profile form into Downloads / Pictures.
+         Only needed up to API 28: from API 29 the app writes through
+         MediaStore, which grants access to the rows it inserts and needs no
+         permission at all. See MainActivity.kt. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"/>
     <application
         android:label="Jothida Matrimony"
         android:name="${applicationName}"

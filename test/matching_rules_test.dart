@@ -95,25 +95,54 @@ void main() {
       );
     });
 
-    test('reopening continues from the exact profile last shown', () {
+    // NOTE: reopening used to land on the profile last shown. The rule is now
+    // "continue from the next profile after the ones already browsed" — view
+    // 1-2-3, come back tomorrow, and you get 4, not 3.
+    test('reopening continues from the NEXT profile, not the last one', () {
       expect(
         resolveResumeIndex(
           profileIds: ids,
           viewed: const {'a', 'b', 'c'},
           lastViewed: 'c',
         ),
-        2,
+        3, // 'd'
       );
     });
 
-    test('swiping BACK moves the resume anchor back too', () {
+    test('swiping back then leaving still resumes past everything seen', () {
+      // Browsed a-b-c-d, then swiped back to 'b' before closing. The unseen
+      // profile is still 'e', so that is where the next session opens.
       expect(
         resolveResumeIndex(
           profileIds: ids,
           viewed: const {'a', 'b', 'c', 'd'},
           lastViewed: 'b',
         ),
-        1,
+        4, // 'e'
+      );
+    });
+
+    test('a gap left behind the anchor is picked up', () {
+      // Everything after 'd' is seen, but 'b' never was — go back for it
+      // rather than pinning the member on the last profile.
+      expect(
+        resolveResumeIndex(
+          profileIds: ids,
+          viewed: const {'a', 'c', 'd', 'e'},
+          lastViewed: 'd',
+        ),
+        1, // 'b'
+      );
+    });
+
+    test('the anchor holds when nothing anywhere is unseen', () {
+      expect(
+        resolveResumeIndex(
+          profileIds: ids,
+          viewed: {...ids},
+          lastViewed: 'c',
+        ),
+        2, // stays on 'c' instead of jumping to the end
       );
     });
 
@@ -146,15 +175,16 @@ void main() {
       );
     });
 
-    test('new matches merged in do not move the user', () {
-      // 'c' is where the user is; 'x' ranked in above them.
+    test('a reordered feed resumes by ID, not by index', () {
+      // 'x' ranked in above the member overnight, shifting every index by one.
+      // Resuming by ID still lands on the profile after 'c'.
       expect(
         resolveResumeIndex(
           profileIds: const ['x', 'a', 'b', 'c', 'd', 'e'],
           viewed: const {'a', 'b', 'c'},
           lastViewed: 'c',
         ),
-        3,
+        4, // 'd'
       );
     });
 
