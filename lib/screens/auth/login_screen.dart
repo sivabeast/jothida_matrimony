@@ -454,6 +454,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      _skipRow(busy, l10n),
                       _header(l10n),
                       const SizedBox(height: 22),
                       _googleButton(busy, l10n),
@@ -463,8 +464,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       _passwordForm(busy, l10n),
                       const SizedBox(height: 20),
                       _createAccountRow(busy, l10n),
-                      const SizedBox(height: 14),
-                      _guestButton(busy, l10n),
                       const SizedBox(height: 18),
                       _termsFooter(l10n),
                       const SizedBox(height: 10),
@@ -480,45 +479,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  /// "Continue as Guest" (§13) — starts an anonymous session so a visitor can
-  /// browse Home and public information before committing to an account.
+  /// "Skip" — browse on without an account (§4).
   ///
-  /// Deliberately the quietest control on the page: a text button below the
-  /// real sign-in options, so registering stays the obvious primary path.
-  /// Registering later LINKS this session in place, keeping the same uid.
-  Widget _guestButton(bool busy, AppLocalizations l10n) {
-    return TextButton.icon(
-      onPressed: busy ? null : _continueAsGuest,
-      icon: const Icon(Icons.explore_outlined, size: 19),
-      label: Text(
-        l10n.continueAsGuest,
-        style: const TextStyle(
-          fontSize: 14.5,
-          fontFamily: 'Poppins',
-          fontWeight: FontWeight.w600,
+  /// Sits at the TOP as a plain text link so it never competes with Google or
+  /// the login form. It deliberately does NOT sign anyone in: the app already
+  /// treats a visitor with no session as a guest, so starting an anonymous
+  /// session here would be inventing a login the member never asked for.
+  /// Guests keep browsing everything guests may see, and any protected submit
+  /// asks for an account at that moment instead.
+  Widget _skipRow(bool busy, AppLocalizations l10n) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: TextButton(
+        onPressed: busy ? null : () => context.go('/home'),
+        style: TextButton.styleFrom(
+          foregroundColor: Colors.grey[700],
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        child: Text(
+          l10n.skip,
+          style: const TextStyle(
+            fontSize: 14.5,
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
-      style: TextButton.styleFrom(
-        foregroundColor: AppColors.primary,
-        minimumSize: const Size.fromHeight(48),
-      ),
     );
-  }
-
-  Future<void> _continueAsGuest() async {
-    final messenger = ScaffoldMessenger.of(context);
-    await ref.read(authNotifierProvider.notifier).signInAsGuest();
-    if (!mounted) return;
-    final state = ref.read(authNotifierProvider);
-    if (state.hasError) {
-      // The most likely cause by far is Anonymous sign-in being disabled in
-      // the Firebase console, so say something the user can act on rather
-      // than surfacing a raw provider error.
-      messenger.showSnackBar(
-          SnackBar(content: Text(context.l10n.couldNotContinueAsGuest)));
-      return;
-    }
-    // The router's redirect takes it from here (guest → /home).
   }
 
   Widget _header(AppLocalizations l10n) {

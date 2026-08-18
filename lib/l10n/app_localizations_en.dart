@@ -3243,4 +3243,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileDownloaded => 'Profile downloaded';
+
+  @override
+  String get couldNotCreateAccount =>
+      'Could not create the account. Please try again.';
+
+  @override
+  String get accountNeededForBooking =>
+      'Create an account to confirm your booking';
+
+  @override
+  String get accountNeededForRequest =>
+      'Create an account to submit your request';
+
+  @override
+  String get notificationsUnavailable =>
+      'Notifications could not be loaded right now.';
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../widgets/auth/account_required_sheet.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -11,7 +13,6 @@ import '../../models/astrology_service_config.dart';
 import '../../providers/astrology_config_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/match_analysis_provider.dart';
-import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../services/firebase/astrologer_service.dart';
 import 'appointment_details_dialog.dart';
@@ -63,14 +64,18 @@ class _AstrologyAppointmentScreenState
       return;
     }
 
-    // 1. Login is the ONLY hard requirement.
-    if (ref.read(isGuestProvider)) {
-      ref.read(pendingReturnRouteProvider.notifier).state =
-          '/astrology-appointment';
-      context.push('/login-required'
-          '?returnTo=${Uri.encodeComponent('/astrology-appointment')}');
+    // 1. An ACCOUNT is the only hard requirement — never a matrimony profile.
+    //
+    // Asked for RIGHT HERE in a sheet rather than by navigating to the login
+    // page: the guest has already picked a category, a date and a session, and
+    // routing them away would throw all of that on the floor and make them
+    // start the booking over. The sheet returns to this exact screen with the
+    // selections still in state.
+    if (!await ensureAccount(context, ref,
+        reason: context.l10n.accountNeededForBooking)) {
       return;
     }
+    if (!mounted) return;
 
     // 2. Name / Mobile / Date of Birth — prefilled from whatever IS known.
     final profile = ref.read(myProfileProvider).valueOrNull;

@@ -1461,5 +1461,9 @@
       }
     }
   },
-  "profileDownloaded": "Profile downloaded"
+  "profileDownloaded": "Profile downloaded",
+  "couldNotCreateAccount": "Could not create the account. Please try again.",
+  "accountNeededForBooking": "Create an account to confirm your booking",
+  "accountNeededForRequest": "Create an account to submit your request",
+  "notificationsUnavailable": "Notifications could not be loaded right now."
 }

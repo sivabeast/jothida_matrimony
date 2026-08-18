@@ -5965,6 +5965,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Profile downloaded'**
   String get profileDownloaded;
+
+  /// No description provided for @couldNotCreateAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create the account. Please try again.'**
+  String get couldNotCreateAccount;
+
+  /// No description provided for @accountNeededForBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Create an account to confirm your booking'**
+  String get accountNeededForBooking;
+
+  /// No description provided for @accountNeededForRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Create an account to submit your request'**
+  String get accountNeededForRequest;
+
+  /// No description provided for @notificationsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications could not be loaded right now.'**
+  String get notificationsUnavailable;
 }
 
 class _AppLocalizationsDelegate

@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/common/app_logo.dart';
 import '../../../core/utils/file_actions.dart';
-import '../../../core/utils/member_access.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../core/utils/report_pdf.dart';
 import '../../../models/astrologer_request_model.dart';
@@ -97,19 +96,11 @@ class ReportsTab extends ConsumerWidget {
             child: SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () async {
-                  // Login only: the report is about two other people's
-                  // horoscopes, so the member's own matrimony profile is
-                  // irrelevant to it. After signing in the router returns
-                  // here and the member carries on with the request.
-                  if (!await requireMemberAccess(
-                      context, ref, MemberFeature.reportRequest,
-                      returnTo: '/reports', requireProfile: false)) {
-                    return;
-                  }
-                  if (context.mounted) {
-                    context.push('/request-external-report');
-                  }
+                onPressed: () {
+                  // No gate here: a guest may open the form and fill in BOTH
+                  // horoscopes. The account is asked for at SUBMIT, in place,
+                  // so nothing they typed is lost to a detour through login.
+                  context.push('/request-external-report');
                 },
                 icon: const Icon(Icons.add_circle_outline, size: 18),
                 label: const Text('Request New Horoscope Report'),

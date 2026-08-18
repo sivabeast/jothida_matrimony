@@ -78,6 +78,34 @@ class _NotificationsTabState extends ConsumerState<NotificationsTab> {
       ...notifs.map(_Item.notification),
     ]..sort((a, b) => b.date.compareTo(a.date));
 
+    // A FAILED listener used to render as "no notifications", which is what
+    // made a broken feed indistinguishable from an empty one. Say so instead,
+    // and offer a retry — the underlying causes (a missing index, undeployed
+    // rules, no connection) are all transient from the app's point of view.
+    if (items.isEmpty && notifsAsync.hasError) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.cloud_off_outlined, size: 64, color: Colors.grey[400]),
+              const SizedBox(height: 16),
+              Text(context.l10n.notificationsUnavailable,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 15, color: Colors.grey)),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: () => ref.invalidate(notificationsProvider),
+                icon: const Icon(Icons.refresh, size: 18),
+                label: Text(context.l10n.retry),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (items.isEmpty) {
       return Center(
         child: Column(

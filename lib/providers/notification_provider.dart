@@ -5,14 +5,44 @@ import 'locale_provider.dart';
 import 'service_providers.dart';
 import 'auth_provider.dart';
 
-final notificationsProvider = StreamProvider.autoDispose<List<NotificationModel>>((ref) {
-  final userId = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
-  if (userId == null) return Stream.value([]);
-  return ref.watch(firestoreServiceProvider).watchNotifications(userId);
+/// The signed-in member's live notification feed.
+///
+/// A GUEST is excluded deliberately: an anonymous session has a real Firebase
+/// uid, so without this check the query runs, matches nothing, and quietly
+/// looks identical to "your notifications are broken".
+///
+/// Stream errors are LOGGED rather than swallowed. The query is
+/// `where(userId) + orderBy(createdAt)`, which Firestore refuses without the
+/// composite index, and reads are rejected without the deployed rules — both
+/// of which surface here as an error, not as an empty list. Silently mapping
+/// that to "no notifications" is what made this look like a client bug.
+final notificationsProvider =
+    StreamProvider.autoDispose<List<NotificationModel>>((ref) {
+  final auth = ref.watch(firebaseAuthStreamProvider).valueOrNull;
+  final userId = auth?.uid;
+  if (userId == null || (auth?.isAnonymous ?? false)) {
+    return Stream.value(const <NotificationModel>[]);
+  }
+  return ref
+      .watch(firestoreServiceProvider)
+      .watchNotifications(userId)
+      .handleError((Object e, StackTrace st) {
+    // Named loudly so the cause is obvious in logcat instead of showing up as
+    // an empty bell.
+    debugPrint('[notifications] LISTENER FAILED for uid=$userId: $e');
+    debugPrint('[notifications] An index error means firestore.indexes.json '
+        'is not deployed; a permission error means firestore.rules is not. '
+        'Stack: $st');
+    throw e;
+  });
 });
 
+/// Unread badge count. Returns 0 while loading AND on error — a broken feed
+/// must not show a phantom count — but the error itself is still visible in
+/// [notificationsProvider] for the UI to render.
 final unreadNotificationCountProvider = Provider.autoDispose<int>((ref) {
-  final notifs = ref.watch(notificationsProvider).valueOrNull ?? [];
+  final async = ref.watch(notificationsProvider);
+  final notifs = async.valueOrNull ?? const <NotificationModel>[];
   return notifs.where((n) => !n.isRead).length;
 });
 

@@ -3281,4 +3281,20 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get profileDownloaded => 'சுயவிவரம் பதிவிறக்கப்பட்டது';
+
+  @override
+  String get couldNotCreateAccount =>
+      'கணக்கை உருவாக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get accountNeededForBooking =>
+      'உங்கள் முன்பதிவை உறுதிப்படுத்த ஒரு கணக்கை உருவாக்கவும்';
+
+  @override
+  String get accountNeededForRequest =>
+      'உங்கள் கோரிக்கையைச் சமர்ப்பிக்க ஒரு கணக்கை உருவாக்கவும்';
+
+  @override
+  String get notificationsUnavailable =>
+      'அறிவிப்புகளை இப்போது ஏற்ற முடியவில்லை.';
 }

@@ -1357,5 +1357,9 @@
   "minSixCharacters": "குறைந்தது 6 எழுத்துகள்",
   "reEnterPassword": "கடவுச்சொல்லை மீண்டும் உள்ளிடவும்",
   "profileSavedTo": "{location} இல் சேமிக்கப்பட்டது",
-  "profileDownloaded": "சுயவிவரம் பதிவிறக்கப்பட்டது"
+  "profileDownloaded": "சுயவிவரம் பதிவிறக்கப்பட்டது",
+  "couldNotCreateAccount": "கணக்கை உருவாக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
+  "accountNeededForBooking": "உங்கள் முன்பதிவை உறுதிப்படுத்த ஒரு கணக்கை உருவாக்கவும்",
+  "accountNeededForRequest": "உங்கள் கோரிக்கையைச் சமர்ப்பிக்க ஒரு கணக்கை உருவாக்கவும்",
+  "notificationsUnavailable": "அறிவிப்புகளை இப்போது ஏற்ற முடியவில்லை."
 }

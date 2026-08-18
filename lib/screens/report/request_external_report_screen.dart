@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/utils/l10n_ext.dart';
+import '../../widgets/auth/account_required_sheet.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -248,6 +251,16 @@ class _RequestExternalReportScreenState
     String? paymentId,
     String note = '',
   }) async {
+    // An ACCOUNT is required to own the request — but a matrimony profile is
+    // not: this report is about two other people's charts. Asked for here,
+    // after both horoscopes are filled in, so a guest never retypes anything.
+    if (!await ensureAccount(context, ref,
+        reason: context.l10n.accountNeededForRequest)) {
+      if (mounted) setState(() => _busy = false);
+      return;
+    }
+    if (!mounted) return;
+
     final me = ref.read(myProfileProvider).valueOrNull;
     try {
       final id =
