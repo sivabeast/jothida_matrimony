@@ -3278,4 +3278,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String profileSavedTo(String location) {
     return '$location இல் சேமிக்கப்பட்டது';
   }
+
+  @override
+  String get profileDownloaded => 'சுயவிவரம் பதிவிறக்கப்பட்டது';
 }

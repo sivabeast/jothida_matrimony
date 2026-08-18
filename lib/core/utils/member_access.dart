@@ -84,6 +84,12 @@ Future<bool> requireMemberAccess(
   WidgetRef ref,
   MemberFeature feature, {
   String? returnTo,
+  // Some features need a signed-in ACCOUNT but not a matrimony profile:
+  // requesting a horoscope report is about two other people's charts, and an
+  // astrology booking only needs a name and a phone number. Authentication and
+  // matrimony-profile completion are separate states, so those flows pass
+  // false here rather than pushing the member into the profile wizard.
+  bool requireProfile = true,
 }) async {
   // ── 1. Login ──────────────────────────────────────────────────────────────
   final signedIn = ref.read(authRepositoryProvider).currentUser != null &&
@@ -94,7 +100,8 @@ Future<bool> requireMemberAccess(
     return false;
   }
 
-  // ── 2. Completed matrimony profile ────────────────────────────────────────
+  // ── 2. Completed matrimony profile (only when the feature needs one) ─────
+  if (!requireProfile) return true;
   final user = ref.read(currentUserProvider).valueOrNull;
   final profile = ref.read(myProfileProvider).valueOrNull;
   final complete = profile != null && (user?.isProfileComplete ?? false);

@@ -5959,6 +5959,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saved to {location}'**
   String profileSavedTo(String location);
+
+  /// No description provided for @profileDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile downloaded'**
+  String get profileDownloaded;
 }
 
 class _AppLocalizationsDelegate

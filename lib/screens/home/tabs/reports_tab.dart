@@ -98,9 +98,13 @@ class ReportsTab extends ConsumerWidget {
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: () async {
+                  // Login only: the report is about two other people's
+                  // horoscopes, so the member's own matrimony profile is
+                  // irrelevant to it. After signing in the router returns
+                  // here and the member carries on with the request.
                   if (!await requireMemberAccess(
                       context, ref, MemberFeature.reportRequest,
-                      returnTo: '/reports')) {
+                      returnTo: '/reports', requireProfile: false)) {
                     return;
                   }
                   if (context.mounted) {

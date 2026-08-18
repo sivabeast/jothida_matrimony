@@ -1460,5 +1460,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "profileDownloaded": "Profile downloaded"
 }

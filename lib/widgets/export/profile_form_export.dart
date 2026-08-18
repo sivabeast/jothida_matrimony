@@ -1269,15 +1269,18 @@ Widget buildProfileFormPreview({
 // Export entry points
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Where a completed export ended up, for the success message.
+/// Where a completed export ended up, and what "Share" should attach.
 class ExportResult {
   /// Human-readable destination, e.g. "Download/Priya_profile.pdf".
   final String location;
 
-  /// How many files were written (one PDF, or one PNG per page).
-  final int fileCount;
+  /// Real filesystem paths for the saved file(s) — one per page for an image
+  /// export. Handed to the share sheet only if the member taps Share.
+  final List<String> sharePaths;
 
-  const ExportResult(this.location, this.fileCount);
+  const ExportResult({required this.location, required this.sharePaths});
+
+  int get fileCount => sharePaths.length;
 }
 
 /// Captures the profile form and writes it to the phone as ONE A4 PDF.
@@ -1308,7 +1311,9 @@ Future<ExportResult?> exportProfileFormPdf(
     fileName: fileName,
     mimeType: 'application/pdf',
   );
-  return saved == null ? null : ExportResult(saved, 1);
+  return saved == null
+      ? null
+      : ExportResult(location: saved.location, sharePaths: [saved.sharePath]);
 }
 
 /// Captures the profile form and writes each page to the phone's gallery.
@@ -1326,8 +1331,8 @@ Future<ExportResult?> exportProfileFormImages(
   final pngs = await ProfileFormCaptureScreen.capture(context,
       profile: profile, user: user, contact: contact, options: options);
   if (pngs == null || pngs.isEmpty) return null;
-  String? last;
-  var written = 0;
+  String? location;
+  final paths = <String>[];
   for (var i = 0; i < pngs.length; i++) {
     final saved = await DeviceFiles.saveToPictures(
       pngs[i],
@@ -1335,11 +1340,13 @@ Future<ExportResult?> exportProfileFormImages(
       mimeType: 'image/png',
     );
     if (saved != null) {
-      last = saved;
-      written++;
+      location = saved.location;
+      paths.add(saved.sharePath);
     }
   }
-  return last == null ? null : ExportResult(last, written);
+  return location == null
+      ? null
+      : ExportResult(location: location, sharePaths: paths);
 }
 
 /// A filesystem-safe base name for this member's export

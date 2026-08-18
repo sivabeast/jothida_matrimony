@@ -3240,4 +3240,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String profileSavedTo(String location) {
     return 'Saved to $location';
   }
+
+  @override
+  String get profileDownloaded => 'Profile downloaded';
 }

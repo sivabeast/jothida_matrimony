@@ -161,16 +161,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // them — the gate has to be here (spec §6/§7):
         //
         //   0 Home      — public, always browsable
-        //   1 Matches   ┐
-        //   2 Interests ├ member-only: login + completed matrimony profile
-        //   3 Reports   ┘
-        //   4 Astrology — public services, browsable by a guest (§6);
-        //                 BOOKING inside it asks for a login only (§8).
+        //   1 Matches   ┐ member-only: login + completed matrimony profile
+        //   2 Interests ┘
+        //   3 Reports   — public: the page and its "+" are browsable by a
+        //                 guest, and only PRESSING "+" asks for a login, which
+        //                 then returns here to continue the request.
+        //   4 Astrology — public services, browsable by a guest;
+        //                 BOOKING inside it asks for a login only.
         onTap: (i) async {
           const gated = <int, MemberFeature>{
             kMatchesTabIndex: MemberFeature.matches,
             kInterestsTabIndex: MemberFeature.sendInterest,
-            kReportsTabIndex: MemberFeature.reportRequest,
           };
           final feature = gated[i];
           if (feature != null &&

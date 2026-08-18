@@ -19,6 +19,7 @@ import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/auto_fit_label.dart';
+import '../../widgets/export/download_saved_dialog.dart';
 import '../../widgets/export/profile_form_export.dart';
 import '../../widgets/common/face_centered_photo.dart';
 import '../../widgets/common/fullscreen_photo_viewer.dart';
@@ -261,13 +262,15 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       if (mounted) setState(() => _downloading = false);
     }
 
-    // The file is already on the phone at this point — no share sheet is
-    // opened, so the message is the only confirmation the member gets.
-    messenger.showSnackBar(SnackBar(
-      content: Text(result == null
-          ? l10n.downloadProfileFailed
-          : l10n.profileSavedTo(result.location)),
-    ));
+    // The file is on the phone by now. Only THEN is the confirmation shown,
+    // which is also where sharing is offered — the save never depends on it.
+    if (!mounted) return;
+    if (result == null) {
+      messenger.showSnackBar(
+          SnackBar(content: Text(l10n.downloadProfileFailed)));
+      return;
+    }
+    await showDownloadSavedDialog(context, result: result);
   }
 
   /// Format picker for the connected-member download — PDF or images, the

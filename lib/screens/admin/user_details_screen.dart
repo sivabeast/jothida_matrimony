@@ -11,6 +11,7 @@ import '../../providers/admin_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/export/download_saved_dialog.dart';
 import '../../widgets/export/profile_form_export.dart';
 
 /// Live counts of a user's Horoscope Analysis + Appointment bookings.
@@ -497,11 +498,14 @@ class UserDetailsScreen extends ConsumerWidget {
             contact: contact,
             options: options,
             baseName: base);
-    messenger.showSnackBar(SnackBar(
-      content: Text(result == null
-          ? l10n.downloadProfileFailed
-          : l10n.profileSavedTo(result.location)),
-    ));
+    if (result == null) {
+      messenger.showSnackBar(
+          SnackBar(content: Text(l10n.downloadProfileFailed)));
+      return;
+    }
+    if (context.mounted) {
+      await showDownloadSavedDialog(context, result: result);
+    }
   }
 
   String _photo(ProfileModel? profile, UserModel user) {
