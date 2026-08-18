@@ -1679,6 +1679,14 @@ class _BannerSlide extends StatelessWidget {
               Image.asset(
                 data.assetPath,
                 fit: BoxFit.cover,
+                // The banner art is 1536x1024 (~6 MB decoded) but the card is
+                // roughly screen-wide and a third as tall, so decode it at the
+                // width it is actually painted at. Two of these sit in a
+                // carousel on the first screen of the app.
+                cacheWidth:
+                    (MediaQuery.sizeOf(context).width *
+                            MediaQuery.devicePixelRatioOf(context))
+                        .round(),
                 errorBuilder: (_, __, ___) => _fallbackBanner(),
               ),
             ],

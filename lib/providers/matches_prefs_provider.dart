@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,6 +18,16 @@ import 'demo_data_provider.dart';
 class ViewedProfilesNotifier extends Notifier<Set<String>> {
   static const _maxTracked = 1000; // oldest entries fall off beyond this
 
+  /// Completes once SharedPreferences has been read.
+  ///
+  /// `build()` has to return synchronously, so it returns an EMPTY history and
+  /// fills it in a moment later. Anything that decides where to resume must
+  /// await this first — reading the state before it completes sees "nothing
+  /// viewed yet" and sends the member back to profile 1, which is exactly the
+  /// bug this exists to prevent.
+  Completer<void> _hydrated = Completer<void>();
+  Future<void> get restored => _hydrated.future;
+
   String? get _uid => kBypassAuth
       ? kDemoUserId
       : ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
@@ -24,6 +36,9 @@ class ViewedProfilesNotifier extends Notifier<Set<String>> {
 
   @override
   Set<String> build() {
+    // A rebuild (e.g. the signed-in uid changed) re-reads a DIFFERENT key, so
+    // the gate reopens and waiters block until the new history is in.
+    _hydrated = Completer<void>();
     _restore();
     return const {};
   }
@@ -34,6 +49,8 @@ class ViewedProfilesNotifier extends Notifier<Set<String>> {
       state = (prefs.getStringList(_key) ?? const []).toSet();
     } catch (_) {
       // Ignore — start with an empty history.
+    } finally {
+      if (!_hydrated.isCompleted) _hydrated.complete();
     }
   }
 
@@ -81,6 +98,11 @@ final viewedProfilesProvider =
 /// `null` means "nothing recorded yet" — the feed then starts at the first
 /// unseen profile, which for a first-ever session is profile 1.
 class LastViewedProfileNotifier extends Notifier<String?> {
+  /// Completes once SharedPreferences has been read — see
+  /// [ViewedProfilesNotifier.restored].
+  Completer<void> _hydrated = Completer<void>();
+  Future<void> get restored => _hydrated.future;
+
   String? get _uid => kBypassAuth
       ? kDemoUserId
       : ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
@@ -89,6 +111,7 @@ class LastViewedProfileNotifier extends Notifier<String?> {
 
   @override
   String? build() {
+    _hydrated = Completer<void>();
     _restore();
     return null;
   }
@@ -100,6 +123,8 @@ class LastViewedProfileNotifier extends Notifier<String?> {
       if (saved != null && saved.isNotEmpty) state = saved;
     } catch (_) {
       // Ignore — resume falls back to the first unseen profile.
+    } finally {
+      if (!_hydrated.isCompleted) _hydrated.complete();
     }
   }
 

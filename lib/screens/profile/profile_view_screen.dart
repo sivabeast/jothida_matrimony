@@ -1022,10 +1022,12 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                         fontWeight: FontWeight.w600),
                   ),
                 Text(
-                  '${profile.age} yrs • ${[
+                  // Each part is localized on its own so the city and the
+                  // state both read in Tamil while storage stays English.
+                  '${context.l10n.ageYears(profile.age)} • ${[
                     profile.city,
                     profile.state
-                  ].where((s) => s.trim().isNotEmpty).join(', ')}',
+                  ].map(context.localizeValue).where((s) => s.trim().isNotEmpty).join(', ')}',
                   style: TextStyle(color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 16),
@@ -1059,10 +1061,17 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                       context.localizeValue(profile.physicalStatus)),
                   _InfoItem(Icons.translate, context.l10n.motherTongue,
                       context.localizeValue(profile.motherTongue)),
-                  _InfoItem(Icons.place_outlined, context.l10n.location,
-                      [profile.city, profile.state].where((s) => s.trim().isNotEmpty).join(', ')),
-                  _InfoItem(Icons.location_city_outlined,
-                      context.l10n.nativePlace, profile.nativePlace ?? ''),
+                  _InfoItem(
+                      Icons.place_outlined,
+                      context.l10n.location,
+                      [profile.city, profile.state]
+                          .map(context.localizeValue)
+                          .where((s) => s.trim().isNotEmpty)
+                          .join(', ')),
+                  _InfoItem(
+                      Icons.location_city_outlined,
+                      context.l10n.nativePlace,
+                      context.localizeValue(profile.nativePlace ?? '')),
                   _InfoItem(Icons.flag_outlined, context.l10n.citizenship,
                       context.localizeValue(profile.citizenship ?? '')),
                 ], icon: Icons.badge_outlined),

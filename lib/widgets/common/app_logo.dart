@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 import '../../core/constants/brand_assets.dart';
 import '../../core/theme/app_colors.dart';
 
+/// Physical pixels to decode [logical] logical pixels at on this screen.
+///
+/// Capped so a hi-DPI phone never asks for more than the master actually has —
+/// requesting above the source size would decode the full bitmap anyway.
+int _decodePx(BuildContext context, double logical) {
+  final ratio = MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0;
+  return (logical * ratio).round().clamp(1, 1024);
+}
+
 /// The official Jothida Matrimony brand logo — [kAppLogoAsset], the SAME
 /// artwork as the launcher / Play Store icon (spec §5).
 ///
@@ -30,6 +39,12 @@ class AppLogo extends StatelessWidget {
         width: size,
         height: size,
         fit: BoxFit.cover,
+        // The master is 1024x1024 — ~4 MB once decoded — and this widget
+        // renders it at 36-46px in app bars on nearly every screen. Without a
+        // decode cap Flutter keeps the full-size bitmap in the image cache for
+        // each distinct size, which is memory and jank for pixels nobody sees.
+        cacheWidth: _decodePx(context, size),
+        cacheHeight: _decodePx(context, size),
         errorBuilder: (_, __, ___) => Container(
           width: size,
           height: size,
@@ -91,6 +106,8 @@ class AppLauncherLogo extends StatelessWidget {
           width: size,
           height: size,
           fit: BoxFit.cover,
+          cacheWidth: _decodePx(context, size),
+          cacheHeight: _decodePx(context, size),
           errorBuilder: (_, __, ___) => Container(
             decoration:
                 const BoxDecoration(gradient: AppColors.primaryGradient),

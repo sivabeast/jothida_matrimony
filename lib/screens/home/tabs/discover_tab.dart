@@ -119,9 +119,19 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   }
 
   /// Jumps to the saved resume position the first time a feed is shown (§4).
-  void _applyResume(List<ProfileModel> profiles) {
+  ///
+  /// WAITS for the saved progress to come back from SharedPreferences before
+  /// deciding. Both notifiers must return synchronously from `build()`, so they
+  /// start out empty and fill in a moment later — reading them too early looks
+  /// like "nothing viewed yet" and drops the member back on profile 1, which is
+  /// precisely the complaint this guards against.
+  Future<void> _applyResume(List<ProfileModel> profiles) async {
     if (_resumeApplied) return;
     _resumeApplied = true;
+
+    await ref.read(viewedProfilesProvider.notifier).restored;
+    await ref.read(lastViewedProfileProvider.notifier).restored;
+    if (!mounted) return;
 
     final target = resolveResumeIndex(
       profileIds: profiles.map((p) => p.id).toList(),
