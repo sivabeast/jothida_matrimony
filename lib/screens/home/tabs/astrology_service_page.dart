@@ -375,18 +375,97 @@ class _Body extends StatelessWidget {
           () => _launch(context, Uri(scheme: 'mailto', path: email),
               'Email: $email')));
     }
+    // The office address itself opens Google Maps — the destination is always
+    // derived from the astrologer's OWN stored location/address, never a fixed
+    // place (see [_openMaps]).
     if (address.isNotEmpty) {
-      rows.add(_contactRow(Icons.location_on_outlined, 'Office', address, null));
+      rows.add(_contactRow(Icons.location_on_outlined, 'Office', address,
+          _hasMapTarget ? () => _openMaps(context) : null));
     }
     if (location.isNotEmpty) {
-      final uri = location.startsWith('http')
-          ? Uri.parse(location)
-          : Uri.parse(
-              'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(location)}');
-      rows.add(_contactRow(Icons.map_outlined, 'Location', location,
-          () => _launch(context, uri, location)));
+      rows.add(_contactRow(
+          Icons.map_outlined, 'Location', location, () => _openMaps(context)));
+    }
+    if (_hasMapTarget) {
+      rows.add(const SizedBox(height: 4));
+      rows.add(SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () => _openMaps(context),
+          icon: const Icon(Icons.place_outlined, size: 18),
+          label: const Text('View Location on Google Maps'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary),
+            minimumSize: const Size.fromHeight(44),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        ),
+      ));
     }
     return rows;
+  }
+
+  /// The astrologer's own map destination — `mapLocation` when the admin has
+  /// set one (a pasted Maps link, "lat,lng" coordinates, or a place name),
+  /// otherwise the configured office address. Empty when neither is set, in
+  /// which case no map action is offered at all.
+  String get _mapQuery {
+    final location = cfg.mapLocation.trim();
+    if (location.isNotEmpty) return location;
+    return cfg.officeAddress.trim();
+  }
+
+  bool get _hasMapTarget => _mapQuery.isNotEmpty;
+
+  /// Matches "12.9716,77.5946" (with optional spaces) — coordinates are used
+  /// verbatim because they pin the office far more accurately than an address
+  /// string that Maps has to geocode.
+  static final RegExp _latLng =
+      RegExp(r'^\s*(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)\s*$');
+
+  /// Opens the astrologer's location, preferring the installed Google Maps app
+  /// (Android `geo:` / iOS `comgooglemaps:`) and falling back to the browser.
+  Future<void> _openMaps(BuildContext context) async {
+    final query = _mapQuery;
+    if (query.isEmpty) return;
+    final messenger = ScaffoldMessenger.of(context);
+
+    // An admin-pasted Maps link is already a destination — open it as-is.
+    if (query.startsWith('http')) {
+      await _launch(context, Uri.parse(query), query);
+      return;
+    }
+
+    final coords = _latLng.firstMatch(query);
+    final encoded = Uri.encodeComponent(query);
+    final Uri appUri = coords != null
+        ? Uri.parse('geo:${coords.group(1)},${coords.group(2)}'
+            '?q=${coords.group(1)},${coords.group(2)}')
+        : Uri.parse('geo:0,0?q=$encoded');
+    final Uri webUri = coords != null
+        ? Uri.parse('https://www.google.com/maps/search/?api=1'
+            '&query=${coords.group(1)},${coords.group(2)}')
+        : Uri.parse(
+            'https://www.google.com/maps/search/?api=1&query=$encoded');
+
+    // Try the native maps app first; any failure falls through to the web map
+    // so the action always does something useful.
+    try {
+      if (await canLaunchUrl(appUri) &&
+          await launchUrl(appUri, mode: LaunchMode.externalApplication)) {
+        return;
+      }
+    } catch (_) {
+      // Ignored — handled by the web fallback below.
+    }
+    try {
+      if (await launchUrl(webUri, mode: LaunchMode.externalApplication)) return;
+    } catch (_) {
+      // Ignored — handled by the message below.
+    }
+    messenger.showSnackBar(SnackBar(content: Text(query)));
   }
 
   Widget _contactRow(

@@ -704,7 +704,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
         icon: Icons.auto_awesome_outlined,
         color: AppColors.primary,
         label: l10n.horoscopeMatching,
-        onTap: () => context.push('/horoscope-report/${profile.userId}'),
+        onTap: () => context.push('/horoscope-match/${profile.userId}'),
       );
     }
     if (req.status == AstrologerRequestStatus.completed) {
@@ -715,12 +715,15 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
         onTap: () => _viewCompatReport(req),
       );
     }
-    // Requested and under analysis — informational, deliberately not tappable.
+    // A paid report is under analysis. The FREE basic porutham result stays
+    // available regardless, so the tile still opens the Horoscope Match Result
+    // page — which shows the pending status in place of the paid CTA.
     return _connectedActionTile(
       icon: Icons.hourglass_top,
       color: AppColors.warning,
       label: l10n.horoscopeMatching,
       subtitle: l10n.reportUnderAnalysisTitle,
+      onTap: () => context.push('/horoscope-match/${profile.userId}'),
     );
   }
 
@@ -774,7 +777,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
             width: double.infinity,
             child: FilledButton.icon(
               onPressed: () =>
-                  context.push('/horoscope-report/${profile.userId}'),
+                  context.push('/horoscope-match/${profile.userId}'),
               icon: const Icon(Icons.description_outlined, size: 19),
               label: Text(l10n.getHoroscopeCompatibilityReport,
                   maxLines: 1, overflow: TextOverflow.ellipsis),

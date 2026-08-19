@@ -6,6 +6,7 @@
 // the exact exception + stack.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -81,5 +82,58 @@ void main() {
         reason: 'Express Interest action missing from the summary card');
     expect(find.text('View Profile'), findsOneWidget,
         reason: 'View Profile action missing from the summary card');
+  });
+
+  // The "Matches your Nakshatra" chip now sits on the SAME row as the name.
+  // A Row of two unbounded children is exactly the shape that overflows on a
+  // narrow phone, so pin it at the smallest widths we support, in both
+  // languages (the Tamil label is much longer than the English one).
+  testWidgets('Matches card name row never overflows', (tester) async {
+    final all = sampleProfiles();
+    final me = all.firstWhere((p) => p.gender == 'Male');
+    final her = all.firstWhere((p) => p.gender == 'Female');
+
+    for (final locale in const [Locale('en'), Locale('ta')]) {
+      for (final width in const <double>[320, 360, 411]) {
+        tester.view.physicalSize = Size(width, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              discoverProvider.overrideWith(
+                () => _FakeDiscoverNotifier(
+                  DiscoverState(
+                      profiles: [her], isLoading: false, hasMore: false),
+                ),
+              ),
+              myProfileProvider.overrideWith((ref) => Stream.value(me)),
+              sentInterestsProvider
+                  .overrideWith((ref) => Stream.value(const <InterestModel>[])),
+              receivedInterestsProvider
+                  .overrideWith((ref) => Stream.value(const <InterestModel>[])),
+            ],
+            child: MaterialApp(
+              locale: locale,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: const Scaffold(body: DiscoverTab()),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(tester.takeException(), isNull,
+            reason: 'Matches card overflowed at ${width}px in '
+                '"${locale.languageCode}"');
+      }
+    }
   });
 }

@@ -12,15 +12,13 @@ import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/interest_provider.dart';
 import '../../providers/match_analysis_provider.dart';
-import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
-import '../../widgets/common/horoscope_match_badge.dart' show categoryColor;
 
 /// Opens (or explains the not-yet-ready state of) the Astrology Analysis Chat
-/// for a horoscope-report request [r]. Shared by the accepted-match card and the
-/// detail screen so every "Open Analysis Chat" shortcut lands in the SAME thread
-/// — the request's responder uid once the team accepts, else the internal
-/// account uid captured in config (spec §12).
+/// for a horoscope-report request [r]. Used by the accepted-match card so every
+/// "Open Analysis Chat" shortcut lands in the SAME thread — the request's
+/// responder uid once the team accepts, else the internal account uid captured
+/// in config (spec §12).
 Future<void> openAnalysisChat(
   BuildContext context,
   WidgetRef ref,
@@ -56,7 +54,7 @@ Future<void> openAnalysisChat(
 }
 
 /// The user's horoscope-report request for the pairing with [otherUserId], if
-/// one exists (so the card/detail can show the "Open Analysis Chat" shortcut).
+/// one exists (so the card can show the "Open Analysis Chat" shortcut).
 AstrologerRequestModel? _reportRequestFor(WidgetRef ref, String otherProfileId) {
   final analyses =
       ref.watch(myMatchAnalysisRequestsProvider).valueOrNull ?? const [];
@@ -72,9 +70,9 @@ AstrologerRequestModel? _reportRequestFor(WidgetRef ref, String otherProfileId) 
 /// mutually-accepted interest with, for horoscope-focused matching.
 ///
 /// Pending / rejected interests never appear here. Each card shows a summary
-/// (photo, name, age, location, match category) plus the four horoscope
-/// actions (View Horoscope · Compare Horoscope · Request Astrologer Analysis ·
-/// Book Consultation). Tapping a card opens the full horoscope-matching detail.
+/// (photo, name, age, location, matched-porutham count) plus the horoscope
+/// actions. Tapping a card — like every other horoscope entry point in the app
+/// — opens the ONE canonical Horoscope Match Result page.
 class HoroscopeMatchingScreen extends StatelessWidget {
   const HoroscopeMatchingScreen({super.key});
 
@@ -164,7 +162,7 @@ class _AcceptedMatchCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            onTap: () => _openDetail(context, other),
+            onTap: () => context.push('/horoscope-match/$userId'),
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
@@ -213,8 +211,8 @@ class _AcceptedMatchCard extends ConsumerWidget {
                             ],
                           ),
                         const SizedBox(height: 8),
-                        // Match Category
-                        _categoryChip(result),
+                        // Porutham count only — no grade / percentage.
+                        _poruthamCountChip(result),
                       ],
                     ),
                   ),
@@ -238,7 +236,7 @@ class _AcceptedMatchCard extends ConsumerWidget {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: _actionChip(Icons.compare_arrows, 'Compare',
+                      child: _actionChip(Icons.compare_arrows, 'Match Result',
                           () => context.push('/horoscope-match/$userId')),
                     ),
                   ],
@@ -247,10 +245,13 @@ class _AcceptedMatchCard extends ConsumerWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
+                    // Enters the SAME canonical Horoscope Match Result page as
+                    // every other entry point; payment is offered there, after
+                    // the free basic result.
                     onPressed: () =>
-                        context.push('/horoscope-report/$userId'),
+                        context.push('/horoscope-match/$userId'),
                     icon: const Icon(Icons.auto_awesome, size: 18),
-                    label: const Text('Get Horoscope Analysis'),
+                    label: const Text('Get Horoscope Compatibility Report'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
@@ -295,7 +296,10 @@ class _AcceptedMatchCard extends ConsumerWidget {
         child: Icon(Icons.person, size: 40, color: Colors.brown.shade200),
       );
 
-  Widget _categoryChip(PoruthamMatchResult? result) {
+  /// A neutral porutham COUNT chip — "7/10 poruthams matched". Never a grade,
+  /// percentage or Excellent/Good/Average label; the full breakdown lives on
+  /// the canonical Horoscope Match Result page.
+  Widget _poruthamCountChip(PoruthamMatchResult? result) {
     if (result == null) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -307,23 +311,19 @@ class _AcceptedMatchCard extends ConsumerWidget {
             style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
       );
     }
-    final color = categoryColor(result.category);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: AppColors.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(result.category.emoji, style: const TextStyle(fontSize: 11)),
-          const SizedBox(width: 5),
-          Text(result.category.label,
-              style: TextStyle(
-                  fontSize: 11.5, color: color, fontWeight: FontWeight.w700)),
-        ],
+      child: Text(
+        '${result.matchedCount}/${result.totalCount} poruthams matched',
+        style: const TextStyle(
+            fontSize: 11.5,
+            color: AppColors.primary,
+            fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -345,12 +345,6 @@ class _AcceptedMatchCard extends ConsumerWidget {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
-
-  void _openDetail(BuildContext context, ProfileModel other) {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => HoroscopeMatchDetailScreen(other: other),
-    ));
-  }
 }
 
 class _EmptyMatches extends StatelessWidget {
@@ -381,418 +375,4 @@ class _EmptyMatches extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Full horoscope-matching detail for one accepted member, opened from a card.
-///
-/// Sections: User Basic Details · User Horoscope · My Horoscope · Horoscope
-/// Comparison · Compatibility Result · Astrologer Analysis (if available) ·
-/// Book Consultation.
-class HoroscopeMatchDetailScreen extends ConsumerWidget {
-  final ProfileModel other;
-  const HoroscopeMatchDetailScreen({super.key, required this.other});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final me = ref.watch(myProfileProvider).valueOrNull;
-    final result = me == null ? null : computePorutham(me, other);
-
-    // An existing astrologer analysis for this pairing, if the user has booked
-    // one and the astrologer has completed it.
-    final analyses =
-        ref.watch(myMatchAnalysisRequestsProvider).valueOrNull ?? const [];
-    AstrologerRequestModel? analysis;
-    for (final r in analyses) {
-      final involvesPartner =
-          r.profileAId == other.id || r.profileBId == other.id;
-      if (involvesPartner && r.hasAnalysis) {
-        analysis = r;
-        break;
-      }
-    }
-
-    return Scaffold(
-      backgroundColor: AppColors.scaffoldBg,
-      appBar: AppBar(
-        title: const Text('Horoscope Matching'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _basicDetails(),
-          const SizedBox(height: 16),
-          _horoscopeCard('${other.name}\'s Horoscope', other.horoscope),
-          const SizedBox(height: 16),
-          if (me != null) ...[
-            _horoscopeCard('My Horoscope', me.horoscope),
-            const SizedBox(height: 16),
-          ],
-          if (result != null) ...[
-            _compatibilityResult(result),
-            const SizedBox(height: 16),
-            _comparison(result),
-            const SizedBox(height: 16),
-          ] else
-            _noCompatibility(me),
-          _analysisSection(context, ref, analysis),
-          const SizedBox(height: 16),
-          if (analysis == null)
-            _getReportButton(context)
-          else
-            _openChatButton(context, ref, analysis),
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
-
-  // ── User Basic Details ──
-  Widget _basicDetails() {
-    final location =
-        [other.city, other.state].where((s) => s.trim().isNotEmpty).join(', ');
-    final rows = <(String, String)>[
-      ('Age', other.age > 0 ? '${other.age} years' : ''),
-      ('Height', other.height),
-      ('Location', location),
-      ('Education', other.education),
-      ('Profession', other.occupation),
-      ('Religion', other.religion),
-      ('Caste', other.caste ?? ''),
-    ];
-    return _card(
-      title: 'Basic Details',
-      child: Column(
-        children: [
-          Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  width: 64,
-                  height: 64,
-                  child: other.photos.isNotEmpty
-                      ? Image.network(other.photos.first,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _avatarSmall())
-                      : _avatarSmall(),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text('${other.name}${other.age > 0 ? ', ${other.age}' : ''}',
-                    style: const TextStyle(
-                        fontSize: 17,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w700)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          for (final r in rows)
-            if (r.$2.trim().isNotEmpty) _row(r.$1, r.$2),
-        ],
-      ),
-    );
-  }
-
-  Widget _avatarSmall() => Container(
-        color: const Color(0xFFEFE7D6),
-        child: Icon(Icons.person, size: 32, color: Colors.brown.shade200),
-      );
-
-  // ── Horoscope card (Rasi + Nakshatra; full chart stays private) ──
-  Widget _horoscopeCard(String title, HoroscopeDetails h) => _card(
-        title: title,
-        child: Column(
-          children: [
-            _row('Rasi (Moon Sign)', h.rasi),
-            _row('Nakshatra (Star)', h.nakshatra),
-          ],
-        ),
-      );
-
-  // ── Compatibility Result ──
-  Widget _compatibilityResult(PoruthamMatchResult result) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        children: [
-          const Text('Compatibility Result',
-              style: TextStyle(color: Colors.white70, fontSize: 13)),
-          const SizedBox(height: 12),
-          Text(result.category.emoji, style: const TextStyle(fontSize: 28)),
-          const SizedBox(height: 6),
-          Text(result.category.label,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              '${result.matchedCount} of ${result.totalCount} poruthams matched',
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.lightbulb_outline,
-                    color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(result.recommendation,
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 12.5, height: 1.4)),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Horoscope Comparison (10 poruthams) ──
-  Widget _comparison(PoruthamMatchResult result) => _card(
-        title: 'Horoscope Comparison',
-        child: Column(
-          children: [
-            for (final p in result.poruthams)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(
-                  children: [
-                    Icon(p.matched ? Icons.check_circle : Icons.cancel,
-                        size: 18,
-                        color: p.matched
-                            ? AppColors.success
-                            : AppColors.error),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(p.name,
-                          style: const TextStyle(
-                              fontSize: 13.5, fontWeight: FontWeight.w500)),
-                    ),
-                    Text(p.note,
-                        style:
-                            TextStyle(fontSize: 12, color: Colors.grey[600])),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      );
-
-  Widget _noCompatibility(ProfileModel? me) => _card(
-        title: 'Compatibility Result',
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(
-            me == null
-                ? 'Complete your own horoscope to see a compatibility result.'
-                : 'Not enough horoscope data to calculate compatibility for '
-                    'this pair. Add Rasi & Nakshatra details to both profiles.',
-            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-          ),
-        ),
-      );
-
-  // ── Astrologer Analysis (if available) ──
-  Widget _analysisSection(
-      BuildContext context, WidgetRef ref, AstrologerRequestModel? analysis) {
-    if (analysis == null) {
-      return _card(
-        title: 'Astrologer Analysis',
-        child: Row(
-          children: [
-            Icon(Icons.info_outline, size: 18, color: Colors.grey[500]),
-            const SizedBox(width: 8),
-            const Expanded(
-              child: Text(
-                'No astrologer analysis yet. Request one below for an expert '
-                'porutham report.',
-                style: TextStyle(fontSize: 12.5),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    // PAYMENT LOCK: the astrologer's report stays hidden until the fee is paid
-    // (free analyses, amount == 0, are shown immediately). The report content is
-    // never rendered here while locked — only a prompt to pay in My Match
-    // Analysis, where the single payment flow lives.
-    final locked = analysis.amount > 0 && !analysis.paid;
-    if (locked) {
-      return _card(
-        title: 'Astrologer Analysis',
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.lock_outline,
-                    size: 16, color: AppColors.primary),
-                const SizedBox(width: 6),
-                const Expanded(
-                  child: Text('Report ready',
-                      style: TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w600)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Your horoscope matching report has been completed. Complete '
-              'payment to unlock and view it.',
-              style: TextStyle(fontSize: 12.5, color: Colors.grey[700]),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => goToReportsTab(context, ref),
-                icon: const Icon(Icons.lock_open, size: 16),
-                label: const Text('Complete Payment'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  visualDensity: VisualDensity.compact,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    return _card(
-      title: 'Astrologer Analysis',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Single-company service: the report is presented as prepared by the
-          // company's astrology team — individual employee names never appear.
-          const Row(
-            children: [
-              Icon(Icons.verified, size: 16, color: AppColors.success),
-              SizedBox(width: 6),
-              Expanded(
-                child: Text('By our Astrology Team',
-                    style: TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w600)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(analysis.analysisText,
-              style: const TextStyle(fontSize: 13, height: 1.45)),
-        ],
-      ),
-    );
-  }
-
-  Widget _getReportButton(BuildContext context) => SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: () => context.push('/horoscope-report/${other.userId}'),
-          icon: const Icon(Icons.description_outlined),
-          label: const Text('Get Horoscope Compatibility Report'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            minimumSize: const Size.fromHeight(52),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-      );
-
-  Widget _openChatButton(
-          BuildContext context, WidgetRef ref, AstrologerRequestModel analysis) =>
-      SizedBox(
-        width: double.infinity,
-        child: OutlinedButton.icon(
-          onPressed: () => openAnalysisChat(
-              context, ref, analysis, ref.read(astrologyServiceConfigValueProvider)),
-          icon: const Icon(Icons.chat_outlined),
-          label: const Text('Open Analysis Chat'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.primary),
-            minimumSize: const Size.fromHeight(52),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-      );
-
-  // ── Shared building blocks ──
-  Widget _card({required String title, required Widget child}) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 15,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary)),
-            const Divider(height: 18),
-            child,
-          ],
-        ),
-      );
-
-  Widget _row(String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 5,
-              child: Text(label,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-            ),
-            Expanded(
-              flex: 6,
-              child: Text(value.trim().isEmpty ? '—' : value,
-                  style: const TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600)),
-            ),
-          ],
-        ),
-      );
 }

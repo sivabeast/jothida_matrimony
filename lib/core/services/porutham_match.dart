@@ -18,56 +18,22 @@ class PoruthamResult {
   });
 }
 
-/// Final compatibility category, derived ONLY from how many of the 10
-/// poruthams matched — there is no percentage / score anywhere. Only FOUR
-/// standardized categories are used app-wide.
-enum MatchCategory { excellent, good, average, poor }
-
-extension MatchCategoryInfo on MatchCategory {
-  /// Human label shown to the user.
-  String get label => switch (this) {
-        MatchCategory.excellent => 'Excellent Match',
-        MatchCategory.good => 'Good Match',
-        MatchCategory.average => 'Average Match',
-        MatchCategory.poor => 'Poor Match',
-      };
-
-  /// Status emoji used on the profile-card badge.
-  String get emoji => switch (this) {
-        MatchCategory.excellent => '🟢',
-        MatchCategory.good => '🟡',
-        MatchCategory.average => '🟠',
-        MatchCategory.poor => '🔴',
-      };
-}
-
-/// Map matched-porutham count (0-10) → one of the four standardized categories:
-/// 8-10 → Excellent · 6-7 → Good · 4-5 → Average · 0-3 → Poor.
-MatchCategory categoryFromMatched(int matched) {
-  if (matched >= 8) return MatchCategory.excellent;
-  if (matched >= 6) return MatchCategory.good;
-  if (matched >= 4) return MatchCategory.average;
-  return MatchCategory.poor;
-}
-
 /// Overall Thirumana Porutham (10-porutham) compatibility between two members.
 ///
 /// Computed from each member's **Nakshatra** (star) and **Rasi** (moon sign)
-/// using the classical South-Indian rules — NOT a percentage / heuristic. The
-/// result is purely the count of matched poruthams and the derived category.
+/// using the classical South-Indian rules. The result is purely the COUNT of
+/// matched poruthams plus the two lists — there is deliberately no percentage,
+/// score, grade or "Excellent / Good / Average Match" label anywhere: the user
+/// is shown how many poruthams matched and which ones, nothing more.
 class PoruthamMatchResult {
   final int matchedCount; // poruthams that matched (0-10)
   final int totalCount; // always 10
   final List<PoruthamResult> poruthams;
-  final MatchCategory category;
-  final String recommendation;
 
   const PoruthamMatchResult({
     required this.matchedCount,
     required this.totalCount,
     required this.poruthams,
-    required this.category,
-    required this.recommendation,
   });
 
   List<PoruthamResult> get matching =>
@@ -102,22 +68,11 @@ PoruthamMatchResult? computePorutham(ProfileModel me, ProfileModel other) {
   ];
 
   final matched = results.where((r) => r.matched).length;
-  final category = categoryFromMatched(matched);
-  final recommendation = switch (category) {
-    MatchCategory.excellent => 'Excellent marriage compatibility.',
-    MatchCategory.good => 'Good marriage compatibility.',
-    MatchCategory.average =>
-      'Average compatibility — astrologer consultation suggested.',
-    MatchCategory.poor =>
-      'Poor compatibility — astrologer guidance strongly advised.',
-  };
 
   return PoruthamMatchResult(
     matchedCount: matched,
     totalCount: results.length,
     poruthams: results,
-    category: category,
-    recommendation: recommendation,
   );
 }
 
@@ -173,13 +128,47 @@ List<int> compatibleStarsFor({required int myStar, required bool iAmFemale}) {
   return result;
 }
 
+/// Resolves a stored star / rasi NAME to its 0-based index, or -1.
+///
+/// Profiles store the star either as the Tamil name ('ரோகிணி') or as the
+/// index-aligned English transliteration ('Rohini') depending on where the
+/// value was entered, and rasi values may carry a parenthetical gloss
+/// ('Rishabam (Taurus)'). Matching only the Tamil list — as this used to —
+/// silently failed every English-stored profile, which made the whole
+/// compatibility result unavailable for them. [tamil] and [english] are
+/// index-aligned by construction in AppConstants.
+int _indexOfName(String raw, List<String> tamil, List<String> english) {
+  final value = raw.trim();
+  if (value.isEmpty) return -1;
+  var i = tamil.indexOf(value);
+  if (i >= 0) return i;
+  i = english.indexOf(value);
+  if (i >= 0) return i;
+  // Loose match: case-insensitive, ignoring any "(English)" gloss.
+  String norm(String s) => s.split('(').first.trim().toLowerCase();
+  final target = norm(value);
+  if (target.isEmpty) return -1;
+  for (var k = 0; k < english.length; k++) {
+    if (norm(english[k]) == target) return k;
+  }
+  for (var k = 0; k < tamil.length; k++) {
+    if (norm(tamil[k]) == target) return k;
+  }
+  return -1;
+}
+
+int _starIndexOf(String name) => _indexOfName(
+    name, AppConstants.nakshatraList, AppConstants.nakshatraEnList);
+
+int _rasiIndexOf(String name) =>
+    _indexOfName(name, AppConstants.rasiList, AppConstants.rasiEnList);
+
 /// Resolves [p]'s nakshatra as a 1-27 index — the stored horoscope star when
 /// present, otherwise derived from the birth date. Null when unresolvable.
 int? profileStarIndex(ProfileModel p) {
-  var idx = AppConstants.nakshatraList.indexOf(p.horoscope.nakshatra.trim());
+  var idx = _starIndexOf(p.horoscope.nakshatra);
   if (idx < 0 && p.horoscope.nakshatra.trim().isEmpty) {
-    idx = AppConstants.nakshatraList
-        .indexOf(HoroscopeUtils.calculateNakshatra(p.dateOfBirth));
+    idx = _starIndexOf(HoroscopeUtils.calculateNakshatra(p.dateOfBirth));
   }
   return idx < 0 ? null : idx + 1;
 }
@@ -209,15 +198,15 @@ class _Chart {
 
   static _Chart? from(ProfileModel p) {
     final h = p.horoscope;
-    var starIdx = AppConstants.nakshatraList.indexOf(h.nakshatra.trim());
+    // A stored value that cannot be resolved stays unresolved — only a MISSING
+    // one falls back to the birth date, so a star is never invented.
+    var starIdx = _starIndexOf(h.nakshatra);
     if (starIdx < 0 && h.nakshatra.trim().isEmpty) {
-      starIdx =
-          AppConstants.nakshatraList.indexOf(HoroscopeUtils.calculateNakshatra(p.dateOfBirth));
+      starIdx = _starIndexOf(HoroscopeUtils.calculateNakshatra(p.dateOfBirth));
     }
-    var rasiIdx = AppConstants.rasiList.indexOf(h.rasi.trim());
+    var rasiIdx = _rasiIndexOf(h.rasi);
     if (rasiIdx < 0 && h.rasi.trim().isEmpty) {
-      rasiIdx =
-          AppConstants.rasiList.indexOf(HoroscopeUtils.calculateRasi(p.dateOfBirth));
+      rasiIdx = _rasiIndexOf(HoroscopeUtils.calculateRasi(p.dateOfBirth));
     }
     if (starIdx < 0 || rasiIdx < 0) return null;
     final female = p.gender.trim().toLowerCase().startsWith('f');

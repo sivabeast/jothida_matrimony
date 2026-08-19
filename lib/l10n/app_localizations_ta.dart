@@ -1114,6 +1114,9 @@ class AppLocalizationsTa extends AppLocalizations {
   String get nakshatraMatch => 'நட்சத்திரப் பொருத்தம்';
 
   @override
+  String get matchesYourNakshatra => 'உங்கள் நட்சத்திரத்துடன் பொருந்துகிறது';
+
+  @override
   String get matchingProfile => 'சிறந்த பொருத்தம்';
 
   @override

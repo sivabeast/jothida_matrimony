@@ -2192,6 +2192,12 @@ abstract class AppLocalizations {
   /// **'Nakshatra Match'**
   String get nakshatraMatch;
 
+  /// No description provided for @matchesYourNakshatra.
+  ///
+  /// In en, this message translates to:
+  /// **'Matches your Nakshatra'**
+  String get matchesYourNakshatra;
+
   /// No description provided for @matchingProfile.
   ///
   /// In en, this message translates to:

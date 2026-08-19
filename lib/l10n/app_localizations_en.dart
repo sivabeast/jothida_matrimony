@@ -1099,6 +1099,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nakshatraMatch => 'Nakshatra Match';
 
   @override
+  String get matchesYourNakshatra => 'Matches your Nakshatra';
+
+  @override
   String get matchingProfile => 'Best Match';
 
   @override

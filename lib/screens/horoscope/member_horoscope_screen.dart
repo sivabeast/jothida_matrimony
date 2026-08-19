@@ -111,9 +111,9 @@ class _ConsultCard extends ConsumerWidget {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () =>
-                  context.push('/horoscope-report/$partnerUserId'),
+                  context.push('/horoscope-match/$partnerUserId'),
               icon: const Icon(Icons.description_outlined, size: 18),
-              label: const Text('Get Compatibility Report'),
+              label: const Text('Get Horoscope Compatibility Report'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,

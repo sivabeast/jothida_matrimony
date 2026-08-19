@@ -6,16 +6,46 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jothida_matrimony/core/constants/app_constants.dart';
+import 'package:jothida_matrimony/core/data/sample_profiles.dart';
 import 'package:jothida_matrimony/core/services/porutham_match.dart';
 
 void main() {
   group('Paid-service pricing', () {
-    test('Horoscope Compatibility Report costs ₹199', () {
-      expect(AppConstants.horoscopeAnalysisFee, 199);
+    test('Horoscope Compatibility Report costs ₹200', () {
+      expect(AppConstants.horoscopeAnalysisFee, 200);
     });
 
     test('Astrologer appointment booking costs ₹20', () {
       expect(AppConstants.appointmentBookingFee, 20);
+    });
+  });
+
+  // The Horoscope Match Result page renders these three numbers and the two
+  // lists directly, so the counts it shows can only ever be consistent if the
+  // invariant below holds for every pairing.
+  group('Porutham result counts', () {
+    test('matched + not matched always equals the total, and the lists agree',
+        () {
+      final profiles = sampleProfiles();
+      var compared = 0;
+      for (final me in profiles) {
+        for (final other in profiles) {
+          if (me.id == other.id) continue;
+          final r = computePorutham(me, other);
+          if (r == null) continue;
+          compared++;
+          final reason = '${me.id} x ${other.id}';
+          expect(r.totalCount, 10, reason: reason);
+          expect(r.poruthams.length, r.totalCount, reason: reason);
+          expect(r.matching.length, r.matchedCount, reason: reason);
+          expect(r.nonMatching.length, r.totalCount - r.matchedCount,
+              reason: reason);
+          expect(r.matching.length + r.nonMatching.length, r.totalCount,
+              reason: reason);
+        }
+      }
+      expect(compared, greaterThan(0),
+          reason: 'no sample pairing produced a result to check');
     });
   });
 

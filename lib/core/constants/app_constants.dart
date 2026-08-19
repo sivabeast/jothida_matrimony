@@ -76,8 +76,9 @@ class AppConstants {
   // Fee for the ONLINE Horoscope Compatibility Report (paid, auto-assigned,
   // delivered to the user's Reports page). Completely separate from the
   // office-visit appointment fee below. Charged via Google Play Billing
-  // (product id `horoscope_report`).
-  static const int horoscopeAnalysisFee = 199;
+  // (product id `horoscope_report`) — Play Console is the source of truth for
+  // what is actually charged; this is only the fallback label.
+  static const int horoscopeAnalysisFee = 200;
   // Booking charge to confirm a Direct Office-Visit appointment slot. A separate,
   // independent service from the online analysis above.
   static const int appointmentBookingFee = 20;

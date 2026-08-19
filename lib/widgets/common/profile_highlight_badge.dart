@@ -6,11 +6,13 @@ import '../../core/utils/l10n_ext.dart';
 import '../../models/profile_model.dart';
 import '../../providers/profile_provider.dart';
 
-/// A clean, single ⭐ highlight pill shown on browse cards to mark a profile as
+/// A clean, single highlight pill shown on browse cards to mark a profile as
 /// suitable/relevant — replacing the old Excellent/Good/Average rating badges.
 ///
 /// It shows ONE of two labels and NEVER a score, percentage or grade:
-///   • "⭐ Nakshatra Match" — the profile's star is compatible with the user's;
+///   • "✓ Matches your Nakshatra" — the profile's star is compatible with the
+///     user's. Because that is a POSITIVE state it is always rendered in green,
+///     never gold/yellow (see [nakshatraOnly] callers).
 ///   • "⭐ Best Match" — the profile satisfies every partner preference the
 ///     user has set.
 ///
@@ -23,16 +25,14 @@ class ProfileHighlightBadge extends ConsumerWidget {
   /// Compact variant for dense cards (smaller padding/text).
   final bool compact;
 
-  /// Optional solid background colour. When set (e.g. [AppColors.success] on the
-  /// Home recommended cards) the pill is drawn as a flat coloured chip with
-  /// white text instead of the default gold gradient — keeping the Home design's
-  /// green "star match" look without changing the badge elsewhere.
+  /// Optional solid background colour for the PREFERENCE ("Best Match")
+  /// variant. The nakshatra variant is always green — a positive compatibility
+  /// state must read as positive everywhere.
   final Color? color;
 
   /// When true the badge renders ONLY for a nakshatra match — the plain
   /// preference-match variant is suppressed. The Matches page uses this so a
-  /// profile carries exactly one badge, "⭐ Nakshatra Match", and never a second
-  /// quality label.
+  /// profile carries exactly one badge and never a second quality label.
   final bool nakshatraOnly;
 
   const ProfileHighlightBadge({
@@ -52,9 +52,45 @@ class ProfileHighlightBadge extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final label = highlight == ProfileHighlight.nakshatra
-        ? context.l10n.nakshatraMatch
+    final isNakshatra = highlight == ProfileHighlight.nakshatra;
+    final label = isNakshatra
+        ? context.l10n.matchesYourNakshatra
         : context.l10n.matchingProfile;
+
+    // Nakshatra compatibility is a POSITIVE signal → green chip with a check,
+    // never the gold/amber pill used for the generic preference match.
+    if (isNakshatra) {
+      return Container(
+        padding: EdgeInsets.symmetric(
+            horizontal: compact ? 8 : 10, vertical: compact ? 3 : 5),
+        decoration: BoxDecoration(
+          color: AppColors.success.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
+          border:
+              Border.all(color: AppColors.success.withValues(alpha: 0.45)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle,
+                size: compact ? 12 : 14, color: AppColors.success),
+            SizedBox(width: compact ? 4 : 5),
+            Flexible(
+              child: Text(
+                label,
+                softWrap: true,
+                style: TextStyle(
+                  color: AppColors.success,
+                  fontSize: compact ? 10 : 11.5,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     final solid = color != null;
     return Container(

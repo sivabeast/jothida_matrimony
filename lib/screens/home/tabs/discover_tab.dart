@@ -412,16 +412,22 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
                   color: AppColors.textPrimary),
             ),
           ),
-          TextButton(
-            onPressed: _showMatchingStars,
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              textStyle:
-                  const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+          // Flexible + ellipsis: the Tamil label ("பொருந்தும் நட்சத்திரங்கள்")
+          // is far wider than the English one and, left unbounded, pushed this
+          // row past the screen edge on a 320px phone.
+          Flexible(
+            child: TextButton(
+              onPressed: _showMatchingStars,
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                textStyle:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+              ),
+              child: Text(l10n.viewMatchingStars,
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
             ),
-            child: Text(l10n.viewMatchingStars),
           ),
         ],
       ),
@@ -890,7 +896,11 @@ class _MatchProfileCard extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Name, Age + optional verification badge.
+        // Name, Age + the green "Matches your Nakshatra" indicator on the SAME
+        // row, to the right of the name, so the positive star compatibility is
+        // obvious at a glance. Never on the photo, and never alongside another
+        // quality label. Both sides are Flexible so a long name or the longer
+        // Tamil label shrink instead of overflowing on a narrow phone.
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -911,12 +921,16 @@ class _MatchProfileCard extends ConsumerWidget {
               const SizedBox(width: 8),
               _verifiedChip(context),
             ],
+            const SizedBox(width: 8),
+            Flexible(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: ProfileHighlightBadge(
+                    profile: profile, nakshatraOnly: true, compact: true),
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: 8),
-        // The ONE match badge — "⭐ Nakshatra Match" — directly under Name +
-        // Age. Never on the photo, and never alongside another quality label.
-        ProfileHighlightBadge(profile: profile, nakshatraOnly: true),
         const SizedBox(height: 12),
         // Essential fields — each rendered only when present.
         // Free-text (city) / numeric (height) stay as entered; the controlled-

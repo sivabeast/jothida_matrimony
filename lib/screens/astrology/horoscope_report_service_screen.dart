@@ -17,14 +17,17 @@ import '../../providers/service_providers.dart';
 import '../../services/billing/play_billing_service.dart';
 import '../report/compatibility_report_screen.dart';
 
-/// Online **Horoscope Analysis** — service details page (spec §1).
+/// Online **Horoscope Compatibility Report** — the PAID step of the horoscope
+/// flow.
 ///
-/// This is a fully ONLINE report service — NOT an appointment. Opened from an
-/// accepted match's "Get Horoscope Analysis" button. It explains the report,
+/// This is a fully ONLINE report service — NOT an appointment. It is reached
+/// ONLY from the "Get Horoscope Compatibility Report" CTA on the canonical
+/// Horoscope Match Result page, so the member has always seen the free basic
+/// porutham result before any payment is asked for. It explains the report,
 /// shows the charge, and the user pays via Google Play Billing (one-time
-/// product `horoscope_report`) to create an analysis
-/// request that is auto-assigned to an astrologer. There is intentionally no
-/// "Contact Expert", "Book Appointment" or any office-visit content here.
+/// product `horoscope_report`) to create an analysis request that is
+/// auto-assigned to an astrologer. There is intentionally no "Contact Expert",
+/// "Book Appointment" or any office-visit content here.
 class HoroscopeReportServiceScreen extends ConsumerStatefulWidget {
   /// The accepted-match user id whose horoscope is compared with the user's.
   final String otherUserId;
@@ -39,7 +42,7 @@ class _HoroscopeReportServiceScreenState
     extends ConsumerState<HoroscopeReportServiceScreen> {
   /// Fallback price, shown only until Play's own price arrives (or if the store
   /// is unreachable). Play Console is the source of truth — see [_priceText].
-  static const int _fee = AppConstants.horoscopeAnalysisFee; // ₹199
+  static const int _fee = AppConstants.horoscopeAnalysisFee; // ₹200
 
   bool _busy = false;
 
@@ -179,7 +182,7 @@ class _HoroscopeReportServiceScreenState
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Horoscope Analysis'),
+        title: const Text('Horoscope Compatibility Report'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -279,7 +282,7 @@ class _HoroscopeReportServiceScreenState
               label: Text(
                 _busy
                     ? 'Processing…'
-                    : 'Pay $_priceText · Request Horoscope Analysis',
+                    : 'Pay $_priceText · Request Report',
                 style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               ),
               style: ElevatedButton.styleFrom(
