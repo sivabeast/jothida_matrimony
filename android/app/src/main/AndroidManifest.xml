@@ -20,11 +20,22 @@
         android:label="Jothida Matrimony"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- singleTop keeps a relaunch (launcher tap, notification tap, deep
+             link) on the SAME activity instance instead of stacking a second
+             copy, and delivers it through onNewIntent.
+
+             taskAffinity is deliberately NOT set. It used to be "" here, which
+             is what put duplicate cards in Android Recents: an empty affinity
+             puts the activity in no task family at all, so every launch
+             carrying FLAG_ACTIVITY_NEW_TASK - which is exactly what the
+             launcher and notification intents use - failed to match the running
+             task and started a fresh one. Left unset it defaults to the package
+             name, every launch resolves to the one task, and Recents shows a
+             single card. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"

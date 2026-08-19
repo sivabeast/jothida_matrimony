@@ -25,8 +25,8 @@
     "semantic_hash": ""
   },
   "lib/core/errors/auth_exception.dart": {
-    "mtime": 1786108944.3603542,
-    "ast_hash": "c8042c9887a189313e92e611d18369a7",
+    "mtime": 1787127061.7993512,
+    "ast_hash": "efa42505b1942788c2aa9c983da197f5",
     "semantic_hash": ""
   },
   "lib/core/theme/app_colors.dart": {
@@ -130,8 +130,8 @@
     "semantic_hash": ""
   },
   "lib/providers/auth_provider.dart": {
-    "mtime": 1786108944.425248,
-    "ast_hash": "b937d3df18b4479d10359117efd17bd4",
+    "mtime": 1787126491.8465283,
+    "ast_hash": "98a42b7d012b8bdb25f77997fc5066ff",
     "semantic_hash": ""
   },
   "lib/providers/chat_provider.dart": {
@@ -160,8 +160,8 @@
     "semantic_hash": ""
   },
   "lib/providers/profile_provider.dart": {
-    "mtime": 1786108944.4425712,
-    "ast_hash": "c0944a8e8240b1ffb85aca8617f6a07a",
+    "mtime": 1787126491.6470568,
+    "ast_hash": "edb8589f6bc76b2bc35101e089b2dab1",
     "semantic_hash": ""
   },
   "lib/providers/service_providers.dart": {
@@ -365,8 +365,8 @@
     "semantic_hash": ""
   },
   "pubspec.yaml": {
-    "mtime": 1787056662.147439,
-    "ast_hash": "b796c471a1abb5bcff885348960ac028",
+    "mtime": 1787127119.206923,
+    "ast_hash": "b754a1e3d6a092a9620b397de4c21fa4",
     "semantic_hash": ""
   },
   "android/app/build.gradle": {
@@ -1070,8 +1070,8 @@
     "semantic_hash": ""
   },
   "lib/screens/astrology/astrology_appointment_screen.dart": {
-    "mtime": 1787046123.8299243,
-    "ast_hash": "cfc1746f0b400058498e7aaa96f7bb24",
+    "mtime": 1787126921.8285508,
+    "ast_hash": "8bf5c3a599f7dac12808fe723e2cb3ca",
     "semantic_hash": ""
   },
   "lib/screens/astrology/horoscope_report_service_screen.dart": {
@@ -1790,8 +1790,8 @@
     "semantic_hash": ""
   },
   "lib/screens/astrology/appointment_details_dialog.dart": {
-    "mtime": 1786108944.5096326,
-    "ast_hash": "6adcf38206bf1deadd833db9592c7247",
+    "mtime": 1787126863.2444417,
+    "ast_hash": "9b81a3faea38584e3171d2e953080134",
     "semantic_hash": ""
   },
   "lib/screens/auth/login_required_screen.dart": {
@@ -1820,8 +1820,8 @@
     "semantic_hash": ""
   },
   "SETUP_TAMIL.md": {
-    "mtime": 1787056662.2164347,
-    "ast_hash": "500ff46dc3c7edb7814de1957b6f91e0",
+    "mtime": 1787127119.2479422,
+    "ast_hash": "c6d2263b0fdadaadf0ce0c7a4c1256a2",
     "semantic_hash": ""
   },
   "assets/master_data/career/degrees.json": {
@@ -1917,6 +1917,11 @@
   "lib/widgets/auth/account_required_sheet.dart": {
     "mtime": 1787045886.682935,
     "ast_hash": "f090ba8d56da4d64ccd8aa8ca9f49e95",
+    "semantic_hash": ""
+  },
+  "test/account_switch_test.dart": {
+    "mtime": 1787126726.3884916,
+    "ast_hash": "08188299690270090aebb184c0555e45",
     "semantic_hash": ""
   }
 }

@@ -185,10 +185,16 @@ void main() {
       expect(e.message, isNotEmpty);
     });
 
-    test('Google provider disabled in Firebase is called out by name', () {
+    test('a disabled sign-in method never blames Google specifically', () {
+      // Firebase raises operation-not-allowed for ANY disabled method — email
+      // and password, phone, anonymous, Google. The message used to name
+      // Google, so Forgot Password (which never touches Google) reported
+      // "Google Sign-In is not enabled" while Google was in fact enabled.
       final e = AuthException.from(
           FirebaseAuthException(code: 'operation-not-allowed'));
-      expect(e.message, contains('Firebase Console'));
+      expect(e.code, 'operation-not-allowed');
+      expect(e.message, isNotEmpty);
+      expect(e.message.toLowerCase(), isNot(contains('google')));
     });
 
     test('a timed-out step becomes a retryable error, never a silent hang', () {

@@ -157,9 +157,14 @@ class AuthException implements Exception {
             code: 'user-disabled',
           );
         case 'operation-not-allowed':
+          // Firebase raises this for ANY disabled sign-in method — email and
+          // password, phone, anonymous, Google. Naming Google here was wrong
+          // and actively misleading: it is what made the Forgot Password page,
+          // which never touches Google, report "Google Sign-In is not enabled"
+          // while Google was in fact enabled and some OTHER provider was not.
           return const AuthException(
-            'Google Sign-In is not enabled for this project. Enable it in the '
-            'Firebase Console (Authentication > Sign-in method).',
+            'This sign-in method is not enabled for this app. Please contact '
+            'support.',
             code: 'operation-not-allowed',
           );
         default:

@@ -52,7 +52,19 @@ final currentUserProvider = FutureProvider<UserModel?>((ref) async {
   // exist. The router treats "guest" as its own branch before it ever looks at
   // this value (see resolveAuthRedirect).
   if (user.isAnonymous) return null;
-  return ref.watch(authRepositoryProvider).getUserModel(user.uid);
+
+  final uid = user.uid;
+  final model = await ref.watch(authRepositoryProvider).getUserModel(uid);
+  // Guard against a slow read from the PREVIOUS account landing after a
+  // switch. Riverpod keeps the last value visible while this future is in
+  // flight, so without the check a stale fetch could settle as the new
+  // account's user and every screen keyed off it would show the wrong person.
+  if (model != null && model.uid.isNotEmpty && model.uid != uid) {
+    debugPrint('[currentUser] dropped a stale model for ${model.uid} '
+        '(signed in as $uid)');
+    return null;
+  }
+  return model;
 });
 
 // Auth state notifier

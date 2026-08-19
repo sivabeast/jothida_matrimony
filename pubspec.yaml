@@ -1,7 +1,7 @@
 name: jothida_matrimony
 description: Jothida Matrimony - Tamil Matrimony App with Horoscope & Porutham Analysis
 publish_to: 'none'
-version: 1.10.0+14
+version: 1.11.0+15
 
 environment:
   # in_app_purchase_android 0.5.0+ (Play Billing Library 8.0.0) requires

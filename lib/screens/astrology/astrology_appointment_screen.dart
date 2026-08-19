@@ -86,7 +86,6 @@ class _AstrologyAppointmentScreenState
       initialPhone: (profile?.contact.mobileNumber.trim().isNotEmpty ?? false)
           ? profile!.contact.mobileNumber.trim()
           : (user?.phone ?? ''),
-      initialDob: profile?.dateOfBirth,
     );
     if (details == null || !mounted) return; // cancelled
 
@@ -103,7 +102,10 @@ class _AstrologyAppointmentScreenState
             paymentId: 'free',
             contactName: details.name,
             contactPhone: details.phone,
-            contactDob: details.dobText,
+            // No DOB is asked for any more. bookServiceAppointment still fills
+            // it from the matrimony profile when the member has one, so nothing
+            // is lost for them — and an astrology-only customer is simply not
+            // made to supply a matrimony field to book a consultation.
           );
       if (!mounted) return;
       context.pushReplacement('/appointment-confirmation/$id', extra: {

@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart' show DocumentSnapshot;
 import 'package:firebase_core/firebase_core.dart' show FirebaseException;
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint, visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/dev_config.dart';
 import '../core/constants/app_constants.dart';
@@ -38,8 +38,37 @@ final myProfileProvider = StreamProvider.autoDispose<ProfileModel?>((ref) {
   // LIVE snapshot stream (was a one-shot get() converted to a stream). Admin
   // edits to the profile document now reach the user app in real time —
   // no stale cache, no re-login needed.
-  return ref.watch(profileRepositoryProvider).watchProfileByUserId(userId);
+  return scopeToAccount(
+    ref.watch(profileRepositoryProvider).watchProfileByUserId(userId),
+    userId,
+  );
 });
+
+/// Wraps a per-account stream so it can never serve the PREVIOUS account's data.
+///
+/// Two separate leaks are closed here, and both caused "I logged into the male
+/// account but the female profile is showing":
+///
+///  * **Retained value across a rebuild.** When the uid changes the provider
+///    rebuilds, but Riverpod keeps the last value visible while the new stream
+///    warms up — so every one of the ~39 screens reading `.valueOrNull` kept
+///    painting the old member until the first snapshot landed. Yielding `null`
+///    first collapses that window: the UI shows its empty/loading state instead
+///    of somebody else's profile.
+///  * **A late snapshot from the old account.** A Firestore listener that was
+///    already in flight can deliver after the switch. Every document is checked
+///    against the uid this stream was created for and dropped if it does not
+///    match, so a straggler can never overwrite the new account's state.
+@visibleForTesting
+Stream<ProfileModel?> scopeToAccount(
+  Stream<ProfileModel?> source,
+  String userId,
+) async* {
+  yield null;
+  await for (final profile in source) {
+    if (profile == null || profile.userId == userId) yield profile;
+  }
+}
 
 // Watch a specific profile by id
 final profileByIdProvider =
