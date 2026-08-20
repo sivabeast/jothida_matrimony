@@ -148,7 +148,6 @@ void _openNotificationTarget(
         n.targetId.isNotEmpty ? '/announcement/${n.targetId}' : '',
       'appointment' || 'appointment_cancelled' || 'appointment_status' =>
         '/my-appointments',
-      'membership_activated' || 'membership_expired' => '/home',
       'report_assigned' => '/astrologer-dashboard',
       // The member's profile went live — Home is where they see themselves
       // back in the flow. (Free-text admin notices have no destination.)
@@ -306,10 +305,6 @@ class _NotificationTile extends ConsumerWidget {
         return Colors.indigo;
       case 'appointment_cancelled':
         return AppColors.error;
-      case 'membership_activated':
-        return AppColors.success;
-      case 'membership_expired':
-        return Colors.deepOrange;
       case 'payment_success':
         return Colors.teal;
       case 'app_update':
@@ -329,8 +324,6 @@ class _NotificationTile extends ConsumerWidget {
         return Icons.cancel;
       case 'porutham_ready':
         return Icons.star;
-      case 'subscription_expiry':
-        return Icons.access_time;
       case 'profile_approval':
         return Icons.verified_user;
       case 'chat_message':
@@ -344,10 +337,6 @@ class _NotificationTile extends ConsumerWidget {
         return Icons.event_available;
       case 'appointment_cancelled':
         return Icons.event_busy;
-      case 'membership_activated':
-        return Icons.workspace_premium;
-      case 'membership_expired':
-        return Icons.hourglass_disabled;
       case 'payment_success':
         return Icons.payments_outlined;
       case 'app_update':

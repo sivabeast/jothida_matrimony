@@ -3,13 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/profile_status.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../models/profile_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/notification_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/export/download_saved_dialog.dart';
 import '../../widgets/export/profile_form_export.dart';
@@ -23,7 +23,7 @@ final _userRequestsProvider = StreamProvider.autoDispose
 /// Admin → Users → View Details (§6).
 ///
 /// Shows EVERY detail the member entered — account, basic details, location,
-/// education & career, community, horoscope, family, lifestyle, partner
+/// education & career, community, horoscope, lifestyle, partner
 /// preferences, contact and privacy — plus their activity, with Edit
 /// (suspend/activate) and Delete (account + data) actions.
 ///
@@ -188,73 +188,9 @@ class UserDetailsScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                // Membership lifecycle notifications (spec §10). Every
-                // matrimony feature is currently free, so membership state is
-                // an OFFLINE arrangement — these send the member the same
-                // push/in-app notification a billing system would, in their
-                // own app language, deep-linked to Home.
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _notifyMembership(context, ref, user!,
-                            AppNotificationEvent.membershipActivated),
-                        icon: const Icon(Icons.workspace_premium_outlined,
-                            size: 18),
-                        label: const Text('Membership Activated',
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
-                        style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.success,
-                            side: const BorderSide(color: AppColors.success),
-                            minimumSize: const Size.fromHeight(48)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _notifyMembership(context, ref, user!,
-                            AppNotificationEvent.membershipExpired),
-                        icon: const Icon(Icons.hourglass_disabled, size: 18),
-                        label: const Text('Membership Expired',
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
-                        style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.deepOrange,
-                            side: const BorderSide(color: Colors.deepOrange),
-                            minimumSize: const Size.fromHeight(48)),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
     );
-  }
-
-  /// Sends one membership notification to [user]. Deterministic per (user,
-  /// event, day) so a double-tap can't spam them twice in the same day.
-  Future<void> _notifyMembership(BuildContext context, WidgetRef ref,
-      UserModel user, AppNotificationEvent event) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final today = DateTime.now();
-    final dayKey = '${today.year}${today.month.toString().padLeft(2, '0')}'
-        '${today.day.toString().padLeft(2, '0')}';
-    try {
-      await ref.read(notificationNotifierProvider.notifier).notify(
-            toUid: user.uid,
-            event: event,
-            name: user.displayName ?? '',
-            id: '${event.name}_${user.uid}_$dayKey',
-          );
-      messenger.showSnackBar(SnackBar(
-          content: Text(event == AppNotificationEvent.membershipActivated
-              ? 'Membership activation notification sent.'
-              : 'Membership expiry notification sent.')));
-    } catch (e) {
-      messenger.showSnackBar(SnackBar(
-          content: Text('Could not send the notification: $e'),
-          backgroundColor: AppColors.error));
-    }
   }
 
   /// EVERY field the member entered, grouped exactly like the profile wizard
@@ -262,7 +198,6 @@ class UserDetailsScreen extends ConsumerWidget {
   /// tell "not filled in" apart from "section missing".
   List<Widget> _profileCards(ProfileModel p, ContactDetails? contact) {
     final h = p.horoscope;
-    final f = p.family;
     final pp = p.partnerPreferences;
     final ls = p.lifestyle;
     String s(Object? v) {
@@ -346,20 +281,6 @@ class UserDetailsScreen extends ConsumerWidget {
       ]),
       const SizedBox(height: 14),
       _card([
-        _sectionTitle('Family'),
-        const SizedBox(height: 8),
-        _row('Father', s(f.fatherName)),
-        _row("Father's Occupation", s(f.fatherOccupation)),
-        _row('Mother', s(f.motherName)),
-        _row("Mother's Occupation", s(f.motherOccupation)),
-        _row('Brothers', '${f.brothersCount} (${f.marriedBrothers} married)'),
-        _row('Sisters', '${f.sistersCount} (${f.marriedSisters} married)'),
-        _row('Family Type', s(f.familyType)),
-        _row('Family Status', s(f.familyStatus)),
-        _row('About Family', s(f.aboutFamily)),
-      ]),
-      const SizedBox(height: 14),
-      _card([
         _sectionTitle('Lifestyle'),
         const SizedBox(height: 8),
         _row('Eating Habit', s(ls.eatingHabit)),
@@ -416,9 +337,9 @@ class UserDetailsScreen extends ConsumerWidget {
       _card([
         _sectionTitle('Moderation'),
         const SizedBox(height: 8),
-        _row('Profile Status', s(p.status)),
+        _row('Verification Status', profileStatusLabel(p.status)),
         _row('Active', yn(p.isActive)),
-        _row('Verified', yn(p.isVerified)),
+        _row('Aadhaar Verified', yn(p.isVerified)),
         _row('Featured', yn(p.isFeatured)),
         _row('Married', yn(p.isMarried)),
         _row('Test / Dummy Profile', yn(p.isDummy)),
@@ -523,14 +444,14 @@ class UserDetailsScreen extends ConsumerWidget {
     return provider!.trim();
   }
 
-  /// Status-aware moderation actions — Approve / Reject a pending profile,
-  /// re-approve a rejected one; approved profiles point the admin at the
+  /// Status-aware verification actions — Verify / Reject a pending profile,
+  /// re-verify a rejected one; verified profiles point the admin at the
   /// account-level Suspend/Activate button instead.
   Widget _moderationActionsCard(
       BuildContext context, WidgetRef ref, ProfileModel p) {
     final status = p.status.trim().toLowerCase();
     return _card([
-      _sectionTitle('Moderation Actions'),
+      _sectionTitle('Profile Verification'),
       const SizedBox(height: 12),
       if (status == 'pending')
         Row(
@@ -538,8 +459,8 @@ class UserDetailsScreen extends ConsumerWidget {
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: () => _approveProfile(context, ref, p),
-                icon: const Icon(Icons.check_circle_outline),
-                label: const Text('Approve'),
+                icon: const Icon(Icons.verified_outlined),
+                label: const Text('Verify'),
                 style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.success,
                     foregroundColor: Colors.white,
@@ -565,8 +486,8 @@ class UserDetailsScreen extends ConsumerWidget {
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: () => _approveProfile(context, ref, p),
-            icon: const Icon(Icons.check_circle_outline),
-            label: const Text('Approve'),
+            icon: const Icon(Icons.verified_outlined),
+            label: const Text('Verify'),
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.success,
                 foregroundColor: Colors.white,
@@ -581,7 +502,7 @@ class UserDetailsScreen extends ConsumerWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'This profile is approved. To take it off the platform, use '
+                'This profile is verified. To take it off the platform, use '
                 'the Suspend button below — Activate restores access.',
                 style: TextStyle(fontSize: 12.5, color: Colors.grey[700]),
               ),
@@ -589,7 +510,8 @@ class UserDetailsScreen extends ConsumerWidget {
           ],
         )
       else
-        Text('No moderation action available for status "${p.status}".',
+        Text('No verification action available for status '
+            '"${profileStatusLabel(p.status)}".',
             style: TextStyle(fontSize: 12.5, color: Colors.grey[700])),
     ]);
   }
@@ -597,15 +519,15 @@ class UserDetailsScreen extends ConsumerWidget {
   Future<void> _approveProfile(
       BuildContext context, WidgetRef ref, ProfileModel p) async {
     final messenger = ScaffoldMessenger.of(context);
-    // Pass BOTH ids so the member receives the "Profile Approved" push.
+    // Pass BOTH ids so the member receives the "Profile Verified" push.
     await ref
         .read(adminActionsProvider.notifier)
         .approveProfile(p.id, userId: p.userId);
     final st = ref.read(adminActionsProvider);
     messenger.showSnackBar(SnackBar(
       content: Text(st.hasError
-          ? 'Could not approve profile. Please try again.'
-          : 'Profile approved — the member has been notified.'),
+          ? 'Could not verify profile. Please try again.'
+          : 'Profile verified — the member has been notified.'),
       backgroundColor: st.hasError ? AppColors.error : AppColors.success,
     ));
   }

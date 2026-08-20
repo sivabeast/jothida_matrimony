@@ -43,15 +43,11 @@ import '../screens/admin/admin_edit_user_screen.dart';
 import '../screens/admin/astrologer_accounts_screen.dart';
 import '../screens/admin/astrologer_details_screen.dart';
 import '../screens/admin/user_details_screen.dart';
-import '../screens/admin/admin_astrologer_profile_screen.dart';
-import '../screens/admin/admin_settlements_screen.dart';
 import '../screens/admin/admin_horoscope_requests_screen.dart';
 import '../screens/admin/admin_appointments_screen.dart';
-import '../screens/admin/astrologer_verification_screen.dart';
 import '../screens/admin/admin_activity_log_screen.dart';
 import '../screens/admin/admin_approvals_screen.dart';
 import '../screens/admin/admin_payments_screen.dart';
-import '../screens/admin/admin_management_screens.dart';
 import '../screens/admin/admin_reports_page.dart';
 import '../screens/admin/admin_report_management_screen.dart';
 import '../screens/admin/admin_test_data_screen.dart';
@@ -71,7 +67,6 @@ import '../screens/notifications/announcement_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
 import '../screens/profile/profile_section_edit_screens.dart';
 import '../screens/profile/photos_edit_screen.dart';
-import '../screens/family/family_tree_screen.dart';
 import '../screens/interests/interests_center_screen.dart';
 import '../screens/preferences/partner_preferences_screen.dart';
 import '../screens/settings/settings_screen.dart';
@@ -446,8 +441,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           path: '/edit/religious',
           builder: (_, __) => const ReligiousEditScreen()),
       GoRoute(
-          path: '/edit/family', builder: (_, __) => const FamilyEditScreen()),
-      GoRoute(
           path: '/edit/lifestyle',
           builder: (_, __) => const LifestyleEditScreen()),
       GoRoute(
@@ -476,17 +469,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) =>
             HoroscopeMatchScreen(userId: state.pathParameters['uid']!),
       ),
-      // Family Tree — own (/family-tree) and an accepted match's
-      // (/family-tree-user/:uid). The matched-user entry button is only shown on
-      // a profile whose interest has been accepted.
-      GoRoute(
-          path: '/family-tree',
-          builder: (_, __) => const FamilyTreeScreen()),
-      GoRoute(
-        path: '/family-tree-user/:uid',
-        builder: (_, state) =>
-            FamilyTreeScreen(userId: state.pathParameters['uid']!),
-      ),
       GoRoute(path: '/partner-preferences', builder: (_, __) => const PartnerPreferencesScreen()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
       // Safety / moderation (spec §6–§7): user-facing Blocked & Reported lists.
@@ -505,13 +487,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/delete-account',
           builder: (_, __) => const DeleteAccountScreen()),
-      // Dedicated Astrologer Verification queue (standalone full-screen page,
-      // admin-gated by the /admin/ redirect; reached from the Dashboard and the
-      // Astrologers list).
-      GoRoute(
-        path: '/admin/verification',
-        builder: (_, __) => const AstrologerVerificationScreen(),
-      ),
       // One report request — Groom / Bride / Horoscope details + Fill Report.
       // The SAME page the employee portal opens ('/astrologer-request/:id').
       //
@@ -566,16 +541,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               path: '/admin/astrologer-account/:id',
               builder: (_, state) => AstrologerDetailsScreen(
                   emailKey: state.pathParameters['id'] ?? '')),
-          // Per-astrologer profile (Profile/Documents/Availability/Bookings/
-          // Reviews/Payouts).
-          GoRoute(
-              path: '/admin/astrologer/:id',
-              builder: (_, state) => AdminAstrologerProfileScreen(
-                  astrologerId: state.pathParameters['id'] ?? '')),
-          // Settlements & Payouts (astrologer payouts + refunds).
-          GoRoute(
-              path: '/admin/settlements',
-              builder: (_, __) => const AdminSettlementsScreen()),
           // Paid transactions — every astrologer_requests booking with
           // paid == true (drawer → Payments → Transactions).
           GoRoute(
@@ -592,12 +557,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               builder: (_, __) => const AdminAppointmentsScreen()),
           GoRoute(path: '/admin/banners', builder: (_, __) => const BannerManagementScreen()),
           GoRoute(path: '/admin/notifications', builder: (_, __) => const AnnouncementManagementScreen()),
-          GoRoute(path: '/admin/revenue-settings', builder: (_, __) => const RevenueSettingsScreen()),
           GoRoute(
               path: '/admin/astrology-service',
               builder: (_, __) => const AstrologyServiceSettingsScreen()),
           GoRoute(path: '/admin/analytics', builder: (_, __) => const AdminReportsPage()),
-          GoRoute(path: '/admin/settings', builder: (_, __) => const AdminSettingsScreen()),
           GoRoute(path: '/admin/commission', builder: (_, __) => const EmployeeCommissionScreen()),
           GoRoute(path: '/admin/married', builder: (_, __) => const MarriedUsersScreen()),
           GoRoute(path: '/admin/test-data', builder: (_, __) => const AdminTestDataScreen()),

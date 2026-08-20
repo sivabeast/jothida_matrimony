@@ -96,36 +96,10 @@ class AdminReportsPage extends ConsumerWidget {
         ]),
         const SizedBox(height: 24),
 
-        // ── Astrologers ───────────────────────────────────────────────────
-        Row(children: [
-          Expanded(child: _SectionTitle('Astrologers')),
-          _ExportChip(onTap: () => exportAstrologersCsv(context, a)),
-        ]),
-        const SizedBox(height: 12),
-        _statTiles([
-          ('Total', '${a.totalAstrologers}', AppColors.gold),
-          ('Pending', '${a.pendingAstrologers}', AppColors.warning),
-          ('Verified', '${a.verifiedAstrologers}', AppColors.success),
-        ]),
-        const SizedBox(height: 12),
-        _leaderboard('⭐ Top Rated', a.topRatedAstrologers,
-            (r) => '${r.rating.toStringAsFixed(1)} ★ (${r.reviewCount})'),
-        const SizedBox(height: 10),
-        _leaderboard('🔮 Most Consulted', a.mostConsultedAstrologers,
-            (r) => '${r.consultations} consults'),
-        const SizedBox(height: 24),
-
-        // ── Consultations ─────────────────────────────────────────────────
-        _SectionTitle('Consultations'),
-        const SizedBox(height: 12),
-        _statTiles([
-          ('Today', '${a.consultationsToday}', AppColors.info),
-          ('This Week', '${a.consultationsWeek}', AppColors.primary),
-          ('This Month', '${a.consultationsMonth}', Colors.teal),
-          ('Completed', '${a.consultationsCompleted}', AppColors.success),
-          ('Cancelled', '${a.consultationsCancelled}', AppColors.error),
-        ]),
-        const SizedBox(height: 24),
+        // (The Astrologers and Consultations sections were removed with the
+        // astrologer role: there are no astrologer accounts, ratings, reviews
+        // or consultation bookings any more. Employee workload and commission
+        // live in Employee Management → Commission.)
 
         // ── Marriage success ──────────────────────────────────────────────
         _SectionTitle('Marriage Success'),
@@ -156,57 +130,6 @@ class AdminReportsPage extends ConsumerWidget {
         runSpacing: 10,
         children: [for (final r in rows) _MiniStat(label: r.$1, value: r.$2, color: r.$3)],
       );
-
-  Widget _leaderboard(String title, List<AstrologerStatRow> rows,
-      String Function(AstrologerStatRow) trailing) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-          const SizedBox(height: 8),
-          if (rows.isEmpty)
-            Text('No data yet.', style: TextStyle(color: Colors.grey[500], fontSize: 12.5))
-          else
-            ...rows.asMap().entries.map((e) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(children: [
-                    CircleAvatar(
-                      radius: 11,
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
-                      child: Text('${e.key + 1}',
-                          style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold)),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(e.value.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 13)),
-                    ),
-                    Text(trailing(e.value),
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[700],
-                            fontWeight: FontWeight.w600)),
-                  ]),
-                )),
-        ],
-      ),
-    );
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

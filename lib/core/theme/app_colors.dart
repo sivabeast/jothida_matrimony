@@ -42,10 +42,6 @@ class AppColors {
   static const Color alertHigh = Color(0xFFE65100);
   static const Color alertCritical = Color(0xFFD32F2F);
 
-  // Subscription
-  static const Color basicPlan = Color(0xFF546E7A);
-  static const Color mediumPlan = Color(0xFF800020);
-  static const Color premiumPlan = Color(0xFFD4AF37);
 
   // Divider & Border
   static const Color divider = Color(0xFFE8D5D8);

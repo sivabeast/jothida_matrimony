@@ -380,7 +380,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
         (ref
                 .watch(profileByUserIdProvider(otherUid))
                 .valueOrNull
-                ?.isVerified ??
+                ?.isProfileVerified ??
             false);
 
     // Block / report state (spec §6, §7). `blocked` is either direction — the

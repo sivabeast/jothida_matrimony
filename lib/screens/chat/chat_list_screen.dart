@@ -105,11 +105,16 @@ class _ThreadTile extends ConsumerWidget {
     final photo = thread.otherPhoto(myUid);
     final unread = thread.unreadFor(myUid);
     // Verified badge — resolved from the counterpart's (readable, cached)
-    // profile. No extra network cost when Firestore serves it from local cache.
+    // profile. Reads the SAME admin profile-verification status as the tick
+    // beside a member's name. No extra network cost when Firestore serves it
+    // from local cache.
     final otherId = thread.otherId(myUid);
     final verified = otherId.isEmpty
         ? false
-        : (ref.watch(profileByUserIdProvider(otherId)).valueOrNull?.isVerified ??
+        : (ref
+                .watch(profileByUserIdProvider(otherId))
+                .valueOrNull
+                ?.isProfileVerified ??
             false);
 
     return Material(
@@ -141,7 +146,7 @@ class _ThreadTile extends ConsumerWidget {
             ),
             if (verified) ...[
               const SizedBox(width: 4),
-              const Icon(Icons.verified, size: 15, color: AppColors.primary),
+              const Icon(Icons.verified, size: 15, color: AppColors.success),
             ],
           ],
         ),

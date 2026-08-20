@@ -197,8 +197,12 @@ const Map<String, String> kTamilValueMap = {
   // ── Misc statuses (incl. profile status, §20 "Profile Status") ──
   'Pending': 'நிலுவையில்',
   'Accepted': 'ஏற்கப்பட்டது',
-  'Approved': 'அங்கீகரிக்கப்பட்டது',
-  'approved': 'அங்கீகரிக்கப்பட்டது',
+  // Profile status: the stored value is still 'approved', but it MEANS
+  // "Verified" everywhere a human reads it.
+  'Verified': 'சரிபார்க்கப்பட்டது',
+  'Approved': 'சரிபார்க்கப்பட்டது',
+  'approved': 'சரிபார்க்கப்பட்டது',
+  'Pending Verification': 'சரிபார்ப்பு நிலுவையில்',
   'pending': 'நிலுவையில்',
   'rejected': 'நிராகரிக்கப்பட்டது',
   'blocked': 'தடுக்கப்பட்டது',

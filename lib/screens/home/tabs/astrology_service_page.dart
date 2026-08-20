@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -375,9 +376,9 @@ class _Body extends StatelessWidget {
           () => _launch(context, Uri(scheme: 'mailto', path: email),
               'Email: $email')));
     }
-    // The office address itself opens Google Maps — the destination is always
-    // derived from the astrologer's OWN stored location/address, never a fixed
-    // place (see [_openMaps]).
+    // The office address itself starts Google Maps DIRECTIONS — the
+    // destination is always derived from the astrologer's OWN stored
+    // location/address, never a fixed place (see [_openMaps]).
     if (address.isNotEmpty) {
       rows.add(_contactRow(Icons.location_on_outlined, 'Office', address,
           _hasMapTarget ? () => _openMaps(context) : null));
@@ -392,8 +393,8 @@ class _Body extends StatelessWidget {
         width: double.infinity,
         child: OutlinedButton.icon(
           onPressed: () => _openMaps(context),
-          icon: const Icon(Icons.place_outlined, size: 18),
-          label: const Text('View Location on Google Maps'),
+          icon: const Icon(Icons.directions_outlined, size: 18),
+          label: const Text('Get Directions in Google Maps'),
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.primary,
             side: const BorderSide(color: AppColors.primary),
@@ -417,7 +418,7 @@ class _Body extends StatelessWidget {
     return cfg.officeAddress.trim();
   }
 
-  bool get _hasMapTarget => _mapQuery.isNotEmpty;
+  bool get _hasMapTarget => _destination.isNotEmpty;
 
   /// Matches "12.9716,77.5946" (with optional spaces) — coordinates are used
   /// verbatim because they pin the office far more accurately than an address
@@ -425,47 +426,98 @@ class _Body extends StatelessWidget {
   static final RegExp _latLng =
       RegExp(r'^\s*(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)\s*$');
 
-  /// Opens the astrologer's location, preferring the installed Google Maps app
-  /// (Android `geo:` / iOS `comgooglemaps:`) and falling back to the browser.
+  /// Coordinates embedded in a pasted Google Maps link, in the two shapes the
+  /// Maps UI produces: `/@-33.8688,151.2093,17z` and `?q=-33.8688,151.2093`
+  /// (also `query=`, `daddr=`, `destination=`).
+  static final RegExp _urlAtCoords =
+      RegExp(r'@(-?\d{1,3}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)');
+  static final RegExp _urlParamCoords = RegExp(
+      r'[?&](?:q|query|daddr|destination)=(-?\d{1,3}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)');
+
+  /// Place name embedded in a `/maps/place/<Name>/` link, used when the link
+  /// carries no coordinates.
+  static final RegExp _urlPlaceName = RegExp(r'/maps/place/([^/@?]+)');
+
+  /// The DESTINATION string handed to Google Maps Directions — always derived
+  /// from the astrologer's own stored location, never a hardcoded place.
+  ///
+  /// A pasted Maps link cannot be used as a destination as-is, so the
+  /// coordinates (or place name) are extracted from it; a link that carries
+  /// neither (e.g. a `maps.app.goo.gl` short link) falls back to the office
+  /// address so the button still starts real directions.
+  String get _destination {
+    final raw = _mapQuery;
+    if (raw.isEmpty) return '';
+    if (!raw.startsWith('http')) return raw;
+
+    final at = _urlAtCoords.firstMatch(raw);
+    if (at != null) return '${at.group(1)},${at.group(2)}';
+    final param = _urlParamCoords.firstMatch(raw);
+    if (param != null) return '${param.group(1)},${param.group(2)}';
+    final place = _urlPlaceName.firstMatch(raw);
+    if (place != null) {
+      final name = Uri.decodeComponent(place.group(1)!).replaceAll('+', ' ');
+      if (name.trim().isNotEmpty) return name.trim();
+    }
+    // No usable destination inside the link — use the office address instead.
+    final address = cfg.officeAddress.trim();
+    return address.isNotEmpty ? address : '';
+  }
+
+  /// Opens the Google Maps DIRECTIONS screen for the astrologer's location:
+  /// the device's current position is the origin (left unset so Maps fills it
+  /// in) and the stored office location is the destination, so the user lands
+  /// on a ready-to-start route instead of on a plain pin.
+  ///
+  /// Navigation is NOT auto-started — the user taps Start themselves.
+  ///
+  /// On iOS the installed Google Maps app is tried first (`comgooglemaps:`);
+  /// everywhere else the universal `maps/dir/` link is used, which Android
+  /// routes into the Google Maps app when it is installed and opens in the
+  /// browser when it is not.
   Future<void> _openMaps(BuildContext context) async {
-    final query = _mapQuery;
-    if (query.isEmpty) return;
+    final destination = _destination;
+    if (destination.isEmpty) return;
     final messenger = ScaffoldMessenger.of(context);
 
-    // An admin-pasted Maps link is already a destination — open it as-is.
-    if (query.startsWith('http')) {
-      await _launch(context, Uri.parse(query), query);
-      return;
-    }
+    final coords = _latLng.firstMatch(destination);
+    final target = coords != null
+        ? '${coords.group(1)},${coords.group(2)}'
+        : destination;
+    final encoded = Uri.encodeComponent(target);
 
-    final coords = _latLng.firstMatch(query);
-    final encoded = Uri.encodeComponent(query);
-    final Uri appUri = coords != null
-        ? Uri.parse('geo:${coords.group(1)},${coords.group(2)}'
-            '?q=${coords.group(1)},${coords.group(2)}')
-        : Uri.parse('geo:0,0?q=$encoded');
-    final Uri webUri = coords != null
-        ? Uri.parse('https://www.google.com/maps/search/?api=1'
-            '&query=${coords.group(1)},${coords.group(2)}')
-        : Uri.parse(
-            'https://www.google.com/maps/search/?api=1&query=$encoded');
+    // Universal Maps DIRECTIONS url. Omitting `origin` makes Google Maps use
+    // the user's CURRENT LOCATION as the starting point, and leaving
+    // `dir_action` off shows the route with a Start button rather than dropping
+    // the user straight into turn-by-turn. Android/iOS route this https link
+    // into the Google Maps app when it is installed.
+    final webUri = Uri.parse('https://www.google.com/maps/dir/?api=1'
+        '&destination=$encoded&travelmode=driving');
 
-    // Try the native maps app first; any failure falls through to the web map
-    // so the action always does something useful.
-    try {
-      if (await canLaunchUrl(appUri) &&
-          await launchUrl(appUri, mode: LaunchMode.externalApplication)) {
-        return;
+    // iOS does not app-link the https url, so try the Google Maps app scheme
+    // there first. (`google.navigation:` is deliberately NOT used on Android:
+    // it starts turn-by-turn immediately instead of showing the route.)
+    final appUris = <Uri>[
+      if (defaultTargetPlatform == TargetPlatform.iOS)
+        Uri.parse('comgooglemaps://?daddr=$encoded&directionsmode=driving'),
+    ];
+
+    for (final appUri in appUris) {
+      try {
+        if (await canLaunchUrl(appUri) &&
+            await launchUrl(appUri, mode: LaunchMode.externalApplication)) {
+          return;
+        }
+      } catch (_) {
+        // Ignored — handled by the web fallback below.
       }
-    } catch (_) {
-      // Ignored — handled by the web fallback below.
     }
     try {
       if (await launchUrl(webUri, mode: LaunchMode.externalApplication)) return;
     } catch (_) {
       // Ignored — handled by the message below.
     }
-    messenger.showSnackBar(SnackBar(content: Text(query)));
+    messenger.showSnackBar(SnackBar(content: Text(destination)));
   }
 
   Widget _contactRow(

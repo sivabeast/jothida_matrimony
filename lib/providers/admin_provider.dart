@@ -144,8 +144,10 @@ class AdminActionsNotifier extends Notifier<AsyncValue<void>> {
         );
   }
 
-  /// Approves a pending profile. When [userId] is provided the member gets the
-  /// "Profile Approved" notification (+ push via the Cloud Function gate).
+  /// VERIFIES a pending profile (the stored status value stays 'approved' —
+  /// Firestore rules, indexes and Cloud Functions key off it). When [userId] is
+  /// provided the member gets the "Profile Verified" notification (+ push via
+  /// the Cloud Function gate).
   Future<void> approveProfile(String profileId, {String userId = ''}) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(

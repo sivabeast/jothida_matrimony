@@ -106,24 +106,3 @@ Future<void> exportUsersCsv(BuildContext context, DashboardAnalytics a) {
   ];
   return _shareCsv(context, 'user_report_${_stamp()}.csv', _rows(rows));
 }
-
-Future<void> exportAstrologersCsv(BuildContext context, DashboardAnalytics a) {
-  final rows = <List<Object?>>[
-    ['Astrologer Report', 'Generated', DateTime.now().toIso8601String()],
-    [],
-    ['Metric', 'Count'],
-    ['Total Astrologers', a.totalAstrologers],
-    ['Pending Verification', a.pendingAstrologers],
-    ['Verified Astrologers', a.verifiedAstrologers],
-    [],
-    ['Top Rated Astrologers', ''],
-    ['Name', 'Rating', 'Reviews'],
-    for (final r in a.topRatedAstrologers)
-      [r.name, r.rating.toStringAsFixed(1), r.reviewCount],
-    [],
-    ['Most Consulted Astrologers', ''],
-    ['Name', 'Consultations'],
-    for (final r in a.mostConsultedAstrologers) [r.name, r.consultations],
-  ];
-  return _shareCsv(context, 'astrologer_report_${_stamp()}.csv', _rows(rows));
-}

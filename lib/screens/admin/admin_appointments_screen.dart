@@ -87,7 +87,6 @@ class _AdminAppointmentsScreenState
     return r.userName.toLowerCase().contains(q) ||
         r.userPhone.toLowerCase().contains(q) ||
         r.id.toLowerCase().contains(q) ||
-        r.astrologerName.toLowerCase().contains(q) ||
         r.category.toLowerCase().contains(q);
   }
 
@@ -150,7 +149,7 @@ class _AdminAppointmentsScreenState
           controller: _search,
           onChanged: (v) => setState(() => _query = v),
           decoration: InputDecoration(
-            hintText: 'Search by name, mobile, booking ID or astrologer',
+            hintText: 'Search by name, mobile or booking ID',
             prefixIcon: const Icon(Icons.search),
             suffixIcon: _query.isEmpty
                 ? null
@@ -325,42 +324,26 @@ class _AppointmentAdminCard extends ConsumerWidget {
             ],
           ),
           const Divider(height: 18),
-          Row(
-            children: [
-              Expanded(
-                  child: _info(Icons.category_outlined, 'Appointment Type',
-                      d.appointmentType)),
-              Expanded(
-                  child: _info(
-                      Icons.place_outlined, 'Meeting Type', d.meetingType)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(child: _info(Icons.event_outlined, 'Date', d.date)),
-              Expanded(child: _info(Icons.schedule_outlined, 'Time', d.time)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                  child: _info(Icons.payments_outlined, 'Payment', d.payment)),
-              Expanded(
-                  child: _info(Icons.badge_outlined, 'Astrologer',
-                      d.astrologer)),
-            ],
-          ),
-          const SizedBox(height: 8),
+          // Every detail uses ONE structure (label above value, value on its
+          // own full-width line) laid out in a responsive grid: two columns
+          // when there is room, one column on narrow phones. Values therefore
+          // always get enough width to wrap on word boundaries instead of
+          // breaking one word — or one character — per line.
+          AppointmentDetailsGrid(items: [
+            (Icons.category_outlined, 'Appointment Type', d.appointmentType),
+            (Icons.place_outlined, 'Meeting Type', d.meetingType),
+            (Icons.event_outlined, 'Date', d.date),
+            (Icons.schedule_outlined, 'Time', d.time),
+            (Icons.payments_outlined, 'Payment', d.payment),
+            (Icons.history_toggle_off_outlined, 'Created', d.created),
+          ]),
+          const SizedBox(height: 10),
           _info(Icons.confirmation_number_outlined, 'Booking ID', appt.id),
           if (d.notes.isNotEmpty) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: 10),
             _info(Icons.sticky_note_2_outlined, 'Notes', d.notes),
           ],
-          const SizedBox(height: 6),
-          _info(Icons.history_toggle_off_outlined, 'Created', d.created),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
           _actions(context, ref),
         ],
       ),
@@ -378,20 +361,8 @@ class _AppointmentAdminCard extends ConsumerWidget {
                 fontSize: 11, fontWeight: FontWeight.w700, color: color)),
       );
 
-  Widget _info(IconData icon, String label, String value) => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 15, color: AppColors.primary),
-          const SizedBox(width: 6),
-          Text('$label: ',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-          Expanded(
-            child: Text(value,
-                style: const TextStyle(
-                    fontSize: 12.5, fontWeight: FontWeight.w600)),
-          ),
-        ],
-      );
+  Widget _info(IconData icon, String label, String value) =>
+      AppointmentDetailRow(icon: icon, label: label, value: value);
 
   /// Every action the spec asks for, offered only when it makes sense for the
   /// booking's current state:
@@ -439,5 +410,90 @@ class _AppointmentAdminCard extends ConsumerWidget {
           minimumSize: const Size(0, 36),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
+      );
+}
+
+
+/// The appointment card's label/value grid (spec §19).
+///
+/// Two columns when the card is wide enough, ONE full-width column when it is
+/// not, so a value like "In-Person · Office Visit" always has room to wrap on
+/// word boundaries instead of breaking one word — or one character — per line.
+class AppointmentDetailsGrid extends StatelessWidget {
+  /// (icon, label, value) triples, rendered in order.
+  final List<(IconData, String, String)> items;
+
+  const AppointmentDetailsGrid({super.key, required this.items});
+
+  /// The minimum width one detail column needs before a value starts breaking
+  /// badly. Below twice this (plus the gutter) the grid drops to one column.
+  static const double minColumnWidth = 150;
+  static const double _gutter = 12;
+
+  @override
+  Widget build(BuildContext context) =>
+      LayoutBuilder(builder: (context, c) {
+        final twoColumns = c.maxWidth >= minColumnWidth * 2 + _gutter;
+        // Subtract a hair so rounding can never push two tiles past the line.
+        final itemWidth =
+            twoColumns ? (c.maxWidth - _gutter) / 2 - 0.01 : c.maxWidth;
+        return Wrap(
+          spacing: _gutter,
+          runSpacing: 10,
+          children: [
+            for (final (icon, label, value) in items)
+              SizedBox(
+                width: itemWidth,
+                child:
+                    AppointmentDetailRow(icon: icon, label: label, value: value),
+              ),
+          ],
+        );
+      });
+}
+
+/// One label/value pair. The label sits on its own line next to the icon and
+/// the value takes the FULL width underneath, so labels and values stay aligned
+/// and ordinary words are never squeezed into a one-character-per-line column.
+class AppointmentDetailRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const AppointmentDetailRow({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: AppColors.primary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Padding(
+            padding: const EdgeInsets.only(left: 20),
+            child: Text(
+              value.trim().isEmpty ? '—' : value,
+              softWrap: true,
+              style: const TextStyle(
+                  fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.3),
+            ),
+          ),
+        ],
       );
 }

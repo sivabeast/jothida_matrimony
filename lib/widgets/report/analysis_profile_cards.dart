@@ -187,7 +187,6 @@ class _ProfileReviewCard extends ConsumerWidget {
 
   Widget _details(BuildContext context, ProfileModel p) {
     final h = p.horoscope;
-    final f = p.family;
     final l = p.lifestyle;
     final location = [p.city, p.district, p.state, p.country]
         .where((s) => s.trim().isNotEmpty)
@@ -302,20 +301,6 @@ class _ProfileReviewCard extends ConsumerWidget {
           ('Rahu / Kethu Dosham', h.rahuKethuDosham),
           ('Kalasarpa Dosham', h.kalasarpaDosham),
         ]),
-        _group('Family Details', [
-          ('Father', f.fatherName),
-          ('Father Occupation', f.fatherOccupation),
-          ('Mother', f.motherName),
-          ('Mother Occupation', f.motherOccupation),
-          ('Brothers', f.brothersCount > 0 ? '${f.brothersCount}' : ''),
-          ('Married Brothers',
-              f.marriedBrothers > 0 ? '${f.marriedBrothers}' : ''),
-          ('Sisters', f.sistersCount > 0 ? '${f.sistersCount}' : ''),
-          ('Married Sisters',
-              f.marriedSisters > 0 ? '${f.marriedSisters}' : ''),
-          ('Family Type', f.familyType),
-          ('Family Status', f.familyStatus),
-        ]),
         _group('Personality & Lifestyle', [
           ('Eating Habit', l.eatingHabit),
           ('Smoking Habit', l.smokingHabit),
@@ -325,8 +310,6 @@ class _ProfileReviewCard extends ConsumerWidget {
           ('Languages Known', l.languagesKnown.join(', ')),
         ]),
         if (p.about.trim().isNotEmpty) _paragraph('About', p.about),
-        if (f.aboutFamily.trim().isNotEmpty)
-          _paragraph('About the Family', f.aboutFamily),
 
         // ── Uploaded horoscope documents ──
         if (h.horoscopeImages.isNotEmpty || h.allPdfUrls.isNotEmpty) ...[

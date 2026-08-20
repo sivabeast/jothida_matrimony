@@ -461,16 +461,6 @@ ProfileModel _dummy({
       birthPlace: city,
       horoscopeImages: horoscopeImage != null ? [horoscopeImage] : const [],
     ),
-    family: const FamilyDetails(
-      fatherName: 'Mr. Raman',
-      fatherOccupation: 'Retired',
-      motherName: 'Mrs. Kamala',
-      motherOccupation: 'Homemaker',
-      brothersCount: 1,
-      sistersCount: 0,
-      familyType: 'Nuclear',
-      familyStatus: 'Middle Class',
-    ),
     partnerPreferences: PartnerPreferences(
       minAge: gender == 'Male' ? 22 : 26,
       maxAge: gender == 'Male' ? 32 : 38,

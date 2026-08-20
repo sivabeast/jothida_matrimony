@@ -417,7 +417,7 @@ class _AstrologyServiceSettingsScreenState
           const SizedBox(height: 14),
           _subLabel('Session Capacity'),
           _emptyHint(
-              'Two fixed sessions (no exact time slots — the assigned employee '
+              'Two fixed sessions (no exact time slots — the office '
               'contacts the user personally with the exact timing). Set how '
               'many bookings each accepts per day (max 5 recommended) — once '
               'full, that session becomes unavailable for booking.'),

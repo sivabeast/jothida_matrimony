@@ -506,28 +506,18 @@ service cloud.firestore {
       }
     }
 
-    // ── Consultations (In-App + Direct Visit booking system) ─────────────
-    // USER → ASTROLOGER. The user creates the booking; both parties (and admins)
-    // can read it; the astrologer responds and submits the report; the user can
-    // pay / cancel. Payment is collected only AFTER acceptance.
+    // ── Consultations (LEGACY) ───────────────────────────────────────────
+    // The astrologer consultation marketplace was removed together with the
+    // astrologer role: nothing creates or updates these documents any more.
+    // Read + delete stay so the owner's account-deletion sweep can clear any
+    // leftover records.
     match /consultations/{consultationId} {
-      allow read: if isAuthenticated()
-                  && (resource.data.userId == request.auth.uid
-                      || resource.data.astrologerId == request.auth.uid);
-      allow read: if isAdmin();
-      allow create: if isAuthenticated()
-                    && request.resource.data.userId == request.auth.uid;
-      // The addressed astrologer may respond / run the analysis / submit report.
-      allow update: if isAuthenticated()
-                    && resource.data.astrologerId == request.auth.uid;
-      // The booking owner may pay / cancel their own booking.
-      allow update: if isAuthenticated()
-                    && resource.data.userId == request.auth.uid;
-      allow update: if isAdmin();
+      allow read: if isAdmin()
+                  || (isAuthenticated()
+                      && resource.data.userId == request.auth.uid);
       allow delete: if isAdmin()
                     || (isAuthenticated()
-                        && (resource.data.astrologerId == request.auth.uid
-                            || resource.data.userId == request.auth.uid));
+                        && resource.data.userId == request.auth.uid);
     }
 
     // ── Astrology service config ─────────────────────────────────────────
@@ -604,21 +594,10 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
-    // ── Settlements (astrologer payout history) ──────────────────────────
-    // The admin collects consultation payments and pays them out in full (no
-    // commission). Each "Mark as Paid" batch writes one settlement doc. Only the
-    // admin may write; the admin and the owning astrologer may read their own.
-    match /settlements/{settlementId} {
-      allow read: if isAdmin()
-                  || (isAuthenticated()
-                      && resource.data.astrologerId == request.auth.uid);
-      allow create, update, delete: if isAdmin();
-    }
-
     // ── Astrologer requests (consultation / inquiry / matching) ──────────
-    // Direction is USER → ASTROLOGER: only the user creates a request; the
-    // astrologer may only respond (accept/complete/reject) to requests
-    // addressed to them.
+    // Direction is USER → EMPLOYEE: only the user creates a request; the
+    // assigned employee may only respond (accept/complete/reject) to requests
+    // addressed to them, and stamps the per-request commission on completion.
     match /astrologer_requests/{requestId} {
       allow read: if isAuthenticated()
                   && (resource.data.userId == request.auth.uid

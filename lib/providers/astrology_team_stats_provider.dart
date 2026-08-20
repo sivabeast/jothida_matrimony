@@ -48,8 +48,25 @@ class AstrologerStats {
   final int revenue;
 
   /// Commission (₹) paid to the employee per completed report — the single
-  /// global rate from `AstrologyServiceConfig.analysisCommission`.
+  /// global rate from `AstrologyServiceConfig.analysisCommission`. This is the
+  /// rate that will apply to the NEXT completion; already-completed requests
+  /// keep whatever rate they were credited at.
   final int commissionPerReport;
+
+  /// Commission ACTUALLY earned, all-time: the sum of the commission stamped on
+  /// each completed request at the moment it was completed. Because the amount
+  /// is frozen per request, changing the configured rate never rewrites what
+  /// past completions were worth.
+  final int earnedCommission;
+
+  /// Earned commission for the current calendar week / month, on the same
+  /// per-request stamped amounts.
+  final int earnedThisWeek;
+  final int earnedThisMonth;
+
+  /// Earned commission for the CURRENT payroll cycle (completions since the
+  /// admin last hit "Mark As Paid").
+  final int earnedThisCycle;
 
   /// Reports completed in the CURRENT payroll cycle — i.e. since the admin
   /// last hit "Mark As Paid" (`member.lastPaidDate`). This is what the weekly
@@ -74,20 +91,24 @@ class AstrologerStats {
     this.revenue = 0,
     this.commissionPerReport = 0,
     this.cycleCompleted = 0,
+    this.earnedCommission = 0,
+    this.earnedThisWeek = 0,
+    this.earnedThisMonth = 0,
+    this.earnedThisCycle = 0,
   });
 
   /// All-time completion rate as a whole-number percentage.
   int get completionRate =>
       totalAssigned == 0 ? 0 : ((completed / totalAssigned) * 100).round();
 
-  /// Commission earned this calendar week = completed-this-week × rate.
-  int get weeklyCommission => thisWeek.completed * commissionPerReport;
+  /// Commission earned this calendar week (per-request stamped amounts).
+  int get weeklyCommission => earnedThisWeek;
 
-  /// Commission earned this month = completed-this-month × rate.
-  int get monthlyCommission => monthCompleted * commissionPerReport;
+  /// Commission earned this month (per-request stamped amounts).
+  int get monthlyCommission => earnedThisMonth;
 
-  /// Total commission earned (all-time) = total completed × rate.
-  int get totalCommission => completed * commissionPerReport;
+  /// Total commission earned, all-time (per-request stamped amounts).
+  int get totalCommission => earnedCommission;
 
   /// Commission the admin has already paid out to this employee.
   int get paidCommission => member.paidCommission;
@@ -96,7 +117,7 @@ class AstrologerStats {
   /// completed since the last "Mark As Paid"). Resets to ₹0 the moment the
   /// admin pays — e.g. week 1 earns ₹5000, admin pays, week 2 earning ₹50
   /// shows ₹50 (never ₹5050).
-  int get cycleCommission => cycleCompleted * commissionPerReport;
+  int get cycleCommission => earnedThisCycle;
 
   /// Payment status for the current cycle: money owed → Pending; nothing owed
   /// after at least one payout → Paid; brand-new employee with no activity → —.
@@ -142,14 +163,37 @@ AstrologerStats computeAstrologerStats(
   var todayCompleted = 0;
   var monthCompleted = 0;
   var cycleCompleted = 0;
+  var earned = 0;
+  var earnedWeek = 0;
+  var earnedMonth = 0;
+  var earnedCycle = 0;
   final cycleStart = m.lastPaidDate; // null → everything is still unpaid
+
+  // What ONE completed request earned. The amount stamped on the request at
+  // completion time is authoritative, so changing the configured rate later
+  // never rewrites history; requests completed before commission stamping
+  // existed carry no stamp and fall back to the current rate.
+  int earnedOn(AstrologerRequestModel r) =>
+      r.commissionCreditedAt != null || r.commissionAmount > 0
+          ? r.commissionAmount
+          : cfg.analysisCommission;
+
   for (final r in completedList) {
     revenue += r.amount;
+    final value = earnedOn(r);
+    earned += value;
     final c = r.completedAt;
     if (c != null) {
       if (sameDay(c, now)) todayCompleted++;
-      if (c.year == now.year && c.month == now.month) monthCompleted++;
-      if (cycleStart == null || c.isAfter(cycleStart)) cycleCompleted++;
+      if (c.year == now.year && c.month == now.month) {
+        monthCompleted++;
+        earnedMonth += value;
+      }
+      if (!c.isBefore(thisWeekStart)) earnedWeek += value;
+      if (cycleStart == null || c.isAfter(cycleStart)) {
+        cycleCompleted++;
+        earnedCycle += value;
+      }
     }
   }
   bool notCompleted(AstrologerRequestModel r) =>
@@ -205,6 +249,10 @@ AstrologerStats computeAstrologerStats(
     revenue: revenue,
     commissionPerReport: cfg.analysisCommission,
     cycleCompleted: cycleCompleted,
+    earnedCommission: earned,
+    earnedThisWeek: earnedWeek,
+    earnedThisMonth: earnedMonth,
+    earnedThisCycle: earnedCycle,
   );
 }
 

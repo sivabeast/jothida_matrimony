@@ -18,7 +18,7 @@ import '../../widgets/common/skeletons.dart';
 
 /// Admin "Notification Management" — TWO fully independent systems (per spec):
 ///
-///  • **User Notifications** — match/report/membership/booking/payment updates
+///  • **User Notifications** — match/report/booking/payment updates
 ///    sent to ALL users or to SELECTED users. Never visible to employees.
 ///  • **Employee Notifications** — assignments, announcements, priority
 ///    reports, work reminders, maintenance notes sent to ALL employees or to

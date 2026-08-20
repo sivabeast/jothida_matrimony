@@ -16,7 +16,7 @@ import '../../../widgets/common/searchable_field.dart';
 
 /// Step 1 — Basic Details: Profile For, Full Name (English required, Tamil
 /// optional per §1), Gender, Date of Birth, Height, Weight, Marital Status,
-/// Physical Status, Family Type / Status, and the children question.
+/// Physical Status, and the children question.
 ///
 /// Children are asked DIRECTLY (§2) — "உங்களுக்கு குழந்தைகள் உள்ளனவா?" — not
 /// inferred from marital status. The old rule only offered the field to
@@ -50,8 +50,6 @@ class _StepBasicState extends ConsumerState<StepBasic> {
   String? _maritalStatus;
   String? _physicalStatus;
   String? _childrenLivingStatus;
-  String? _familyType;
-  String? _familyStatus;
 
   /// §2 — asked outright, independent of marital status. Null until answered,
   /// which is what makes the question required.
@@ -94,15 +92,6 @@ class _StepBasicState extends ConsumerState<StepBasic> {
       _hasChildren = count > 0;
     }
     if (count is int && count > 0) _childrenCount = count;
-    // Family Type / Family Status live inside the familyDetails map (kept in
-    // sync with the Edit Profile → Family section).
-    final fam = data['familyDetails'];
-    if (fam is Map) {
-      final t = (fam['familyType'] as String?)?.trim() ?? '';
-      final s = (fam['familyStatus'] as String?)?.trim() ?? '';
-      if (t.isNotEmpty) _familyType = t;
-      if (s.isNotEmpty) _familyStatus = s;
-    }
   }
 
   @override
@@ -169,10 +158,6 @@ class _StepBasicState extends ConsumerState<StepBasic> {
           l10n.pleaseSelect(l10n.maritalStatus)),
       FieldCheck.notEmpty('physicalStatus', _physicalStatus,
           l10n.pleaseSelect(l10n.physicalStatus)),
-      FieldCheck.notEmpty(
-          'familyType', _familyType, l10n.pleaseSelect(l10n.familyType)),
-      FieldCheck.notEmpty(
-          'familyStatus', _familyStatus, l10n.pleaseSelect(l10n.familyStatus)),
       // §2 — the yes/no answer itself is required…
       FieldCheck(
           id: 'hasChildren',
@@ -185,17 +170,7 @@ class _StepBasicState extends ConsumerState<StepBasic> {
     ];
     if (!_v.validate(context, checks, onChanged: () => setState(() {}))) return;
 
-    // Merge into the existing familyDetails map so an edit never wipes the
-    // other family fields (father/mother details, siblings…).
-    final existingFam = ref.read(profileCreationProvider).data['familyDetails'];
-    final fam = existingFam is Map
-        ? Map<String, dynamic>.from(existingFam)
-        : <String, dynamic>{};
-    fam['familyType'] = _familyType;
-    fam['familyStatus'] = _familyStatus;
-
     ref.read(profileCreationProvider.notifier).updateData({
-      'familyDetails': fam,
       'profileFor': _profileFor,
       'name': _nameController.text.trim(),
       'nameTamil': _nameTamilController.text.trim(),
@@ -372,34 +347,6 @@ class _StepBasicState extends ConsumerState<StepBasic> {
               onChanged: (v) => setState(() {
                 _physicalStatus = v;
                 _v.clear('physicalStatus');
-              }),
-            ),
-            const SizedBox(height: 16),
-            SearchableField(
-              key: _v.anchor('familyType'),
-              label: context.l10n.familyType,
-              isRequired: true,
-              items: AppConstants.familyTypeList,
-              selectedItem: _familyType,
-              prefixIcon: Icons.family_restroom,
-              errorText: _v.errorOf('familyType'),
-              onChanged: (v) => setState(() {
-                _familyType = v;
-                _v.clear('familyType');
-              }),
-            ),
-            const SizedBox(height: 16),
-            SearchableField(
-              key: _v.anchor('familyStatus'),
-              label: context.l10n.familyStatus,
-              isRequired: true,
-              items: AppConstants.familyStatusList,
-              selectedItem: _familyStatus,
-              prefixIcon: Icons.diamond_outlined,
-              errorText: _v.errorOf('familyStatus'),
-              onChanged: (v) => setState(() {
-                _familyStatus = v;
-                _v.clear('familyStatus');
               }),
             ),
             // ── §2 Children — asked directly, never inferred ───────────────

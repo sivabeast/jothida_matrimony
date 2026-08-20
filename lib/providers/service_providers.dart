@@ -6,7 +6,6 @@ import '../services/cloudinary/cloudinary_storage_service.dart';
 import '../services/firebase/fcm_service.dart';
 import '../services/firebase/astrologer_service.dart';
 import '../services/firebase/astrology_team_service.dart';
-import '../services/firebase/consultation_service.dart';
 import '../services/firebase/chat_service.dart';
 import '../services/firebase/login_directory_service.dart';
 import '../services/billing/play_billing_service.dart';
@@ -38,8 +37,6 @@ final astrologerServiceProvider =
     Provider<AstrologerService>((ref) => AstrologerService());
 final astrologyTeamServiceProvider =
     Provider<AstrologyTeamService>((ref) => AstrologyTeamService());
-final consultationServiceProvider =
-    Provider<ConsultationService>((ref) => ConsultationService());
 final chatServiceProvider = Provider<ChatService>((ref) => ChatService());
 
 /// Mobile-number → sign-in-address index, used to resolve a phone login before

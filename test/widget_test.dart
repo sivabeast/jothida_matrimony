@@ -1,8 +1,8 @@
 // Unit tests for pure-Dart business rules (no Firebase).
 //
 // The old subscription-entitlements tests were removed along with the whole
-// subscription system: every matrimony feature is free and only the two
-// astrology services are paid (per booking).
+// subscription system: the app is free and the ONE-TIME Horoscope Request fee
+// is the only payment in it.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jothida_matrimony/core/constants/app_constants.dart';
@@ -11,12 +11,9 @@ import 'package:jothida_matrimony/core/services/porutham_match.dart';
 
 void main() {
   group('Paid-service pricing', () {
+    // The ONE-TIME Horoscope Request fee is the only payment in the app.
     test('Horoscope Compatibility Report costs ₹200', () {
       expect(AppConstants.horoscopeAnalysisFee, 200);
-    });
-
-    test('Astrologer appointment booking costs ₹20', () {
-      expect(AppConstants.appointmentBookingFee, 20);
     });
   });
 

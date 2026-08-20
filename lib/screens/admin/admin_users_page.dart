@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/profile_status.dart';
 import '../../core/utils/profile_completion.dart';
 import '../../models/profile_model.dart';
 import '../../models/user_model.dart';
@@ -24,13 +25,14 @@ import '../../widgets/common/data_states.dart';
 ///   uid) AND the joined matrimony profile (Tamil + English name, profile id,
 ///   religion, caste, city, district, state, education, occupation).
 /// - FILTERS: status chips with LIVE counts applied WITHIN the active tab —
-///   All · Approved · Pending · Rejected · Suspended · Recently Joined ·
+///   All · Verified · Pending Verification · Rejected · Suspended ·
+///   Recently Joined ·
 ///   Recently Updated. (Male/Female moved up into the tab bar.)
 /// - SORT: Newest first (default) · Name A-Z · Last login · Completion %.
 /// - STICKY HEADER: the search row + tab bar + filter chips are a pinned
 ///   SliverPersistentHeader; only the summary card and the list scroll.
 /// - BULK ACTIONS: a checklist toggle enters multi-select mode (checkboxes +
-///   Select All) with a bottom bar: Approve / Reject / Delete / Export CSV /
+///   Select All) with a bottom bar: Verify / Reject / Delete / Export CSV /
 ///   Notify selected.
 ///
 /// (Horoscope-analysis staff are managed under admin → Employees.)
@@ -213,8 +215,8 @@ enum _UserTab {
 /// promoted to tabs.)
 enum _UserFilter {
   all('All'),
-  approved('Approved'),
-  pending('Pending'),
+  approved('Verified'),
+  pending('Pending Verification'),
   rejected('Rejected'),
   suspended('Suspended'),
   recentJoined('Recently Joined'),
@@ -432,7 +434,7 @@ class _UsersTabState extends ConsumerState<_UsersTab>
     final uids = _selected.toList();
     final profiles = _profilesNow;
     setState(() => _busy = true);
-    _snack('Approving ${uids.length} profile(s)…');
+    _snack('Verifying ${uids.length} profile(s)…');
     final notifier = ref.read(adminActionsProvider.notifier);
     var ok = 0, failed = 0, skipped = 0;
     for (final uid in uids) {
@@ -441,8 +443,8 @@ class _UsersTabState extends ConsumerState<_UsersTab>
         skipped++;
         continue;
       }
-      // Already-approved profiles are skipped — re-approving would blast a
-      // fresh "Profile Approved" push at long-standing members.
+      // Already-verified profiles are skipped — re-verifying would blast a
+      // fresh "Profile Verified" push at long-standing members.
       if (p.status == 'approved') {
         skipped++;
         continue;
@@ -454,7 +456,7 @@ class _UsersTabState extends ConsumerState<_UsersTab>
         ok++;
       }
     }
-    _finishBulk(_bulkSummary('Approved', ok, failed, skipped),
+    _finishBulk(_bulkSummary('Verified', ok, failed, skipped),
         error: ok == 0 && failed > 0);
   }
 
@@ -990,13 +992,6 @@ class _UserCard extends ConsumerWidget {
   String get _shortUid =>
       user.uid.length <= 10 ? user.uid : '${user.uid.substring(0, 10)}…';
 
-  Color _statusColor(String s) => switch (s) {
-        'approved' => AppColors.success,
-        'pending' => AppColors.warning,
-        'rejected' => AppColors.error,
-        _ => AppColors.info,
-      };
-
   void _copyUid(BuildContext context) {
     Clipboard.setData(ClipboardData(text: user.uid));
     final m = ScaffoldMessenger.of(context);
@@ -1108,13 +1103,11 @@ class _UserCard extends ConsumerWidget {
                   spacing: 6,
                   runSpacing: 4,
                   children: [
-                    // Membership — subscriptions were removed app-wide, every
-                    // member is on the free plan.
-                    _chip('FREE', AppColors.goldDark),
                     _chip(user.isBlocked ? 'SUSPENDED' : 'ACTIVE',
                         user.isBlocked ? AppColors.error : AppColors.success),
                     if (status.isNotEmpty)
-                      _chip(status.toUpperCase(), _statusColor(status)),
+                      _chip(profileStatusLabel(status).toUpperCase(),
+                          profileStatusColor(status)),
                   ],
                 ),
                 const SizedBox(height: 7),
@@ -1353,7 +1346,7 @@ class _BulkActionBar extends StatelessWidget {
                 children: [
                   _BulkButton(
                       icon: Icons.check_circle_outline,
-                      label: 'Approve',
+                      label: 'Verify',
                       color: AppColors.success,
                       onTap: enabled ? onApprove : null),
                   _BulkButton(

@@ -15,7 +15,7 @@ import '../theme/app_colors.dart';
 ///   2. a completed matrimony profile.
 ///
 /// The group is: View Profiles · Send Interest · Matches · Chat · Horoscope
-/// Report Requests. Everything else — Home, banners, memberships, astrology
+/// Report Requests. Everything else — Home, banners, astrology
 /// services, public content, and astrology APPOINTMENT booking (§8, which needs
 /// login only) — stays reachable without a matrimony profile.
 enum MemberFeature {

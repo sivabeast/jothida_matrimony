@@ -25,6 +25,7 @@ import '../../widgets/common/face_centered_photo.dart';
 import '../../widgets/common/fullscreen_photo_viewer.dart';
 import '../../widgets/common/gradient_button.dart';
 import '../../widgets/common/horoscope_documents_view.dart';
+import '../../widgets/profile/verification_tick.dart';
 import '../../widgets/common/skeletons.dart';
 import '../../widgets/interest/match_celebration.dart';
 import '../../widgets/interest/pending_interest_card.dart';
@@ -1004,12 +1005,11 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                       child: Text(profile.displayName(context.isTamil),
                           style: AppTextStyles.heading1),
                     ),
-                    // Verified badge — mirrors the Discover card's chip so
-                    // verification reads consistently across the app.
-                    if (profile.isVerified) ...[
-                      const SizedBox(width: 8),
-                      _verifiedChip(context),
-                    ],
+                    // Verification status is ALWAYS visible at the top of the
+                    // profile, right beside the name: a green tick when the
+                    // admin has verified it, a dark/inactive tick when not.
+                    const SizedBox(width: 8),
+                    VerificationTick.forProfile(profile, size: 22),
                   ],
                 ),
                 // Both names are shown when they differ (§14) — the header
@@ -1122,8 +1122,6 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                   Text(profile.about, style: AppTextStyles.bodyMedium),
                 ],
                 const SizedBox(height: 20),
-                // ── Family Details ──
-                ..._familySection(profile.family),
                 // ── Horoscope Details ──
                 _horoscopeSection(profile),
                 const SizedBox(height: 20),
@@ -1164,28 +1162,6 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       ],
     );
   }
-
-  /// Small green "Verified" chip shown beside the member's name once an admin
-  /// has verified the profile — same look as the Discover card's badge.
-  Widget _verifiedChip(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: AppColors.success.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.verified, size: 14, color: AppColors.success),
-            const SizedBox(width: 4),
-            Text(context.l10n.verified,
-                style: const TextStyle(
-                    color: AppColors.success,
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700)),
-          ],
-        ),
-      );
 
   /// The single 1:1 profile photo in the collapsing header.
   ///
@@ -1271,44 +1247,6 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     if (items.every((i) => i.value.trim().isEmpty)) return const [];
     return [
       _buildInfoSection(context.l10n.lifestyleDetails, items),
-      const SizedBox(height: 20),
-    ];
-  }
-
-  /// Family Details section — rendered only when at least one field is set.
-  List<Widget> _familySection(FamilyDetails f) {
-    final items = <_InfoItem>[
-      _InfoItem(Icons.man_outlined, context.l10n.father, f.fatherName),
-      _InfoItem(Icons.work_history_outlined, context.l10n.fatherOccupation,
-          context.localizeValue(f.fatherOccupation)),
-      _InfoItem(Icons.woman_outlined, context.l10n.mother, f.motherName),
-      _InfoItem(Icons.work_history_outlined, context.l10n.motherOccupation,
-          context.localizeValue(f.motherOccupation)),
-      _InfoItem(Icons.group_outlined, context.l10n.brothers,
-          f.brothersCount > 0 ? '${f.brothersCount}' : ''),
-      _InfoItem(Icons.group_outlined, context.l10n.marriedBrothers,
-          f.marriedBrothers > 0 ? '${f.marriedBrothers}' : ''),
-      _InfoItem(Icons.group_outlined, context.l10n.sisters,
-          f.sistersCount > 0 ? '${f.sistersCount}' : ''),
-      _InfoItem(Icons.group_outlined, context.l10n.marriedSisters,
-          f.marriedSisters > 0 ? '${f.marriedSisters}' : ''),
-      _InfoItem(Icons.family_restroom, context.l10n.familyType,
-          context.localizeValue(f.familyType)),
-      _InfoItem(Icons.diamond_outlined, context.l10n.familyStatus,
-          context.localizeValue(f.familyStatus)),
-    ];
-    if (items.every((i) => i.value.trim().isEmpty) &&
-        f.aboutFamily.trim().isEmpty) {
-      return const [];
-    }
-    return [
-      _buildInfoSection(context.l10n.familyDetails, items),
-      if (f.aboutFamily.trim().isNotEmpty) ...[
-        const SizedBox(height: 12),
-        Text(context.l10n.aboutFamily, style: AppTextStyles.heading3),
-        const SizedBox(height: 8),
-        Text(f.aboutFamily, style: AppTextStyles.bodyMedium),
-      ],
       const SizedBox(height: 20),
     ];
   }

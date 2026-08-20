@@ -31,6 +31,7 @@ import '../../../widgets/common/face_centered_photo.dart';
 import '../../../widgets/common/network_photo.dart';
 import '../../../widgets/common/skeletons.dart';
 import '../../../widgets/home/home_banner_slide.dart';
+import '../../../widgets/profile/verification_tick.dart';
 
 // ── Shared card styling — every home card uses the SAME radius, shadow and
 //    padding so the page reads as one system (spec: home cards consistency).
@@ -59,29 +60,11 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   int _bannerPage = 0;
   Timer? _bannerTimer;
 
-  /// How many slides the carousel currently shows — admin-published banners
-  /// when any exist, otherwise the built-in asset banners. Kept as a field so
-  /// the auto-scroll timer always wraps at the LIVE count.
-  int _bannerCount = _banners.length;
-
-  // Built-in FALLBACK hero banners — shown only while the admin has not
-  // published any banner in Banner Management (`banners` collection). The full
-  // artwork is baked into each image; headline/subtitle/cta are used by the
-  // graceful fallback if an asset ever fails to load.
-  static const _banners = [
-    _BannerData(
-      assetPath: 'assets/images/banner_1.png',
-      headline: 'Perfect Match\nWritten in the Stars',
-      subtitle: 'Astrology meets compatibility\nto create your perfect match.',
-      cta: 'Explore Your Match →',
-    ),
-    _BannerData(
-      assetPath: 'assets/images/banner_2.png',
-      headline: 'Find Your\nLife Partner',
-      subtitle: 'Where stars align,\nhearts connect.',
-      cta: 'Explore Matches →',
-    ),
-  ];
+  /// How many slides the carousel currently shows — ONLY admin-published
+  /// banners. Kept as a field so the auto-scroll timer always wraps at the
+  /// LIVE count. There are no built-in / demo / fallback banners: when the
+  /// admin has published none the carousel is not rendered at all.
+  int _bannerCount = 0;
 
   @override
   void initState() {
@@ -204,8 +187,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
 
   // ── Curved header + overlapping banner ─────────────────────────────────────
 
-  /// The admin-published banners (Banner Management). Empty = fall back to the
-  /// built-in asset banners.
+  /// The admin-published banners (Banner Management). Empty = the Home page
+  /// shows NO banner at all (no default, demo or fallback artwork).
   List<HomeBannerModel> get _remoteBanners =>
       ref.watch(activeBannersProvider).valueOrNull ?? const [];
 
@@ -223,10 +206,15 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     final topPad = media.padding.top;
     const headerRowHeight = 56.0;
     final bannerWidth = media.size.width - 24;
-    final bannerHeight = bannerWidth * _bannerRatio;
+    // No admin banner published -> the carousel collapses to nothing and the
+    // curved header shrinks to just the profile/bell row, leaving no empty gap.
+    final hasBanner = _remoteBanners.isNotEmpty;
+    final bannerHeight = hasBanner ? bannerWidth * _bannerRatio : 0.0;
     final bannerTop = topPad + headerRowHeight + 10;
-    final headerBgHeight = bannerTop + bannerHeight * 0.45;
-    final totalHeight = bannerTop + bannerHeight + 28; // + dots block
+    final headerBgHeight =
+        hasBanner ? bannerTop + bannerHeight * 0.45 : bannerTop + 12;
+    final totalHeight =
+        hasBanner ? bannerTop + bannerHeight + 28 : headerBgHeight + 8;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light, // white status-bar icons over maroon
@@ -250,13 +238,16 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
               height: headerRowHeight,
               child: _buildHeaderRow(context),
             ),
-            Positioned(
-              top: bannerTop,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: _buildBannerCarousel(context),
-            ),
+            // Only mounted when the admin has published a banner — with none,
+            // the header is just the curved profile/bell row.
+            if (hasBanner)
+              Positioned(
+                top: bannerTop,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _buildBannerCarousel(context),
+              ),
           ],
         ),
       ),
@@ -388,11 +379,12 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     final bannerWidth = MediaQuery.of(context).size.width - 24;
     final bannerHeight = bannerWidth * _bannerRatio;
 
-    // Admin-published banners take over the carousel; the built-in asset
-    // banners remain only as the fallback when none are published.
+    // ONLY admin-published banners are ever shown. When Banner Management is
+    // empty (or every banner is hidden) the whole section disappears.
     final remote = _remoteBanners;
-    final count = remote.isNotEmpty ? remote.length : _banners.length;
+    final count = remote.length;
     _bannerCount = count; // keep the auto-scroll timer wrapping correctly
+    if (count == 0) return const SizedBox.shrink();
     final page = _bannerPage < count ? _bannerPage : 0;
 
     return Column(
@@ -403,9 +395,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             controller: _bannerCtrl,
             itemCount: count,
             onPageChanged: (i) => setState(() => _bannerPage = i),
-            itemBuilder: (_, i) => remote.isNotEmpty
-                ? _bannerCard(HomeBannerSlide(banner: remote[i]))
-                : _BannerSlide(data: _banners[i]),
+            itemBuilder: (_, i) =>
+                _bannerCard(HomeBannerSlide(banner: remote[i])),
           ),
         ),
         const SizedBox(height: 10),
@@ -429,8 +420,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     );
   }
 
-  /// Wraps an admin banner slide in the same rounded, elevated card the asset
-  /// banners use, so the carousel look stays consistent.
+  /// Wraps an admin banner slide in the rounded, elevated carousel card so the
+  /// uploaded artwork is framed consistently (nothing is drawn over it).
   Widget _bannerCard(Widget child) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Container(
@@ -1638,151 +1629,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   }
 }
 
-// ── Banner Data Model ─────────────────────────────────────────────────────────
-
-class _BannerData {
-  final String assetPath;
-  final String headline;
-  final String subtitle;
-  final String cta;
-  const _BannerData({
-    required this.assetPath,
-    required this.headline,
-    required this.subtitle,
-    required this.cta,
-  });
-}
-
-// ── Banner Slide Widget ───────────────────────────────────────────────────────
-
-class _BannerSlide extends StatelessWidget {
-  final _BannerData data;
-  const _BannerSlide({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(_kCardRadius),
-          // Same soft gold hairline + shadow as the admin banner card, so
-          // fallback and remote banners are indistinguishable in framing.
-          border: Border.all(color: AppColors.gold.withOpacity(0.40), width: 1),
-          boxShadow: _kCardShadow,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(_kCardRadius - 1),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Image.asset(
-                data.assetPath,
-                fit: BoxFit.cover,
-                // The banner art is 1536x1024 (~6 MB decoded) but the card is
-                // roughly screen-wide and a third as tall, so decode it at the
-                // width it is actually painted at. Two of these sit in a
-                // carousel on the first screen of the app.
-                cacheWidth:
-                    (MediaQuery.sizeOf(context).width *
-                            MediaQuery.devicePixelRatioOf(context))
-                        .round(),
-                errorBuilder: (_, __, ___) => _fallbackBanner(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _fallbackBanner() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF8B0000), Color(0xFF6B0000)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -20,
-            top: -20,
-            child: Container(
-              width: 180,
-              height: 180,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border:
-                    Border.all(color: AppColors.gold.withOpacity(0.3), width: 1),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 120, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  data.headline,
-                  style: const TextStyle(
-                    color: AppColors.gold,
-                    fontSize: 22,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.bold,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  data.subtitle,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Text(
-                    data.cta,
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            right: 12,
-            top: 0,
-            bottom: 0,
-            child: Center(
-              child: Icon(
-                Icons.favorite,
-                size: 80,
-                color: AppColors.gold.withOpacity(0.4),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ── Recommended Match Card ────────────────────────────────────────────────────
 
 class _MatchCard extends ConsumerWidget {
@@ -1845,12 +1691,10 @@ class _MatchCard extends ConsumerWidget {
                               fontFamily: 'Poppins'),
                         ),
                       ),
-                      // Verified badge — same green tick the Discover cards use.
-                      if (profile.isVerified) ...[
-                        const SizedBox(width: 4),
-                        const Icon(Icons.verified,
-                            size: 15, color: AppColors.success),
-                      ],
+                      // Verification tick — green when the admin has verified
+                      // the profile, dark/inactive when not.
+                      const SizedBox(width: 4),
+                      VerificationTick.forProfile(profile, size: 15),
                     ],
                   ),
                   const SizedBox(height: 4),

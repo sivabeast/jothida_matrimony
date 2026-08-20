@@ -8,11 +8,11 @@ import '../../providers/admin_provider.dart';
 import '../../widgets/common/data_states.dart';
 import '../../widgets/common/skeletons.dart';
 
-/// Admin → Profile Approvals (/admin/approvals).
+/// Admin → Profile Verification (/admin/approvals).
 ///
-/// Live pending-moderation queue: a profile submitted, approved or rejected
+/// Live pending-verification queue: a profile submitted, verified or rejected
 /// anywhere shows up / disappears here instantly ([pendingProfilesProvider] is
-/// a Firestore snapshot stream). Approve / Reject pass BOTH the profile id and
+/// a Firestore snapshot stream). Verify / Reject pass BOTH the profile id and
 /// the owner's userId so the member gets the in-app + push notification.
 class AdminApprovalsScreen extends ConsumerWidget {
   const AdminApprovalsScreen({super.key});
@@ -25,7 +25,9 @@ class AdminApprovalsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: Text(count > 0 ? 'Profile Approvals ($count)' : 'Profile Approvals'),
+        title: Text(count > 0
+            ? 'Profile Verification ($count)'
+            : 'Profile Verification'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -44,7 +46,7 @@ class AdminApprovalsScreen extends ConsumerWidget {
         data: (profiles) => profiles.isEmpty
             ? const EmptyState(
                 icon: Icons.check_circle_outline,
-                message: 'No profiles waiting for review',
+                message: 'No profiles waiting for verification',
                 subtitle: 'New submissions will appear here automatically.',
               )
             : ListView.separated(
@@ -160,7 +162,7 @@ class _ApprovalCard extends ConsumerWidget {
                   child: ElevatedButton.icon(
                     onPressed: () => _approve(context, ref),
                     icon: const Icon(Icons.check, color: Colors.white),
-                    label: const Text('Approve',
+                    label: const Text('Verify',
                         style: TextStyle(color: Colors.white)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.success,
@@ -179,15 +181,15 @@ class _ApprovalCard extends ConsumerWidget {
 
   Future<void> _approve(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
-    // userId too, so the member receives the "Profile Approved" notification.
+    // userId too, so the member receives the "Profile Verified" notification.
     await ref
         .read(adminActionsProvider.notifier)
         .approveProfile(profile.id, userId: profile.userId);
     final st = ref.read(adminActionsProvider);
     messenger.showSnackBar(SnackBar(
       content: Text(st.hasError
-          ? 'Could not approve profile. Please try again.'
-          : '${profile.name} approved — the member has been notified.'),
+          ? 'Could not verify profile. Please try again.'
+          : '${profile.name} verified — the member has been notified.'),
       backgroundColor: st.hasError ? AppColors.error : AppColors.success,
     ));
   }

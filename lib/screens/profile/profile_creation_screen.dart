@@ -17,6 +17,7 @@ import '../../widgets/profile/share_login_details_dialog.dart';
 import 'steps/step_basic.dart';
 import 'steps/step_location.dart';
 import 'steps/step_education.dart';
+import 'steps/step_lifestyle.dart';
 import 'steps/step_religious.dart';
 import 'steps/step3_horoscope.dart';
 import 'steps/step_partner_preference.dart';
@@ -26,13 +27,13 @@ import 'steps/step7_contact.dart';
 import 'steps/step_login_credentials.dart';
 import 'steps/step_review.dart';
 
-/// Multi-step onboarding wizard (12 steps incl. the success screen).
+/// Multi-step onboarding wizard (13 steps incl. the success screen).
 ///
 /// Each input step is a focused page so the form never feels overwhelming.
 /// Required fields are validated per step. Progress is auto-saved as a draft
 /// so a signed-out user can resume on the next sign-in. There is NO
 /// "Save & Exit" — navigation is Next/Continue only, with a Skip action on
-/// the OPTIONAL sections (About Me / Lifestyle, Partner Preference).
+/// the OPTIONAL sections (Lifestyle, Photos, Upload Horoscope).
 ///
 /// EDIT MODE ([editProfileId] non-null, opened via Menu → Profile → Edit
 /// Profile): the wizard is seeded with the EXISTING profile so every field —
@@ -89,18 +90,19 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   /// very end. Never combined with edit/section mode.
   bool get _isAdminMode => widget.adminMode && !_isEditMode;
 
-  /// The 10 shared profile steps, plus the admin-only Login Credentials step.
-  static const int _memberSteps = 10;
+  /// The 11 shared profile steps, plus the admin-only Login Credentials step.
+  static const int _memberSteps = 11;
   int get _totalSteps => _isAdminMode ? _memberSteps + 1 : _memberSteps;
 
-  /// Steps the user may SKIP — only the optional sections, matching the website
-  /// (Photos, Upload Horoscope). Mandatory steps never show Skip.
+  /// Steps the user may SKIP — only the optional sections: Lifestyle (5),
+  /// Photos (7) and Upload Horoscope (8). Mandatory steps never show Skip.
   ///
-  /// Partner Preferences (step 5) is NO LONGER skippable: the partner AGE
-  /// range is mandatory (§11), so the step must be completed.
-  static const Set<int> _skippableSteps = {6, 7};
+  /// Partner Preferences is NO LONGER skippable: the partner AGE range is
+  /// mandatory (§11), so that step must be completed. Lifestyle carries no
+  /// required field at all, so an empty Lifestyle can never block creation.
+  static const Set<int> _skippableSteps = {5, 7, 8};
 
-  /// The 10 website profile-creation steps, in the same order as the website.
+  /// The 11 profile-creation steps, in wizard order.
   /// Titles are ALWAYS read from the l10n dictionary so they follow the
   /// selected language — there is no English fallback list.
   List<String> _stepTitles(BuildContext context) {
@@ -111,6 +113,7 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
       l.career,
       l.community,
       l.horoscope,
+      l.lifestyleDetails,
       l.partnerPreferences,
       l.photos,
       l.uploadHoroscope,
@@ -404,6 +407,8 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
       StepEducation(onNext: _nextStep),
       StepReligious(onNext: _nextStep),
       Step3Horoscope(onNext: _nextStep),
+      // Lifestyle — fully OPTIONAL (no validation, and skippable).
+      StepLifestyle(onNext: _nextStep),
       StepPartnerPreference(onNext: _nextStep),
       Step6Photos(onNext: _nextStep),
       StepHoroscopeUpload(onNext: _nextStep),

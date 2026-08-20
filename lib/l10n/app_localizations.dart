@@ -1094,23 +1094,11 @@ abstract class AppLocalizations {
   /// **'Horoscope Details'**
   String get horoscopeDetails;
 
-  /// No description provided for @familyDetails.
-  ///
-  /// In en, this message translates to:
-  /// **'Family Details'**
-  String get familyDetails;
-
   /// No description provided for @partnerPreferences.
   ///
   /// In en, this message translates to:
   /// **'Partner Preferences'**
   String get partnerPreferences;
-
-  /// No description provided for @subscriptionPlans.
-  ///
-  /// In en, this message translates to:
-  /// **'Subscription Plans'**
-  String get subscriptionPlans;
 
   /// No description provided for @upgradeToPremium.
   ///
@@ -1153,72 +1141,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Education & Career'**
   String get educationCareer;
-
-  /// No description provided for @familyTree.
-  ///
-  /// In en, this message translates to:
-  /// **'Family Tree'**
-  String get familyTree;
-
-  /// No description provided for @father.
-  ///
-  /// In en, this message translates to:
-  /// **'Father'**
-  String get father;
-
-  /// No description provided for @mother.
-  ///
-  /// In en, this message translates to:
-  /// **'Mother'**
-  String get mother;
-
-  /// No description provided for @brothers.
-  ///
-  /// In en, this message translates to:
-  /// **'Brothers'**
-  String get brothers;
-
-  /// No description provided for @sisters.
-  ///
-  /// In en, this message translates to:
-  /// **'Sisters'**
-  String get sisters;
-
-  /// No description provided for @familyType.
-  ///
-  /// In en, this message translates to:
-  /// **'Family Type'**
-  String get familyType;
-
-  /// No description provided for @familyStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'Family Status'**
-  String get familyStatus;
-
-  /// No description provided for @jointFamily.
-  ///
-  /// In en, this message translates to:
-  /// **'Joint Family'**
-  String get jointFamily;
-
-  /// No description provided for @nuclearFamily.
-  ///
-  /// In en, this message translates to:
-  /// **'Nuclear Family'**
-  String get nuclearFamily;
-
-  /// No description provided for @familyDetailsNotAdded.
-  ///
-  /// In en, this message translates to:
-  /// **'Family details not added'**
-  String get familyDetailsNotAdded;
-
-  /// No description provided for @addFamilyDetails.
-  ///
-  /// In en, this message translates to:
-  /// **'Add Family Details'**
-  String get addFamilyDetails;
 
   /// No description provided for @horoscope.
   ///
@@ -1267,24 +1189,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Free Plan'**
   String get freePlan;
-
-  /// No description provided for @premiumPlan.
-  ///
-  /// In en, this message translates to:
-  /// **'Premium Plan'**
-  String get premiumPlan;
-
-  /// No description provided for @basicPlan.
-  ///
-  /// In en, this message translates to:
-  /// **'Basic Plan'**
-  String get basicPlan;
-
-  /// No description provided for @mediumPlan.
-  ///
-  /// In en, this message translates to:
-  /// **'Medium Plan'**
-  String get mediumPlan;
 
   /// No description provided for @monthlySubscription.
   ///
@@ -1640,12 +1544,6 @@ abstract class AppLocalizations {
   /// **'Could not remove photo. Please try again.'**
   String get couldNotRemovePhoto;
 
-  /// No description provided for @family.
-  ///
-  /// In en, this message translates to:
-  /// **'Family'**
-  String get family;
-
   /// No description provided for @noProfileYet.
   ///
   /// In en, this message translates to:
@@ -1663,54 +1561,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This member\'s details could not be loaded.'**
   String get memberDetailsUnavailable;
-
-  /// No description provided for @couldNotLoadFamilyDetails.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not load family details'**
-  String get couldNotLoadFamilyDetails;
-
-  /// No description provided for @addFamilyFromPersonalDetails.
-  ///
-  /// In en, this message translates to:
-  /// **'Add your family details from Personal Details to see your family tree here.'**
-  String get addFamilyFromPersonalDetails;
-
-  /// No description provided for @memberNoFamilyDetails.
-  ///
-  /// In en, this message translates to:
-  /// **'{name} hasn\'t shared family details yet.'**
-  String memberNoFamilyDetails(String name);
-
-  /// No description provided for @familyStatusRich.
-  ///
-  /// In en, this message translates to:
-  /// **'Rich'**
-  String get familyStatusRich;
-
-  /// No description provided for @familyStatusUpperMiddle.
-  ///
-  /// In en, this message translates to:
-  /// **'Upper Middle Class'**
-  String get familyStatusUpperMiddle;
-
-  /// No description provided for @familyStatusMiddle.
-  ///
-  /// In en, this message translates to:
-  /// **'Middle Class'**
-  String get familyStatusMiddle;
-
-  /// No description provided for @familyStatusLowerMiddle.
-  ///
-  /// In en, this message translates to:
-  /// **'Lower Middle Class'**
-  String get familyStatusLowerMiddle;
-
-  /// No description provided for @familyStatusLower.
-  ///
-  /// In en, this message translates to:
-  /// **'Lower Class'**
-  String get familyStatusLower;
 
   /// No description provided for @whoCreatingAccountFor.
   ///
@@ -2071,12 +1921,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Community'**
   String get community;
-
-  /// No description provided for @verified.
-  ///
-  /// In en, this message translates to:
-  /// **'Verified'**
-  String get verified;
 
   /// No description provided for @profession.
   ///
@@ -3446,6 +3290,12 @@ abstract class AppLocalizations {
   /// **'Where are you located?'**
   String get locationStepSubtitle;
 
+  /// No description provided for @lifestyleStepSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional — share your habits and interests, or skip this step.'**
+  String get lifestyleStepSubtitle;
+
   /// No description provided for @nativePlace.
   ///
   /// In en, this message translates to:
@@ -4544,24 +4394,6 @@ abstract class AppLocalizations {
   /// **'College'**
   String get collegeName;
 
-  /// No description provided for @fatherOccupation.
-  ///
-  /// In en, this message translates to:
-  /// **'Father\'s Occupation'**
-  String get fatherOccupation;
-
-  /// No description provided for @motherOccupation.
-  ///
-  /// In en, this message translates to:
-  /// **'Mother\'s Occupation'**
-  String get motherOccupation;
-
-  /// No description provided for @aboutFamily.
-  ///
-  /// In en, this message translates to:
-  /// **'About Family'**
-  String get aboutFamily;
-
   /// No description provided for @eatingHabit.
   ///
   /// In en, this message translates to:
@@ -4885,18 +4717,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saving…'**
   String get savingLabel;
-
-  /// No description provided for @fatherName.
-  ///
-  /// In en, this message translates to:
-  /// **'Father Name'**
-  String get fatherName;
-
-  /// No description provided for @motherName.
-  ///
-  /// In en, this message translates to:
-  /// **'Mother Name'**
-  String get motherName;
 
   /// No description provided for @aboutMeHint.
   ///
@@ -5456,18 +5276,6 @@ abstract class AppLocalizations {
   /// **'Sun Sign'**
   String get sunSign;
 
-  /// No description provided for @marriedBrothers.
-  ///
-  /// In en, this message translates to:
-  /// **'Married Brothers'**
-  String get marriedBrothers;
-
-  /// No description provided for @marriedSisters.
-  ///
-  /// In en, this message translates to:
-  /// **'Married Sisters'**
-  String get marriedSisters;
-
   /// No description provided for @preferredAgeRange.
   ///
   /// In en, this message translates to:
@@ -5651,25 +5459,25 @@ abstract class AppLocalizations {
   /// No description provided for @profileUnderReviewTitle.
   ///
   /// In en, this message translates to:
-  /// **'Profile Under Review'**
+  /// **'Pending Verification'**
   String get profileUnderReviewTitle;
 
   /// No description provided for @profileUnderReviewBody.
   ///
   /// In en, this message translates to:
-  /// **'Your profile is being reviewed by our team. You will be notified the moment it is approved and visible to matches.'**
+  /// **'Your profile is being verified by our team. You will be notified the moment it is verified and visible to matches.'**
   String get profileUnderReviewBody;
 
   /// No description provided for @profileRejectedTitle.
   ///
   /// In en, this message translates to:
-  /// **'Profile Not Approved'**
+  /// **'Profile Not Verified'**
   String get profileRejectedTitle;
 
   /// No description provided for @profileRejectedBody.
   ///
   /// In en, this message translates to:
-  /// **'Your profile could not be approved. Please review your details or contact our support team for help.'**
+  /// **'Your profile could not be verified. Please review your details or contact our support team for help.'**
   String get profileRejectedBody;
 
   /// No description provided for @continueAsGuest.

@@ -22,8 +22,8 @@ class _NavGroup {
 
 /// Admin navigation shell — a professional SaaS-style grouped
 /// [Drawer] (Material 3) opened from the AppBar menu icon. Every admin area is
-/// reachable from the drawer; the previously orphaned Analytics, Settlements,
-/// Married Members, Pricing and Test Data routes are all linked here.
+/// reachable from the drawer; the previously orphaned Analytics, Married
+/// Members and Test Data routes are all linked here.
 class AdminShell extends ConsumerWidget {
   final Widget child;
 
@@ -35,7 +35,8 @@ class AdminShell extends ConsumerWidget {
     ]),
     _NavGroup('User Management', [
       _NavItem('All Users', Icons.people_outline, '/admin/users'),
-      _NavItem('Pending Approval', Icons.fact_check_outlined, '/admin/approvals'),
+      _NavItem('Profile Verification', Icons.verified_outlined,
+          '/admin/approvals'),
       _NavItem('Married Members', Icons.favorite_outline, '/admin/married'),
       _NavItem('Create Profile', Icons.person_add_alt_1, '/admin/create-profile'),
     ]),
@@ -50,7 +51,6 @@ class AdminShell extends ConsumerWidget {
     _NavGroup('Payments', [
       _NavItem('Transactions', Icons.receipt_long_outlined, '/admin/payments'),
       _NavItem('Revenue & Analytics', Icons.insights, '/admin/analytics'),
-      _NavItem('Settlements', Icons.account_balance_outlined, '/admin/settlements'),
     ]),
     _NavGroup('Reports', [
       _NavItem('User Reports', Icons.flag_outlined, '/admin/reports'),
@@ -60,12 +60,16 @@ class AdminShell extends ConsumerWidget {
       _NavItem('Banners', Icons.image_outlined, '/admin/banners'),
       _NavItem('Announcements', Icons.campaign_outlined, '/admin/notifications'),
     ]),
+    // There is deliberately no "General" hub and no "Pricing" page: General
+    // only duplicated entries that already exist in this drawer, and the app
+    // has no pricing/subscription model (the one-time Horoscope Request payment
+    // is handled by the Horoscope flow itself).
+    //
+    // No "App Update" entry either: updates are driven entirely by Google Play
+    // In-App Updates and need no admin action (spec §9).
     _NavGroup('Settings', [
-      _NavItem('General', Icons.settings_outlined, '/admin/settings'),
-      _NavItem('Astrology Service', Icons.auto_awesome_outlined, '/admin/astrology-service'),
-      // No "App Update" entry: updates are driven entirely by Google Play
-      // In-App Updates and need no admin action (spec §9).
-      _NavItem('Pricing', Icons.currency_rupee, '/admin/revenue-settings'),
+      _NavItem('Astrology Service', Icons.auto_awesome_outlined,
+          '/admin/astrology-service'),
       _NavItem('Test Data', Icons.science_outlined, '/admin/test-data'),
     ]),
   ];
@@ -79,7 +83,7 @@ class AdminShell extends ConsumerWidget {
       }
     }
     if (loc.startsWith('/admin/user/')) return '/admin/users';
-    // Covers /admin/astrologer/:id and /admin/astrologer-account/:id.
+    // Covers /admin/astrologer-account/:id (employee details).
     if (loc.startsWith('/admin/astrologer')) return '/admin/astrologers';
     return null;
   }

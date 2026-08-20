@@ -259,16 +259,6 @@ ProfileModel _build({
       birthTime: '06:45 AM',
       birthPlace: city,
     ),
-    family: const FamilyDetails(
-      fatherName: 'Mr. Raman',
-      fatherOccupation: 'Retired',
-      motherName: 'Mrs. Kamala',
-      motherOccupation: 'Homemaker',
-      brothersCount: 1,
-      sistersCount: 0,
-      familyType: 'Nuclear',
-      familyStatus: 'Middle Class',
-    ),
     partnerPreferences: PartnerPreferences(
       minAge: prefMinAge,
       maxAge: prefMaxAge,

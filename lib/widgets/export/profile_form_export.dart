@@ -947,7 +947,6 @@ List<Widget> buildProfileFormSections({
 }) {
   final p = profile;
   final o = options;
-  final f = p.family;
   final h = p.horoscope;
   final pp = p.partnerPreferences;
 
@@ -1038,33 +1037,7 @@ List<Widget> buildProfileFormSections({
       _field('முகவரி', _joined([p.city, p.district, p.state, p.country]),
           labelW: 108),
     ]),
-    _section('2. குடும்ப விவரங்கள்', [
-      _pair(
-        _field('தந்தை பெயர்', f.fatherName, labelW: 108),
-        _field('தந்தை தொழில்', f.fatherOccupation, labelW: 92),
-      ),
-      _pair(
-        _field('தாய் பெயர்', f.motherName, labelW: 108),
-        _field('தாய் தொழில்', f.motherOccupation, labelW: 92),
-      ),
-      _pair(
-        _field('சகோதரர்', _siblings(f.brothersCount, f.marriedBrothers),
-            labelW: 108),
-        _field('சகோதரி', _siblings(f.sistersCount, f.marriedSisters),
-            labelW: 92),
-      ),
-      _choice(
-        'குடும்ப வகை',
-        [
-          for (final t in AppConstants.familyTypeList)
-            (tamilValue(t), f.familyType.trim() == t),
-        ],
-        labelW: 108,
-      ),
-      _field('குடும்ப நிலை', tamilValue(f.familyStatus), labelW: 108),
-      _field('குடும்பம் பற்றி', f.aboutFamily, labelW: 108),
-    ]),
-    _section('3. கல்வி & தொழில்', [
+    _section('2. கல்வி & தொழில்', [
       _pair(
         _field('கல்வித் தகுதி', tamilValue(p.effectiveEducationLevel),
             required: true, labelW: 108),
@@ -1085,7 +1058,7 @@ List<Widget> buildProfileFormSections({
         labelW: 108,
       ),
     ]),
-    _section('4. ஜாதக விவரங்கள்', [
+    _section('3. ஜாதக விவரங்கள்', [
       _pair(
         _field('பிறந்த தேதி', _fmtDate(p.dateOfBirth),
             required: true, labelW: 108),
@@ -1120,7 +1093,7 @@ List<Widget> buildProfileFormSections({
         labelW: 108,
       ),
     ]),
-    _section('5. வாழ்க்கைத் துணை விருப்பங்கள்', [
+    _section('4. வாழ்க்கைத் துணை விருப்பங்கள்', [
       _field('வயது வரம்பு', '${pp.minAge} முதல் ${pp.maxAge} வரை',
           suffix: 'ஆண்டுகள்', labelW: 118),
       // Not _joined: that comma-separates, and a range reads as a sentence.
@@ -1166,16 +1139,13 @@ List<Widget> buildProfileFormSections({
 
 /// Registered login identity — admin-only context, never part of the paper
 /// form, so it is a plain extra card at the end.
-Widget _loginSection(UserModel u) => _section('6. பதிவு விவரங்கள்', [
+Widget _loginSection(UserModel u) => _section('5. பதிவு விவரங்கள்', [
       _pair(
         _field('பதிவு மொபைல்', u.phone, labelW: 118),
         _field('பதிவு மின்னஞ்சல்', u.email, labelW: 100),
       ),
       _field('உறுப்பினர் எண்', u.uid, labelW: 118),
     ]);
-
-String _siblings(int total, int married) =>
-    total <= 0 ? '' : '$total ($married திருமணமானவர்)';
 
 /// Chevvai dosham is a FREE-TEXT field on the profile, not a dropdown, so
 /// the printed form's three tick boxes cannot represent every stored value.

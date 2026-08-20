@@ -516,13 +516,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get horoscopeDetails => 'Horoscope Details';
 
   @override
-  String get familyDetails => 'Family Details';
-
-  @override
   String get partnerPreferences => 'Partner Preferences';
-
-  @override
-  String get subscriptionPlans => 'Subscription Plans';
 
   @override
   String get upgradeToPremium => 'Upgrade to Premium';
@@ -547,39 +541,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get educationCareer => 'Education & Career';
 
   @override
-  String get familyTree => 'Family Tree';
-
-  @override
-  String get father => 'Father';
-
-  @override
-  String get mother => 'Mother';
-
-  @override
-  String get brothers => 'Brothers';
-
-  @override
-  String get sisters => 'Sisters';
-
-  @override
-  String get familyType => 'Family Type';
-
-  @override
-  String get familyStatus => 'Family Status';
-
-  @override
-  String get jointFamily => 'Joint Family';
-
-  @override
-  String get nuclearFamily => 'Nuclear Family';
-
-  @override
-  String get familyDetailsNotAdded => 'Family details not added';
-
-  @override
-  String get addFamilyDetails => 'Add Family Details';
-
-  @override
   String get horoscope => 'Horoscope';
 
   @override
@@ -602,15 +563,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get freePlan => 'Free Plan';
-
-  @override
-  String get premiumPlan => 'Premium Plan';
-
-  @override
-  String get basicPlan => 'Basic Plan';
-
-  @override
-  String get mediumPlan => 'Medium Plan';
 
   @override
   String get monthlySubscription => 'Monthly Subscription';
@@ -797,9 +749,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get couldNotRemovePhoto => 'Could not remove photo. Please try again.';
 
   @override
-  String get family => 'Family';
-
-  @override
   String get noProfileYet => 'No profile yet';
 
   @override
@@ -808,33 +757,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get memberDetailsUnavailable =>
       'This member\'s details could not be loaded.';
-
-  @override
-  String get couldNotLoadFamilyDetails => 'Could not load family details';
-
-  @override
-  String get addFamilyFromPersonalDetails =>
-      'Add your family details from Personal Details to see your family tree here.';
-
-  @override
-  String memberNoFamilyDetails(String name) {
-    return '$name hasn\'t shared family details yet.';
-  }
-
-  @override
-  String get familyStatusRich => 'Rich';
-
-  @override
-  String get familyStatusUpperMiddle => 'Upper Middle Class';
-
-  @override
-  String get familyStatusMiddle => 'Middle Class';
-
-  @override
-  String get familyStatusLowerMiddle => 'Lower Middle Class';
-
-  @override
-  String get familyStatusLower => 'Lower Class';
 
   @override
   String get whoCreatingAccountFor => 'Who are you creating\nan account for?';
@@ -1028,9 +950,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get community => 'Community';
-
-  @override
-  String get verified => 'Verified';
 
   @override
   String get profession => 'Profession';
@@ -1812,6 +1731,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationStepSubtitle => 'Where are you located?';
 
   @override
+  String get lifestyleStepSubtitle =>
+      'Optional — share your habits and interests, or skip this step.';
+
+  @override
   String get nativePlace => 'Native Place';
 
   @override
@@ -2435,15 +2358,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collegeName => 'College';
 
   @override
-  String get fatherOccupation => 'Father\'s Occupation';
-
-  @override
-  String get motherOccupation => 'Mother\'s Occupation';
-
-  @override
-  String get aboutFamily => 'About Family';
-
-  @override
   String get eatingHabit => 'Eating Habit';
 
   @override
@@ -2618,12 +2532,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get savingLabel => 'Saving…';
-
-  @override
-  String get fatherName => 'Father Name';
-
-  @override
-  String get motherName => 'Mother Name';
 
   @override
   String get aboutMeHint =>
@@ -2947,12 +2855,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sunSign => 'Sun Sign';
 
   @override
-  String get marriedBrothers => 'Married Brothers';
-
-  @override
-  String get marriedSisters => 'Married Sisters';
-
-  @override
   String get preferredAgeRange => 'Preferred Age';
 
   @override
@@ -3059,18 +2961,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get profileUnderReviewTitle => 'Profile Under Review';
+  String get profileUnderReviewTitle => 'Pending Verification';
 
   @override
   String get profileUnderReviewBody =>
-      'Your profile is being reviewed by our team. You will be notified the moment it is approved and visible to matches.';
+      'Your profile is being verified by our team. You will be notified the moment it is verified and visible to matches.';
 
   @override
-  String get profileRejectedTitle => 'Profile Not Approved';
+  String get profileRejectedTitle => 'Profile Not Verified';
 
   @override
   String get profileRejectedBody =>
-      'Your profile could not be approved. Please review your details or contact our support team for help.';
+      'Your profile could not be verified. Please review your details or contact our support team for help.';
 
   @override
   String get continueAsGuest => 'Continue as Guest';

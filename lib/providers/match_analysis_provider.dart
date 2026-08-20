@@ -105,16 +105,6 @@ final compatRequestForPairProvider = Provider.autoDispose
   });
 });
 
-/// DEPRECATED (legacy per-astrologer inbox). Retained only so the now-unwired
-/// astrologer screens still analyse; the live app routes match analysis through
-/// the single internal service ([internalAstrologyRequestsProvider]).
-final astrologerMatchRequestsProvider =
-    Provider.autoDispose<AsyncValue<List<AstrologerRequestModel>>>((ref) {
-  return ref
-      .watch(astrologerRequestsProvider)
-      .whenData((list) => list.where((r) => r.isMatchAnalysis).toList());
-});
-
 /// Every Match Analysis request addressed to the official consultation
 /// service ([kInternalAstrologyId]). Admin-only read (per rules) — powers the
 /// legacy match-workspace screen. Newest-first, real-time.

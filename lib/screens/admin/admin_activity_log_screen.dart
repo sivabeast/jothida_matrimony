@@ -25,7 +25,7 @@ class AdminActivityLogScreen extends ConsumerWidget {
       };
 
   static String _label(String action) => switch (action) {
-        'profile_approved' => 'Profile Approved',
+        'profile_approved' => 'Profile Verified',
         'profile_rejected' => 'Profile Rejected',
         'user_suspended' => 'User Suspended',
         'user_activated' => 'User Activated',
@@ -77,8 +77,8 @@ class AdminActivityLogScreen extends ConsumerWidget {
                       icon: Icons.history,
                       message: 'No admin activity recorded yet',
                       subtitle:
-                          'Approvals, rejections and other admin actions will '
-                          'be logged here automatically.',
+                          'Verifications, rejections and other admin actions '
+                          'will be logged here automatically.',
                     )
               : ListView.separated(
                   padding: const EdgeInsets.all(16),

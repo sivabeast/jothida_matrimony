@@ -517,13 +517,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get horoscopeDetails => 'ஜாதக விவரங்கள்';
 
   @override
-  String get familyDetails => 'குடும்ப விவரங்கள்';
-
-  @override
   String get partnerPreferences => 'துணை விருப்பங்கள்';
-
-  @override
-  String get subscriptionPlans => 'சந்தா திட்டங்கள்';
 
   @override
   String get upgradeToPremium => 'பிரீமியம் திட்டத்திற்கு மேம்படுத்தவும்';
@@ -548,39 +542,6 @@ class AppLocalizationsTa extends AppLocalizations {
   String get educationCareer => 'கல்வி & தொழில்';
 
   @override
-  String get familyTree => 'குடும்ப மரம்';
-
-  @override
-  String get father => 'தந்தை';
-
-  @override
-  String get mother => 'தாய்';
-
-  @override
-  String get brothers => 'சகோதரர்கள்';
-
-  @override
-  String get sisters => 'சகோதரிகள்';
-
-  @override
-  String get familyType => 'குடும்ப வகை';
-
-  @override
-  String get familyStatus => 'குடும்ப நிலை';
-
-  @override
-  String get jointFamily => 'கூட்டுக் குடும்பம்';
-
-  @override
-  String get nuclearFamily => 'தனிக் குடும்பம்';
-
-  @override
-  String get familyDetailsNotAdded => 'குடும்ப விவரங்கள் சேர்க்கப்படவில்லை';
-
-  @override
-  String get addFamilyDetails => 'குடும்ப விவரங்களைச் சேர்';
-
-  @override
   String get horoscope => 'ஜாதகம்';
 
   @override
@@ -603,15 +564,6 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get freePlan => 'இலவச திட்டம்';
-
-  @override
-  String get premiumPlan => 'பிரீமியம் திட்டம்';
-
-  @override
-  String get basicPlan => 'அடிப்படை திட்டம்';
-
-  @override
-  String get mediumPlan => 'நடுத்தர திட்டம்';
 
   @override
   String get monthlySubscription => 'மாதாந்திர சந்தா';
@@ -802,9 +754,6 @@ class AppLocalizationsTa extends AppLocalizations {
       'புகைப்படத்தை அகற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
-  String get family => 'குடும்பம்';
-
-  @override
   String get noProfileYet => 'இன்னும் சுயவிவரம் இல்லை';
 
   @override
@@ -813,33 +762,6 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get memberDetailsUnavailable =>
       'இந்த உறுப்பினரின் விவரங்களை ஏற்ற முடியவில்லை.';
-
-  @override
-  String get couldNotLoadFamilyDetails => 'குடும்ப விவரங்களை ஏற்ற முடியவில்லை';
-
-  @override
-  String get addFamilyFromPersonalDetails =>
-      'உங்கள் குடும்ப மரத்தை இங்கே காண, தனிப்பட்ட விவரங்களில் இருந்து குடும்ப விவரங்களைச் சேர்க்கவும்.';
-
-  @override
-  String memberNoFamilyDetails(String name) {
-    return '$name இன்னும் குடும்ப விவரங்களைப் பகிரவில்லை.';
-  }
-
-  @override
-  String get familyStatusRich => 'செல்வந்தர்';
-
-  @override
-  String get familyStatusUpperMiddle => 'உயர் நடுத்தர வர்க்கம்';
-
-  @override
-  String get familyStatusMiddle => 'நடுத்தர வர்க்கம்';
-
-  @override
-  String get familyStatusLowerMiddle => 'கீழ் நடுத்தர வர்க்கம்';
-
-  @override
-  String get familyStatusLower => 'கீழ் வர்க்கம்';
 
   @override
   String get whoCreatingAccountFor => 'யாருக்காக\nகணக்கை உருவாக்குகிறீர்கள்?';
@@ -1041,9 +963,6 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get community => 'சமூகம்';
-
-  @override
-  String get verified => 'சரிபார்க்கப்பட்டது';
 
   @override
   String get profession => 'தொழில்';
@@ -1837,6 +1756,10 @@ class AppLocalizationsTa extends AppLocalizations {
   String get locationStepSubtitle => 'நீங்கள் எங்கு வசிக்கிறீர்கள்?';
 
   @override
+  String get lifestyleStepSubtitle =>
+      'விருப்பம் — உங்கள் பழக்கவழக்கங்களைப் பகிரவும் அல்லது இந்த படியைத் தவிர்க்கவும்.';
+
+  @override
   String get nativePlace => 'சொந்த ஊர்';
 
   @override
@@ -2469,15 +2392,6 @@ class AppLocalizationsTa extends AppLocalizations {
   String get collegeName => 'கல்லூரி';
 
   @override
-  String get fatherOccupation => 'தந்தையின் தொழில்';
-
-  @override
-  String get motherOccupation => 'தாயின் தொழில்';
-
-  @override
-  String get aboutFamily => 'குடும்பம் பற்றி';
-
-  @override
   String get eatingHabit => 'உணவுப் பழக்கம்';
 
   @override
@@ -2657,12 +2571,6 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get savingLabel => 'சேமிக்கிறது…';
-
-  @override
-  String get fatherName => 'தந்தையின் பெயர்';
-
-  @override
-  String get motherName => 'தாயின் பெயர்';
 
   @override
   String get aboutMeHint =>
@@ -2984,12 +2892,6 @@ class AppLocalizationsTa extends AppLocalizations {
   String get sunSign => 'சூரிய ராசி';
 
   @override
-  String get marriedBrothers => 'திருமணமான சகோதரர்கள்';
-
-  @override
-  String get marriedSisters => 'திருமணமான சகோதரிகள்';
-
-  @override
   String get preferredAgeRange => 'விரும்பும் வயது';
 
   @override
@@ -3097,18 +2999,18 @@ class AppLocalizationsTa extends AppLocalizations {
   }
 
   @override
-  String get profileUnderReviewTitle => 'Profile பரிசீலனையில் உள்ளது';
+  String get profileUnderReviewTitle => 'சரிபார்ப்பு நிலுவையில்';
 
   @override
   String get profileUnderReviewBody =>
-      'உங்கள் Profile எங்கள் குழுவால் பரிசீலிக்கப்படுகிறது. அங்கீகரிக்கப்பட்டு Matches-க்கு தெரியும் உடனேயே உங்களுக்கு தெரிவிக்கப்படும்.';
+      'உங்கள் Profile எங்கள் குழுவால் சரிபார்க்கப்படுகிறது. சரிபார்க்கப்பட்டு Matches-க்கு தெரியும் உடனேயே உங்களுக்கு தெரிவிக்கப்படும்.';
 
   @override
-  String get profileRejectedTitle => 'Profile அங்கீகரிக்கப்படவில்லை';
+  String get profileRejectedTitle => 'Profile சரிபார்க்கப்படவில்லை';
 
   @override
   String get profileRejectedBody =>
-      'உங்கள் Profile-ஐ அங்கீகரிக்க முடியவில்லை. உங்கள் விவரங்களை சரிபார்க்கவும் அல்லது உதவிக்கு எங்கள் ஆதரவு குழுவை தொடர்பு கொள்ளவும்.';
+      'உங்கள் Profile-ஐ சரிபார்க்க முடியவில்லை. உங்கள் விவரங்களை சரிபார்க்கவும் அல்லது உதவிக்கு எங்கள் ஆதரவு குழுவை தொடர்பு கொள்ளவும்.';
 
   @override
   String get continueAsGuest => 'விருந்தினராக தொடரவும்';

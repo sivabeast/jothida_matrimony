@@ -70,10 +70,6 @@ enum AppNotificationEvent {
   appointmentConfirmed,
   appointmentCancelled,
 
-  /// Membership / plan lifecycle.
-  membershipActivated,
-  membershipExpired,
-
   /// A payment completed successfully (Play Billing purchase or a booking fee).
   paymentSuccess,
 
@@ -167,8 +163,6 @@ class NotificationNotifier extends Notifier<void> {
         AppNotificationEvent.appointmentBooked => '/my-appointments',
         AppNotificationEvent.appointmentConfirmed => '/my-appointments',
         AppNotificationEvent.appointmentCancelled => '/my-appointments',
-        AppNotificationEvent.membershipActivated => '/home',
-        AppNotificationEvent.membershipExpired => '/home',
         AppNotificationEvent.paymentSuccess => '/reports',
         AppNotificationEvent.adminProfileUpdate => '/my-profile',
         AppNotificationEvent.reportAssigned => '/astrologer-dashboard',
@@ -185,8 +179,6 @@ class NotificationNotifier extends Notifier<void> {
         AppNotificationEvent.appointmentBooked => 'appointment',
         AppNotificationEvent.appointmentConfirmed => 'appointment',
         AppNotificationEvent.appointmentCancelled => 'appointment_cancelled',
-        AppNotificationEvent.membershipActivated => 'membership_activated',
-        AppNotificationEvent.membershipExpired => 'membership_expired',
         AppNotificationEvent.paymentSuccess => 'payment_success',
         AppNotificationEvent.adminProfileUpdate => 'admin_update',
         AppNotificationEvent.reportAssigned => 'report_assigned',
@@ -264,30 +256,6 @@ class NotificationNotifier extends Notifier<void> {
                 body: 'Your astrology appointment has been cancelled. '
                     'Open My Appointments for the details.'
               );
-      case AppNotificationEvent.membershipActivated:
-        return ta
-            ? (
-                title: 'Membership செயல்படுத்தப்பட்டது ⭐',
-                body: 'உங்கள் membership இப்போது செயலில் உள்ளது. '
-                    'அனைத்து வசதிகளையும் பயன்படுத்துங்கள்!'
-              )
-            : (
-                title: 'Membership Activated ⭐',
-                body: 'Your membership is now active. '
-                    'Enjoy full access to every feature!'
-              );
-      case AppNotificationEvent.membershipExpired:
-        return ta
-            ? (
-                title: 'Membership காலாவதி ⌛',
-                body: 'உங்கள் membership காலாவதியாகிவிட்டது. '
-                    'தொடர்ந்து பயன்படுத்த புதுப்பிக்கவும்.'
-              )
-            : (
-                title: 'Membership Expired ⌛',
-                body: 'Your membership has expired. '
-                    'Renew it to keep using all the features.'
-              );
       case AppNotificationEvent.paymentSuccess:
         return ta
             ? (
@@ -302,12 +270,12 @@ class NotificationNotifier extends Notifier<void> {
       case AppNotificationEvent.profileApproved:
         return ta
             ? (
-                title: 'Profile அங்கீகரிக்கப்பட்டது ✅',
+                title: 'Profile சரிபார்க்கப்பட்டது ✅',
                 body: 'உங்கள் Profile இப்போது நேரலையில் உள்ளது — '
                     'பொருத்தமான Matches உங்களை பார்க்க முடியும்.'
               )
             : (
-                title: 'Profile Approved ✅',
+                title: 'Profile Verified ✅',
                 body: 'Your profile is now live — matching members can see you.'
               );
       case AppNotificationEvent.reportReady:

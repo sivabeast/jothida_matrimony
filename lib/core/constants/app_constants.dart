@@ -69,19 +69,16 @@ class AppConstants {
   static const String horoscopeDocsPath = 'horoscope_docs';
   static const String idProofsPath = 'id_proofs';
 
-  // ── Pricing ────────────────────────────────────────────────────────────────
-  // There is NO subscription system: every matrimony feature is FREE.
-  // Only the two astrology services below are paid (per booking).
+  // ── Pricing ─────────────────────────────────────────────────────────────
+  // The app is FREE. There is NO membership, subscription or general pricing
+  // system — the ONE-TIME fee for a Horoscope Request is the only payment in
+  // the entire application. Appointments are free (settled at the office).
   static const int poruthamsPrice = 199;
-  // Fee for the ONLINE Horoscope Compatibility Report (paid, auto-assigned,
-  // delivered to the user's Reports page). Completely separate from the
-  // office-visit appointment fee below. Charged via Google Play Billing
-  // (product id `horoscope_report`) — Play Console is the source of truth for
-  // what is actually charged; this is only the fallback label.
+  // The one-time fee for a Horoscope Compatibility Report request (paid,
+  // auto-assigned, delivered to the user's Reports page). Charged via Google
+  // Play Billing (product id `horoscope_report`) — Play Console is the source
+  // of truth for what is actually charged; this is only the fallback label.
   static const int horoscopeAnalysisFee = 200;
-  // Booking charge to confirm a Direct Office-Visit appointment slot. A separate,
-  // independent service from the online analysis above.
-  static const int appointmentBookingFee = 20;
 
   // Pagination
   static const int profilesPerPage = 20;
@@ -92,7 +89,10 @@ class AppConstants {
   static const String interestAccepted = 'accepted';
   static const String interestRejected = 'rejected';
 
-  // Profile Status
+  // Profile Status. The app calls 'approved' VERIFIED everywhere a human reads
+  // it (see `core/utils/profile_status.dart`); the stored value keeps the
+  // legacy name because the Firestore rules, indexes and Cloud Functions all
+  // key off it.
   static const String profilePending = 'pending';
   static const String profileApproved = 'approved';
   static const String profileRejected = 'rejected';
@@ -101,6 +101,9 @@ class AppConstants {
   // User Roles
   static const String roleUser = 'user';
   static const String roleAdmin = 'admin';
+  // EMPLOYEE role (horoscope-analysis staff). There is no astrologer login,
+  // account or dashboard — the value keeps the legacy name for data
+  // compatibility only.
   static const String roleAstrologer = 'astrologer';
 
   // Porutham Status
@@ -331,16 +334,6 @@ class AppConstants {
     'Welder', 'Writer',
   ];
 
-  // Family Type
-  static const List<String> familyTypeList = [
-    'Joint Family', 'Nuclear Family',
-  ];
-
-  // Family Status
-  static const List<String> familyStatusList = [
-    'Rich', 'Upper Middle Class', 'Middle Class', 'Lower Middle Class',
-  ];
-
   // Income List
   static const List<String> incomeList = [
     'Below ₹1 Lakh', '₹1-2 Lakhs', '₹2-3 Lakhs', '₹3-5 Lakhs',
@@ -411,7 +404,6 @@ class AppConstants {
   ];
 
   // ── Shorthand aliases used by screens ─────────────────────────────────────
-  static const int poruthamsRequestPrice = poruthamsPrice;
   static const List<String> religions = religionList;
   static const List<String> castes = castList;
   static const List<String> maritalStatuses = maritalStatusList;

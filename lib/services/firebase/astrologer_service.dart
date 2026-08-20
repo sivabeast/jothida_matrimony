@@ -11,6 +11,7 @@ import '../../models/astrologer_account_model.dart';
 import '../../models/astrologer_model.dart' as model;
 import '../../models/astrologer_request_model.dart';
 import '../../models/astrologer_review_model.dart';
+import 'astrology_config_service.dart';
 
 /// Thrown when the chosen in-person appointment SESSION is already full (its
 /// booking capacity has been reached).
@@ -1031,25 +1032,63 @@ class AstrologerService {
     };
   }
 
+  /// Credits the EMPLOYEE COMMISSION for a horoscope request that has just been
+  /// COMPLETED (spec §11/§12).
+  ///
+  ///  • Commission is credited ONLY on completion — never when the request is
+  ///    created and never when it is assigned.
+  ///  • It is credited AT MOST ONCE per request: the transaction refuses to
+  ///    stamp a document that already carries `commissionCreditedAt`, so a
+  ///    retry, a double tap or a re-submitted report cannot pay twice.
+  ///  • The configured rate is FROZEN onto the request, so a later change to
+  ///    the commission setting never recalculates historical completions.
+  ///
+  /// Best-effort: a failure here must never fail the report submission itself,
+  /// so the caller ignores errors and the request still completes.
+  Future<void> _creditCommissionOnce(String requestId) async {
+    try {
+      final rate = (await AstrologyConfigService().get()).analysisCommission;
+      final ref = _db
+          .collection(AppConstants.astrologerRequestsCollection)
+          .doc(requestId);
+      await _db.runTransaction((tx) async {
+        final snap = await tx.get(ref);
+        if (!snap.exists) return;
+        final data = snap.data() ?? const <String, dynamic>{};
+        // Already credited → nothing to do (idempotent).
+        if (data['commissionCreditedAt'] != null) return;
+        tx.update(ref, {
+          'commissionAmount': rate,
+          'commissionCreditedAt': FieldValue.serverTimestamp(),
+        });
+      });
+    } catch (e) {
+      debugPrint('[AstrologerService] commission credit failed for '
+          '$requestId: $e');
+    }
+  }
+
   /// Stores the finished structured Marriage Compatibility Report and flips the
   /// request to `completed` (same completion stamps as [submitAnalysis]).
   Future<void> submitCompatReport({
     required String requestId,
     required Map<String, dynamic> data,
-  }) =>
-      _db
-          .collection(AppConstants.astrologerRequestsCollection)
-          .doc(requestId)
-          .update({
-        'compatReport': data,
-        'status': AstrologerRequestStatus.completed.name,
-        'workflowStatus': 'completed',
-        'completedAt': FieldValue.serverTimestamp(),
-        'respondedAt': FieldValue.serverTimestamp(),
-        ..._completionStamp(),
-        'history': FieldValue.arrayUnion(
-            [BookingHistoryEntry.now('Compatibility report submitted').toMap()]),
-      });
+  }) async {
+    await _db
+        .collection(AppConstants.astrologerRequestsCollection)
+        .doc(requestId)
+        .update({
+      'compatReport': data,
+      'status': AstrologerRequestStatus.completed.name,
+      'workflowStatus': 'completed',
+      'completedAt': FieldValue.serverTimestamp(),
+      'respondedAt': FieldValue.serverTimestamp(),
+      ..._completionStamp(),
+      'history': FieldValue.arrayUnion(
+          [BookingHistoryEntry.now('Compatibility report submitted').toMap()]),
+    });
+    await _creditCommissionOnce(requestId);
+  }
 
   /// One-shot fetch of a single request (e.g. to resolve its owner for the
   /// "report ready" notification). Null when the doc doesn't exist.
@@ -1070,22 +1109,24 @@ class AstrologerService {
     required String text,
     required List<String> images,
     required List<String> pdfs,
-  }) =>
-      _db
-          .collection(AppConstants.astrologerRequestsCollection)
-          .doc(requestId)
-          .update({
-        'analysisText': text,
-        'analysisImages': images,
-        'analysisPdfs': pdfs,
-        'status': AstrologerRequestStatus.completed.name,
-        'workflowStatus': 'completed',
-        'completedAt': FieldValue.serverTimestamp(),
-        'respondedAt': FieldValue.serverTimestamp(),
-        ..._completionStamp(),
-        'history': FieldValue.arrayUnion(
-            [BookingHistoryEntry.now('Report submitted').toMap()]),
-      });
+  }) async {
+    await _db
+        .collection(AppConstants.astrologerRequestsCollection)
+        .doc(requestId)
+        .update({
+      'analysisText': text,
+      'analysisImages': images,
+      'analysisPdfs': pdfs,
+      'status': AstrologerRequestStatus.completed.name,
+      'workflowStatus': 'completed',
+      'completedAt': FieldValue.serverTimestamp(),
+      'respondedAt': FieldValue.serverTimestamp(),
+      ..._completionStamp(),
+      'history': FieldValue.arrayUnion(
+          [BookingHistoryEntry.now('Report submitted').toMap()]),
+    });
+    await _creditCommissionOnce(requestId);
+  }
 
   /// Marks a match-analysis booking paid (dev-mode: no real gateway). Records
   /// the demo transaction id + audit trail and notifies the user that payment

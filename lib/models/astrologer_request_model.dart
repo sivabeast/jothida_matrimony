@@ -325,6 +325,18 @@ class AstrologerRequestModel {
   /// an astrology-team member ('' for legacy docs).
   final String completedByRole;
 
+  // ── Employee commission ───────────────────────────────────────────────
+  /// The commission (₹) credited to the assigned employee for COMPLETING this
+  /// request. It is stamped ONCE, at completion time, from the rate the admin
+  /// had configured then — so changing the configured rate later never rewrites
+  /// what an already-completed request earned. 0 until the request is completed.
+  final int commissionAmount;
+
+  /// When the commission was credited. Non-null == already credited, which is
+  /// what makes crediting idempotent: re-completing a request (a retry, a
+  /// double tap, an admin re-submitting the report) can never pay twice.
+  final DateTime? commissionCreditedAt;
+
   // ── In-person appointment (Horoscope Compatibility Report booking) ─────────
   /// The office-visit day (date-only). Null for non-appointment requests.
   final DateTime? visitDate;
@@ -398,6 +410,8 @@ class AstrologerRequestModel {
     this.completedBy = '',
     this.completedByEmail = '',
     this.completedByRole = '',
+    this.commissionAmount = 0,
+    this.commissionCreditedAt,
     this.visitDate,
     this.slotStartMinutes,
     this.session = '',
@@ -643,6 +657,10 @@ class AstrologerRequestModel {
       completedBy: (d['completedBy'] ?? '').toString(),
       completedByEmail: (d['completedByEmail'] ?? '').toString(),
       completedByRole: (d['completedByRole'] ?? '').toString(),
+      commissionAmount: (d['commissionAmount'] is num)
+          ? (d['commissionAmount'] as num).toInt()
+          : (int.tryParse('${d['commissionAmount']}') ?? 0),
+      commissionCreditedAt: _toDate(d['commissionCreditedAt']),
       visitDate: _toDate(d['visitDate']),
       slotStartMinutes: (d['slotStartMinutes'] as num?)?.toInt(),
       session: (d['session'] ?? '').toString(),
@@ -709,6 +727,10 @@ class AstrologerRequestModel {
         'completedBy': completedBy,
         'completedByEmail': completedByEmail,
         'completedByRole': completedByRole,
+        'commissionAmount': commissionAmount,
+        'commissionCreditedAt': commissionCreditedAt != null
+            ? Timestamp.fromDate(commissionCreditedAt!)
+            : null,
         'visitDate': visitDate != null ? Timestamp.fromDate(visitDate!) : null,
         'slotStartMinutes': slotStartMinutes,
         'session': session,

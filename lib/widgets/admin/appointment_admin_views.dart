@@ -28,7 +28,6 @@ class AppointmentCardData {
   final String sessionWindow;
   final String payment;
   final String paymentStatus;
-  final String astrologer;
   final String notes;
   final String created;
   final String reason;
@@ -45,7 +44,6 @@ class AppointmentCardData {
     required this.sessionWindow,
     required this.payment,
     required this.paymentStatus,
-    required this.astrologer,
     required this.notes,
     required this.created,
     required this.reason,
@@ -96,8 +94,6 @@ class AppointmentCardData {
           ? 'Paid${a.amount > 0 ? ' · ₹${a.amount}' : ''}'
           : (a.amount > 0 ? 'Not Paid · ₹${a.amount}' : 'Free'),
       paymentStatus: a.paid ? 'Paid' : a.paymentStatusLabel,
-      astrologer:
-          a.astrologerName.trim().isEmpty ? 'Unassigned' : a.astrologerName,
       notes: a.message.trim(),
       created: DateFormat('d MMM yyyy, h:mm a').format(a.createdAt),
       reason: a.category.trim(),
@@ -217,15 +213,6 @@ class _AppointmentDetailsSheet extends ConsumerWidget {
                 appt.paidAt == null
                     ? ''
                     : DateFormat('d MMM yyyy, h:mm a').format(appt.paidAt!)),
-          ]),
-          _group('Assignment', [
-            ('Astrologer', d.astrologer),
-            ('Astrologer Email', appt.astrologerEmail),
-            ('Assigned By', appt.assignedBy),
-            ('Assigned At',
-                appt.assignedAt == null
-                    ? ''
-                    : DateFormat('d MMM yyyy, h:mm a').format(appt.assignedAt!)),
           ]),
           if (d.notes.isNotEmpty) _paragraph('Notes from the member', d.notes),
           if (d.office.isNotEmpty) _paragraph('Office Address', d.office),

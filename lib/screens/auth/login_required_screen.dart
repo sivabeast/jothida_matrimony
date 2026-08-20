@@ -11,7 +11,7 @@ import '../../widgets/common/gradient_button.dart';
 /// Where a GUEST lands when they tap anything personalized (§13).
 ///
 /// Guest Mode lets a visitor browse Home and public information; Matches,
-/// Profile, Chat, Astrology booking, Horoscope upload, Membership and Reports
+/// Profile, Chat, Astrology booking, Horoscope upload and Reports
 /// all route here instead. The router decides that — see
 /// `resolveAuthRedirect` and `kGuestAllowedRoutes` — so this screen never has
 /// to know which feature was blocked.

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/config/dev_config.dart';
 import '../models/profile_model.dart';
-import 'astrologer_session_provider.dart';
 import 'auth_provider.dart';
 import 'demo_data_provider.dart';
 import 'matches_prefs_provider.dart';
@@ -111,7 +110,6 @@ class AccountController extends Notifier<AsyncValue<void>> {
       }
 
       // Reset in-memory session so nothing stale survives into the next login.
-      ref.read(myAstrologerAccountProvider.notifier).signOut();
       ref.invalidate(currentUserProvider);
       ref.invalidate(myProfileProvider);
       ref.invalidate(viewedProfilesProvider);

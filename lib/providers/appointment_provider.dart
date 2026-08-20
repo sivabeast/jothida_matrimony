@@ -27,8 +27,8 @@ final myAppointmentsProvider =
 });
 
 /// EVERY appointment booking a user has created — powers the admin Appointment
-/// Management page. Realtime, newest first, and independent of which astrologer
-/// the booking is currently assigned to.
+/// Management page. Realtime, newest first. Appointments are never assigned to
+/// an employee or an astrologer: they go straight to the admin.
 final allAppointmentsProvider =
     StreamProvider.autoDispose<List<AstrologerRequestModel>>((ref) {
   if (kBypassAuth) {

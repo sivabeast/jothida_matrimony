@@ -18,9 +18,12 @@ import '../../../providers/service_providers.dart';
 import '../../../widgets/common/async_state_view.dart';
 import '../../../widgets/common/payroll_history_tile.dart';
 
-/// The astrologer portal shell (spec §3/§4). A bottom navigation with five
+/// The EMPLOYEE portal shell (spec §3/§4). A bottom navigation with five
 /// destinations — Dashboard · Pending · Completed · Work Report · Profile —
-/// each a separate page (no top tabs). Every page handles loading / error /
+/// each a separate page (no top tabs).
+///
+/// Employees sign in through the SAME common login as everyone else — there is
+/// no separate astrologer/employee login, account or role picker. Every page handles loading / error /
 /// empty / data explicitly (via [AsyncStateView]) so no tab can ever sit on
 /// an endless spinner.
 class AstrologerShell extends ConsumerStatefulWidget {
@@ -1563,7 +1566,7 @@ class _ProfilePageState extends ConsumerState<_ProfilePage> {
           _info('Employee Name', m.displayName.isEmpty ? m.email : m.displayName),
           _info('Email', m.email),
           _info('Mobile Number', m.mobile),
-          _info('Assigned Role', 'Astrologer — Employee'),
+          _info('Assigned Role', 'Employee'),
           _info('Employee ID', m.id),
           _info('Account Status', m.statusLabel),
         ]),

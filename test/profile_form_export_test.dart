@@ -78,18 +78,6 @@ ProfileModel _profile({
         birthTime: '06:45 AM',
         birthPlace: 'Tindivanam, Villupuram',
       ),
-      family: const FamilyDetails(
-        fatherName: 'Ramasubramaniam',
-        fatherOccupation: 'Agriculture',
-        motherName: 'Lakshmi',
-        motherOccupation: 'Homemaker',
-        brothersCount: 2,
-        sistersCount: 1,
-        marriedBrothers: 1,
-        familyType: 'Joint Family',
-        familyStatus: 'Middle Class',
-        aboutFamily: 'Traditional family from Villupuram district.',
-      ),
       partnerPreferences: const PartnerPreferences(
         minAge: 28,
         maxAge: 36,
@@ -281,7 +269,6 @@ void main() {
         city: 'Chennai',
         motherTongue: 'Tamil',
         horoscope: _profile().horoscope,
-        family: _profile().family,
         partnerPreferences: const PartnerPreferences(), // all defaults = 'Any'
         contact: _profile().contact,
         createdAt: DateTime(2026, 1, 1),

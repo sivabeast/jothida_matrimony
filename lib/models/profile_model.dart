@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/constants/app_constants.dart';
 import '../core/data/education_catalog.dart';
 import '../core/data/occupation_catalog.dart';
 
@@ -29,8 +30,8 @@ List<String> toStringList(dynamic value) {
 ///
 /// The retired switches (`hideAddress`, `hideFamilyDetails`,
 /// `hideAdditionalPhotos`) are deliberately absent: the app never collects an
-/// address, family details are not hideable, and additional photos no longer
-/// exist. Legacy values for those keys are dropped on read.
+/// address or family details, and additional photos no longer exist. Legacy
+/// values for those keys are dropped on read.
 class ProfilePrivacy {
   ProfilePrivacy._();
 
@@ -197,8 +198,6 @@ class ProfileModel {
   // Horoscope
   final HoroscopeDetails horoscope;
 
-  // Family
-  final FamilyDetails family;
 
   // Partner Preferences
   final PartnerPreferences partnerPreferences;
@@ -212,7 +211,16 @@ class ProfileModel {
   final String contactPrivacy;
 
   // Status
+  //
+  // 'approved' is the stored value for a VERIFIED profile (the wording users
+  // and admins see is "Verified"; the raw value stays 'approved' because the
+  // Firestore security rules, indexes and Cloud Functions key off it).
+  // See [isProfileVerified] / [isPendingVerification].
   final String status; // pending, approved, rejected, blocked
+
+  /// Aadhaar ID-check outcome, mirrored from the `aadhaar` record by the admin.
+  /// This is an internal document check, NOT the profile verification badge —
+  /// the tick beside a member's name comes from [isProfileVerified].
   final bool isVerified;
   final int reportCount;
   final int viewCount;
@@ -280,7 +288,6 @@ class ProfileModel {
     this.profilePhotoUrl,
     this.privacySettings = ProfilePrivacy.defaults,
     required this.horoscope,
-    required this.family,
     required this.partnerPreferences,
     required this.contact,
     this.contactPrivacy = 'private',
@@ -354,7 +361,6 @@ class ProfileModel {
       profilePhotoUrl: d['profilePhotoUrl'],
       privacySettings: ProfilePrivacy.fromMap(d['privacySettings']),
       horoscope: HoroscopeDetails.fromMap(d['horoscope'] ?? {}),
-      family: FamilyDetails.fromMap(d['family'] ?? {}),
       partnerPreferences: PartnerPreferences.fromMap(d['partnerPreferences'] ?? {}),
       contact: ContactDetails.fromMap(d['contact'] ?? {}),
       contactPrivacy: d['contactPrivacy'] ?? 'private',
@@ -435,7 +441,6 @@ class ProfileModel {
         'additionalPhotos': const <String>[],
         'privacySettings': privacySettings,
         'horoscope': horoscope.toMap(),
-        'family': family.toMap(),
         'partnerPreferences': partnerPreferences.toMap(),
         // Contact details are intentionally NOT written into the public profile
         // document — they are stored in the access-gated `contacts/{userId}`
@@ -553,6 +558,13 @@ class ProfileModel {
   /// True when this member chose to share contact publicly (§17/§18) — any
   /// signed-in viewer may see it, without a mutually-accepted interest.
   bool get isContactPublic => contactPrivacy == 'public';
+
+  /// TRUE once an admin has verified this profile (the review queue action).
+  /// This single flag drives the green/dark verification tick everywhere.
+  bool get isProfileVerified => status == AppConstants.profileApproved;
+
+  /// TRUE while the profile is still waiting for admin verification.
+  bool get isPendingVerification => status == AppConstants.profilePending;
   String get about => aboutMe ?? '';
 
   /// The member's photo(s) — at most ONE (§1). Kept as a list so the existing
@@ -579,7 +591,6 @@ class ProfileModel {
   // ── fromMap factory for profile creation flow ─────────────────────────
   factory ProfileModel.fromMap(Map<String, dynamic> d) {
     final horoMap = d['horoscopeDetails'] as Map<String, dynamic>? ?? {};
-    final famMap = d['familyDetails'] as Map<String, dynamic>? ?? {};
     final prefMap = d['partnerPreferences'] as Map<String, dynamic>? ?? {};
     final contactMap = d['contactDetails'] as Map<String, dynamic>? ?? {};
     final lifeMap = d['lifestyle'] as Map<String, dynamic>? ?? {};
@@ -641,7 +652,6 @@ class ProfileModel {
       profilePhotoUrl: photos.isNotEmpty ? photos.first : null,
       privacySettings: ProfilePrivacy.fromMap(d['privacySettings']),
       horoscope: HoroscopeDetails.fromMap(horoMap),
-      family: FamilyDetails.fromMap(famMap),
       partnerPreferences: PartnerPreferences.fromMap(prefMap),
       contact: ContactDetails.fromMap(contactMap),
       contactPrivacy: d['contactPrivacy'] ?? 'private',
@@ -709,7 +719,6 @@ class ProfileModel {
         'photos': photos, // the one existing URL — kept unless a new file is picked
         'privacySettings': privacySettings,
         'horoscopeDetails': horoscope.toMap(),
-        'familyDetails': family.toMap(),
         'partnerPreferences': partnerPreferences.toMap(),
         'contactDetails': contact.toMap(),
         'contactPrivacy': contactPrivacy,
@@ -765,7 +774,6 @@ class ProfileModel {
     String? profilePhotoUrl,
     Map<String, bool>? privacySettings,
     HoroscopeDetails? horoscope,
-    FamilyDetails? family,
     PartnerPreferences? partnerPreferences,
     ContactDetails? contact,
     String? contactPrivacy,
@@ -833,7 +841,6 @@ class ProfileModel {
         profilePhotoUrl: profilePhotoUrl ?? this.profilePhotoUrl,
         privacySettings: privacySettings ?? this.privacySettings,
         horoscope: horoscope ?? this.horoscope,
-        family: family ?? this.family,
         partnerPreferences: partnerPreferences ?? this.partnerPreferences,
         contact: contact ?? this.contact,
         contactPrivacy: contactPrivacy ?? this.contactPrivacy,
@@ -903,7 +910,6 @@ class ProfileModel {
         profilePhotoUrl: url,
         privacySettings: privacySettings,
         horoscope: horoscope,
-        family: family,
         partnerPreferences: partnerPreferences,
         contact: contact,
         contactPrivacy: contactPrivacy,
@@ -955,7 +961,6 @@ class HoroscopeDetails {
   final bool overrideEnabled;
   final bool isAutoGenerated;
   final bool isUserEdited;
-  final bool isAstrologerVerified;
   // Legacy single horoscope PDF (kept for backward compatibility with older
   // documents). New uploads append to [horoscopePdfUrls] so a profile can hold
   // MULTIPLE horoscope PDFs.
@@ -987,7 +992,6 @@ class HoroscopeDetails {
     this.overrideEnabled = false,
     this.isAutoGenerated = true,
     this.isUserEdited = false,
-    this.isAstrologerVerified = false,
     this.horoscopePdfUrl,
     this.horoscopePdfUrls = const [],
     this.horoscopeImages = const [],
@@ -1017,7 +1021,6 @@ class HoroscopeDetails {
         overrideEnabled: map['overrideEnabled'] ?? false,
         isAutoGenerated: map['isAutoGenerated'] ?? true,
         isUserEdited: map['isUserEdited'] ?? false,
-        isAstrologerVerified: map['isAstrologerVerified'] ?? false,
         horoscopePdfUrl: map['horoscopePdfUrl'],
         horoscopePdfUrls: toStringList(map['horoscopePdfUrls']),
         horoscopeImages: toStringList(map['horoscopeImages']),
@@ -1047,7 +1050,6 @@ class HoroscopeDetails {
         'overrideEnabled': overrideEnabled,
         'isAutoGenerated': isAutoGenerated,
         'isUserEdited': isUserEdited,
-        'isAstrologerVerified': isAstrologerVerified,
         'horoscopePdfUrl': horoscopePdfUrl,
         'horoscopePdfUrls': horoscopePdfUrls,
         'horoscopeImages': horoscopeImages,
@@ -1104,14 +1106,12 @@ class HoroscopeDetails {
         overrideEnabled: overrideEnabled ?? this.overrideEnabled,
         isAutoGenerated: isAutoGenerated,
         isUserEdited: isUserEdited ?? this.isUserEdited,
-        isAstrologerVerified: isAstrologerVerified,
         horoscopePdfUrl: horoscopePdfUrl ?? this.horoscopePdfUrl,
         horoscopePdfUrls: horoscopePdfUrls ?? this.horoscopePdfUrls,
         horoscopeImages: horoscopeImages ?? this.horoscopeImages,
       );
 
   String get badgeText {
-    if (isAstrologerVerified) return 'Astrologer Verified';
     if (isUserEdited) return 'User Edited';
     return 'Auto Generated';
   }
@@ -1126,89 +1126,6 @@ class HoroscopeDetails {
     }
     return out;
   }
-}
-
-class FamilyDetails {
-  final String fatherName;
-  final String fatherOccupation;
-  final String motherName;
-  final String motherOccupation;
-  final int brothersCount;
-  final int sistersCount;
-  final int marriedBrothers;
-  final int marriedSisters;
-  final String familyType;
-  final String familyStatus;
-  final String aboutFamily;
-
-  const FamilyDetails({
-    required this.fatherName,
-    required this.fatherOccupation,
-    required this.motherName,
-    required this.motherOccupation,
-    required this.brothersCount,
-    required this.sistersCount,
-    this.marriedBrothers = 0,
-    this.marriedSisters = 0,
-    required this.familyType,
-    required this.familyStatus,
-    this.aboutFamily = '',
-  });
-
-  factory FamilyDetails.fromMap(Map<String, dynamic> map) => FamilyDetails(
-        fatherName: map['fatherName'] ?? '',
-        fatherOccupation: map['fatherOccupation'] ?? '',
-        motherName: map['motherName'] ?? '',
-        motherOccupation: map['motherOccupation'] ?? '',
-        brothersCount: map['brothersCount'] ?? 0,
-        sistersCount: map['sistersCount'] ?? 0,
-        marriedBrothers: map['marriedBrothers'] ?? 0,
-        marriedSisters: map['marriedSisters'] ?? 0,
-        familyType: map['familyType'] ?? '',
-        familyStatus: map['familyStatus'] ?? '',
-        aboutFamily: map['aboutFamily'] ?? '',
-      );
-
-  Map<String, dynamic> toMap() => {
-        'fatherName': fatherName,
-        'fatherOccupation': fatherOccupation,
-        'motherName': motherName,
-        'motherOccupation': motherOccupation,
-        'brothersCount': brothersCount,
-        'sistersCount': sistersCount,
-        'marriedBrothers': marriedBrothers,
-        'marriedSisters': marriedSisters,
-        'familyType': familyType,
-        'familyStatus': familyStatus,
-        'aboutFamily': aboutFamily,
-      };
-
-  FamilyDetails copyWith({
-    String? fatherName,
-    String? fatherOccupation,
-    String? motherName,
-    String? motherOccupation,
-    int? brothersCount,
-    int? sistersCount,
-    int? marriedBrothers,
-    int? marriedSisters,
-    String? familyType,
-    String? familyStatus,
-    String? aboutFamily,
-  }) =>
-      FamilyDetails(
-        fatherName: fatherName ?? this.fatherName,
-        fatherOccupation: fatherOccupation ?? this.fatherOccupation,
-        motherName: motherName ?? this.motherName,
-        motherOccupation: motherOccupation ?? this.motherOccupation,
-        brothersCount: brothersCount ?? this.brothersCount,
-        sistersCount: sistersCount ?? this.sistersCount,
-        marriedBrothers: marriedBrothers ?? this.marriedBrothers,
-        marriedSisters: marriedSisters ?? this.marriedSisters,
-        familyType: familyType ?? this.familyType,
-        familyStatus: familyStatus ?? this.familyStatus,
-        aboutFamily: aboutFamily ?? this.aboutFamily,
-      );
 }
 
 class PartnerPreferences {

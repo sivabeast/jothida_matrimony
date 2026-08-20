@@ -6,14 +6,22 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/app_dialogs.dart';
 import '../../models/astrology_service_config.dart';
 import '../../providers/astrology_config_provider.dart';
+import '../../providers/astrology_team_stats_provider.dart';
 import '../../widgets/common/data_states.dart';
 
 /// Admin → Employee Commission Settings.
 ///
-/// Employees are paid a COMMISSION per completed Horoscope Compatibility Report
-/// (not a salary). This is a single global rate stored on the astrology service
-/// config (`analysisCommission`). Editable here at any time; changes apply to
-/// all future commission calculations across the admin + employee views.
+/// Employees are paid a COMMISSION per completed Horoscope Request (not a
+/// salary). This is a single global rate stored on the astrology service config
+/// (`analysisCommission`), editable here at any time.
+///
+/// Commission is credited ONLY when an assigned request is COMPLETED — never on
+/// creation or assignment — and exactly once per request. The rate in force at
+/// completion time is frozen onto that request, so editing the rate here changes
+/// FUTURE completions only and never recalculates what past ones earned.
+///
+/// The page also lists, per employee: total assigned, completed, pending, the
+/// current per-request rate and the total commission actually earned.
 class EmployeeCommissionScreen extends ConsumerStatefulWidget {
   const EmployeeCommissionScreen({super.key});
 
@@ -154,7 +162,118 @@ class _EmployeeCommissionScreenState
             ),
           ),
         ),
+        const SizedBox(height: 24),
+        const _CommissionBreakdown(),
       ],
     );
   }
+}
+
+/// Per-employee commission details (spec §12): assigned / completed / pending
+/// counts, the current per-request rate and the commission actually earned.
+///
+/// "Total Earned" sums the amount frozen on each COMPLETED request, so it is
+/// unaffected by a later change to the configured rate and can never
+/// double-count a request whose completion was re-submitted.
+class _CommissionBreakdown extends ConsumerWidget {
+  const _CommissionBreakdown();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stats = ref.watch(astrologerStatsProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('COMMISSION BY EMPLOYEE',
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+                color: Colors.grey[600])),
+        const SizedBox(height: 10),
+        if (stats.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              'No employees yet. Add employees under Employee Management, then '
+              'assign Horoscope Requests to them.',
+              style: TextStyle(fontSize: 12.5, color: Colors.grey[600]),
+            ),
+          )
+        else
+          for (final s in stats)
+            Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          s.member.displayName.trim().isEmpty
+                              ? s.member.email
+                              : s.member.displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 14.5,
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      Text('₹${s.totalCommission}',
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.success)),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text('Total commission earned',
+                      style:
+                          TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+                  const Divider(height: 18),
+                  Wrap(
+                    spacing: 18,
+                    runSpacing: 8,
+                    children: [
+                      _metric('Assigned', '${s.totalAssigned}'),
+                      _metric('Completed', '${s.completed}'),
+                      _metric('Pending', '${s.pending + s.inProgress}'),
+                      _metric('Per request', '₹${s.commissionPerReport}'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+      ],
+    );
+  }
+
+  Widget _metric(String label, String value) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(value,
+              style:
+                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+        ],
+      );
 }

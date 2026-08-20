@@ -24,7 +24,6 @@ const Map<String, String> _kTitleTa = {
   'Career': 'தொழில்',
   'Community': 'சமூகம்',
   'Horoscope': 'ஜாதகம்',
-  'Family Details': 'குடும்ப விவரங்கள்',
   'Partner Preferences': 'துணை விருப்பங்கள்',
   'Photos': 'புகைப்படங்கள்',
   'Upload Horoscope': 'ஜாதகம் பதிவேற்றம்',
@@ -71,14 +70,6 @@ const Map<String, String> _kLabelTa = {
   'WhatsApp': 'வாட்ஸ்அப்',
   'Email': 'மின்னஞ்சல்',
   'Horoscope PDF': 'ஜாதக PDF',
-  'Father': 'தந்தை',
-  "Father's Occupation": 'தந்தையின் தொழில்',
-  'Mother': 'தாய்',
-  "Mother's Occupation": 'தாயின் தொழில்',
-  'Brothers': 'சகோதரர்கள்',
-  'Sisters': 'சகோதரிகள்',
-  'Family Type': 'குடும்ப வகை',
-  'Family Status': 'குடும்ப நிலை',
 };
 
 /// Section title in the current language (English key → Tamil in Tamil mode).
@@ -274,28 +265,6 @@ class MyProfileScreen extends ConsumerWidget {
             [l('Mother Tongue'), lv(p.motherTongue)],
           ],
         ),
-        // Family Details (§5) — editable like every other section.
-        _SectionCard(
-          icon: Icons.family_restroom_outlined,
-          title: 'Family Details',
-          onEdit: () => context.push('/edit/family'),
-          rows: [
-            [l('Father'), s(p.family.fatherName)],
-            [l("Father's Occupation"), lv(p.family.fatherOccupation)],
-            [l('Mother'), s(p.family.motherName)],
-            [l("Mother's Occupation"), lv(p.family.motherOccupation)],
-            [
-              l('Brothers'),
-              p.family.brothersCount > 0 ? '${p.family.brothersCount}' : ''
-            ],
-            [
-              l('Sisters'),
-              p.family.sistersCount > 0 ? '${p.family.sistersCount}' : ''
-            ],
-            [l('Family Type'), lv(p.family.familyType)],
-            [l('Family Status'), lv(p.family.familyStatus)],
-          ],
-        ),
         _SectionCard(
           icon: Icons.auto_awesome_outlined,
           title: 'Horoscope',
@@ -350,7 +319,7 @@ class MyProfileScreen extends ConsumerWidget {
         _SectionCard(
           icon: Icons.picture_as_pdf_outlined,
           title: 'Upload Horoscope',
-          onEdit: () => editStep(7),
+          onEdit: () => editStep(8),
           rows: [
             [
               l('Horoscope PDF'),
@@ -363,7 +332,7 @@ class MyProfileScreen extends ConsumerWidget {
         _SectionCard(
           icon: Icons.call_outlined,
           title: 'Contact',
-          onEdit: () => editStep(8),
+          onEdit: () => editStep(9),
           rows: [
             [l('Contact Person'), s(contact?.contactPersonName)],
             [l('Relationship'), lv(contact?.relationship)],

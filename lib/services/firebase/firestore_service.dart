@@ -1065,7 +1065,12 @@ class FirestoreService {
       .where('enabled', isEqualTo: true)
       .snapshots()
       .map((s) {
-        final list = s.docs.map(HomeBannerModel.fromFirestore).toList();
+        // Banners are image-only. Documents without artwork (legacy
+        // text/template banners) are skipped so nothing fake can reach Home.
+        final list = s.docs
+            .map(HomeBannerModel.fromFirestore)
+            .where((b) => b.hasImage)
+            .toList();
         list.sort((a, b) => a.order.compareTo(b.order));
         return list;
       });
@@ -1075,7 +1080,10 @@ class FirestoreService {
       .collection(AppConstants.bannersCollection)
       .snapshots()
       .map((s) {
-        final list = s.docs.map(HomeBannerModel.fromFirestore).toList();
+        final list = s.docs
+            .map(HomeBannerModel.fromFirestore)
+            .where((b) => b.hasImage)
+            .toList();
         list.sort((a, b) => a.order.compareTo(b.order));
         return list;
       });

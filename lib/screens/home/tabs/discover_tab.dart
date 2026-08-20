@@ -17,6 +17,7 @@ import '../../../widgets/common/auto_fit_label.dart';
 import '../../../widgets/common/create_profile_cta.dart';
 import '../../../widgets/common/face_centered_photo.dart';
 import '../../../widgets/common/profile_highlight_badge.dart';
+import '../../../widgets/profile/verification_tick.dart';
 import '../../../widgets/interest/match_celebration.dart';
 import '../../../widgets/interest/pending_interest_card.dart';
 
@@ -917,10 +918,10 @@ class _MatchProfileCard extends ConsumerWidget {
                 ),
               ),
             ),
-            if (profile.isVerified) ...[
-              const SizedBox(width: 8),
-              _verifiedChip(context),
-            ],
+            // Verification status beside the name: GREEN tick = admin
+            // verified, dark/inactive tick = not verified yet.
+            const SizedBox(width: 6),
+            VerificationTick.forProfile(profile, size: 19),
             const SizedBox(width: 8),
             Flexible(
               child: Align(
@@ -947,26 +948,6 @@ class _MatchProfileCard extends ConsumerWidget {
       ],
     );
   }
-
-  Widget _verifiedChip(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: AppColors.success.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.verified, size: 14, color: AppColors.success),
-            const SizedBox(width: 4),
-            Text(context.l10n.verified,
-                style: const TextStyle(
-                    color: AppColors.success,
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700)),
-          ],
-        ),
-      );
 
   Widget _infoRow(IconData icon, String label, String value) {
     if (value.trim().isEmpty) return const SizedBox.shrink();

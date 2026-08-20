@@ -93,7 +93,7 @@ class StepReview extends ConsumerWidget {
             [l10n.birthTime, s(horo['birthTime'])],
             [l10n.birthPlace, s(horo['birthPlace'])],
           ]),
-          _section(context, l10n.contact, 8, [
+          _section(context, l10n.contact, 9, [
             [l10n.contactPerson, s(contact['contactPersonName'])],
             [l10n.relationship, s(contact['relationship'])],
             [l10n.mobileLabel, s(contact['mobileNumber'])],

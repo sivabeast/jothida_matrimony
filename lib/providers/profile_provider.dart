@@ -373,10 +373,12 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
         'userId': userId,
         'photos': photoUrls.isNotEmpty ? photoUrls : existingPhotos,
         if (horoscopeMap.isNotEmpty) 'horoscopeDetails': horoscopeMap,
-        // Approval workflow: self-registered profiles start PENDING REVIEW and
-        // become visible in Matches/Search only after an admin approves them.
-        // Admin-created profiles are approved on the spot (the admin is the
-        // reviewer). 'rejected'/'blocked' remain moderation outcomes.
+        // Verification workflow: self-registered profiles start PENDING
+        // VERIFICATION and become visible in Matches/Search only after an admin
+        // verifies them. Admin-created profiles are verified on the spot (the
+        // admin is the reviewer). 'rejected'/'blocked' remain moderation
+        // outcomes. NOTE: the stored value for "Verified" is still 'approved' —
+        // the Firestore rules, indexes and Cloud Functions all key off it.
         'status': adminCreated ? 'approved' : 'pending',
         'isActive': true,
         'createdAt': DateTime.now(),

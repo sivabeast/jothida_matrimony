@@ -16,8 +16,8 @@ import 'admin_export.dart' show inr;
 /// The admin Dashboard — business analytics only (user counters live on the
 /// All Users page; every admin area is reachable from the navigation drawer):
 ///
-///   • QUICK ACTIONS — Pending Approvals + Activity Log, shown only while the
-///     approval queue is non-empty (operationally important).
+///   • QUICK ACTIONS — Pending Verification + Activity Log, shown only while
+///     the verification queue is non-empty (operationally important).
 ///   • REVENUE — Today · This Week · This Month · Total
 ///     (from [dashboardAnalyticsProvider]) + the 7-day Revenue Trend chart.
 ///   • PAYMENT ANALYTICS — paid orders, average order value, orders this month
@@ -58,7 +58,7 @@ class AdminDashboard extends ConsumerWidget {
         .take(5)
         .toList();
 
-    // Live approval queue count (dummies excluded, like every profile stat).
+    // Live verification queue count (dummies excluded, like every profile stat).
     final pendingApprovals =
         (ref.watch(pendingProfilesProvider).valueOrNull ??
                 const <ProfileModel>[])
@@ -87,7 +87,7 @@ class AdminDashboard extends ConsumerWidget {
             _ActionCard(
               icon: Icons.fact_check_outlined,
               color: AppColors.warning,
-              title: 'Pending Approvals',
+              title: 'Pending Verification',
               count: pendingApprovals,
               highlighted: true,
               onTap: () => context.push('/admin/approvals'),
@@ -267,9 +267,10 @@ class AdminDashboard extends ConsumerWidget {
       );
 
   /// Humanises an `admin_logs` action key ('profile_approved' →
-  /// 'Profile Approved').
+  /// 'Profile Verified' — the stored key keeps the legacy 'approved' wording).
   static String _actionLabel(String action) {
     if (action.isEmpty) return 'Action';
+    if (action == 'profile_approved') return 'Profile Verified';
     return action
         .split('_')
         .map((w) => w.isEmpty ? w : w[0].toUpperCase() + w.substring(1))
@@ -472,7 +473,7 @@ class _RevenueTrendCard extends StatelessWidget {
 
 /// Tappable navigation card — icon, title, optional count pill and a chevron.
 /// When [highlighted] the card takes on the [color]'s tint (used for the
-/// amber Pending Approvals state).
+/// amber Pending Verification state).
 class _ActionCard extends StatelessWidget {
   final IconData icon;
   final Color color;

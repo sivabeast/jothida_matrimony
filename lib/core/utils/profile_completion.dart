@@ -49,7 +49,7 @@ List<ProfileSectionStatus> profileSections(ProfileModel? p) {
 
   // Only the sections that exist in the website's profile-creation flow are
   // surfaced as editable sections (Career, Location, Community, Horoscope,
-  // Photos, Partner Preference). Website-absent sections (About Me, Family,
+  // Photos, Partner Preference). Website-absent sections (About Me,
   // Lifestyle) are intentionally NOT listed — every field is edited through
   // the Edit Profile wizard, which mirrors the creation steps.
   return [
@@ -116,8 +116,8 @@ ProfileCompletion computeProfileCompletion(ProfileModel? profile) {
 ///
 /// Computed from ACTUAL Firestore profile fields (not the
 /// `users/{uid}.isProfileComplete` flag, which can lag behind real data).
-/// Rule: the profile exists, has a name, and at least 3 of the four core
-/// sections (photo, personal, horoscope, family) are filled in.
+/// Rule: the profile exists, has a name, and at least 2 of the three core
+/// sections (photo, personal, horoscope) are filled in.
 bool isProfileCompleteEnough(ProfileModel? p) {
   if (p == null) return false;
   final hasIdentity = p.fullName.trim().isNotEmpty;
@@ -130,10 +130,7 @@ bool isProfileCompleteEnough(ProfileModel? p) {
   final hasHoroscope = p.horoscope.rasi.trim().isNotEmpty ||
       p.horoscope.nakshatra.trim().isNotEmpty ||
       p.horoscope.birthTime.trim().isNotEmpty;
-  final hasFamily = p.family.fatherName.trim().isNotEmpty ||
-      p.family.motherName.trim().isNotEmpty;
-
   final coreSections =
-      [hasPhoto, hasPersonal, hasHoroscope, hasFamily].where((b) => b).length;
-  return coreSections >= 3;
+      [hasPhoto, hasPersonal, hasHoroscope].where((b) => b).length;
+  return coreSections >= 2;
 }

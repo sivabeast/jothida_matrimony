@@ -12,17 +12,14 @@
 /// Set this to `false` (or delete it) to restore real authentication behavior.
 const bool kBypassAuth = false;
 
-/// Temporary subscription TEST MODE.
+/// Temporary PAYMENT TEST MODE for the one-time Horoscope Request fee — the
+/// only payment in the app (there is no membership or subscription system).
 ///
-/// While `true`, selecting any subscription plan (user OR astrologer) activates
-/// it **immediately with no payment** — the subscription record, user/astrologer
-/// status, premium access and expiry are all written exactly as a real purchase
-/// would, only the Google Play Billing step is bypassed. The UI shows a
-/// "🧪 TEST MODE" badge and an "Activate Plan" button instead of "Pay Now".
+/// While `true`, a Horoscope Request is marked paid IMMEDIATELY with a demo
+/// payment id: the request, its assignment and its report pipeline all run
+/// exactly as a real purchase would, only the Google Play Billing step is
+/// bypassed.
 ///
 /// Set this to `false` to restore the production flow:
-///   Select Plan → Payment Gateway → Payment Success → Activate Subscription.
-///
-/// All subscription logic, premium-access checks, expiry calculations and plan
-/// validation stay intact in both modes — only the payment step is skipped.
+///   Request → Google Play Billing → Payment Success → Request confirmed.
 const bool kPaymentTestMode = true;
