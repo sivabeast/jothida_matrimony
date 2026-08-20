@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/admin_config.dart';
 import '../core/config/dev_config.dart';
 import '../core/utils/working_hours.dart';
+import '../core/utils/phone_utils.dart';
 import '../models/astrologer_request_model.dart';
 import '../models/astrologer_team_member.dart';
 import '../models/astrology_service_config.dart';
@@ -511,17 +512,45 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     String contactName = '',
     String contactPhone = '',
     String contactDob = '',
+    String contactCity = '',
+    String contactDistrict = '',
+    String contactState = '',
   }) async {
     state = const AsyncLoading();
+    // Name and mobile are MANDATORY on every booking (the office rings the
+    // customer to agree the exact time). The form validates them, and this is
+    // the server-side-of-the-client backstop: no caller can book without them.
+    if (contactName.trim().isEmpty) {
+      state = AsyncError(
+          Exception('A name is required to book an appointment.'),
+          StackTrace.current);
+      throw Exception('A name is required to book an appointment.');
+    }
+    if (normalizeIndianPhone(contactPhone).length < 10) {
+      state = AsyncError(
+          Exception('A valid mobile number is required to book an appointment.'),
+          StackTrace.current);
+      throw Exception(
+          'A valid mobile number is required to book an appointment.');
+    }
     try {
       final me = ref.read(myProfileProvider).valueOrNull;
       final user = ref.read(currentUserProvider).valueOrNull;
       final uid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ??
           user?.uid ??
           '';
-      final location = me == null
-          ? ''
-          : [me.city, me.state].where((s) => s.trim().isNotEmpty).join(', ');
+      // What the visitor typed on the booking form wins; their matrimony
+      // profile (when they have one) is only the fallback.
+      final city =
+          contactCity.trim().isNotEmpty ? contactCity.trim() : (me?.city ?? '');
+      final district = contactDistrict.trim().isNotEmpty
+          ? contactDistrict.trim()
+          : (me?.district ?? '');
+      final stateName = contactState.trim().isNotEmpty
+          ? contactState.trim()
+          : (me?.state ?? '');
+      final location =
+          [city, stateName].where((s) => s.trim().isNotEmpty).join(', ');
       final lang = ref.read(localeProvider)?.languageCode ?? 'en';
       final now = DateTime.now();
       final visitDay = DateTime(date.year, date.month, date.day);
@@ -546,6 +575,9 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         userName: userName,
         userPhotoUrl: me?.profilePhotoUrl ?? '',
         userLocation: location,
+        userCity: city.trim(),
+        userDistrict: district.trim(),
+        userState: stateName.trim(),
         userPhone: userPhone,
         userDob: userDob,
         // Standalone office-visit appointment — independent of the online

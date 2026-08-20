@@ -14,10 +14,12 @@ import '../../../providers/profile_provider.dart';
 import '../../../providers/ui_preferences_provider.dart';
 import '../../../providers/chat_provider.dart';
 import '../../../widgets/common/auto_fit_label.dart';
+import '../../../widgets/common/create_profile_sheet.dart';
 import '../../../widgets/common/create_profile_cta.dart';
 import '../../../widgets/common/face_centered_photo.dart';
 import '../../../widgets/common/profile_highlight_badge.dart';
 import '../../../widgets/profile/verification_tick.dart';
+import '../../../widgets/interest/interest_sent_overlay.dart';
 import '../../../widgets/interest/match_celebration.dart';
 import '../../../widgets/interest/pending_interest_card.dart';
 
@@ -152,6 +154,13 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   }
 
   // ── Actions ─────────────────────────────────────────────────────────────
+
+  /// Profiles whose interest send is currently IN FLIGHT. A second tap while
+  /// the first is still running is dropped, so a double tap can never write two
+  /// interests (the deterministic interest id and the security rules enforce
+  /// the same invariant server-side).
+  final Set<String> _sending = <String>{};
+
   Future<void> _sendInterest(ProfileModel profile) async {
     final l10n = context.l10n;
     final me = ref.read(myProfileProvider).valueOrNull;
@@ -159,6 +168,8 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
       _snack(l10n.createProfileFirst);
       return;
     }
+    if (_sending.contains(profile.id)) return; // duplicate tap
+    _sending.add(profile.id);
     // Sending interests is FREE and unlimited — no plan gate.
     try {
       await ref.read(interestNotifierProvider.notifier).sendInterest(
@@ -175,9 +186,13 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
         return;
       }
       setState(() => _interestSent.add(profile.id));
-      _snack(l10n.interestSentTo(profile.name));
+      // Confirmed by the backend → play the success animation. A failure above
+      // returns early, so this can never celebrate a send that did not happen.
+      await showInterestSentOverlay(context);
     } catch (_) {
-      _snack(l10n.couldNotSendInterest);
+      if (mounted) _snack(l10n.couldNotSendInterest);
+    } finally {
+      _sending.remove(profile.id);
     }
   }
 
@@ -771,8 +786,11 @@ class _MatchProfileCard extends ConsumerWidget {
         .join(', ');
   }
 
-  void _openProfile(BuildContext context) =>
-      context.push('/profile/${profile.id}');
+  /// A logged-out visitor gets the "Create Your Profile" bottom sheet instead
+  /// of the full profile page — they stay on this list, with it still visible
+  /// behind the sheet.
+  void _openProfile(BuildContext context, WidgetRef ref) =>
+      openProfileOrPrompt(context, ref, '/profile/${profile.id}');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -790,7 +808,7 @@ class _MatchProfileCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _photo(context),
+          _photo(context, ref),
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 20),
             child: Column(
@@ -798,7 +816,7 @@ class _MatchProfileCard extends ConsumerWidget {
               children: [
                 _summary(context),
                 const SizedBox(height: 18),
-                _actions(context, status),
+                _actions(context, ref, status),
               ],
             ),
           ),
@@ -812,13 +830,13 @@ class _MatchProfileCard extends ConsumerWidget {
   /// Full-width, almost-square, face-centred photo. Nothing is overlaid on it
   /// except the "photo hidden" note — the match badge lives below, with the
   /// name.
-  Widget _photo(BuildContext context) {
+  Widget _photo(BuildContext context, WidgetRef ref) {
     // "Hide Profile Photo" is OFF unless the member turned it on (§12) — a
     // hidden photo shows a neutral placeholder.
     final hidden = profile.hidesPhoto;
     final url = hidden ? '' : (profile.profilePhotoUrl ?? '');
     return GestureDetector(
-      onTap: () => _openProfile(context),
+      onTap: () => _openProfile(context, ref),
       child: AspectRatio(
         // Almost square (§11 keeps the stored crop 1:1); a hair wider than tall
         // leaves room for the details without a scroll on most phones.
@@ -999,7 +1017,8 @@ class _MatchProfileCard extends ConsumerWidget {
   }
 
   // ── Actions ────────────────────────────────────────────────────────────────
-  Widget _actions(BuildContext context, InterestUiStatus status) {
+  Widget _actions(
+      BuildContext context, WidgetRef ref, InterestUiStatus status) {
     // A pending RECEIVED interest replaces the whole action row with the
     // premium Accept/Reject card — this member must never be offered a
     // (duplicate) "Express Interest" while one is already waiting for them.
@@ -1022,7 +1041,7 @@ class _MatchProfileCard extends ConsumerWidget {
               child: _outlinedButton(
                 icon: Icons.person_outline,
                 label: context.l10n.viewProfile,
-                onPressed: () => _openProfile(context),
+                onPressed: () => _openProfile(context, ref),
               ),
             ),
           ],
@@ -1037,7 +1056,7 @@ class _MatchProfileCard extends ConsumerWidget {
           child: _outlinedButton(
             icon: Icons.person_outline,
             label: context.l10n.viewProfile,
-            onPressed: () => _openProfile(context),
+            onPressed: () => _openProfile(context, ref),
           ),
         ),
       ],

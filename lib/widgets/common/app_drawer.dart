@@ -6,9 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/navigation_provider.dart';
-import '../../providers/profile_provider.dart';
 import 'app_logo.dart';
-import 'network_photo.dart';
 
 /// The main navigation Drawer opened from the header menu icon.
 ///
@@ -21,21 +19,10 @@ class AppDrawer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(myProfileProvider).valueOrNull;
-    final user = ref.watch(currentUserProvider).valueOrNull;
-    final name = (profile?.fullName.trim().isNotEmpty ?? false)
-        ? profile!.fullName.trim()
-        : (user?.displayName?.trim().isNotEmpty ?? false)
-            ? user!.displayName!.trim()
-            : context.l10n.guest;
-    final photo = (profile?.profilePhotoUrl?.isNotEmpty ?? false)
-        ? profile!.profilePhotoUrl!
-        : (user?.photoUrl ?? '');
-
     return Drawer(
       child: Column(
         children: [
-          _header(context, name, photo),
+          _header(context),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -115,56 +102,27 @@ class AppDrawer extends ConsumerWidget {
     );
   }
 
-  Widget _header(BuildContext context, String name, String photo) => Container(
+  /// Brand-only header: app logo + app name, nothing else. The member's photo
+  /// and name were deliberately removed — the menu identifies the APP, not the
+  /// signed-in user (their own details live on My Profile).
+  Widget _header(BuildContext context) => Container(
         width: double.infinity,
         padding: EdgeInsets.fromLTRB(
             20, MediaQuery.of(context).padding.top + 20, 20, 20),
         decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              children: [
-                const AppLogo(size: 40),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(context.l10n.appTitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          color: AppColors.gold,
-                          fontSize: 16,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: Colors.white24,
-                  backgroundImage: cachedPhotoProvider(photo),
-                  child: photo.isEmpty
-                      ? Text(name.isNotEmpty ? name[0].toUpperCase() : '?',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18))
-                      : null,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600)),
-                ),
-              ],
+            const AppLogo(size: 40),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(context.l10n.appTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: AppColors.gold,
+                      fontSize: 16,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.bold)),
             ),
           ],
         ),

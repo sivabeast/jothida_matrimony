@@ -25,6 +25,7 @@ import '../../widgets/common/face_centered_photo.dart';
 import '../../widgets/common/fullscreen_photo_viewer.dart';
 import '../../widgets/common/gradient_button.dart';
 import '../../widgets/common/horoscope_documents_view.dart';
+import '../../widgets/interest/interest_sent_overlay.dart';
 import '../../widgets/profile/verification_tick.dart';
 import '../../widgets/common/skeletons.dart';
 import '../../widgets/interest/match_celebration.dart';
@@ -82,7 +83,12 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
         .catchError((_) {});
   }
 
+  /// True while a send is IN FLIGHT — a second tap is dropped, so a double tap
+  /// can never write two interests.
+  bool _sendingInterest = false;
+
   Future<void> _sendInterest(ProfileModel profile) async {
+    if (_sendingInterest) return; // duplicate tap
     final userId = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
     if (userId == null) return;
     final myProfile = await ref.read(profileRepositoryProvider).getProfileByUserId(userId);
@@ -93,19 +99,28 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       }
       return;
     }
+    _sendingInterest = true;
     // Sending interests is FREE and unlimited — no plan gate.
-    await ref.read(interestNotifierProvider.notifier).sendInterest(
-          senderId: userId,
-          receiverId: profile.userId,
-          senderProfileId: myProfile.id,
-          receiverProfileId: profile.id,
-        );
-    if (!mounted) return;
-    final st = ref.read(interestNotifierProvider);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(st.hasError
-            ? interestErrorText(st.error, context.l10n.couldNotSendInterest)
-            : context.l10n.interestSentSuccess)));
+    try {
+      await ref.read(interestNotifierProvider.notifier).sendInterest(
+            senderId: userId,
+            receiverId: profile.userId,
+            senderProfileId: myProfile.id,
+            receiverProfileId: profile.id,
+          );
+      if (!mounted) return;
+      final st = ref.read(interestNotifierProvider);
+      if (st.hasError) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(interestErrorText(
+                st.error, context.l10n.couldNotSendInterest))));
+        return;
+      }
+      // Only after the backend confirms the write.
+      await showInterestSentOverlay(context);
+    } finally {
+      _sendingInterest = false;
+    }
   }
 
   void _reportProfile(ProfileModel profile) {

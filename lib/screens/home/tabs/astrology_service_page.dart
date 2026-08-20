@@ -356,7 +356,6 @@ class _Body extends StatelessWidget {
     final whatsapp = cfg.whatsappNumber.trim();
     final email = cfg.email.trim();
     final address = cfg.officeAddress.trim();
-    final location = cfg.mapLocation.trim();
 
     String digits(String s) => s.replaceAll(RegExp(r'[^0-9+]'), '');
 
@@ -383,9 +382,12 @@ class _Body extends StatelessWidget {
       rows.add(_contactRow(Icons.location_on_outlined, 'Office', address,
           _hasMapTarget ? () => _openMaps(context) : null));
     }
-    if (location.isNotEmpty) {
-      rows.add(_contactRow(
-          Icons.map_outlined, 'Location', location, () => _openMaps(context)));
+    // The centre's fixed City · District · State, shown consistently wherever
+    // its location appears.
+    final hierarchy = cfg.locationHierarchy;
+    if (hierarchy.isNotEmpty) {
+      rows.add(_contactRow(Icons.map_outlined, 'Location', hierarchy,
+          _hasMapTarget ? () => _openMaps(context) : null));
     }
     if (_hasMapTarget) {
       rows.add(const SizedBox(height: 4));
@@ -408,14 +410,13 @@ class _Body extends StatelessWidget {
     return rows;
   }
 
-  /// The astrologer's own map destination — `mapLocation` when the admin has
-  /// set one (a pasted Maps link, "lat,lng" coordinates, or a place name),
-  /// otherwise the configured office address. Empty when neither is set, in
-  /// which case no map action is offered at all.
+  /// The centre's own map reference — `mapLocation` when the admin has set one
+  /// (a pasted Maps link, "lat,lng" coordinates, or a place name), otherwise
+  /// the configured office address.
   String get _mapQuery {
     final location = cfg.mapLocation.trim();
     if (location.isNotEmpty) return location;
-    return cfg.officeAddress.trim();
+    return cfg.fullAddress;
   }
 
   bool get _hasMapTarget => _destination.isNotEmpty;
@@ -438,16 +439,19 @@ class _Body extends StatelessWidget {
   /// carries no coordinates.
   static final RegExp _urlPlaceName = RegExp(r'/maps/place/([^/@?]+)');
 
-  /// The DESTINATION string handed to Google Maps Directions — always derived
-  /// from the astrologer's own stored location, never a hardcoded place.
+  /// The DESTINATION string handed to Google Maps Directions — always the
+  /// astrology centre, derived from its stored location, never a hardcoded or
+  /// approximate place.
   ///
-  /// A pasted Maps link cannot be used as a destination as-is, so the
-  /// coordinates (or place name) are extracted from it; a link that carries
-  /// neither (e.g. a `maps.app.goo.gl` short link) falls back to the office
-  /// address so the button still starts real directions.
+  /// A pasted Maps link cannot be used as a destination as-is, so coordinates
+  /// (or the place name) are extracted from it. A SHARE-STYLE SHORT LINK
+  /// (`maps.app.goo.gl/…`) carries neither — it only resolves server-side — so
+  /// the centre's FULL postal address (street, city, district, state) is used
+  /// instead. Google geocodes that to the exact centre, which is why the
+  /// address must stay complete rather than street-only.
   String get _destination {
     final raw = _mapQuery;
-    if (raw.isEmpty) return '';
+    if (raw.isEmpty) return cfg.fullAddress;
     if (!raw.startsWith('http')) return raw;
 
     final at = _urlAtCoords.firstMatch(raw);
@@ -459,9 +463,9 @@ class _Body extends StatelessWidget {
       final name = Uri.decodeComponent(place.group(1)!).replaceAll('+', ' ');
       if (name.trim().isNotEmpty) return name.trim();
     }
-    // No usable destination inside the link — use the office address instead.
-    final address = cfg.officeAddress.trim();
-    return address.isNotEmpty ? address : '';
+    // A short link resolves to nothing client-side — route to the centre's full
+    // address so Directions still lands on the exact office.
+    return cfg.fullAddress;
   }
 
   /// Opens the Google Maps DIRECTIONS screen for the astrologer's location:

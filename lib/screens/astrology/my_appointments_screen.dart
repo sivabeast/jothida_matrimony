@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_dialogs.dart';
 import '../../core/utils/appointment_status.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/slot_generator.dart';
@@ -48,13 +49,51 @@ class MyAppointmentsScreen extends ConsumerWidget {
 
 /// A clean appointment card (date · time · status · booking id) reused by the
 /// history screen.
-class AppointmentHistoryCard extends StatelessWidget {
+///
+/// An OPEN booking can be cancelled here. That is also how a date change works:
+/// there is deliberately no "edit the date" action — the member cancels this
+/// booking and books the new day afresh, so the new visit is a new booking with
+/// its own Booking ID rather than this record quietly changing date.
+class AppointmentHistoryCard extends ConsumerWidget {
   final AstrologerRequestModel appt;
-  const AppointmentHistoryCard({super.key, required this.appt});
+
+  /// Hides the cancel action where the card is purely informational (e.g. the
+  /// booking-confirmation screen).
+  final bool allowCancel;
+
+  const AppointmentHistoryCard(
+      {super.key, required this.appt, this.allowCancel = true});
+
+  /// Cancels the booking after an explicit confirmation — never on one tap.
+  Future<void> _cancel(BuildContext context, WidgetRef ref) async {
+    final ok = await showAppConfirmDialog(
+      context,
+      title: 'Cancel this booking?',
+      message: 'Booking ${appt.id} will be removed and its session freed up. '
+          'To visit on a different day, book the new date afterwards — that '
+          'creates a new booking.',
+      confirmLabel: 'Cancel Booking',
+      cancelLabel: 'Keep Booking',
+      icon: Icons.event_busy_outlined,
+      danger: true,
+    );
+    if (!ok || !context.mounted) return;
+    try {
+      await ref.read(appointmentControllerProvider.notifier).delete(appt);
+      if (context.mounted) showAppSnack(context, 'Booking cancelled.');
+    } catch (_) {
+      if (context.mounted) {
+        showAppSnack(context, 'Could not cancel the booking. Please try again.',
+            error: true);
+      }
+    }
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final color = appointmentStatusColor(appt.status);
+    final open = appt.status != AstrologerRequestStatus.completed &&
+        appt.status != AstrologerRequestStatus.rejected;
     final dateStr = appt.visitDate == null
         ? '—'
         : DateFormat('EEEE, d MMM yyyy').format(appt.visitDate!);
@@ -114,6 +153,31 @@ class AppointmentHistoryCard extends StatelessWidget {
           _row(Icons.schedule_outlined, 'Session', sessionStr),
           const SizedBox(height: 8),
           _row(Icons.confirmation_number_outlined, 'Booking ID', appt.id),
+          if (allowCancel && open) ...[
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _cancel(context, ref),
+                icon: const Icon(Icons.event_busy_outlined, size: 18),
+                label: const Text('Cancel Booking'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: BorderSide(
+                      color: AppColors.error.withValues(alpha: 0.55)),
+                  minimumSize: const Size.fromHeight(44),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Need another day? Cancel this booking and book the new date — '
+              'you will get a new Booking ID.',
+              style: TextStyle(fontSize: 11.5, color: Colors.grey[600]),
+            ),
+          ],
         ],
       ),
     );

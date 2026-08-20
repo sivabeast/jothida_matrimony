@@ -45,8 +45,17 @@ class AdminShell extends ConsumerWidget {
       _NavItem('Commission', Icons.percent, '/admin/commission'),
     ]),
     _NavGroup('Horoscope', [
-      _NavItem('Requests', Icons.auto_stories_outlined, '/admin/horoscope-requests'),
-      _NavItem('Appointments', Icons.event_available, '/admin/appointments'),
+      _NavItem('Requests', Icons.auto_stories_outlined,
+          '/admin/horoscope-requests'),
+    ]),
+    // Astrology appointments get their OWN top-level entry: they are a separate
+    // customer flow from horoscope report requests (no employee assignment, and
+    // the admin's main job here is ringing the customer back).
+    _NavGroup('Astrology', [
+      _NavItem('Astrology Bookings', Icons.event_available,
+          '/admin/appointments'),
+      _NavItem('Astrology Service', Icons.auto_awesome_outlined,
+          '/admin/astrology-service'),
     ]),
     _NavGroup('Payments', [
       _NavItem('Transactions', Icons.receipt_long_outlined, '/admin/payments'),
@@ -68,8 +77,6 @@ class AdminShell extends ConsumerWidget {
     // No "App Update" entry either: updates are driven entirely by Google Play
     // In-App Updates and need no admin action (spec §9).
     _NavGroup('Settings', [
-      _NavItem('Astrology Service', Icons.auto_awesome_outlined,
-          '/admin/astrology-service'),
       _NavItem('Test Data', Icons.science_outlined, '/admin/test-data'),
     ]),
   ];

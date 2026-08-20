@@ -80,12 +80,17 @@ class _AstrologyAppointmentScreenState
     // 2. Name / Mobile / Date of Birth — prefilled from whatever IS known.
     final profile = ref.read(myProfileProvider).valueOrNull;
     final user = ref.read(currentUserProvider).valueOrNull;
+    // Whatever is known only PREFILLS the form — name and mobile still have to
+    // be present and valid before the booking can be submitted.
     final details = await showAppointmentDetailsDialog(
       context,
       initialName: profile?.fullName ?? user?.displayName ?? '',
       initialPhone: (profile?.contact.mobileNumber.trim().isNotEmpty ?? false)
           ? profile!.contact.mobileNumber.trim()
           : (user?.phone ?? ''),
+      initialCity: profile?.city ?? '',
+      initialDistrict: profile?.district ?? '',
+      initialState: profile?.state ?? '',
     );
     if (details == null || !mounted) return; // cancelled
 
@@ -102,6 +107,9 @@ class _AstrologyAppointmentScreenState
             paymentId: 'free',
             contactName: details.name,
             contactPhone: details.phone,
+            contactCity: details.city,
+            contactDistrict: details.district,
+            contactState: details.state,
             // No DOB is asked for any more. bookServiceAppointment still fills
             // it from the matrimony profile when the member has one, so nothing
             // is lost for them — and an astrology-only customer is simply not

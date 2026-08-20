@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/app_dialogs.dart';
 import '../../core/utils/appointment_status.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../providers/appointment_provider.dart';
+import '../../services/firebase/astrologer_service.dart'
+    show AppointmentSlotTakenException;
 import '../../widgets/admin/appointment_admin_views.dart';
 import '../../widgets/common/data_states.dart';
 import '../../widgets/common/network_photo.dart';
@@ -26,10 +29,15 @@ extension _ApptFilterX on _ApptFilter {
       };
 }
 
-/// Admin → Appointment Management. A dedicated page (separate from Astrology
-/// Management) listing EVERY appointment booking with full user details, live
-/// status, search + filters and per-booking actions. Fully database-driven via
+/// Admin → **Astrology Bookings**. The dedicated page (separate from Astrology
+/// Management) listing EVERY astrology appointment with the full customer
+/// record — Booking ID, name, tap-to-call mobile number, what was booked, the
+/// visit date, the reason and the customer's city/district/state — plus live
+/// status, search, filters and per-booking actions. Fully database-driven via
 /// [allAppointmentsProvider]; status changes sync to the user instantly.
+///
+/// Rescheduling REBOOKS (new Booking ID) rather than editing the visit date on
+/// the existing record — see [AppointmentController.rebook].
 class AdminAppointmentsScreen extends ConsumerStatefulWidget {
   const AdminAppointmentsScreen({super.key});
 
@@ -87,7 +95,10 @@ class _AdminAppointmentsScreenState
     return r.userName.toLowerCase().contains(q) ||
         r.userPhone.toLowerCase().contains(q) ||
         r.id.toLowerCase().contains(q) ||
-        r.category.toLowerCase().contains(q);
+        r.category.toLowerCase().contains(q) ||
+        r.userCity.toLowerCase().contains(q) ||
+        r.userDistrict.toLowerCase().contains(q) ||
+        r.userState.toLowerCase().contains(q);
   }
 
   @override
@@ -96,7 +107,7 @@ class _AdminAppointmentsScreenState
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Appointment Management'),
+        title: const Text('Astrology Bookings'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -149,7 +160,7 @@ class _AdminAppointmentsScreenState
           controller: _search,
           onChanged: (v) => setState(() => _query = v),
           decoration: InputDecoration(
-            hintText: 'Search by name, mobile or booking ID',
+            hintText: 'Search by name, mobile, booking ID or city',
             prefixIcon: const Icon(Icons.search),
             suffixIcon: _query.isEmpty
                 ? null
@@ -240,29 +251,76 @@ class _AppointmentAdminCard extends ConsumerWidget {
     }
   }
 
-  /// Opens the "Reschedule" sheet and applies the chosen day + session.
+  /// Opens the "Reschedule" sheet and REBOOKS the visit on the chosen day.
+  ///
+  /// A date change is never an edit of this record: a new booking with a NEW
+  /// Booking ID is created for the new day and this one is then deleted, so the
+  /// old date does not silently turn into the new one. The admin is told the
+  /// new Booking ID, and confirms up front because the current booking goes
+  /// away.
   Future<void> _reschedule(BuildContext context, WidgetRef ref) async {
     final picked = await showAppointmentRescheduleSheet(context, appt);
     if (picked == null || !context.mounted) return;
+
+    final newDay = DateFormat('EEE, d MMM yyyy').format(picked.date);
+    final ok = await showAppConfirmDialog(
+      context,
+      title: 'Rebook on a new date?',
+      message: 'Booking ${appt.id} will be DELETED and a new booking created '
+          'for $newDay · ${AppointmentSession.shortLabel(picked.session)}. '
+          'The new booking gets its own Booking ID.',
+      confirmLabel: 'Rebook',
+      icon: Icons.event_repeat_outlined,
+    );
+    if (!ok || !context.mounted) return;
+
     try {
-      await ref.read(appointmentControllerProvider.notifier).reschedule(
-            appt,
-            visitDate: picked.date,
-            session: picked.session,
-          );
+      final newId =
+          await ref.read(appointmentControllerProvider.notifier).rebook(
+                appt,
+                visitDate: picked.date,
+                session: picked.session,
+              );
       if (context.mounted) {
         showAppSnack(
             context,
-            'Rescheduled to '
-            '${DateFormat('EEE, d MMM yyyy').format(picked.date)} · '
-            '${AppointmentSession.shortLabel(picked.session)}.');
+            'Rebooked for $newDay · '
+            '${AppointmentSession.shortLabel(picked.session)}. '
+            'New Booking ID: $newId');
+      }
+    } on AppointmentSlotTakenException {
+      if (context.mounted) {
+        showAppSnack(
+            context,
+            'That session is already full — the original booking was kept. '
+            'Pick another day or session.',
+            error: true);
       }
     } catch (_) {
       if (context.mounted) {
-        showAppSnack(context, 'Could not reschedule. Please try again.',
+        showAppSnack(
+            context,
+            'Could not rebook — the original booking was kept. Please try '
+            'again.',
             error: true);
       }
     }
+  }
+
+  /// Opens the device dialer with the customer's number already entered, so the
+  /// admin can place the call straight away. Never a clipboard copy.
+  Future<void> _call(BuildContext context, String phone) async {
+    final digits = phone.replaceAll(RegExp(r'[^0-9+]'), '');
+    if (digits.isEmpty) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final uri = Uri(scheme: 'tel', path: digits);
+    try {
+      if (await launchUrl(uri, mode: LaunchMode.externalApplication)) return;
+    } catch (_) {
+      // Falls through to the message below.
+    }
+    messenger.showSnackBar(SnackBar(
+        content: Text('Could not open the dialer. Number: $phone')));
   }
 
   @override
@@ -299,10 +357,29 @@ class _AppointmentAdminCard extends ConsumerWidget {
                         style: const TextStyle(
                             fontSize: 15, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 2),
+                    // Tapping the number opens the DIALER with it entered —
+                    // the admin's primary action on a booking.
                     if (d.phone.isNotEmpty)
-                      Text('📞 ${d.phone}',
-                          style:
-                              TextStyle(fontSize: 12, color: Colors.grey[700])),
+                      InkWell(
+                        onTap: () => _call(context, d.phone),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.phone_in_talk_outlined,
+                                  size: 14, color: AppColors.primary),
+                              const SizedBox(width: 4),
+                              Text(d.phone,
+                                  style: const TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.primary,
+                                      decoration: TextDecoration.underline)),
+                            ],
+                          ),
+                        ),
+                      ),
                     if (d.email.isNotEmpty)
                       Text('✉ ${d.email}',
                           maxLines: 1,
@@ -334,7 +411,11 @@ class _AppointmentAdminCard extends ConsumerWidget {
             (Icons.place_outlined, 'Meeting Type', d.meetingType),
             (Icons.event_outlined, 'Date', d.date),
             (Icons.schedule_outlined, 'Time', d.time),
+            (Icons.help_outline, 'Reason', d.reason),
             (Icons.payments_outlined, 'Payment', d.payment),
+            (Icons.location_city_outlined, 'City', appt.userCity),
+            (Icons.map_outlined, 'District', appt.userDistrict),
+            (Icons.public_outlined, 'State', appt.userState),
             (Icons.history_toggle_off_outlined, 'Created', d.created),
           ]),
           const SizedBox(height: 10),
@@ -376,7 +457,11 @@ class _AppointmentAdminCard extends ConsumerWidget {
     final s = appt.status;
     final open = s != AstrologerRequestStatus.completed &&
         s != AstrologerRequestStatus.rejected;
+    final phone = appt.userPhone.trim();
     final chips = <Widget>[
+      if (phone.isNotEmpty)
+        _actionBtn(context, 'Call', Icons.call, AppColors.success,
+            () => _call(context, phone)),
       _actionBtn(context, 'View Details', Icons.receipt_long_outlined,
           AppColors.primary, () => showAppointmentDetailsSheet(context, appt)),
       if (s == AstrologerRequestStatus.pending)

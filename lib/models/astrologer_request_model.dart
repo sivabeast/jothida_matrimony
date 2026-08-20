@@ -211,7 +211,18 @@ class AstrologerRequestModel {
   final String userId;
   final String userName;
   final String userPhotoUrl;
+
+  /// Human-readable "City, State" summary kept for older records and compact
+  /// displays. [userCity] / [userDistrict] / [userState] are the structured
+  /// fields the admin booking list shows.
   final String userLocation;
+
+  /// The booking user's own location hierarchy, captured on the booking form
+  /// (prefilled from their matrimony profile when they have one). Optional —
+  /// only Name and Mobile are mandatory to book — so these can be empty.
+  final String userCity;
+  final String userDistrict;
+  final String userState;
 
   /// Denormalised booking user's mobile number, captured at booking time so the
   /// admin Appointment Management list can display + search by mobile without an
@@ -375,6 +386,9 @@ class AstrologerRequestModel {
     required this.userName,
     this.userPhotoUrl = '',
     this.userLocation = '',
+    this.userCity = '',
+    this.userDistrict = '',
+    this.userState = '',
     this.userPhone = '',
     this.userDob = '',
     required this.type,
@@ -610,6 +624,9 @@ class AstrologerRequestModel {
       userName: d['userName'] ?? 'User',
       userPhotoUrl: d['userPhotoUrl'] ?? '',
       userLocation: d['userLocation'] ?? d['location'] ?? '',
+      userCity: (d['userCity'] ?? '').toString(),
+      userDistrict: (d['userDistrict'] ?? '').toString(),
+      userState: (d['userState'] ?? '').toString(),
       userPhone: (d['userPhone'] ?? '').toString(),
       userDob: (d['userDob'] ?? '').toString(),
       type: AstrologerRequestType.values.firstWhere(
@@ -683,6 +700,9 @@ class AstrologerRequestModel {
         'userName': userName,
         'userPhotoUrl': userPhotoUrl,
         'userLocation': userLocation,
+        'userCity': userCity,
+        'userDistrict': userDistrict,
+        'userState': userState,
         'userPhone': userPhone,
         'userDob': userDob,
         'type': type.name,
@@ -790,6 +810,9 @@ class AstrologerRequestModel {
         userName: userName,
         userPhotoUrl: userPhotoUrl,
         userLocation: userLocation,
+        userCity: userCity,
+        userDistrict: userDistrict,
+        userState: userState,
         userPhone: userPhone,
         userDob: userDob,
         type: type,

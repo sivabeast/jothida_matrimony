@@ -252,8 +252,35 @@ class AstrologyServiceConfig {
   final String whatsappNumber;
   final String email;
 
-  /// Free-text location / Google Maps link shown in Contact Details.
+  /// The Google Maps link for the centre, shown in Contact Details. It is also
+  /// the preferred DIRECTIONS destination whenever coordinates can be read out
+  /// of it; a share-style short link carries none, so [fullAddress] is used.
   final String mapLocation;
+
+  // ── The astrology centre's fixed location ────────────────────────────────
+  /// City / District / State of the centre. They are a FIXED hierarchy (the
+  /// office does not move), snapshotted onto every appointment and shown
+  /// consistently wherever the centre's location appears.
+  final String officeCity;
+  final String officeDistrict;
+  final String officeState;
+
+  /// The centre's complete postal address, in the order Google Maps geocodes
+  /// most reliably: street, city, district, state. This is what the Get
+  /// Directions action routes to when the stored Maps link has no coordinates.
+  String get fullAddress => [
+        officeAddress.trim(),
+        officeCity.trim(),
+        officeDistrict.trim(),
+        officeState.trim(),
+      ].where((p) => p.isNotEmpty).join(', ');
+
+  /// "City, District, State" for display.
+  String get locationHierarchy => [
+        officeCity.trim(),
+        officeDistrict.trim(),
+        officeState.trim(),
+      ].where((p) => p.isNotEmpty).join(', ');
 
   // ── Appointment slot configuration (minutes-from-midnight) ─────────────
   /// Mon→Fri only (spec §8). Weekday ints 1..7 (Mon=1). Default Mon–Fri.
@@ -343,12 +370,14 @@ class AstrologyServiceConfig {
     this.awards = const [],
     this.news = const [],
     this.expertContactPhone = '',
-    this.officeAddress =
-        'Jothida Matrimony Office, Main Road, Tamil Nadu',
+    this.officeAddress = '45, Lakshmiyapuram Street, Thoppatti, Rajapalayam',
     this.officeContactNumber = '+91 90000 00000',
     this.whatsappNumber = '',
     this.email = '',
-    this.mapLocation = '',
+    this.mapLocation = 'https://maps.app.goo.gl/YY8ZxTMdhx1bfm3o6',
+    this.officeCity = 'Rajapalayam',
+    this.officeDistrict = 'Virudhunagar',
+    this.officeState = 'Tamil Nadu',
     this.workingWeekdays = const [1, 2, 3, 4, 5],
     this.slotStartMinutes = 600, // 10:00 AM
     this.slotEndMinutes = 1020, // 5:00 PM
@@ -454,7 +483,10 @@ class AstrologyServiceConfig {
           _toStr(d['officeContactNumber'], def.officeContactNumber),
       whatsappNumber: (d['whatsappNumber'] ?? '').toString(),
       email: (d['email'] ?? '').toString(),
-      mapLocation: (d['mapLocation'] ?? '').toString(),
+      mapLocation: _toStr(d['mapLocation'], def.mapLocation),
+      officeCity: _toStr(d['officeCity'], def.officeCity),
+      officeDistrict: _toStr(d['officeDistrict'], def.officeDistrict),
+      officeState: _toStr(d['officeState'], def.officeState),
       workingWeekdays: _toIntList(d['workingWeekdays'], def.workingWeekdays),
       slotStartMinutes: _toInt(d['slotStartMinutes'], def.slotStartMinutes),
       slotEndMinutes: _toInt(d['slotEndMinutes'], def.slotEndMinutes),
@@ -508,6 +540,9 @@ class AstrologyServiceConfig {
         'whatsappNumber': whatsappNumber,
         'email': email,
         'mapLocation': mapLocation,
+        'officeCity': officeCity,
+        'officeDistrict': officeDistrict,
+        'officeState': officeState,
         'workingWeekdays': workingWeekdays,
         'slotStartMinutes': slotStartMinutes,
         'slotEndMinutes': slotEndMinutes,
@@ -550,6 +585,9 @@ class AstrologyServiceConfig {
     String? whatsappNumber,
     String? email,
     String? mapLocation,
+    String? officeCity,
+    String? officeDistrict,
+    String? officeState,
     List<int>? workingWeekdays,
     int? slotStartMinutes,
     int? slotEndMinutes,
@@ -590,6 +628,9 @@ class AstrologyServiceConfig {
         whatsappNumber: whatsappNumber ?? this.whatsappNumber,
         email: email ?? this.email,
         mapLocation: mapLocation ?? this.mapLocation,
+        officeCity: officeCity ?? this.officeCity,
+        officeDistrict: officeDistrict ?? this.officeDistrict,
+        officeState: officeState ?? this.officeState,
         workingWeekdays: workingWeekdays ?? this.workingWeekdays,
         slotStartMinutes: slotStartMinutes ?? this.slotStartMinutes,
         slotEndMinutes: slotEndMinutes ?? this.slotEndMinutes,

@@ -16,6 +16,7 @@ import '../../../models/profile_model.dart';
 import '../../../providers/account_provider.dart';
 import '../../../providers/announcement_provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/interest_celebration_provider.dart';
 import '../../../providers/banner_provider.dart';
 import '../../auth/login_required_screen.dart';
 import '../../../providers/chat_provider.dart';
@@ -26,11 +27,13 @@ import '../../../providers/profile_provider.dart';
 import '../../../providers/wedding_provider.dart';
 import '../../../widgets/common/auto_fit_label.dart';
 import '../../../widgets/common/coming_soon.dart';
+import '../../../widgets/common/create_profile_sheet.dart';
 import '../../../widgets/common/create_profile_cta.dart';
 import '../../../widgets/common/face_centered_photo.dart';
 import '../../../widgets/common/network_photo.dart';
 import '../../../widgets/common/skeletons.dart';
 import '../../../widgets/home/home_banner_slide.dart';
+import '../../../widgets/interest/interest_accepted_celebration.dart';
 import '../../../widgets/profile/verification_tick.dart';
 
 // ── Shared card styling — every home card uses the SAME radius, shadow and
@@ -66,10 +69,61 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
   /// admin has published none the carousel is not rendered at all.
   int _bannerCount = 0;
 
+  /// Guards the accepted-interest celebration so two frames can never open two
+  /// dialogs for the same event.
+  bool _celebrating = false;
+
   @override
   void initState() {
     super.initState();
     _startAutoScroll();
+    // The sender may have been away when their interest was accepted — check
+    // for that the moment Home is up.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _celebrateAccepted());
+  }
+
+  /// Shows the confetti celebration for every interest of MINE that has been
+  /// accepted since I last saw it, oldest first, then marks each as seen so it
+  /// never plays again (spec §14–§16).
+  ///
+  /// Waits for the seen-set to hydrate first: reading it before
+  /// SharedPreferences has been loaded would look like "nothing seen yet" and
+  /// replay old celebrations on every cold start.
+  Future<void> _celebrateAccepted() async {
+    if (_celebrating) return;
+    _celebrating = true;
+    try {
+      final celebrations = ref.read(celebratedInterestsProvider.notifier);
+      await celebrations.ready;
+      // Give the sent-interests stream a moment to deliver its first snapshot.
+      if (!mounted) return;
+      if (ref.read(sentInterestsProvider).valueOrNull == null) {
+        await ref.read(sentInterestsProvider.future).timeout(
+              const Duration(seconds: 6),
+              onTimeout: () => const [],
+            );
+      }
+      // Drain the backlog one at a time so nothing is lost and nothing repeats.
+      while (mounted) {
+        final pending = ref.read(pendingAcceptedInterestsProvider);
+        if (pending.isEmpty) break;
+        final interest = pending.first;
+        final other = ref
+            .read(profileByIdProvider(interest.receiverProfileId))
+            .valueOrNull;
+        await showInterestAcceptedCelebration(
+          context,
+          name: other?.displayName(context.isTamil) ?? '',
+          onOpenInterests: () => context.push('/interests?tab=sent'),
+        );
+        // Marked only AFTER it has actually been displayed.
+        await celebrations.markCelebrated(interest.id);
+      }
+    } catch (_) {
+      // Never let a celebration failure affect the Home page.
+    } finally {
+      _celebrating = false;
+    }
   }
 
   @override
@@ -1638,7 +1692,7 @@ class _MatchCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: () => context.push('/profile/${profile.id}'),
+      onTap: () => openProfileOrPrompt(context, ref, '/profile/${profile.id}'),
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
@@ -1776,7 +1830,9 @@ class _RecentInterestCard extends ConsumerWidget {
     final location = p == null
         ? ''
         : [p.city, p.state].where((s) => s.trim().isNotEmpty).join(', ');
-    final open = p == null ? null : () => context.push('/profile/${p.id}');
+    final open = p == null
+        ? null
+        : () => openProfileOrPrompt(context, ref, '/profile/${p.id}');
 
     return Container(
       width: 172,

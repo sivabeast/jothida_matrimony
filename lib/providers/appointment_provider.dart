@@ -67,19 +67,31 @@ class AppointmentController extends Notifier<AsyncValue<void>> {
 
   /// Moves a booking to a new day / session, releasing the old session's
   /// capacity and taking the new one.
-  Future<void> reschedule(
+  /// Moves a booking to a new day/session by REBOOKING it: a new booking (with
+  /// a NEW Booking ID) is created first, then the original is deleted. The
+  /// original record is never edited into the new date.
+  ///
+  /// Returns the new Booking ID.
+  Future<String> rebook(
     AstrologerRequestModel r, {
     required DateTime visitDate,
     required String session,
+    int? capacity,
   }) async {
     state = const AsyncLoading();
     try {
-      if (!kBypassAuth) {
-        await ref
-            .read(astrologerServiceProvider)
-            .rescheduleAppointment(r, visitDate: visitDate, session: session);
+      if (kBypassAuth) {
+        state = const AsyncData(null);
+        return r.id;
       }
+      final newId = await ref.read(astrologerServiceProvider).rebookAppointment(
+            r,
+            visitDate: visitDate,
+            session: session,
+            capacity: capacity,
+          );
       state = const AsyncData(null);
+      return newId;
     } catch (e, st) {
       state = AsyncError(e, st);
       rethrow;

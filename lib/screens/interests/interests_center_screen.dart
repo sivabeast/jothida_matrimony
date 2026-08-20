@@ -2,6 +2,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/navigation/root_navigator.dart';
+import '../../widgets/common/create_profile_sheet.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../models/astrologer_request_model.dart';
@@ -861,7 +862,8 @@ class _InterestCard extends ConsumerWidget {
                     _snack(context, l10n.profileUnavailableMatch);
                     return;
                   }
-                  context.push('/profile-user/$otherUserId');
+                  openProfileOrPrompt(
+                      context, ref, '/profile-user/$otherUserId');
                 },
                 icon: const Icon(Icons.person_outline, size: 18),
                 label: Text(l10n.viewProfile),

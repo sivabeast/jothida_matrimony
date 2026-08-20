@@ -481,57 +481,77 @@ class AstrologerService {
   /// booked-slots index stays honest for everyone else's date picker. The
   /// booking keeps its id, its payment and its history — only the visit moves —
   /// and the member is notified with the new date.
-  Future<void> rescheduleAppointment(
+  /// Moves an appointment to a new day/session by REBOOKING it, never by
+  /// editing the original record.
+  ///
+  /// A date change is a NEW booking, not an amendment: the August 25 record
+  /// must not quietly become the August 28 one. So this
+  ///   1. creates a brand-new booking (new document → NEW Booking ID) on the
+  ///      chosen day, carrying the customer's details across, then
+  ///   2. deletes the original booking and frees its slot.
+  ///
+  /// Create-then-delete is deliberate: if the new day is full the capacity
+  /// transaction throws and the ORIGINAL booking is still intact, so a
+  /// customer can never end up with no booking at all.
+  ///
+  /// Returns the new Booking ID.
+  Future<String> rebookAppointment(
     AstrologerRequestModel r, {
     required DateTime visitDate,
     required String session,
+    int? capacity,
   }) async {
-    final dateKey = '${visitDate.year.toString().padLeft(4, '0')}-'
-        '${visitDate.month.toString().padLeft(2, '0')}-'
-        '${visitDate.day.toString().padLeft(2, '0')}';
-    if (dateKey == r.visitDateKey && session == r.session) return; // no-op
+    final day = DateTime(visitDate.year, visitDate.month, visitDate.day);
+    final dateKey = '${day.year.toString().padLeft(4, '0')}-'
+        '${day.month.toString().padLeft(2, '0')}-'
+        '${day.day.toString().padLeft(2, '0')}';
+    if (dateKey == r.visitDateKey && session == r.session) return r.id; // no-op
 
     final start = AppointmentSession.startMinutes(session);
-    final label = '${AppointmentSession.shortLabel(session)} · $dateKey';
-    await _db
-        .collection(AppConstants.astrologerRequestsCollection)
-        .doc(r.id)
-        .update({
-      'visitDate': Timestamp.fromDate(DateTime(
-          visitDate.year, visitDate.month, visitDate.day)),
-      'visitDateKey': dateKey,
-      'session': session,
-      'slotStartMinutes': start,
-      'slotKey': '${(start ~/ 60).toString().padLeft(2, '0')}'
-          '${(start % 60).toString().padLeft(2, '0')}',
-      'updatedAt': FieldValue.serverTimestamp(),
-      'history': FieldValue.arrayUnion(
-          [BookingHistoryEntry.now('Rescheduled to $label').toMap()]),
+    final now = DateTime.now();
+    final oldLabel = '${AppointmentSession.shortLabel(r.session)} \u00b7 '
+        '${r.visitDateKey}';
+    final newLabel = '${AppointmentSession.shortLabel(session)} \u00b7 $dateKey';
+
+    // Start from the ORIGINAL document so no customer detail (name, phone,
+    // city/district/state, reason, office snapshot) is lost, then override
+    // everything that identifies the booking itself.
+    final data = Map<String, dynamic>.from(r.toFirestore())
+      ..['visitDate'] = Timestamp.fromDate(day)
+      ..['visitDateKey'] = dateKey
+      ..['session'] = session
+      ..['slotStartMinutes'] = start
+      ..['slotKey'] = '${(start ~/ 60).toString().padLeft(2, '0')}'
+          '${(start % 60).toString().padLeft(2, '0')}'
+      ..['createdAt'] = Timestamp.fromDate(now)
+      ..['updatedAt'] = FieldValue.serverTimestamp()
+      // A rebooking is a fresh booking: it starts its own audit trail and does
+      // not inherit the old one's completion/cancellation state.
+      ..['history'] = [
+        BookingHistoryEntry(
+                at: now, label: 'Rebooked from $oldLabel to $newLabel')
+            .toMap(),
+      ]
+      ..['rebookedFrom'] = r.id;
+
+    final newRef =
+        _db.collection(AppConstants.astrologerRequestsCollection).doc();
+    final slotsRef = _appointmentSlotsDoc(dateKey);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(slotsRef);
+      final current = (snap.data()?[session] as num?)?.toInt() ?? 0;
+      if (capacity != null && current >= capacity) {
+        throw AppointmentSlotTakenException();
+      }
+      tx.set(newRef, data);
+      tx.set(slotsRef, {session: current + 1}, SetOptions(merge: true));
     });
 
-    // Move the capacity: free the old session, take the new one. Both are
-    // best-effort merges — a failed index write must never undo the reschedule.
-    await _freeSlot(r);
-    try {
-      await _appointmentSlotsDoc(dateKey)
-          .set({session: FieldValue.increment(1)}, SetOptions(merge: true));
-    } catch (e) {
-      debugPrint('[AstrologerService] reschedule slot claim skipped: $e');
-    }
-
-    if (r.userId.trim().isNotEmpty) {
-      await _notify(
-        r.userId,
-        'Appointment Rescheduled',
-        'Your appointment has been moved to $label.',
-        'appointment_status',
-        id: 'appointment_rescheduled_${r.id}_${dateKey}_$session',
-        data: {'requestId': r.id, 'route': '/my-appointments'},
-      );
-    }
+    // The new booking exists — now retire the old one and give its slot back.
+    await deleteAppointment(r);
+    return newRef.id;
   }
 
-  /// Hard-deletes an appointment and frees its slot.
   Future<void> deleteAppointment(AstrologerRequestModel r) async {
     await _db
         .collection(AppConstants.astrologerRequestsCollection)

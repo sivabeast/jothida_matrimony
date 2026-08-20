@@ -74,6 +74,9 @@ class _AstrologyServiceSettingsScreenState
     _ctrl('email', cfg.email);
     _ctrl('officeAddress', cfg.officeAddress);
     _ctrl('mapLocation', cfg.mapLocation);
+    _ctrl('officeCity', cfg.officeCity);
+    _ctrl('officeDistrict', cfg.officeDistrict);
+    _ctrl('officeState', cfg.officeState);
     _ctrl('appointmentRules', cfg.appointmentRules);
     _ctrl('serviceIntro', cfg.serviceIntro);
     _ctrl('reportIncludes', cfg.reportIncludes.join('\n'));
@@ -182,6 +185,9 @@ class _AstrologyServiceSettingsScreenState
       email: _ctrl('email').text.trim(),
       officeAddress: _ctrl('officeAddress').text.trim(),
       mapLocation: _ctrl('mapLocation').text.trim(),
+      officeCity: _ctrl('officeCity').text.trim(),
+      officeDistrict: _ctrl('officeDistrict').text.trim(),
+      officeState: _ctrl('officeState').text.trim(),
       appointmentRules: _ctrl('appointmentRules').text.trim(),
       serviceIntro: _ctrl('serviceIntro').text.trim(),
       reportIncludes: _lines('reportIncludes'),
@@ -372,8 +378,16 @@ class _AstrologyServiceSettingsScreenState
           _field('officeContactNumber', 'Phone'),
           _field('whatsappNumber', 'WhatsApp'),
           _field('email', 'Email'),
-          _field('officeAddress', 'Office address', maxLines: 2),
-          _field('mapLocation', 'Location (Google Maps link or area)'),
+          _field('officeAddress', 'Office address (street)', maxLines: 2),
+          _field('officeCity', 'City'),
+          _field('officeDistrict', 'District'),
+          _field('officeState', 'State'),
+          _field('mapLocation', 'Google Maps link'),
+          _emptyHint(
+              'Street + City + District + State together are the DIRECTIONS '
+              'destination whenever the Maps link is a share-style short link '
+              '(maps.app.goo.gl/…), which carries no coordinates. Keep all '
+              'four filled in so Get Directions lands on the exact centre.'),
         ]),
 
         // ── Appointment settings ───────────────────────────────────────────
