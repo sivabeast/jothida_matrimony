@@ -154,6 +154,20 @@ jobs:
       - name: Build AAB (Debug fallback)
         run: flutter build appbundle --debug
 
+      # Google Play rejects a bundle whose native libraries were linked for
+      # 4 KB memory pages. The only real check is the ELF p_align of each
+      # PT_LOAD segment in every lib/**/*.so (>= 0x4000), plus — for an APK
+      # that stores them uncompressed — a 16 KB zip offset. This runs on the
+      # DEBUG artifacts first so a regression is caught even on a run without
+      # signing secrets, and on the release artifacts below before they are
+      # uploaded. It FAILS the build rather than warning: a misaligned bundle
+      # must never reach the artifacts list.
+      - name: Verify 16 KB page size compatibility (debug artifacts)
+        run: |
+          python3 tool/check_16kb_alignment.py \
+            build/app/outputs/flutter-apk/app-debug.apk \
+            build/app/outputs/bundle/debug/app-debug.aab
+
       # Release builds run whenever real signing credentials are available, on
       # ANY branch — so a feature branch produces a Play-uploadable bundle
       # without having to merge to main first. (They used to be gated on
@@ -172,6 +186,28 @@ jobs:
       - name: Build AAB (Release)
         if: steps.signing.outputs.available == 'true'
         run: flutter build appbundle --release
+
+      # The status is captured rather than piped: the default shell here has no
+      # `pipefail`, so `... | tee` would report the exit code of tee (always 0)
+      # and a misaligned bundle would sail through. Capture, publish the report
+      # either way, then exit with the checker's own status.
+      - name: Verify 16 KB page size compatibility (release artifacts)
+        if: steps.signing.outputs.available == 'true'
+        run: |
+          status=0
+          python3 tool/check_16kb_alignment.py \
+            build/app/outputs/flutter-apk/app-release.apk \
+            build/app/outputs/bundle/release/app-release.aab \
+            > /tmp/16kb.txt 2>&1 || status=$?
+          cat /tmp/16kb.txt
+          {
+            echo "## 16 KB memory page size check"
+            echo ""
+            echo '```'
+            cat /tmp/16kb.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
 
       - name: Verify the AAB is release-signed
         if: steps.signing.outputs.available == 'true'

@@ -16,6 +16,79 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+// ── Android 16 KB memory page size compatibility ──────────────────────────────
+//
+// Google Play rejects a bundle whose native libraries were linked for 4 KB
+// memory pages ("Your app does not support 16 KB memory page sizes").
+//
+// Everything Flutter ships is already fine — libflutter.so and libapp.so link
+// with p_align 0x10000. The single offender is `libsweph.so`, produced by the
+// `sweph` plugin, whose own android/build.gradle pins:
+//
+//     compileSdkVersion 31
+//     ndkVersion "21.1.6352462"
+//     defaultConfig { minSdkVersion 16 }
+//
+// NDK r21 lays out PT_LOAD segments with p_align = 0x1000 (4 KB), so every
+// libsweph.so in the bundle failed the check. Upgrading the package does NOT
+// help: sweph 3.2.1 pins the exact same NDK, and 3.x is an unrelated breaking
+// migration to universal_ffi.
+//
+// libsweph.so is COMPILED HERE (CMake through externalNativeBuild) rather than
+// shipped prebuilt, so the alignment can be fixed where it is actually linked:
+// build every native module with the app's own NDK — r28, which emits
+// 16 KB-aligned segments for 64-bit ABIs by default — and pass the explicit
+// max-page-size link flag so the 32-bit ABIs are aligned too (the NDK default
+// covers 64-bit only). NDK r27+ also dropped API levels below 21, so the
+// module's minSdk is raised to the app's at the same time.
+//
+// Only modules that actually build native code are touched; a plugin with no
+// externalNativeBuild is left exactly as it was. `tool/check_16kb_alignment.py`
+// verifies the result on the real release artifacts in CI, so this can never
+// regress silently.
+subprojects { sub ->
+    sub.afterEvaluate {
+        if (sub.path == ":app") {
+            return
+        }
+        def androidExt = sub.extensions.findByName("android")
+        if (androidExt == null) {
+            return
+        }
+        // Native code is built here only when a CMake / ndk-build script is
+        // declared. Anything else has no .so to align.
+        def nativeBuild = androidExt.externalNativeBuild
+        def buildsNativeCode = nativeBuild?.cmake?.path != null ||
+                nativeBuild?.ndkBuild?.path != null
+        if (!buildsNativeCode) {
+            return
+        }
+
+        def appAndroid = project(":app").extensions.findByName("android")
+        def appNdkVersion = appAndroid?.ndkVersion
+        def appMinSdk = appAndroid?.defaultConfig?.minSdk ?: 23
+
+        if (appNdkVersion && androidExt.ndkVersion != appNdkVersion) {
+            logger.lifecycle("[16kb] ${sub.path}: ndkVersion " +
+                    "${androidExt.ndkVersion} -> ${appNdkVersion}")
+            androidExt.ndkVersion = appNdkVersion
+        }
+        if ((androidExt.defaultConfig.minSdk ?: 0) < appMinSdk) {
+            logger.lifecycle("[16kb] ${sub.path}: minSdk " +
+                    "${androidExt.defaultConfig.minSdk} -> ${appMinSdk}")
+            androidExt.defaultConfig.minSdk = appMinSdk
+        }
+        // These modules leave CMAKE_SHARED_LINKER_FLAGS empty (verified in the
+        // generated CMakeCache.txt), so setting it here replaces nothing.
+        androidExt.defaultConfig.externalNativeBuild.cmake.arguments(
+                "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+                "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384," +
+                        "-z,common-page-size=16384"
+        )
+        logger.lifecycle("[16kb] ${sub.path}: linking with max-page-size=16384")
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.layout.buildDirectory
 }
