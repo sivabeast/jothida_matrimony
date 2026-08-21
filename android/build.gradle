@@ -46,46 +46,69 @@ subprojects {
 // externalNativeBuild is left exactly as it was. `tool/check_16kb_alignment.py`
 // verifies the result on the real release artifacts in CI, so this can never
 // regress silently.
+
+// Applies the 16 KB link settings to ONE already-evaluated Android module.
+def align16Kb = { sub ->
+    def androidExt = sub.extensions.findByName("android")
+    if (androidExt == null) {
+        return
+    }
+    // Native code is built here only when a CMake / ndk-build script is
+    // declared. A plugin with no externalNativeBuild has no .so to align, and
+    // a plugin shipping a PREBUILT .so cannot be fixed from here at all.
+    def nb = androidExt.externalNativeBuild
+    if (nb?.cmake?.path == null && nb?.ndkBuild?.path == null) {
+        return
+    }
+
+    def appAndroid = project(":app").extensions.findByName("android")
+    def appNdkVersion = appAndroid?.ndkVersion
+    def appMinSdk = appAndroid?.defaultConfig?.minSdk ?: 23
+
+    // Scalars are assigned through an explicit receiver rather than inside a
+    // configure closure: `ndkVersion = ...` in a closure can bind to the script
+    // instead of the extension, which would silently do nothing.
+    if (appNdkVersion) {
+        androidExt.ndkVersion = appNdkVersion
+    }
+    // NDK r27+ dropped every API level below 21, and sweph declares 16.
+    if ((androidExt.defaultConfig.minSdk ?: 0) < appMinSdk) {
+        androidExt.defaultConfig.minSdk = appMinSdk
+    }
+    // `arguments` APPENDS, so the documented DSL block is used here — a method
+    // call resolves to the delegate reliably.
+    sub.android {
+        defaultConfig {
+            externalNativeBuild {
+                cmake {
+                    // These modules leave CMAKE_SHARED_LINKER_FLAGS empty
+                    // (verified in the generated CMakeCache.txt), so setting it
+                    // replaces nothing.
+                    arguments "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+                            "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384,-z,common-page-size=16384"
+                }
+            }
+        }
+    }
+    sub.logger.lifecycle("[16kb] ${sub.path}: NDK ${androidExt.ndkVersion}, " +
+            "minSdk ${androidExt.defaultConfig.minSdk}, max-page-size=16384")
+}
+
 subprojects { sub ->
-    sub.afterEvaluate {
-        if (sub.path == ":app") {
-            return
-        }
-        def androidExt = sub.extensions.findByName("android")
-        if (androidExt == null) {
-            return
-        }
-        // Native code is built here only when a CMake / ndk-build script is
-        // declared. Anything else has no .so to align.
-        def nativeBuild = androidExt.externalNativeBuild
-        def buildsNativeCode = nativeBuild?.cmake?.path != null ||
-                nativeBuild?.ndkBuild?.path != null
-        if (!buildsNativeCode) {
-            return
-        }
-
-        def appAndroid = project(":app").extensions.findByName("android")
-        def appNdkVersion = appAndroid?.ndkVersion
-        def appMinSdk = appAndroid?.defaultConfig?.minSdk ?: 23
-
-        if (appNdkVersion && androidExt.ndkVersion != appNdkVersion) {
-            logger.lifecycle("[16kb] ${sub.path}: ndkVersion " +
-                    "${androidExt.ndkVersion} -> ${appNdkVersion}")
-            androidExt.ndkVersion = appNdkVersion
-        }
-        if ((androidExt.defaultConfig.minSdk ?: 0) < appMinSdk) {
-            logger.lifecycle("[16kb] ${sub.path}: minSdk " +
-                    "${androidExt.defaultConfig.minSdk} -> ${appMinSdk}")
-            androidExt.defaultConfig.minSdk = appMinSdk
-        }
-        // These modules leave CMAKE_SHARED_LINKER_FLAGS empty (verified in the
-        // generated CMakeCache.txt), so setting it here replaces nothing.
-        androidExt.defaultConfig.externalNativeBuild.cmake.arguments(
-                "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
-                "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384," +
-                        "-z,common-page-size=16384"
-        )
-        logger.lifecycle("[16kb] ${sub.path}: linking with max-page-size=16384")
+    // `:app` is ALREADY EVALUATED by the time this runs — the
+    // `evaluationDependsOn(":app")` block above forces it during root
+    // configuration — and calling afterEvaluate on an evaluated project throws
+    // "Cannot run Project.afterEvaluate(Closure) when the project is already
+    // evaluated". So skip it (it is on the right NDK anyway) and configure any
+    // other already-evaluated project immediately instead of registering a
+    // callback that would never fire.
+    if (sub.path == ":app") {
+        return
+    }
+    if (sub.state.executed) {
+        align16Kb(sub)
+    } else {
+        sub.afterEvaluate { align16Kb(sub) }
     }
 }
 
