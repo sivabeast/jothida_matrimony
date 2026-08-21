@@ -214,6 +214,42 @@ const Map<String, String> kTamilValueMap = {
   'Completed': 'முடிந்தது',
   'Confirmed': 'உறுதிப்படுத்தப்பட்டது',
   'Cancelled': 'ரத்து செய்யப்பட்டது',
+
+  // ── The ten poruthams (computed names + per-item verdicts) ──
+  // The calculator emits canonical English names so the stored/exported data
+  // stays language-independent; only the DISPLAY switches here.
+  'Dina Porutham': 'தின பொருத்தம்',
+  'Gana Porutham': 'கண பொருத்தம்',
+  'Mahendra Porutham': 'மகேந்திர பொருத்தம்',
+  'Sthree Dheerga Porutham': 'ஸ்திரீ தீர்க்க பொருத்தம்',
+  'Yoni Porutham': 'யோனி பொருத்தம்',
+  'Rasi Porutham': 'ராசி பொருத்தம்',
+  'Rasi Athipathi Porutham': 'ராசி அதிபதி பொருத்தம்',
+  'Vasya Porutham': 'வசிய பொருத்தம்',
+  'Rajju Porutham': 'ரஜ்ஜு பொருத்தம்',
+  'Vedha Porutham': 'வேத பொருத்தம்',
+  'Compatible': 'பொருந்தும்',
+  'Needs attention': 'கவனம் தேவை',
+
+  // ── Astrology service config DEFAULTS ──
+  // These strings are admin-editable in `astrology_service/config`; an admin
+  // who rewrites them owns the wording in both languages. Until then the
+  // shipped defaults read in Tamil too (spec §17).
+  'Star (Nakshatra) & Rasi compatibility':
+      'நட்சத்திரம் மற்றும் ராசி பொருத்தம்',
+  'Porutham / Guna matching with detailed notes':
+      'பொருத்தம் / குண பொருத்தம் — விரிவான குறிப்புகளுடன்',
+  'Dosha check and remedies (if any)':
+      'தோஷ பரிசோதனையும் பரிகாரங்களும் (ஏதேனும் இருந்தால்)',
+  'Overall compatibility verdict & recommendation':
+      'ஒட்டுமொத்தப் பொருத்த முடிவும் பரிந்துரையும்',
+  'Within 2 working days after your payment is confirmed':
+      'கட்டணம் உறுதி செய்யப்பட்ட பிறகு 2 வேலை நாட்களுக்குள்',
+  'Get a detailed, professional horoscope compatibility analysis for you '
+          'and your matched partner, prepared personally by our astrology '
+          'expert.':
+      'உங்களுக்கும் உங்கள் இணைக்கும் இடையேயான விரிவான, தொழில்முறை ஜாதகப் '
+          'பொருத்த ஆய்வு — எங்கள் ஜோதிட நிபுணரால் நேரடியாகத் தயாரிக்கப்படுகிறது.',
 };
 
 /// Astrology values (Rasi · Nakshatra · Lagnam) are stored in TAMIL script,

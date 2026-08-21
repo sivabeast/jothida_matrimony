@@ -287,8 +287,7 @@ class _AstrologyAppointmentScreenState
           border: Border.all(color: Colors.grey.withOpacity(0.3)),
         ),
         child: Text(
-          'No consultation categories are available right now. Please try '
-          'again later.',
+          context.l10n.noCategoriesAvailable,
           style: TextStyle(fontSize: 13, color: Colors.grey[700]),
         ),
       );

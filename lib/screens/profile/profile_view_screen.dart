@@ -585,7 +585,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _horoscopeMatchingTile(profile, req, reqAsync.isLoading),
+                      child: _horoscopeReportTile(profile, req, reqAsync.isLoading),
                     ),
                   ],
                 ),
@@ -702,25 +702,27 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     );
   }
 
-  /// The Horoscope Matching tile — one control, three states, driven by the
+  /// The Horoscope Report tile — one control, three states, driven by the
   /// real request document so it can never offer a second booking for a pair
-  /// that already has one (spec §12, one request per partner).
-  Widget _horoscopeMatchingTile(
+  /// that already has one (spec §12, one request per partner). It opens the ONE
+  /// Horoscope Compatibility Report page directly; there is no intermediate
+  /// informational screen in between.
+  Widget _horoscopeReportTile(
       ProfileModel profile, AstrologerRequestModel? req, bool loading) {
     final l10n = context.l10n;
     if (loading) {
       return _connectedActionTile(
         icon: Icons.auto_awesome_outlined,
         color: AppColors.primary,
-        label: l10n.horoscopeMatching,
+        label: l10n.horoscopeReportShort,
       );
     }
     if (req == null) {
       return _connectedActionTile(
         icon: Icons.auto_awesome_outlined,
         color: AppColors.primary,
-        label: l10n.horoscopeMatching,
-        onTap: () => context.push('/horoscope-match/${profile.userId}'),
+        label: l10n.horoscopeReportShort,
+        onTap: () => context.push('/horoscope-report/${profile.userId}'),
       );
     }
     if (req.status == AstrologerRequestStatus.completed) {
@@ -732,14 +734,14 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       );
     }
     // A paid report is under analysis. The FREE basic porutham result stays
-    // available regardless, so the tile still opens the Horoscope Match Result
-    // page — which shows the pending status in place of the paid CTA.
+    // available regardless, so the tile still opens the report page — which
+    // shows the pending status in place of the paid CTA.
     return _connectedActionTile(
       icon: Icons.hourglass_top,
       color: AppColors.warning,
-      label: l10n.horoscopeMatching,
+      label: l10n.horoscopeReportShort,
       subtitle: l10n.reportUnderAnalysisTitle,
-      onTap: () => context.push('/horoscope-match/${profile.userId}'),
+      onTap: () => context.push('/horoscope-report/${profile.userId}'),
     );
   }
 
@@ -793,7 +795,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
             width: double.infinity,
             child: FilledButton.icon(
               onPressed: () =>
-                  context.push('/horoscope-match/${profile.userId}'),
+                  context.push('/horoscope-report/${profile.userId}'),
               icon: const Icon(Icons.description_outlined, size: 19),
               label: Text(l10n.getHoroscopeCompatibilityReport,
                   maxLines: 1, overflow: TextOverflow.ellipsis),

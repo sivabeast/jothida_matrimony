@@ -103,7 +103,8 @@ class ReportsTab extends ConsumerWidget {
                   context.push('/request-external-report');
                 },
                 icon: const Icon(Icons.add_circle_outline, size: 18),
-                label: const Text('Request New Horoscope Report'),
+                label: Text(context.l10n.requestNewHoroscopeReport,
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
                   side: const BorderSide(color: AppColors.primary),

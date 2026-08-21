@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/phone_utils.dart';
 import '../../core/utils/validators.dart';
+import '../../models/location_model.dart';
+import '../../widgets/common/place_picker_field.dart';
 
 /// The details an astrology appointment needs from the visitor.
 class AppointmentContactDetails {
@@ -30,13 +33,17 @@ class AppointmentContactDetails {
 }
 
 /// Asks for **Name · Mobile Number** (both MANDATORY) plus an optional
-/// City / District / State before an astrology appointment is confirmed.
+/// location before an astrology appointment is confirmed.
 ///
-/// Name and Mobile are required even for a signed-in member: whatever is known
-/// — from a matrimony profile, or from the Google/phone login — only PREFILLS
-/// the form, and the visitor still has to confirm it. A booking can never be
-/// submitted without a name and a valid 10-digit mobile number, because the
-/// office rings the customer to agree the exact visit time.
+/// Everything the app already knows PREFILLS the form (spec §18): the
+/// matrimony profile's name, mobile and location, falling back to the
+/// Google/phone login. The visitor can edit any of it for THIS booking — and
+/// those edits are used for the booking only; the member's profile is never
+/// overwritten (spec §19).
+///
+/// Name and Mobile stay required even for a signed-in member: a booking can
+/// never be submitted without a name and a valid 10-digit mobile number,
+/// because the office rings the customer to agree the exact visit time.
 ///
 /// Date of birth is deliberately NOT asked for: it is a matrimony-profile
 /// field, and an astrology customer may never create one. The office takes any
@@ -100,20 +107,29 @@ class _AppointmentDetailsDialogState extends State<_AppointmentDetailsDialog> {
   // cleanly into a field that only accepts ten digits.
   late final TextEditingController _phone =
       TextEditingController(text: _localTenDigits(widget.initialPhone));
-  late final TextEditingController _city =
-      TextEditingController(text: widget.initialCity.trim());
-  late final TextEditingController _district =
-      TextEditingController(text: widget.initialDistrict.trim());
-  late final TextEditingController _state =
-      TextEditingController(text: widget.initialState.trim());
+  /// The booking's location, prefilled from the profile and editable here.
+  /// Held in local state so an edit never touches the profile document.
+  late PlaceSelection _place = PlaceSelection(
+    city: widget.initialCity.trim(),
+    cityEn: widget.initialCity.trim(),
+    district: widget.initialDistrict.trim(),
+    districtEn: widget.initialDistrict.trim(),
+    state: widget.initialState.trim().isEmpty
+        ? TnState.nameEn
+        : widget.initialState.trim(),
+  );
+
+  /// True when the profile/login supplied any of these values, which is what
+  /// the "filled in from your profile" note refers to.
+  bool get _prefilled =>
+      widget.initialName.trim().isNotEmpty ||
+      _localTenDigits(widget.initialPhone).isNotEmpty ||
+      widget.initialCity.trim().isNotEmpty;
 
   @override
   void dispose() {
     _name.dispose();
     _phone.dispose();
-    _city.dispose();
-    _district.dispose();
-    _state.dispose();
     super.dispose();
   }
 
@@ -126,9 +142,9 @@ class _AppointmentDetailsDialogState extends State<_AppointmentDetailsDialog> {
       AppointmentContactDetails(
         name: _name.text.trim(),
         phone: _phone.text.trim(),
-        city: _city.text.trim(),
-        district: _district.text.trim(),
-        state: _state.text.trim(),
+        city: _place.city.trim(),
+        district: _place.district.trim(),
+        state: _place.city.trim().isEmpty ? '' : _place.state.trim(),
       ),
     );
   }
@@ -137,8 +153,8 @@ class _AppointmentDetailsDialogState extends State<_AppointmentDetailsDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      title: const Text('Your Details',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+      title: Text(context.l10n.yourDetailsTitle,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -147,23 +163,48 @@ class _AppointmentDetailsDialogState extends State<_AppointmentDetailsDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'We need your name and mobile number to confirm the '
-                'appointment — the office calls you to agree the exact time. '
-                'A Matrimony Profile is not required.',
+                context.l10n.bookingContactIntro,
                 style: TextStyle(fontSize: 12.5, color: Colors.grey[700]),
               ),
+              // Auto-filled is not locked: the member may change any of it for
+              // this booking, and their profile stays as it was (spec §19).
+              if (_prefilled) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.info_outline,
+                          size: 16, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(context.l10n.bookingContactPrefilledNote,
+                            style: TextStyle(
+                                fontSize: 11.5,
+                                height: 1.4,
+                                color: Colors.grey[800])),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
               TextFormField(
                 controller: _name,
                 textCapitalization: TextCapitalization.words,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Name *',
-                  prefixIcon: Icon(Icons.person_outline),
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: context.l10n.nameRequiredLabel,
+                  prefixIcon: const Icon(Icons.person_outline),
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (v) => (v ?? '').trim().length < 2
-                    ? 'Please enter your name'
+                    ? context.l10n.pleaseEnterYourName
                     : null,
               ),
               const SizedBox(height: 12),
@@ -173,57 +214,31 @@ class _AppointmentDetailsDialogState extends State<_AppointmentDetailsDialog> {
                 maxLength: 10,
                 textInputAction: TextInputAction.next,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  labelText: 'Mobile Number *',
-                  prefixIcon: Icon(Icons.phone_outlined),
+                decoration: InputDecoration(
+                  labelText: context.l10n.mobileNumberRequiredLabel,
+                  prefixIcon: const Icon(Icons.phone_outlined),
                   prefixText: '+91 ',
                   counterText: '',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (v) => AppValidators.isValidMobile(v)
                     ? null
-                    : 'Enter a valid 10-digit mobile number',
+                    : context.l10n.enterValidMobile,
               ),
               const SizedBox(height: 18),
-              Text('WHERE YOU ARE FROM (OPTIONAL)',
+              Text(context.l10n.whereYouAreFrom,
                   style: TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.7,
                       color: Colors.grey[600])),
               const SizedBox(height: 10),
-              TextFormField(
-                controller: _city,
-                textCapitalization: TextCapitalization.words,
-                textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'City',
-                  prefixIcon: Icon(Icons.location_city_outlined),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _district,
-                textCapitalization: TextCapitalization.words,
-                textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'District',
-                  prefixIcon: Icon(Icons.map_outlined),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _state,
-                textCapitalization: TextCapitalization.words,
-                textInputAction: TextInputAction.done,
-                onFieldSubmitted: (_) => _submit(),
-                decoration: const InputDecoration(
-                  labelText: 'State',
-                  prefixIcon: Icon(Icons.public_outlined),
-                  border: OutlineInputBorder(),
-                ),
+              // The app's ONE place picker (spec §31): City/Village + District
+              // + State, so the office knows exactly where the visitor is from.
+              PlacePickerField(
+                label: context.l10n.location,
+                value: _place.city.trim().isEmpty ? null : _place.display,
+                onChanged: (p) => setState(() => _place = p),
               ),
             ],
           ),
@@ -232,7 +247,7 @@ class _AppointmentDetailsDialogState extends State<_AppointmentDetailsDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.cancel),
         ),
         ElevatedButton(
           onPressed: _submit,
@@ -240,7 +255,7 @@ class _AppointmentDetailsDialogState extends State<_AppointmentDetailsDialog> {
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
           ),
-          child: const Text('Confirm Booking'),
+          child: Text(context.l10n.confirmBooking),
         ),
       ],
     );

@@ -57,9 +57,7 @@ import '../screens/admin/announcement_management_screen.dart';
 import '../screens/admin/banner_management_screen.dart';
 import '../screens/horoscope/horoscope_details_screen.dart';
 import '../screens/horoscope/horoscope_files_screen.dart';
-import '../screens/horoscope/horoscope_matching_screen.dart';
 import '../screens/horoscope/member_horoscope_screen.dart';
-import '../screens/horoscope/horoscope_match_screen.dart';
 import '../screens/profile/personal_details_screen.dart';
 import '../screens/profile/complete_profile_screen.dart';
 import '../providers/navigation_provider.dart';
@@ -446,11 +444,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/edit/photos', builder: (_, __) => const PhotosEditScreen()),
       GoRoute(path: '/horoscope', builder: (_, __) => const HoroscopeDetailsScreen()),
-      // Horoscope Matching — accepted matches only, with horoscope compare /
-      // compatibility / astrologer-analysis actions (ASTROLOGY menu group).
-      GoRoute(
-          path: '/horoscope-matching',
-          builder: (_, __) => const HoroscopeMatchingScreen()),
       // Horoscope / Jathagam document manager (multiple images + PDFs CRUD).
       GoRoute(
           path: '/horoscope-files',
@@ -461,13 +454,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) =>
             MemberHoroscopeScreen(userId: state.pathParameters['uid']!),
       ),
-      // Horoscope Match Result for an accepted match
-      // (Interests → Accepted → Horoscope). Shows compatibility only — never the
-      // other member's raw horoscope fields.
+      // Legacy alias: the separate "Horoscope Match Result" page was merged
+      // into the ONE Horoscope Compatibility Report page, which now shows the
+      // free porutham result and the paid request together.
       GoRoute(
         path: '/horoscope-match/:uid',
-        builder: (_, state) =>
-            HoroscopeMatchScreen(userId: state.pathParameters['uid']!),
+        redirect: (_, state) =>
+            '/horoscope-report/${state.pathParameters['uid']}',
       ),
       GoRoute(path: '/partner-preferences', builder: (_, __) => const PartnerPreferencesScreen()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),

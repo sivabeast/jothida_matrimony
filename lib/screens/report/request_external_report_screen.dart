@@ -3,41 +3,49 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../core/utils/l10n_ext.dart';
-import '../../widgets/auth/account_required_sheet.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../../core/services/master_astrology_data.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
+import '../../models/location_model.dart';
 import '../../models/profile_model.dart';
-import '../../providers/location_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../services/billing/play_billing_service.dart';
+import '../../widgets/auth/account_required_sheet.dart';
 import '../../widgets/common/network_photo.dart';
+import '../../widgets/common/place_picker_field.dart';
 import '../../widgets/common/searchable_field.dart';
-import '../../widgets/common/searchable_with_others_field.dart';
 
-/// Spec §4 — **Request New Horoscope Report** (external).
+/// **Request New Horoscope Report** — the compatibility report for someone who
+/// is NOT on the app (spec §9–§13).
 ///
-/// Lets a signed-in user request a Horoscope Compatibility Report between
-/// themselves (details auto-filled from their profile) and a SECOND person who
-/// is NOT registered in the app (details entered manually + a horoscope
-/// image/PDF uploaded here). After payment the request is created as a paid
-/// `matching` request tagged `externalRequest`, auto-assigned to an employee,
-/// and tracked on the user's Reports page exactly like an internal report.
+/// The signed-in member's own details are auto-filled from their profile (they
+/// never retype them); only the SECOND person's details are entered here,
+/// together with an optional horoscope image/PDF. The flow is identical to the
+/// in-app profile flow:
 ///
-/// Second-person input rules (spec §1):
+///   Fill second-person details → ₹200 payment → payment success → request
+///
+/// Both flows share the SAME price, the SAME Google Play Billing validation
+/// and the SAME request-creation + Reports delivery path (spec §14). A
+/// cancelled or failed payment creates nothing.
+///
+/// Second-person input rules (spec §11):
 ///   * Gender is auto-set to the opposite of the logged-in user's gender and is
 ///     read-only.
 ///   * Age is derived from the Date of Birth and is read-only.
-///   * Place of Birth reuses the profile-creation searchable city picker.
-///   * Nakshatra / Rasi are searchable dropdowns backed by the master astrology
-///     data.
+///   * Place of Birth uses the app's ONE place picker — City/Village +
+///     District + State (spec §27–§32). The place is used only for THIS
+///     request; nothing is written back to the shared location data.
+///   * Nakshatra / Rasi are searchable dropdowns backed by the master
+///     astrology data.
 ///   * Name, DOB, Time of Birth, Place, Nakshatra and Rasi are required; the
 ///     horoscope image/PDF is optional.
 class RequestExternalReportScreen extends ConsumerStatefulWidget {
@@ -50,12 +58,20 @@ class RequestExternalReportScreen extends ConsumerStatefulWidget {
 
 class _RequestExternalReportScreenState
     extends ConsumerState<RequestExternalReportScreen> {
+  /// Fallback price, shown only until Play's own price arrives — the exact
+  /// same constant the in-app profile flow uses (spec §14).
+  static const int _fee = AppConstants.horoscopeAnalysisFee; // ₹200
+
   final _formKey = GlobalKey<FormState>();
 
   // Second-person fields.
   final _name = TextEditingController();
   final _tob = TextEditingController();
-  String? _place; // city name or a custom "Others" value
+
+  /// The second person's birth place. Held in local state ONLY — a place added
+  /// here is never saved to the member's own profile and never appears in
+  /// anyone else's suggestions (spec §30).
+  PlaceSelection? _place;
   String? _nakshatra;
   String? _rasi;
   DateTime? _dob;
@@ -70,10 +86,15 @@ class _RequestExternalReportScreenState
   bool _uploading = false;
   bool _busy = false;
 
+  /// Play's localized price for `horoscope_report`, when the store answers.
+  String? _storePrice;
+  String get _priceText => _storePrice ?? '₹$_fee';
+
   @override
   void initState() {
     super.initState();
     _loadMasterOptions();
+    _loadStorePrice();
   }
 
   @override
@@ -90,6 +111,21 @@ class _RequestExternalReportScreenState
       _rasiOptions = m.rasis.map((e) => e.nameTamil).toList();
       _nakOptions = m.nakshatras.map((e) => e.nameTamil).toList();
     });
+  }
+
+  /// Best-effort: an unreachable store (emulator without Play, no network)
+  /// must never surface an error here — the button simply keeps showing the
+  /// built-in ₹200 until Play answers.
+  Future<void> _loadStorePrice() async {
+    try {
+      final billing = ref.read(playBillingServiceProvider);
+      await billing.init();
+      if (!mounted) return;
+      setState(() =>
+          _storePrice = billing.priceLabel(BillingProducts.horoscopeReport));
+    } catch (_) {
+      // Keep the fallback price.
+    }
   }
 
   void _snack(String m) {
@@ -143,18 +179,27 @@ class _RequestExternalReportScreenState
     };
   }
 
-  Map<String, dynamic> _otherMap(ProfileModel? me) => {
-        'name': _name.text.trim(),
-        'age': _dob == null ? 0 : _ageFromDob(_dob!),
-        'gender': _lockedGender(me),
-        'dob': _dob == null ? '' : DateFormat('dd MMM yyyy').format(_dob!),
-        'tob': _tob.text.trim(),
-        'place': (_place ?? '').trim(),
-        'nakshatra': (_nakshatra ?? '').trim(),
-        'rasi': (_rasi ?? '').trim(),
-        'horoscopeImageUrl': _otherImageUrl,
-        'horoscopePdfUrl': _otherPdfUrl,
-      };
+  Map<String, dynamic> _otherMap(ProfileModel? me) {
+    final place = _place;
+    return {
+      'name': _name.text.trim(),
+      'age': _dob == null ? 0 : _ageFromDob(_dob!),
+      'gender': _lockedGender(me),
+      'dob': _dob == null ? '' : DateFormat('dd MMM yyyy').format(_dob!),
+      'tob': _tob.text.trim(),
+      // Full "City, District, State" so the astrologer can never confuse two
+      // villages that share a name (spec §27/§32).
+      'place': place?.display ?? '',
+      'placeCity': place?.cityEn.isNotEmpty == true ? place!.cityEn : (place?.city ?? ''),
+      'placeDistrict':
+          place?.districtEn.isNotEmpty == true ? place!.districtEn : (place?.district ?? ''),
+      'placeState': place?.state ?? '',
+      'nakshatra': (_nakshatra ?? '').trim(),
+      'rasi': (_rasi ?? '').trim(),
+      'horoscopeImageUrl': _otherImageUrl,
+      'horoscopePdfUrl': _otherPdfUrl,
+    };
+  }
 
   // ── Uploads (reuse the generic attachment uploader) ──────────────────────
   Future<void> _pickImage() async {
@@ -186,7 +231,7 @@ class _RequestExternalReportScreenState
         }
       });
     } catch (_) {
-      _snack('Upload failed — please try again.');
+      _snack(context.l10n.uploadFailedRetry);
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
@@ -211,46 +256,29 @@ class _RequestExternalReportScreenState
     }
   }
 
-  // ── Pay + create ──────────────────────────────────────────────────────────
-  void _payAndRequest() {
+  // ── Validate → account → pay → create ────────────────────────────────────
+  /// The single entry point behind "Pay ₹200 · Request Report".
+  ///
+  /// Nothing is created until Google Play reports a VERIFIED purchase, so a
+  /// cancelled or failed payment leaves no request behind (spec §13).
+  Future<void> _payAndRequest() async {
     if (_busy) return;
-    // Field-level (Name, Place, Nakshatra, Rasi) validation.
+    final l10n = context.l10n;
+    // Field-level (Name) validation first.
     if (!(_formKey.currentState?.validate() ?? false)) return;
     // Picker fields are not FormFields, so validate them explicitly.
-    if (_dob == null) {
-      _snack('Please select the second person\'s date of birth.');
-      return;
-    }
-    if (_tob.text.trim().isEmpty) {
-      _snack('Please select the second person\'s time of birth.');
-      return;
-    }
-    if ((_place ?? '').trim().isEmpty) {
-      _snack('Please select the second person\'s place of birth.');
-      return;
+    if (_dob == null) return _snack(l10n.pleaseSelectSecondDob);
+    if (_tob.text.trim().isEmpty) return _snack(l10n.pleaseSelectSecondTob);
+    if (_place == null || _place!.isEmpty) {
+      return _snack(l10n.pleaseSelectSecondPlace);
     }
     if ((_nakshatra ?? '').trim().isEmpty) {
-      _snack('Please select the second person\'s Nakshatra.');
-      return;
+      return _snack(l10n.pleaseSelectSecondNakshatra);
     }
-    if ((_rasi ?? '').trim().isEmpty) {
-      _snack('Please select the second person\'s Rasi.');
-      return;
-    }
-    setState(() => _busy = true);
-    // No in-app payment (Razorpay removed) — create the request directly. It is
-    // auto-assigned for verification, same as the internal report flow.
-    _createRequest(
-      amount: 0,
-      note: 'Requested in-app (no online payment) — assigned for verification.',
-    );
-  }
+    if ((_rasi ?? '').trim().isEmpty) return _snack(l10n.pleaseSelectSecondRasi);
 
-  Future<void> _createRequest({
-    required int amount,
-    String? paymentId,
-    String note = '',
-  }) async {
+    setState(() => _busy = true);
+
     // An ACCOUNT is required to own the request — but a matrimony profile is
     // not: this report is about two other people's charts. Asked for here,
     // after both horoscopes are filled in, so a guest never retypes anything.
@@ -261,24 +289,72 @@ class _RequestExternalReportScreenState
     }
     if (!mounted) return;
 
+    try {
+      // Google Play Billing purchase sheet — the SAME one-time product the
+      // in-app profile flow charges for (spec §14).
+      final result = await ref
+          .read(playBillingServiceProvider)
+          .buyConsumable(BillingProducts.horoscopeReport);
+      if (!mounted) return;
+
+      if (!result.isPurchased) {
+        switch (result.outcome) {
+          case BillingOutcome.canceled:
+            _snack(l10n.paymentCancelledNotCharged);
+            break;
+          case BillingOutcome.unavailable:
+            _snack(result.message ?? l10n.billingUnavailable);
+            break;
+          default:
+            _snack(result.message ?? l10n.paymentCouldNotComplete);
+        }
+        setState(() => _busy = false);
+        return;
+      }
+
+      // Record what Play ACTUALLY charged rather than the hardcoded constant.
+      final raw = ref
+          .read(playBillingServiceProvider)
+          .rawPrice(BillingProducts.horoscopeReport);
+      final chargedAmount = (raw != null && raw > 0) ? raw.round() : _fee;
+
+      await _createRequest(
+        amount: chargedAmount,
+        paymentId: result.purchaseToken.isNotEmpty
+            ? result.purchaseToken
+            : 'play_billing',
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _snack(l10n.couldNotStartPayment);
+    }
+  }
+
+  Future<void> _createRequest({
+    required int amount,
+    String? paymentId,
+  }) async {
+    final l10n = context.l10n;
     final me = ref.read(myProfileProvider).valueOrNull;
     try {
-      final id =
-          await ref.read(matchAnalysisControllerProvider.notifier).requestExternalReport(
-                requester: _requesterMap(me),
-                other: _otherMap(me),
-                amount: amount,
-                paymentId: paymentId,
-                note: note,
-              );
+      final id = await ref
+          .read(matchAnalysisControllerProvider.notifier)
+          .requestExternalReport(
+            requester: _requesterMap(me),
+            other: _otherMap(me),
+            amount: amount,
+            paymentId: paymentId,
+            note: 'External horoscope report — paid via Google Play Billing.',
+          );
       if (!mounted) return;
-      _snack('Request #$id has been submitted — track it on the Reports tab.');
+      _snack(l10n.requestSubmittedTrackReports(id));
       ref.read(homeTabIndexProvider.notifier).state = kReportsTabIndex;
       context.go('/home');
     } catch (_) {
       if (!mounted) return;
       setState(() => _busy = false);
-      _snack('Could not create the request. Please try again.');
+      _snack(l10n.couldNotCreateRequest);
     }
   }
 
@@ -288,7 +364,7 @@ class _RequestExternalReportScreenState
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Request New Horoscope Report'),
+        title: Text(context.l10n.requestNewHoroscopeReport),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -302,6 +378,8 @@ class _RequestExternalReportScreenState
             _selfCard(me),
             const SizedBox(height: 14),
             _otherCard(me),
+            const SizedBox(height: 14),
+            _chargeCard(),
             const SizedBox(height: 16),
           ],
         ),
@@ -317,69 +395,66 @@ class _RequestExternalReportScreenState
           gradient: AppColors.primaryGradient,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Column(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              Icon(Icons.description_outlined, color: Colors.white, size: 22),
-              SizedBox(width: 8),
+              const Icon(Icons.description_outlined,
+                  color: Colors.white, size: 22),
+              const SizedBox(width: 8),
               Expanded(
-                child: Text('Compatibility report with anyone',
-                    style: TextStyle(
+                child: Text(context.l10n.compatibilityReportWithAnyone,
+                    style: const TextStyle(
                         color: Colors.white,
                         fontSize: 15,
                         fontWeight: FontWeight.w700)),
               ),
             ]),
-            SizedBox(height: 8),
-            Text(
-              'Get a professional horoscope compatibility report between you and '
-              'a person who is not on the app. Your details are filled in '
-              'automatically — just add the second person\'s details below.',
-              style: TextStyle(color: Colors.white, fontSize: 12.5, height: 1.5),
-            ),
+            const SizedBox(height: 8),
+            Text(context.l10n.compatibilityReportWithAnyoneBody,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 12.5, height: 1.5)),
           ],
         ),
       );
 
   // ── Your (auto-filled) details ────────────────────────────────────────────
   Widget _selfCard(ProfileModel? me) {
+    final l10n = context.l10n;
     final h = me?.horoscope;
     final hasHoro = (h?.horoscopeImages.isNotEmpty ?? false) ||
         (h?.horoscopePdfUrls.isNotEmpty ?? false);
-    return _card('Your Details (auto-filled)', Icons.person_outline, [
+    return _card(l10n.yourDetailsAutoFilled, Icons.person_outline, [
       if (me == null)
-        const Text('Your profile is still loading…',
-            style: TextStyle(color: Colors.grey))
+        Text(l10n.yourProfileStillLoading,
+            style: const TextStyle(color: Colors.grey))
       else ...[
-        _readRow('Name', me.fullName),
-        _readRow('Age', me.age > 0 ? '${me.age}' : '—'),
-        _readRow('Gender', me.gender),
-        _readRow('Date of Birth',
+        _readRow(l10n.fullName, me.fullName),
+        _readRow(l10n.age, me.age > 0 ? '${me.age}' : '—'),
+        _readRow(l10n.gender, me.gender),
+        _readRow(l10n.dateOfBirth,
             DateFormat('dd MMM yyyy').format(me.dateOfBirth)),
-        _readRow('Time of Birth', h?.birthTime ?? ''),
+        _readRow(l10n.timeOfBirth, h?.birthTime ?? ''),
         _readRow(
-            'Place of Birth',
+            l10n.placeOfBirthLabel,
             (h?.birthPlace.trim().isNotEmpty ?? false)
                 ? h!.birthPlace
                 : [me.city, me.state]
                     .where((s) => s.trim().isNotEmpty)
                     .join(', ')),
-        _readRow('Nakshatra', h?.nakshatra ?? ''),
-        _readRow('Rasi', h?.rasi ?? ''),
+        _readRow(l10n.nakshatra, h?.nakshatra ?? ''),
+        _readRow(l10n.rasi, h?.rasi ?? ''),
         const SizedBox(height: 8),
         Row(
           children: [
             Icon(hasHoro ? Icons.check_circle : Icons.info_outline,
-                size: 16,
-                color: hasHoro ? AppColors.success : Colors.grey),
+                size: 16, color: hasHoro ? AppColors.success : Colors.grey),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 hasHoro
-                    ? 'Your horoscope document will be attached automatically.'
-                    : 'No horoscope document on your profile — the employee will '
-                        'use the details above.',
+                    ? l10n.horoscopeWillBeAttached
+                    : l10n.noHoroscopeDocOnProfile,
                 style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
             ),
@@ -391,52 +466,63 @@ class _RequestExternalReportScreenState
 
   // ── Second person (manual) details ────────────────────────────────────────
   Widget _otherCard(ProfileModel? me) {
+    final l10n = context.l10n;
     final lockedGender = _lockedGender(me);
     final ageText = _dob == null ? '—' : '${_ageFromDob(_dob!)}';
-    return _card('Second Person\'s Details', Icons.person_add_alt_1_outlined, [
+    return _card(l10n.secondPersonDetails, Icons.person_add_alt_1_outlined, [
       TextFormField(
         controller: _name,
         textCapitalization: TextCapitalization.words,
-        decoration: _dec('Full name *'),
+        decoration: _dec('${l10n.fullNameLabel} *'),
         validator: (v) =>
-            (v == null || v.trim().isEmpty) ? 'Name is required' : null,
+            (v == null || v.trim().isEmpty) ? l10n.nameIsRequired : null,
       ),
       const SizedBox(height: 12),
       Row(
         children: [
           // Age is derived from the DOB below and cannot be edited.
-          Expanded(child: _readOnlyBox('Age', ageText, Icons.cake_outlined)),
+          Expanded(
+              child: _readOnlyBox(l10n.age, ageText, Icons.cake_outlined)),
           const SizedBox(width: 10),
           // Gender is auto-set to the opposite of the logged-in user.
           Expanded(
-              child: _readOnlyBox('Gender', lockedGender, Icons.wc_outlined)),
+              child:
+                  _readOnlyBox(l10n.gender, lockedGender, Icons.wc_outlined)),
         ],
       ),
       const SizedBox(height: 6),
-      Text(
-        'Gender is set automatically to the opposite of your gender. Age is '
-        'calculated from the date of birth.',
-        style: TextStyle(fontSize: 11.5, color: Colors.grey[600]),
-      ),
+      Text(l10n.genderAgeAutoNote,
+          style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
       const SizedBox(height: 12),
       Row(
         children: [
-          Expanded(child: _pickerField('Date of Birth *',
-              _dob == null ? '' : DateFormat('dd MMM yyyy').format(_dob!),
-              Icons.calendar_today_outlined, _pickDob)),
+          Expanded(
+              child: _pickerField(
+                  '${l10n.dateOfBirth} *',
+                  _dob == null
+                      ? ''
+                      : DateFormat('dd MMM yyyy').format(_dob!),
+                  Icons.calendar_today_outlined,
+                  _pickDob)),
           const SizedBox(width: 10),
-          Expanded(child: _pickerField('Time of Birth *', _tob.text,
-              Icons.schedule, _pickTob)),
+          Expanded(
+              child: _pickerField('${l10n.timeOfBirth} *', _tob.text,
+                  Icons.schedule, _pickTob)),
         ],
       ),
       const SizedBox(height: 12),
-      // Place of Birth — same searchable city picker as profile creation, with
-      // an "Others" fallback for places not in the database.
-      _placeField(),
+      // Place of Birth — the app's ONE place picker: search → City/Village +
+      // District + State → + → Save (spec §27–§31).
+      PlacePickerField(
+        label: l10n.placeOfBirthLabel,
+        isRequired: true,
+        value: _place?.display,
+        onChanged: (p) => setState(() => _place = p),
+      ),
       const SizedBox(height: 12),
       // Nakshatra / Rasi — searchable dropdowns backed by the master data.
       SearchableField(
-        label: 'Nakshatra',
+        label: l10n.nakshatra,
         isRequired: true,
         items: _nakOptions,
         selectedItem: _nakshatra,
@@ -446,7 +532,7 @@ class _RequestExternalReportScreenState
       ),
       const SizedBox(height: 12),
       SearchableField(
-        label: 'Rasi',
+        label: l10n.rasi,
         isRequired: true,
         items: _rasiOptions,
         selectedItem: _rasi,
@@ -455,40 +541,54 @@ class _RequestExternalReportScreenState
         onChanged: (v) => setState(() => _rasi = v),
       ),
       const SizedBox(height: 14),
-      const Text('Horoscope Image / PDF (optional)',
-          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+      Text(l10n.horoscopeImageOrPdfOptional,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
       const SizedBox(height: 8),
       _uploadRow(),
     ]);
   }
 
-  Widget _placeField() {
-    final citiesAsync = ref.watch(allCityNamesProvider);
-    final cities = citiesAsync.valueOrNull ?? const <String>[];
-    if (citiesAsync.isLoading && cities.isEmpty) {
-      return Row(children: [
-        const SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2)),
-        const SizedBox(width: 10),
-        Expanded(child: Text('Loading places…',
-            style: TextStyle(color: Colors.grey[600], fontSize: 13))),
-      ]);
-    }
-    return SearchableWithOthersField(
-      label: 'Place of Birth',
-      isRequired: true,
-      prefixIcon: Icons.location_on_outlined,
-      popupMode: SearchablePopupMode.modalBottomSheet,
-      items: cities,
-      value: _place,
-      customLabel: 'Custom place of birth',
-      onChanged: (v) => setState(() => _place = v),
-    );
+  /// The ₹200 service charge, shown before the pay button so the price is
+  /// never a surprise — the same charge the in-app profile flow states.
+  Widget _chargeCard() {
+    final l10n = context.l10n;
+    return _card(l10n.serviceDetails, Icons.info_outline, [
+      _metaRow(Icons.cloud_done_outlined, l10n.serviceTypeLabel,
+          l10n.onlineReportNoVisit),
+      const Divider(height: 18),
+      _metaRow(Icons.schedule_outlined, l10n.estimatedDelivery,
+          l10n.deliveryWithinTwoDays),
+      const Divider(height: 18),
+      _metaRow(Icons.payments_outlined, l10n.serviceCharge, _priceText),
+    ]);
   }
 
+  Widget _metaRow(IconData icon, String label, String value) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 18, color: AppColors.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              flex: 4,
+              child: Text(label,
+                  style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 5,
+              child: Text(value,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
+      );
+
   Widget _uploadRow() {
+    final l10n = context.l10n;
     final hasImage = _otherImageUrl.isNotEmpty;
     final hasPdf = _otherPdfUrl.isNotEmpty;
     return Column(
@@ -506,14 +606,14 @@ class _RequestExternalReportScreenState
                     child:
                         NetworkPhoto(url: _otherImageUrl, width: 52, height: 52),
                   ),
-                  label: 'Image attached',
+                  label: l10n.imageAttached,
                   onRemove: () => setState(() => _otherImageUrl = ''),
                 ),
               if (hasPdf)
                 _attachmentChip(
                   preview: const Icon(Icons.picture_as_pdf,
                       color: AppColors.error, size: 40),
-                  label: 'PDF attached',
+                  label: l10n.pdfAttached,
                   onRemove: () => setState(() => _otherPdfUrl = ''),
                 ),
             ],
@@ -522,10 +622,8 @@ class _RequestExternalReportScreenState
         ] else
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: Text(
-              'Optional — attach the second person\'s horoscope.',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
+            child: Text(l10n.attachSecondPersonHoroscope,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600])),
           ),
         Row(children: [
           Expanded(
@@ -537,7 +635,7 @@ class _RequestExternalReportScreenState
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.image_outlined, size: 18),
-              label: Text(hasImage ? 'Replace image' : 'Image'),
+              label: Text(hasImage ? l10n.replaceImage : l10n.imageLabel),
               style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
                   side: const BorderSide(color: AppColors.primary)),
@@ -548,7 +646,7 @@ class _RequestExternalReportScreenState
             child: OutlinedButton.icon(
               onPressed: _uploading ? null : _pickPdf,
               icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-              label: Text(hasPdf ? 'Replace PDF' : 'PDF'),
+              label: Text(hasPdf ? l10n.replacePdf : l10n.pdfLabel),
               style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
                   side: const BorderSide(color: AppColors.primary)),
@@ -568,9 +666,9 @@ class _RequestExternalReportScreenState
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: AppColors.success.withOpacity(0.06),
+        color: AppColors.success.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.success.withOpacity(0.25)),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.25)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -603,7 +701,7 @@ class _RequestExternalReportScreenState
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.06),
+                color: Colors.black.withValues(alpha: 0.06),
                 blurRadius: 12,
                 offset: const Offset(0, -2)),
           ],
@@ -622,8 +720,12 @@ class _RequestExternalReportScreenState
                           strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.auto_awesome, size: 20),
               label: Text(
-                _busy ? 'Processing…' : 'Request Report',
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                _busy
+                    ? context.l10n.processingPayment
+                    : context.l10n.payAndRequestReport(_priceText),
+                textAlign: TextAlign.center,
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -645,7 +747,8 @@ class _RequestExternalReportScreenState
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
           ],
         ),
         child: Column(
@@ -654,12 +757,14 @@ class _RequestExternalReportScreenState
             Row(children: [
               Icon(icon, size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
-              Text(title,
-                  style: const TextStyle(
-                      fontSize: 15,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary)),
+              Expanded(
+                child: Text(title,
+                    style: const TextStyle(
+                        fontSize: 15,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary)),
+              ),
             ]),
             const Divider(height: 18),
             ...children,

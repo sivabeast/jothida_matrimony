@@ -7,6 +7,7 @@ import '../../core/utils/l10n_ext.dart';
 import '../../models/location_model.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/location_provider.dart';
+import 'place_picker_field.dart';
 import 'searchable_field.dart';
 
 /// The app's ONE location picker: **State → District → City** for Tamil Nadu.
@@ -18,6 +19,10 @@ import 'searchable_field.dart';
 ///    the same master rows, but the values EMITTED are always the canonical
 ///    English name + stable numeric id — so stored profiles are
 ///    language-independent and existing data keeps working.
+///  • A "Search a place" field at the top uses the app's ONE place picker
+///    (City/Village + District + State), so this section offers the SAME
+///    search UX as every other location field (spec §31) while keeping the
+///    cascading dropdowns for members who prefer to browse.
 ///  • "📍 Use My Location" reverse-geocodes the device position and matches it
 ///    against the master data (Tamil Nadu only — anything else asks for a
 ///    manual pick). Failures never crash; a friendly message is shown.
@@ -177,6 +182,31 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
     }
   }
 
+  /// A place chosen in the shared search picker → set BOTH dropdowns at once.
+  /// A free-typed place has no master row, so it is kept as a legacy display
+  /// value exactly like an old profile's custom entry.
+  Future<void> _onPlaceSearched(PlaceSelection p) async {
+    final repo = ref.read(locationRepositoryProvider);
+    final district = p.custom
+        ? null
+        : await repo.findDistrict(
+            p.districtEn.isNotEmpty ? p.districtEn : p.district);
+    final city = p.custom
+        ? null
+        : await repo.findCity(p.cityEn.isNotEmpty ? p.cityEn : p.city,
+            districtId: district?.id);
+    if (!mounted) return;
+    setState(() {
+      _district = district;
+      _legacyDistrict =
+          district == null && p.district.trim().isNotEmpty ? p.district : null;
+      _city = city;
+      _legacyCity = city == null && p.city.trim().isNotEmpty ? p.city : null;
+      _locError = null;
+    });
+    _emit();
+  }
+
   void _emit() => widget.onChanged(LocationSelection(
         country: 'India',
         state: TnState.nameEn,
@@ -194,6 +224,16 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── 🔎 Search a place — sets District + City in one step ──
+        PlacePickerField(
+          label: _label('city'),
+          isRequired: widget.isRequired,
+          value: _city == null
+              ? (_legacyCity ?? '')
+              : '${_city!.nameFor(_lang)}, ${_district?.nameFor(_lang) ?? ''}, ${TnState.nameFor(_lang)}',
+          onChanged: _onPlaceSearched,
+        ),
+        const SizedBox(height: 12),
         // ── 📍 Use My Location ──
         OutlinedButton.icon(
           onPressed: _detecting ? null : _useMyLocation,

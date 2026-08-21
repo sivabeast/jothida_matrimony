@@ -3038,12 +3038,6 @@ abstract class AppLocalizations {
   /// **'Messages'**
   String get messages;
 
-  /// No description provided for @horoscopeMatching.
-  ///
-  /// In en, this message translates to:
-  /// **'Horoscope Matching'**
-  String get horoscopeMatching;
-
   /// No description provided for @myReports.
   ///
   /// In en, this message translates to:
@@ -5803,6 +5797,702 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Notifications could not be loaded right now.'**
   String get notificationsUnavailable;
+
+  /// No description provided for @astrologyBookings.
+  ///
+  /// In en, this message translates to:
+  /// **'Astrology Bookings'**
+  String get astrologyBookings;
+
+  /// No description provided for @bookingHistorySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All your astrology appointment bookings'**
+  String get bookingHistorySubtitle;
+
+  /// No description provided for @noBookingsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'You have no astrology bookings yet.'**
+  String get noBookingsYet;
+
+  /// No description provided for @couldNotLoadBookings.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your bookings. Please try again.'**
+  String get couldNotLoadBookings;
+
+  /// No description provided for @consultationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Consultation'**
+  String get consultationLabel;
+
+  /// No description provided for @astrologerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Astrologer'**
+  String get astrologerLabel;
+
+  /// No description provided for @bookedOnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Booked on'**
+  String get bookedOnLabel;
+
+  /// No description provided for @dateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get dateLabel;
+
+  /// No description provided for @timeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get timeLabel;
+
+  /// No description provided for @statusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get statusLabel;
+
+  /// No description provided for @paymentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get paymentLabel;
+
+  /// No description provided for @paymentPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get paymentPaid;
+
+  /// No description provided for @paymentAtOffice.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay at office'**
+  String get paymentAtOffice;
+
+  /// No description provided for @viewDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'View Details'**
+  String get viewDetails;
+
+  /// No description provided for @apptStatusUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming'**
+  String get apptStatusUpcoming;
+
+  /// No description provided for @apptStatusPendingApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Approval'**
+  String get apptStatusPendingApproval;
+
+  /// No description provided for @apptStatusConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get apptStatusConfirmed;
+
+  /// No description provided for @apptStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get apptStatusCompleted;
+
+  /// No description provided for @apptStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get apptStatusCancelled;
+
+  /// No description provided for @apptMsgPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Your appointment request has been received and is awaiting confirmation.'**
+  String get apptMsgPending;
+
+  /// No description provided for @apptMsgConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Your appointment has been confirmed successfully.'**
+  String get apptMsgConfirmed;
+
+  /// No description provided for @apptMsgCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Your appointment has been completed. Thank you!'**
+  String get apptMsgCompleted;
+
+  /// No description provided for @apptMsgCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Your appointment has been cancelled.'**
+  String get apptMsgCancelled;
+
+  /// No description provided for @cancelBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Booking'**
+  String get cancelBooking;
+
+  /// No description provided for @keepBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Booking'**
+  String get keepBooking;
+
+  /// No description provided for @cancelBookingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this booking?'**
+  String get cancelBookingTitle;
+
+  /// No description provided for @cancelBookingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking {id} will be removed and its session freed up. To visit on a different day, book the new date afterwards — that creates a new booking.'**
+  String cancelBookingBody(String id);
+
+  /// No description provided for @bookingCancelledToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking cancelled.'**
+  String get bookingCancelledToast;
+
+  /// No description provided for @couldNotCancelBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not cancel the booking. Please try again.'**
+  String get couldNotCancelBooking;
+
+  /// No description provided for @rebookAnotherDayNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Need another day? Cancel this booking and book the new date — you will get a new Booking ID.'**
+  String get rebookAnotherDayNote;
+
+  /// No description provided for @upcomingBookingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Upcoming Booking'**
+  String get upcomingBookingTitle;
+
+  /// No description provided for @horoscopeCompatibilityReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope Compatibility Report'**
+  String get horoscopeCompatibilityReport;
+
+  /// No description provided for @onlineHoroscopeCompatibilityReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Online Horoscope Compatibility Report'**
+  String get onlineHoroscopeCompatibilityReport;
+
+  /// No description provided for @whatTheReportIncludes.
+  ///
+  /// In en, this message translates to:
+  /// **'What the report includes'**
+  String get whatTheReportIncludes;
+
+  /// No description provided for @serviceDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Details'**
+  String get serviceDetails;
+
+  /// No description provided for @serviceTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Type'**
+  String get serviceTypeLabel;
+
+  /// No description provided for @estimatedDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Delivery'**
+  String get estimatedDelivery;
+
+  /// No description provided for @onlineReportNoVisit.
+  ///
+  /// In en, this message translates to:
+  /// **'Online report (no office visit)'**
+  String get onlineReportNoVisit;
+
+  /// No description provided for @deliveryWithinTwoDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Within 2 working days after payment'**
+  String get deliveryWithinTwoDays;
+
+  /// No description provided for @onlineServiceNote.
+  ///
+  /// In en, this message translates to:
+  /// **'A fully online service — your report is delivered to your Reports page. No appointment or office visit needed.'**
+  String get onlineServiceNote;
+
+  /// No description provided for @payAndRequestReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay {price} · Request Report'**
+  String payAndRequestReport(String price);
+
+  /// No description provided for @requestReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Report'**
+  String get requestReport;
+
+  /// No description provided for @meetOurAstrologyExpert.
+  ///
+  /// In en, this message translates to:
+  /// **'Meet Our Astrology Expert'**
+  String get meetOurAstrologyExpert;
+
+  /// No description provided for @reportForPair.
+  ///
+  /// In en, this message translates to:
+  /// **'Report for you and {name}'**
+  String reportForPair(String name);
+
+  /// No description provided for @horoscopeMatchWith.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope match with {name}'**
+  String horoscopeMatchWith(String name);
+
+  /// No description provided for @poruthamsWord.
+  ///
+  /// In en, this message translates to:
+  /// **'Poruthams'**
+  String get poruthamsWord;
+
+  /// No description provided for @matchedWord.
+  ///
+  /// In en, this message translates to:
+  /// **'Matched'**
+  String get matchedWord;
+
+  /// No description provided for @notMatchedWord.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Matched'**
+  String get notMatchedWord;
+
+  /// No description provided for @poruthamsMatchedChip.
+  ///
+  /// In en, this message translates to:
+  /// **'{matched}/{total} poruthams matched'**
+  String poruthamsMatchedChip(int matched, int total);
+
+  /// No description provided for @freeBasicResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Free Basic Result'**
+  String get freeBasicResultTitle;
+
+  /// No description provided for @matchingPoruthams.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching Poruthams'**
+  String get matchingPoruthams;
+
+  /// No description provided for @notMatchingPoruthams.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Matching / Needs Attention'**
+  String get notMatchingPoruthams;
+
+  /// No description provided for @basicResultDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'This basic result is an automated calculation from both members’ birth-star details. For a final decision, please consult a qualified astrologer.'**
+  String get basicResultDisclaimer;
+
+  /// No description provided for @notEnoughHoroscopeForPair.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough horoscope data to calculate the poruthams for this pair. You can still request a detailed report — our astrology expert works from both horoscopes directly.'**
+  String get notEnoughHoroscopeForPair;
+
+  /// No description provided for @horoscopePendingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope pending'**
+  String get horoscopePendingLabel;
+
+  /// No description provided for @completeYourHoroscopeFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete your own horoscope to see a match result.'**
+  String get completeYourHoroscopeFirst;
+
+  /// No description provided for @matchResultUnavailableMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Match result is unavailable for this member.'**
+  String get matchResultUnavailableMember;
+
+  /// No description provided for @paymentCancelledNotCharged.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment cancelled — you have not been charged.'**
+  String get paymentCancelledNotCharged;
+
+  /// No description provided for @billingUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Play Billing is unavailable on this device.'**
+  String get billingUnavailable;
+
+  /// No description provided for @paymentCouldNotComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment could not be completed. You have not been charged.'**
+  String get paymentCouldNotComplete;
+
+  /// No description provided for @couldNotStartPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start the payment. Please try again.'**
+  String get couldNotStartPayment;
+
+  /// No description provided for @paymentSuccessReportAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment successful. Your report request has been created — track it on the Reports tab.'**
+  String get paymentSuccessReportAssigned;
+
+  /// No description provided for @couldNotLoadBothProfiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load both profiles. Please try again.'**
+  String get couldNotLoadBothProfiles;
+
+  /// No description provided for @processingPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing…'**
+  String get processingPayment;
+
+  /// No description provided for @requestNewHoroscopeReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Request New Horoscope Report'**
+  String get requestNewHoroscopeReport;
+
+  /// No description provided for @compatibilityReportWithAnyone.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibility report with anyone'**
+  String get compatibilityReportWithAnyone;
+
+  /// No description provided for @compatibilityReportWithAnyoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a professional horoscope compatibility report between you and a person who is not on the app. Your details are filled in automatically — just add the second person’s details below.'**
+  String get compatibilityReportWithAnyoneBody;
+
+  /// No description provided for @yourDetailsAutoFilled.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Details (auto-filled)'**
+  String get yourDetailsAutoFilled;
+
+  /// No description provided for @secondPersonDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Second Person’s Details'**
+  String get secondPersonDetails;
+
+  /// No description provided for @yourProfileStillLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile is still loading…'**
+  String get yourProfileStillLoading;
+
+  /// No description provided for @horoscopeWillBeAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Your horoscope document will be attached automatically.'**
+  String get horoscopeWillBeAttached;
+
+  /// No description provided for @noHoroscopeDocOnProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'No horoscope document on your profile — our astrology expert will work from the details above.'**
+  String get noHoroscopeDocOnProfile;
+
+  /// No description provided for @fullNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get fullNameLabel;
+
+  /// No description provided for @nameIsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Name is required'**
+  String get nameIsRequired;
+
+  /// No description provided for @genderAgeAutoNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender is set automatically to the opposite of your gender. Age is calculated from the date of birth.'**
+  String get genderAgeAutoNote;
+
+  /// No description provided for @horoscopeImageOrPdfOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope Image / PDF (optional)'**
+  String get horoscopeImageOrPdfOptional;
+
+  /// No description provided for @attachSecondPersonHoroscope.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional — attach the second person’s horoscope.'**
+  String get attachSecondPersonHoroscope;
+
+  /// No description provided for @imageAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Image attached'**
+  String get imageAttached;
+
+  /// No description provided for @pdfAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF attached'**
+  String get pdfAttached;
+
+  /// No description provided for @replaceImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace image'**
+  String get replaceImage;
+
+  /// No description provided for @replacePdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace PDF'**
+  String get replacePdf;
+
+  /// No description provided for @imageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get imageLabel;
+
+  /// No description provided for @pdfLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF'**
+  String get pdfLabel;
+
+  /// No description provided for @uploadFailedRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload failed — please try again.'**
+  String get uploadFailedRetry;
+
+  /// No description provided for @pleaseSelectSecondDob.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select the second person’s date of birth.'**
+  String get pleaseSelectSecondDob;
+
+  /// No description provided for @pleaseSelectSecondTob.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select the second person’s time of birth.'**
+  String get pleaseSelectSecondTob;
+
+  /// No description provided for @pleaseSelectSecondPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select the second person’s place of birth.'**
+  String get pleaseSelectSecondPlace;
+
+  /// No description provided for @pleaseSelectSecondNakshatra.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select the second person’s Nakshatra.'**
+  String get pleaseSelectSecondNakshatra;
+
+  /// No description provided for @pleaseSelectSecondRasi.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select the second person’s Rasi.'**
+  String get pleaseSelectSecondRasi;
+
+  /// No description provided for @requestSubmittedTrackReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Request #{id} has been submitted — track it on the Reports tab.'**
+  String requestSubmittedTrackReports(String id);
+
+  /// No description provided for @couldNotCreateRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create the request. Please try again.'**
+  String get couldNotCreateRequest;
+
+  /// No description provided for @placeOfBirthLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Place of Birth'**
+  String get placeOfBirthLabel;
+
+  /// No description provided for @searchCityVillage.
+  ///
+  /// In en, this message translates to:
+  /// **'Search city or village'**
+  String get searchCityVillage;
+
+  /// No description provided for @searchLocationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type at least 2 letters to search'**
+  String get searchLocationHint;
+
+  /// No description provided for @noLocationsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching place found. Try a different spelling.'**
+  String get noLocationsFound;
+
+  /// No description provided for @selectedLocationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected place'**
+  String get selectedLocationLabel;
+
+  /// No description provided for @addLocationTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add this place'**
+  String get addLocationTooltip;
+
+  /// No description provided for @saveLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get saveLocation;
+
+  /// No description provided for @selectLocationFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a place with the + button first.'**
+  String get selectLocationFirst;
+
+  /// No description provided for @locationNotListedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Can’t find the place? Search the nearest town — its district and state are saved with it.'**
+  String get locationNotListedNote;
+
+  /// No description provided for @chooseLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a place'**
+  String get chooseLocationTitle;
+
+  /// No description provided for @yourDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Details'**
+  String get yourDetailsTitle;
+
+  /// No description provided for @bookingContactIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'We need your name and mobile number to confirm the appointment — the office calls you to agree the exact time. A Matrimony Profile is not required.'**
+  String get bookingContactIntro;
+
+  /// No description provided for @bookingContactPrefilledNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Filled in from your profile. You can change these for this booking — your profile is not updated.'**
+  String get bookingContactPrefilledNote;
+
+  /// No description provided for @nameRequiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name *'**
+  String get nameRequiredLabel;
+
+  /// No description provided for @mobileNumberRequiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile Number *'**
+  String get mobileNumberRequiredLabel;
+
+  /// No description provided for @whereYouAreFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'WHERE YOU ARE FROM (OPTIONAL)'**
+  String get whereYouAreFrom;
+
+  /// No description provided for @confirmBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Booking'**
+  String get confirmBooking;
+
+  /// No description provided for @pleaseEnterYourName.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your name'**
+  String get pleaseEnterYourName;
+
+  /// No description provided for @enterValidMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid 10-digit mobile number'**
+  String get enterValidMobile;
+
+  /// No description provided for @noAcceptedMatchesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No accepted matches yet'**
+  String get noAcceptedMatchesTitle;
+
+  /// No description provided for @horoscopeReportShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope Report'**
+  String get horoscopeReportShort;
+
+  /// No description provided for @awardsAndMedals.
+  ///
+  /// In en, this message translates to:
+  /// **'Awards & Medals'**
+  String get awardsAndMedals;
+
+  /// No description provided for @newsAndMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'News & Media'**
+  String get newsAndMedia;
+
+  /// No description provided for @getDirectionsInMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Directions in Google Maps'**
+  String get getDirectionsInMaps;
+
+  /// No description provided for @astrologyHomeReportBlurb.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a detailed online horoscope compatibility report for you and a matched profile. Open the profile and tap “Get Horoscope Compatibility Report” — your report is delivered to your Reports tab.'**
+  String get astrologyHomeReportBlurb;
 }
 
 class _AppLocalizationsDelegate

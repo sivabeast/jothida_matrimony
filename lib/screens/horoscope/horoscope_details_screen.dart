@@ -8,17 +8,16 @@ import '../../core/services/horoscope_calculation_service.dart';
 import '../../core/services/master_astrology_data.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/file_actions.dart';
+import '../../core/utils/l10n_ext.dart';
+import '../../models/location_model.dart';
 import '../../models/profile_model.dart';
 import '../../providers/demo_data_provider.dart';
-import '../../providers/location_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/app_text_field.dart';
 import '../../widgets/common/gradient_button.dart';
+import '../../widgets/common/place_picker_field.dart';
 import '../../widgets/common/searchable_field.dart';
-
-/// Sentinel appended to the city list for birth places not in the master data.
-const String _kOthers = 'Others';
 
 /// Horoscope Details — generate Rasi / Nakshatra / Lagnam from birth details.
 ///
@@ -48,14 +47,15 @@ class _HoroscopeDetailsScreenState
   final _calc = HoroscopeCalculationService();
   final _dobController = TextEditingController();
   final _timeController = TextEditingController();
-  final _customPlaceController = TextEditingController();
 
   DateTime? _dob;
   TimeOfDay? _time;
 
-  // Birth place: a master city, or a free-typed custom place via "Others".
-  String? _selectedCity;
-  bool _isOthers = false;
+  /// Birth place as "City, District, State" (or a free-typed place), chosen in
+  /// the app's ONE place picker (spec §31). The district + state also make the
+  /// geocoding lookup unambiguous for repeated village names.
+  String? _birthPlace;
+  bool _placeIsCustom = false;
 
   // Engine-calculated (generated) values — always preserved.
   String? _genRasi;
@@ -94,7 +94,6 @@ class _HoroscopeDetailsScreenState
   void dispose() {
     _dobController.dispose();
     _timeController.dispose();
-    _customPlaceController.dispose();
     super.dispose();
   }
 
@@ -124,12 +123,8 @@ class _HoroscopeDetailsScreenState
 
     final place = h.birthPlace.trim();
     if (place.isNotEmpty) {
-      if (h.birthPlaceType == 'custom') {
-        _isOthers = true;
-        _customPlaceController.text = place;
-      } else {
-        _selectedCity = place;
-      }
+      _birthPlace = place;
+      _placeIsCustom = h.birthPlaceType == 'custom';
     }
     _lat = h.latitude != 0 ? h.latitude : null;
     _lng = h.longitude != 0 ? h.longitude : null;
@@ -154,8 +149,7 @@ class _HoroscopeDetailsScreenState
   String? get _effNakshatra => _overrideEnabled ? _ovrNakshatra : _genNakshatra;
   String? get _effLagnam => _overrideEnabled ? _ovrLagnam : _genLagnam;
 
-  String? get _effectivePlace =>
-      _isOthers ? _customPlaceController.text.trim() : _selectedCity;
+  String? get _effectivePlace => _birthPlace?.trim();
 
   // ── Pickers ────────────────────────────────────────────────────────────
   Future<void> _pickDob() async {
@@ -187,16 +181,10 @@ class _HoroscopeDetailsScreenState
     }
   }
 
-  void _onPlaceChanged(String? v) {
+  void _onPlaceChanged(PlaceSelection p) {
     setState(() {
-      if (v == _kOthers) {
-        _isOthers = true;
-        _selectedCity = null;
-      } else {
-        _isOthers = false;
-        _selectedCity = v;
-        _customPlaceController.clear();
-      }
+      _birthPlace = p.display;
+      _placeIsCustom = p.custom;
     });
   }
 
@@ -263,7 +251,7 @@ class _HoroscopeDetailsScreenState
     final age = _ageFromDob(_dob!);
     final birthTime = HoroscopeCalculationService.formatStoredTime(_time!);
     final place = _effectivePlace ?? '';
-    final placeType = _isOthers ? 'custom' : 'city';
+    final placeType = _placeIsCustom ? 'custom' : 'city';
 
     final effRasi = _effRasi ?? '';
     final effNak = _effNakshatra ?? '';
@@ -321,18 +309,13 @@ class _HoroscopeDetailsScreenState
       if (p != null && !_prefilled && mounted) setState(() => _prefill(p));
     });
 
-    final citiesAsync = ref.watch(allCityNamesProvider);
-    final cityItems = <String>[
-      ...(citiesAsync.valueOrNull ?? const <String>[]),
-      _kOthers,
-    ];
     final placeMissing =
         _effectivePlace == null || _effectivePlace!.trim().isEmpty;
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Horoscope Details'),
+        title: Text(context.l10n.horoscopeDetails),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -349,8 +332,8 @@ class _HoroscopeDetailsScreenState
           // Date of Birth
           AppTextField(
             controller: _dobController,
-            label: 'Date of Birth',
-            hint: 'Select date',
+            label: context.l10n.dateOfBirth,
+            hint: context.l10n.selectDateHint,
             readOnly: true,
             onTap: _pickDob,
             suffixIcon: const Icon(Icons.calendar_today_outlined),
@@ -362,8 +345,8 @@ class _HoroscopeDetailsScreenState
           // Time of Birth
           AppTextField(
             controller: _timeController,
-            label: 'Time of Birth',
-            hint: 'Select time',
+            label: context.l10n.timeOfBirth,
+            hint: context.l10n.selectTimeHint,
             readOnly: true,
             onTap: _pickTime,
             suffixIcon: const Icon(Icons.access_time),
@@ -373,40 +356,12 @@ class _HoroscopeDetailsScreenState
           const SizedBox(height: 16),
 
           // Birth City (searchable, modal bottom sheet so it never overlaps)
-          if (citiesAsync.isLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Row(children: [
-                SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2)),
-                SizedBox(width: 10),
-                Text('Loading cities…'),
-              ]),
-            )
-          else
-            SearchableField(
-              label: 'Birth City',
-              isRequired: true,
-              items: cityItems,
-              selectedItem: _isOthers ? _kOthers : _selectedCity,
-              prefixIcon: Icons.location_on_outlined,
-              popupMode: SearchablePopupMode.modalBottomSheet,
-              onChanged: _onPlaceChanged,
-            ),
-
-          // Custom Birth Place (only when "Others" is chosen)
-          if (_isOthers) ...[
-            const SizedBox(height: 12),
-            AppTextField(
-              controller: _customPlaceController,
-              label: 'Custom Birth Place',
-              hint: 'Village, town or foreign / unknown place',
-              prefixIcon: const Icon(Icons.edit_location_alt_outlined),
-              onChanged: (_) => setState(() {}),
-            ),
-          ],
+          PlacePickerField(
+            label: context.l10n.placeOfBirthLabel,
+            isRequired: true,
+            value: _birthPlace,
+            onChanged: _onPlaceChanged,
+          ),
           _fieldError(_showValidation && placeMissing,
               'Please select or enter your birth city'),
           const SizedBox(height: 24),
@@ -432,7 +387,7 @@ class _HoroscopeDetailsScreenState
                 const Icon(Icons.auto_awesome,
                     size: 18, color: AppColors.primary),
                 const SizedBox(width: 8),
-                const Text('Calculated Horoscope',
+                Text(context.l10n.calculatedHoroscope,
                     style: TextStyle(
                         fontSize: 16,
                         fontFamily: 'Poppins',
@@ -475,7 +430,7 @@ class _HoroscopeDetailsScreenState
               value: _overrideEnabled,
               onChanged: _onOverrideToggled,
               activeColor: AppColors.primary,
-              title: const Text('Override Horoscope Details',
+              title: Text(context.l10n.overrideHoroscope,
                   style:
                       TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
               subtitle: const Text(
@@ -550,7 +505,7 @@ class _HoroscopeDetailsScreenState
             const Icon(Icons.upload_file_outlined,
                 size: 18, color: AppColors.primary),
             const SizedBox(width: 8),
-            const Text('Uploaded Horoscope',
+            Text(context.l10n.horoscopeDocuments,
                 style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',

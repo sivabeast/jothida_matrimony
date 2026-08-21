@@ -7,22 +7,21 @@ import '../../../core/services/horoscope_calculation_service.dart';
 import '../../../core/services/master_astrology_data.dart';
 import '../../../core/utils/inline_validation.dart';
 import '../../../core/utils/l10n_ext.dart';
-import '../../../providers/location_provider.dart';
+import '../../../models/location_model.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
+import '../../../widgets/common/place_picker_field.dart';
 import '../../../widgets/common/searchable_field.dart';
-
-/// Sentinel appended to the city list for "not in the list" birth places.
-const String _kOthers = 'Others';
 
 /// Step 3 — Horoscope.
 ///
 /// Rasi / Nakshatra / Lagnam are calculated automatically from Date of Birth +
-/// Time of Birth + Birth Place via the Vedic engine. Birth Place is a
-/// searchable dropdown over the master cities (with an "Others" → custom input
-/// escape hatch). Users may optionally **override** the calculated values with
-/// manually-chosen ones from the master Rasi / Nakshatra / Lagnam lists.
+/// Time of Birth + Birth Place via the Vedic engine. Birth Place uses the
+/// app's ONE place picker — City/Village + District + State (spec §31) — which
+/// also disambiguates the geocoding lookup. Users may optionally **override**
+/// the calculated values with manually-chosen ones from the master Rasi /
+/// Nakshatra / Lagnam lists.
 class Step3Horoscope extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   const Step3Horoscope({super.key, required this.onNext});
@@ -36,15 +35,15 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
   final _calc = HoroscopeCalculationService();
   final _birthTimeController = TextEditingController();
   final _dobController = TextEditingController();
-  final _customPlaceController = TextEditingController();
-  Timer? _customDebounce;
 
   DateTime? _dob;
   TimeOfDay? _birthTime;
 
-  // Birth place
-  String? _selectedCity; // when a master city is chosen
-  bool _isOthers = false; // "Others" → custom text input
+  /// Birth place as "City, District, State" (or a free-typed place). Stored
+  /// verbatim, and passed to the geocoder — the district + state make the
+  /// lookup unambiguous for villages whose name repeats across districts.
+  String? _birthPlace;
+  bool _placeIsCustom = false;
 
   // Calculated (generated) values.
   String? _genRasi;
@@ -76,10 +75,8 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
 
   @override
   void dispose() {
-    _customDebounce?.cancel();
     _birthTimeController.dispose();
     _dobController.dispose();
-    _customPlaceController.dispose();
     super.dispose();
   }
 
@@ -113,12 +110,8 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
       final place = (h['birthPlace'] as String?)?.trim() ?? '';
       final type = (h['birthPlaceType'] as String?) ?? 'city';
       if (place.isNotEmpty) {
-        if (type == 'custom') {
-          _isOthers = true;
-          _customPlaceController.text = place;
-        } else {
-          _selectedCity = place;
-        }
+        _birthPlace = place;
+        _placeIsCustom = type == 'custom';
       }
       _genRasi = (h['generatedRasi'] as String?)?.isNotEmpty == true
           ? h['generatedRasi'] as String
@@ -145,8 +138,7 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
   String? get _effNakshatra => _overrideEnabled ? _ovrNakshatra : _genNakshatra;
   String? get _effLagnam => _overrideEnabled ? _ovrLagnam : _genLagnam;
 
-  String? get _effectivePlace =>
-      _isOthers ? _customPlaceController.text.trim() : _selectedCity;
+  String? get _effectivePlace => _birthPlace?.trim();
 
   bool get _hasGenerated =>
       (_genRasi ?? '').isNotEmpty &&
@@ -188,23 +180,12 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
     }
   }
 
-  void _onPlaceChanged(String? v) {
+  void _onPlaceChanged(PlaceSelection p) {
     setState(() {
-      if (v == _kOthers) {
-        _isOthers = true;
-        _selectedCity = null;
-      } else {
-        _isOthers = false;
-        _selectedCity = v;
-      }
+      _birthPlace = p.display;
+      _placeIsCustom = p.custom;
     });
-    if (!_isOthers) _recalculate();
-  }
-
-  void _onCustomPlaceChanged(String v) {
-    _customDebounce?.cancel();
-    _customDebounce =
-        Timer(const Duration(milliseconds: 700), () => _recalculate());
+    _recalculate();
   }
 
   void _onOverrideToggled(bool on) {
@@ -295,7 +276,7 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
         // Birth details
         'birthTime': HoroscopeCalculationService.formatStoredTime(_birthTime!),
         'birthPlace': _effectivePlace,
-        'birthPlaceType': _isOthers ? 'custom' : 'city',
+        'birthPlaceType': _placeIsCustom ? 'custom' : 'city',
         'latitude': _lat ?? 0,
         'longitude': _lng ?? 0,
         'horoscopeGenerated': true,
@@ -309,12 +290,6 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final citiesAsync = ref.watch(allCityNamesProvider);
-    final cityItems = <String>[
-      ...(citiesAsync.valueOrNull ?? const <String>[]),
-      _kOthers,
-    ];
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -351,49 +326,17 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
             errorText: _v.errorOf('birthTime'),
           ),
           const SizedBox(height: 16),
-          if (citiesAsync.isLoading)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(children: [
-                const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2)),
-                const SizedBox(width: 10),
-                Expanded(child: Text(l10n.loadingCities)),
-              ]),
-            )
-          else
-            SearchableField(
-              key: _v.anchor('birthPlace'),
-              label: l10n.birthCity,
-              isRequired: true,
-              items: cityItems,
-              selectedItem: _isOthers ? _kOthers : _selectedCity,
-              prefixIcon: Icons.location_on_outlined,
-              popupMode: SearchablePopupMode.modalBottomSheet,
-              itemLabel: (item) =>
-                  item == _kOthers ? l10n.othersOption : item,
-              errorText: _v.errorOf('birthPlace'),
-              onChanged: (v) {
-                _v.clear('birthPlace');
-                _onPlaceChanged(v);
-              },
-            ),
-          if (_isOthers) ...[
-            const SizedBox(height: 12),
-            AppTextField(
-              controller: _customPlaceController,
-              label: '${l10n.customBirthPlace} *',
-              hint: l10n.customBirthPlaceHint,
-              prefixIcon: const Icon(Icons.edit_location_alt_outlined),
-              errorText: _v.errorOf('birthPlace'),
-              onChanged: (v) {
-                _v.clear('birthPlace');
-                _onCustomPlaceChanged(v);
-              },
-            ),
-          ],
+          PlacePickerField(
+            key: _v.anchor('birthPlace'),
+            label: l10n.placeOfBirthLabel,
+            isRequired: true,
+            value: _birthPlace,
+            errorText: _v.errorOf('birthPlace'),
+            onChanged: (p) {
+              _v.clear('birthPlace');
+              _onPlaceChanged(p);
+            },
+          ),
           const SizedBox(height: 24),
 
           // ── Status / generated results ───────────────────────────────────

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../providers/admin_badge_provider.dart';
 import '../../widgets/common/app_logo.dart';
 
 /// One entry in the admin navigation drawer.
@@ -24,6 +25,11 @@ class _NavGroup {
 /// [Drawer] (Material 3) opened from the AppBar menu icon. Every admin area is
 /// reachable from the drawer; the previously orphaned Analytics, Married
 /// Members and Test Data routes are all linked here.
+///
+/// Drawer entries that can receive new work carry a live red badge (spec
+/// §20–§26): the number of NEW action-required records for that section, from
+/// [adminBadgeCountsProvider]. Opening the section marks it seen, which clears
+/// the badge without touching a single record.
 class AdminShell extends ConsumerWidget {
   final Widget child;
 
@@ -35,7 +41,7 @@ class AdminShell extends ConsumerWidget {
     ]),
     _NavGroup('User Management', [
       _NavItem('All Users', Icons.people_outline, '/admin/users'),
-      _NavItem('Profile Verification', Icons.verified_outlined,
+      _NavItem('Pending Verification', Icons.verified_outlined,
           '/admin/approvals'),
       _NavItem('Married Members', Icons.favorite_outline, '/admin/married'),
       _NavItem('Create Profile', Icons.person_add_alt_1, '/admin/create-profile'),
@@ -99,6 +105,14 @@ class AdminShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final loc = GoRouterState.of(context).matchedLocation;
 
+    // Landing on a badged section IS the admin seeing it: clear its badge
+    // (the records themselves are untouched — spec §26). Deferred to after
+    // the frame so the notifier is never written to during a build.
+    if (AdminBadgeSection.all.contains(loc)) {
+      WidgetsBinding.instance.addPostFrameCallback(
+          (_) => ref.read(adminSeenProvider.notifier).markSeen(loc));
+    }
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -114,6 +128,15 @@ class AdminShell extends ConsumerWidget {
       },
       child: Scaffold(
         appBar: AppBar(
+          leading: Builder(
+            builder: (ctx) => _MenuButtonWithDot(
+              hasNew: ref
+                  .watch(adminBadgeCountsProvider)
+                  .values
+                  .any((c) => c > 0),
+              onPressed: () => Scaffold.of(ctx).openDrawer(),
+            ),
+          ),
           title: const Text('Jothida Admin',
               style:
                   TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold)),
@@ -139,9 +162,10 @@ class AdminShell extends ConsumerWidget {
 }
 
 /// The grouped navigation drawer: brand header, labelled sections of nav items
-/// with a primary-tint highlight on the active route, and a pinned
+/// with a primary-tint highlight on the active route, a live notification
+/// badge on every section that can receive new work, and a pinned
 /// "Return to User App" action at the bottom.
-class _AdminDrawer extends StatelessWidget {
+class _AdminDrawer extends ConsumerWidget {
   final String? selectedRoute;
   const _AdminDrawer({required this.selectedRoute});
 
@@ -153,7 +177,8 @@ class _AdminDrawer extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final badges = ref.watch(adminBadgeCountsProvider);
     return Drawer(
       backgroundColor: Colors.white,
       child: Column(
@@ -169,6 +194,7 @@ class _AdminDrawer extends StatelessWidget {
                     _DrawerItem(
                       item: item,
                       selected: item.route == selectedRoute,
+                      badge: badges[item.route] ?? 0,
                       onTap: () => _open(context, item.route),
                     ),
                 ],
@@ -262,8 +288,17 @@ class _DrawerItem extends StatelessWidget {
   final _NavItem item;
   final bool selected;
   final VoidCallback onTap;
-  const _DrawerItem(
-      {required this.item, required this.selected, required this.onTap});
+
+  /// New/action-required records for this section. 0 renders NO badge at all
+  /// (spec §21) — an empty queue must look empty.
+  final int badge;
+
+  const _DrawerItem({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+    this.badge = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -294,10 +329,75 @@ class _DrawerItem extends StatelessWidget {
                               selected ? FontWeight.w600 : FontWeight.w500,
                           color: selected ? AppColors.primary : Colors.black87)),
                 ),
+                if (badge > 0) _NotificationBadge(count: badge),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The red count badge on a drawer row. Renders the exact number up to 99 and
+/// "99+" beyond, so a busy queue never blows the row's width.
+class _NotificationBadge extends StatelessWidget {
+  final int count;
+  const _NotificationBadge({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = count > 99 ? '99+' : '$count';
+    return Container(
+      margin: const EdgeInsets.only(left: 8),
+      constraints: const BoxConstraints(minWidth: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.error,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      alignment: Alignment.center,
+      child: Text(label,
+          style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              height: 1.2)),
+    );
+  }
+}
+
+/// The drawer button with a small red dot when ANY admin section has new work.
+/// No count here — the exact numbers live on the drawer rows themselves.
+class _MenuButtonWithDot extends StatelessWidget {
+  final bool hasNew;
+  final VoidCallback onPressed;
+  const _MenuButtonWithDot({required this.hasNew, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
+      onPressed: onPressed,
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(Icons.menu),
+          if (hasNew)
+            Positioned(
+              right: -1,
+              top: -1,
+              child: Container(
+                width: 9,
+                height: 9,
+                decoration: BoxDecoration(
+                  color: AppColors.error,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.primary, width: 1.2),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

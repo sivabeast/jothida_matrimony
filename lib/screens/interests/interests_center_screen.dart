@@ -5,9 +5,11 @@ import '../../core/navigation/root_navigator.dart';
 import '../../widgets/common/create_profile_sheet.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
+import '../../core/utils/value_l10n.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../models/compatibility_report_model.dart';
 import '../../models/interest_model.dart';
+import '../../models/profile_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/interest_provider.dart';
@@ -317,7 +319,7 @@ class _InterestListState extends State<_InterestList> {
   /// Rough per-card extents used to land the scroll near the target — the
   /// flash animation then makes the exact card unmistakable.
   double get _estimatedExtent => switch (widget.mode) {
-        _CardMode.accepted => 330,
+        _CardMode.accepted => 400,
         _CardMode.received => 210,
         _ => 190,
       };
@@ -477,6 +479,9 @@ class _InterestCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (mode == _CardMode.accepted)
+            _acceptedHeader(context, profile, name, age)
+          else
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -533,6 +538,78 @@ class _InterestCard extends ConsumerWidget {
           _actions(context, ref, otherUserId, name, photo),
         ],
       ),
+    );
+  }
+
+  /// The **Accepted** card header (spec §15): a clean profile card — larger
+  /// photo, name + age, then location, education and occupation on their own
+  /// lines instead of the compact one-line summary the other tabs use.
+  Widget _acceptedHeader(
+      BuildContext context, ProfileModel? profile, String name, int age) {
+    final l10n = context.l10n;
+    final photo = profile?.profilePhotoUrl ?? '';
+    // Native place wins over city/state — it is what members recognise.
+    final native = (profile?.nativePlace ?? '').trim();
+    final location = native.isNotEmpty
+        ? context.localizeValue(native)
+        : (profile == null
+            ? ''
+            : [profile.city, profile.state]
+                .where((s) => s.trim().isNotEmpty)
+                .map(context.localizeValue)
+                .join(', '));
+    final education = context.localizeValue(profile?.education ?? '');
+    final occupation = context.localizeValue(profile?.occupation ?? '');
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: SizedBox(
+            width: 84,
+            height: 84,
+            child: NetworkPhoto(url: photo, fallbackIconSize: 34),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(age > 0 ? '$name, $age' : name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16.5,
+                            fontFamily: 'Poppins')),
+                  ),
+                  const SizedBox(width: 6),
+                  _modeBadge(context),
+                ],
+              ),
+              const SizedBox(height: 6),
+              if (location.isNotEmpty) ...[
+                _meta(Icons.location_on_outlined, location),
+                const SizedBox(height: 3),
+              ],
+              if (education.isNotEmpty) ...[
+                _meta(Icons.school_outlined, education),
+                const SizedBox(height: 3),
+              ],
+              if (occupation.isNotEmpty)
+                _meta(Icons.work_outline, occupation),
+              if (location.isEmpty && education.isEmpty && occupation.isEmpty)
+                _meta(Icons.info_outline, l10n.notSpecified),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -728,9 +805,10 @@ class _InterestCard extends ConsumerWidget {
   /// request per partner profile — the paid button disappears after the first
   /// request and never comes back).
   ///
-  /// Before any request it opens the CANONICAL Horoscope Match Result page
-  /// (`/horoscope-match/:uid`) — never the payment screen directly, so the
-  /// member always sees the free basic result before being asked to pay.
+  /// Before any request it opens the ONE Horoscope Compatibility Report page
+  /// (`/horoscope-report/:uid`) directly — no intermediate informational
+  /// screen. That page carries the free basic result, the service details and
+  /// the ₹200 pay CTA together (spec §5/§6).
   Widget _compatReportAction(BuildContext context, WidgetRef ref,
       String otherUserId, dynamic l10n) {
     // Partner PROFILE id: prefer the live profile doc; fall back to the id
@@ -750,7 +828,7 @@ class _InterestCard extends ConsumerWidget {
     if (req == null) {
       return SizedBox(
         width: double.infinity,
-        child: OutlinedButton.icon(
+        child: FilledButton.icon(
           // While the request stream is still loading the tap re-checks on
           // the service screen itself, so a duplicate can never slip through.
           onPressed: () {
@@ -758,13 +836,18 @@ class _InterestCard extends ConsumerWidget {
               _snack(context, l10n.horoscopeUnavailableMember);
               return;
             }
-            context.push('/horoscope-match/$otherUserId');
+            context.push('/horoscope-report/$otherUserId');
           },
-          icon: const Icon(Icons.description_outlined, size: 18),
-          label: Text(l10n.getHoroscopeCompatibilityReport),
-          style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              side: const BorderSide(color: AppColors.primary)),
+          icon: const Icon(Icons.auto_awesome, size: 18),
+          label: Text(l10n.getHoroscopeCompatibilityReport,
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(46),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
         ),
       );
     }
@@ -868,16 +951,20 @@ class _InterestCard extends ConsumerWidget {
                 icon: const Icon(Icons.person_outline, size: 18),
                 label: Text(l10n.viewProfile),
                 style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary)),
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                  minimumSize: const Size.fromHeight(46),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
               ),
             ),
             const SizedBox(height: 10),
-            // Horoscope Compatibility Report — enters the SAME canonical
-            // Horoscope Match Result page as "View Profile → Horoscope"; the
-            // paid request is offered there, after the free basic result.
-            // ONE request per partner profile (spec §12): before any request →
-            // the CTA; pending → a status chip; completed → View Report.
+            // Horoscope Compatibility Report — the maroon primary CTA that
+            // opens the ONE report page (free result + service details + the
+            // ₹200 payment). ONE request per partner profile (spec §12):
+            // before any request → the CTA; pending → a status chip;
+            // completed → View Report.
             _compatReportAction(context, ref, otherUserId, l10n),
           ],
         );

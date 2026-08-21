@@ -1571,9 +1571,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messages => 'Messages';
 
   @override
-  String get horoscopeMatching => 'Horoscope Matching';
-
-  @override
   String get myReports => 'My Reports';
 
   @override
@@ -3164,4 +3161,400 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get notificationsUnavailable =>
       'Notifications could not be loaded right now.';
+
+  @override
+  String get astrologyBookings => 'Astrology Bookings';
+
+  @override
+  String get bookingHistorySubtitle =>
+      'All your astrology appointment bookings';
+
+  @override
+  String get noBookingsYet => 'You have no astrology bookings yet.';
+
+  @override
+  String get couldNotLoadBookings =>
+      'Could not load your bookings. Please try again.';
+
+  @override
+  String get consultationLabel => 'Consultation';
+
+  @override
+  String get astrologerLabel => 'Astrologer';
+
+  @override
+  String get bookedOnLabel => 'Booked on';
+
+  @override
+  String get dateLabel => 'Date';
+
+  @override
+  String get timeLabel => 'Time';
+
+  @override
+  String get statusLabel => 'Status';
+
+  @override
+  String get paymentLabel => 'Payment';
+
+  @override
+  String get paymentPaid => 'Paid';
+
+  @override
+  String get paymentAtOffice => 'Pay at office';
+
+  @override
+  String get viewDetails => 'View Details';
+
+  @override
+  String get apptStatusUpcoming => 'Upcoming';
+
+  @override
+  String get apptStatusPendingApproval => 'Pending Approval';
+
+  @override
+  String get apptStatusConfirmed => 'Confirmed';
+
+  @override
+  String get apptStatusCompleted => 'Completed';
+
+  @override
+  String get apptStatusCancelled => 'Cancelled';
+
+  @override
+  String get apptMsgPending =>
+      'Your appointment request has been received and is awaiting confirmation.';
+
+  @override
+  String get apptMsgConfirmed =>
+      'Your appointment has been confirmed successfully.';
+
+  @override
+  String get apptMsgCompleted =>
+      'Your appointment has been completed. Thank you!';
+
+  @override
+  String get apptMsgCancelled => 'Your appointment has been cancelled.';
+
+  @override
+  String get cancelBooking => 'Cancel Booking';
+
+  @override
+  String get keepBooking => 'Keep Booking';
+
+  @override
+  String get cancelBookingTitle => 'Cancel this booking?';
+
+  @override
+  String cancelBookingBody(String id) {
+    return 'Booking $id will be removed and its session freed up. To visit on a different day, book the new date afterwards — that creates a new booking.';
+  }
+
+  @override
+  String get bookingCancelledToast => 'Booking cancelled.';
+
+  @override
+  String get couldNotCancelBooking =>
+      'Could not cancel the booking. Please try again.';
+
+  @override
+  String get rebookAnotherDayNote =>
+      'Need another day? Cancel this booking and book the new date — you will get a new Booking ID.';
+
+  @override
+  String get upcomingBookingTitle => 'Your Upcoming Booking';
+
+  @override
+  String get horoscopeCompatibilityReport => 'Horoscope Compatibility Report';
+
+  @override
+  String get onlineHoroscopeCompatibilityReport =>
+      'Online Horoscope Compatibility Report';
+
+  @override
+  String get whatTheReportIncludes => 'What the report includes';
+
+  @override
+  String get serviceDetails => 'Service Details';
+
+  @override
+  String get serviceTypeLabel => 'Service Type';
+
+  @override
+  String get estimatedDelivery => 'Estimated Delivery';
+
+  @override
+  String get onlineReportNoVisit => 'Online report (no office visit)';
+
+  @override
+  String get deliveryWithinTwoDays => 'Within 2 working days after payment';
+
+  @override
+  String get onlineServiceNote =>
+      'A fully online service — your report is delivered to your Reports page. No appointment or office visit needed.';
+
+  @override
+  String payAndRequestReport(String price) {
+    return 'Pay $price · Request Report';
+  }
+
+  @override
+  String get requestReport => 'Request Report';
+
+  @override
+  String get meetOurAstrologyExpert => 'Meet Our Astrology Expert';
+
+  @override
+  String reportForPair(String name) {
+    return 'Report for you and $name';
+  }
+
+  @override
+  String horoscopeMatchWith(String name) {
+    return 'Horoscope match with $name';
+  }
+
+  @override
+  String get poruthamsWord => 'Poruthams';
+
+  @override
+  String get matchedWord => 'Matched';
+
+  @override
+  String get notMatchedWord => 'Not Matched';
+
+  @override
+  String poruthamsMatchedChip(int matched, int total) {
+    return '$matched/$total poruthams matched';
+  }
+
+  @override
+  String get freeBasicResultTitle => 'Free Basic Result';
+
+  @override
+  String get matchingPoruthams => 'Matching Poruthams';
+
+  @override
+  String get notMatchingPoruthams => 'Not Matching / Needs Attention';
+
+  @override
+  String get basicResultDisclaimer =>
+      'This basic result is an automated calculation from both members’ birth-star details. For a final decision, please consult a qualified astrologer.';
+
+  @override
+  String get notEnoughHoroscopeForPair =>
+      'Not enough horoscope data to calculate the poruthams for this pair. You can still request a detailed report — our astrology expert works from both horoscopes directly.';
+
+  @override
+  String get horoscopePendingLabel => 'Horoscope pending';
+
+  @override
+  String get completeYourHoroscopeFirst =>
+      'Complete your own horoscope to see a match result.';
+
+  @override
+  String get matchResultUnavailableMember =>
+      'Match result is unavailable for this member.';
+
+  @override
+  String get paymentCancelledNotCharged =>
+      'Payment cancelled — you have not been charged.';
+
+  @override
+  String get billingUnavailable =>
+      'Google Play Billing is unavailable on this device.';
+
+  @override
+  String get paymentCouldNotComplete =>
+      'Payment could not be completed. You have not been charged.';
+
+  @override
+  String get couldNotStartPayment =>
+      'Could not start the payment. Please try again.';
+
+  @override
+  String get paymentSuccessReportAssigned =>
+      'Payment successful. Your report request has been created — track it on the Reports tab.';
+
+  @override
+  String get couldNotLoadBothProfiles =>
+      'Could not load both profiles. Please try again.';
+
+  @override
+  String get processingPayment => 'Processing…';
+
+  @override
+  String get requestNewHoroscopeReport => 'Request New Horoscope Report';
+
+  @override
+  String get compatibilityReportWithAnyone =>
+      'Compatibility report with anyone';
+
+  @override
+  String get compatibilityReportWithAnyoneBody =>
+      'Get a professional horoscope compatibility report between you and a person who is not on the app. Your details are filled in automatically — just add the second person’s details below.';
+
+  @override
+  String get yourDetailsAutoFilled => 'Your Details (auto-filled)';
+
+  @override
+  String get secondPersonDetails => 'Second Person’s Details';
+
+  @override
+  String get yourProfileStillLoading => 'Your profile is still loading…';
+
+  @override
+  String get horoscopeWillBeAttached =>
+      'Your horoscope document will be attached automatically.';
+
+  @override
+  String get noHoroscopeDocOnProfile =>
+      'No horoscope document on your profile — our astrology expert will work from the details above.';
+
+  @override
+  String get fullNameLabel => 'Full name';
+
+  @override
+  String get nameIsRequired => 'Name is required';
+
+  @override
+  String get genderAgeAutoNote =>
+      'Gender is set automatically to the opposite of your gender. Age is calculated from the date of birth.';
+
+  @override
+  String get horoscopeImageOrPdfOptional => 'Horoscope Image / PDF (optional)';
+
+  @override
+  String get attachSecondPersonHoroscope =>
+      'Optional — attach the second person’s horoscope.';
+
+  @override
+  String get imageAttached => 'Image attached';
+
+  @override
+  String get pdfAttached => 'PDF attached';
+
+  @override
+  String get replaceImage => 'Replace image';
+
+  @override
+  String get replacePdf => 'Replace PDF';
+
+  @override
+  String get imageLabel => 'Image';
+
+  @override
+  String get pdfLabel => 'PDF';
+
+  @override
+  String get uploadFailedRetry => 'Upload failed — please try again.';
+
+  @override
+  String get pleaseSelectSecondDob =>
+      'Please select the second person’s date of birth.';
+
+  @override
+  String get pleaseSelectSecondTob =>
+      'Please select the second person’s time of birth.';
+
+  @override
+  String get pleaseSelectSecondPlace =>
+      'Please select the second person’s place of birth.';
+
+  @override
+  String get pleaseSelectSecondNakshatra =>
+      'Please select the second person’s Nakshatra.';
+
+  @override
+  String get pleaseSelectSecondRasi =>
+      'Please select the second person’s Rasi.';
+
+  @override
+  String requestSubmittedTrackReports(String id) {
+    return 'Request #$id has been submitted — track it on the Reports tab.';
+  }
+
+  @override
+  String get couldNotCreateRequest =>
+      'Could not create the request. Please try again.';
+
+  @override
+  String get placeOfBirthLabel => 'Place of Birth';
+
+  @override
+  String get searchCityVillage => 'Search city or village';
+
+  @override
+  String get searchLocationHint => 'Type at least 2 letters to search';
+
+  @override
+  String get noLocationsFound =>
+      'No matching place found. Try a different spelling.';
+
+  @override
+  String get selectedLocationLabel => 'Selected place';
+
+  @override
+  String get addLocationTooltip => 'Add this place';
+
+  @override
+  String get saveLocation => 'Save';
+
+  @override
+  String get selectLocationFirst => 'Add a place with the + button first.';
+
+  @override
+  String get locationNotListedNote =>
+      'Can’t find the place? Search the nearest town — its district and state are saved with it.';
+
+  @override
+  String get chooseLocationTitle => 'Choose a place';
+
+  @override
+  String get yourDetailsTitle => 'Your Details';
+
+  @override
+  String get bookingContactIntro =>
+      'We need your name and mobile number to confirm the appointment — the office calls you to agree the exact time. A Matrimony Profile is not required.';
+
+  @override
+  String get bookingContactPrefilledNote =>
+      'Filled in from your profile. You can change these for this booking — your profile is not updated.';
+
+  @override
+  String get nameRequiredLabel => 'Name *';
+
+  @override
+  String get mobileNumberRequiredLabel => 'Mobile Number *';
+
+  @override
+  String get whereYouAreFrom => 'WHERE YOU ARE FROM (OPTIONAL)';
+
+  @override
+  String get confirmBooking => 'Confirm Booking';
+
+  @override
+  String get pleaseEnterYourName => 'Please enter your name';
+
+  @override
+  String get enterValidMobile => 'Enter a valid 10-digit mobile number';
+
+  @override
+  String get noAcceptedMatchesTitle => 'No accepted matches yet';
+
+  @override
+  String get horoscopeReportShort => 'Horoscope Report';
+
+  @override
+  String get awardsAndMedals => 'Awards & Medals';
+
+  @override
+  String get newsAndMedia => 'News & Media';
+
+  @override
+  String get getDirectionsInMaps => 'Get Directions in Google Maps';
+
+  @override
+  String get astrologyHomeReportBlurb =>
+      'Get a detailed online horoscope compatibility report for you and a matched profile. Open the profile and tap “Get Horoscope Compatibility Report” — your report is delivered to your Reports tab.';
 }

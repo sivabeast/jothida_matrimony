@@ -10,6 +10,8 @@ import '../../../core/utils/appointment_status.dart';
 import '../../../core/utils/file_actions.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../core/utils/slot_generator.dart';
+import '../../../core/utils/value_l10n.dart';
+import '../../../models/astrologer_request_model.dart';
 import '../../../models/astrology_service_config.dart';
 import '../../../providers/appointment_provider.dart';
 import '../../../providers/astrology_config_provider.dart';
@@ -266,15 +268,15 @@ class _Body extends StatelessWidget {
       ));
     }
 
-    // Horoscope Analysis (online report) — booked from an accepted match.
+    // The online report service — requested from a matched profile, never
+    // booked here. Kept to ONE short blurb: the full service details live on
+    // the Horoscope Compatibility Report page and are not repeated (spec §5).
     out.add(_section(
-      'Horoscope Analysis (Online)',
+      context.l10n.onlineHoroscopeCompatibilityReport,
       Icons.auto_awesome_outlined,
-      const Text(
-        'Get a detailed online horoscope compatibility report for you and an '
-        'accepted match. Open a matched profile and tap "Get Horoscope '
-        'Analysis" — your report is delivered to your Reports tab.',
-        style: TextStyle(fontSize: 13.5, height: 1.5),
+      Text(
+        context.l10n.astrologyHomeReportBlurb,
+        style: const TextStyle(fontSize: 13.5, height: 1.5),
       ),
     ));
 
@@ -309,7 +311,7 @@ class _Body extends StatelessWidget {
 
     if (cfg.awards.isNotEmpty) {
       out.add(_section(
-        'Awards & Medals',
+        context.l10n.awardsAndMedals,
         Icons.emoji_events_outlined,
         SizedBox(
           height: 210,
@@ -326,7 +328,7 @@ class _Body extends StatelessWidget {
 
     if (cfg.news.isNotEmpty) {
       out.add(_section(
-        'News & Media',
+        context.l10n.newsAndMedia,
         Icons.newspaper_outlined,
         SizedBox(
           height: 248,
@@ -343,7 +345,8 @@ class _Body extends StatelessWidget {
 
     final contacts = _contactRows(context);
     if (contacts.isNotEmpty) {
-      out.add(_section('Contact Details', Icons.contact_phone_outlined,
+      out.add(_section(
+          context.l10n.contactDetails, Icons.contact_phone_outlined,
           Column(children: contacts)));
     }
 
@@ -396,7 +399,7 @@ class _Body extends StatelessWidget {
         child: OutlinedButton.icon(
           onPressed: () => _openMaps(context),
           icon: const Icon(Icons.directions_outlined, size: 18),
-          label: const Text('Get Directions in Google Maps'),
+          label: Text(context.l10n.getDirectionsInMaps),
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.primary,
             side: const BorderSide(color: AppColors.primary),
@@ -635,23 +638,48 @@ class _Body extends StatelessWidget {
 
 // ── Appointment status card (top of the Astrology page) ───────────────────────
 
-/// Shows the signed-in user's LATEST appointment with its live status. Renders
-/// nothing when the user has no appointment. Updates in real time as the admin
-/// changes the status (Pending → Confirmed → Completed / Cancelled).
+/// The compact CURRENT / UPCOMING booking card at the top of the Astrology
+/// page (spec §3): title, status badge, date, time, a short status message and
+/// a "View My Bookings" action that opens the ONE booking-history page.
+///
+/// Prefers the soonest still-open booking so a member with an upcoming visit
+/// always sees THAT one; with none open it falls back to the most recent
+/// booking. Renders nothing when the user has never booked. Updates in real
+/// time as the admin changes the status (Pending → Confirmed → Completed /
+/// Cancelled).
 class _AppointmentStatusCard extends ConsumerWidget {
   const _AppointmentStatusCard();
 
+  /// The booking to feature: the soonest OPEN one, else the latest of all.
+  static AstrologerRequestModel? _featured(
+      List<AstrologerRequestModel> list) {
+    if (list.isEmpty) return null;
+    final open = list.where((a) => isOpenAppointment(a.status)).toList()
+      ..sort((a, b) {
+        final ad = a.visitDate, bd = b.visitDate;
+        if (ad == null && bd == null) return b.createdAt.compareTo(a.createdAt);
+        if (ad == null) return 1;
+        if (bd == null) return -1;
+        return ad.compareTo(bd);
+      });
+    return open.isNotEmpty ? open.first : list.first;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final list = ref.watch(myAppointmentsProvider).valueOrNull ?? const [];
-    if (list.isEmpty) return const SizedBox.shrink();
-    final appt = list.first;
+    final appt = _featured(list);
+    if (appt == null) return const SizedBox.shrink();
     final color = appointmentStatusColor(appt.status);
     final date = appt.visitDate == null
         ? '—'
         : DateFormat('d MMMM yyyy').format(appt.visitDate!);
-    final time =
-        appt.slotStartMinutes == null ? '—' : formatMinutes(appt.slotStartMinutes!);
+    final time = appt.session.isNotEmpty
+        ? context.localizeValue(appt.sessionLabel)
+        : (appt.slotStartMinutes == null
+            ? '—'
+            : formatMinutes(appt.slotStartMinutes!));
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -672,7 +700,10 @@ class _AppointmentStatusCard extends ConsumerWidget {
               const Icon(Icons.event_available, size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(context.l10n.yourAppointment,
+                child: Text(
+                    isOpenAppointment(appt.status)
+                        ? l10n.upcomingBookingTitle
+                        : l10n.yourAppointment,
                     style: const TextStyle(
                         fontSize: 15,
                         fontFamily: 'Poppins',
@@ -689,7 +720,7 @@ class _AppointmentStatusCard extends ConsumerWidget {
                   children: [
                     Icon(appointmentStatusIcon(appt.status), size: 14, color: color),
                     const SizedBox(width: 4),
-                    Text(appointmentStatusLabel(appt.status),
+                    Text(appointmentTimelineLabel(l10n, appt),
                         style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w700,
@@ -700,9 +731,9 @@ class _AppointmentStatusCard extends ConsumerWidget {
             ],
           ),
           const Divider(height: 18),
-          _row(Icons.event_outlined, 'Date', date),
+          _row(Icons.event_outlined, l10n.dateLabel, date),
           const SizedBox(height: 8),
-          _row(Icons.schedule_outlined, 'Time', time),
+          _row(Icons.schedule_outlined, l10n.timeLabel, time),
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.all(10),
@@ -710,7 +741,7 @@ class _AppointmentStatusCard extends ConsumerWidget {
               color: color.withOpacity(0.07),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Text(appointmentStatusMessage(appt.status),
+            child: Text(appointmentStatusMessage(l10n, appt.status),
                 style: TextStyle(
                     fontSize: 12.5, height: 1.4, color: Colors.grey[800])),
           ),

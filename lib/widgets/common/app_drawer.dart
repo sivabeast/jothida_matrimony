@@ -42,9 +42,13 @@ class AppDrawer extends ConsumerWidget {
                     () => context.push('/partner-preferences')),
 
                 // ── 💖 MATCHES ───────────────────────────────────────────────
+                // Every entry here opens an EXISTING page — no menu item ever
+                // creates a second copy of a screen that already exists.
+                // "My Matches" is the mutually-accepted list, which is the
+                // Interests centre's Accepted tab.
                 _section('💖  ${context.l10n.menuSectionMatches}'),
                 _item(context, Icons.favorite_border, context.l10n.myMatches,
-                    () => _openTab(context, ref, 1)),
+                    () => context.push('/interests?tab=accepted')),
                 _item(context, Icons.send_outlined, context.l10n.interestsSent,
                     () => context.push('/interests?tab=sent')),
                 _item(context, Icons.mark_email_unread_outlined,
@@ -54,10 +58,15 @@ class AppDrawer extends ConsumerWidget {
                     () => context.push('/chats')),
 
                 // ── 🧿 ASTROLOGY ─────────────────────────────────────────────
+                // Astrology = Bookings + Reports. There is deliberately NO
+                // "Horoscope Matching" entry: that page was removed and its
+                // accepted-matches list is the Matches → My Matches page.
                 _section('🧿  ${context.l10n.menuSectionAstrology}'),
-                _item(context, Icons.favorite_outline,
-                    context.l10n.horoscopeMatching,
-                    () => context.push('/horoscope-matching')),
+                // The ONE booking-history page — the same route the Astrology
+                // home page's booking card opens.
+                _item(context, Icons.event_available_outlined,
+                    context.l10n.astrologyBookings,
+                    () => context.push('/my-appointments')),
                 // Reports live ONLY on the bottom-nav Reports tab (the old
                 // standalone "My Reports" page was removed).
                 _item(context, Icons.receipt_long_outlined, context.l10n.myReports,

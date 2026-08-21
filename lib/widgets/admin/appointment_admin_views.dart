@@ -8,6 +8,7 @@ import '../../core/utils/slot_generator.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../providers/profile_provider.dart';
 import '../common/network_photo.dart';
+import '../../core/utils/l10n_ext.dart';
 
 /// Everything the admin Appointment Management card and detail sheet display
 /// for one booking, resolved once from the booking document plus (only when the
@@ -175,7 +176,7 @@ class _AppointmentDetailsSheet extends ConsumerWidget {
                   color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(appointmentStatusLabel(appt.status),
+                child: Text(appointmentStatusLabel(context.l10n, appt.status),
                     style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -191,7 +192,7 @@ class _AppointmentDetailsSheet extends ConsumerWidget {
             ('Meeting Type', d.meetingType),
             ('Selected Date', d.date),
             ('Selected Time', d.sessionWindow),
-            ('Booking Status', appointmentStatusLabel(appt.status)),
+            ('Booking Status', appointmentStatusLabel(context.l10n, appt.status)),
             ('Created', d.created),
           ]),
           _group('Member', [

@@ -14,6 +14,7 @@ import '../../widgets/admin/appointment_admin_views.dart';
 import '../../widgets/common/data_states.dart';
 import '../../widgets/common/network_photo.dart';
 import '../../widgets/common/skeletons.dart';
+import '../../core/utils/l10n_ext.dart';
 
 enum _ApptFilter { all, today, upcoming, confirmed, pending, completed, cancelled }
 
@@ -219,8 +220,8 @@ class _AppointmentAdminCard extends ConsumerWidget {
           .read(appointmentControllerProvider.notifier)
           .setStatus(appt, status);
       if (context.mounted) {
-        showAppSnack(
-            context, 'Appointment ${appointmentStatusLabel(status)}.');
+        showAppSnack(context,
+            'Appointment ${appointmentStatusLabel(context.l10n, status)}.');
       }
     } catch (_) {
       if (context.mounted) {
@@ -392,7 +393,7 @@ class _AppointmentAdminCard extends ConsumerWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _pill(appointmentStatusLabel(appt.status), color),
+                  _pill(appointmentStatusLabel(context.l10n, appt.status), color),
                   const SizedBox(height: 4),
                   _pill(d.paymentStatus,
                       appt.paid ? AppColors.success : AppColors.warning),

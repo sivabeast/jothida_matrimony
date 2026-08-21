@@ -4,10 +4,10 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/inline_validation.dart';
 import '../../../core/utils/l10n_ext.dart';
-import '../../../providers/location_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/gradient_button.dart';
 import '../../../widgets/common/location_picker_section.dart';
+import '../../../widgets/common/place_picker_field.dart';
 import '../../../widgets/common/searchable_with_others_field.dart';
 
 /// Step 8 — Location Details: State / District / City (req), plus Native
@@ -134,18 +134,13 @@ class _StepLocationState extends ConsumerState<StepLocation> {
     );
   }
 
-  /// Native Place — searchable master-city list, with "Others" → custom
-  /// textbox for a village/town that isn't in the list.
-  Widget _nativePlaceField() {
-    final items =
-        ref.watch(allCityNamesProvider).valueOrNull ?? const <String>[];
-    return SearchableWithOthersField(
-      label: context.l10n.nativePlace,
-      prefixIcon: Icons.home_outlined,
-      items: items,
-      value: _nativePlace,
-      popupMode: SearchablePopupMode.modalBottomSheet,
-      onChanged: (v) => setState(() => _nativePlace = v),
-    );
-  }
+  /// Native Place — the app's ONE place picker: search → City/Village +
+  /// District + State → + → Save (spec §31), so a village name that occurs in
+  /// several districts is never ambiguous.
+  Widget _nativePlaceField() => PlacePickerField(
+        label: context.l10n.nativePlace,
+        prefixIcon: Icons.home_outlined,
+        value: _nativePlace,
+        onChanged: (p) => setState(() => _nativePlace = p.display),
+      );
 }

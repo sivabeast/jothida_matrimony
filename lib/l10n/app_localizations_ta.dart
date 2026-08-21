@@ -1596,9 +1596,6 @@ class AppLocalizationsTa extends AppLocalizations {
   String get messages => 'செய்திகள்';
 
   @override
-  String get horoscopeMatching => 'ஜாதகப் பொருத்தம்';
-
-  @override
   String get myReports => 'எனது அறிக்கைகள்';
 
   @override
@@ -3202,4 +3199,403 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get notificationsUnavailable =>
       'அறிவிப்புகளை இப்போது ஏற்ற முடியவில்லை.';
+
+  @override
+  String get astrologyBookings => 'ஜோதிட முன்பதிவுகள்';
+
+  @override
+  String get bookingHistorySubtitle =>
+      'நீங்கள் செய்த அனைத்து ஜோதிட முன்பதிவுகள்';
+
+  @override
+  String get noBookingsYet => 'உங்களுக்கு இதுவரை ஜோதிட முன்பதிவுகள் இல்லை.';
+
+  @override
+  String get couldNotLoadBookings =>
+      'உங்கள் முன்பதிவுகளை ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get consultationLabel => 'ஆலோசனை வகை';
+
+  @override
+  String get astrologerLabel => 'ஜோதிடர்';
+
+  @override
+  String get bookedOnLabel => 'முன்பதிவு செய்த நாள்';
+
+  @override
+  String get dateLabel => 'தேதி';
+
+  @override
+  String get timeLabel => 'நேரம்';
+
+  @override
+  String get statusLabel => 'நிலை';
+
+  @override
+  String get paymentLabel => 'கட்டணம்';
+
+  @override
+  String get paymentPaid => 'செலுத்தப்பட்டது';
+
+  @override
+  String get paymentAtOffice => 'அலுவலகத்தில் செலுத்தவும்';
+
+  @override
+  String get viewDetails => 'விவரங்களைப் பார்க்க';
+
+  @override
+  String get apptStatusUpcoming => 'வரவிருக்கும்';
+
+  @override
+  String get apptStatusPendingApproval => 'ஒப்புதலுக்காக காத்திருக்கிறது';
+
+  @override
+  String get apptStatusConfirmed => 'உறுதிப்படுத்தப்பட்டது';
+
+  @override
+  String get apptStatusCompleted => 'முடிந்தது';
+
+  @override
+  String get apptStatusCancelled => 'ரத்தானது';
+
+  @override
+  String get apptMsgPending =>
+      'உங்கள் முன்பதிவு கோரிக்கை பெறப்பட்டது; உறுதிப்படுத்தலுக்காக காத்திருக்கிறது.';
+
+  @override
+  String get apptMsgConfirmed =>
+      'உங்கள் முன்பதிவு வெற்றிகரமாக உறுதிப்படுத்தப்பட்டது.';
+
+  @override
+  String get apptMsgCompleted => 'உங்கள் முன்பதிவு முடிந்தது. நன்றி!';
+
+  @override
+  String get apptMsgCancelled => 'உங்கள் முன்பதிவு ரத்து செய்யப்பட்டது.';
+
+  @override
+  String get cancelBooking => 'முன்பதிவை ரத்து செய்';
+
+  @override
+  String get keepBooking => 'முன்பதிவை வைத்திரு';
+
+  @override
+  String get cancelBookingTitle => 'இந்த முன்பதிவை ரத்து செய்யவா?';
+
+  @override
+  String cancelBookingBody(String id) {
+    return 'முன்பதிவு $id நீக்கப்பட்டு, அதன் அமர்வு மற்றவர்களுக்குத் திறக்கப்படும். வேறு நாளில் வர விரும்பினால் புதிய தேதியை முன்பதிவு செய்யவும் — அது புதிய முன்பதிவாகும்.';
+  }
+
+  @override
+  String get bookingCancelledToast => 'முன்பதிவு ரத்து செய்யப்பட்டது.';
+
+  @override
+  String get couldNotCancelBooking =>
+      'முன்பதிவை ரத்து செய்ய முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get rebookAnotherDayNote =>
+      'வேறு நாள் தேவையா? இந்த முன்பதிவை ரத்து செய்து புதிய தேதியை முன்பதிவு செய்யவும் — புதிய முன்பதிவு ஐடி கிடைக்கும்.';
+
+  @override
+  String get upcomingBookingTitle => 'உங்கள் வரவிருக்கும் முன்பதிவு';
+
+  @override
+  String get horoscopeCompatibilityReport => 'ஜாதகப் பொருத்த அறிக்கை';
+
+  @override
+  String get onlineHoroscopeCompatibilityReport =>
+      'ஆன்லைன் ஜாதகப் பொருத்த அறிக்கை';
+
+  @override
+  String get whatTheReportIncludes => 'அறிக்கையில் இடம்பெறுபவை';
+
+  @override
+  String get serviceDetails => 'சேவை விவரங்கள்';
+
+  @override
+  String get serviceTypeLabel => 'சேவை வகை';
+
+  @override
+  String get estimatedDelivery => 'மதிப்பிடப்பட்ட வழங்கல் காலம்';
+
+  @override
+  String get onlineReportNoVisit =>
+      'ஆன்லைன் அறிக்கை (அலுவலகம் வரத் தேவையில்லை)';
+
+  @override
+  String get deliveryWithinTwoDays =>
+      'கட்டணம் செலுத்திய பிறகு 2 வேலை நாட்களுக்குள்';
+
+  @override
+  String get onlineServiceNote =>
+      'முற்றிலும் ஆன்லைன் சேவை — உங்கள் அறிக்கை “என் அறிக்கைகள்” பக்கத்தில் கிடைக்கும். அலுவலகம் வரத் தேவையில்லை.';
+
+  @override
+  String payAndRequestReport(String price) {
+    return '$price செலுத்தி · அறிக்கை கோரவும்';
+  }
+
+  @override
+  String get requestReport => 'அறிக்கை கோரவும்';
+
+  @override
+  String get meetOurAstrologyExpert => 'எங்கள் ஜோதிட நிபுணரைச் சந்திக்கவும்';
+
+  @override
+  String reportForPair(String name) {
+    return 'உங்களுக்கும் $name அவர்களுக்குமான அறிக்கை';
+  }
+
+  @override
+  String horoscopeMatchWith(String name) {
+    return '$name உடனான ஜாதகப் பொருத்தம்';
+  }
+
+  @override
+  String get poruthamsWord => 'பொருத்தங்கள்';
+
+  @override
+  String get matchedWord => 'பொருந்தியது';
+
+  @override
+  String get notMatchedWord => 'பொருந்தவில்லை';
+
+  @override
+  String poruthamsMatchedChip(int matched, int total) {
+    return '$matched/$total பொருத்தங்கள் பொருந்தின';
+  }
+
+  @override
+  String get freeBasicResultTitle => 'இலவச அடிப்படை முடிவு';
+
+  @override
+  String get matchingPoruthams => 'பொருந்திய பொருத்தங்கள்';
+
+  @override
+  String get notMatchingPoruthams => 'பொருந்தாதவை / கவனம் தேவை';
+
+  @override
+  String get basicResultDisclaimer =>
+      'இந்த அடிப்படை முடிவு இரு நபர்களின் ஜென்ம நட்சத்திர விவரங்களிலிருந்து தானாகக் கணக்கிடப்பட்டது. இறுதி முடிவுக்குத் தகுதியான ஜோதிடரைக் கலந்தாலோசிக்கவும்.';
+
+  @override
+  String get notEnoughHoroscopeForPair =>
+      'இந்த இணைக்குப் பொருத்தங்களைக் கணக்கிடப் போதுமான ஜாதகத் தகவல் இல்லை. ஆனாலும் விரிவான அறிக்கையைக் கோரலாம் — எங்கள் ஜோதிட நிபுணர் இரண்டு ஜாதகங்களையும் நேரடியாகப் பார்த்துத் தயாரிப்பார்.';
+
+  @override
+  String get horoscopePendingLabel => 'ஜாதகம் நிலுவையில்';
+
+  @override
+  String get completeYourHoroscopeFirst =>
+      'பொருத்த முடிவைப் பார்க்க முதலில் உங்கள் ஜாதகத்தை நிரப்பவும்.';
+
+  @override
+  String get matchResultUnavailableMember =>
+      'இந்த உறுப்பினருக்குப் பொருத்த முடிவு கிடைக்கவில்லை.';
+
+  @override
+  String get paymentCancelledNotCharged =>
+      'கட்டணம் ரத்து செய்யப்பட்டது — உங்களிடமிருந்து எதுவும் வசூலிக்கப்படவில்லை.';
+
+  @override
+  String get billingUnavailable =>
+      'இந்த சாதனத்தில் Google Play கட்டண வசதி கிடைக்கவில்லை.';
+
+  @override
+  String get paymentCouldNotComplete =>
+      'கட்டணத்தை முடிக்க முடியவில்லை. உங்களிடமிருந்து எதுவும் வசூலிக்கப்படவில்லை.';
+
+  @override
+  String get couldNotStartPayment =>
+      'கட்டணத்தைத் தொடங்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get paymentSuccessReportAssigned =>
+      'கட்டணம் வெற்றி. உங்கள் அறிக்கைக் கோரிக்கை உருவாக்கப்பட்டது — “அறிக்கைகள்” தாவலில் கவனிக்கவும்.';
+
+  @override
+  String get couldNotLoadBothProfiles =>
+      'இரண்டு சுயவிவரங்களையும் ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get processingPayment => 'செயலாக்கப்படுகிறது…';
+
+  @override
+  String get requestNewHoroscopeReport => 'புதிய ஜாதக அறிக்கை கோரிக்கை';
+
+  @override
+  String get compatibilityReportWithAnyone => 'யாருடனும் பொருத்த அறிக்கை';
+
+  @override
+  String get compatibilityReportWithAnyoneBody =>
+      'ஆப்பில் இல்லாத ஒருவருடன் கூட தொழில்முறை ஜாதகப் பொருத்த அறிக்கை பெறலாம். உங்கள் விவரங்கள் தானாகவே நிரப்பப்படுகின்றன — இரண்டாம் நபரின் விவரங்களை மட்டும் கீழே சேர்க்கவும்.';
+
+  @override
+  String get yourDetailsAutoFilled => 'உங்கள் விவரங்கள் (தானாக நிரப்பப்பட்டது)';
+
+  @override
+  String get secondPersonDetails => 'இரண்டாம் நபரின் விவரங்கள்';
+
+  @override
+  String get yourProfileStillLoading => 'உங்கள் சுயவிவரம் ஏற்றப்படுகிறது…';
+
+  @override
+  String get horoscopeWillBeAttached =>
+      'உங்கள் ஜாதக ஆவணம் தானாகவே இணைக்கப்படும்.';
+
+  @override
+  String get noHoroscopeDocOnProfile =>
+      'உங்கள் சுயவிவரத்தில் ஜாதக ஆவணம் இல்லை — மேலுள்ள விவரங்களைக் கொண்டு எங்கள் நிபுணர் ஆய்வு செய்வார்.';
+
+  @override
+  String get fullNameLabel => 'முழுப் பெயர்';
+
+  @override
+  String get nameIsRequired => 'பெயர் தேவை';
+
+  @override
+  String get genderAgeAutoNote =>
+      'பாலினம் உங்களுக்கு எதிர்ப்பாலாகத் தானாகவே அமைக்கப்படுகிறது. வயது பிறந்த தேதியிலிருந்து கணக்கிடப்படுகிறது.';
+
+  @override
+  String get horoscopeImageOrPdfOptional => 'ஜாதகப் படம் / PDF (விருப்பம்)';
+
+  @override
+  String get attachSecondPersonHoroscope =>
+      'விருப்பம் — இரண்டாம் நபரின் ஜாதகத்தை இணைக்கலாம்.';
+
+  @override
+  String get imageAttached => 'படம் இணைக்கப்பட்டது';
+
+  @override
+  String get pdfAttached => 'PDF இணைக்கப்பட்டது';
+
+  @override
+  String get replaceImage => 'படத்தை மாற்று';
+
+  @override
+  String get replacePdf => 'PDF மாற்று';
+
+  @override
+  String get imageLabel => 'படம்';
+
+  @override
+  String get pdfLabel => 'PDF';
+
+  @override
+  String get uploadFailedRetry =>
+      'பதிவேற்றம் தோல்வி — மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get pleaseSelectSecondDob =>
+      'இரண்டாம் நபரின் பிறந்த தேதியைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get pleaseSelectSecondTob =>
+      'இரண்டாம் நபரின் பிறந்த நேரத்தைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get pleaseSelectSecondPlace =>
+      'இரண்டாம் நபரின் பிறந்த இடத்தைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get pleaseSelectSecondNakshatra =>
+      'இரண்டாம் நபரின் நட்சத்திரத்தைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get pleaseSelectSecondRasi =>
+      'இரண்டாம் நபரின் ராசியைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String requestSubmittedTrackReports(String id) {
+    return 'கோரிக்கை #$id சமர்ப்பிக்கப்பட்டது — “அறிக்கைகள்” தாவலில் கவனிக்கவும்.';
+  }
+
+  @override
+  String get couldNotCreateRequest =>
+      'கோரிக்கையை உருவாக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get placeOfBirthLabel => 'பிறந்த இடம்';
+
+  @override
+  String get searchCityVillage => 'நகரம் அல்லது கிராமத்தைத் தேடுங்கள்';
+
+  @override
+  String get searchLocationHint =>
+      'தேட குறைந்தது 2 எழுத்துகள் தட்டச்சு செய்யவும்';
+
+  @override
+  String get noLocationsFound =>
+      'பொருந்தும் இடம் கிடைக்கவில்லை. வேறு எழுத்துக்கூட்டலில் முயற்சிக்கவும்.';
+
+  @override
+  String get selectedLocationLabel => 'தேர்ந்தெடுக்கப்பட்ட இடம்';
+
+  @override
+  String get addLocationTooltip => 'இந்த இடத்தைச் சேர்';
+
+  @override
+  String get saveLocation => 'சேமி';
+
+  @override
+  String get selectLocationFirst =>
+      'முதலில் + பொத்தானால் ஒரு இடத்தைச் சேர்க்கவும்.';
+
+  @override
+  String get locationNotListedNote =>
+      'இடம் கிடைக்கவில்லையா? அருகிலுள்ள நகரத்தைத் தேடுங்கள் — அதன் மாவட்டமும் மாநிலமும் சேர்த்தே சேமிக்கப்படும்.';
+
+  @override
+  String get chooseLocationTitle => 'ஒரு இடத்தைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get yourDetailsTitle => 'உங்கள் விவரங்கள்';
+
+  @override
+  String get bookingContactIntro =>
+      'முன்பதிவை உறுதிப்படுத்த உங்கள் பெயரும் கைபேசி எண்ணும் தேவை — சரியான நேரத்தை உறுதி செய்ய அலுவலகம் உங்களை அழைக்கும். மேட்ரிமோனி சுயவிவரம் தேவையில்லை.';
+
+  @override
+  String get bookingContactPrefilledNote =>
+      'உங்கள் சுயவிவரத்திலிருந்து நிரப்பப்பட்டது. இந்த முன்பதிவுக்கு மட்டும் மாற்றலாம் — உங்கள் சுயவிவரம் மாற்றப்படாது.';
+
+  @override
+  String get nameRequiredLabel => 'பெயர் *';
+
+  @override
+  String get mobileNumberRequiredLabel => 'கைபேசி எண் *';
+
+  @override
+  String get whereYouAreFrom => 'நீங்கள் எந்த இடத்திலிருந்து (விருப்பம்)';
+
+  @override
+  String get confirmBooking => 'முன்பதிவை உறுதி செய்';
+
+  @override
+  String get pleaseEnterYourName => 'உங்கள் பெயரை உள்ளிடவும்';
+
+  @override
+  String get enterValidMobile => 'சரியான 10 இலக்க கைபேசி எண்ணை உள்ளிடவும்';
+
+  @override
+  String get noAcceptedMatchesTitle => 'இதுவரை ஏற்கப்பட்ட பொருத்தங்கள் இல்லை';
+
+  @override
+  String get horoscopeReportShort => 'ஜாதக அறிக்கை';
+
+  @override
+  String get awardsAndMedals => 'விருதுகள் & பதக்கங்கள்';
+
+  @override
+  String get newsAndMedia => 'செய்திகள் & ஊடகம்';
+
+  @override
+  String get getDirectionsInMaps => 'Google Maps-ல் வழி காட்டு';
+
+  @override
+  String get astrologyHomeReportBlurb =>
+      'உங்களுக்கும் பொருந்திய சுயவிவரத்திற்கும் இடையேயான விரிவான ஆன்லைன் ஜாதகப் பொருத்த அறிக்கையைப் பெறுங்கள். அந்தச் சுயவிவரத்தைத் திறந்து “ஜாதகப் பொருத்த அறிக்கை பெறவும்” என்பதைத் தட்டவும் — உங்கள் அறிக்கை “அறிக்கைகள்” தாவலில் கிடைக்கும்.';
 }

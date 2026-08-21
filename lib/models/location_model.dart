@@ -61,6 +61,86 @@ class TnCity {
   int get hashCode => id.hashCode;
 }
 
+/// One searchable place in the hierarchical place picker: a city/village row
+/// joined to the district it belongs to (spec §27/§32).
+///
+/// A city name alone is ambiguous — the same village name occurs in several
+/// districts — so the picker always identifies a place by **City/Village +
+/// District + State** and stores all three separately.
+class PlaceOption {
+  final TnCity city;
+  final TnDistrict district;
+
+  const PlaceOption({required this.city, required this.district});
+
+  String cityName(String lang) => city.nameFor(lang);
+  String districtName(String lang) => district.nameFor(lang);
+
+  /// "District, Tamil Nadu" — the disambiguating subtitle under the city name.
+  String subtitle(String lang) =>
+      '${district.nameFor(lang)}, ${TnState.nameFor(lang)}';
+
+  PlaceSelection toSelection(String lang) => PlaceSelection(
+        city: city.nameFor(lang),
+        cityEn: city.nameEn,
+        cityId: city.id,
+        district: district.nameFor(lang),
+        districtEn: district.nameEn,
+        districtId: district.id,
+        state: TnState.nameFor(lang),
+      );
+}
+
+/// A place chosen in the picker. Carries the three levels separately so a
+/// duplicate city name in another district is never confused with this one.
+///
+/// A [custom] selection is a free-typed place that is not in the master data
+/// (e.g. a small village). It exists ONLY inside the form that created it —
+/// the picker never writes anything back to the master `location` datasets or
+/// to another member's data (spec §30).
+class PlaceSelection {
+  final String city;
+
+  /// Canonical English city name, for language-independent storage/matching.
+  final String cityEn;
+  final int? cityId;
+  final String district;
+  final String districtEn;
+  final int? districtId;
+  final String state;
+  final bool custom;
+
+  const PlaceSelection({
+    required this.city,
+    this.cityEn = '',
+    this.cityId,
+    this.district = '',
+    this.districtEn = '',
+    this.districtId,
+    this.state = TnState.nameEn,
+    this.custom = false,
+  });
+
+  /// A place the member typed themselves — only the name is known.
+  const PlaceSelection.custom(this.city)
+      : cityEn = '',
+        cityId = null,
+        district = '',
+        districtEn = '',
+        districtId = null,
+        state = '',
+        custom = true;
+
+  /// "Athikkolam, Ramanathapuram, Tamil Nadu" — what the field displays and
+  /// what is stored as the place value.
+  String get display => [city, district, state]
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .join(', ');
+
+  bool get isEmpty => city.trim().isEmpty;
+}
+
 /// The full location a form collects. Names are stored in canonical English
 /// for readability and cross-language matching; the `*Id` fields are the
 /// stable master-data ids persisted on the profile. [latitude] / [longitude]

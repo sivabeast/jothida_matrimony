@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
+import '../../core/utils/value_l10n.dart';
 import '../../models/profile_model.dart';
 import '../../providers/profile_provider.dart';
 
@@ -25,7 +27,7 @@ class MemberHoroscopeScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Horoscope Details'),
+        title: Text(context.l10n.horoscopeDetails),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -53,9 +55,11 @@ class MemberHoroscopeScreen extends ConsumerWidget {
             children: [
               _HeaderCard(profile: profile),
               const SizedBox(height: 16),
-              _Section(title: 'Horoscope', rows: [
-                _Row('Rasi (Moon Sign)', h.rasi),
-                _Row('Nakshatra (Star)', h.nakshatra),
+              _Section(title: context.l10n.horoscope, rows: [
+                _Row(context.l10n.rasiMoonSign,
+                    context.localizeValue(h.rasi)),
+                _Row(context.l10n.nakshatraStar,
+                    context.localizeValue(h.nakshatra)),
               ]),
               const SizedBox(height: 16),
               _ConsultCard(
@@ -90,20 +94,20 @@ class _ConsultCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
-              Icon(Icons.lock_outline, size: 18, color: AppColors.primary),
-              SizedBox(width: 8),
+            children: [
+              const Icon(Icons.lock_outline,
+                  size: 18, color: AppColors.primary),
+              const SizedBox(width: 8),
               Expanded(
-                child: Text('Full horoscope is private',
-                    style: TextStyle(
+                child: Text(context.l10n.horoscopePrivateNote,
+                    style: const TextStyle(
                         fontWeight: FontWeight.w600, fontSize: 14)),
               ),
             ],
           ),
           const SizedBox(height: 6),
           Text(
-            'For detailed horoscope (porutham) matching with $partnerName, '
-            'consult a verified astrologer.',
+            context.l10n.compatibilityUnlocksAfterAccept(partnerName),
             style: TextStyle(color: Colors.grey[700], fontSize: 12.5),
           ),
           const SizedBox(height: 12),
@@ -111,9 +115,10 @@ class _ConsultCard extends ConsumerWidget {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () =>
-                  context.push('/horoscope-match/$partnerUserId'),
+                  context.push('/horoscope-report/$partnerUserId'),
               icon: const Icon(Icons.description_outlined, size: 18),
-              label: const Text('Get Horoscope Compatibility Report'),
+              label: Text(context.l10n.getHoroscopeCompatibilityReport,
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,

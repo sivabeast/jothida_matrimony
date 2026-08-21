@@ -608,7 +608,6 @@
   "interestsSent": "Interests Sent",
   "interestsReceived": "Interests Received",
   "messages": "Messages",
-  "horoscopeMatching": "Horoscope Matching",
   "myReports": "My Reports",
   "career": "Career",
   "photos": "Photos",
@@ -1427,5 +1426,166 @@
   "couldNotCreateAccount": "Could not create the account. Please try again.",
   "accountNeededForBooking": "Create an account to confirm your booking",
   "accountNeededForRequest": "Create an account to submit your request",
-  "notificationsUnavailable": "Notifications could not be loaded right now."
+  "notificationsUnavailable": "Notifications could not be loaded right now.",
+  "astrologyBookings": "Astrology Bookings",
+  "bookingHistorySubtitle": "All your astrology appointment bookings",
+  "noBookingsYet": "You have no astrology bookings yet.",
+  "couldNotLoadBookings": "Could not load your bookings. Please try again.",
+  "consultationLabel": "Consultation",
+  "astrologerLabel": "Astrologer",
+  "bookedOnLabel": "Booked on",
+  "dateLabel": "Date",
+  "timeLabel": "Time",
+  "statusLabel": "Status",
+  "paymentLabel": "Payment",
+  "paymentPaid": "Paid",
+  "paymentAtOffice": "Pay at office",
+  "viewDetails": "View Details",
+  "apptStatusUpcoming": "Upcoming",
+  "apptStatusPendingApproval": "Pending Approval",
+  "apptStatusConfirmed": "Confirmed",
+  "apptStatusCompleted": "Completed",
+  "apptStatusCancelled": "Cancelled",
+  "apptMsgPending": "Your appointment request has been received and is awaiting confirmation.",
+  "apptMsgConfirmed": "Your appointment has been confirmed successfully.",
+  "apptMsgCompleted": "Your appointment has been completed. Thank you!",
+  "apptMsgCancelled": "Your appointment has been cancelled.",
+  "cancelBooking": "Cancel Booking",
+  "keepBooking": "Keep Booking",
+  "cancelBookingTitle": "Cancel this booking?",
+  "cancelBookingBody": "Booking {id} will be removed and its session freed up. To visit on a different day, book the new date afterwards — that creates a new booking.",
+  "@cancelBookingBody": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingCancelledToast": "Booking cancelled.",
+  "couldNotCancelBooking": "Could not cancel the booking. Please try again.",
+  "rebookAnotherDayNote": "Need another day? Cancel this booking and book the new date — you will get a new Booking ID.",
+  "upcomingBookingTitle": "Your Upcoming Booking",
+  "horoscopeCompatibilityReport": "Horoscope Compatibility Report",
+  "onlineHoroscopeCompatibilityReport": "Online Horoscope Compatibility Report",
+  "whatTheReportIncludes": "What the report includes",
+  "serviceDetails": "Service Details",
+  "serviceTypeLabel": "Service Type",
+  "estimatedDelivery": "Estimated Delivery",
+  "onlineReportNoVisit": "Online report (no office visit)",
+  "deliveryWithinTwoDays": "Within 2 working days after payment",
+  "onlineServiceNote": "A fully online service — your report is delivered to your Reports page. No appointment or office visit needed.",
+  "payAndRequestReport": "Pay {price} · Request Report",
+  "@payAndRequestReport": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "requestReport": "Request Report",
+  "meetOurAstrologyExpert": "Meet Our Astrology Expert",
+  "reportForPair": "Report for you and {name}",
+  "@reportForPair": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "horoscopeMatchWith": "Horoscope match with {name}",
+  "@horoscopeMatchWith": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "poruthamsWord": "Poruthams",
+  "matchedWord": "Matched",
+  "notMatchedWord": "Not Matched",
+  "poruthamsMatchedChip": "{matched}/{total} poruthams matched",
+  "@poruthamsMatchedChip": {
+    "placeholders": {
+      "matched": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "freeBasicResultTitle": "Free Basic Result",
+  "matchingPoruthams": "Matching Poruthams",
+  "notMatchingPoruthams": "Not Matching / Needs Attention",
+  "basicResultDisclaimer": "This basic result is an automated calculation from both members’ birth-star details. For a final decision, please consult a qualified astrologer.",
+  "notEnoughHoroscopeForPair": "Not enough horoscope data to calculate the poruthams for this pair. You can still request a detailed report — our astrology expert works from both horoscopes directly.",
+  "horoscopePendingLabel": "Horoscope pending",
+  "completeYourHoroscopeFirst": "Complete your own horoscope to see a match result.",
+  "matchResultUnavailableMember": "Match result is unavailable for this member.",
+  "paymentCancelledNotCharged": "Payment cancelled — you have not been charged.",
+  "billingUnavailable": "Google Play Billing is unavailable on this device.",
+  "paymentCouldNotComplete": "Payment could not be completed. You have not been charged.",
+  "couldNotStartPayment": "Could not start the payment. Please try again.",
+  "paymentSuccessReportAssigned": "Payment successful. Your report request has been created — track it on the Reports tab.",
+  "couldNotLoadBothProfiles": "Could not load both profiles. Please try again.",
+  "processingPayment": "Processing…",
+  "requestNewHoroscopeReport": "Request New Horoscope Report",
+  "compatibilityReportWithAnyone": "Compatibility report with anyone",
+  "compatibilityReportWithAnyoneBody": "Get a professional horoscope compatibility report between you and a person who is not on the app. Your details are filled in automatically — just add the second person’s details below.",
+  "yourDetailsAutoFilled": "Your Details (auto-filled)",
+  "secondPersonDetails": "Second Person’s Details",
+  "yourProfileStillLoading": "Your profile is still loading…",
+  "horoscopeWillBeAttached": "Your horoscope document will be attached automatically.",
+  "noHoroscopeDocOnProfile": "No horoscope document on your profile — our astrology expert will work from the details above.",
+  "fullNameLabel": "Full name",
+  "nameIsRequired": "Name is required",
+  "genderAgeAutoNote": "Gender is set automatically to the opposite of your gender. Age is calculated from the date of birth.",
+  "horoscopeImageOrPdfOptional": "Horoscope Image / PDF (optional)",
+  "attachSecondPersonHoroscope": "Optional — attach the second person’s horoscope.",
+  "imageAttached": "Image attached",
+  "pdfAttached": "PDF attached",
+  "replaceImage": "Replace image",
+  "replacePdf": "Replace PDF",
+  "imageLabel": "Image",
+  "pdfLabel": "PDF",
+  "uploadFailedRetry": "Upload failed — please try again.",
+  "pleaseSelectSecondDob": "Please select the second person’s date of birth.",
+  "pleaseSelectSecondTob": "Please select the second person’s time of birth.",
+  "pleaseSelectSecondPlace": "Please select the second person’s place of birth.",
+  "pleaseSelectSecondNakshatra": "Please select the second person’s Nakshatra.",
+  "pleaseSelectSecondRasi": "Please select the second person’s Rasi.",
+  "requestSubmittedTrackReports": "Request #{id} has been submitted — track it on the Reports tab.",
+  "@requestSubmittedTrackReports": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "couldNotCreateRequest": "Could not create the request. Please try again.",
+  "placeOfBirthLabel": "Place of Birth",
+  "searchCityVillage": "Search city or village",
+  "searchLocationHint": "Type at least 2 letters to search",
+  "noLocationsFound": "No matching place found. Try a different spelling.",
+  "selectedLocationLabel": "Selected place",
+  "addLocationTooltip": "Add this place",
+  "saveLocation": "Save",
+  "selectLocationFirst": "Add a place with the + button first.",
+  "locationNotListedNote": "Can’t find the place? Search the nearest town — its district and state are saved with it.",
+  "chooseLocationTitle": "Choose a place",
+  "yourDetailsTitle": "Your Details",
+  "bookingContactIntro": "We need your name and mobile number to confirm the appointment — the office calls you to agree the exact time. A Matrimony Profile is not required.",
+  "bookingContactPrefilledNote": "Filled in from your profile. You can change these for this booking — your profile is not updated.",
+  "nameRequiredLabel": "Name *",
+  "mobileNumberRequiredLabel": "Mobile Number *",
+  "whereYouAreFrom": "WHERE YOU ARE FROM (OPTIONAL)",
+  "confirmBooking": "Confirm Booking",
+  "pleaseEnterYourName": "Please enter your name",
+  "enterValidMobile": "Enter a valid 10-digit mobile number",
+  "noAcceptedMatchesTitle": "No accepted matches yet",
+  "horoscopeReportShort": "Horoscope Report",
+  "awardsAndMedals": "Awards & Medals",
+  "newsAndMedia": "News & Media",
+  "getDirectionsInMaps": "Get Directions in Google Maps",
+  "astrologyHomeReportBlurb": "Get a detailed online horoscope compatibility report for you and a matched profile. Open the profile and tap “Get Horoscope Compatibility Report” — your report is delivered to your Reports tab."
 }
