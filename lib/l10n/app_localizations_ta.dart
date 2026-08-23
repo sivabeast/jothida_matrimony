@@ -3626,4 +3626,33 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get couldNotRemoveMatch =>
       'பொருத்தத்தை நீக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get searchOrTypeHint => 'தேடுங்கள் அல்லது தட்டச்சு செய்யுங்கள்…';
+
+  @override
+  String get addYourOwnHint =>
+      'கிடைக்கவில்லையா? தட்டச்சு செய்து + அழுத்தி சேர்க்கவும்.';
+
+  @override
+  String addValueLabel(String value) {
+    return '+ “$value” சேர்';
+  }
+
+  @override
+  String get professionType => 'பணிவகை';
+
+  @override
+  String get occupationFreeTextLabel => 'தொழில் / பணி';
+
+  @override
+  String get occupationFreeTextHint => 'உங்கள் தொழிலை உள்ளிடவும்…';
+
+  @override
+  String get occupationFreeTextHelper =>
+      'உங்கள் உண்மையான தொழிலைத் தட்டச்சு செய்யவும் — எ.கா. விவசாயி, தையல்காரர், ஓட்டுநர், மின்சாரப் பணியாளர், தொழில் உரிமையாளர்.';
+
+  @override
+  String get cityNotListedHelper =>
+      'உங்கள் ஊர் கிடைக்கவில்லையா? தட்டச்சு செய்து + அழுத்தி சேர்க்கவும். தெரு அல்லது பகுதி அல்ல, நகரம்/ஊர் பெயரை உள்ளிடவும்.';
 }

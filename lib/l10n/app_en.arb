@@ -1602,5 +1602,20 @@
     }
   },
   "matchRemoved": "Match removed.",
-  "couldNotRemoveMatch": "Could not remove the match. Please try again."
+  "couldNotRemoveMatch": "Could not remove the match. Please try again.",
+  "searchOrTypeHint": "Search or type…",
+  "addYourOwnHint": "Can’t find it? Type it and tap + to add your own.",
+  "addValueLabel": "+ Add “{value}”",
+  "@addValueLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "professionType": "Profession Type",
+  "occupationFreeTextLabel": "Occupation / Profession",
+  "occupationFreeTextHint": "Enter your occupation…",
+  "occupationFreeTextHelper": "Type your actual occupation — for example Farmer, Tailor, Driver, Electrician, Business Owner.",
+  "cityNotListedHelper": "Can’t find your city? Type it and tap + to add it. Please enter a city or town, not a street or locality."
 }

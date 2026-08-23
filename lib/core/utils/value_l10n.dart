@@ -285,19 +285,33 @@ final Map<String, String> _astroEnToTa = {
 /// while storage stays English (spec §13/§14).
 final Map<String, String> _masterTamilNames = {};
 
+/// Reverse of [_masterTamilNames] — `{ tamilName: englishName }`.
+///
+/// Kept in step with the forward map so a Tamil-rendered master value (a
+/// district or city shown in Tamil) can be resolved back to the canonical
+/// English name for cross-language search (§9).
+final Map<String, String> _masterEnglishNames = {};
+
 /// Registers `{ englishName: tamilName }` pairs from master data. Empty names on
 /// either side are ignored; later registrations overwrite earlier ones.
 void registerMasterTamilNames(Map<String, String> pairs) {
   pairs.forEach((en, ta) {
     final k = en.trim().toLowerCase();
     final v = ta.trim();
-    if (k.isNotEmpty && v.isNotEmpty) _masterTamilNames[k] = v;
+    if (k.isNotEmpty && v.isNotEmpty) {
+      _masterTamilNames[k] = v;
+      _masterEnglishNames[v.toLowerCase()] = en.trim();
+    }
   });
 }
 
 /// The registered Tamil name for a canonical English [value], or null.
 String? masterTamilNameFor(String value) =>
     _masterTamilNames[value.trim().toLowerCase()];
+
+/// The canonical English name for a registered TAMIL master [value], or null.
+String? masterEnglishNameFor(String value) =>
+    _masterEnglishNames[value.trim().toLowerCase()];
 
 /// Tamil text for a stored data [value], INDEPENDENT of the active locale.
 ///
@@ -311,6 +325,35 @@ String tamilValue(String? value) {
   final v = (value ?? '').trim();
   if (v.isEmpty) return v;
   return kTamilValueMap[v] ?? masterTamilNameFor(v) ?? _astroEnToTa[v] ?? v;
+}
+
+/// English text for a stored data [value], INDEPENDENT of the active locale —
+/// the mirror of [tamilValue].
+///
+/// Needed for cross-language SEARCH (§9). Most values are stored in English, but
+/// Rasi / Nakshatra / Lagnam are stored in TAMIL script because that is what the
+/// pickers offer. Without this, typing "Mesham" while the app is in Tamil could
+/// never match "மேஷம்": neither the stored value nor its Tamil display contains
+/// the English letters. An unmapped value is returned unchanged.
+String englishValue(String? value) {
+  final v = (value ?? '').trim();
+  if (v.isEmpty) return v;
+  return _astroTaToEn[v] ?? masterEnglishNameFor(v) ?? v;
+}
+
+/// Every text a value can be searched by, in BOTH languages, lowercased.
+///
+/// A dropdown filter should match a query against all of these, so Tamil input
+/// finds an English-stored option and English input finds a Tamil-stored one —
+/// in either app language (§9).
+List<String> searchableFormsOf(String? value) {
+  final v = (value ?? '').trim();
+  if (v.isEmpty) return const [];
+  return {
+    v.toLowerCase(),
+    tamilValue(v).toLowerCase(),
+    englishValue(v).toLowerCase(),
+  }.toList();
 }
 
 extension ValueL10nX on BuildContext {

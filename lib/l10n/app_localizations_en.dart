@@ -3585,4 +3585,33 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get couldNotRemoveMatch =>
       'Could not remove the match. Please try again.';
+
+  @override
+  String get searchOrTypeHint => 'Search or type…';
+
+  @override
+  String get addYourOwnHint =>
+      'Can’t find it? Type it and tap + to add your own.';
+
+  @override
+  String addValueLabel(String value) {
+    return '+ Add “$value”';
+  }
+
+  @override
+  String get professionType => 'Profession Type';
+
+  @override
+  String get occupationFreeTextLabel => 'Occupation / Profession';
+
+  @override
+  String get occupationFreeTextHint => 'Enter your occupation…';
+
+  @override
+  String get occupationFreeTextHelper =>
+      'Type your actual occupation — for example Farmer, Tailor, Driver, Electrician, Business Owner.';
+
+  @override
+  String get cityNotListedHelper =>
+      'Can’t find your city? Type it and tap + to add it. Please enter a city or town, not a street or locality.';
 }

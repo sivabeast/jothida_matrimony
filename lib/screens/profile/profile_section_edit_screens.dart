@@ -17,6 +17,7 @@ import '../../widgets/common/location_picker_section.dart';
 import '../../widgets/common/religion_caste_fields.dart';
 import '../../widgets/common/searchable_field.dart';
 import '../../widgets/common/searchable_with_others_field.dart';
+import '../../widgets/common/occupation_fields.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared chrome + save helper for every section editor.
@@ -398,13 +399,14 @@ class _EducationFormState extends ConsumerState<_EducationForm> {
         ),
         if (_needsOccupation) ...[
           const SizedBox(height: 16),
-          SearchableField.fromOptions(
+          // §6 — Profession Type keeps its catalogue but is no longer a closed
+          // list: a type that is missing is typed and added with "+". There is
+          // deliberately no "Others" entry to fall back on.
+          ProfessionTypeField(
             key: _v.anchor('sector'),
             label: l10n.employmentType,
-            isRequired: true,
-            options: OccupationCatalog.typesFor(_employmentStatus),
-            selectedItem: _sector,
-            prefixIcon: Icons.account_balance_outlined,
+            status: _employmentStatus,
+            value: _sector,
             errorText: _v.errorOf('sector'),
             onChanged: (v) => setState(() {
               _sector = v;
@@ -414,10 +416,12 @@ class _EducationFormState extends ConsumerState<_EducationForm> {
             }),
           ),
           const SizedBox(height: 16),
-          SearchableWithOthersField.fromOptions(
+          // §5 — the occupation itself is free text when it is not in the
+          // catalogue: "Farmer", "Tailor", "Coconut Farmer"… are typed and
+          // added, never squeezed into "Others".
+          OccupationField(
             key: _v.anchor('occupation'),
-            label: l10n.occupation,
-            isRequired: true,
+            label: l10n.occupationFreeTextLabel,
             enabled: (_sector ?? '').isNotEmpty,
             // Ordered by what they studied (§6), never filtered.
             options: OccupationCatalog.occupationsFor(
@@ -426,8 +430,6 @@ class _EducationFormState extends ConsumerState<_EducationForm> {
               educationLevel: _educationLevel,
             ),
             value: _occupation,
-            prefixIcon: Icons.work_outline,
-            showEnglishInBrackets: true,
             errorText: _v.errorOf('occupation'),
             onChanged: (v) => setState(() {
               _occupation = v;

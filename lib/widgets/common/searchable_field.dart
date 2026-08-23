@@ -104,16 +104,22 @@ class SearchableField extends StatelessWidget {
       // mode). Unmapped values (cities, castes not in the map) pass through
       // unchanged, so this is safe for every field.
       itemAsString: (item) => _display(context, item),
-      // Keep search working in Tamil mode: match the user's query against BOTH
-      // the stored English value and its localized display text.
+      // Cross-language search (§9), for EVERY searchable dropdown — not just
+      // Location. The query is matched against the stored value, its Tamil
+      // rendering AND its English rendering, plus the current display text.
+      //
+      // Both directions matter and neither is covered by the display text
+      // alone: most values are stored in English (typing "விரு" must find
+      // "Virudhunagar"), while Rasi / Nakshatra / Lagnam are stored in Tamil
+      // script (typing "Mesham" in Tamil mode must find "மேஷம்").
       filterFn: (item, query) {
         final q = query.trim().toLowerCase();
         if (q.isEmpty) return true;
         // A catalogue-backed field searches English + Tamil + aliases (§9).
         final option = options?.byValue(item);
         if (option != null) return option.matches(query);
-        return item.toLowerCase().contains(q) ||
-            _display(context, item).toLowerCase().contains(q);
+        if (_display(context, item).toLowerCase().contains(q)) return true;
+        return searchableFormsOf(item).any((form) => form.contains(q));
       },
       validator: isRequired
           ? (v) => (v == null || v.isEmpty)

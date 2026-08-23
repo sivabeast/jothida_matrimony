@@ -6541,6 +6541,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not remove the match. Please try again.'**
   String get couldNotRemoveMatch;
+
+  /// No description provided for @searchOrTypeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search or type…'**
+  String get searchOrTypeHint;
+
+  /// No description provided for @addYourOwnHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Can’t find it? Type it and tap + to add your own.'**
+  String get addYourOwnHint;
+
+  /// No description provided for @addValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'+ Add “{value}”'**
+  String addValueLabel(String value);
+
+  /// No description provided for @professionType.
+  ///
+  /// In en, this message translates to:
+  /// **'Profession Type'**
+  String get professionType;
+
+  /// No description provided for @occupationFreeTextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Occupation / Profession'**
+  String get occupationFreeTextLabel;
+
+  /// No description provided for @occupationFreeTextHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your occupation…'**
+  String get occupationFreeTextHint;
+
+  /// No description provided for @occupationFreeTextHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your actual occupation — for example Farmer, Tailor, Driver, Electrician, Business Owner.'**
+  String get occupationFreeTextHelper;
+
+  /// No description provided for @cityNotListedHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Can’t find your city? Type it and tap + to add it. Please enter a city or town, not a street or locality.'**
+  String get cityNotListedHelper;
 }
 
 class _AppLocalizationsDelegate

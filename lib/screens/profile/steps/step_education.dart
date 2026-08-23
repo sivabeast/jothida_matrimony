@@ -12,6 +12,7 @@ import '../../../widgets/common/gradient_button.dart';
 import '../../../widgets/common/searchable_field.dart';
 import '../../../widgets/common/searchable_multi_select_field.dart';
 import '../../../widgets/common/searchable_with_others_field.dart';
+import '../../../widgets/common/occupation_fields.dart';
 
 /// Career step — two dependent hierarchies, both of which hide what does not
 /// apply (§3–§6):
@@ -307,21 +308,20 @@ class _StepEducationState extends ConsumerState<StepEducation> {
           // "other" — there is no sector to ask about.
           if (_needsOccupation) ...[
             const SizedBox(height: 16),
-            SearchableField.fromOptions(
+            // §6 — Profession Type: catalogue + "+ Add", no "Others".
+            ProfessionTypeField(
               key: _v.anchor('employmentType'),
               label: l10n.employmentType,
-              isRequired: true,
-              options: OccupationCatalog.typesFor(_employmentStatus),
-              selectedItem: _employmentType,
-              prefixIcon: Icons.account_balance_outlined,
+              status: _employmentStatus,
+              value: _employmentType,
               errorText: _v.errorOf('employmentType'),
               onChanged: _onTypeChanged,
             ),
             const SizedBox(height: 16),
-            SearchableWithOthersField.fromOptions(
+            // §5 — the occupation itself accepts manual entry.
+            OccupationField(
               key: _v.anchor('occupation'),
-              label: l10n.occupation,
-              isRequired: true,
+              label: l10n.occupationFreeTextLabel,
               enabled: (_employmentType ?? '').isNotEmpty,
               // Ordered by education (§6), never filtered by it.
               options: OccupationCatalog.occupationsFor(
@@ -330,8 +330,6 @@ class _StepEducationState extends ConsumerState<StepEducation> {
                 educationLevel: _educationLevel,
               ),
               value: _occupation,
-              prefixIcon: Icons.work_outline,
-              showEnglishInBrackets: true,
               errorText: _v.errorOf('occupation'),
               onChanged: (v) => setState(() {
                 _occupation = v;

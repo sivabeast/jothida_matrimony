@@ -8,6 +8,7 @@ import '../../models/location_model.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/location_provider.dart';
 import 'place_picker_field.dart';
+import 'searchable_with_add_field.dart';
 import 'searchable_field.dart';
 
 /// The app's ONE location picker: **State → District → City** for Tamil Nadu.
@@ -374,12 +375,17 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
           selected = _legacyCity;
           names.insert(0, _legacyCity!); // legacy value — display only
         }
-        return SearchableField(
+        // §11 — a city missing from the master list can be typed and added
+        // with "+". It is kept on THIS profile only (as a legacy/custom city
+        // name); nothing is written back to the shared location data, so one
+        // member's entry never appears in another member's suggestions.
+        return SearchableWithAddField(
           label: _label('city'),
           isRequired: widget.isRequired,
           prefixIcon: Icons.location_city,
           items: names,
-          selectedItem: selected,
+          value: selected,
+          helperText: context.l10n.cityNotListedHelper,
           onChanged: (name) {
             TnCity? match;
             for (final c in cities) {
