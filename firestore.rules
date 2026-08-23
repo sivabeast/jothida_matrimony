@@ -405,6 +405,16 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── Cloudinary cleanup queue (spec §12) ───────────────────────────────
+    // Assets that could not be deleted from Cloudinary are recorded here so an
+    // orphan is findable instead of leaking silently. A signed-in member may
+    // ADD to the queue (the client records a failed cleanup); only an admin
+    // reads or resolves it, since it is an operational record, not user data.
+    match /cloudinary_cleanup/{entryId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if isAdmin();
+    }
+
     // ── App-opening popups (admin-managed content, spec §13/§14) ───────────
     // Same shape as banners: every signed-in member reads the rotation, only
     // an admin creates, edits, reorders or deletes the contents.

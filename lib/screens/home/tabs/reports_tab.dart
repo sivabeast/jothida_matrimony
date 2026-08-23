@@ -12,6 +12,7 @@ import '../../../models/compatibility_report_model.dart';
 import '../../../providers/match_analysis_provider.dart';
 import '../../../providers/profile_provider.dart';
 import '../../report/compatibility_report_screen.dart';
+import '../../report/report_submission_details_screen.dart';
 
 /// Requests the self-heal has already retried this app session, so a stuck
 /// request is re-assigned at most once per launch (assignRequest itself is
@@ -359,6 +360,29 @@ class _ReportCard extends ConsumerWidget {
               ],
             ),
           ],
+          // §15 — View Details on EVERY report, Under Analysis and Completed
+          // alike, so the member can always review exactly what they
+          // submitted. Read-only: there is deliberately no edit here (§16).
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) =>
+                    ReportSubmissionDetailsScreen(request: report),
+              )),
+              icon: const Icon(Icons.description_outlined, size: 18),
+              label: Text(l10n.viewDetails),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: BorderSide(
+                    color: AppColors.primary.withValues(alpha: 0.5)),
+                minimumSize: const Size.fromHeight(42),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ),
         ],
       ),
     );

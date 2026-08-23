@@ -1026,3 +1026,121 @@ exports.sendScheduledAnnouncements = onSchedule('every 5 minutes', async () => {
     await sendAnnouncementToTopic(doc.id, a);
   }
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cloudinary asset cleanup (spec §12)
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Deleting a Cloudinary asset requires a request SIGNED with the API secret.
+// That secret must never ship inside the Flutter app, so the client sends the
+// asset references here and this trusted function performs the destroy.
+//
+// Required secrets (set once, then redeploy):
+//   firebase functions:secrets:set CLOUDINARY_API_KEY
+//   firebase functions:secrets:set CLOUDINARY_API_SECRET
+const crypto = require('crypto');
+
+const CLOUDINARY_CLOUD_NAME = 'dh8hzjx5q';
+const CLOUDINARY_API_KEY = defineSecret('CLOUDINARY_API_KEY');
+const CLOUDINARY_API_SECRET = defineSecret('CLOUDINARY_API_SECRET');
+
+/// Most assets a single call will ever need to remove (a profile's photos plus
+/// its horoscope documents). Keeps one request bounded.
+const MAX_ASSETS_PER_CALL = 60;
+
+/**
+ * Destroys ONE asset. Returns { ok, result } — Cloudinary answers "not found"
+ * for an asset that is already gone, which we treat as success: the desired end
+ * state (the asset does not exist) holds either way.
+ */
+async function destroyCloudinaryAsset(publicId, resourceType, apiKey, apiSecret) {
+  const timestamp = Math.round(Date.now() / 1000);
+  // Cloudinary signs the alphabetically-sorted parameters, excluding api_key.
+  const toSign = `public_id=${publicId}&timestamp=${timestamp}${apiSecret}`;
+  const signature = crypto.createHash('sha1').update(toSign).digest('hex');
+
+  const body = new URLSearchParams({
+    public_id: publicId,
+    timestamp: String(timestamp),
+    api_key: apiKey,
+    signature,
+    invalidate: 'true', // also purge the CDN copy
+  });
+
+  const type = ['image', 'video', 'raw'].includes(resourceType)
+    ? resourceType
+    : 'image';
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${type}/destroy`,
+    { method: 'POST', body }
+  );
+  const json = await res.json().catch(() => ({}));
+  const result = json.result || `http_${res.status}`;
+  return { ok: result === 'ok' || result === 'not found', result };
+}
+
+/**
+ * Deletes Cloudinary assets on behalf of the signed-in user.
+ *
+ * The caller sends `[{ publicId, resourceType }]`. Every asset is attempted
+ * independently so one failure cannot abort the rest, and the per-asset outcome
+ * is returned. Anything that FAILED is also written to `cloudinary_cleanup` so
+ * an orphaned asset can be found and retried later rather than silently leaking
+ * (spec §12: cleanup failures must not be ignored).
+ */
+exports.deleteCloudinaryAssets = onCall(
+  { secrets: [CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET] },
+  async (request) => {
+    const uid = request.auth && request.auth.uid;
+    if (!uid) {
+      throw new HttpsError('unauthenticated', 'Sign in required.');
+    }
+    const assets = Array.isArray(request.data && request.data.assets)
+      ? request.data.assets.slice(0, MAX_ASSETS_PER_CALL)
+      : [];
+    if (assets.length === 0) return { deleted: 0, failed: 0, results: [] };
+
+    const apiKey = CLOUDINARY_API_KEY.value();
+    const apiSecret = CLOUDINARY_API_SECRET.value();
+
+    const results = [];
+    let deleted = 0;
+    let failed = 0;
+    for (const a of assets) {
+      const publicId = typeof a.publicId === 'string' ? a.publicId.trim() : '';
+      if (!publicId) continue;
+      const resourceType = typeof a.resourceType === 'string'
+        ? a.resourceType
+        : 'image';
+      try {
+        const r = await destroyCloudinaryAsset(
+          publicId, resourceType, apiKey, apiSecret);
+        results.push({ publicId, resourceType, result: r.result });
+        if (r.ok) {
+          deleted++;
+        } else {
+          failed++;
+        }
+      } catch (e) {
+        failed++;
+        results.push({ publicId, resourceType, result: `error:${e.message}` });
+      }
+    }
+
+    // Record only the failures — a queue of assets that still need attention.
+    const orphans = results.filter(
+      (r) => r.result !== 'ok' && r.result !== 'not found');
+    if (orphans.length > 0) {
+      await db.collection('cloudinary_cleanup').add({
+        uid,
+        assets: orphans,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        resolved: false,
+      }).catch((e) => console.error('[cloudinary] queue write failed', e));
+      console.error(
+        `[cloudinary] ${orphans.length} asset(s) could not be deleted for ${uid}`,
+        orphans);
+    }
+    return { deleted, failed, results };
+  }
+);

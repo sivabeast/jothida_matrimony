@@ -8,6 +8,7 @@ import 'demo_data_provider.dart';
 import 'matches_prefs_provider.dart';
 import 'profile_provider.dart';
 import 'service_providers.dart';
+import '../services/cloudinary/cloudinary_storage_service.dart';
 
 /// Account lifecycle: "Mark as Married" and immediate self-service account
 /// deletion. Works in demo mode (in-memory) and real mode (Firestore).
@@ -94,6 +95,12 @@ class AccountController extends Notifier<AsyncValue<void>> {
         }
         ref.read(myDemoProfileIdProvider.notifier).state = null;
       } else if (uid != null) {
+        // Cloudinary assets FIRST, while the profile document still exists —
+        // once it is deleted the URLs are gone and the images would be
+        // orphaned in Cloudinary forever (spec §12). Best-effort: whatever
+        // cannot be deleted is queued in `cloudinary_cleanup` by the cleanup
+        // service, never silently dropped.
+        await _deleteCloudinaryAssets(uid);
         // Chats FIRST, while the session still satisfies the participant-only
         // rules. The thread document is shared, so it cannot be deleted by the
         // leaving member — it is tombstoned instead, which removes their name,
@@ -137,6 +144,37 @@ class AccountController extends Notifier<AsyncValue<void>> {
     } catch (e, st) {
       state = AsyncError(e, st);
       rethrow;
+    }
+  }
+
+  /// Removes every Cloudinary asset this member uploaded — profile photos and
+  /// horoscope images/PDFs (spec §12).
+  ///
+  /// Reads the URLs off the LIVE profile before anything is deleted, because
+  /// once the profile document is gone there is no way to know which assets
+  /// belonged to them. Never throws: a failed cleanup must not stop the
+  /// account deletion, and the cleanup service queues anything it could not
+  /// delete so orphans stay findable.
+  Future<void> _deleteCloudinaryAssets(String uid) async {
+    try {
+      final profile = ref.read(myProfileProvider).valueOrNull;
+      if (profile == null) return;
+      final h = profile.horoscope;
+      final urls = <String?>[
+        profile.profilePhotoUrl,
+        ...profile.photos,
+        ...h.horoscopeImages,
+        ...h.allPdfUrls,
+      ];
+      final storage = ref.read(storageServiceProvider);
+      if (storage is CloudinaryStorageService) {
+        final deleted =
+            await storage.deleteFiles(urls, reason: 'account_deleted:$uid');
+        debugPrint('[AccountController] Cloudinary: $deleted asset(s) deleted '
+            'for $uid.');
+      }
+    } catch (e) {
+      debugPrint('[AccountController] Cloudinary cleanup skipped: $e');
     }
   }
 

@@ -1617,5 +1617,7 @@
   "occupationFreeTextLabel": "Occupation / Profession",
   "occupationFreeTextHint": "Enter your occupation…",
   "occupationFreeTextHelper": "Type your actual occupation — for example Farmer, Tailor, Driver, Electrician, Business Owner.",
-  "cityNotListedHelper": "Can’t find your city? Type it and tap + to add it. Please enter a city or town, not a street or locality."
+  "cityNotListedHelper": "Can’t find your city? Type it and tap + to add it. Please enter a city or town, not a street or locality.",
+  "reportReadOnlyNote": "These details were submitted once and cannot be changed. If something is wrong, please contact support.",
+  "submittedDetails": "Submitted Details"
 }

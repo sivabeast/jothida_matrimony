@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../storage_service.dart';
+import 'cloudinary_cleanup_service.dart';
 import 'cloudinary_exception.dart';
 import 'cloudinary_response.dart';
 
@@ -12,9 +13,10 @@ import 'cloudinary_response.dart';
 ///
 /// Only the cloud name and an unsigned upload preset are needed on the
 /// client — never embed the Cloudinary **API secret** in the app. With an
-/// unsigned preset, deleting/overwriting assets normally requires a signed
-/// admin-API call from a trusted server, so [deleteFile] and
-/// [deleteProfilePhotos] are no-ops here (see their doc comments).
+/// unsigned preset, DELETING an asset requires a signed admin-API call from a
+/// trusted server — so [deleteFile] / [deleteFiles] hand the work to the
+/// `deleteCloudinaryAssets` Cloud Function via [CloudinaryCleanupService]
+/// (spec §12). The API secret lives only in that function's secrets.
 ///
 /// Flow: pick image → [uploadProfilePhoto]/[uploadMultiplePhotos] → Cloudinary
 /// returns `secure_url` → caller saves that URL into Firestore
@@ -25,7 +27,12 @@ class CloudinaryStorageService implements StorageService {
     this.uploadPreset = 'matrimony_profiles',
     this.maxRetries = 3,
     http.Client? client,
-  }) : _client = client;
+    CloudinaryCleanupService? cleanup,
+  })  : _client = client,
+        _cleanup = cleanup ?? CloudinaryCleanupService();
+
+  /// Performs the SIGNED deletes through the trusted Cloud Function.
+  final CloudinaryCleanupService _cleanup;
 
   /// Cloudinary "Cloud name" (visible, not a secret).
   final String cloudName;
@@ -201,23 +208,30 @@ class CloudinaryStorageService implements StorageService {
 
   @override
   Future<void> deleteFile(String downloadUrl) async {
-    // Deleting a Cloudinary asset requires a signed `destroy` request signed
-    // with the API secret. That secret must never ship inside the Flutter
-    // app, so this is intentionally a no-op on the client. Wire this up to a
-    // small trusted backend (Cloud Function) if hard deletes are needed.
-    debugPrint(
-      'CloudinaryStorageService.deleteFile: skipped (requires a signed '
-      'server-side request) for $downloadUrl',
-    );
+    // A Cloudinary destroy must be SIGNED with the API secret, which must
+    // never ship inside the app — so the actual delete is performed by the
+    // trusted `deleteCloudinaryAssets` Cloud Function. Failures are queued by
+    // the cleanup service rather than ignored (spec §12).
+    await _cleanup.deleteByUrls([downloadUrl], reason: 'deleteFile');
   }
 
   @override
   Future<void> deleteProfilePhotos(String userId) async {
+    // Kept for interface compatibility. Cloudinary cannot be asked to "delete
+    // everything under a prefix" without the admin API, and the app already
+    // knows the exact URLs it stored, so callers should pass those to
+    // [deleteFiles] — which deletes precisely the right assets and nothing
+    // belonging to anyone else.
     debugPrint(
-      'CloudinaryStorageService.deleteProfilePhotos: skipped (requires a '
-      'signed server-side request) for user $userId',
+      'CloudinaryStorageService.deleteProfilePhotos($userId): no-op — pass the '
+      'stored URLs to deleteFiles() so the exact assets are removed.',
     );
   }
+
+  /// Deletes every Cloudinary asset behind [urls] in ONE call. Returns the
+  /// number confirmed deleted.
+  Future<int> deleteFiles(Iterable<String?> urls, {String reason = ''}) =>
+      _cleanup.deleteByUrls(urls, reason: reason);
 
   // ── Internals ─────────────────────────────────────────────────────────
 

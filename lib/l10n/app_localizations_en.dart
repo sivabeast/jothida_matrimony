@@ -3614,4 +3614,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get cityNotListedHelper =>
       'Can’t find your city? Type it and tap + to add it. Please enter a city or town, not a street or locality.';
+
+  @override
+  String get reportReadOnlyNote =>
+      'These details were submitted once and cannot be changed. If something is wrong, please contact support.';
+
+  @override
+  String get submittedDetails => 'Submitted Details';
 }

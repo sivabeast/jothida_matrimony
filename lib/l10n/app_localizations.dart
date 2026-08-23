@@ -6589,6 +6589,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Can’t find your city? Type it and tap + to add it. Please enter a city or town, not a street or locality.'**
   String get cityNotListedHelper;
+
+  /// No description provided for @reportReadOnlyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'These details were submitted once and cannot be changed. If something is wrong, please contact support.'**
+  String get reportReadOnlyNote;
+
+  /// No description provided for @submittedDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted Details'**
+  String get submittedDetails;
 }
 
 class _AppLocalizationsDelegate

@@ -14,6 +14,8 @@ import '../../providers/service_providers.dart';
 import '../../widgets/export/download_saved_dialog.dart';
 import '../../widgets/export/profile_form_export.dart';
 import '../../core/services/horoscope_calculation_service.dart';
+import '../../widgets/common/horoscope_documents_view.dart';
+import '../../widgets/common/network_photo.dart';
 
 /// Live counts of a user's Horoscope Analysis + Appointment bookings.
 final _userRequestsProvider = StreamProvider.autoDispose
@@ -74,28 +76,15 @@ class UserDetailsScreen extends ConsumerWidget {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                // §8 — a proper, large profile view: full-width photo with
+                // the identifying details at a glance, instead of a small
+                // avatar above a flat list of rows.
+                _HeroProfileCard(
+                    photoUrl: _photo(profile, user),
+                    name: profile?.fullName ?? user.displayName ?? 'User',
+                    profile: profile),
+                const SizedBox(height: 14),
                 _card([
-                  Center(
-                    child: CircleAvatar(
-                      radius: 40,
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
-                      backgroundImage: _photo(profile, user).isNotEmpty
-                          ? NetworkImage(_photo(profile, user))
-                          : null,
-                      child: _photo(profile, user).isEmpty
-                          ? const Icon(Icons.person,
-                              color: AppColors.primary, size: 40)
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Center(
-                    child: Text(
-                        profile?.fullName ?? user.displayName ?? 'User',
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w700)),
-                  ),
-                  const Divider(height: 24),
                   _sectionTitle('Login Information'),
                   const SizedBox(height: 8),
                   _row('User ID', user.uid),
@@ -277,8 +266,15 @@ class UserDetailsScreen extends ConsumerWidget {
         _row('Rahu / Kethu Dosham', s(h.rahuKethuDosham)),
         _row('Kalasarpa Dosham', s(h.kalasarpaDosham)),
         _row('Dasa Balance', s(h.dasaBalance)),
-        _row('Documents',
-            '${h.horoscopeImages.length} image(s), ${h.allPdfUrls.length} PDF(s)'),
+        const SizedBox(height: 6),
+        // The actual uploaded horoscope images / PDFs, not just a count —
+        // an admin needs to SEE them (§8). Same viewer the member and the
+        // astrologer use, so behaviour is identical everywhere.
+        HoroscopeDocumentsView(
+          imageUrls: h.horoscopeImages,
+          pdfUrls: h.allPdfUrls,
+          title: 'Horoscope Documents',
+        ),
       ]),
       const SizedBox(height: 14),
       _card([
@@ -666,4 +662,91 @@ class UserDetailsScreen extends ConsumerWidget {
           ],
         ),
       );
+}
+
+
+/// §8 — the large profile header on the admin's user page: a full-width photo
+/// with the member's name, age and location over it, so an admin opening a
+/// profile sees WHO it is immediately rather than reading it out of a table.
+class _HeroProfileCard extends StatelessWidget {
+  final String photoUrl;
+  final String name;
+  final ProfileModel? profile;
+
+  const _HeroProfileCard({
+    required this.photoUrl,
+    required this.name,
+    required this.profile,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = profile;
+    final location = p == null
+        ? ''
+        : [p.city, p.district, p.state]
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toSet()
+            .join(', ');
+    final line2 = [
+      if (p != null && p.age > 0) '${p.age} yrs',
+      if (p != null && p.education.trim().isNotEmpty) p.education.trim(),
+      if (p != null && p.occupation.trim().isNotEmpty) p.occupation.trim(),
+    ].join('  ·  ');
+
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AspectRatio(
+            aspectRatio: 1,
+            child: NetworkPhoto(url: photoUrl, fallbackIconSize: 72),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name,
+                    style: const TextStyle(
+                        fontSize: 20,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.bold)),
+                if (line2.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(line2,
+                      style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+                ],
+                if (location.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on_outlined,
+                          size: 15, color: Colors.grey[600]),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(location,
+                            maxLines: 2,
+                            style: TextStyle(
+                                fontSize: 13, color: Colors.grey[700])),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

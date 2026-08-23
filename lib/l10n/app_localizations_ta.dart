@@ -3655,4 +3655,11 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get cityNotListedHelper =>
       'உங்கள் ஊர் கிடைக்கவில்லையா? தட்டச்சு செய்து + அழுத்தி சேர்க்கவும். தெரு அல்லது பகுதி அல்ல, நகரம்/ஊர் பெயரை உள்ளிடவும்.';
+
+  @override
+  String get reportReadOnlyNote =>
+      'இந்த விவரங்கள் ஒரு முறை சமர்ப்பிக்கப்பட்டவை; மாற்ற முடியாது. ஏதேனும் தவறு இருந்தால் ஆதரவைத் தொடர்பு கொள்ளவும்.';
+
+  @override
+  String get submittedDetails => 'சமர்ப்பிக்கப்பட்ட விவரங்கள்';
 }
