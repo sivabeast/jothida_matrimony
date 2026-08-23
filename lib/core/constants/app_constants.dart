@@ -13,6 +13,8 @@ class AppConstants {
   static const String announcementsCollection = 'announcements';
   // Admin-managed Home page banners (image banners + text-builder banners).
   static const String bannersCollection = 'banners';
+  /// Admin-managed app-opening popup contents (spec §13/§14).
+  static const String appPopupsCollection = 'app_popups';
   static const String transactionsCollection = 'transactions';
   static const String adminCollection = 'admin';
   static const String astrologersCollection = 'astrologers';

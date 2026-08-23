@@ -405,6 +405,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── App-opening popups (admin-managed content, spec §13/§14) ───────────
+    // Same shape as banners: every signed-in member reads the rotation, only
+    // an admin creates, edits, reorders or deletes the contents.
+    match /app_popups/{popupId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
     // ── Admin activity log ────────────────────────────────────────────────
     // Immutable audit trail of important admin actions (profile created /
     // approved / rejected / suspended / deleted, credentials shared,

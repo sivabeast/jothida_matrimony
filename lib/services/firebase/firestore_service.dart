@@ -12,6 +12,7 @@ import '../../models/interest_model.dart';
 import '../../models/report_model.dart';
 import '../../models/notification_model.dart';
 import '../../models/announcement_model.dart';
+import '../../models/app_popup_model.dart';
 import '../../models/banner_model.dart';
 import '../../models/user_model.dart';
 import '../../models/dashboard_analytics.dart';
@@ -1132,6 +1133,56 @@ class FirestoreService {
       String idA, int orderA, String idB, int orderB) async {
     final batch = _db.batch();
     final col = _db.collection(AppConstants.bannersCollection);
+    batch.update(col.doc(idA), {'order': orderB});
+    batch.update(col.doc(idB), {'order': orderA});
+    await batch.commit();
+  }
+
+  // ── App-opening popups (admin-managed, spec §13/§14) ──────────────────────
+
+  /// ACTIVE popups in display order — the rotation the user sees.
+  Stream<List<AppPopupModel>> watchActivePopups() => _db
+      .collection(AppConstants.appPopupsCollection)
+      .where('enabled', isEqualTo: true)
+      .snapshots()
+      .map((s) {
+        // An empty popup (no title AND no body) is never shown, so a
+        // half-created document cannot reach users.
+        final list = s.docs
+            .map(AppPopupModel.fromFirestore)
+            .where((p) => p.hasContent)
+            .toList();
+        list.sort((a, b) => a.order.compareTo(b.order));
+        return list;
+      });
+
+  /// ALL popups (any status) for the admin management screen.
+  Stream<List<AppPopupModel>> watchAllPopups() => _db
+      .collection(AppConstants.appPopupsCollection)
+      .snapshots()
+      .map((s) {
+        final list = s.docs.map(AppPopupModel.fromFirestore).toList();
+        list.sort((a, b) => a.order.compareTo(b.order));
+        return list;
+      });
+
+  Future<void> createPopup(AppPopupModel popup) => _db
+      .collection(AppConstants.appPopupsCollection)
+      .add(popup.toFirestore()..['createdAt'] = FieldValue.serverTimestamp());
+
+  Future<void> updatePopup(String id, Map<String, dynamic> fields) => _db
+      .collection(AppConstants.appPopupsCollection)
+      .doc(id)
+      .update({...fields, 'updatedAt': FieldValue.serverTimestamp()});
+
+  Future<void> deletePopup(String id) =>
+      _db.collection(AppConstants.appPopupsCollection).doc(id).delete();
+
+  /// Swaps the display order of two popups atomically (Move Up / Move Down).
+  Future<void> swapPopupOrder(
+      String idA, int orderA, String idB, int orderB) async {
+    final batch = _db.batch();
+    final col = _db.collection(AppConstants.appPopupsCollection);
     batch.update(col.doc(idA), {'order': orderB});
     batch.update(col.doc(idB), {'order': orderA});
     await batch.commit();

@@ -17,6 +17,7 @@ import 'tabs/astrology_service_page.dart';
 import 'tabs/discover_tab.dart';
 import 'tabs/home_dashboard_tab.dart';
 import 'tabs/reports_tab.dart';
+import '../../widgets/common/app_opening_popup.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -67,6 +68,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         if (didPop) return;
         _handleBackPress();
       },
+      // The admin-managed app-opening popup (§13/§14). It renders nothing of
+      // its own — it opens a dialog OVER Home once per launch, so the Home
+      // screen and its navigation keep working normally underneath.
+      child: AppOpeningPopupHost(
       child: Scaffold(
       // ── Navigation Drawer (header menu icon) ──────────────────────────────
       drawer: const AppDrawer(),
@@ -182,6 +187,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           if (!mounted) return;
           ref.read(homeTabIndexProvider.notifier).state = i;
         },
+      ),
       ),
       ),
     );

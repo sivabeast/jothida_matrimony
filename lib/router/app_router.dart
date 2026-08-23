@@ -55,6 +55,7 @@ import '../screens/admin/employee_commission_screen.dart';
 import '../screens/admin/account_admin_screens.dart';
 import '../screens/admin/announcement_management_screen.dart';
 import '../screens/admin/banner_management_screen.dart';
+import '../screens/admin/popup_management_screen.dart';
 import '../screens/horoscope/horoscope_details_screen.dart';
 import '../screens/horoscope/horoscope_files_screen.dart';
 import '../screens/horoscope/member_horoscope_screen.dart';
@@ -550,6 +551,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               builder: (_, __) => const AdminAppointmentsScreen()),
           GoRoute(path: '/admin/banners', builder: (_, __) => const BannerManagementScreen()),
           GoRoute(path: '/admin/notifications', builder: (_, __) => const AnnouncementManagementScreen()),
+          // Admin-managed app-opening popup contents (§13/§14).
+          GoRoute(
+              path: '/admin/popups',
+              builder: (_, __) => const PopupManagementScreen()),
           GoRoute(
               path: '/admin/astrology-service',
               builder: (_, __) => const AstrologyServiceSettingsScreen()),
