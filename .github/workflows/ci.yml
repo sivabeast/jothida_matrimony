@@ -134,6 +134,17 @@ jobs:
             echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
           fi
 
+      # Independent safety net for the 16 KB fix. CMake seeds
+      # CMAKE_SHARED_LINKER_FLAGS_INIT from $LDFLAGS on its FIRST configure,
+      # which a fresh CI checkout always is — so every CMake-built .so is
+      # linked for 16 KB pages even if the Gradle-side override were to miss a
+      # module. The Gradle override in android/settings.gradle remains the
+      # primary mechanism (it also covers local builds); this only guarantees
+      # the artifact that actually ships. The verification steps below are what
+      # decide whether either worked.
+      - name: Link native code for 16 KB pages
+        run: echo "LDFLAGS=-Wl,-z,max-page-size=16384,-z,common-page-size=16384" >> "$GITHUB_ENV"
+
       - name: Install dependencies
         run: flutter pub get
 

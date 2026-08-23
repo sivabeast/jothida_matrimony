@@ -29,3 +29,78 @@ plugins {
 }
 
 include ":app"
+
+// ── Android 16 KB memory page size compatibility ──────────────────────────────
+//
+// Google Play rejects a bundle whose native libraries were linked for 4 KB
+// memory pages ("Your app does not support 16 KB memory page sizes").
+//
+// Everything Flutter ships is already fine — libflutter.so and libapp.so link
+// with p_align 0x10000. The single offender is `libsweph.so`, produced by the
+// `sweph` plugin, whose own android/build.gradle pins:
+//
+//     compileSdkVersion 31
+//     ndkVersion "21.1.6352462"
+//     defaultConfig { minSdkVersion 16 }
+//
+// NDK r21 lays out PT_LOAD segments with p_align = 0x1000 (4 KB). Upgrading the
+// package does NOT help: sweph 3.2.1 pins the identical NDK, and 3.x is an
+// unrelated breaking migration to universal_ffi.
+//
+// libsweph.so is COMPILED HERE through externalNativeBuild rather than shipped
+// prebuilt, so the alignment is fixed where it is actually linked: build every
+// native module with the app's own NDK (r28 — 16 KB aligned for 64-bit by
+// default) and pass the explicit max-page-size link flag so the 32-bit ABIs are
+// aligned too. NDK r27+ also dropped API levels below 21, so the module's
+// minSdk is raised to the app's at the same time.
+//
+// This lives in SETTINGS, not build.gradle, and hooks `beforeProject`: an
+// afterEvaluate registered there is queued ahead of AGP's own, which is the
+// only way the values land before AGP builds its native model. Registering the
+// same hook from the root build.gradle ran too late and silently did nothing.
+//
+// `tool/check_16kb_alignment.py` verifies the real artifacts in CI, so this can
+// never regress unnoticed.
+gradle.beforeProject { project ->
+    if (project.path == ':app') {
+        return
+    }
+    project.afterEvaluate {
+        def androidExt = project.extensions.findByName('android')
+        if (androidExt == null) {
+            return
+        }
+        // Only modules that actually BUILD native code here can be fixed from
+        // here; a plugin shipping a prebuilt .so cannot be re-linked.
+        def nb = androidExt.externalNativeBuild
+        if (nb?.cmake?.path == null && nb?.ndkBuild?.path == null) {
+            return
+        }
+
+        def appAndroid = project.rootProject.findProject(':app')
+                ?.extensions?.findByName('android')
+        def appNdkVersion = appAndroid?.ndkVersion
+        def appMinSdk = appAndroid?.defaultConfig?.minSdk ?: 23
+
+        // Explicit receivers: `ndkVersion = ...` inside a configure closure can
+        // bind to the script instead of the extension and silently do nothing.
+        if (appNdkVersion) {
+            androidExt.ndkVersion = appNdkVersion
+        }
+        if ((androidExt.defaultConfig.minSdk ?: 0) < appMinSdk) {
+            androidExt.defaultConfig.minSdk = appMinSdk
+        }
+        // `arguments` APPENDS, so the documented DSL block is used here — a
+        // method call resolves to the delegate reliably. These modules leave
+        // CMAKE_SHARED_LINKER_FLAGS empty (verified in the generated
+        // CMakeCache.txt), so setting it replaces nothing.
+        androidExt.defaultConfig.externalNativeBuild.cmake.arguments(
+                '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON',
+                '-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384,-z,common-page-size=16384'
+        )
+        project.logger.lifecycle("[16kb] ${project.path}: NDK " +
+                "${androidExt.ndkVersion}, minSdk " +
+                "${androidExt.defaultConfig.minSdk}, max-page-size=16384")
+    }
+}
+
