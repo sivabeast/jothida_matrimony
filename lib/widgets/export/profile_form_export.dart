@@ -15,6 +15,7 @@ import '../../core/utils/device_files.dart';
 import '../../core/utils/value_l10n.dart';
 import '../../models/profile_model.dart';
 import '../../models/user_model.dart';
+import '../../core/services/horoscope_calculation_service.dart';
 
 /// A4 PDF / image export of a member profile, laid out as the printed
 /// **JOTHIDA MATRIMONY பதிவு படிவம்** (registration form) — the same branded
@@ -1062,7 +1063,8 @@ List<Widget> buildProfileFormSections({
       _pair(
         _field('பிறந்த தேதி', _fmtDate(p.dateOfBirth),
             required: true, labelW: 108),
-        _field('பிறந்த நேரம்', o.hideHoroscope ? '' : h.birthTime,
+        _field('பிறந்த நேரம்',
+            o.hideHoroscope ? '' : HoroscopeCalculationService.formatBirthTimeForDisplay(h.birthTime),
             required: true, labelW: 92),
       ),
       _field('பிறந்த இடம்', o.hideHoroscope ? '' : h.birthPlace,

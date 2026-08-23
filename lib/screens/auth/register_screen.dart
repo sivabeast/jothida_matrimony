@@ -18,8 +18,14 @@ import '../../widgets/common/app_text_field.dart';
 /// **Account creation** — deliberately NOT profile creation.
 ///
 /// This page only opens a login for the member: Full Name, Mobile Number,
-/// Email Address, Password, Confirm Password, Gender, Date of Birth and the
-/// Terms & Conditions acceptance. Nothing matrimony-specific is asked here.
+/// Email Address (OPTIONAL), Password, Confirm Password, Gender, Date of Birth
+/// and the Terms & Conditions acceptance. Nothing matrimony-specific is asked
+/// here.
+///
+/// The account is identified by the MOBILE number, not the email: when the
+/// email is left blank `registerUserWithDetails` synthesises a phone-based
+/// address for Firebase Auth and stores an empty email on the user document.
+/// An address that IS typed is still validated normally.
 ///
 /// On success the account is created, the member is signed in automatically and
 /// sent straight to the **Home page**. The matrimony profile is created later,
@@ -196,12 +202,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       validator: v.mobile,
                     ),
                     const SizedBox(height: 16),
+                    // Email is OPTIONAL: the account is identified by the
+                    // mobile number, and registration synthesises a
+                    // phone-based Firebase Auth address when this is blank.
+                    // No "*", and no validation error on an empty field.
                     AppTextField(
                       controller: _emailController,
-                      label: '${l10n.email} *',
+                      label: '${l10n.email} (${l10n.optional})',
                       hint: 'you@email.com',
                       keyboardType: TextInputType.emailAddress,
-                      validator: v.email,
+                      validator: v.optionalEmail,
                     ),
                     const SizedBox(height: 16),
                     AppTextField(

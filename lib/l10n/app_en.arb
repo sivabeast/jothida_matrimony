@@ -1587,5 +1587,20 @@
   "awardsAndMedals": "Awards & Medals",
   "newsAndMedia": "News & Media",
   "getDirectionsInMaps": "Get Directions in Google Maps",
-  "astrologyHomeReportBlurb": "Get a detailed online horoscope compatibility report for you and a matched profile. Open the profile and tap “Get Horoscope Compatibility Report” — your report is delivered to your Reports tab."
+  "astrologyHomeReportBlurb": "Get a detailed online horoscope compatibility report for you and a matched profile. Open the profile and tap “Get Horoscope Compatibility Report” — your report is delivered to your Reports tab.",
+  "unsendInterest": "Unsend Interest",
+  "interestUnsent": "Interest unsent.",
+  "unsendConfirmMsg": "This interest will be cancelled. The other member will no longer see it and cannot accept or reject it.",
+  "removeMatch": "Remove",
+  "removeMatchTitle": "Remove this match?",
+  "removeMatchBody": "{name} will be removed from your matches for both of you, and neither of you will be able to see the other's contact details any more.",
+  "@removeMatchBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "matchRemoved": "Match removed.",
+  "couldNotRemoveMatch": "Could not remove the match. Please try again."
 }

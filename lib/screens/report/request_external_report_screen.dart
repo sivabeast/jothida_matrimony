@@ -22,6 +22,7 @@ import '../../widgets/auth/account_required_sheet.dart';
 import '../../widgets/common/network_photo.dart';
 import '../../widgets/common/place_picker_field.dart';
 import '../../widgets/common/searchable_field.dart';
+import '../../core/services/horoscope_calculation_service.dart';
 
 /// **Request New Horoscope Report** — the compatibility report for someone who
 /// is NOT on the app (spec §9–§13).
@@ -164,7 +165,7 @@ class _RequestExternalReportScreenState
       'age': me?.age ?? 0,
       'gender': me?.gender ?? '',
       'dob': me == null ? '' : DateFormat('dd MMM yyyy').format(me.dateOfBirth),
-      'tob': h?.birthTime ?? '',
+      'tob': HoroscopeCalculationService.formatBirthTimeForDisplay(h?.birthTime),
       'place': (h?.birthPlace.trim().isNotEmpty ?? false)
           ? h!.birthPlace
           : (me == null
@@ -434,7 +435,8 @@ class _RequestExternalReportScreenState
         _readRow(l10n.gender, me.gender),
         _readRow(l10n.dateOfBirth,
             DateFormat('dd MMM yyyy').format(me.dateOfBirth)),
-        _readRow(l10n.timeOfBirth, h?.birthTime ?? ''),
+        _readRow(l10n.timeOfBirth,
+            HoroscopeCalculationService.formatBirthTimeForDisplay(h?.birthTime)),
         _readRow(
             l10n.placeOfBirthLabel,
             (h?.birthPlace.trim().isNotEmpty ?? false)

@@ -9,6 +9,7 @@ import '../../providers/profile_provider.dart';
 import '../common/fullscreen_photo_viewer.dart';
 import '../common/horoscope_documents_view.dart';
 import '../common/network_photo.dart';
+import '../../core/services/horoscope_calculation_service.dart';
 
 /// The REVIEW block an astrologer / admin sees ABOVE the compatibility report
 /// form: one premium card per side (Groom, then Bride) carrying that member's
@@ -291,7 +292,7 @@ class _ProfileReviewCard extends ConsumerWidget {
           ('Nakshatra', h.nakshatra),
           ('Lagnam', h.lagnam),
           ('Birth Place', h.birthPlace),
-          ('Birth Time', h.birthTime),
+          ('Birth Time', HoroscopeCalculationService.formatBirthTimeForDisplay(h.birthTime)),
           ('Moon Sign', h.moonSign),
           ('Sun Sign', h.sunSign),
           ('Dasa Balance', h.dasaBalance),

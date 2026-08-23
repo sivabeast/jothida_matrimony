@@ -366,6 +366,21 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
       await ref.read(interestRepositoryProvider).withdrawInterest(interestId);
     });
   }
+
+  /// Removes an ACCEPTED interest: the match is dissolved for both members and
+  /// the contact-unlock connection goes with it.
+  ///
+  /// The live `sentInterestsProvider` / `receivedInterestsProvider` streams
+  /// drive every accepted list, so deleting the document updates the UI on both
+  /// sides without any manual refresh.
+  Future<void> removeAcceptedInterest(String interestId) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref
+          .read(interestRepositoryProvider)
+          .removeAcceptedInterest(interestId);
+    });
+  }
 }
 
 final interestNotifierProvider =

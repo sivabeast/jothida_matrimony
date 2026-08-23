@@ -319,7 +319,7 @@ class _InterestListState extends State<_InterestList> {
   /// Rough per-card extents used to land the scroll near the target — the
   /// flash animation then makes the exact card unmistakable.
   double get _estimatedExtent => switch (widget.mode) {
-        _CardMode.accepted => 400,
+        _CardMode.accepted => 450,
         _CardMode.received => 210,
         _ => 190,
       };
@@ -678,14 +678,57 @@ class _InterestCard extends ConsumerWidget {
 
   /// Confirms and withdraws (unsends) a pending sent interest. Deletes the doc
   /// via the notifier so it disappears for both users immediately.
+  /// §3 — Confirms, then dissolves an ACCEPTED match: the interest document
+  /// and the contact-unlock connection are both deleted, so it disappears from
+  /// both members' Accepted lists and neither can read the other's contact
+  /// details any more.
+  Future<void> _removeAccepted(
+      BuildContext context, WidgetRef ref, String name) async {
+    final l10n = context.l10n;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(l10n.removeMatchTitle),
+        content: Text(l10n.removeMatchBody(name)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.cancel)),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.removeMatch),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    // Captured before the async gap: the card is removed from the live list the
+    // moment the delete lands, so `context` may already be unmounted when the
+    // result comes back.
+    final container = ProviderScope.containerOf(context, listen: false);
+    await ref
+        .read(interestNotifierProvider.notifier)
+        .removeAcceptedInterest(interest.id);
+    final ctx = context.mounted ? context : rootNavigatorKey.currentContext;
+    if (ctx == null) return;
+    final failed = container.read(interestNotifierProvider).hasError;
+    ScaffoldMessenger.maybeOf(ctx)?.showSnackBar(SnackBar(
+        content: Text(
+            failed ? ctx.l10n.couldNotRemoveMatch : ctx.l10n.matchRemoved)));
+  }
+
   Future<void> _withdraw(BuildContext context, WidgetRef ref) async {
     final l10n = context.l10n;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(l10n.withdrawInterest),
-        content: Text(l10n.withdrawConfirmMsg),
+        title: Text(l10n.unsendInterest),
+        content: Text(l10n.unsendConfirmMsg),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -966,6 +1009,21 @@ class _InterestCard extends ConsumerWidget {
             // before any request → the CTA; pending → a status chip;
             // completed → View Report.
             _compatReportAction(context, ref, otherUserId, l10n),
+            const SizedBox(height: 6),
+            // Remove the match (§3) — destructive, so it is a quiet text
+            // button under the two primary actions rather than a third
+            // equal-weight control.
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => _removeAccepted(context, ref, name),
+                icon: const Icon(Icons.person_remove_outlined, size: 17),
+                label: Text(l10n.removeMatch),
+                style: TextButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    visualDensity: VisualDensity.compact),
+              ),
+            ),
           ],
         );
       case _CardMode.sent:
@@ -976,7 +1034,7 @@ class _InterestCard extends ConsumerWidget {
           child: OutlinedButton.icon(
             onPressed: () => _withdraw(context, ref),
             icon: const Icon(Icons.undo, size: 18),
-            label: Text(l10n.withdrawInterest),
+            label: Text(l10n.unsendInterest),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.error,
               side: BorderSide(color: AppColors.error.withOpacity(0.6)),

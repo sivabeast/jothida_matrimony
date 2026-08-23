@@ -13,6 +13,7 @@ import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/network_photo.dart';
 import '../../widgets/profile/field_edit_sheet.dart';
+import '../../core/services/horoscope_calculation_service.dart';
 
 // ── Tamil display helpers (display-only — storage stays English, spec §14) ────
 
@@ -274,7 +275,7 @@ class MyProfileScreen extends ConsumerWidget {
             [l('Rasi'), lv(h.rasi)],
             [l('Nakshatra'), lv(h.nakshatra)],
             [l('Lagnam'), lv(h.lagnam)],
-            [l('Birth Time'), s(h.birthTime)],
+            [l('Birth Time'), s(HoroscopeCalculationService.formatBirthTimeForDisplay(h.birthTime))],
             [l('Birth Place'), lv(h.birthPlace)],
           ],
         ),

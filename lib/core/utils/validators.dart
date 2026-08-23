@@ -6,10 +6,22 @@ import '../../l10n/app_localizations.dart';
 class AppValidators {
   static String? email(String? value) {
     if (value == null || value.isEmpty) return 'Email is required';
-    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-    if (!emailRegex.hasMatch(value)) return 'Enter a valid email address';
+    if (!isValidEmail(value)) return 'Enter a valid email address';
     return null;
   }
+
+  /// OPTIONAL email: blank is fine, anything typed must be well formed.
+  static String? optionalEmail(String? value) {
+    final v = (value ?? '').trim();
+    if (v.isEmpty) return null;
+    return isValidEmail(v) ? null : 'Enter a valid email address';
+  }
+
+  /// The single email-shape rule, shared by every email validator so the
+  /// required and optional variants can never disagree about what is valid.
+  static bool isValidEmail(String? value) => RegExp(
+          r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+      .hasMatch((value ?? '').trim());
 
   static String? password(String? value) {
     if (value == null || value.isEmpty) return 'Password is required';
@@ -125,8 +137,20 @@ class LocalizedValidators {
   String? email(String? value) {
     final v = (value ?? '').trim();
     if (v.isEmpty) return l.pleaseEnterField(l.email);
-    final re = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-    return re.hasMatch(v) ? null : l.invalidEmail;
+    return AppValidators.isValidEmail(v) ? null : l.invalidEmail;
+  }
+
+  /// OPTIONAL email: an empty field is valid, but anything typed must still be
+  /// a well-formed address.
+  ///
+  /// Account creation identifies a member by their MOBILE number — the email is
+  /// a convenience only, and `registerUserWithDetails` already synthesises a
+  /// phone-based address for Firebase Auth when none is supplied. So the field
+  /// must never block registration when left blank.
+  String? optionalEmail(String? value) {
+    final v = (value ?? '').trim();
+    if (v.isEmpty) return null;
+    return AppValidators.isValidEmail(v) ? null : l.invalidEmail;
   }
 }
 

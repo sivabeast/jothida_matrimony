@@ -18,6 +18,7 @@ import '../../providers/profile_provider.dart';
 import '../../widgets/common/external_party_card.dart';
 import '../../widgets/common/horoscope_documents_view.dart';
 import '../../widgets/common/rasi_chart.dart';
+import '../../core/services/horoscope_calculation_service.dart';
 
 /// The astrologer's Match Analysis "Status" page / workspace — opened from a
 /// request (pending, accepted or completed). Shows the full requester, GROOM
@@ -963,7 +964,7 @@ class _PartyCard extends ConsumerWidget {
         const SizedBox(height: 12),
         _row('Age', '${p.age} yrs'),
         _row('Date of Birth', dob),
-        _row('Birth Time', h.birthTime),
+        _row('Birth Time', HoroscopeCalculationService.formatBirthTimeForDisplay(h.birthTime)),
         _row('Birth Place', h.birthPlace),
         _row('Rasi', h.rasi),
         _row('Nakshatra', h.nakshatra),

@@ -3557,4 +3557,32 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get astrologyHomeReportBlurb =>
       'Get a detailed online horoscope compatibility report for you and a matched profile. Open the profile and tap “Get Horoscope Compatibility Report” — your report is delivered to your Reports tab.';
+
+  @override
+  String get unsendInterest => 'Unsend Interest';
+
+  @override
+  String get interestUnsent => 'Interest unsent.';
+
+  @override
+  String get unsendConfirmMsg =>
+      'This interest will be cancelled. The other member will no longer see it and cannot accept or reject it.';
+
+  @override
+  String get removeMatch => 'Remove';
+
+  @override
+  String get removeMatchTitle => 'Remove this match?';
+
+  @override
+  String removeMatchBody(String name) {
+    return '$name will be removed from your matches for both of you, and neither of you will be able to see the other\'s contact details any more.';
+  }
+
+  @override
+  String get matchRemoved => 'Match removed.';
+
+  @override
+  String get couldNotRemoveMatch =>
+      'Could not remove the match. Please try again.';
 }

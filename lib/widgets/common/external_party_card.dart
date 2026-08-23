@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import 'horoscope_documents_view.dart';
+import '../../core/services/horoscope_calculation_service.dart';
 
 /// Displays one party of an EXTERNAL horoscope report (spec §4) — the
 /// manually-entered details + the uploaded horoscope image/PDF (reusing
@@ -69,7 +70,7 @@ class ExternalPartyCard extends StatelessWidget {
           _row('Age', age.isEmpty || age == '0' ? '—' : '$age yrs'),
           _row('Gender', _s('gender')),
           _row('Date of Birth', _s('dob')),
-          _row('Time of Birth', _s('tob')),
+          _row('Time of Birth', HoroscopeCalculationService.formatBirthTimeForDisplay(_s('tob'))),
           _row('Place of Birth', _s('place')),
           _row('Nakshatra', _s('nakshatra')),
           _row('Rasi', _s('rasi')),

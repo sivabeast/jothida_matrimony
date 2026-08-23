@@ -146,7 +146,14 @@ final myChatThreadsProvider =
           .compareTo(a.lastMessageAt ?? DateTime(0)));
     return Stream.value(threads);
   }
-  return ref.read(chatServiceProvider).watchThreads(uid);
+  // A member who deleted their account is tombstoned on the thread, so their
+  // conversation disappears from everyone else's Chats list — name, photo and
+  // all (spec §2).
+  return ref
+      .read(chatServiceProvider)
+      .watchThreads(uid)
+      .map((threads) =>
+          threads.where((t) => !t.isOtherDeleted(uid)).toList());
 });
 
 /// Total unread messages for the signed-in person across all their threads —

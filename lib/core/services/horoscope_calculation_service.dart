@@ -142,4 +142,26 @@ class HoroscopeCalculationService {
   /// Formats a [TimeOfDay] to the canonical stored form "HH:mm".
   static String formatStoredTime(TimeOfDay t) =>
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  /// A stored birth time rendered for DISPLAY, always with AM / PM.
+  ///
+  /// Storage is 24-hour `HH:mm` (see [formatStoredTime]), so "07:30" is
+  /// ambiguous to a reader — it could be morning or evening. This converts the
+  /// real stored value rather than appending a guessed suffix: 07:30 → 07:30 AM
+  /// and 19:30 → 07:30 PM. Legacy rows that already carry "06:45 AM" parse
+  /// correctly too ([parseStoredTime] accepts both shapes) and come back
+  /// unchanged, so nothing is double-suffixed.
+  ///
+  /// An empty or unparseable value is returned as-is, so a display row never
+  /// invents a time that was never entered.
+  static String formatBirthTimeForDisplay(String? stored) {
+    final raw = (stored ?? '').trim();
+    if (raw.isEmpty) return '';
+    final t = parseStoredTime(raw);
+    if (t == null) return raw;
+    final suffix = t.hour < 12 ? 'AM' : 'PM';
+    final h12 = t.hour % 12 == 0 ? 12 : t.hour % 12;
+    return '${h12.toString().padLeft(2, '0')}:'
+        '${t.minute.toString().padLeft(2, '0')} $suffix';
+  }
 }

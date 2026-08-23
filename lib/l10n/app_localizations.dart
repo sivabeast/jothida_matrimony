@@ -6493,6 +6493,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Get a detailed online horoscope compatibility report for you and a matched profile. Open the profile and tap “Get Horoscope Compatibility Report” — your report is delivered to your Reports tab.'**
   String get astrologyHomeReportBlurb;
+
+  /// No description provided for @unsendInterest.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsend Interest'**
+  String get unsendInterest;
+
+  /// No description provided for @interestUnsent.
+  ///
+  /// In en, this message translates to:
+  /// **'Interest unsent.'**
+  String get interestUnsent;
+
+  /// No description provided for @unsendConfirmMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'This interest will be cancelled. The other member will no longer see it and cannot accept or reject it.'**
+  String get unsendConfirmMsg;
+
+  /// No description provided for @removeMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removeMatch;
+
+  /// No description provided for @removeMatchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this match?'**
+  String get removeMatchTitle;
+
+  /// No description provided for @removeMatchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} will be removed from your matches for both of you, and neither of you will be able to see the other\'s contact details any more.'**
+  String removeMatchBody(String name);
+
+  /// No description provided for @matchRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Match removed.'**
+  String get matchRemoved;
+
+  /// No description provided for @couldNotRemoveMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove the match. Please try again.'**
+  String get couldNotRemoveMatch;
 }
 
 class _AppLocalizationsDelegate

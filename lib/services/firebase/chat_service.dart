@@ -119,6 +119,41 @@ class ChatService {
         return threads;
       });
 
+  /// Tombstones every thread [uid] takes part in, so the conversation stops
+  /// being shown to the other member (spec §2).
+  ///
+  /// An UPDATE, not a delete: the rules let a participant update the thread but
+  /// never delete it, and deleting would destroy the other member's copy of the
+  /// history from under them. The name and photo entries are blanked at the
+  /// same time so no identifying data survives on the document even for a
+  /// client that has not been updated.
+  ///
+  /// Best-effort per thread: one failure must not abort the rest of account
+  /// deletion, and the caller logs what could not be cleared.
+  Future<int> tombstoneThreadsFor(String uid) async {
+    var failed = 0;
+    try {
+      final snap =
+          await _chats.where('participantIds', arrayContains: uid).get();
+      for (final doc in snap.docs) {
+        try {
+          await doc.reference.update({
+            'deletedParticipants': FieldValue.arrayUnion([uid]),
+            'participantNames.$uid': '',
+            'participantPhotos.$uid': '',
+          });
+        } catch (e) {
+          failed++;
+          debugPrint('[ChatService] tombstone failed for ${doc.id}: $e');
+        }
+      }
+    } catch (e) {
+      debugPrint('[ChatService] tombstoneThreadsFor($uid) query failed: $e');
+      return -1;
+    }
+    return failed;
+  }
+
   Stream<ChatThread?> watchThread(String threadId) => _chats
       .doc(threadId)
       .snapshots()

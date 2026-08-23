@@ -3598,4 +3598,32 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get astrologyHomeReportBlurb =>
       'உங்களுக்கும் பொருந்திய சுயவிவரத்திற்கும் இடையேயான விரிவான ஆன்லைன் ஜாதகப் பொருத்த அறிக்கையைப் பெறுங்கள். அந்தச் சுயவிவரத்தைத் திறந்து “ஜாதகப் பொருத்த அறிக்கை பெறவும்” என்பதைத் தட்டவும் — உங்கள் அறிக்கை “அறிக்கைகள்” தாவலில் கிடைக்கும்.';
+
+  @override
+  String get unsendInterest => 'விருப்பத்தை திரும்பப் பெறு';
+
+  @override
+  String get interestUnsent => 'விருப்பம் திரும்பப் பெறப்பட்டது.';
+
+  @override
+  String get unsendConfirmMsg =>
+      'இந்த விருப்பம் ரத்து செய்யப்படும். மற்றவருக்கு இது இனி தெரியாது; ஏற்கவோ நிராகரிக்கவோ முடியாது.';
+
+  @override
+  String get removeMatch => 'நீக்கு';
+
+  @override
+  String get removeMatchTitle => 'இந்தப் பொருத்தத்தை நீக்கவா?';
+
+  @override
+  String removeMatchBody(String name) {
+    return '$name இருவரின் பொருத்தப் பட்டியலிலிருந்தும் நீக்கப்படுவார்; இருவரும் ஒருவரின் தொடர்பு விவரங்களை மற்றவர் இனி பார்க்க முடியாது.';
+  }
+
+  @override
+  String get matchRemoved => 'பொருத்தம் நீக்கப்பட்டது.';
+
+  @override
+  String get couldNotRemoveMatch =>
+      'பொருத்தத்தை நீக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 }

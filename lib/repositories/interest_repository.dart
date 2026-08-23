@@ -42,10 +42,28 @@ class InterestRepository {
   Future<void> rejectInterest(String interestId) =>
       _firestore.updateInterestStatus(interestId, 'rejected');
 
-  /// Withdraws (unsends) an interest the signed-in user sent, by deleting the
+  /// Withdraws (UNSENDS) an interest the signed-in user sent, by deleting the
   /// document so it disappears for both parties.
+  ///
+  /// This is a real cancellation, not a hidden flag: once the document is gone
+  /// the receiver's `watchReceivedInterests` stream drops it immediately, and
+  /// they cannot accept or reject it — the security rules only allow an update
+  /// on a document that still exists.
   Future<void> withdrawInterest(String interestId) =>
       _firestore.deleteInterest(interestId);
+
+  /// Removes an ACCEPTED interest (a connection) for both members: the
+  /// interest document and the contact-unlock connection are both deleted.
+  ///
+  /// Loads the interest first so the connection's pair id can be derived from
+  /// the real sender/receiver rather than trusting a possibly-stale cached
+  /// model. A missing interest still clears nothing and reports success — the
+  /// desired end state is "no accepted interest", which already holds.
+  Future<void> removeAcceptedInterest(String interestId) async {
+    final interest = await _firestore.getInterestById(interestId);
+    if (interest == null) return;
+    return _firestore.removeAcceptedInterest(interest);
+  }
 
   Stream<List<InterestModel>> watchSentInterests(String userId) =>
       _firestore.watchSentInterests(userId);

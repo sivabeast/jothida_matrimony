@@ -13,6 +13,7 @@ import '../../widgets/common/external_party_card.dart';
 import '../../widgets/common/horoscope_documents_view.dart';
 import '../../widgets/common/network_photo.dart';
 import 'compatibility_report_screen.dart';
+import '../../core/services/horoscope_calculation_service.dart';
 
 /// ONE Horoscope Report Request, opened from the Requests module (spec §2/§3).
 ///
@@ -301,7 +302,8 @@ class _PersonCard extends ConsumerWidget {
         const SizedBox(height: 12),
         kvRow('Date of Birth', p == null ? '—' : _date(p.dateOfBirth)),
         kvRow('Age', p == null ? '—' : '${_age(p.dateOfBirth)}'),
-        kvRow('Time of Birth', p?.horoscope.birthTime ?? ''),
+        kvRow('Time of Birth',
+            HoroscopeCalculationService.formatBirthTimeForDisplay(p?.horoscope.birthTime)),
         kvRow('Place of Birth', p?.horoscope.birthPlace ?? ''),
         kvRow('Gender', p?.gender ?? ''),
         kvRow('Marital Status', p?.maritalStatus ?? ''),

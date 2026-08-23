@@ -13,6 +13,7 @@ import '../../core/constants/brand_assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/file_actions.dart';
 import '../../models/compatibility_report_model.dart';
+import '../../core/services/horoscope_calculation_service.dart';
 
 /// A4 print layout + PDF/Image export for the Marriage Compatibility Report.
 ///
@@ -232,7 +233,7 @@ Widget _personCard(String title, CompatPerson p) => Container(
               children: [
                 _personRow('பெயர் / Name', p.name),
                 _personRow('பிறந்த தேதி / DOB', p.dob),
-                _personRow('பிறந்த நேரம் / Time', p.birthTime),
+                _personRow('பிறந்த நேரம் / Time', HoroscopeCalculationService.formatBirthTimeForDisplay(p.birthTime)),
                 _personRow('பிறந்த இடம் / Place', p.birthPlace),
                 _personRow('நட்சத்திரம் / Star', p.star),
                 _personRow('ராசி / Rasi', p.rasi),

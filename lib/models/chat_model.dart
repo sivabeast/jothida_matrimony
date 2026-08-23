@@ -25,6 +25,14 @@ class ChatThread {
   final Map<String, DateTime> deliveredAt;
   final Map<String, DateTime> readAt;
 
+  /// Uids whose owner has DELETED their account (spec §2).
+  ///
+  /// The thread document is shared, so it cannot simply be removed by the
+  /// leaving member — and it snapshots their name and photo, which must stop
+  /// being shown to the other member. Their uid is recorded here instead and
+  /// the client hides the thread entirely.
+  final List<String> deletedParticipants;
+
   const ChatThread({
     required this.id,
     required this.participantIds,
@@ -36,6 +44,7 @@ class ChatThread {
     this.unread = const {},
     this.deliveredAt = const {},
     this.readAt = const {},
+    this.deletedParticipants = const [],
   });
 
   /// Deterministic thread id for a pair of uids.
@@ -46,6 +55,11 @@ class ChatThread {
 
   String otherId(String myUid) =>
       participantIds.firstWhere((id) => id != myUid, orElse: () => '');
+
+  /// True when the OTHER member has deleted their account, so this thread must
+  /// not be listed or opened any more (spec §2).
+  bool isOtherDeleted(String myUid) =>
+      deletedParticipants.contains(otherId(myUid));
 
   String otherName(String myUid) => participantNames[otherId(myUid)] ?? 'User';
 
@@ -80,6 +94,8 @@ class ChatThread {
       unread: Map<String, int>.from(d['unread'] ?? const {}),
       deliveredAt: _timesFrom(d['deliveredAt']),
       readAt: _timesFrom(d['readAt']),
+      deletedParticipants:
+          List<String>.from(d['deletedParticipants'] ?? const []),
     );
   }
 

@@ -94,6 +94,25 @@ class AccountController extends Notifier<AsyncValue<void>> {
         }
         ref.read(myDemoProfileIdProvider.notifier).state = null;
       } else if (uid != null) {
+        // Chats FIRST, while the session still satisfies the participant-only
+        // rules. The thread document is shared, so it cannot be deleted by the
+        // leaving member — it is tombstoned instead, which removes their name,
+        // photo and the whole conversation from the other member's Chats list
+        // (spec §2). Best-effort: a chat that cannot be cleared must never
+        // block the account deletion itself, but it IS logged so an orphaned
+        // thread can be found later rather than failing silently.
+        if (!isAstrologer) {
+          try {
+            final failed =
+                await ref.read(chatServiceProvider).tombstoneThreadsFor(uid);
+            if (failed != 0) {
+              debugPrint('[AccountController] chat tombstone incomplete for '
+                  '$uid (failed=$failed) — threads may still show this member.');
+            }
+          } catch (e) {
+            debugPrint('[AccountController] chat tombstone skipped: $e');
+          }
+        }
         authDeleted = await repo.deleteAccount(uid, isAstrologer: isAstrologer);
       }
 

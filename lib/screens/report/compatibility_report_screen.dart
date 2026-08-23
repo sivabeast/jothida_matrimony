@@ -12,6 +12,7 @@ import '../../providers/match_analysis_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../widgets/report/analysis_profile_cards.dart';
 import 'compatibility_report_print.dart';
+import '../../core/services/horoscope_calculation_service.dart';
 
 const Color _maroon = AppColors.primary;
 const Color _gold = AppColors.gold;
@@ -641,7 +642,7 @@ class _CompatibilityReportScreenState
                 children: [
                   _personField('Name', p.name),
                   _personField('Date of Birth', p.dob),
-                  _personField('Time of Birth', p.birthTime),
+                  _personField('Time of Birth', HoroscopeCalculationService.formatBirthTimeForDisplay(p.birthTime)),
                   _personField('Birth Place', p.birthPlace),
                   _personField('Star', p.star),
                   _personField('Rasi', p.rasi),

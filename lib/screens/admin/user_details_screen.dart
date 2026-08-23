@@ -13,6 +13,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/export/download_saved_dialog.dart';
 import '../../widgets/export/profile_form_export.dart';
+import '../../core/services/horoscope_calculation_service.dart';
 
 /// Live counts of a user's Horoscope Analysis + Appointment bookings.
 final _userRequestsProvider = StreamProvider.autoDispose
@@ -270,7 +271,7 @@ class UserDetailsScreen extends ConsumerWidget {
         _row('Rasi', s(h.rasi)),
         _row('Nakshatra', s(h.nakshatra)),
         _row('Lagnam', s(h.lagnam)),
-        _row('Birth Time', s(h.birthTime)),
+        _row('Birth Time', s(HoroscopeCalculationService.formatBirthTimeForDisplay(h.birthTime))),
         _row('Birth Place', s(h.birthPlace)),
         _row('Chevvai Dosham', s(h.dosham)),
         _row('Rahu / Kethu Dosham', s(h.rahuKethuDosham)),

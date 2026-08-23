@@ -600,6 +600,32 @@ class FirestoreService {
     }
   }
 
+  /// The deterministic `connections/{pair}` document id for two uids.
+  static String connectionPairId(String a, String b) =>
+      a.compareTo(b) < 0 ? '${a}_$b' : '${b}_$a';
+
+  /// Removes an ACCEPTED interest and the contact-unlock connection it created.
+  ///
+  /// Both sides of the match are affected, which is the point: after this the
+  /// pair is no longer connected, so the interest disappears from BOTH members'
+  /// Accepted lists and neither can read the other's gated contact details any
+  /// more. The rules already permit this — either party may delete the
+  /// interest, and a participant may delete their own connection — so no rules
+  /// change is required.
+  ///
+  /// The connection is deleted FIRST: if the interest went first, the
+  /// connection would briefly reference a missing interest, and a failure
+  /// between the two writes would leave contact details unlocked for a match
+  /// that no longer exists. Losing the interest but keeping the connection is
+  /// the more harmful ordering, so it is the one that cannot happen.
+  Future<void> removeAcceptedInterest(InterestModel interest) async {
+    final pair = connectionPairId(interest.senderId, interest.receiverId);
+    await _deleteDocSafe(AppConstants.connectionsCollection, pair);
+    await deleteInterest(interest.id);
+    debugPrint('[FirestoreService] removed accepted interest ${interest.id} '
+        'and connection $pair');
+  }
+
   // ── Contacts (gated phone / WhatsApp) ──────────────────────────────────────
   /// Reads a user's contact details. The Firestore rules only permit this when
   /// the caller is the owner, an admin, or has an accepted connection with the
