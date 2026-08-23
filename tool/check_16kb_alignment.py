@@ -7,6 +7,8 @@ it must be >= 16384 (0x4000), which is what `readelf -lW` shows as `Align`.
 A library linked with NDK r26 or older (or without
 `-Wl,-z,max-page-size=16384`) reports 0x1000 and fails on a 16 KB device.
 
+Only 64-bit ABIs are gated — see ABI_64_BIT below for why.
+
 For an AAB/APK there is a second, independent requirement: when the libraries
 are stored uncompressed (`useLegacyPackaging = false`, the AGP 8 default), each
 `lib/**/*.so` zip entry must START on a 16 KB boundary. AGP 8.5.1+ does that
@@ -25,6 +27,28 @@ import sys
 import zipfile
 
 PAGE_16K = 16 * 1024
+
+# 16 KB pages are a 64-bit-only Android feature: a device configured with them
+# is arm64 and does not run 32-bit code at all. Google Play's compatibility
+# check therefore evaluates the 64-bit libraries, and the alignment of a 32-bit
+# .so is moot — it can never be loaded on such a device.
+#
+# So a misaligned 32-bit library is REPORTED but does not fail the gate. This
+# matters in practice: libface_detector_v2_jni.so ships PREBUILT inside the
+# ML Kit AAR with 0x1000 on armeabi-v7a (its arm64-v8a and x86_64 copies are
+# correctly 0x4000), and being prebuilt it cannot be re-linked from this build.
+# Failing on it would block a release that Play considers compliant.
+ABI_64_BIT = {"arm64-v8a", "x86_64", "riscv64"}
+ABI_32_BIT = {"armeabi-v7a", "armeabi", "x86", "mips"}
+
+
+def abi_of(path: str):
+    """The ABI directory in a `lib/<abi>/x.so` path, or None if not present."""
+    parts = path.replace("\\", "/").split("/")
+    for p in parts:
+        if p in ABI_64_BIT or p in ABI_32_BIT:
+            return p
+    return None
 
 
 def load_segment_aligns(data: bytes):
@@ -74,9 +98,16 @@ def check_elf(name: str, data: bytes, failures: list):
         return
     worst = min(aligns)
     ok = worst >= PAGE_16K
-    print("  %s %-56s p_align=0x%x" % ("OK " if ok else "BAD", name, worst))
-    if not ok:
+    abi = abi_of(name)
+    # A 32-bit library cannot run on a 16 KB-page device, so its alignment is
+    # informational only — flagged, but never a build failure.
+    advisory = (not ok) and abi in ABI_32_BIT
+    mark = "OK " if ok else ("32b" if advisory else "BAD")
+    print("  %s %-56s p_align=0x%x" % (mark, name, worst))
+    if not ok and not advisory:
         failures.append("%s (p_align=0x%x, needs >=0x4000)" % (name, worst))
+    elif advisory:
+        print("      ^ 32-bit ABI (%s) - not applicable to 16 KB pages." % abi)
 
 
 def check_archive(path: str, failures: list):
