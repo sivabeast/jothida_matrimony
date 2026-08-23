@@ -415,6 +415,14 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // ── App configuration (release / version gate, spec §2/§6) ────────────
+    // Every signed-in member must be able to READ the version gate — it is how
+    // the app learns a newer release exists. Only an admin may change it.
+    match /app_config/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
     // ── App-opening popups (admin-managed content, spec §13/§14) ───────────
     // Same shape as banners: every signed-in member reads the rotation, only
     // an admin creates, edits, reorders or deletes the contents.

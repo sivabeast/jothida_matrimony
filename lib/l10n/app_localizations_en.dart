@@ -1332,7 +1332,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportLabel => 'Report';
 
   @override
-  String get updateAvailableTitle => 'Update Available';
+  String get updateAvailableTitle => 'New Update Available 🎉';
 
   @override
   String get updateRequiredMessage => 'Update your application to continue.';
@@ -3019,7 +3019,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updateAvailableBody =>
-      'A new version of the app is available on Google Play. Update now for the latest features and fixes.';
+      'A new version of Jothida Matrimony is available. Update now for new features, improvements and bug fixes.';
 
   @override
   String get later => 'Later';
@@ -3621,4 +3621,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get submittedDetails => 'Submitted Details';
+
+  @override
+  String get updateRequiredTitle => 'Update Required';
+
+  @override
+  String get updateRequiredBody =>
+      'This version is no longer supported. Please update to the latest version to continue using Jothida Matrimony.';
+
+  @override
+  String versionLabel(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get couldNotOpenPlayStore =>
+      'Could not open the Play Store. Please update Jothida Matrimony from the Play Store app.';
+
+  @override
+  String get rateAppTitle => 'How is Jothida Matrimony? ❤️';
+
+  @override
+  String get rateAppBody => 'Your feedback means a lot to us.';
+
+  @override
+  String get rateAndReview => 'Rate & Review';
+
+  @override
+  String get rateApp => 'Rate this app';
 }

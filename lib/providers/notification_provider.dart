@@ -78,6 +78,9 @@ enum AppNotificationEvent {
   /// A horoscope-analysis request was auto-assigned to an EMPLOYEE — sent to
   /// the employee's account so they see the new work immediately.
   reportAssigned,
+
+  /// A newer app release is available (spec §5).
+  appUpdate,
 }
 
 class NotificationNotifier extends Notifier<void> {
@@ -147,6 +150,45 @@ class NotificationNotifier extends Notifier<void> {
     }
   }
 
+  /// Announces a release to every member running an OLDER build (spec §5/§7).
+  ///
+  /// Returns how many members were notified, or -1 when the send failed.
+  ///
+  /// Two things stop this becoming spam: members already on [versionCode] or
+  /// newer are never selected, and each notification uses a deterministic
+  /// per-member-per-version id, so re-running it for the same release
+  /// overwrites the existing row instead of adding another.
+  Future<int> sendUpdateAnnouncement({
+    required int versionCode,
+    required String versionName,
+    String title = '',
+    String body = '',
+  }) async {
+    try {
+      final fs = ref.read(firestoreServiceProvider);
+      final uids = await fs.uidsBelowVersion(versionCode);
+      if (uids.isEmpty) return 0;
+      await fs.createUpdateNotifications(
+        uids: uids,
+        versionCode: versionCode,
+        title: title.trim().isEmpty ? 'New Update Available' : title.trim(),
+        body: body.trim().isEmpty
+            ? 'A new version of Jothida Matrimony is available. Update now '
+                'for new features and improvements.'
+            : body.trim(),
+        data: {
+          'route': '/home',
+          'versionCode': versionCode,
+          'versionName': versionName,
+        },
+      );
+      return uids.length;
+    } catch (e) {
+      debugPrint('[Notifications] sendUpdateAnnouncement failed: $e');
+      return -1;
+    }
+  }
+
   /// Canonical destination per event — used when the caller didn't pass an
   /// explicit route. Kept aligned with the NotificationsTab type fallback and
   /// the routes registered in app_router.dart.
@@ -166,6 +208,9 @@ class NotificationNotifier extends Notifier<void> {
         AppNotificationEvent.paymentSuccess => '/reports',
         AppNotificationEvent.adminProfileUpdate => '/my-profile',
         AppNotificationEvent.reportAssigned => '/astrologer-dashboard',
+        // Lands on Home, where AppUpdateHost is mounted and offers the
+        // update immediately — never a dead screen or a raw store link.
+        AppNotificationEvent.appUpdate => '/home',
       };
 
   /// Stored `type` strings — kept aligned with the NotificationsTab visuals.
@@ -182,6 +227,7 @@ class NotificationNotifier extends Notifier<void> {
         AppNotificationEvent.paymentSuccess => 'payment_success',
         AppNotificationEvent.adminProfileUpdate => 'admin_update',
         AppNotificationEvent.reportAssigned => 'report_assigned',
+        AppNotificationEvent.appUpdate => 'app_update',
       };
 
   static ({String title, String body}) _template(
@@ -325,6 +371,19 @@ class NotificationNotifier extends Notifier<void> {
                 title: 'New Horoscope Report Assigned 📋',
                 body: 'A new horoscope analysis report has been assigned to '
                     'you. Open your dashboard to start working on it.'
+              );
+      case AppNotificationEvent.appUpdate:
+        return ta
+            ? (
+                title: 'புதிய பதிப்பு வந்துள்ளது 🎉',
+                body: 'Jothida Matrimony-ன் புதிய version வெளியாகியுள்ளது. '
+                    'புதிய features மற்றும் improvements பெற இப்போதே '
+                    'update செய்யுங்கள்.'
+              )
+            : (
+                title: 'New Update Available 🎉',
+                body: 'A new version of Jothida Matrimony is available. '
+                    'Update now for new features and improvements.'
               );
     }
   }

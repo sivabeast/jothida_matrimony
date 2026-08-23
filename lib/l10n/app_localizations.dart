@@ -2603,7 +2603,7 @@ abstract class AppLocalizations {
   /// No description provided for @updateAvailableTitle.
   ///
   /// In en, this message translates to:
-  /// **'Update Available'**
+  /// **'New Update Available 🎉'**
   String get updateAvailableTitle;
 
   /// No description provided for @updateRequiredMessage.
@@ -5555,7 +5555,7 @@ abstract class AppLocalizations {
   /// No description provided for @updateAvailableBody.
   ///
   /// In en, this message translates to:
-  /// **'A new version of the app is available on Google Play. Update now for the latest features and fixes.'**
+  /// **'A new version of Jothida Matrimony is available. Update now for new features, improvements and bug fixes.'**
   String get updateAvailableBody;
 
   /// No description provided for @later.
@@ -6601,6 +6601,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Submitted Details'**
   String get submittedDetails;
+
+  /// No description provided for @updateRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Required'**
+  String get updateRequiredTitle;
+
+  /// No description provided for @updateRequiredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This version is no longer supported. Please update to the latest version to continue using Jothida Matrimony.'**
+  String get updateRequiredBody;
+
+  /// No description provided for @versionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String versionLabel(String version);
+
+  /// No description provided for @couldNotOpenPlayStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the Play Store. Please update Jothida Matrimony from the Play Store app.'**
+  String get couldNotOpenPlayStore;
+
+  /// No description provided for @rateAppTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How is Jothida Matrimony? ❤️'**
+  String get rateAppTitle;
+
+  /// No description provided for @rateAppBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your feedback means a lot to us.'**
+  String get rateAppBody;
+
+  /// No description provided for @rateAndReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate & Review'**
+  String get rateAndReview;
+
+  /// No description provided for @rateApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate this app'**
+  String get rateApp;
 }
 
 class _AppLocalizationsDelegate

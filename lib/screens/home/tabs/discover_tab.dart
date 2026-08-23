@@ -22,6 +22,8 @@ import '../../../widgets/profile/verification_tick.dart';
 import '../../../widgets/interest/interest_sent_overlay.dart';
 import '../../../widgets/interest/match_celebration.dart';
 import '../../../widgets/interest/pending_interest_card.dart';
+import 'dart:async';
+import '../../../services/review_service.dart';
 
 /// The Matches experience — a HORIZONTAL swipe browser over EVERY eligible
 /// profile (§1).
@@ -111,6 +113,9 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     final profile = profiles[page];
     setState(() => _index = page);
     ref.read(viewedProfilesProvider.notifier).markViewed(profile.id);
+    // Ordinary browsing counts a little towards the review ask.
+    unawaited(ReviewService.instance
+        .recordEngagement(ReviewTrigger.browsedMatches));
     ref.read(lastViewedProfileProvider.notifier).set(profile.id);
     _maybeLoadMore(page, profiles.length);
   }

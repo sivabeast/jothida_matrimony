@@ -438,7 +438,7 @@
   "profileNotFound": "சுயவிவரம் கிடைக்கவில்லை",
   "couldNotLoadProfile": "இந்த சுயவிவரத்தை இப்போது ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
   "reportLabel": "புகார்",
-  "updateAvailableTitle": "புதிய Update உள்ளது",
+  "updateAvailableTitle": "புதிய பதிப்பு வந்துள்ளது 🎉",
   "updateRequiredMessage": "தொடர உங்கள் பயன்பாட்டைப் புதுப்பிக்கவும்.",
   "updateNow": "இப்போது புதுப்பிக்கவும்",
   "welcomeExclaim": "வரவேற்கிறோம்!",
@@ -1289,7 +1289,7 @@
   "downloadAsImages": "படமாக பதிவிறக்கவும்",
   "downloadProfileLocked": "விருப்பம் ஏற்கப்பட்ட பிறகுதான் Profile-ஐ பதிவிறக்க முடியும்.",
   "downloadProfileFailed": "Profile-ஐ தயாரிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
-  "updateAvailableBody": "Google Play-இல் App-இன் புதிய பதிப்பு உள்ளது. புதிய அம்சங்களுக்கும் திருத்தங்களுக்கும் இப்போதே Update செய்யுங்கள்.",
+  "updateAvailableBody": "Jothida Matrimony-ன் புதிய version வெளியாகியுள்ளது. புதிய features, improvements மற்றும் bug fixes பெற இப்போதே update செய்யுங்கள்.",
   "later": "பின்னர்",
   "anyTapToSelect": "ஏதேனும் — தேர்ந்தெடுக்க தட்டவும்",
   "countSelected": "{count} தேர்ந்தெடுக்கப்பட்டது",
@@ -1463,5 +1463,13 @@
   "occupationFreeTextHelper": "உங்கள் உண்மையான தொழிலைத் தட்டச்சு செய்யவும் — எ.கா. விவசாயி, தையல்காரர், ஓட்டுநர், மின்சாரப் பணியாளர், தொழில் உரிமையாளர்.",
   "cityNotListedHelper": "உங்கள் ஊர் கிடைக்கவில்லையா? தட்டச்சு செய்து + அழுத்தி சேர்க்கவும். தெரு அல்லது பகுதி அல்ல, நகரம்/ஊர் பெயரை உள்ளிடவும்.",
   "reportReadOnlyNote": "இந்த விவரங்கள் ஒரு முறை சமர்ப்பிக்கப்பட்டவை; மாற்ற முடியாது. ஏதேனும் தவறு இருந்தால் ஆதரவைத் தொடர்பு கொள்ளவும்.",
-  "submittedDetails": "சமர்ப்பிக்கப்பட்ட விவரங்கள்"
+  "submittedDetails": "சமர்ப்பிக்கப்பட்ட விவரங்கள்",
+  "updateRequiredTitle": "Update தேவை",
+  "updateRequiredBody": "இந்த version இனி supported இல்லை. தொடர்ந்து Jothida Matrimony பயன்படுத்த புதிய version-க்கு update செய்ய வேண்டும்.",
+  "versionLabel": "பதிப்பு {version}",
+  "couldNotOpenPlayStore": "Play Store-ஐ திறக்க முடியவில்லை. Play Store செயலியிலிருந்து Jothida Matrimony-ஐ update செய்யவும்.",
+  "rateAppTitle": "Jothida Matrimony எப்படி இருக்கு? ❤️",
+  "rateAppBody": "உங்கள் feedback எங்களுக்கு மிகவும் முக்கியம்.",
+  "rateAndReview": "மதிப்பீடு அளிக்கவும்",
+  "rateApp": "இந்த செயலியை மதிப்பிடுங்கள்"
 }

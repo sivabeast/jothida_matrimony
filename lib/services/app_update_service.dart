@@ -2,79 +2,182 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:in_app_update/in_app_update.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-/// Google Play **In-App Updates** (Immediate flow).
+import '../models/app_update_config.dart';
+
+/// How an update attempt finished, so the caller can tell the member something
+/// truthful instead of guessing.
+enum UpdateLaunchOutcome {
+  /// Play accepted the flow (flexible download started, or the immediate flow
+  /// completed / is completing).
+  started,
+
+  /// Play could not run the flow, so the Play Store listing was opened.
+  openedStore,
+
+  /// The member backed out of Play's own dialog.
+  cancelled,
+
+  /// Nothing worked — neither Play nor the store link.
+  failed,
+}
+
+/// Google Play **In-App Updates** plus a real Play Store fallback.
 ///
-/// This fully replaces the old admin-managed force-update gate: nothing is
-/// stored in Firestore, no admin ever publishes a version number, and there is
-/// no configuration to keep in sync. Google Play itself is the single source of
-/// truth for "is a newer build live?".
+/// Two independent things decide whether a member is prompted:
 ///
-/// Contract (spec §9):
-///   • checked automatically every time the app opens — cold start AND every
-///     return from the background;
-///   • when Play reports a newer version, the IMMEDIATE update dialog is shown,
-///     which blocks the app until the user updates;
-///   • once updated, Play stops reporting an available update, so the dialog
-///     never appears again until the next release;
-///   • completely silent on any failure — a device with no Play Store, a
-///     sideloaded/debug build, or no network must never be blocked from using
-///     the app.
+///  * the admin-managed [AppUpdateConfig] decides IF and how urgently (that
+///    lives in Firestore so a release can be announced without shipping code);
+///  * Play decides HOW the update actually happens.
 ///
-/// IMPORTANT (testing): `InAppUpdate.checkForUpdate()` only ever reports an
-/// update for a build that was **installed by Google Play** and whose version
-/// code is lower than the one live on a Play track. It always reports
-/// "no update" for a locally-installed debug/release APK — that is Play's
-/// behaviour, not a bug in this code.
+/// Everything here is best-effort and never throws. A device with no Play
+/// Store, a sideloaded build, or no network must keep working — an OPTIONAL
+/// update can always be skipped, and even a forced one falls back to opening
+/// the store listing rather than trapping the member in a dead dialog.
+///
+/// IMPORTANT (testing): `InAppUpdate.checkForUpdate()` only reports an update
+/// for a build **installed by Google Play** whose version code is lower than
+/// one live on a Play track. It always reports "no update" for a locally
+/// installed debug/release APK. That is Play's behaviour, not a bug — which is
+/// exactly why the Firestore config exists as the decision source and Play is
+/// used only to carry out the update.
 class AppUpdateService {
   AppUpdateService._();
 
   static final AppUpdateService instance = AppUpdateService._();
 
-  /// Guards against overlapping checks: the immediate flow is a full-screen
-  /// Play activity, and starting a second one while the first is showing
-  /// throws.
+  /// Guards against overlapping flows: Play's update UI is a full-screen
+  /// activity and starting a second one while the first is showing throws.
   bool _inFlight = false;
 
-  /// Android-only. On any other platform the Play API does not exist, so the
-  /// check is skipped rather than throwing.
-  bool get _supported => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  /// Cached so the version is read from the platform once per process.
+  int? _installedVersionCode;
 
-  /// Checks Play for a newer version and, if there is one, starts the
-  /// IMMEDIATE update flow. Safe to call as often as you like — concurrent
-  /// calls collapse into the one already running.
+  bool get _supported =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  /// This build's version code (the `+N` in pubspec's `version:`).
   ///
-  /// Never throws: every failure path is logged and swallowed.
-  Future<void> checkAndPromptImmediate() async {
-    if (!_supported || _inFlight) return;
+  /// Returns 0 when it cannot be read, which every caller treats as "do not
+  /// prompt" — never as "out of date".
+  Future<int> installedVersionCode() async {
+    final cached = _installedVersionCode;
+    if (cached != null) return cached;
+    try {
+      final info = await PackageInfo.fromPlatform();
+      final code = int.tryParse(info.buildNumber.trim()) ?? 0;
+      _installedVersionCode = code;
+      return code;
+    } catch (e) {
+      debugPrint('[AppUpdate] could not read the installed version: $e');
+      _installedVersionCode = 0;
+      return 0;
+    }
+  }
+
+  Future<String> installedVersionName() async {
+    try {
+      return (await PackageInfo.fromPlatform()).version;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  /// Runs the update for [requirement].
+  ///
+  /// Forced → Play's IMMEDIATE flow (Play itself blocks the app until the
+  /// update finishes). Optional → the FLEXIBLE flow, which downloads in the
+  /// background and lets the member keep using the app.
+  ///
+  /// Whatever Play cannot do, the store listing does: every failure path ends
+  /// in [openStoreListing] rather than a dead end.
+  Future<UpdateLaunchOutcome> startUpdate({
+    required AppUpdateRequirement requirement,
+    required AppUpdateConfig config,
+  }) async {
+    if (_inFlight) return UpdateLaunchOutcome.started;
     _inFlight = true;
     try {
-      final info = await InAppUpdate.checkForUpdate()
-          .timeout(const Duration(seconds: 15));
+      if (!_supported) return await _fallback(config);
+
+      AppUpdateInfo info;
+      try {
+        info = await InAppUpdate.checkForUpdate()
+            .timeout(const Duration(seconds: 15));
+      } catch (e) {
+        // No Play Services, sideloaded build, offline, timeout…
+        debugPrint('[AppUpdate] Play check unavailable ($e) — opening store.');
+        return await _fallback(config);
+      }
+
       if (info.updateAvailability != UpdateAvailability.updateAvailable) {
-        debugPrint('[AppUpdate] no update available '
-            '(${info.updateAvailability}).');
-        return;
+        // Play does not know about the release yet (staged rollout, or this
+        // build was not installed by Play). The store listing still lets the
+        // member update by hand.
+        debugPrint('[AppUpdate] Play reports ${info.updateAvailability} — '
+            'opening store instead.');
+        return await _fallback(config);
       }
-      if (!info.immediateUpdateAllowed) {
-        // Play can veto the immediate flow (e.g. staleness/priority rules).
-        // Nothing else to do — we never fall back to a home-grown blocking
-        // screen; the next launch checks again.
-        debugPrint('[AppUpdate] immediate update not allowed by Play.');
-        return;
+
+      final immediate = requirement == AppUpdateRequirement.forced;
+      final allowed =
+          immediate ? info.immediateUpdateAllowed : info.flexibleUpdateAllowed;
+      if (!allowed) {
+        debugPrint('[AppUpdate] Play vetoed the '
+            '${immediate ? 'immediate' : 'flexible'} flow — opening store.');
+        return await _fallback(config);
       }
-      debugPrint('[AppUpdate] newer version '
-          '${info.availableVersionCode} — starting immediate update.');
-      await InAppUpdate.performImmediateUpdate();
-    } on TimeoutException {
-      debugPrint('[AppUpdate] check timed out (non-fatal).');
-    } catch (e) {
-      // Not installed from Play, no Play Services, offline, user cancelled the
-      // Play dialog… all non-fatal: the app keeps working and re-checks on the
-      // next open.
-      debugPrint('[AppUpdate] check/flow skipped (non-fatal): $e');
+
+      try {
+        if (immediate) {
+          await InAppUpdate.performImmediateUpdate();
+        } else {
+          await InAppUpdate.startFlexibleUpdate();
+          // The bytes are downloaded; completing installs and restarts. A
+          // failure here is not fatal — Play finishes the install on its own
+          // schedule.
+          try {
+            await InAppUpdate.completeFlexibleUpdate();
+          } catch (e) {
+            debugPrint('[AppUpdate] flexible completion deferred: $e');
+          }
+        }
+        return UpdateLaunchOutcome.started;
+      } catch (e) {
+        // The member dismissed Play's dialog, or the install failed.
+        debugPrint('[AppUpdate] update flow ended early: $e');
+        return UpdateLaunchOutcome.cancelled;
+      }
     } finally {
       _inFlight = false;
     }
+  }
+
+  Future<UpdateLaunchOutcome> _fallback(AppUpdateConfig config) async =>
+      await openStoreListing(config)
+          ? UpdateLaunchOutcome.openedStore
+          : UpdateLaunchOutcome.failed;
+
+  /// Opens the app's real Play listing. Tries the `market://` scheme first so
+  /// the Play app handles it directly, then the https URL for devices without
+  /// the Play app (or with it disabled).
+  Future<bool> openStoreListing(AppUpdateConfig config) async {
+    final https = config.effectivePlayStoreUrl;
+    final market = https.startsWith('market://')
+        ? https
+        : https.replaceFirst(
+            'https://play.google.com/store/apps/details', 'market://details');
+    for (final url in {market, https}) {
+      try {
+        final ok = await launchUrl(Uri.parse(url),
+            mode: LaunchMode.externalApplication);
+        if (ok) return true;
+      } catch (e) {
+        debugPrint('[AppUpdate] could not open $url: $e');
+      }
+    }
+    return false;
   }
 }

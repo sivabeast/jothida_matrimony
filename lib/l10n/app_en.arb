@@ -507,7 +507,7 @@
   "profileNotFound": "Profile not found",
   "couldNotLoadProfile": "Couldn't load this profile right now. Please try again.",
   "reportLabel": "Report",
-  "updateAvailableTitle": "Update Available",
+  "updateAvailableTitle": "New Update Available 🎉",
   "updateRequiredMessage": "Update your application to continue.",
   "updateNow": "Update Now",
   "welcomeExclaim": "Welcome!",
@@ -1358,7 +1358,7 @@
   "downloadAsImages": "Download as Images",
   "downloadProfileLocked": "You can download a profile only after the interest is accepted.",
   "downloadProfileFailed": "Could not prepare the profile. Please try again.",
-  "updateAvailableBody": "A new version of the app is available on Google Play. Update now for the latest features and fixes.",
+  "updateAvailableBody": "A new version of Jothida Matrimony is available. Update now for new features, improvements and bug fixes.",
   "later": "Later",
   "anyTapToSelect": "Any — tap to select",
   "countSelected": "{count} selected",
@@ -1619,5 +1619,20 @@
   "occupationFreeTextHelper": "Type your actual occupation — for example Farmer, Tailor, Driver, Electrician, Business Owner.",
   "cityNotListedHelper": "Can’t find your city? Type it and tap + to add it. Please enter a city or town, not a street or locality.",
   "reportReadOnlyNote": "These details were submitted once and cannot be changed. If something is wrong, please contact support.",
-  "submittedDetails": "Submitted Details"
+  "submittedDetails": "Submitted Details",
+  "updateRequiredTitle": "Update Required",
+  "updateRequiredBody": "This version is no longer supported. Please update to the latest version to continue using Jothida Matrimony.",
+  "versionLabel": "Version {version}",
+  "@versionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "couldNotOpenPlayStore": "Could not open the Play Store. Please update Jothida Matrimony from the Play Store app.",
+  "rateAppTitle": "How is Jothida Matrimony? ❤️",
+  "rateAppBody": "Your feedback means a lot to us.",
+  "rateAndReview": "Rate & Review",
+  "rateApp": "Rate this app"
 }

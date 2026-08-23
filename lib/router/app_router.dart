@@ -83,6 +83,7 @@ import '../screens/muhurtham/muhurtham_calendar_screen.dart';
 import '../screens/wedding/wedding_workspace_screen.dart';
 import '../providers/wedding_provider.dart';
 import '../core/theme/app_colors.dart';
+import '../screens/admin/app_update_management_screen.dart';
 
 /// Bridges a [Stream] (here, Firebase's `authStateChanges`) to a
 /// [Listenable] that [GoRouter] can use as `refreshListenable`.
@@ -555,6 +556,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/admin/popups',
               builder: (_, __) => const PopupManagementScreen()),
+          // Release / version gate read by the in-app update check (§6).
+          GoRoute(
+              path: '/admin/app-update',
+              builder: (_, __) => const AppUpdateManagementScreen()),
           GoRoute(
               path: '/admin/astrology-service',
               builder: (_, __) => const AstrologyServiceSettingsScreen()),

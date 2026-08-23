@@ -13,6 +13,7 @@ import '../../models/report_model.dart';
 import '../../models/notification_model.dart';
 import '../../models/announcement_model.dart';
 import '../../models/app_popup_model.dart';
+import '../../models/app_update_config.dart';
 import '../../models/banner_model.dart';
 import '../../models/user_model.dart';
 import '../../models/dashboard_analytics.dart';
@@ -1137,6 +1138,110 @@ class FirestoreService {
     batch.update(col.doc(idB), {'order': orderA});
     await batch.commit();
   }
+
+  /// Records the version code this member is actually running.
+  ///
+  /// Without it the update push would have to go to everyone, including people
+  /// already on the newest build (spec §7). Merged onto the user document and
+  /// completely best-effort — a failure here must never affect startup.
+  Future<void> recordAppVersion(String uid, int versionCode) async {
+    if (uid.trim().isEmpty || versionCode <= 0) return;
+    try {
+      await _db.collection(AppConstants.usersCollection).doc(uid).set(
+        {'appVersionCode': versionCode},
+        SetOptions(merge: true),
+      );
+    } catch (e) {
+      debugPrint('[Firestore] recordAppVersion skipped: $e');
+    }
+  }
+
+  /// Uids of members running a build OLDER than [versionCode].
+  ///
+  /// A member with no recorded version is included: they have not opened a
+  /// build new enough to report one, so they are by definition behind.
+  Future<List<String>> uidsBelowVersion(int versionCode) async {
+    if (versionCode <= 0) return const [];
+    final snap = await _db.collection(AppConstants.usersCollection).get();
+    final out = <String>[];
+    for (final d in snap.docs) {
+      final raw = d.data()['appVersionCode'];
+      final code = raw is int ? raw : int.tryParse('${raw ?? ''}') ?? 0;
+      if (code < versionCode) out.add(d.id);
+    }
+    return out;
+  }
+
+  /// Creates the update notification for [uids], ONE per member per version.
+  ///
+  /// The document id is deterministic (`update_<uid>_<versionCode>`) and the
+  /// write is a `set`, so re-sending the same release overwrites the existing
+  /// row instead of stacking duplicates — the same dedupe idiom the interest
+  /// notifications use. A new version code produces a new id, i.e. a genuinely
+  /// new notification cycle.
+  Future<void> createUpdateNotifications({
+    required List<String> uids,
+    required int versionCode,
+    required String title,
+    required String body,
+    required Map<String, dynamic> data,
+  }) async {
+    final col = _db.collection(AppConstants.notificationsCollection);
+    // Firestore batches cap at 500 writes.
+    for (var i = 0; i < uids.length; i += 400) {
+      final batch = _db.batch();
+      for (final uid in uids.skip(i).take(400)) {
+        if (uid.trim().isEmpty) continue;
+        batch.set(col.doc('update_${uid}_$versionCode'), {
+          'userId': uid,
+          'title': title,
+          'body': body,
+          'type': 'app_update',
+          'data': data,
+          'isRead': false,
+          'createdAt': FieldValue.serverTimestamp(),
+          'targetScreen': '/app-update',
+        });
+      }
+      await batch.commit();
+    }
+  }
+
+  // ── App update / release configuration (spec §2/§6) ───────────────────────
+
+  DocumentReference<Map<String, dynamic>> get _updateConfigRef => _db
+      .collection(AppConstants.appConfigCollection)
+      .doc(AppConstants.appUpdateConfigDoc);
+
+  /// Live release config. A missing document yields the DEFAULT config, whose
+  /// latestVersionCode is 0 — i.e. "nothing configured, prompt nobody" — so a
+  /// project that has never set this up behaves exactly as before.
+  Stream<AppUpdateConfig> watchAppUpdateConfig() => _updateConfigRef
+      .snapshots()
+      .map((d) => d.exists
+          ? AppUpdateConfig.fromFirestore(d)
+          : const AppUpdateConfig())
+      // A rules denial or offline read must not surface as an error that
+      // blocks the app; fall back to "nothing to do".
+      .handleError((Object e) {
+        debugPrint('[Firestore] update config unavailable: $e');
+      });
+
+  Future<AppUpdateConfig> getAppUpdateConfig() async {
+    try {
+      final d = await _updateConfigRef.get();
+      return d.exists ? AppUpdateConfig.fromFirestore(d) : const AppUpdateConfig();
+    } catch (e) {
+      debugPrint('[Firestore] update config read failed: $e');
+      return const AppUpdateConfig();
+    }
+  }
+
+  Future<void> saveAppUpdateConfig(Map<String, dynamic> fields) =>
+      _updateConfigRef.set(
+        {...fields, 'updatedAt': FieldValue.serverTimestamp()},
+        SetOptions(merge: true),
+      );
 
   // ── App-opening popups (admin-managed, spec §13/§14) ──────────────────────
 

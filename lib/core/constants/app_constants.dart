@@ -15,6 +15,10 @@ class AppConstants {
   static const String bannersCollection = 'banners';
   /// Admin-managed app-opening popup contents (spec §13/§14).
   static const String appPopupsCollection = 'app_popups';
+  /// Admin-managed app configuration. `app_config/update` holds the
+  /// release/version gate read by the in-app update check.
+  static const String appConfigCollection = 'app_config';
+  static const String appUpdateConfigDoc = 'update';
   static const String transactionsCollection = 'transactions';
   static const String adminCollection = 'admin';
   static const String astrologersCollection = 'astrologers';

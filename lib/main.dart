@@ -14,9 +14,9 @@ import 'providers/locale_provider.dart';
 import 'core/data/catalog_registry.dart';
 import 'router/app_router.dart';
 import 'screens/settings/language_screen.dart';
-import 'services/app_update_service.dart';
 import 'services/firebase/fcm_service.dart';
 import 'services/firebase/master_data_service.dart';
+import 'providers/app_update_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -99,10 +99,9 @@ class _JothidaMatrimonyAppState extends ConsumerState<JothidaMatrimonyApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Google Play In-App Update (Immediate) — checked on COLD START, and again
-    // on every resume via didChangeAppLifecycleState. Fire-and-forget: the
-    // service never throws and never blocks first paint.
-    unawaited(AppUpdateService.instance.checkAndPromptImmediate());
+    // The update prompt is driven by the admin-managed release config, which
+    // AppUpdateHost watches around Home — nothing to kick off here on a cold
+    // start, and nothing that could delay first paint.
   }
 
   @override
@@ -114,9 +113,11 @@ class _JothidaMatrimonyAppState extends ConsumerState<JothidaMatrimonyApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // "Whenever the app opens" includes coming back from the background — a
-    // long-lived process would otherwise never see a new release.
+    // long-lived process would otherwise never see a new release. The tick is
+    // all that is needed: AppUpdateHost re-evaluates, and its own throttle
+    // decides whether the member is actually prompted.
     if (state == AppLifecycleState.resumed) {
-      unawaited(AppUpdateService.instance.checkAndPromptImmediate());
+      ref.read(updateRecheckTickProvider.notifier).state++;
     }
   }
 
