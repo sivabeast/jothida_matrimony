@@ -10,6 +10,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -175,9 +178,52 @@ jobs:
       # must never reach the artifacts list.
       - name: Verify 16 KB page size compatibility (debug artifacts)
         run: |
+          status=0
           python3 tool/check_16kb_alignment.py \
             build/app/outputs/flutter-apk/app-debug.apk \
-            build/app/outputs/bundle/debug/app-debug.aab
+            build/app/outputs/bundle/debug/app-debug.aab \
+            > /tmp/16kb-debug.txt 2>&1 || status=$?
+          cat /tmp/16kb-debug.txt
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit $status
+        id: check16kb
+        continue-on-error: true
+
+      # Publishes what the check actually saw, and the toolchain the native
+      # module was built with, somewhere readable WITHOUT repo-admin rights —
+      # Actions logs are not. Runs even when the check failed, which is exactly
+      # when the detail is needed.
+      - name: Report 16 KB diagnostics
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "### 16 KB page size check"
+            echo ""
+            echo '```'
+            cat /tmp/16kb-debug.txt 2>/dev/null || echo "(no output)"
+            echo '```'
+            echo ""
+            echo "### Native toolchain actually used"
+            echo ""
+            echo '```'
+            for f in $(find ~/.pub-cache -path '*/android/.cxx/*/CMakeCache.txt' 2>/dev/null | head -4); do
+              echo "== $f"
+              grep -E '^(ANDROID_NDK|ANDROID_PLATFORM|ANDROID_ABI|CMAKE_SHARED_LINKER_FLAGS):' "$f" || true
+            done
+            echo '```'
+          } > /tmp/16kb-report.md
+          cat /tmp/16kb-report.md >> "$GITHUB_STEP_SUMMARY"
+          # A commit comment is publicly readable, unlike the run log.
+          gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/comments" \
+            -f body="$(cat /tmp/16kb-report.md)" >/dev/null || true
+
+      - name: Fail if the 16 KB check failed
+        if: steps.check16kb.outcome == 'failure'
+        run: |
+          echo "::error::Native libraries are not 16 KB page-size compatible — see the job summary."
+          exit 1
 
       # Release builds run whenever real signing credentials are available, on
       # ANY branch — so a feature branch produces a Play-uploadable bundle
