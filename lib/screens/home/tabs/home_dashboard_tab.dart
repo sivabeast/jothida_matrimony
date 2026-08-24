@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../core/data/muhurtham_dates.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/l10n_ext.dart';
+import '../../../core/utils/matrimony_photo.dart';
 import '../../../core/utils/profile_completion.dart';
 import '../../../core/utils/value_l10n.dart';
 import '../../../models/banner_model.dart';
@@ -18,7 +19,6 @@ import '../../../providers/announcement_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/interest_celebration_provider.dart';
 import '../../../providers/banner_provider.dart';
-import '../../auth/login_required_screen.dart';
 import '../../../providers/chat_provider.dart';
 import '../../../providers/interest_provider.dart';
 import '../../../providers/navigation_provider.dart';
@@ -181,9 +181,9 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           _buildHeaderBanner(context),
           const SizedBox(height: 18),
 
-          // ── Guest Mode strip (§13) — renders itself only for an anonymous
-          //    session, so it costs nothing for a signed-in member. ──────────
-          const GuestModeBanner(),
+          // (The permanent "browsing as a guest — sign up" card was removed:
+          //  guests are invited to log in through the periodic login prompt
+          //  instead, so Home stays clean for everyone.)
 
           // ── Profile Under Review — shown only while the member's profile is
           //    awaiting admin approval. Streams off myProfileProvider, so it
@@ -317,9 +317,11 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             ? user!.displayName!.trim()
             : context.l10n.guest;
     final firstName = fullName.split(' ').first;
-    final photo = (myProfile?.profilePhotoUrl?.isNotEmpty ?? false)
-        ? myProfile!.profilePhotoUrl!
-        : (user?.photoUrl ?? '');
+    // MATRIMONY photo only — never the Google account picture (§6/§17).
+    // `user.photoUrl` is the denormalized mirror of the same uploaded image
+    // and is already stripped of provider avatars by UserModel.fromFirestore.
+    final photo =
+        matrimonyPhotoUrl(myProfile?.profilePhotoUrl, user?.photoUrl);
     final unread = ref.watch(unreadNotificationCountProvider) +
         ref.watch(unreadAnnouncementsCountProvider);
     final unreadChats = ref.watch(myUnreadChatCountProvider);

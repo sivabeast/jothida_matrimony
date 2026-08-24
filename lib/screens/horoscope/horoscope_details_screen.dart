@@ -16,24 +16,25 @@ import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/app_text_field.dart';
 import '../../widgets/common/gradient_button.dart';
+import '../../widgets/common/calculated_horoscope_card.dart';
 import '../../widgets/common/place_picker_field.dart';
-import '../../widgets/common/searchable_field.dart';
 
 /// Horoscope Details — generate Rasi / Nakshatra / Lagnam from birth details.
 ///
-/// Flow:
-/// 1. User enters Date of Birth, Time of Birth.
-/// 2. User picks a **Birth City** from the searchable master-cities dropdown,
-///    or selects **Others** and types a **Custom Birth Place**.
-/// 3. User taps **Generate Horoscope** — only then does the app geocode the
-///    place, run the Swiss Ephemeris (sidereal, Lahiri) engine via
-///    [HoroscopeCalculationService] and show the calculated Rasi/Nakshatra/
-///    Lagnam, persisting them to Firestore.
-/// 4. Optionally the user enables **Override Horoscope Details** to replace the
-///    generated values with manual selections from the master lists.
+/// The same structure as the profile wizard's Horoscope step (§13), so a
+/// member sees one horoscope form wherever they reach it:
+/// 1. Date of Birth, Time of Birth.
+/// 2. Place of Birth, through the app's ONE place picker.
+/// 3. **Generate Horoscope** geocodes the place, runs the Swiss Ephemeris
+///    (sidereal, Lahiri) engine via [HoroscopeCalculationService] and shows the
+///    calculated Rasi / Nakshatra / Lagnam, persisting them to Firestore.
+/// 4. Each of those three values is then **editable directly inside the
+///    Calculated Horoscope card** (§12). The "Override Horoscope Details"
+///    switch is gone (§11) — there is no edit mode to turn on; an edit saves
+///    immediately, and the engine's own values are always preserved alongside.
 ///
-/// The city/override dropdowns open as modal bottom sheets so they never
-/// overlap the result cards (the previous anchored-menu overlap bug).
+/// Every picker opens as a modal bottom sheet so a list never overlaps the
+/// result card (the previous anchored-menu overlap bug).
 class HoroscopeDetailsScreen extends ConsumerStatefulWidget {
   const HoroscopeDetailsScreen({super.key});
 
@@ -65,13 +66,12 @@ class _HoroscopeDetailsScreenState
   double? _lng;
   bool _generated = false;
 
-  // Manual override.
-  bool _overrideEnabled = false;
+  // The member's own edits. Null means "use what the engine calculated".
   String? _ovrRasi;
   String? _ovrNakshatra;
   String? _ovrLagnam;
 
-  // Master option lists (Tamil names) for the override dropdowns.
+  // Master option lists (Tamil names) for the in-card pickers.
   List<String> _rasiOptions = const [];
   List<String> _nakOptions = const [];
   List<String> _lagnamOptions = const [];
@@ -135,19 +135,29 @@ class _HoroscopeDetailsScreenState
           h.generatedNakshatra.isNotEmpty ? h.generatedNakshatra : h.nakshatra;
       _genLagnam = h.generatedLagnam.isNotEmpty ? h.generatedLagnam : h.lagnam;
       _generated = (_genRasi ?? '').isNotEmpty;
-      _overrideEnabled = h.overrideEnabled;
-      if (_overrideEnabled) {
-        _ovrRasi = h.rasi;
+      // A saved value that differs from the generated one is a member edit,
+      // whether or not the (removed) override flag was ever set.
+      if (h.rasi.isNotEmpty && h.rasi != _genRasi) _ovrRasi = h.rasi;
+      if (h.nakshatra.isNotEmpty && h.nakshatra != _genNakshatra) {
         _ovrNakshatra = h.nakshatra;
-        _ovrLagnam = h.lagnam;
       }
+      if (h.lagnam.isNotEmpty && h.lagnam != _genLagnam) _ovrLagnam = h.lagnam;
     }
   }
 
   // ── Effective (display/save) values ──────────────────────────────────────
-  String? get _effRasi => _overrideEnabled ? _ovrRasi : _genRasi;
-  String? get _effNakshatra => _overrideEnabled ? _ovrNakshatra : _genNakshatra;
-  String? get _effLagnam => _overrideEnabled ? _ovrLagnam : _genLagnam;
+  // A member edit wins over the calculated value; otherwise the engine's
+  // result is what shows and what is saved.
+  String? get _effRasi => _ovrRasi ?? _genRasi;
+  String? get _effNakshatra => _ovrNakshatra ?? _genNakshatra;
+  String? get _effLagnam => _ovrLagnam ?? _genLagnam;
+
+  /// True once the member has changed any value away from what was
+  /// calculated. Replaces the old override switch — DERIVED, never toggled.
+  bool get _isUserEdited =>
+      (_ovrRasi != null && _ovrRasi != _genRasi) ||
+      (_ovrNakshatra != null && _ovrNakshatra != _genNakshatra) ||
+      (_ovrLagnam != null && _ovrLagnam != _genLagnam);
 
   String? get _effectivePlace => _birthPlace?.trim();
 
@@ -188,17 +198,10 @@ class _HoroscopeDetailsScreenState
     });
   }
 
-  void _onOverrideToggled(bool on) {
-    setState(() {
-      _overrideEnabled = on;
-      if (on) {
-        // Seed manual selections from the generated values.
-        _ovrRasi ??= _genRasi;
-        _ovrNakshatra ??= _genNakshatra;
-        _ovrLagnam ??= _genLagnam;
-      }
-    });
-    // Override changes the effective values → persist them.
+  /// A value edited inside the Calculated Horoscope card. The change is saved
+  /// straight away — there is no separate confirm step.
+  void _onValueEdited(void Function() apply) {
+    setState(apply);
     if (_generated) _save();
   }
 
@@ -270,9 +273,9 @@ class _HoroscopeDetailsScreenState
         generatedRasi: _genRasi ?? '',
         generatedNakshatra: _genNakshatra ?? '',
         generatedLagnam: _genLagnam ?? '',
-        overrideEnabled: _overrideEnabled,
+        overrideEnabled: _isUserEdited,
         horoscopeGenerated: true,
-        isUserEdited: _overrideEnabled,
+        isUserEdited: _isUserEdited,
       );
       ref.read(demoProfilesProvider.notifier).upsert(
             profile.copyWith(dateOfBirth: _dob!, age: age, horoscope: horo),
@@ -292,10 +295,13 @@ class _HoroscopeDetailsScreenState
         'horoscope.generatedRasi': _genRasi ?? '',
         'horoscope.generatedNakshatra': _genNakshatra ?? '',
         'horoscope.generatedLagnam': _genLagnam ?? '',
-        'horoscope.overrideEnabled': _overrideEnabled,
+        // Derived from the values themselves — there is no override switch
+        // any more (§11). Still written so existing readers (the astrologer
+        // report, the website) keep working unchanged.
+        'horoscope.overrideEnabled': _isUserEdited,
         'horoscope.horoscopeGenerated': true,
-        'horoscope.isAutoGenerated': !_overrideEnabled,
-        'horoscope.isUserEdited': _overrideEnabled,
+        'horoscope.isAutoGenerated': !_isUserEdited,
+        'horoscope.isUserEdited': _isUserEdited,
       });
       ref.invalidate(myProfileProvider);
     }
@@ -319,43 +325,42 @@ class _HoroscopeDetailsScreenState
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
+      // One clean vertical rhythm (§10): description, the three birth-detail
+      // fields evenly spaced, Generate, then the Calculated Horoscope card and
+      // the uploaded documents. Nothing overlaps and nothing is clipped.
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
         children: [
-          const Text(
-            'Enter your birth details to generate your Rasi, Nakshatra and '
-            'Lagnam automatically.',
-            style: TextStyle(color: Colors.black54, fontSize: 13.5),
+          Text(
+            context.l10n.horoscopeStepSubtitle,
+            style: const TextStyle(
+                color: Colors.black54, fontSize: 13.5, height: 1.4),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
-          // Date of Birth
+          // ── Birth details ────────────────────────────────────────────────
           AppTextField(
             controller: _dobController,
-            label: context.l10n.dateOfBirth,
+            label: '${context.l10n.dateOfBirth} *',
             hint: context.l10n.selectDateHint,
             readOnly: true,
             onTap: _pickDob,
             suffixIcon: const Icon(Icons.calendar_today_outlined),
           ),
           _fieldError(_showValidation && _dob == null,
-              'Please select your date of birth'),
-          const SizedBox(height: 16),
-
-          // Time of Birth
+              context.l10n.pleaseSelect(context.l10n.dateOfBirth)),
+          const SizedBox(height: 18),
           AppTextField(
             controller: _timeController,
-            label: context.l10n.timeOfBirth,
+            label: '${context.l10n.timeOfBirth} *',
             hint: context.l10n.selectTimeHint,
             readOnly: true,
             onTap: _pickTime,
             suffixIcon: const Icon(Icons.access_time),
           ),
           _fieldError(_showValidation && _time == null,
-              'Please select your time of birth'),
-          const SizedBox(height: 16),
-
-          // Birth City (searchable, modal bottom sheet so it never overlaps)
+              context.l10n.pleaseSelectTimeOfBirth),
+          const SizedBox(height: 18),
           PlacePickerField(
             label: context.l10n.placeOfBirthLabel,
             isRequired: true,
@@ -363,125 +368,42 @@ class _HoroscopeDetailsScreenState
             onChanged: _onPlaceChanged,
           ),
           _fieldError(_showValidation && placeMissing,
-              'Please select or enter your birth city'),
-          const SizedBox(height: 24),
+              context.l10n.pleaseSelectBirthPlace),
+          const SizedBox(height: 28),
 
-          // Generate
+          // ── Generate ─────────────────────────────────────────────────────
           GradientButton(
-            text: _generated ? 'Regenerate Horoscope' : 'Generate Horoscope',
+            text: _generated
+                ? context.l10n.regenerateHoroscope
+                : context.l10n.generateHoroscope,
             isLoading: _loading,
             onPressed: _loading ? null : _generate,
           ),
 
-          // Error
           if (_error != null) ...[
-            const SizedBox(height: 20),
-            _ErrorBox(message: _error!),
-          ],
-
-          // Results (hidden until generated)
-          if (_generated && _error == null) ...[
             const SizedBox(height: 24),
-            Row(
-              children: [
-                const Icon(Icons.auto_awesome,
-                    size: 18, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Text(context.l10n.calculatedHoroscope,
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.bold)),
-                const Spacer(),
-                if (_overrideEnabled)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.orange[50],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text('Overridden',
-                        style: TextStyle(
-                            fontSize: 11, color: Colors.orange[800])),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _ResultCard(
-                icon: Icons.brightness_3_outlined,
-                label: 'Rasi',
-                value: _effRasi ?? '—'),
-            const SizedBox(height: 12),
-            _ResultCard(
-                icon: Icons.star_outline,
-                label: 'Nakshatra',
-                value: _effNakshatra ?? '—'),
-            const SizedBox(height: 12),
-            _ResultCard(
-                icon: Icons.wb_twilight_outlined,
-                label: 'Lagnam',
-                value: _effLagnam ?? '—'),
-
-            // ── Manual override ────────────────────────────────────────────
-            const SizedBox(height: 8),
-            SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              value: _overrideEnabled,
-              onChanged: _onOverrideToggled,
-              activeColor: AppColors.primary,
-              title: Text(context.l10n.overrideHoroscope,
-                  style:
-                      TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-              subtitle: const Text(
-                  'Choose Rasi, Nakshatra and Lagnam manually.',
-                  style: TextStyle(fontSize: 12)),
-            ),
-            if (_overrideEnabled) ...[
-              const SizedBox(height: 8),
-              SearchableField(
-                label: 'Rasi',
-                isRequired: true,
-                items: _rasiOptions,
-                selectedItem: _ovrRasi,
-                prefixIcon: Icons.brightness_3_outlined,
-                popupMode: SearchablePopupMode.modalBottomSheet,
-                onChanged: (v) {
-                  setState(() => _ovrRasi = v);
-                  _save();
-                },
-              ),
-              const SizedBox(height: 16),
-              SearchableField(
-                label: 'Nakshatra',
-                isRequired: true,
-                items: _nakOptions,
-                selectedItem: _ovrNakshatra,
-                prefixIcon: Icons.star_outline,
-                popupMode: SearchablePopupMode.modalBottomSheet,
-                onChanged: (v) {
-                  setState(() => _ovrNakshatra = v);
-                  _save();
-                },
-              ),
-              const SizedBox(height: 16),
-              SearchableField(
-                label: 'Lagnam',
-                isRequired: true,
-                items: _lagnamOptions,
-                selectedItem: _ovrLagnam,
-                prefixIcon: Icons.wb_twilight_outlined,
-                popupMode: SearchablePopupMode.modalBottomSheet,
-                onChanged: (v) {
-                  setState(() => _ovrLagnam = v);
-                  _save();
-                },
-              ),
-            ],
+            HoroscopeErrorBox(message: _error!),
           ],
 
-          // ── Uploaded Horoscope (PDF / image) ──────────────────────────────
-          const SizedBox(height: 28),
+          // ── Calculated Horoscope — each value editable in place (§12) ────
+          if (_generated && _error == null) ...[
+            const SizedBox(height: 28),
+            CalculatedHoroscopeCard(
+              rasi: _effRasi ?? '',
+              nakshatra: _effNakshatra ?? '',
+              lagnam: _effLagnam ?? '',
+              rasiOptions: _rasiOptions,
+              nakshatraOptions: _nakOptions,
+              lagnamOptions: _lagnamOptions,
+              onRasiChanged: (v) => _onValueEdited(() => _ovrRasi = v),
+              onNakshatraChanged: (v) =>
+                  _onValueEdited(() => _ovrNakshatra = v),
+              onLagnamChanged: (v) => _onValueEdited(() => _ovrLagnam = v),
+            ),
+          ],
+
+          // ── Uploaded Horoscope (PDF / image) ─────────────────────────────
+          const SizedBox(height: 32),
           _uploadedHoroscopeSection(),
         ],
       ),
@@ -506,7 +428,7 @@ class _HoroscopeDetailsScreenState
                 size: 18, color: AppColors.primary),
             const SizedBox(width: 8),
             Text(context.l10n.horoscopeDocuments,
-                style: TextStyle(
+                style: const TextStyle(
                     fontSize: 16,
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.bold)),
@@ -608,85 +530,5 @@ class _HoroscopeDetailsScreenState
       age--;
     }
     return age < 0 ? 0 : age;
-  }
-}
-
-/// A single calculated-value card (modern, themed).
-class _ResultCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  const _ResultCard(
-      {required this.icon, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
-        ],
-        border: Border.all(color: AppColors.primary.withOpacity(0.12)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: Colors.white, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12.5)),
-              const SizedBox(height: 3),
-              Text(value,
-                  style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Poppins')),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Themed error box for generation failures.
-class _ErrorBox extends StatelessWidget {
-  final String message;
-  const _ErrorBox({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.red[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red[200]!),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.error_outline, color: Colors.red[400], size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(message,
-                style: TextStyle(color: Colors.red[700], fontSize: 13)),
-          ),
-        ],
-      ),
-    );
   }
 }

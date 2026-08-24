@@ -11,7 +11,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:jothida_matrimony/l10n/app_localizations.dart';
-import 'package:jothida_matrimony/screens/profile/steps/step3_horoscope.dart';
+import 'package:jothida_matrimony/widgets/common/calculated_horoscope_card.dart';
+import 'package:jothida_matrimony/widgets/common/searchable_field.dart';
 import 'package:jothida_matrimony/widgets/common/dual_range_slider_field.dart';
 import 'package:jothida_matrimony/widgets/common/horoscope_documents_view.dart';
 
@@ -114,5 +115,61 @@ void main() {
         onChanged: (_, __) {},
       ),
     );
+  });
+
+  // §11/§12 — the "Override automatically calculated horoscope" switch is
+  // gone; the three calculated values are edited inside the card itself.
+  testWidgets('the editable Calculated Horoscope card has no override switch',
+      (tester) async {
+    String? pickedRasi;
+    await tester.pumpWidget(_host(
+      CalculatedHoroscopeCard(
+        rasi: 'மேஷம்',
+        nakshatra: 'அஸ்வினி',
+        lagnam: 'கடகம்',
+        rasiOptions: const ['மேஷம்', 'ரிஷபம்', 'மிதுனம்'],
+        nakshatraOptions: const ['அஸ்வினி', 'பரணி'],
+        lagnamOptions: const ['கடகம்', 'சிம்மம்'],
+        onRasiChanged: (v) => pickedRasi = v,
+        onNakshatraChanged: (_) {},
+        onLagnamChanged: (_) {},
+      ),
+      const Locale('en'),
+    ));
+    await tester.pump();
+
+    // No override/edit-mode toggle anywhere in the card.
+    expect(find.byType(Switch), findsNothing);
+    expect(find.byType(SwitchListTile), findsNothing);
+
+    // Each of the three values is its own in-card picker, pre-filled with the
+    // calculated value — that IS the edit affordance (§12).
+    final pickers = tester
+        .widgetList<SearchableField>(find.byType(SearchableField))
+        .toList();
+    expect(pickers.length, 3);
+    expect(
+      pickers.map((f) => f.selectedItem).toList(),
+      ['மேஷம்', 'அஸ்வினி', 'கடகம்'],
+    );
+    expect(pickedRasi, isNull); // nothing changes until the member picks
+  });
+
+  testWidgets('the read-only card still renders every value', (tester) async {
+    await tester.pumpWidget(_host(
+      const CalculatedHoroscopeCard(
+        rasi: 'மேஷம்',
+        nakshatra: 'அஸ்வினி',
+        lagnam: 'கடகம்',
+      ),
+      const Locale('en'),
+    ));
+    await tester.pump();
+    expect(find.byType(Switch), findsNothing);
+    // Read-only mode: plain label/value rows, no pickers.
+    expect(find.byType(SearchableField), findsNothing);
+    for (final v in const ['மேஷம்', 'அஸ்வினி', 'கடகம்']) {
+      expect(find.text(v), findsOneWidget);
+    }
   });
 }

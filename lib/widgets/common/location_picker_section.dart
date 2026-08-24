@@ -8,22 +8,22 @@ import '../../models/location_model.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/location_provider.dart';
 import 'place_picker_field.dart';
-import 'searchable_with_add_field.dart';
-import 'searchable_field.dart';
 
-/// The app's ONE location picker: **State → District → City** for Tamil Nadu.
+/// The app's ONE location picker — a single **City** field plus **Use My
+/// Location** (spec §7).
 ///
-///  • State is fixed to Tamil Nadu (displayed read-only, no dropdown query).
-///  • District lists the 38 Tamil Nadu districts; City lists only the chosen
-///    district's cities and resets when the district changes.
+///  • The member answers ONE question: which city or town are they in. The
+///    separate State / District / City dropdowns were removed: they asked for
+///    the same answer three times and duplicated the city field above them.
+///  • State and District are still RESOLVED and emitted — the place picker
+///    returns City/Village + District + State together, so every stored
+///    profile keeps its full location mapping and existing matching, filtering
+///    and export code is untouched. That relationship is maintained
+///    internally; it is simply no longer something the member has to type.
 ///  • Labels and option names follow the app language (English / Tamil) from
-///    the same master rows, but the values EMITTED are always the canonical
-///    English name + stable numeric id — so stored profiles are
-///    language-independent and existing data keeps working.
-///  • A "Search a place" field at the top uses the app's ONE place picker
-///    (City/Village + District + State), so this section offers the SAME
-///    search UX as every other location field (spec §31) while keeping the
-///    cascading dropdowns for members who prefer to browse.
+///    the master rows, but the values EMITTED are always the canonical English
+///    name + stable numeric id — so stored profiles are language-independent
+///    and existing data keeps working.
 ///  • "📍 Use My Location" reverse-geocodes the device position and matches it
 ///    against the master data (Tamil Nadu only — anything else asks for a
 ///    manual pick). Failures never crash; a friendly message is shown.
@@ -225,7 +225,7 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── 🔎 Search a place — sets District + City in one step ──
+        // ── City * — the ONE location field the member fills in ──
         PlacePickerField(
           label: _label('city'),
           isRequired: widget.isRequired,
@@ -233,6 +233,12 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
               ? (_legacyCity ?? '')
               : '${_city!.nameFor(_lang)}, ${_district?.nameFor(_lang) ?? ''}, ${TnState.nameFor(_lang)}',
           onChanged: _onPlaceSearched,
+        ),
+        const SizedBox(height: 6),
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Text(context.l10n.locationCityOnlyHint,
+              style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
         ),
         const SizedBox(height: 12),
         // ── 📍 Use My Location ──
@@ -261,17 +267,10 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
             child: Text(_locError!,
                 style: const TextStyle(color: AppColors.error, fontSize: 12.5)),
           ),
-        const SizedBox(height: 16),
 
-        _stateField(),
-        const SizedBox(height: 16),
-        _districtField(),
-        const SizedBox(height: 16),
-        _cityField(),
-
-        // ── 📍 City, State summary ──
+        // ── 📍 City, State summary — confirms what was resolved ──
         if (_city != null || (_legacyCity ?? '').isNotEmpty) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Row(
             children: [
               const Icon(Icons.place, size: 16, color: AppColors.primary),
@@ -291,163 +290,4 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
       ],
     );
   }
-
-  /// State — fixed to Tamil Nadu, shown read-only in the app language.
-  Widget _stateField() => InputDecorator(
-        decoration: InputDecoration(
-          labelText: '${_label('state')} *',
-          prefixIcon: const Icon(Icons.map_outlined),
-          filled: true,
-          fillColor: Colors.grey[200],
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey[300]!),
-          ),
-        ),
-        child: Text(TnState.nameFor(_lang),
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-      );
-
-  Widget _districtField() {
-    final async = ref.watch(districtsProvider);
-    return async.when(
-      loading: () => _loadingField(_label('district'), required: widget.isRequired),
-      error: (_, __) =>
-          _errorField(_label('district'), () => ref.invalidate(districtsProvider)),
-      data: (districts) {
-        final names = [for (final d in districts) d.nameFor(_lang)]..sort();
-        var selected = _district?.nameFor(_lang);
-        if (selected == null && (_legacyDistrict ?? '').isNotEmpty) {
-          selected = _legacyDistrict;
-          names.insert(0, _legacyDistrict!); // legacy value — display only
-        }
-        return SearchableField(
-          label: _label('district'),
-          isRequired: widget.isRequired,
-          prefixIcon: Icons.account_balance_outlined,
-          items: names,
-          selectedItem: selected,
-          onChanged: (name) {
-            TnDistrict? match;
-            for (final d in districts) {
-              if (d.nameFor(_lang) == name) {
-                match = d;
-                break;
-              }
-            }
-            setState(() {
-              _district = match;
-              _legacyDistrict = match == null ? name : null;
-              _city = null; // reset child
-              _legacyCity = null;
-              _locError = null;
-            });
-            _emit();
-          },
-        );
-      },
-    );
-  }
-
-  Widget _cityField() {
-    final districtId = _district?.id;
-    if (districtId == null) {
-      return SearchableField(
-        label: _label('city'),
-        isRequired: widget.isRequired,
-        items: (_legacyCity ?? '').isNotEmpty ? [_legacyCity!] : const [],
-        selectedItem: (_legacyCity ?? '').isNotEmpty ? _legacyCity : null,
-        enabled: false,
-        prefixIcon: Icons.location_city,
-        onChanged: (_) {},
-      );
-    }
-    final async = ref.watch(citiesProvider(districtId));
-    return async.when(
-      loading: () => _loadingField(_label('city'), required: widget.isRequired),
-      error: (_, __) => _errorField(
-          _label('city'), () => ref.invalidate(citiesProvider(districtId))),
-      data: (cities) {
-        final names = [for (final c in cities) c.nameFor(_lang)]..sort();
-        var selected = _city?.nameFor(_lang);
-        if (selected == null && (_legacyCity ?? '').isNotEmpty) {
-          selected = _legacyCity;
-          names.insert(0, _legacyCity!); // legacy value — display only
-        }
-        // §11 — a city missing from the master list can be typed and added
-        // with "+". It is kept on THIS profile only (as a legacy/custom city
-        // name); nothing is written back to the shared location data, so one
-        // member's entry never appears in another member's suggestions.
-        return SearchableWithAddField(
-          label: _label('city'),
-          isRequired: widget.isRequired,
-          prefixIcon: Icons.location_city,
-          items: names,
-          value: selected,
-          helperText: context.l10n.cityNotListedHelper,
-          onChanged: (name) {
-            TnCity? match;
-            for (final c in cities) {
-              if (c.nameFor(_lang) == name) {
-                match = c;
-                break;
-              }
-            }
-            setState(() {
-              _city = match;
-              _legacyCity = match == null ? name : null;
-            });
-            _emit();
-          },
-        );
-      },
-    );
-  }
-
-  /// A disabled field showing a spinner while its options load.
-  Widget _loadingField(String label, {bool required = false}) => InputDecorator(
-        decoration: InputDecoration(
-          labelText: required ? '$label *' : label,
-          filled: true,
-          fillColor: Colors.grey[100],
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        child: Row(
-          children: [
-            const SizedBox(
-                height: 16,
-                width: 16,
-                child: CircularProgressIndicator(strokeWidth: 2)),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(context.l10n.loadingField(label),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-            ),
-          ],
-        ),
-      );
-
-  Widget _errorField(String label, VoidCallback onRetry) => InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          filled: true,
-          fillColor: Colors.grey[100],
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(context.l10n.couldNotLoadField(label),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: AppColors.error, fontSize: 13)),
-            ),
-            TextButton(
-                onPressed: onRetry, child: Text(context.l10n.retry)),
-          ],
-        ),
-      );
 }

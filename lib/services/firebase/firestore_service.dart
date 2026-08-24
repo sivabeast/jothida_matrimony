@@ -67,7 +67,12 @@ class FirestoreService {
                 : user.email,
             phone: phone ?? user.phoneNumber,
             displayName: user.displayName,
-            photoUrl: user.photoURL,
+            // Deliberately NOT `user.photoURL`. `photoUrl` is the denormalized
+            // mirror of the member's MATRIMONY profile photo (§6/§17); seeding
+            // it from the identity provider made a Google account picture show
+            // up as a matrimony photo on Home, match cards and the admin view.
+            // It stays null until the member uploads their own image.
+            photoUrl: null,
             loginProvider: loginProvider,
             // Auto-assign super_admin / dedicated-admin to whitelisted
             // accounts; everyone else defaults to 'user'.

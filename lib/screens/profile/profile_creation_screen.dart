@@ -10,6 +10,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../services/firebase/admin_account_service.dart';
@@ -58,11 +59,20 @@ class ProfileCreationScreen extends ConsumerStatefulWidget {
   /// changes — this is one shared profile-creation flow, not a second one.
   final bool adminMode;
 
+  /// Whose profile this is. Normally null — the signed-in member is editing
+  /// their own profile — but the ADMIN editor (`/admin/user/:uid/edit`) passes
+  /// the MEMBER's uid, because the save writes photos, the `userId` field and
+  /// the gated contact record under the profile's owner, never under whoever
+  /// happens to be signed in. Without it an admin edit would re-home the
+  /// profile onto the admin's own account.
+  final String? ownerUserId;
+
   const ProfileCreationScreen({
     super.key,
     this.editProfileId,
     this.sectionStep,
     this.adminMode = false,
+    this.ownerUserId,
   });
 
   @override
@@ -365,7 +375,11 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
       await _submitAsAdmin();
       return;
     }
-    final userId = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
+    // The profile's OWNER, not the signed-in account: an admin editing a
+    // member's profile must keep writing it under that member's uid.
+    final userId = widget.ownerUserId?.trim().isNotEmpty == true
+        ? widget.ownerUserId!.trim()
+        : ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(context.l10n.mustBeSignedInToCreateProfile)));
@@ -377,6 +391,21 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
     if (!mounted) return;
     if (profileId != null) {
       if (_isEditMode) {
+        // An ADMIN edit (ownerUserId set, and it is not the admin's own
+        // profile) tells the member their profile changed — the same
+        // best-effort notification the old admin-only editor sent.
+        final signedInUid =
+            ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
+        if (userId != signedInUid) {
+          unawaited(ref
+              .read(notificationNotifierProvider.notifier)
+              .notify(
+                toUid: userId,
+                event: AppNotificationEvent.adminProfileUpdate,
+              )
+              .catchError((Object e) => debugPrint(
+                  '[ProfileCreation] admin update notice skipped: $e')));
+        }
         // Updated in place — the live profile stream refreshes everything.
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(context.l10n.profileUpdatedSuccess)));

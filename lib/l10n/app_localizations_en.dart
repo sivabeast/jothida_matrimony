@@ -3063,7 +3063,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get locationPreferenceHint =>
-      'State → District → City, from the master data';
+      'Search the city or town you would prefer';
 
   @override
   String get educationPreference => 'Education Preference';
@@ -3649,4 +3649,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rateApp => 'Rate this app';
+
+  @override
+  String get loginToContinue => 'Login to Continue';
+
+  @override
+  String get guestMenuHint =>
+      'Login to unlock your profile, matches, interests and chat.';
+
+  @override
+  String get guestLoginPromptTitle => 'Login to unlock everything';
+
+  @override
+  String get guestLoginPromptBody =>
+      'You are browsing as a guest. Login to see your matches, send interests and chat with members.';
+
+  @override
+  String get maybeLater => 'Maybe Later';
+
+  @override
+  String get editHoroscopeValueHint => 'Tap a value to change it';
+
+  @override
+  String get occupationManualLabel => 'Occupation / What do you do?';
+
+  @override
+  String get occupationManualHint =>
+      'e.g. Software Developer, Teacher, Farmer, Business Owner';
+
+  @override
+  String get viewFullProfile => 'View Full Profile';
+
+  @override
+  String get locationCityOnlyHint =>
+      'Search your city or town, or use your current location.';
+
+  @override
+  String get generateHoroscope => 'Generate Horoscope';
+
+  @override
+  String get regenerateHoroscope => 'Regenerate Horoscope';
 }

@@ -1110,17 +1110,17 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                 ], icon: Icons.temple_hindu_outlined),
                 const SizedBox(height: 20),
                 _buildInfoSection(context.l10n.professionalDetails, [
-                  // Education Level → Course/Degree and Employment Status →
-                  // Sector → Occupation (§13). The level/status/sector are
-                  // localized; degree + occupation titles stay English (§9).
+                  // Education Level → Course/Degree, then the member's own
+                  // free-text occupation. Employment Status and Profession
+                  // Type are no longer part of the profile structure (§9), so
+                  // they are not shown. Education is localized; degree and
+                  // occupation titles stay as entered.
                   _InfoItem(Icons.school_outlined, context.l10n.education,
                       profile.educationDisplay(context.localizeValue)),
                   _InfoItem(Icons.school, context.l10n.courseDegree,
                       profile.courseDegree ?? ''),
                   _InfoItem(Icons.account_balance, context.l10n.collegeName,
                       profile.collegeName ?? ''),
-                  _InfoItem(Icons.badge_outlined, context.l10n.employmentType,
-                      context.localizeValue(profile.employmentType)),
                   _InfoItem(Icons.work_outline, context.l10n.profession,
                       profile.occupationDisplay(context.localizeValue)),
                   _InfoItem(Icons.business_outlined, context.l10n.companyName,

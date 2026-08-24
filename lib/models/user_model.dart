@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../core/config/admin_config.dart';
+import '../core/utils/matrimony_photo.dart';
 import 'profile_model.dart' show ProfilePrivacy;
 
 class UserModel {
@@ -60,7 +61,12 @@ class UserModel {
       email: data['email'],
       phone: data['phone'],
       displayName: data['displayName'],
-      photoUrl: data['photoUrl'],
+      // MATRIMONY photo only (§6/§17). Documents written before that rule
+      // existed can still hold a Google account picture here; dropping it on
+      // read means no screen — profile, admin view, match card, search result
+      // — can fall back to it. The member sees the app placeholder until they
+      // upload their own image.
+      photoUrl: _matrimonyPhotoOrNull(data['photoUrl']),
       loginProvider: data['loginProvider'],
       gender: data['gender'],
       role: data['role'] ?? 'user',
@@ -83,6 +89,14 @@ class UserModel {
       fcmToken: data['fcmToken'],
       preferredLanguage: data['preferred_language'],
     );
+  }
+
+  /// Drops a stored identity-provider avatar (Google, Facebook) so it can
+  /// never be displayed as the member's matrimony profile photo.
+  static String? _matrimonyPhotoOrNull(dynamic v) {
+    final url = v is String ? v.trim() : '';
+    if (url.isEmpty || isAuthProviderPhoto(url)) return null;
+    return url;
   }
 
   /// Coerces a Firestore value into a `bool` instead of blindly casting it.

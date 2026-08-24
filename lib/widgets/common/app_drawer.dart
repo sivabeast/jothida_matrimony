@@ -19,12 +19,16 @@ class AppDrawer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Authentication state — NOT "does a profile exist". A visitor with no
+    // Firebase session (or an anonymous Guest Mode one) is a GUEST, and a
+    // guest has nothing to sign out OF: they see Login instead.
+    final isGuest = ref.watch(isGuestProvider);
     return Drawer(
       child: Column(
         children: [
           _header(context),
           Expanded(
-            child: ListView(
+            child: isGuest ? _guestMenu(context) : ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
                 // ── 👤 PROFILE ───────────────────────────────────────────────
@@ -89,27 +93,120 @@ class AppDrawer extends ConsumerWidget {
             ),
           ),
           const Divider(height: 1),
-          // Logout is deliberately NOT routed through [_item] (which pops the
-          // drawer first): popping would deactivate this context before the
-          // confirmation dialog and post-logout navigation run. Instead the
-          // dialog opens over the still-mounted drawer and we navigate via a
-          // router captured before the async gap.
-          ListTile(
-            dense: true,
-            visualDensity: const VisualDensity(vertical: -1),
-            leading: const Icon(Icons.logout, size: 22, color: AppColors.error),
-            title: Text(context.l10n.logout,
-                style: const TextStyle(
-                    color: AppColors.error,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14.5)),
-            onTap: () => _logout(context, ref),
-          ),
+          // Sign Out exists ONLY for a real, authenticated account. A guest
+          // has no session to end, so the same slot offers Login instead —
+          // the drawer must never show Sign Out to someone who is not logged
+          // in.
+          if (isGuest)
+            ListTile(
+              dense: true,
+              visualDensity: const VisualDensity(vertical: -1),
+              leading:
+                  const Icon(Icons.login, size: 22, color: AppColors.primary),
+              title: Text(context.l10n.loginToContinue,
+                  style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14.5)),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.go('/login');
+              },
+            )
+          else
+            // Logout is deliberately NOT routed through [_item] (which pops the
+            // drawer first): popping would deactivate this context before the
+            // confirmation dialog and post-logout navigation run. Instead the
+            // dialog opens over the still-mounted drawer and we navigate via a
+            // router captured before the async gap.
+            ListTile(
+              dense: true,
+              visualDensity: const VisualDensity(vertical: -1),
+              leading:
+                  const Icon(Icons.logout, size: 22, color: AppColors.error),
+              title: Text(context.l10n.logout,
+                  style: const TextStyle(
+                      color: AppColors.error,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14.5)),
+              onTap: () => _logout(context, ref),
+            ),
           const SizedBox(height: 8),
         ],
       ),
     );
   }
+
+  /// The GUEST menu. Every entry in the member menu is a personalized feature
+  /// a guest cannot use, so listing them would only lead to the Login Required
+  /// screen. A guest gets one clear call to action plus the public pages.
+  Widget _guestMenu(BuildContext context) => ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+            child: Text(
+              context.l10n.guestMenuHint,
+              style:
+                  TextStyle(fontSize: 13, height: 1.4, color: Colors.grey[700]),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  context.go('/login');
+                },
+                icon: const Icon(Icons.login, size: 18),
+                label: Text(context.l10n.loginToContinue),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(46),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  context.go('/register');
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                  minimumSize: const Size.fromHeight(46),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(context.l10n.createAccount),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Divider(height: 1),
+          // Public pages a guest may actually open (the router's guest
+          // allow-list) — nothing here needs an account.
+          _item(context, Icons.event_available_outlined,
+              context.l10n.featureMuhurthamCalendar,
+              () => context.push('/muhurtham-calendar')),
+          _item(context, Icons.help_outline, context.l10n.helpSupport,
+              () => context.push('/help')),
+          _item(context, Icons.privacy_tip_outlined, context.l10n.privacyPolicy,
+              () => context.push('/privacy-policy')),
+          _item(context, Icons.description_outlined,
+              context.l10n.termsConditions, () => context.push('/terms')),
+        ],
+      );
 
   /// Brand-only header: app logo + app name, nothing else. The member's photo
   /// and name were deliberately removed — the menu identifies the APP, not the

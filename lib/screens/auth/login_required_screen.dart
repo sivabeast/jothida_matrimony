@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../widgets/common/gradient_button.dart';
 
@@ -146,56 +145,6 @@ class LoginRequiredScreen extends ConsumerWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// The "you are browsing as a guest" strip shown on Home in Guest Mode, with a
-/// one-tap route into registration.
-class GuestModeBanner extends ConsumerWidget {
-  const GuestModeBanner({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (!ref.watch(isGuestProvider)) return const SizedBox.shrink();
-    final l10n = context.l10n;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.gold.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.45)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.visibility_outlined,
-              size: 20, color: AppColors.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              l10n.guestModeBanner,
-              style: TextStyle(
-                  fontSize: 12.5, height: 1.35, color: Colors.grey[800]),
-            ),
-          ),
-          const SizedBox(width: 8),
-          TextButton(
-            onPressed: () => context.go('/register'),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(l10n.signUp,
-                style: const TextStyle(
-                    fontSize: 13,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w700)),
-          ),
-        ],
       ),
     );
   }

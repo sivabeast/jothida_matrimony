@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/constants/app_constants.dart';
-import '../../core/data/occupation_catalog.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/value_l10n.dart';
@@ -12,7 +10,6 @@ import '../../providers/location_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/network_photo.dart';
-import '../../widgets/profile/field_edit_sheet.dart';
 import '../../core/services/horoscope_calculation_service.dart';
 
 // ── Tamil display helpers (display-only — storage stays English, spec §14) ────
@@ -171,6 +168,15 @@ class MyProfileScreen extends ConsumerWidget {
     String l(String en) => _label(context, en);
 
     // Edit route for a wizard section (step index in the creation flow).
+    //
+    // EVERY field section below opens the SAME step of the profile-creation
+    // wizard that produced it (§13/§15): same sections, same fields, same
+    // order, same widgets. There is no separate "edit" form to drift out of
+    // sync — create, edit and the admin editor are one flow.
+    //
+    //   0 Basic · 1 Location · 2 Career · 3 Community · 4 Horoscope
+    //   5 Lifestyle · 6 Partner Preferences · 7 Photos
+    //   8 Upload Horoscope · 9 Contact
     void editStep(int step) =>
         context.push('/profile/${p.id}/edit-section/$step');
 
@@ -194,9 +200,7 @@ class MyProfileScreen extends ConsumerWidget {
         _SectionCard(
           icon: Icons.badge_outlined,
           title: 'Basic Details',
-          // Field-level editing: opens a sheet to edit ONLY the chosen field.
-          onEdit: () => showProfileFieldSheet(context,
-              sectionTitle: 'Basic Details', fieldsBuilder: basicDetailsFields),
+          onEdit: () => editStep(0),
           rows: [
             [l('Profile For'), lv(p.profileCreatedFor)],
             // BOTH names are shown, always (§14) — the canonical English name
@@ -218,8 +222,7 @@ class MyProfileScreen extends ConsumerWidget {
         _SectionCard(
           icon: Icons.location_on_outlined,
           title: 'Location',
-          // Composite (state→district→city cascade) → dedicated section editor.
-          onEdit: () => context.push('/edit/location'),
+          onEdit: () => editStep(1),
           rows: [
             [l('Location'), location],
             [l('Native Place'), lv(p.nativePlace)],
@@ -229,10 +232,7 @@ class MyProfileScreen extends ConsumerWidget {
         _SectionCard(
           icon: Icons.work_outline,
           title: 'Career',
-          // Education and Occupation are dependent cascades (§5/§6), so the
-          // whole section is edited on its own screen rather than field by
-          // field — picking a level/status changes what the next field offers.
-          onEdit: () => context.push('/edit/education'),
+          onEdit: () => editStep(2),
           rows: [
             // Education Level -> Degree(s). Both are localized; a degree
             // renders as "இளங்கலை பொறியியல் (B.E)" in Tamil (§8).
@@ -242,23 +242,16 @@ class MyProfileScreen extends ConsumerWidget {
               context.l10n.degreesLabel,
               [for (final d in p.allDegrees) lv(d)].join(', ')
             ],
-            // Employment Status -> Employment Type -> Occupation (§5).
-            [l('Employment Status'), lv(p.effectiveEmploymentStatus)],
-            if (OccupationCatalog.statusHasOccupation(
-                p.effectiveEmploymentStatus)) ...[
-              [context.l10n.employmentType, lv(p.effectiveSector)],
-              [l('Occupation'), lv(p.occupation)],
-              [l('Annual Income'), lv(p.annualIncome)],
-            ],
-            if (p.effectiveEmploymentStatus == OccupationCatalog.statusStudent)
-              [l('Course / Degree'), lv(p.courseDegree)],
+            // Occupation is free text now — there is no Employment Status or
+            // Profession Type to show (§9).
+            [context.l10n.occupationManualLabel, lv(p.occupation)],
+            [l('Annual Income'), lv(p.annualIncome)],
           ],
         ),
         _SectionCard(
           icon: Icons.diversity_3_outlined,
           title: 'Community',
-          // Composite (religion→caste→subcaste cascade) → dedicated editor.
-          onEdit: () => context.push('/edit/religious'),
+          onEdit: () => editStep(3),
           rows: [
             [l('Religion'), lv(p.religion)],
             [l('Caste'), lv(p.caste)],
@@ -269,8 +262,7 @@ class MyProfileScreen extends ConsumerWidget {
         _SectionCard(
           icon: Icons.auto_awesome_outlined,
           title: 'Horoscope',
-          // Opens ONLY the Horoscope details editor (not the full wizard).
-          onEdit: () => context.push('/horoscope'),
+          onEdit: () => editStep(4),
           rows: [
             [l('Rasi'), lv(h.rasi)],
             [l('Nakshatra'), lv(h.nakshatra)],
@@ -409,102 +401,6 @@ class MyProfileScreen extends ConsumerWidget {
       ),
     );
   }
-}
-
-/// Computes age from a date of birth (so editing DOB keeps `age` in sync).
-int _ageFromDob(DateTime dob) {
-  final now = DateTime.now();
-  var age = now.year - dob.year;
-  if (now.month < dob.month ||
-      (now.month == dob.month && now.day < dob.day)) {
-    age--;
-  }
-  return age < 0 ? 0 : age;
-}
-
-/// Field-level editable descriptors for the **Basic Details** section — each
-/// saves ONLY its own field (Firestore patch) and leaves everything else as-is.
-///
-/// EVERY field here is editable after profile creation (§5), including the
-/// Date of Birth (which also recomputes `age`, so matching stays correct).
-/// Labels come from the l10n dictionary so the editor switches language with
-/// the rest of the app (§21).
-List<ProfileEditableField> basicDetailsFields(BuildContext c, ProfileModel p) {
-  final l = c.l10n;
-  return [
-    ProfileEditableField(
-      label: l.fullName,
-      kind: ProfileFieldKind.text,
-      value: p.fullName,
-      localizeValues: false, // a person's name is never translated
-      apply: (pr, v) => pr.copyWith(fullName: v as String),
-      patch: (v) => {'fullName': v},
-    ),
-    ProfileEditableField(
-      label: l.nameTamilLabel,
-      kind: ProfileFieldKind.text,
-      value: p.fullNameTamil,
-      localizeValues: false,
-      apply: (pr, v) => pr.copyWith(fullNameTamil: v as String),
-      patch: (v) => {'fullNameTamil': v},
-    ),
-    ProfileEditableField(
-      label: l.gender,
-      kind: ProfileFieldKind.options,
-      value: p.gender,
-      options: AppConstants.genderList,
-      apply: (pr, v) => pr.copyWith(gender: v as String),
-      patch: (v) => {'gender': v},
-    ),
-    ProfileEditableField(
-      label: l.ageDateOfBirth,
-      kind: ProfileFieldKind.date,
-      value: p.age > 0 ? _ageText(c, p.age) : '',
-      localizeValues: false,
-      dateValue: p.dateOfBirth,
-      apply: (pr, v) {
-        final d = v as DateTime;
-        return pr.copyWith(dateOfBirth: d, age: _ageFromDob(d));
-      },
-      patch: (v) {
-        final d = v as DateTime;
-        return {'dateOfBirth': d, 'age': _ageFromDob(d)};
-      },
-    ),
-    ProfileEditableField(
-      label: l.height,
-      kind: ProfileFieldKind.options,
-      value: p.height,
-      options: AppConstants.heightList,
-      localizeValues: false, // 5'6" reads the same in both languages
-      apply: (pr, v) => pr.copyWith(height: v as String),
-      patch: (v) => {'height': v},
-    ),
-    ProfileEditableField(
-      label: l.weightKgLabel,
-      kind: ProfileFieldKind.number,
-      value: p.weight,
-      localizeValues: false,
-      apply: (pr, v) => pr.copyWith(weight: v as String),
-      patch: (v) => {'weight': v},
-    ),
-    ProfileEditableField(
-      label: l.maritalStatus,
-      kind: ProfileFieldKind.options,
-      value: p.maritalStatus,
-      options: AppConstants.maritalStatusList,
-      apply: (pr, v) => pr.copyWith(maritalStatus: v as String),
-      patch: (v) => {'maritalStatus': v},
-    ),
-    ProfileEditableField(
-      label: l.physicalStatus,
-      kind: ProfileFieldKind.options,
-      value: p.physicalStatus,
-      options: AppConstants.physicalStatusList,
-      apply: (pr, v) => pr.copyWith(physicalStatus: v as String),
-      patch: (v) => {'physicalStatus': v},
-    ),
-  ];
 }
 
 /// One profile category: title + Edit action + label/value rows (empty values

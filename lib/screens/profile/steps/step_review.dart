@@ -70,13 +70,12 @@ class StepReview extends ConsumerWidget {
             [l10n.nativePlace, s(d['nativePlace'])],
             [l10n.citizenship, s(d['citizenship'])],
           ]),
+          // Employment Status / Profession Type are no longer collected (§9),
+          // so the review mirrors exactly what the Career step now asks for.
           _section(context, l10n.career, 2, [
+            [l10n.educationLevel, s(d['educationLevel'])],
             [l10n.education, s(d['education'])],
-            [l10n.occupation, s(d['occupation'])],
-            if (s(d['courseDegree']).isNotEmpty)
-              [l10n.courseDegree, s(d['courseDegree'])],
-            if (s(d['employmentType']).isNotEmpty)
-              [l10n.employmentLabel, s(d['employmentType'])],
+            [l10n.occupationManualLabel, s(d['occupation'])],
             if (s(d['annualIncome']).isNotEmpty)
               [l10n.annualIncome, s(d['annualIncome'])],
           ]),

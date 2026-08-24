@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/constants/app_constants.dart';
 import '../core/data/education_catalog.dart';
 import '../core/data/occupation_catalog.dart';
+import '../core/utils/matrimony_photo.dart';
 
 /// Safely coerce a dynamic value into a List<String>.
 ///
@@ -358,7 +359,10 @@ class ProfileModel {
       nativePlace: d['nativePlace'],
       citizenship: d['citizenship'],
       lifestyle: LifestyleDetails.fromMap(d['lifestyle'] ?? {}),
-      profilePhotoUrl: d['profilePhotoUrl'],
+      // MATRIMONY photo only (§6/§17): an identity-provider avatar that ever
+      // reached this field is dropped on read, so no card, list or admin view
+      // can display a Google account picture as a matrimony photo.
+      profilePhotoUrl: _matrimonyPhoto(d['profilePhotoUrl']),
       privacySettings: ProfilePrivacy.fromMap(d['privacySettings']),
       horoscope: HoroscopeDetails.fromMap(d['horoscope'] ?? {}),
       partnerPreferences: PartnerPreferences.fromMap(d['partnerPreferences'] ?? {}),
@@ -538,22 +542,17 @@ class ProfileModel {
     return '${localize(level)} · ${shown.join(', ')}';
   }
 
-  /// "Employed · Private · Software Engineer" — status, type and occupation,
-  /// each rendered through [localize]. Statuses with no occupation of their own
-  /// (Student / Job Seeker / Homemaker / Retired / Others) render as just the
-  /// status.
-  String occupationDisplay(String Function(String) localize) {
-    final status = effectiveEmploymentStatus;
-    final occ = occupation.trim();
-    if (status.isEmpty) return localize(occ);
-    final parts = <String>[localize(status)];
-    if (OccupationCatalog.statusHasOccupation(status)) {
-      final type = effectiveSector;
-      if (type.isNotEmpty) parts.add(localize(type));
-      if (occ.isNotEmpty) parts.add(localize(occ));
-    }
-    return parts.join(' · ');
-  }
+  /// What the member does for work, exactly as they entered it (§9).
+  ///
+  /// This used to read "Employed · Private · Software Engineer" — the derived
+  /// Employment Status and Profession Type prefixed onto the occupation. Those
+  /// two fields are no longer part of the profile (they were dropped in favour
+  /// of one plain "what do you do?" text box), and prefixing a *derived*
+  /// status onto free text produced wrong labels for anything outside the old
+  /// catalogue. The occupation now stands on its own, still passed through
+  /// [localize] so a catalogue value keeps its Tamil name.
+  String occupationDisplay(String Function(String) localize) =>
+      localize(occupation.trim());
 
   /// True when this member chose to share contact publicly (§17/§18) — any
   /// signed-in viewer may see it, without a mutually-accepted interest.
@@ -566,6 +565,14 @@ class ProfileModel {
   /// TRUE while the profile is still waiting for admin verification.
   bool get isPendingVerification => status == AppConstants.profilePending;
   String get about => aboutMe ?? '';
+
+  /// Drops an identity-provider avatar (Google, Facebook) so it can never be
+  /// shown as the member's matrimony profile photo (§6/§17).
+  static String? _matrimonyPhoto(dynamic v) {
+    final url = v is String ? v.trim() : '';
+    if (url.isEmpty || isAuthProviderPhoto(url)) return null;
+    return url;
+  }
 
   /// The member's photo(s) — at most ONE (§1). Kept as a list so the existing
   /// call sites (cards, chat avatars, admin panel) keep compiling, but it can

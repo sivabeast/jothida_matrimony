@@ -3101,7 +3101,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get locationPreference => 'இட விருப்பம்';
 
   @override
-  String get locationPreferenceHint => 'மாநிலம் → மாவட்டம் → நகரம்';
+  String get locationPreferenceHint =>
+      'நீங்கள் விரும்பும் நகரம் அல்லது ஊரைத் தேடவும்';
 
   @override
   String get educationPreference => 'கல்வி விருப்பம்';
@@ -3690,4 +3691,45 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get rateApp => 'இந்த செயலியை மதிப்பிடுங்கள்';
+
+  @override
+  String get loginToContinue => 'தொடர உள்நுழையவும்';
+
+  @override
+  String get guestMenuHint =>
+      'உங்கள் சுயவிவரம், பொருத்தங்கள், விருப்பங்கள் மற்றும் அரட்டையைப் பயன்படுத்த உள்நுழையவும்.';
+
+  @override
+  String get guestLoginPromptTitle => 'அனைத்தையும் பயன்படுத்த உள்நுழையவும்';
+
+  @override
+  String get guestLoginPromptBody =>
+      'நீங்கள் விருந்தினராக உலாவுகிறீர்கள். உங்கள் பொருத்தங்களைப் பார்க்கவும், விருப்பம் அனுப்பவும், உறுப்பினர்களுடன் அரட்டையடிக்கவும் உள்நுழையவும்.';
+
+  @override
+  String get maybeLater => 'பிறகு பார்க்கிறேன்';
+
+  @override
+  String get editHoroscopeValueHint => 'மாற்ற ஒரு மதிப்பைத் தட்டவும்';
+
+  @override
+  String get occupationManualLabel =>
+      'தொழில் / நீங்கள் என்ன வேலை செய்கிறீர்கள்?';
+
+  @override
+  String get occupationManualHint =>
+      'எ.கா. மென்பொருள் உருவாக்குநர், ஆசிரியர், விவசாயி, தொழில் உரிமையாளர்';
+
+  @override
+  String get viewFullProfile => 'முழு சுயவிவரத்தைப் பார்க்க';
+
+  @override
+  String get locationCityOnlyHint =>
+      'உங்கள் நகரம் அல்லது ஊரைத் தேடவும், அல்லது தற்போதைய இருப்பிடத்தைப் பயன்படுத்தவும்.';
+
+  @override
+  String get generateHoroscope => 'ஜாதகத்தை உருவாக்கு';
+
+  @override
+  String get regenerateHoroscope => 'ஜாதகத்தை மீண்டும் உருவாக்கு';
 }

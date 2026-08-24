@@ -39,7 +39,7 @@ import '../screens/admin/admin_shell.dart';
 import '../screens/admin/astrology_service_settings_screen.dart';
 import '../screens/admin/admin_dashboard.dart';
 import '../screens/admin/admin_users_page.dart';
-import '../screens/admin/admin_edit_user_screen.dart';
+import '../screens/admin/admin_edit_profile_screen.dart';
 import '../screens/admin/astrologer_accounts_screen.dart';
 import '../screens/admin/astrologer_details_screen.dart';
 import '../screens/admin/user_details_screen.dart';
@@ -59,12 +59,10 @@ import '../screens/admin/popup_management_screen.dart';
 import '../screens/horoscope/horoscope_details_screen.dart';
 import '../screens/horoscope/horoscope_files_screen.dart';
 import '../screens/horoscope/member_horoscope_screen.dart';
-import '../screens/profile/personal_details_screen.dart';
 import '../screens/profile/complete_profile_screen.dart';
 import '../providers/navigation_provider.dart';
 import '../screens/notifications/announcement_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
-import '../screens/profile/profile_section_edit_screens.dart';
 import '../screens/profile/photos_edit_screen.dart';
 import '../screens/interests/interests_center_screen.dart';
 import '../screens/preferences/partner_preferences_screen.dart';
@@ -375,7 +373,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/language', builder: (_, __) => const LanguageScreen()),
       // ── Profile section screens ──────────────────────────────────────────
       // Profile Details (PROFILE group) — photo, name & all personal info.
-      GoRoute(path: '/personal-details', builder: (_, __) => const PersonalDetailsScreen()),
       // Interests as a standalone page (side menu's Interests Sent / Received).
       // ?tab=sent|received|accepted|rejected selects the opening tab and
       // ?highlight=<uid> scrolls to + flashes that counterpart's card — used
@@ -429,20 +426,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(path: '/complete-profile', builder: (_, __) => const CompleteProfileScreen()),
-      // ── Section-wise profile editors (opened from the completion card) ────
-      GoRoute(path: '/edit/about', builder: (_, __) => const AboutMeEditScreen()),
-      GoRoute(
-          path: '/edit/education',
-          builder: (_, __) => const EducationEditScreen()),
-      GoRoute(
-          path: '/edit/location',
-          builder: (_, __) => const LocationEditScreen()),
-      GoRoute(
-          path: '/edit/religious',
-          builder: (_, __) => const ReligiousEditScreen()),
-      GoRoute(
-          path: '/edit/lifestyle',
-          builder: (_, __) => const LifestyleEditScreen()),
+      // Photos has its own editor: upload, 1:1 crop and DELETE of an existing
+      // photo are things the creation wizard's photo step (which only stages a
+      // file for a later upload) cannot do. Every other section is edited in
+      // the creation wizard itself (§13/§15).
       GoRoute(
           path: '/edit/photos', builder: (_, __) => const PhotosEditScreen()),
       GoRoute(path: '/horoscope', builder: (_, __) => const HoroscopeDetailsScreen()),
@@ -519,11 +506,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               path: '/admin/user/:uid',
               builder: (_, state) =>
                   UserDetailsScreen(uid: state.pathParameters['uid'] ?? '')),
-          // Full admin editor for a user's profile — details, horoscope,
-          // contact, location, photo, Aadhaar verification, preferences.
+          // Admin editor for a user's profile. It opens the SAME
+          // profile-creation wizard the member uses (§13/§15) — there is no
+          // admin-only profile form any more. Admin-only moderation actions
+          // (verify, Aadhaar, suspend, delete) live on the User Details page.
           GoRoute(
               path: '/admin/user/:uid/edit',
-              builder: (_, state) => AdminEditUserScreen(
+              builder: (_, state) => AdminEditProfileScreen(
                   uid: state.pathParameters['uid'] ?? '')),
           // Astrologers page → admin-provisioned account registry (add by
           // Gmail, enable/disable; Google-only login + auto-assignment).

@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/matrimony_photo.dart';
 import '../../core/utils/profile_status.dart';
 import '../../core/utils/profile_completion.dart';
 import '../../models/profile_model.dart';
@@ -980,13 +981,11 @@ class _UserCard extends ConsumerWidget {
 
   String get _name => _displayNameOf(user, profile);
 
-  /// Prefer the matrimony profile photo, then the auth account photo.
+  /// The member's MATRIMONY photo, or null for the initial-letter avatar.
+  /// A Google account picture is never used as a matrimony photo (§6/§17).
   String? get _photoUrl {
-    final pp = profile?.profilePhotoUrl;
-    if (pp != null && pp.isNotEmpty) return pp;
-    final up = user.photoUrl;
-    if (up != null && up.isNotEmpty) return up;
-    return null;
+    final url = matrimonyPhotoUrl(profile?.profilePhotoUrl, user.photoUrl);
+    return url.isEmpty ? null : url;
   }
 
   String get _shortUid =>
@@ -1147,6 +1146,14 @@ class _UserCard extends ConsumerWidget {
             PopupMenuButton<String>(
               onSelected: (v) async {
                 switch (v) {
+                  case 'view':
+                    // The member's COMPLETE matrimony profile, laid out in the
+                    // finalized profile structure (§5). Tapping the card does
+                    // the same thing; this makes the action explicit.
+                    context.push('/admin/user/${user.uid}');
+                  case 'edit':
+                    // The member's own profile wizard, in edit mode (§13/§15).
+                    context.push('/admin/user/${user.uid}/edit');
                   case 'suspend':
                     await _act(
                         context,
@@ -1166,6 +1173,19 @@ class _UserCard extends ConsumerWidget {
                 }
               },
               itemBuilder: (_) => [
+                const PopupMenuItem(
+                    value: 'view',
+                    child: ListTile(
+                        leading: Icon(Icons.person_search_outlined),
+                        title: Text('View Full Profile'),
+                        contentPadding: EdgeInsets.zero)),
+                const PopupMenuItem(
+                    value: 'edit',
+                    child: ListTile(
+                        leading: Icon(Icons.edit_outlined),
+                        title: Text('Edit Profile'),
+                        contentPadding: EdgeInsets.zero)),
+                const PopupMenuDivider(),
                 if (user.isBlocked)
                   const PopupMenuItem(
                       value: 'activate',

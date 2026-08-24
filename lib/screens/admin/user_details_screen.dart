@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/profile_status.dart';
+import '../../models/aadhaar_details.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../core/utils/l10n_ext.dart';
+import '../../core/utils/matrimony_photo.dart';
 import '../../models/profile_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/admin_provider.dart';
@@ -21,6 +23,21 @@ import '../../widgets/common/network_photo.dart';
 final _userRequestsProvider = StreamProvider.autoDispose
     .family<List<AstrologerRequestModel>, String>((ref, uid) {
   return ref.read(astrologerServiceProvider).watchRequestsByUser(uid);
+});
+
+/// The member's gated `aadhaar/{uid}` record, readable by admins only.
+///
+/// Aadhaar verification is an admin MODERATION action, not a profile field, so
+/// it lives on this page next to Verify / Suspend / Delete rather than inside
+/// the profile form (the profile form is the member's own wizard now — §13).
+final _userAadhaarProvider =
+    FutureProvider.autoDispose.family<AadhaarDetails?, String>((ref, uid) async {
+  try {
+    return await ref.read(firestoreServiceProvider).getAadhaar(uid);
+  } catch (e) {
+    debugPrint('[UserDetails] aadhaar read skipped: $e');
+    return null;
+  }
 });
 
 /// Admin → Users → View Details (§6).
@@ -122,6 +139,8 @@ class UserDetailsScreen extends ConsumerWidget {
                   ..._profileCards(profile, contact),
                   const SizedBox(height: 14),
                   _moderationActionsCard(context, ref, profile),
+                  const SizedBox(height: 14),
+                  _AadhaarVerificationCard(uid: uid, profileId: profile.id),
                 ],
                 const SizedBox(height: 14),
                 _card([
@@ -235,12 +254,11 @@ class UserDetailsScreen extends ConsumerWidget {
         const SizedBox(height: 8),
         _row('Education Level', s(p.effectiveEducationLevel)),
         _row('Course / Degree', s(p.education)),
-        _row('College', s(p.collegeName)),
-        _row('Employment Status', s(p.effectiveEmploymentStatus)),
-        _row('Government / Private', s(p.effectiveSector)),
+        _row('All Qualifications', s(p.allDegrees.join(', '))),
+        // Occupation is free text now — the Employment Status and Profession
+        // Type fields were removed from the profile structure (§9), so they
+        // are no longer shown here either.
         _row('Occupation', s(p.occupation)),
-        _row('Company', s(p.companyName)),
-        _row('Work Location', s(p.workLocation)),
         _row('Annual Income', s(p.annualIncome)),
       ]),
       const SizedBox(height: 14),
@@ -426,11 +444,11 @@ class UserDetailsScreen extends ConsumerWidget {
     }
   }
 
-  String _photo(ProfileModel? profile, UserModel user) {
-    final p = profile?.profilePhotoUrl ?? '';
-    if (p.isNotEmpty) return p;
-    return user.photoUrl ?? '';
-  }
+  /// The member's MATRIMONY photo. A Google account picture is never shown
+  /// here — the admin view sees exactly the image the member uploaded, or the
+  /// placeholder when they have not uploaded one (§6/§17).
+  String _photo(ProfileModel? profile, UserModel user) =>
+      matrimonyPhotoUrl(profile?.profilePhotoUrl, user.photoUrl);
 
   /// Human-readable login method (§ Login Information).
   String _authMethod(String? provider) {
@@ -749,4 +767,134 @@ class _HeroProfileCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Admin Aadhaar review: the submitted number (masked) plus the front/back
+/// images, and the switch that marks the member verified — which is what
+/// stamps the public "Verified" badge on their profile.
+///
+/// This used to sit inside the admin-only profile editor. That editor is gone
+/// (admins now open the member's own profile wizard, §13/§15), so the action
+/// moved here, where the rest of the admin-only moderation lives.
+class _AadhaarVerificationCard extends ConsumerWidget {
+  final String uid;
+  final String profileId;
+  const _AadhaarVerificationCard(
+      {required this.uid, required this.profileId});
+
+  Future<void> _setVerified(
+      BuildContext context, WidgetRef ref, bool verified) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(firestoreServiceProvider).setAadhaarVerified(
+          userId: uid, profileId: profileId, verified: verified);
+      ref.invalidate(_userAadhaarProvider(uid));
+      messenger.showSnackBar(SnackBar(
+          content: Text(verified
+              ? 'Aadhaar verified — the profile now shows the Verified badge.'
+              : 'Aadhaar verification removed.')));
+    } catch (e) {
+      debugPrint('[UserDetails] verification update failed: $e');
+      messenger.showSnackBar(const SnackBar(
+          content: Text('Could not update the verification. Please try again.'),
+          backgroundColor: AppColors.error));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final a = ref.watch(_userAadhaarProvider(uid)).valueOrNull;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Aadhaar Verification',
+              style: TextStyle(
+                  fontSize: 15,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary)),
+          const SizedBox(height: 12),
+          if (a == null || !a.isSubmitted)
+            Text('The user has not submitted Aadhaar details yet.',
+                style: TextStyle(color: Colors.grey[600], fontSize: 13))
+          else ...[
+            Row(children: [
+              Expanded(
+                child: Text('Aadhaar Number: ${a.masked}',
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w600)),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (a.verified ? AppColors.success : AppColors.warning)
+                      .withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(a.verified ? 'VERIFIED' : 'PENDING',
+                    style: TextStyle(
+                        color:
+                            a.verified ? AppColors.success : AppColors.warning,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold)),
+              ),
+            ]),
+            const SizedBox(height: 10),
+            Row(children: [
+              Expanded(child: _image('Front', a.frontUrl)),
+              const SizedBox(width: 10),
+              Expanded(child: _image('Back', a.backUrl)),
+            ]),
+            const SizedBox(height: 10),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Aadhaar Verified',
+                  style:
+                      TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              subtitle: const Text(
+                  'Verifying also shows the "Verified" badge on the profile.',
+                  style: TextStyle(fontSize: 12)),
+              value: a.verified,
+              activeThumbColor: AppColors.success,
+              onChanged: (v) => _setVerified(context, ref, v),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _image(String label, String url) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+          const SizedBox(height: 4),
+          Container(
+            height: 110,
+            width: double.infinity,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: url.isEmpty
+                ? const Center(
+                    child: Icon(Icons.image_not_supported_outlined,
+                        color: Colors.grey))
+                : NetworkPhoto(url: url, fit: BoxFit.cover),
+          ),
+        ],
+      );
 }

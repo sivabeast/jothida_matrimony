@@ -10,8 +10,14 @@ import '../../../widgets/common/location_picker_section.dart';
 import '../../../widgets/common/place_picker_field.dart';
 import '../../../widgets/common/searchable_with_others_field.dart';
 
-/// Step 8 — Location Details: State / District / City (req), plus Native
-/// Place and Citizenship. There is NO Country dropdown (removed per spec).
+/// Location step (§7) — ONE required question: **City**, answered either by
+/// searching for it or by tapping **Use My Location**. Plus the optional
+/// Native Place and Citizenship.
+///
+/// The separate State and District dropdowns (and the duplicate lower City
+/// field) were removed: they asked for the same answer the City search already
+/// gives. State/District are still stored — the picker resolves them from the
+/// chosen city — so nothing downstream changed. There is no Country dropdown.
 class StepLocation extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   const StepLocation({super.key, required this.onNext});
@@ -52,14 +58,17 @@ class _StepLocationState extends ConsumerState<StepLocation> {
   }
 
   void _saveAndNext() {
+    // CITY is the only location field the member fills in (§7); State and
+    // District are resolved from it, and a free-typed place legitimately has
+    // no district row — so requiring one here would block a valid answer.
     // Inline, under the location block (§10) — never a bottom snackbar.
     final ok = _v.validate(
       context,
       [
         FieldCheck(
           id: 'location',
-          valid: _state != null && _district != null && _city != null,
-          message: context.l10n.selectStateDistrictCity,
+          valid: (_city ?? '').trim().isNotEmpty,
+          message: context.l10n.pleaseEnterField(context.l10n.city),
         ),
       ],
       onChanged: () => setState(() {}),

@@ -17,6 +17,7 @@ import 'tabs/astrology_service_page.dart';
 import 'tabs/discover_tab.dart';
 import 'tabs/home_dashboard_tab.dart';
 import 'tabs/reports_tab.dart';
+import '../../widgets/auth/guest_login_prompt.dart';
 import '../../widgets/common/app_opening_popup.dart';
 import '../../widgets/common/app_update_dialog.dart';
 
@@ -76,6 +77,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // its own — it opens a dialog OVER Home once per launch, so the Home
       // screen and its navigation keep working normally underneath.
       child: AppOpeningPopupHost(
+      // The periodic GUEST login prompt (§3). Like the popup host above it
+      // renders nothing itself; it opens a login dialog over Home roughly
+      // every 10 minutes while — and only while — the visitor is a guest.
+      child: GuestLoginPromptHost(
       child: Scaffold(
       // ── Navigation Drawer (header menu icon) ──────────────────────────────
       drawer: const AppDrawer(),
@@ -191,6 +196,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           if (!mounted) return;
           ref.read(homeTabIndexProvider.notifier).state = i;
         },
+      ),
       ),
       ),
       ),

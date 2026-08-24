@@ -1,11 +1,26 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/banner_model.dart';
 import 'service_providers.dart';
 
 /// PUBLISHED Home banners (enabled, by display order) — what users see.
+///
+/// Home renders this as `valueOrNull ?? []`, which means a FAILED read looks
+/// exactly like "the admin published nothing": the carousel just disappears.
+/// That is the right behaviour for the user (Home must never break over a
+/// banner) but it hid a real bug for a long time, so every error is logged
+/// here with its Firestore code — a `permission-denied` in this line is the
+/// signature of banner rules that have not been deployed.
 final activeBannersProvider =
     StreamProvider.autoDispose<List<HomeBannerModel>>((ref) {
-  return ref.watch(firestoreServiceProvider).watchActiveBanners();
+  return ref
+      .watch(firestoreServiceProvider)
+      .watchActiveBanners()
+      .handleError((Object e, StackTrace st) {
+    debugPrint('[banners] Home carousel read failed — the banner will not '
+        'render: $e');
+    throw e;
+  });
 });
 
 /// ALL banners (any status) for the admin Banner Management screen.

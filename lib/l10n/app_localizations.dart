@@ -5627,7 +5627,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationPreferenceHint.
   ///
   /// In en, this message translates to:
-  /// **'State → District → City, from the master data'**
+  /// **'Search the city or town you would prefer'**
   String get locationPreferenceHint;
 
   /// No description provided for @educationPreference.
@@ -6649,6 +6649,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rate this app'**
   String get rateApp;
+
+  /// No description provided for @loginToContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Login to Continue'**
+  String get loginToContinue;
+
+  /// No description provided for @guestMenuHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Login to unlock your profile, matches, interests and chat.'**
+  String get guestMenuHint;
+
+  /// No description provided for @guestLoginPromptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Login to unlock everything'**
+  String get guestLoginPromptTitle;
+
+  /// No description provided for @guestLoginPromptBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You are browsing as a guest. Login to see your matches, send interests and chat with members.'**
+  String get guestLoginPromptBody;
+
+  /// No description provided for @maybeLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Maybe Later'**
+  String get maybeLater;
+
+  /// No description provided for @editHoroscopeValueHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a value to change it'**
+  String get editHoroscopeValueHint;
+
+  /// No description provided for @occupationManualLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Occupation / What do you do?'**
+  String get occupationManualLabel;
+
+  /// No description provided for @occupationManualHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Software Developer, Teacher, Farmer, Business Owner'**
+  String get occupationManualHint;
+
+  /// No description provided for @viewFullProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'View Full Profile'**
+  String get viewFullProfile;
+
+  /// No description provided for @locationCityOnlyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search your city or town, or use your current location.'**
+  String get locationCityOnlyHint;
+
+  /// No description provided for @generateHoroscope.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Horoscope'**
+  String get generateHoroscope;
+
+  /// No description provided for @regenerateHoroscope.
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate Horoscope'**
+  String get regenerateHoroscope;
 }
 
 class _AppLocalizationsDelegate

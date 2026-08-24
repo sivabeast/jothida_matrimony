@@ -39,8 +39,9 @@ class _PartnerPreferencesScreenState
   int _maxAge = 40;
   String _minHeight = "5'0\"";
   String _maxHeight = "5'10\"";
-  // Location preference — State → District → City, always chosen from the
-  // master datasets via [LocationPickerSection] (city is never typed).
+  // Location preference — ONE city search (§7), via the shared
+  // [LocationPickerSection]. The picker still resolves District and State from
+  // the chosen city, so these three fields are stored exactly as before.
   // Tamil Nadu is the default state when nothing is saved yet.
   static const String _defaultState = 'Tamil Nadu';
   String? _state = _defaultState;
@@ -262,7 +263,7 @@ class _PartnerPreferencesScreenState
             child: LocationPickerSection(
               key: ValueKey('pref-location-$_locationEpoch'),
               // Tamil Nadu is pre-selected for a fresh preference; a saved
-              // selection is restored as-is. City is never typed by hand.
+              // selection is restored as-is.
               initialState: _state,
               initialDistrict: _district,
               initialCity: _city,

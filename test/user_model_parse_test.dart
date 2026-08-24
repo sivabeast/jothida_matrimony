@@ -99,4 +99,33 @@ void main() {
       expect(user.isAdmin, isTrue);
     });
   });
+
+  group('UserModel.photoUrl never carries an identity-provider avatar', () {
+    // §6/§17 — `users/{uid}.photoUrl` is the denormalized mirror of the
+    // MATRIMONY profile photo. Documents written before that rule existed can
+    // still hold a Google account picture; it must be dropped on read so no
+    // screen can fall back to it.
+    test('a stored Google photo is dropped', () {
+      final doc = _FakeDoc('u2', {
+        'photoUrl':
+            'https://lh3.googleusercontent.com/a/ACg8ocK_abc123=s96-c',
+      });
+      expect(UserModel.fromFirestore(doc).photoUrl, isNull);
+    });
+
+    test('an uploaded matrimony photo is kept', () {
+      const url =
+          'https://res.cloudinary.com/demo/image/upload/v1/profiles/abc.jpg';
+      final doc = _FakeDoc('u3', {'photoUrl': url});
+      expect(UserModel.fromFirestore(doc).photoUrl, url);
+    });
+
+    test('a blank or missing photo stays null', () {
+      expect(UserModel.fromFirestore(_FakeDoc('u4', {})).photoUrl, isNull);
+      expect(
+          UserModel.fromFirestore(_FakeDoc('u5', {'photoUrl': '   '}))
+              .photoUrl,
+          isNull);
+    });
+  });
 }

@@ -47,38 +47,44 @@ List<ProfileSectionStatus> profileSections(ProfileModel? p) {
           _ne(pp.city) ||
           (pp.eatingHabit.isNotEmpty && pp.eatingHabit != 'Any'));
 
-  // Only the sections that exist in the website's profile-creation flow are
-  // surfaced as editable sections (Career, Location, Community, Horoscope,
-  // Photos, Partner Preference). Website-absent sections (About Me,
-  // Lifestyle) are intentionally NOT listed — every field is edited through
-  // the Edit Profile wizard, which mirrors the creation steps.
+  // Only the sections that exist in the profile-creation flow are surfaced as
+  // editable sections (Career, Location, Community, Horoscope, Photos,
+  // Partner Preference).
+  //
+  // Each one opens the SAME step of the creation wizard that produced it
+  // (§13/§15) — there is no separate edit form. `_step` builds that route from
+  // the profile id; with no profile yet there is nothing to edit section by
+  // section, so it points at creation instead.
+  String step(int index) =>
+      p == null ? '/profile/create' : '/profile/${p.id}/edit-section/$index';
+
   return [
     ProfileSectionStatus(
       id: 'education',
       title: 'Education & Career',
       icon: Icons.work_outline,
-      route: '/edit/education',
+      route: step(2),
       isComplete: _ne(p?.education) && _ne(p?.occupation),
     ),
     ProfileSectionStatus(
       id: 'location',
       title: 'Location Details',
       icon: Icons.location_on_outlined,
-      route: '/edit/location',
-      isComplete: _ne(p?.city) && _ne(p?.state),
+      route: step(1),
+      isComplete: _ne(p?.city),
     ),
     ProfileSectionStatus(
       id: 'religious',
       title: 'Religious Information',
       icon: Icons.account_balance_outlined,
-      route: '/edit/religious',
+      route: step(3),
       isComplete: _ne(p?.religion) && _ne(p?.caste),
     ),
     ProfileSectionStatus(
       id: 'astrology',
       title: 'Astrology Information',
       icon: Icons.auto_awesome_outlined,
-      route: '/horoscope',
+      route: step(4),
       isComplete: _ne(h?.rasi) && _ne(h?.nakshatra),
     ),
     ProfileSectionStatus(

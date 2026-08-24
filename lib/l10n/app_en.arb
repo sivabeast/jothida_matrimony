@@ -1391,7 +1391,7 @@
   "profileDisplayQualification": "Profile Display Qualification",
   "profileDisplayQualificationHelp": "Choose up to two qualifications to show on your profile card",
   "locationPreference": "Location Preference",
-  "locationPreferenceHint": "State → District → City, from the master data",
+  "locationPreferenceHint": "Search the city or town you would prefer",
   "educationPreference": "Education Preference",
   "educationPreferenceHint": "Search and select any number of qualifications",
   "professionPreference": "Profession Preference",
@@ -1634,5 +1634,17 @@
   "rateAppTitle": "How is Jothida Matrimony? ❤️",
   "rateAppBody": "Your feedback means a lot to us.",
   "rateAndReview": "Rate & Review",
-  "rateApp": "Rate this app"
+  "rateApp": "Rate this app",
+  "loginToContinue": "Login to Continue",
+  "guestMenuHint": "Login to unlock your profile, matches, interests and chat.",
+  "guestLoginPromptTitle": "Login to unlock everything",
+  "guestLoginPromptBody": "You are browsing as a guest. Login to see your matches, send interests and chat with members.",
+  "maybeLater": "Maybe Later",
+  "editHoroscopeValueHint": "Tap a value to change it",
+  "occupationManualLabel": "Occupation / What do you do?",
+  "occupationManualHint": "e.g. Software Developer, Teacher, Farmer, Business Owner",
+  "viewFullProfile": "View Full Profile",
+  "locationCityOnlyHint": "Search your city or town, or use your current location.",
+  "generateHoroscope": "Generate Horoscope",
+  "regenerateHoroscope": "Regenerate Horoscope"
 }

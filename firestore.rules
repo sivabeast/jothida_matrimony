@@ -398,10 +398,17 @@ service cloud.firestore {
     }
 
     // ── Home banners (admin-managed carousel) ──────────────────────────────
-    // Admin has full control (add / edit / delete / publish / order); any
-    // signed-in user may READ (the Home page filters to enabled banners).
+    // Admin has full control (add / edit / delete / publish / order).
+    //
+    // READ is `isAnyVisitor()`, NOT `isAuthenticated()`: the Home banner is
+    // public marketing artwork the admin publishes for everyone, and Home is
+    // the one page a GUEST (anonymous session) can open. With the stricter
+    // helper the carousel query was rejected for every guest, so the banner
+    // simply never appeared — the whole section silently collapsed. Banners
+    // carry no personal data, so widening the read is safe; writes stay
+    // admin-only.
     match /banners/{bannerId} {
-      allow read: if isAuthenticated();
+      allow read: if isAnyVisitor();
       allow write: if isAdmin();
     }
 
@@ -424,10 +431,12 @@ service cloud.firestore {
     }
 
     // ── App-opening popups (admin-managed content, spec §13/§14) ───────────
-    // Same shape as banners: every signed-in member reads the rotation, only
-    // an admin creates, edits, reorders or deletes the contents.
+    // Same shape as banners: the rotation is public admin-published content
+    // that a guest browsing Home must be able to read too, so it uses the same
+    // `isAnyVisitor()` read as /banners. Only an admin creates, edits,
+    // reorders or deletes the contents.
     match /app_popups/{popupId} {
-      allow read: if isAuthenticated();
+      allow read: if isAnyVisitor();
       allow write: if isAdmin();
     }
 

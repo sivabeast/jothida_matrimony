@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/data/education_catalog.dart';
-import '../../../core/data/occupation_catalog.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/inline_validation.dart';
 import '../../../core/utils/l10n_ext.dart';
@@ -12,22 +11,25 @@ import '../../../widgets/common/gradient_button.dart';
 import '../../../widgets/common/searchable_field.dart';
 import '../../../widgets/common/searchable_multi_select_field.dart';
 import '../../../widgets/common/searchable_with_others_field.dart';
-import '../../../widgets/common/occupation_fields.dart';
 
-/// Career step — two dependent hierarchies, both of which hide what does not
-/// apply (§3–§6):
+/// Education & Career step.
 ///
 ///   Education Level  →  Degree(s), and only above 12th
-///   Employment Status → Employment Type → Occupation
+///   Occupation       →  free text, "what do you do?"
 ///
 /// **§3** Below 10th / 10th / 12th describe the qualification completely, so no
 /// degree picker is shown for them at all.
 /// **§4** A member may hold several degrees. With one or two both go on the
 /// profile card; from three onwards they choose which one or two to show.
-/// **§5** Employment Type changes with the status, and disappears entirely for
-/// a student, job seeker, homemaker, retiree or "other".
-/// **§6** The occupation list is ORDERED by what the member studied — never
-/// filtered, so anyone can still find any job by typing it.
+/// **§9** There is NO Employment Status dropdown, no Profession Type dropdown
+/// and no occupation catalogue any more. The member is asked directly what
+/// they do for work and types it — "Software Developer", "Teacher", "Civil
+/// Engineer", "Business Owner". No predefined list, no search dropdown, no
+/// forced selection, no autocomplete.
+///
+/// Any employmentStatus / employmentType a profile already carries is left
+/// untouched on save: the wizard simply stops asking for it, so editing this
+/// section can never wipe a value entered under the old form.
 ///
 /// Validation follows the app-wide rule: pressing Continue paints an inline red
 /// message under each empty required field and scrolls to + focuses the FIRST
@@ -51,17 +53,13 @@ class _StepEducationState extends ConsumerState<StepEducation> {
   /// The one or two picked for the card — only asked for at 3+ degrees.
   final List<String> _displayDegrees = [];
 
-  String? _employmentStatus;
-  String? _employmentType;
-  String? _occupation;
   String? _annualIncome;
-  final _courseDegree = TextEditingController();
-  final _courseFocus = FocusNode();
+
+  /// §9 — plain manual text entry: "what do you do for work?".
+  final _occupation = TextEditingController();
+  final _occupationFocus = FocusNode();
 
   bool get _needsDegrees => EducationCatalog.levelHasDegrees(_educationLevel);
-  bool get _needsOccupation =>
-      OccupationCatalog.statusHasOccupation(_employmentStatus);
-  bool get _isStudent => _employmentStatus == OccupationCatalog.statusStudent;
 
   /// §4 — the chooser only appears from the third degree onwards.
   bool get _needsDisplayChoice => _degrees.length > 2;
@@ -70,9 +68,8 @@ class _StepEducationState extends ConsumerState<StepEducation> {
   void initState() {
     super.initState();
     final data = ref.read(profileCreationProvider).data;
-    _occupation = data['occupation'] as String?;
+    _occupation.text = (data['occupation'] as String?)?.trim() ?? '';
     _annualIncome = data['annualIncome'] as String?;
-    _courseDegree.text = (data['courseDegree'] as String?) ?? '';
 
     // Restore the hierarchy: prefer the saved level/status, otherwise recover
     // them from the flat values a pre-hierarchy draft stored.
@@ -95,20 +92,12 @@ class _StepEducationState extends ConsumerState<StepEducation> {
         savedDisplay.map((e) => e.toString()).where(_degrees.contains),
       );
     }
-
-    _employmentStatus =
-        (data['employmentStatus'] as String?)?.trim().isNotEmpty == true
-            ? data['employmentStatus'] as String
-            : OccupationCatalog.statusForOccupation(_occupation,
-                employmentType: data['employmentType'] as String?);
-    _employmentType = OccupationCatalog.typeForOccupation(_occupation,
-        employmentType: data['employmentType'] as String?);
   }
 
   @override
   void dispose() {
-    _courseDegree.dispose();
-    _courseFocus.dispose();
+    _occupation.dispose();
+    _occupationFocus.dispose();
     super.dispose();
   }
 
@@ -141,28 +130,6 @@ class _StepEducationState extends ConsumerState<StepEducation> {
     });
   }
 
-  void _onStatusChanged(String? status) {
-    setState(() {
-      _employmentStatus = status;
-      _v.clear('employmentStatus');
-      _v.clear('employmentType');
-      _v.clear('occupation');
-      _employmentType = null;
-      _occupation = null;
-      if (!OccupationCatalog.statusHasOccupation(status)) _annualIncome = null;
-      if (status != OccupationCatalog.statusStudent) _courseDegree.clear();
-    });
-  }
-
-  void _onTypeChanged(String? type) {
-    setState(() {
-      _employmentType = type;
-      _v.clear('employmentType');
-      _v.clear('occupation');
-      _occupation = null; // the occupation list depends on the type
-    });
-  }
-
   // ── Save ───────────────────────────────────────────────────────────────────
 
   /// What actually goes on the card (§4): the member's pick at 3+, otherwise
@@ -182,18 +149,9 @@ class _StepEducationState extends ConsumerState<StepEducation> {
             id: 'degrees',
             valid: _degrees.isNotEmpty,
             message: l10n.pleaseSelect(l10n.degreesLabel)),
-      FieldCheck.notEmpty('employmentStatus', _employmentStatus,
-          l10n.pleaseEnterField(l10n.employmentStatus)),
-      if (_needsOccupation)
-        FieldCheck.notEmpty('employmentType', _employmentType,
-            l10n.pleaseSelect(l10n.employmentType)),
-      if (_needsOccupation)
-        FieldCheck.notEmpty(
-            'occupation', _occupation, l10n.pleaseEnterField(l10n.occupation)),
-      if (_isStudent)
-        FieldCheck.notEmpty('courseDegree', _courseDegree.text,
-            l10n.pleaseEnterField(l10n.courseDegree),
-            focusNode: _courseFocus),
+      FieldCheck.notEmpty('occupation', _occupation.text,
+          l10n.pleaseEnterField(l10n.occupationManualLabel),
+          focusNode: _occupationFocus),
     ];
     if (!_v.validate(context, checks, onChanged: () => setState(() {}))) return;
 
@@ -209,13 +167,12 @@ class _StepEducationState extends ConsumerState<StepEducation> {
       'education': display.isNotEmpty
           ? display.first
           : (_degrees.isNotEmpty ? _degrees.first : ''),
-      'employmentStatus': _employmentStatus,
-      'employmentType': _needsOccupation ? (_employmentType ?? '') : '',
-      'occupation':
-          OccupationCatalog.occupationValueFor(_employmentStatus, _occupation),
+      // `employmentStatus` / `employmentType` are deliberately ABSENT: the
+      // step no longer asks for them (§9), and omitting the keys leaves what
+      // the profile already stored untouched instead of blanking it.
+      'occupation': _occupation.text.trim(),
       // Annual income is OPTIONAL — stored when given, blank otherwise.
-      'annualIncome': _needsOccupation ? (_annualIncome ?? '') : '',
-      'courseDegree': _isStudent ? _courseDegree.text.trim() : '',
+      'annualIncome': _annualIncome ?? '',
     });
     widget.onNext();
   }
@@ -291,79 +248,35 @@ class _StepEducationState extends ConsumerState<StepEducation> {
 
           const SizedBox(height: 24),
 
-          // ── 4. Employment Status (§5, field 1) ────────────────────────────
-          SearchableField.fromOptions(
-            key: _v.anchor('employmentStatus'),
-            label: l10n.employmentStatus,
-            isRequired: true,
-            options: OccupationCatalog.statuses,
-            selectedItem: _employmentStatus,
-            prefixIcon: Icons.badge_outlined,
-            errorText: _v.errorOf('employmentStatus'),
-            onChanged: _onStatusChanged,
+          // ── 4. Occupation — a plain text box (§9) ─────────────────────────
+          // No Employment Status dropdown, no Profession Type dropdown, no job
+          // catalogue and no autocomplete: the member is asked what they do
+          // and types it.
+          AppTextField(
+            key: _v.anchor('occupation'),
+            controller: _occupation,
+            focusNode: _occupationFocus,
+            label: '${l10n.occupationManualLabel} *',
+            hint: l10n.occupationManualHint,
+            prefixIcon: const Icon(Icons.work_outline),
+            textCapitalization: TextCapitalization.words,
+            errorText: _v.errorOf('occupation'),
+            onChanged: (_) {
+              if (_v.errorOf('occupation') != null) {
+                setState(() => _v.clear('occupation'));
+              }
+            },
           ),
+          const SizedBox(height: 16),
 
-          // ── 5. Employment Type · 6. Occupation (§5, fields 2 and 3) ───────
-          // Both vanish for a student, job seeker, homemaker, retiree or
-          // "other" — there is no sector to ask about.
-          if (_needsOccupation) ...[
-            const SizedBox(height: 16),
-            // §6 — Profession Type: catalogue + "+ Add", no "Others".
-            ProfessionTypeField(
-              key: _v.anchor('employmentType'),
-              label: l10n.employmentType,
-              status: _employmentStatus,
-              value: _employmentType,
-              errorText: _v.errorOf('employmentType'),
-              onChanged: _onTypeChanged,
-            ),
-            const SizedBox(height: 16),
-            // §5 — the occupation itself accepts manual entry.
-            OccupationField(
-              key: _v.anchor('occupation'),
-              label: l10n.occupationFreeTextLabel,
-              enabled: (_employmentType ?? '').isNotEmpty,
-              // Ordered by education (§6), never filtered by it.
-              options: OccupationCatalog.occupationsFor(
-                status: _employmentStatus,
-                type: _employmentType,
-                educationLevel: _educationLevel,
-              ),
-              value: _occupation,
-              errorText: _v.errorOf('occupation'),
-              onChanged: (v) => setState(() {
-                _occupation = v;
-                _v.clear('occupation');
-              }),
-            ),
-            const SizedBox(height: 16),
-            // Annual Income is OPTIONAL — no asterisk, no validation.
-            SearchableWithOthersField(
-              label: l10n.annualIncome,
-              items: AppConstants.incomeRanges,
-              value: _annualIncome,
-              prefixIcon: Icons.currency_rupee,
-              onChanged: (v) => setState(() => _annualIncome = v),
-            ),
-          ],
-
-          // Student → what they are currently studying.
-          if (_isStudent) ...[
-            const SizedBox(height: 16),
-            AppTextField(
-              key: _v.anchor('courseDegree'),
-              controller: _courseDegree,
-              focusNode: _courseFocus,
-              label: '${l10n.courseDegree} *',
-              hint: l10n.courseDegreeHint,
-              errorText: _v.errorOf('courseDegree'),
-              onChanged: (_) {
-                if (_v.errorOf('courseDegree') != null) {
-                  setState(() => _v.clear('courseDegree'));
-                }
-              },
-            ),
-          ],
+          // ── 5. Annual Income — OPTIONAL: no asterisk, no validation ───────
+          SearchableWithOthersField(
+            label: l10n.annualIncome,
+            items: AppConstants.incomeRanges,
+            value: _annualIncome,
+            prefixIcon: Icons.currency_rupee,
+            onChanged: (v) => setState(() => _annualIncome = v),
+          ),
 
           const SizedBox(height: 36),
           GradientButton(onPressed: _saveAndNext, text: l10n.continueLabel),
