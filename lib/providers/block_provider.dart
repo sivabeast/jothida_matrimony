@@ -14,14 +14,14 @@ import 'service_providers.dart';
 /// UIDs the signed-in user has blocked. Drives the Block/Unblock toggle label
 /// and prevents the user *initiating* contact.
 final myBlockedUidsProvider = StreamProvider.autoDispose<Set<String>>((ref) {
-  final uid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+  final uid = ref.watch(memberUidProvider);
   if (uid == null) return Stream.value(<String>{});
   return ref.watch(firestoreServiceProvider).watchBlockedByMe(uid);
 });
 
 /// UIDs that have blocked the signed-in user.
 final whoBlockedMeProvider = StreamProvider.autoDispose<Set<String>>((ref) {
-  final uid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+  final uid = ref.watch(memberUidProvider);
   if (uid == null) return Stream.value(<String>{});
   return ref.watch(firestoreServiceProvider).watchWhoBlockedMe(uid);
 });
@@ -29,7 +29,7 @@ final whoBlockedMeProvider = StreamProvider.autoDispose<Set<String>>((ref) {
 /// The signed-in user's blocked users WITH block dates, newest first — feeds
 /// the user-facing Blocked Users page.
 final myBlocksProvider = StreamProvider.autoDispose<List<BlockedEntry>>((ref) {
-  final uid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+  final uid = ref.watch(memberUidProvider);
   if (uid == null) return Stream.value(const <BlockedEntry>[]);
   return ref.watch(firestoreServiceProvider).watchMyBlocks(uid);
 });

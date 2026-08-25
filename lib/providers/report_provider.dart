@@ -14,7 +14,7 @@ final allReportsProvider = StreamProvider.autoDispose<List<ReportModel>>((ref) {
 /// Users page. Requires the Firestore rule allowing a user to read reports they
 /// filed (reporterUserId == uid).
 final myReportsProvider = StreamProvider.autoDispose<List<ReportModel>>((ref) {
-  final uid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+  final uid = ref.watch(memberUidProvider);
   if (uid == null) return Stream.value(const <ReportModel>[]);
   return ref.watch(firestoreServiceProvider).watchMyReports(uid);
 });

@@ -66,7 +66,7 @@ final entryModeProvider = StateProvider<String?>((ref) => null);
 /// The signed-in MATRIMONY user's wedding (as bride or groom), if any.
 final myCoupleWeddingProvider =
     StreamProvider.autoDispose<WeddingModel?>((ref) {
-  final uid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+  final uid = ref.watch(memberUidProvider);
   if (uid == null) return Stream.value(null);
   return ref.watch(weddingServiceProvider).watchWeddingForCouple(uid);
 });
@@ -93,7 +93,7 @@ final activeWeddingProvider = StreamProvider.autoDispose<WeddingModel?>((ref) {
 /// the Marriage Fixed button state on the accepted-interest card.
 final weddingWithUserProvider = StreamProvider.autoDispose
     .family<WeddingModel?, String>((ref, otherUid) {
-  final uid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+  final uid = ref.watch(memberUidProvider);
   if (uid == null || otherUid.isEmpty) return Stream.value(null);
   return ref.watch(weddingServiceProvider).watchWeddingByPair(uid, otherUid);
 });

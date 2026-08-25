@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_update_config.dart';
 import '../services/app_update_service.dart';
+import 'auth_provider.dart';
 import 'service_providers.dart';
 
 /// Live admin-managed release config (`app_config/update`).
@@ -12,6 +13,8 @@ import 'service_providers.dart';
 /// (nothing configured → nobody is prompted).
 final appUpdateConfigProvider =
     StreamProvider<AppUpdateConfig>((ref) {
+  // Re-subscribe when the session lands — see the note on activeBannersProvider.
+  ref.watch(firebaseAuthStreamProvider);
   return ref.watch(firestoreServiceProvider).watchAppUpdateConfig();
 });
 

@@ -392,8 +392,13 @@ service cloud.firestore {
 
     // ── Announcements (admin broadcast → all users & astrologers) ──────────
     // Any signed-in account may READ; only admins create / edit / delete.
+    // READ is `isAnyVisitor()`: an announcement is an admin BROADCAST, the
+    // deep-linked `/announcement/{id}` screen is in the guest allow-list, and
+    // Home counts unread ones for everyone. Audience filtering (users vs
+    // employees) happens client-side on a public broadcast, so there is
+    // nothing personal to protect here. Only an admin may publish.
     match /announcements/{announcementId} {
-      allow read: if isAuthenticated();
+      allow read: if isAnyVisitor();
       allow write: if isAdmin();
     }
 
@@ -425,8 +430,12 @@ service cloud.firestore {
     // ── App configuration (release / version gate, spec §2/§6) ────────────
     // Every signed-in member must be able to READ the version gate — it is how
     // the app learns a newer release exists. Only an admin may change it.
+    // READ is `isAnyVisitor()`: the release/version gate runs on EVERY launch,
+    // before anyone signs in, so a guest on an unsupported build must still be
+    // told to update. It carries a version number and a message, nothing
+    // personal.
     match /app_config/{docId} {
-      allow read: if isAuthenticated();
+      allow read: if isAnyVisitor();
       allow write: if isAdmin();
     }
 
@@ -560,8 +569,14 @@ service cloud.firestore {
     // office details, service charge, page copy and appointment sessions.
     // Any signed-in user may READ it (the service page + booking need it);
     // only an admin may write.
+    // READ is `isAnyVisitor()`: the Astrology page is PUBLIC content a guest
+    // is explicitly allowed to browse (it is in the router's guest allow-list),
+    // and the document holds nothing personal — the expert's name, the charge,
+    // the visiting hours. With the stricter helper every guest opening the
+    // Astrology tab got "Astrology details could not be loaded (permission
+    // denied)". Booking is gated separately, in the screen, and needs a login.
     match /astrology_service/{docId} {
-      allow read: if isAuthenticated();
+      allow read: if isAnyVisitor();
       allow write: if isAdmin();
     }
 

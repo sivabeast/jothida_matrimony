@@ -21,13 +21,13 @@ const String kInterestAcceptedFirstMessageTa =
     'இப்போது நாம் இணைக்கப்பட்டுள்ளோம். தயங்காமல் உரையாடலைத் தொடங்கலாம்.';
 
 final sentInterestsProvider = StreamProvider.autoDispose<List<InterestModel>>((ref) {
-  final userId = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+  final userId = ref.watch(memberUidProvider);
   if (userId == null) return Stream.value([]);
   return ref.watch(interestRepositoryProvider).watchSentInterests(userId);
 });
 
 final receivedInterestsProvider = StreamProvider.autoDispose<List<InterestModel>>((ref) {
-  final userId = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+  final userId = ref.watch(memberUidProvider);
   if (userId == null) return Stream.value([]);
   return ref.watch(interestRepositoryProvider).watchReceivedInterests(userId);
 });

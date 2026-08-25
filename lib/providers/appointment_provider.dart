@@ -18,7 +18,7 @@ final myAppointmentsProvider =
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return Stream.value(list);
   }
-  final uid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+  final uid = ref.watch(memberUidProvider);
   if (uid == null) return Stream.value(const []);
   return ref
       .read(astrologerServiceProvider)

@@ -58,7 +58,7 @@ final myAssignedRequestsProvider =
   // Match the LOWERCASED email that assignment stores, so the query never
   // misses on a case difference between the token email and the registry key.
   final email = (ref.watch(myAuthEmailProvider) ?? '').trim().toLowerCase();
-  final uid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid ?? '';
+  final uid = ref.watch(memberUidProvider) ?? '';
   if (email.isEmpty && uid.isEmpty) return Stream.value(const []);
   final svc = ref.read(astrologerServiceProvider);
 

@@ -18,11 +18,11 @@ import 'auth_provider.dart';
 /// that to "no notifications" is what made this look like a client bug.
 final notificationsProvider =
     StreamProvider.autoDispose<List<NotificationModel>>((ref) {
-  final auth = ref.watch(firebaseAuthStreamProvider).valueOrNull;
-  final userId = auth?.uid;
-  if (userId == null || (auth?.isAnonymous ?? false)) {
-    return Stream.value(const <NotificationModel>[]);
-  }
+  // Members only. A GUEST has a uid (anonymous sessions do), so keying this
+  // off the raw auth stream used to run the query with the anonymous uid and
+  // get `permission-denied` back — see [memberUidProvider].
+  final userId = ref.watch(memberUidProvider);
+  if (userId == null) return Stream.value(const <NotificationModel>[]);
   return ref
       .watch(firestoreServiceProvider)
       .watchNotifications(userId)

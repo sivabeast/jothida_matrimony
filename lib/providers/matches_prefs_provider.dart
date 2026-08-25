@@ -30,7 +30,7 @@ class ViewedProfilesNotifier extends Notifier<Set<String>> {
 
   String? get _uid => kBypassAuth
       ? kDemoUserId
-      : ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+      : ref.watch(memberUidProvider);
 
   String get _key => 'viewed_profiles_${_uid ?? 'anon'}';
 
@@ -105,7 +105,7 @@ class LastViewedProfileNotifier extends Notifier<String?> {
 
   String? get _uid => kBypassAuth
       ? kDemoUserId
-      : ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+      : ref.watch(memberUidProvider);
 
   String get _key => 'last_viewed_profile_${_uid ?? 'anon'}';
 

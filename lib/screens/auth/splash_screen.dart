@@ -64,7 +64,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               .signInAsGuest()
               .timeout(const Duration(seconds: 8));
         } catch (e) {
-          debugPrint('[Splash] guest sign-in unavailable (non-fatal): $e');
+          // Non-fatal for navigation — the visitor still reaches Home — but it
+          // is NOT harmless: the anonymous session is what makes
+          // `request.auth != null`, and every public collection (banners,
+          // app popups, astrology service details, announcements, the version
+          // gate) is guarded by `isAnyVisitor()`, which is exactly that check.
+          // With no session those reads are denied and Home looks empty, so
+          // name the likely cause loudly instead of hiding it in one line.
+          debugPrint('[Splash] ⚠ GUEST SIGN-IN FAILED: $e');
+          debugPrint('[Splash] ⚠ Anonymous auth is what gives a guest a '
+              'Firebase session. Without it the banner carousel, the app '
+              'popups, the Astrology page and announcements will all be '
+              'denied for guests. Check that the Anonymous provider is '
+              'ENABLED in Firebase Console → Authentication → Sign-in method.');
         }
         if (!mounted) return;
         context.go('/home');

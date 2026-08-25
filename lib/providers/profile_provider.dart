@@ -1256,7 +1256,7 @@ bool isEligibleMatch(
 final newProfilesProvider =
     FutureProvider.autoDispose<List<ProfileModel>>((ref) async {
   final gender = ref.watch(matchGenderProvider);
-  final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+  final myUid = ref.watch(memberUidProvider);
 
   final List<ProfileModel> pool;
   if (kBypassAuth) {

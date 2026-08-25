@@ -40,7 +40,7 @@ const String kQuickAskBookingStatus = '📅 என் Booking Status என்�
 /// Uid of the signed-in person (demo id when auth is bypassed).
 final myUidProvider = Provider<String?>((ref) {
   if (kBypassAuth) return kDemoUserId;
-  return ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+  return ref.watch(memberUidProvider);
 });
 
 // ── Demo in-memory chat store ───────────────────────────────────────────────

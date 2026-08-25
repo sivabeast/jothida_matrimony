@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/announcement_model.dart';
+import 'auth_provider.dart';
 import 'service_providers.dart';
 
 /// Live, active announcements of EVERY audience (newest first). Prefer the
@@ -8,6 +9,8 @@ import 'service_providers.dart';
 /// — User and Employee notifications are completely separate systems.
 final announcementsProvider =
     StreamProvider.autoDispose<List<AnnouncementModel>>((ref) {
+  // Re-subscribe when the session lands — see the note on activeBannersProvider.
+  ref.watch(firebaseAuthStreamProvider);
   return ref.watch(firestoreServiceProvider).watchAnnouncements();
 });
 

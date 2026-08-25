@@ -33,22 +33,59 @@ Widget _drawerHost({required bool isGuest}) => ProviderScope(
     );
 
 void main() {
-  group('§1 guest never sees Sign Out', () {
-    testWidgets('a guest is offered Login, not Logout', (tester) async {
+  group('§1 / PART 4 — one menu, only the bottom action changes', () {
+    /// Every navigation entry's label, in order.
+    List<String> menuLabels(WidgetTester tester) => tester
+        .widgetList<ListTile>(find.byType(ListTile))
+        .map((t) => (t.title as Text).data ?? '')
+        .toList();
+
+    testWidgets('a guest is offered Login, never Sign Out', (tester) async {
       await tester.pumpWidget(_drawerHost(isGuest: true));
       await tester.pump();
 
-      expect(find.text('Login to Continue'), findsWidgets);
-      expect(find.text('Logout'), findsNothing);
+      expect(find.text('Login to Continue'), findsOneWidget);
+      expect(find.text('Sign Out'), findsNothing);
       expect(find.byIcon(Icons.logout), findsNothing);
     });
 
-    testWidgets('a signed-in member still gets Logout', (tester) async {
+    testWidgets('a signed-in member is offered Sign Out, never Login',
+        (tester) async {
       await tester.pumpWidget(_drawerHost(isGuest: false));
       await tester.pump();
 
       expect(find.byIcon(Icons.logout), findsOneWidget);
       expect(find.text('Login to Continue'), findsNothing);
+    });
+
+    testWidgets('the menu structure is IDENTICAL either way', (tester) async {
+      await tester.pumpWidget(_drawerHost(isGuest: false));
+      await tester.pump();
+      final member = menuLabels(tester);
+
+      await tester.pumpWidget(_drawerHost(isGuest: true));
+      await tester.pump();
+      final guest = menuLabels(tester);
+
+      // Same count, same order — only the last entry (the auth action) differs.
+      expect(guest.length, member.length);
+      expect(guest.sublist(0, guest.length - 1),
+          member.sublist(0, member.length - 1));
+      expect(member.last, 'Sign Out');
+      expect(guest.last, 'Login to Continue');
+    });
+
+    testWidgets('no sign-up button or extra auth card in the menu',
+        (tester) async {
+      await tester.pumpWidget(_drawerHost(isGuest: true));
+      await tester.pump();
+
+      // The "Create Account" action was removed from the drawer (PART 4.3):
+      // the bottom slot holds exactly ONE authentication action.
+      expect(find.text('Create Account'), findsNothing);
+      expect(find.byType(ElevatedButton), findsNothing);
+      expect(find.byType(OutlinedButton), findsNothing);
+      expect(find.byIcon(Icons.login), findsOneWidget);
     });
   });
 

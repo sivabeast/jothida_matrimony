@@ -33,6 +33,33 @@ final isGuestProvider = Provider<bool>((ref) {
   return user == null || user.isAnonymous;
 });
 
+/// The uid of a REAL, signed-in member — `null` for a guest.
+///
+/// This is the guard every user-scoped Firestore query must use, and the
+/// reason it exists is the whole "permission denied" class of bugs:
+///
+/// Before Guest Mode, `FirebaseAuth.currentUser?.uid == null` meant "nobody is
+/// signed in", so every personal query could safely key off it. Anonymous
+/// sessions broke that assumption — a guest HAS a uid. Providers that still
+/// checked `uid != null` therefore kept firing `where('userId', ==, <anon
+/// uid>)` listeners on notifications, chats, interests, reports, bookings and
+/// weddings. Those collections are guarded by `isAuthenticated()`, which
+/// deliberately excludes anonymous sessions, so Firestore answered every one
+/// of them with `permission-denied` — visible as "could not load" states all
+/// over a guest's Home.
+///
+/// Keying personal data off THIS provider means the query simply never runs
+/// for a guest, which is both correct and cheaper than widening the rules.
+/// Public content (banners, popups, astrology service details, announcements,
+/// the version gate) is the opposite case: it stays on the plain auth stream
+/// and is readable by `isAnyVisitor()` in the rules.
+final memberUidProvider = Provider<String?>((ref) {
+  final user = ref.watch(firebaseAuthStreamProvider).valueOrNull ??
+      ref.watch(authRepositoryProvider).currentUser;
+  if (user == null || user.isAnonymous) return null;
+  return user.uid;
+});
+
 // Current UserModel (loaded after auth).
 //
 // Deliberately NOT autoDispose. Two things read it without holding a listener:

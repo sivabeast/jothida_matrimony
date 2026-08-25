@@ -27,7 +27,7 @@ class CelebratedInterestsNotifier extends Notifier<Set<String>> {
 
   String? get _uid => kBypassAuth
       ? kDemoUserId
-      : ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+      : ref.watch(memberUidProvider);
 
   String get _key => 'celebrated_interests_${_uid ?? 'anon'}';
 

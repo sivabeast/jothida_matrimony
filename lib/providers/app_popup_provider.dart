@@ -8,6 +8,8 @@ import 'service_providers.dart';
 /// ACTIVE popups in display order — the rotation users see (spec §14).
 final activePopupsProvider =
     StreamProvider.autoDispose<List<AppPopupModel>>((ref) {
+  // Re-subscribe when the session lands — see the note on activeBannersProvider.
+  ref.watch(firebaseAuthStreamProvider);
   return ref.watch(firestoreServiceProvider).watchActivePopups();
 });
 

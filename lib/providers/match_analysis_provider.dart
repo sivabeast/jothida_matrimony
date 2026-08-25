@@ -28,7 +28,7 @@ import 'service_providers.dart';
 final matchAnalysisCandidatesProvider =
     FutureProvider.autoDispose<List<ProfileModel>>((ref) async {
   final me = ref.watch(myProfileProvider).valueOrNull;
-  final myUid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+  final myUid = ref.watch(memberUidProvider);
   final sent =
       ref.watch(sentInterestsProvider).valueOrNull ?? const <dynamic>[];
   final received =
@@ -64,7 +64,7 @@ final myMatchAnalysisRequestsProvider =
     return Stream.value(
         all.where((r) => r.type == AstrologerRequestType.matching).toList());
   }
-  final uid = ref.watch(firebaseAuthStreamProvider).valueOrNull?.uid;
+  final uid = ref.watch(memberUidProvider);
   if (uid == null) return Stream.value(const []);
   return ref.read(astrologerServiceProvider).watchRequestsByUser(uid).map(
       (list) => list
@@ -140,6 +140,14 @@ final internalSessionCountsProvider =
       day[r.session] = (day[r.session] ?? 0) + 1;
     }
     return Stream.value(out);
+  }
+  // Capacity comes from `astrologer_requests`, which is personal booking data
+  // — a GUEST browsing the (public) booking page must not query it, or every
+  // slot picker load returns `permission-denied`. With no counts the picker
+  // simply shows every slot as open; tapping Book asks them to log in first,
+  // and capacity is re-checked on the real booking write.
+  if (ref.watch(memberUidProvider) == null) {
+    return Stream.value(const <String, Map<String, int>>{});
   }
   return ref.read(astrologerServiceProvider).watchInternalSessionCounts();
 });

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/banner_model.dart';
+import 'auth_provider.dart';
 import 'service_providers.dart';
 
 /// PUBLISHED Home banners (enabled, by display order) — what users see.
@@ -13,6 +14,17 @@ import 'service_providers.dart';
 /// signature of banner rules that have not been deployed.
 final activeBannersProvider =
     StreamProvider.autoDispose<List<HomeBannerModel>>((ref) {
+  // Re-subscribes whenever the Firebase session changes.
+  //
+  // Public content is readable by `isAnyVisitor()`, i.e. it needs *a* session —
+  // and on a cold start the anonymous Guest session is still being created when
+  // Home first builds. A Firestore listener that is rejected with
+  // `permission-denied` does NOT retry by itself, so without this dependency
+  // one early rejection left the stream dead for the whole session: the banner
+  // never appeared, even though the rules and the data were both fine.
+  // Watching the auth stream tears the listener down and re-subscribes the
+  // moment the session lands.
+  ref.watch(firebaseAuthStreamProvider);
   return ref
       .watch(firestoreServiceProvider)
       .watchActiveBanners()
