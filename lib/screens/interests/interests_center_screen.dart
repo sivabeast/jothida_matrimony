@@ -20,6 +20,7 @@ import '../report/compatibility_report_screen.dart';
 import '../../widgets/common/network_photo.dart';
 import '../../widgets/interest/match_celebration.dart';
 import 'dart:async';
+import '../../providers/review_provider.dart';
 import '../../services/review_service.dart';
 
 /// Interest Management Center — replaces the old chat/messages page.
@@ -787,8 +788,8 @@ class _InterestCard extends ConsumerWidget {
     // A real match just happened — a good moment to ask for a review. The
     // service decides whether enough engagement has built up and whether
     // it has asked recently; it never interrupts this flow (spec §10/§11).
-    unawaited(ReviewService.instance
-        .recordEngagement(ReviewTrigger.matchAccepted));
+    unawaited(
+        ref.read(reviewControllerProvider).record(ReviewTrigger.matchAccepted));
     await showMatchCelebration(
       ctx,
       name: name,

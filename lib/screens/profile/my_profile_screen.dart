@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/value_l10n.dart';
 import '../../models/profile_model.dart';
+import '../../providers/account_provider.dart';
 import '../../providers/location_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
@@ -196,6 +197,13 @@ class MyProfileScreen extends ConsumerWidget {
       children: [
         _header(context, p),
         const SizedBox(height: 6),
+        // Married members see their status HERE rather than on a permanent
+        // panel at the bottom of Home (spec §21/§22) — and this is where the
+        // undo lives once the confirmation snackbar has gone.
+        if (p.isMarried) ...[
+          _MarriedStatusCard(profile: p),
+          const SizedBox(height: 6),
+        ],
 
         _SectionCard(
           icon: Icons.badge_outlined,
@@ -405,6 +413,106 @@ class MyProfileScreen extends ConsumerWidget {
 
 /// One profile category: title + Edit action + label/value rows (empty values
 /// are hidden). [child] renders custom content (e.g. the photo thumbnail).
+
+/// "Married" status + UNDO on My Profile (spec §21).
+///
+/// Marking a profile married is reversible for good reasons — a mistaken tap,
+/// or plans that changed — so the way back must be findable long after the
+/// confirmation snackbar has faded. It lives on the member's own profile page,
+/// where a status about them belongs, instead of occupying Home forever.
+class _MarriedStatusCard extends ConsumerStatefulWidget {
+  final ProfileModel profile;
+  const _MarriedStatusCard({required this.profile});
+
+  @override
+  ConsumerState<_MarriedStatusCard> createState() => _MarriedStatusCardState();
+}
+
+class _MarriedStatusCardState extends ConsumerState<_MarriedStatusCard> {
+  bool _busy = false;
+
+  Future<void> _undo() async {
+    if (_busy) return;
+    final l10n = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(l10n.undoMarriedTitle),
+        content: Text(l10n.undoMarriedBody),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.keepAsMarried)),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.undo),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _busy = true);
+    await ref
+        .read(accountControllerProvider.notifier)
+        .unmarkMarried(widget.profile);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    messenger.showSnackBar(SnackBar(content: Text(l10n.backInMatchmaking)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.success.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Text('🎉', style: TextStyle(fontSize: 20)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.married,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: AppColors.success)),
+                const SizedBox(height: 2),
+                Text(l10n.marriedLeftMatchmaking,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[700])),
+              ],
+            ),
+          ),
+          if (_busy)
+            const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2.2))
+          else
+            TextButton(
+              onPressed: _undo,
+              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+              child: Text(l10n.undoUpper),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SectionCard extends StatelessWidget {
   final IconData icon;
   final String title;

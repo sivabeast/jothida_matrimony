@@ -372,6 +372,30 @@ class AstrologerRequestModel {
   final String officeAddress;
   final String officeContact;
 
+  // ── Horoscope request: contact person + origin (spec §8–§10) ──────────────
+  /// Human-readable request number shown to the member and the admin
+  /// ("JH-260827-4821"). Empty on legacy documents, where the Firestore
+  /// document id is displayed instead — see [displayRequestId].
+  final String requestCode;
+
+  /// Who the astrologer should actually talk to about this request. Collected
+  /// at the last step of the horoscope form; for a member request it defaults
+  /// to their own name but stays editable, because the request may be for
+  /// somebody else entirely.
+  final String contactName;
+
+  /// The contact person's WhatsApp number — EXACTLY 10 digits, no country
+  /// code, validated in the form and again here (spec §8/§34). Never hidden
+  /// from the admin or the assigned employee: it is how the finished horoscope
+  /// is delivered.
+  final String contactWhatsapp;
+
+  /// True when the request was submitted WITHOUT a registered account (Guest
+  /// Mode). Such a request has no member profile behind it, so the admin sees
+  /// "Guest" instead of an account, and the contact number is the only way to
+  /// reach the requester.
+  final bool guestRequest;
+
   const AstrologerRequestModel({
     required this.id,
     required this.astrologerId,
@@ -432,6 +456,10 @@ class AstrologerRequestModel {
     this.category = '',
     this.officeAddress = '',
     this.officeContact = '',
+    this.requestCode = '',
+    this.contactName = '',
+    this.contactWhatsapp = '',
+    this.guestRequest = false,
   });
 
   /// True for a "Book Match Analysis" booking (groom + bride porutham request).
@@ -684,6 +712,10 @@ class AstrologerRequestModel {
       category: (d['category'] ?? '').toString(),
       officeAddress: (d['officeAddress'] ?? '').toString(),
       officeContact: (d['officeContact'] ?? '').toString(),
+      requestCode: (d['requestCode'] ?? '').toString(),
+      contactName: (d['contactName'] ?? '').toString(),
+      contactWhatsapp: (d['contactWhatsapp'] ?? '').toString(),
+      guestRequest: d['guestRequest'] == true,
     );
   }
 
@@ -761,6 +793,10 @@ class AstrologerRequestModel {
         'slotKey': slotKey,
         'officeAddress': officeAddress,
         'officeContact': officeContact,
+        'requestCode': requestCode,
+        'contactName': contactName,
+        'contactWhatsapp': contactWhatsapp,
+        'guestRequest': guestRequest,
       };
 
   AstrologerRequestModel copyWith({
@@ -861,5 +897,46 @@ class AstrologerRequestModel {
         session: session,
         officeAddress: officeAddress,
         officeContact: officeContact,
+        // The horoscope request's own identity + contact person never change
+        // once submitted — they are the request SNAPSHOT (spec §7).
+        requestCode: requestCode,
+        contactName: contactName,
+        contactWhatsapp: contactWhatsapp,
+        guestRequest: guestRequest,
       );
+
+  // ── Horoscope request helpers (spec §7/§10) ──────────────────────────────
+  /// What the member and the admin see as "Request ID". Prefers the readable
+  /// code stamped at submission; falls back to the document id for requests
+  /// created before the code existed.
+  String get displayRequestId => requestCode.trim().isNotEmpty
+      ? requestCode.trim()
+      : (id.length > 10 ? id.substring(0, 10).toUpperCase() : id.toUpperCase());
+
+  /// Contact name to display — falls back to the account holder's name for
+  /// requests submitted before the contact step existed.
+  String get displayContactName =>
+      contactName.trim().isNotEmpty ? contactName.trim() : userName;
+
+  /// The WhatsApp number in international dialling form ("91XXXXXXXXXX"), or
+  /// '' when no usable 10-digit number was captured. Used to open a chat; the
+  /// raw 10 digits stay in [contactWhatsapp] for display.
+  String get whatsappDialNumber {
+    final digits = contactWhatsapp.replaceAll(RegExp(r'\D'), '');
+    if (digits.length == 10) return '91$digits';
+    if (digits.length == 12 && digits.startsWith('91')) return digits;
+    return '';
+  }
+
+  /// The person-1 / person-2 snapshots under their spec names. Aliases of the
+  /// existing requester/other maps, so nothing that already reads those breaks.
+  Map<String, dynamic> get personOne => externalRequester;
+  Map<String, dynamic> get personTwo => externalOther;
+
+  /// The contact block stored inside the request snapshot, for legacy
+  /// documents that kept it there rather than at the top level.
+  Map<String, dynamic> get externalContact =>
+      externalRequest?['contact'] is Map
+          ? Map<String, dynamic>.from(externalRequest!['contact'] as Map)
+          : const {};
 }

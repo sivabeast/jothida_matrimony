@@ -5,6 +5,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/utils/account_deletion.dart';
 import '../../core/utils/l10n_ext.dart';
+import '../../providers/app_update_provider.dart';
+import '../../providers/review_provider.dart';
 
 /// Settings hub — groups app preferences and links to legal/support pages.
 /// Registered at `/settings`. Reached from Profile → "Settings".
@@ -52,6 +54,10 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           // ── About ────────────────────────────────────────────────────────
           _GroupLabel(l10n.aboutSection),
+          // Explicit "Rate this app" — the member ASKED, so this opens the
+          // Play listing directly and marks the account rated, which also
+          // stops the occasional automatic prompt for good (spec §31).
+          const _RateAppTile(),
           _SettingsTile(
             icon: Icons.help_outline,
             title: l10n.helpSupport,
@@ -80,14 +86,85 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           Center(
-            child: Text(
-              '${AppConstants.appName}\n${l10n.version} ${AppConstants.appVersion}',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[500], fontSize: 12, height: 1.5),
+            child: Consumer(
+              builder: (_, r, __) {
+                // The REAL installed version, read from the platform — a
+                // hardcoded constant drifts the moment a release ships
+                // without someone remembering to edit it.
+                final name = r.watch(installedVersionNameProvider).valueOrNull;
+                final code = r.watch(installedVersionCodeProvider).valueOrNull;
+                final version = (name == null || name.isEmpty)
+                    ? AppConstants.appVersion
+                    : '$name${(code ?? 0) > 0 ? ' ($code)' : ''}';
+                return Text(
+                  '${AppConstants.appName}\n${l10n.version} $version',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: Colors.grey[500], fontSize: 12, height: 1.5),
+                );
+              },
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+
+/// "Rate this app" — an explicit, member-initiated rating.
+///
+/// Deliberately NOT Play's silent in-app sheet: the member tapped a menu item
+/// asking to leave a review, and Play's sheet may decide to show nothing at
+/// all, which would look broken. This opens the real listing instead, and
+/// records the account as rated so the automatic prompt never fires again
+/// (spec §31/§32).
+///
+/// It disappears once the account has rated, because an action that can only
+/// be done once should not keep offering itself.
+class _RateAppTile extends ConsumerStatefulWidget {
+  const _RateAppTile();
+
+  @override
+  ConsumerState<_RateAppTile> createState() => _RateAppTileState();
+}
+
+class _RateAppTileState extends ConsumerState<_RateAppTile> {
+  bool _hidden = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_hidden) return const SizedBox.shrink();
+    return FutureBuilder<bool>(
+      future: ref.read(reviewControllerProvider).hasRated(),
+      builder: (context, snap) {
+        if (snap.data == true) return const SizedBox.shrink();
+        return Card(
+          elevation: 0,
+          margin: const EdgeInsets.only(bottom: 8),
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12)),
+          child: ListTile(
+            leading: const Icon(Icons.star_outline, color: AppColors.primary),
+            title: Text(context.l10n.rateApp),
+            trailing: const Icon(Icons.chevron_right, size: 20),
+            onTap: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final l10n = context.l10n;
+              final ok =
+                  await ref.read(reviewControllerProvider).openStoreListing();
+              if (!mounted) return;
+              if (ok) {
+                setState(() => _hidden = true);
+              } else {
+                messenger.showSnackBar(
+                    SnackBar(content: Text(l10n.couldNotOpenPlayStore)));
+              }
+            },
+          ),
+        );
+      },
     );
   }
 }

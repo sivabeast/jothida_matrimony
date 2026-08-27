@@ -25,6 +25,20 @@ class ExternalPartyCard extends StatelessWidget {
 
   String _s(String key) => (data[key] ?? '').toString().trim();
 
+  /// "06:45 AM" — prefers the exact text the requester entered (which already
+  /// carries the AM/PM half), and falls back to the shared formatter for
+  /// requests stored before the AM/PM selector existed.
+  String get _birthTime {
+    final raw = _s('tob');
+    final period = _s('tobPeriod').toUpperCase();
+    if (raw.isEmpty) return '';
+    if (raw.toUpperCase().contains('AM') || raw.toUpperCase().contains('PM')) {
+      return raw;
+    }
+    if (period == 'AM' || period == 'PM') return '$raw $period';
+    return HoroscopeCalculationService.formatBirthTimeForDisplay(raw);
+  }
+
   @override
   Widget build(BuildContext context) {
     final image = _s('horoscopeImageUrl');
@@ -68,10 +82,17 @@ class ExternalPartyCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _row('Age', age.isEmpty || age == '0' ? '—' : '$age yrs'),
-          _row('Gender', _s('gender')),
+          if (_s('gender').isNotEmpty) _row('Gender', _s('gender')),
           _row('Date of Birth', _s('dob')),
-          _row('Time of Birth', HoroscopeCalculationService.formatBirthTimeForDisplay(_s('tob'))),
+          // The AM/PM half is part of the stored birth time, and getting it
+          // wrong ruins the chart — so it is shown verbatim as entered rather
+          // than reformatted away.
+          _row('Time of Birth', _birthTime),
           _row('Place of Birth', _s('place')),
+          // District and City are stored alongside the full place string so the
+          // astrologer can never confuse two villages of the same name.
+          _row('District', _s('placeDistrict')),
+          _row('City / Village', _s('placeCity')),
           _row('Nakshatra', _s('nakshatra')),
           _row('Rasi', _s('rasi')),
           if (image.isNotEmpty || pdf.isNotEmpty) ...[

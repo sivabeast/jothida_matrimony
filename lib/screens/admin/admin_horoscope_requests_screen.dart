@@ -222,6 +222,25 @@ class _RequestCard extends ConsumerWidget {
                         style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 14.5)),
                   ),
+                  // A guest request has no account behind it — the admin must
+                  // see that at a glance, because the contact number is the
+                  // only way to answer it (spec §10).
+                  if (r.guestRequest) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text('GUEST',
+                          style: TextStyle(
+                              color: AppColors.warning,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 3),
@@ -238,7 +257,11 @@ class _RequestCard extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 8),
+              _line(Icons.tag, 'Request ID', r.displayRequestId),
               _line(Icons.favorite_border, 'Match', _matchName),
+              if (r.contactWhatsapp.trim().isNotEmpty)
+                _line(Icons.chat_outlined, 'WhatsApp',
+                    '${r.displayContactName} · +91 ${r.contactWhatsapp}'),
               _line(
                   r.assignedToAdmin
                       ? Icons.admin_panel_settings_outlined

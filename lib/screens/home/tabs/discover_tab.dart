@@ -23,6 +23,7 @@ import '../../../widgets/interest/interest_sent_overlay.dart';
 import '../../../widgets/interest/match_celebration.dart';
 import '../../../widgets/interest/pending_interest_card.dart';
 import 'dart:async';
+import '../../../providers/review_provider.dart';
 import '../../../services/review_service.dart';
 
 /// The Matches experience — a HORIZONTAL swipe browser over EVERY eligible
@@ -114,8 +115,9 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     setState(() => _index = page);
     ref.read(viewedProfilesProvider.notifier).markViewed(profile.id);
     // Ordinary browsing counts a little towards the review ask.
-    unawaited(ReviewService.instance
-        .recordEngagement(ReviewTrigger.browsedMatches));
+    unawaited(ref
+        .read(reviewControllerProvider)
+        .record(ReviewTrigger.browsedMatches));
     ref.read(lastViewedProfileProvider.notifier).set(profile.id);
     _maybeLoadMore(page, profiles.length);
   }
@@ -832,9 +834,14 @@ class _MatchProfileCard extends ConsumerWidget {
 
   // ── Photo ────────────────────────────────────────────────────────────────
 
-  /// Full-width, almost-square, face-centred photo. Nothing is overlaid on it
-  /// except the "photo hidden" note — the match badge lives below, with the
-  /// name.
+  /// Full-width, almost-square, face-centred photo.
+  ///
+  /// The "Matches your Nakshatra" badge is anchored to the photo's TOP-LEFT
+  /// (spec §16). It used to sit on the name row, where a long Tamil label
+  /// squeezed the name and age until they truncated — the single worst thing a
+  /// profile card can hide. Up here it competes with nothing: it is clear of
+  /// the face, clear of the name and age below, and clear of the bottom scrim
+  /// that carries the "photo hidden" note.
   Widget _photo(BuildContext context, WidgetRef ref) {
     // "Hide Profile Photo" is OFF unless the member turned it on (§12) — a
     // hidden photo shows a neutral placeholder.
@@ -882,6 +889,23 @@ class _MatchProfileCard extends ConsumerWidget {
                 ),
               ),
             ),
+            // Top-left, on one horizontal line, in the app's green success
+            // colour. Width-capped so the longer Tamil label wraps inside its
+            // own pill instead of stretching across the face.
+            Positioned(
+              top: 14,
+              left: 18,
+              right: 18,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                      maxWidth: MediaQuery.sizeOf(context).width * 0.62),
+                  child: ProfileHighlightBadge(
+                      profile: profile, nakshatraOnly: true, onPhoto: true),
+                ),
+              ),
+            ),
             if (hidden)
               Positioned(
                 bottom: 14,
@@ -920,41 +944,44 @@ class _MatchProfileCard extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Name, Age + the green "Matches your Nakshatra" indicator on the SAME
-        // row, to the right of the name, so the positive star compatibility is
-        // obvious at a glance. Never on the photo, and never alongside another
-        // quality label. Both sides are Flexible so a long name or the longer
-        // Tamil label shrink instead of overflowing on a narrow phone.
+        // NAME + verified tick, alone on their row (spec §15). Nothing else
+        // shares this line, so the name has the full card width and only
+        // truncates when the name itself is genuinely that long — the badge
+        // can no longer push it out of view.
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Flexible(
               child: Text(
-                '${profile.displayName(context.isTamil)}, ${profile.age}',
-                maxLines: 1,
+                profile.displayName(context.isTamil),
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontFamily: 'Poppins',
                   fontWeight: FontWeight.w700,
                   fontSize: 19,
+                  height: 1.2,
                   color: AppColors.textPrimary,
                 ),
               ),
             ),
-            // Verification status beside the name: GREEN tick = admin
-            // verified, dark/inactive tick = not verified yet.
+            // Verification status immediately beside the name: GREEN tick =
+            // admin verified, dark/inactive tick = not verified yet.
             const SizedBox(width: 6),
             VerificationTick.forProfile(profile, size: 19),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: ProfileHighlightBadge(
-                    profile: profile, nakshatraOnly: true, compact: true),
-              ),
-            ),
           ],
         ),
+        const SizedBox(height: 4),
+        // AGE on its own line, with an explicit label (spec §15). "Meena, 25"
+        // read as part of the name; "Age: 25" cannot be misread and cannot be
+        // clipped along with it.
+        Text('${l10n.age}: ${profile.age}',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: Colors.grey[700],
+            )),
         const SizedBox(height: 12),
         // Essential fields — each rendered only when present.
         // Free-text (city) / numeric (height) stay as entered; the controlled-

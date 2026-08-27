@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -149,6 +150,17 @@ class _AppUpdateDialogState extends ConsumerState<AppUpdateDialog> {
     if (mounted) Navigator.of(context).maybePop();
   }
 
+  /// Closes the app from a FORCED prompt (spec §25/§27).
+  ///
+  /// `SystemNavigator.pop()` is the supported way to leave — it behaves like
+  /// the back gesture at the root, so Android finishes the activity normally
+  /// instead of the app appearing to crash. It is a no-op on platforms that do
+  /// not allow an app to close itself, which is fine: the dialog simply stays,
+  /// which is exactly what a blocked build should do.
+  Future<void> _exitApp() async {
+    await SystemNavigator.pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -229,9 +241,19 @@ class _AppUpdateDialogState extends ConsumerState<AppUpdateDialog> {
                       borderRadius: BorderRadius.circular(12)),
                 ),
               ),
-              // "Later" exists ONLY for optional updates. A forced update has
-              // no way past this dialog.
-              if (!widget.forced) ...[
+              // A FORCED update offers exactly two ways out (spec §25): go to
+              // Play, or leave the app. There is no "Later" and no dismiss —
+              // the member cannot reach the app on this build.
+              if (widget.forced) ...[
+                const SizedBox(height: 6),
+                TextButton.icon(
+                  onPressed: _busy ? null : _exitApp,
+                  icon: const Icon(Icons.exit_to_app, size: 18),
+                  style:
+                      TextButton.styleFrom(foregroundColor: Colors.grey[700]),
+                  label: Text(l10n.exitApp),
+                ),
+              ] else ...[
                 const SizedBox(height: 6),
                 TextButton(
                   onPressed: _busy ? null : _later,

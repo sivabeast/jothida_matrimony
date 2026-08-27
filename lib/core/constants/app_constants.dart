@@ -1,7 +1,10 @@
 class AppConstants {
   static const String appName = 'Jothida Matrimony';
   static const String appTagline = 'ஜோதிட மேட்ரிமோனி';
-  static const String appVersion = '1.0.0';
+  /// Fallback only — Settings and the admin panel read the REAL version
+  /// from the platform (see `installedVersionNameProvider`). Kept in step
+  /// with pubspec's `version:` so an offline read is not misleading.
+  static const String appVersion = '1.14.0';
 
   // Firestore Collections
   static const String usersCollection = 'users';

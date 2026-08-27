@@ -1,54 +1,45 @@
-import 'dart:io';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import '../../core/constants/app_constants.dart';
 import '../../core/services/master_astrology_data.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
-import '../../models/location_model.dart';
+import '../../core/utils/phone_utils.dart';
 import '../../models/profile_model.dart';
+import '../../providers/astrology_config_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
-import '../../providers/service_providers.dart';
-import '../../services/billing/play_billing_service.dart';
-import '../../widgets/auth/account_required_sheet.dart';
-import '../../widgets/common/network_photo.dart';
-import '../../widgets/common/place_picker_field.dart';
-import '../../widgets/common/searchable_field.dart';
-import '../../core/services/horoscope_calculation_service.dart';
+import 'horoscope_request_person_form.dart';
 
-/// **Request New Horoscope Report** — the compatibility report for someone who
-/// is NOT on the app (spec §9–§13).
+/// **Horoscope Report Request** — the compatibility request for any two people
+/// (spec §1–§9).
 ///
-/// The signed-in member's own details are auto-filled from their profile (they
-/// never retype them); only the SECOND person's details are entered here,
-/// together with an optional horoscope image/PDF. The flow is identical to the
-/// in-app profile flow:
+/// Three steps, in this order:
 ///
-///   Fill second-person details → ₹200 payment → payment success → request
+///   Person 1 details  →  Person 2 details  →  Contact person + WhatsApp
 ///
-/// Both flows share the SAME price, the SAME Google Play Billing validation
-/// and the SAME request-creation + Reports delivery path (spec §14). A
-/// cancelled or failed payment creates nothing.
+/// Two rules shape everything here:
 ///
-/// Second-person input rules (spec §11):
-///   * Gender is auto-set to the opposite of the logged-in user's gender and is
-///     read-only.
-///   * Age is derived from the Date of Birth and is read-only.
-///   * Place of Birth uses the app's ONE place picker — City/Village +
-///     District + State (spec §27–§32). The place is used only for THIS
-///     request; nothing is written back to the shared location data.
-///   * Nakshatra / Rasi are searchable dropdowns backed by the master
-///     astrology data.
-///   * Name, DOB, Time of Birth, Place, Nakshatra and Rasi are required; the
-///     horoscope image/PDF is optional.
+///  * **A guest may submit.** No login is demanded before or during the form,
+///    and none at submit either (spec §1). Signing in is offered as an upgrade
+///    — it links the request to the account so it can be TRACKED later — never
+///    as a gate. A guest's request is stored exactly the same way and reaches
+///    the admin identically; the contact WhatsApp number is how it is answered.
+///
+///  * **The stored request is a SNAPSHOT** (spec §7). A signed-in member's
+///    profile only supplies DEFAULTS for Person 1, and every one of those
+///    defaults stays editable — or can be wiped with "Clear" so a completely
+///    different person is entered. What gets written at submission time is
+///    frozen: editing the profile afterwards can never rewrite a request that
+///    has already been sent.
+///
+/// Person 1 is not "the member" and Person 2 is not "the other party" — they
+/// are simply the two charts being matched, which is why both use the SAME
+/// form ([HoroscopePersonForm]) with the same auto-fill and clear actions.
 class RequestExternalReportScreen extends ConsumerStatefulWidget {
   const RequestExternalReportScreen({super.key});
 
@@ -59,49 +50,40 @@ class RequestExternalReportScreen extends ConsumerStatefulWidget {
 
 class _RequestExternalReportScreenState
     extends ConsumerState<RequestExternalReportScreen> {
-  /// Fallback price, shown only until Play's own price arrives — the exact
-  /// same constant the in-app profile flow uses (spec §14).
-  static const int _fee = AppConstants.horoscopeAnalysisFee; // ₹200
+  static const int _steps = 3;
 
-  final _formKey = GlobalKey<FormState>();
+  final _personOneKey = GlobalKey<FormState>();
+  final _personTwoKey = GlobalKey<FormState>();
+  final _contactKey = GlobalKey<FormState>();
 
-  // Second-person fields.
-  final _name = TextEditingController();
-  final _tob = TextEditingController();
+  final _one = HoroscopePersonDraft();
+  final _two = HoroscopePersonDraft();
 
-  /// The second person's birth place. Held in local state ONLY — a place added
-  /// here is never saved to the member's own profile and never appears in
-  /// anyone else's suggestions (spec §30).
-  PlaceSelection? _place;
-  String? _nakshatra;
-  String? _rasi;
-  DateTime? _dob;
+  final _contactName = TextEditingController();
+  final _whatsapp = TextEditingController();
 
-  // Master astrology option lists (searchable Nakshatra / Rasi).
-  List<String> _rasiOptions = const [];
-  List<String> _nakOptions = const [];
-
-  // Second-person uploaded horoscope.
-  String _otherImageUrl = '';
-  String _otherPdfUrl = '';
-  bool _uploading = false;
+  int _step = 0;
   bool _busy = false;
 
-  /// Play's localized price for `horoscope_report`, when the store answers.
-  String? _storePrice;
-  String get _priceText => _storePrice ?? '₹$_fee';
+  /// Set once Person 1 has been seeded from the profile, so re-entering the
+  /// step never silently overwrites edits the member has since made.
+  bool _autofilled = false;
+
+  List<String> _rasiOptions = const [];
+  List<String> _nakOptions = const [];
 
   @override
   void initState() {
     super.initState();
     _loadMasterOptions();
-    _loadStorePrice();
   }
 
   @override
   void dispose() {
-    _name.dispose();
-    _tob.dispose();
+    _one.dispose();
+    _two.dispose();
+    _contactName.dispose();
+    _whatsapp.dispose();
     super.dispose();
   }
 
@@ -114,21 +96,6 @@ class _RequestExternalReportScreenState
     });
   }
 
-  /// Best-effort: an unreachable store (emulator without Play, no network)
-  /// must never surface an error here — the button simply keeps showing the
-  /// built-in ₹200 until Play answers.
-  Future<void> _loadStorePrice() async {
-    try {
-      final billing = ref.read(playBillingServiceProvider);
-      await billing.init();
-      if (!mounted) return;
-      setState(() =>
-          _storePrice = billing.priceLabel(BillingProducts.horoscopeReport));
-    } catch (_) {
-      // Keep the fallback price.
-    }
-  }
-
   void _snack(String m) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -136,614 +103,612 @@ class _RequestExternalReportScreenState
       ..showSnackBar(SnackBar(content: Text(m)));
   }
 
-  // ── Derived values ─────────────────────────────────────────────────────────
-
-  /// The second person is always the opposite gender to the logged-in user.
-  /// Falls back to Female when the user's gender is unknown (still read-only).
-  String _lockedGender(ProfileModel? me) {
-    final g = (me?.gender ?? '').trim().toLowerCase();
-    if (g == 'male') return 'Female';
-    if (g == 'female') return 'Male';
-    return 'Female';
-  }
-
-  int _ageFromDob(DateTime dob) {
-    final now = DateTime.now();
-    var age = now.year - dob.year;
-    if (now.month < dob.month ||
-        (now.month == dob.month && now.day < dob.day)) {
-      age--;
-    }
-    return age < 0 ? 0 : age;
-  }
-
-  // ── Build the requester (self) details from the profile ──────────────────
-  Map<String, dynamic> _requesterMap(ProfileModel? me) {
-    final h = me?.horoscope;
-    return {
-      'name': me?.fullName ?? '',
-      'age': me?.age ?? 0,
-      'gender': me?.gender ?? '',
-      'dob': me == null ? '' : DateFormat('dd MMM yyyy').format(me.dateOfBirth),
-      'tob': HoroscopeCalculationService.formatBirthTimeForDisplay(h?.birthTime),
-      'place': (h?.birthPlace.trim().isNotEmpty ?? false)
-          ? h!.birthPlace
-          : (me == null
-              ? ''
-              : [me.city, me.state].where((s) => s.trim().isNotEmpty).join(', ')),
-      'nakshatra': h?.nakshatra ?? '',
-      'rasi': h?.rasi ?? '',
-      'horoscopeImageUrl':
-          (h?.horoscopeImages.isNotEmpty ?? false) ? h!.horoscopeImages.first : '',
-      'horoscopePdfUrl':
-          (h?.horoscopePdfUrls.isNotEmpty ?? false) ? h!.horoscopePdfUrls.first : '',
-    };
-  }
-
-  Map<String, dynamic> _otherMap(ProfileModel? me) {
-    final place = _place;
-    return {
-      'name': _name.text.trim(),
-      'age': _dob == null ? 0 : _ageFromDob(_dob!),
-      'gender': _lockedGender(me),
-      'dob': _dob == null ? '' : DateFormat('dd MMM yyyy').format(_dob!),
-      'tob': _tob.text.trim(),
-      // Full "City, District, State" so the astrologer can never confuse two
-      // villages that share a name (spec §27/§32).
-      'place': place?.display ?? '',
-      'placeCity': place?.cityEn.isNotEmpty == true ? place!.cityEn : (place?.city ?? ''),
-      'placeDistrict':
-          place?.districtEn.isNotEmpty == true ? place!.districtEn : (place?.district ?? ''),
-      'placeState': place?.state ?? '',
-      'nakshatra': (_nakshatra ?? '').trim(),
-      'rasi': (_rasi ?? '').trim(),
-      'horoscopeImageUrl': _otherImageUrl,
-      'horoscopePdfUrl': _otherPdfUrl,
-    };
-  }
-
-  // ── Uploads (reuse the generic attachment uploader) ──────────────────────
-  Future<void> _pickImage() async {
-    final picked = await ImagePicker()
-        .pickImage(source: ImageSource.gallery, imageQuality: 85);
-    if (picked == null) return;
-    await _upload(File(picked.path), isImage: true);
-  }
-
-  Future<void> _pickPdf() async {
-    final res = await FilePicker.platform
-        .pickFiles(type: FileType.custom, allowedExtensions: ['pdf']);
-    final path = res?.files.single.path;
-    if (path == null) return;
-    await _upload(File(path), isImage: false);
-  }
-
-  Future<void> _upload(File file, {required bool isImage}) async {
-    setState(() => _uploading = true);
-    try {
-      final url = await ref.read(storageServiceProvider).uploadChatAttachment(
-          threadId: 'external_report_media', file: file, isImage: isImage);
-      if (!mounted) return;
-      setState(() {
-        if (isImage) {
-          _otherImageUrl = url;
-        } else {
-          _otherPdfUrl = url;
-        }
-      });
-    } catch (_) {
-      _snack(context.l10n.uploadFailedRetry);
-    } finally {
-      if (mounted) setState(() => _uploading = false);
+  /// Seeds Person 1 from the member's profile the FIRST time it is available.
+  /// Only ever runs once, and only while the step is still untouched — the
+  /// member's own edits always win (spec §5/§6).
+  void _maybeAutofill(ProfileModel? me) {
+    if (_autofilled || me == null || !_one.isBlank) return;
+    _autofilled = true;
+    _one.fillFromProfile(me);
+    _contactName.text = me.contact.contactPersonName.trim().isNotEmpty
+        ? me.contact.contactPersonName.trim()
+        : me.fullName;
+    // WhatsApp first, then the plain mobile — both are stored in many shapes,
+    // so only the last 10 digits are taken (spec §8).
+    final phone = (me.contact.whatsappNumber ?? '').trim().isNotEmpty
+        ? me.contact.whatsappNumber!.trim()
+        : me.contact.mobileNumber.trim();
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.length >= 10) {
+      _whatsapp.text = digits.substring(digits.length - 10);
     }
   }
 
-  Future<void> _pickDob() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _dob ?? DateTime(now.year - 25, now.month, now.day),
-      firstDate: DateTime(1940),
-      lastDate: now,
-    );
-    if (picked != null) setState(() => _dob = picked);
-  }
+  // ── Step validation ───────────────────────────────────────────────────────
 
-  Future<void> _pickTob() async {
-    final picked = await showTimePicker(
-        context: context, initialTime: const TimeOfDay(hour: 6, minute: 0));
-    if (picked != null && mounted) {
-      setState(() => _tob.text = picked.format(context));
-    }
-  }
-
-  // ── Validate → account → pay → create ────────────────────────────────────
-  /// The single entry point behind "Pay ₹200 · Request Report".
-  ///
-  /// Nothing is created until Google Play reports a VERIFIED purchase, so a
-  /// cancelled or failed payment leaves no request behind (spec §13).
-  Future<void> _payAndRequest() async {
-    if (_busy) return;
+  /// Person steps: Name, DOB, birth time and place are required; Nakshatra,
+  /// Rasi and the horoscope upload are explicitly optional (spec §3/§34).
+  bool _validatePerson(
+      GlobalKey<FormState> key, HoroscopePersonDraft d, String who) {
     final l10n = context.l10n;
-    // Field-level (Name) validation first.
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    // Picker fields are not FormFields, so validate them explicitly.
-    if (_dob == null) return _snack(l10n.pleaseSelectSecondDob);
-    if (_tob.text.trim().isEmpty) return _snack(l10n.pleaseSelectSecondTob);
-    if (_place == null || _place!.isEmpty) {
-      return _snack(l10n.pleaseSelectSecondPlace);
+    if (!(key.currentState?.validate() ?? false)) return false;
+    if (d.dob == null) {
+      _snack(l10n.pleaseSelectDobFor(who));
+      return false;
     }
-    if ((_nakshatra ?? '').trim().isEmpty) {
-      return _snack(l10n.pleaseSelectSecondNakshatra);
+    if (!d.hasBirthTime) {
+      _snack(l10n.pleaseSelectTobFor(who));
+      return false;
     }
-    if ((_rasi ?? '').trim().isEmpty) return _snack(l10n.pleaseSelectSecondRasi);
+    if (d.place == null || d.place!.isEmpty) {
+      _snack(l10n.pleaseSelectPlaceFor(who));
+      return false;
+    }
+    return true;
+  }
 
-    setState(() => _busy = true);
+  String get _personOneLabel => context.l10n.personOne;
+  String get _personTwoLabel => context.l10n.personTwo;
 
-    // An ACCOUNT is required to own the request — but a matrimony profile is
-    // not: this report is about two other people's charts. Asked for here,
-    // after both horoscopes are filled in, so a guest never retypes anything.
-    if (!await ensureAccount(context, ref,
-        reason: context.l10n.accountNeededForRequest)) {
-      if (mounted) setState(() => _busy = false);
+  void _next() {
+    final ok = switch (_step) {
+      0 => _validatePerson(_personOneKey, _one, _personOneLabel),
+      1 => _validatePerson(_personTwoKey, _two, _personTwoLabel),
+      _ => true,
+    };
+    if (!ok) return;
+    setState(() => _step = (_step + 1).clamp(0, _steps - 1));
+  }
+
+  void _back() {
+    if (_step == 0) {
+      context.pop();
       return;
     }
-    if (!mounted) return;
-
-    try {
-      // Google Play Billing purchase sheet — the SAME one-time product the
-      // in-app profile flow charges for (spec §14).
-      final result = await ref
-          .read(playBillingServiceProvider)
-          .buyConsumable(BillingProducts.horoscopeReport);
-      if (!mounted) return;
-
-      if (!result.isPurchased) {
-        switch (result.outcome) {
-          case BillingOutcome.canceled:
-            _snack(l10n.paymentCancelledNotCharged);
-            break;
-          case BillingOutcome.unavailable:
-            _snack(result.message ?? l10n.billingUnavailable);
-            break;
-          default:
-            _snack(result.message ?? l10n.paymentCouldNotComplete);
-        }
-        setState(() => _busy = false);
-        return;
-      }
-
-      // Record what Play ACTUALLY charged rather than the hardcoded constant.
-      final raw = ref
-          .read(playBillingServiceProvider)
-          .rawPrice(BillingProducts.horoscopeReport);
-      final chargedAmount = (raw != null && raw > 0) ? raw.round() : _fee;
-
-      await _createRequest(
-        amount: chargedAmount,
-        paymentId: result.purchaseToken.isNotEmpty
-            ? result.purchaseToken
-            : 'play_billing',
-      );
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _busy = false);
-      _snack(l10n.couldNotStartPayment);
-    }
+    setState(() => _step -= 1);
   }
 
-  Future<void> _createRequest({
-    required int amount,
-    String? paymentId,
-  }) async {
+  // ── Submit ────────────────────────────────────────────────────────────────
+
+  Future<void> _submit() async {
+    if (_busy) return;
+    if (!(_contactKey.currentState?.validate() ?? false)) return;
+    // Belt and braces behind the formatter + validator: the number that
+    // reaches Firestore is ALWAYS exactly 10 digits (spec §8).
+    final digits = _whatsapp.text.replaceAll(RegExp(r'\D'), '');
+    if (digits.length != 10) {
+      _snack(context.l10n.whatsappMustBe10Digits);
+      return;
+    }
+
+    setState(() => _busy = true);
     final l10n = context.l10n;
-    final me = ref.read(myProfileProvider).valueOrNull;
+    final isGuest = ref.read(isGuestProvider);
+
     try {
       final id = await ref
           .read(matchAnalysisControllerProvider.notifier)
-          .requestExternalReport(
-            requester: _requesterMap(me),
-            other: _otherMap(me),
-            amount: amount,
-            paymentId: paymentId,
-            note: 'External horoscope report — paid via Google Play Billing.',
+          .requestHoroscopeReport(
+            personOne: _one.toMap(),
+            personTwo: _two.toMap(),
+            contactName: _contactName.text.trim(),
+            contactWhatsapp: digits,
+            isGuest: isGuest,
           );
       if (!mounted) return;
-      _snack(l10n.requestSubmittedTrackReports(id));
-      ref.read(homeTabIndexProvider.notifier).state = kReportsTabIndex;
-      context.go('/home');
-    } catch (_) {
+      await _showSubmitted(id, digits);
+    } catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
       _snack(l10n.couldNotCreateRequest);
     }
   }
 
+  /// Confirmation sheet — the request id to keep, plus the WhatsApp hand-off
+  /// (spec §9). Guests are additionally offered a login, because that is the
+  /// ONLY thing an account adds here: tracking the request later.
+  Future<void> _showSubmitted(String id, String whatsapp) async {
+    final l10n = context.l10n;
+    final isGuest = ref.read(isGuestProvider);
+    await showModalBottomSheet<void>(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                const Icon(Icons.check_circle,
+                    color: AppColors.success, size: 26),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(l10n.requestSubmittedTitle,
+                      style: const TextStyle(
+                          fontSize: 17,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w700)),
+                ),
+              ]),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(13),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.requestIdLabel,
+                        style:
+                            TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+                    const SizedBox(height: 3),
+                    SelectableText(id,
+                        style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(l10n.requestSubmittedWhatsappBody,
+                  style: TextStyle(
+                      fontSize: 13, height: 1.5, color: Colors.grey[700])),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _openWhatsapp(id, whatsapp),
+                  icon: const Icon(Icons.chat, size: 18),
+                  label: Text(l10n.sendOnWhatsapp),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF25D366),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(46),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              if (isGuest) ...[
+                const SizedBox(height: 10),
+                Text(l10n.guestRequestTrackHint,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      context.go('/login');
+                    },
+                    icon: const Icon(Icons.login, size: 18),
+                    label: Text(l10n.loginToContinue),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      minimumSize: const Size.fromHeight(44),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 6),
+              Center(
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _leave(trackable: !isGuest);
+                  },
+                  child: Text(l10n.done,
+                      style: const TextStyle(color: Colors.grey)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (mounted) _leave(trackable: !isGuest);
+  }
+
+  /// Leaves the form. A member lands on the Reports tab where the new request
+  /// is already listed; a guest simply goes Home, since there is nothing
+  /// account-scoped for them to look at.
+  void _leave({required bool trackable}) {
+    if (!mounted) return;
+    if (trackable) {
+      ref.read(homeTabIndexProvider.notifier).state = kReportsTabIndex;
+    }
+    context.go('/home');
+  }
+
+  /// Opens WhatsApp with the request summary pre-typed, addressed to the
+  /// office number from the admin-managed astrology config. Falls back to the
+  /// contact person's own number when the office has not configured one, so
+  /// the hand-off is never a dead button.
+  Future<void> _openWhatsapp(String id, String contactNumber) async {
+    final cfg = ref.read(astrologyServiceConfigValueProvider);
+    final office = cfg.whatsappNumber.trim();
+    final target = office.isNotEmpty ? office : contactNumber;
+    final text = Uri.encodeComponent(
+        '${context.l10n.whatsappRequestIntro}\n'
+        'Request ID: $id\n'
+        '${_one.name.text.trim()} — ${_one.birthTimeText} — '
+        '${_one.place?.display ?? ''}\n'
+        '${_two.name.text.trim()} — ${_two.birthTimeText} — '
+        '${_two.place?.display ?? ''}\n'
+        'Contact: ${_contactName.text.trim()} (+91 $contactNumber)');
+    final uri = Uri.parse('${whatsappUri(target)}?text=$text');
+    try {
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok && mounted) _snack(context.l10n.couldNotOpenWhatsapp);
+    } catch (_) {
+      if (mounted) _snack(context.l10n.couldNotOpenWhatsapp);
+    }
+  }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final me = ref.watch(myProfileProvider).valueOrNull;
-    return Scaffold(
-      backgroundColor: AppColors.scaffoldBg,
-      appBar: AppBar(
-        title: Text(context.l10n.requestNewHoroscopeReport),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
+    _maybeAutofill(me);
+    final l10n = context.l10n;
+
+    return PopScope(
+      canPop: _step == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _back();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.scaffoldBg,
+        appBar: AppBar(
+          title: Text(l10n.requestNewHoroscopeReport),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          leading: IconButton(
+              icon: const Icon(Icons.arrow_back), onPressed: _back),
+        ),
+        body: Column(
           children: [
-            _intro(),
-            const SizedBox(height: 14),
-            _selfCard(me),
-            const SizedBox(height: 14),
-            _otherCard(me),
-            const SizedBox(height: 14),
-            _chargeCard(),
-            const SizedBox(height: 16),
+            _progress(),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                children: [
+                  if (_step == 0) _intro(),
+                  if (_step == 0) const SizedBox(height: 14),
+                  _card(child: _stepBody(me)),
+                ],
+              ),
+            ),
           ],
         ),
+        bottomNavigationBar: _bottomBar(),
       ),
-      bottomNavigationBar: _payBar(),
     );
   }
 
-  Widget _intro() => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              const Icon(Icons.description_outlined,
-                  color: Colors.white, size: 22),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(context.l10n.compatibilityReportWithAnyone,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700)),
-              ),
-            ]),
-            const SizedBox(height: 8),
-            Text(context.l10n.compatibilityReportWithAnyoneBody,
-                style: const TextStyle(
-                    color: Colors.white, fontSize: 12.5, height: 1.5)),
-          ],
-        ),
-      );
-
-  // ── Your (auto-filled) details ────────────────────────────────────────────
-  Widget _selfCard(ProfileModel? me) {
-    final l10n = context.l10n;
-    final h = me?.horoscope;
-    final hasHoro = (h?.horoscopeImages.isNotEmpty ?? false) ||
-        (h?.horoscopePdfUrls.isNotEmpty ?? false);
-    return _card(l10n.yourDetailsAutoFilled, Icons.person_outline, [
-      if (me == null)
-        Text(l10n.yourProfileStillLoading,
-            style: const TextStyle(color: Colors.grey))
-      else ...[
-        _readRow(l10n.fullName, me.fullName),
-        _readRow(l10n.age, me.age > 0 ? '${me.age}' : '—'),
-        _readRow(l10n.gender, me.gender),
-        _readRow(l10n.dateOfBirth,
-            DateFormat('dd MMM yyyy').format(me.dateOfBirth)),
-        _readRow(l10n.timeOfBirth,
-            HoroscopeCalculationService.formatBirthTimeForDisplay(h?.birthTime)),
-        _readRow(
-            l10n.placeOfBirthLabel,
-            (h?.birthPlace.trim().isNotEmpty ?? false)
-                ? h!.birthPlace
-                : [me.city, me.state]
-                    .where((s) => s.trim().isNotEmpty)
-                    .join(', ')),
-        _readRow(l10n.nakshatra, h?.nakshatra ?? ''),
-        _readRow(l10n.rasi, h?.rasi ?? ''),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Icon(hasHoro ? Icons.check_circle : Icons.info_outline,
-                size: 16, color: hasHoro ? AppColors.success : Colors.grey),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                hasHoro
-                    ? l10n.horoscopeWillBeAttached
-                    : l10n.noHoroscopeDocOnProfile,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-            ),
-          ],
-        ),
-      ],
-    ]);
+  Widget _stepBody(ProfileModel? me) {
+    switch (_step) {
+      case 0:
+        return Form(
+          key: _personOneKey,
+          child: HoroscopePersonForm(
+            draft: _one,
+            title: context.l10n.personOneDetails,
+            subtitle: context.l10n.personDetailsSubtitle,
+            icon: Icons.person_outline,
+            nakshatraOptions: _nakOptions,
+            rasiOptions: _rasiOptions,
+            onChanged: () => setState(() {}),
+            onAutofill: me == null ? null : () => _one.fillFromProfile(me),
+          ),
+        );
+      case 1:
+        return Form(
+          key: _personTwoKey,
+          child: HoroscopePersonForm(
+            draft: _two,
+            title: context.l10n.personTwoDetails,
+            subtitle: context.l10n.personDetailsSubtitle,
+            icon: Icons.person_add_alt_1_outlined,
+            nakshatraOptions: _nakOptions,
+            rasiOptions: _rasiOptions,
+            onChanged: () => setState(() {}),
+            onAutofill: me == null ? null : () => _two.fillFromProfile(me),
+          ),
+        );
+      default:
+        return Form(key: _contactKey, child: _contactStep());
+    }
   }
 
-  // ── Second person (manual) details ────────────────────────────────────────
-  Widget _otherCard(ProfileModel? me) {
+  // ── Step 3: contact person ───────────────────────────────────────────────
+  Widget _contactStep() {
     final l10n = context.l10n;
-    final lockedGender = _lockedGender(me);
-    final ageText = _dob == null ? '—' : '${_ageFromDob(_dob!)}';
-    return _card(l10n.secondPersonDetails, Icons.person_add_alt_1_outlined, [
-      TextFormField(
-        controller: _name,
-        textCapitalization: TextCapitalization.words,
-        decoration: _dec('${l10n.fullNameLabel} *'),
-        validator: (v) =>
-            (v == null || v.trim().isEmpty) ? l10n.nameIsRequired : null,
-      ),
-      const SizedBox(height: 12),
-      Row(
-        children: [
-          // Age is derived from the DOB below and cannot be edited.
-          Expanded(
-              child: _readOnlyBox(l10n.age, ageText, Icons.cake_outlined)),
-          const SizedBox(width: 10),
-          // Gender is auto-set to the opposite of the logged-in user.
-          Expanded(
-              child:
-                  _readOnlyBox(l10n.gender, lockedGender, Icons.wc_outlined)),
-        ],
-      ),
-      const SizedBox(height: 6),
-      Text(l10n.genderAgeAutoNote,
-          style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
-      const SizedBox(height: 12),
-      Row(
-        children: [
-          Expanded(
-              child: _pickerField(
-                  '${l10n.dateOfBirth} *',
-                  _dob == null
-                      ? ''
-                      : DateFormat('dd MMM yyyy').format(_dob!),
-                  Icons.calendar_today_outlined,
-                  _pickDob)),
-          const SizedBox(width: 10),
-          Expanded(
-              child: _pickerField('${l10n.timeOfBirth} *', _tob.text,
-                  Icons.schedule, _pickTob)),
-        ],
-      ),
-      const SizedBox(height: 12),
-      // Place of Birth — the app's ONE place picker: search → City/Village +
-      // District + State → + → Save (spec §27–§31).
-      PlacePickerField(
-        label: l10n.placeOfBirthLabel,
-        isRequired: true,
-        value: _place?.display,
-        onChanged: (p) => setState(() => _place = p),
-      ),
-      const SizedBox(height: 12),
-      // Nakshatra / Rasi — searchable dropdowns backed by the master data.
-      SearchableField(
-        label: l10n.nakshatra,
-        isRequired: true,
-        items: _nakOptions,
-        selectedItem: _nakshatra,
-        prefixIcon: Icons.auto_awesome_outlined,
-        popupMode: SearchablePopupMode.modalBottomSheet,
-        onChanged: (v) => setState(() => _nakshatra = v),
-      ),
-      const SizedBox(height: 12),
-      SearchableField(
-        label: l10n.rasi,
-        isRequired: true,
-        items: _rasiOptions,
-        selectedItem: _rasi,
-        prefixIcon: Icons.brightness_3_outlined,
-        popupMode: SearchablePopupMode.modalBottomSheet,
-        onChanged: (v) => setState(() => _rasi = v),
-      ),
-      const SizedBox(height: 14),
-      Text(l10n.horoscopeImageOrPdfOptional,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-      const SizedBox(height: 8),
-      _uploadRow(),
-    ]);
-  }
-
-  /// The ₹200 service charge, shown before the pay button so the price is
-  /// never a surprise — the same charge the in-app profile flow states.
-  Widget _chargeCard() {
-    final l10n = context.l10n;
-    return _card(l10n.serviceDetails, Icons.info_outline, [
-      _metaRow(Icons.cloud_done_outlined, l10n.serviceTypeLabel,
-          l10n.onlineReportNoVisit),
-      const Divider(height: 18),
-      _metaRow(Icons.schedule_outlined, l10n.estimatedDelivery,
-          l10n.deliveryWithinTwoDays),
-      const Divider(height: 18),
-      _metaRow(Icons.payments_outlined, l10n.serviceCharge, _priceText),
-    ]);
-  }
-
-  Widget _metaRow(IconData icon, String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 18, color: AppColors.primary),
-            const SizedBox(width: 10),
-            Expanded(
-              flex: 4,
-              child: Text(label,
-                  style: TextStyle(fontSize: 13, color: Colors.grey[700])),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              flex: 5,
-              child: Text(value,
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w700)),
-            ),
-          ],
-        ),
-      );
-
-  Widget _uploadRow() {
-    final l10n = context.l10n;
-    final hasImage = _otherImageUrl.isNotEmpty;
-    final hasPdf = _otherPdfUrl.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (hasImage || hasPdf) ...[
-          Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            children: [
-              if (hasImage)
-                _attachmentChip(
-                  preview: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child:
-                        NetworkPhoto(url: _otherImageUrl, width: 52, height: 52),
-                  ),
-                  label: l10n.imageAttached,
-                  onRemove: () => setState(() => _otherImageUrl = ''),
-                ),
-              if (hasPdf)
-                _attachmentChip(
-                  preview: const Icon(Icons.picture_as_pdf,
-                      color: AppColors.error, size: 40),
-                  label: l10n.pdfAttached,
-                  onRemove: () => setState(() => _otherPdfUrl = ''),
-                ),
-            ],
-          ),
-          const SizedBox(height: 10),
-        ] else
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Text(l10n.attachSecondPersonHoroscope,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-          ),
         Row(children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: _uploading ? null : _pickImage,
-              icon: _uploading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.image_outlined, size: 18),
-              label: Text(hasImage ? l10n.replaceImage : l10n.imageLabel),
-              style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary)),
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(11),
             ),
+            child: const Icon(Icons.contact_phone_outlined,
+                color: AppColors.primary, size: 20),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 11),
           Expanded(
-            child: OutlinedButton.icon(
-              onPressed: _uploading ? null : _pickPdf,
-              icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-              label: Text(hasPdf ? l10n.replacePdf : l10n.pdfLabel),
-              style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.contactDetailsTitle,
+                    style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15.5)),
+                const SizedBox(height: 2),
+                Text(l10n.contactDetailsSubtitle,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              ],
             ),
           ),
         ]),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _contactName,
+          textCapitalization: TextCapitalization.words,
+          decoration: InputDecoration(
+            labelText: '${l10n.contactPersonName} *',
+            prefixIcon: const Icon(Icons.person_outline, size: 19),
+            filled: true,
+            fillColor: Colors.white,
+            border:
+                OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          validator: (v) =>
+              (v ?? '').trim().length < 2 ? l10n.pleaseEnterFullName : null,
+        ),
+        const SizedBox(height: 14),
+        TextFormField(
+          controller: _whatsapp,
+          keyboardType: TextInputType.number,
+          // Digits only, hard-capped at 10 — an 11th digit cannot be typed and
+          // a pasted "+91…" is trimmed to the local number (spec §8).
+          inputFormatters: const [WhatsAppNumberFormatter()],
+          decoration: InputDecoration(
+            labelText: '${l10n.whatsappNumber} *',
+            prefixText: '+91  ',
+            counterText: '',
+            helperText: l10n.whatsapp10DigitHelper,
+            prefixIcon: const Icon(Icons.chat_outlined, size: 19),
+            filled: true,
+            fillColor: Colors.white,
+            border:
+                OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          onChanged: (_) => setState(() {}),
+          validator: (v) {
+            final d = (v ?? '').replaceAll(RegExp(r'\D'), '');
+            if (d.isEmpty) return l10n.whatsappRequired;
+            if (d.length != 10) return l10n.whatsappMustBe10Digits;
+            return null;
+          },
+        ),
+        const SizedBox(height: 18),
+        _summaryCard(),
       ],
     );
   }
 
-  /// A preview tile with its own Remove button, shown for each attachment.
-  Widget _attachmentChip({
-    required Widget preview,
-    required String label,
-    required VoidCallback onRemove,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: AppColors.success.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.success.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(width: 52, height: 52, child: Center(child: preview)),
-          const SizedBox(width: 8),
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.success,
-                  fontWeight: FontWeight.w600)),
-          const SizedBox(width: 4),
-          InkWell(
-            onTap: onRemove,
-            borderRadius: BorderRadius.circular(20),
-            child: const Padding(
-              padding: EdgeInsets.all(4),
-              child: Icon(Icons.close, size: 18, color: AppColors.error),
-            ),
+  /// A read-only recap of exactly what will be stored, so the member can catch
+  /// a wrong DOB before the request goes out rather than after.
+  Widget _summaryCard() {
+    final l10n = context.l10n;
+    Widget line(String label, String value) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 96,
+                child: Text(label,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              ),
+              Expanded(
+                child: Text(value.trim().isEmpty ? '—' : value,
+                    style: const TextStyle(
+                        fontSize: 12.5, fontWeight: FontWeight.w600)),
+              ),
+            ],
           ),
+        );
+
+    Widget person(String title, HoroscopePersonDraft d) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary)),
+            const SizedBox(height: 4),
+            line(l10n.fullName, d.name.text),
+            line(l10n.dateOfBirth,
+                d.dob == null ? '' : '${d.dob!.day}-${d.dob!.month}-${d.dob!.year}'),
+            line(l10n.timeOfBirth, d.birthTimeText),
+            line(l10n.placeOfBirthLabel, d.place?.display ?? ''),
+            if ((d.nakshatra ?? '').isNotEmpty)
+              line(l10n.nakshatra, d.nakshatra!),
+            if ((d.rasi ?? '').isNotEmpty) line(l10n.rasi, d.rasi!),
+            if (d.imageUrl.isNotEmpty || d.pdfUrl.isNotEmpty)
+              line(l10n.horoscopeImage, l10n.attached),
+          ],
+        );
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.scaffoldBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Icon(Icons.fact_check_outlined,
+                size: 17, color: AppColors.primary),
+            const SizedBox(width: 7),
+            Text(l10n.reviewYourRequest,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w700, fontSize: 13.5)),
+          ]),
+          const SizedBox(height: 10),
+          person(_personOneLabel, _one),
+          const Divider(height: 20),
+          person(_personTwoLabel, _two),
         ],
       ),
     );
   }
 
-  // ── Sticky pay bar ────────────────────────────────────────────────────────
-  Widget _payBar() => Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 12,
-                offset: const Offset(0, -2)),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _busy ? null : _payAndRequest,
-              icon: _busy
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white))
-                  : const Icon(Icons.auto_awesome, size: 20),
-              label: Text(
-                _busy
-                    ? context.l10n.processingPayment
-                    : context.l10n.payAndRequestReport(_priceText),
-                textAlign: TextAlign.center,
-                style:
-                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(54),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+  // ── Chrome ────────────────────────────────────────────────────────────────
+
+  /// Explains, up front, that a guest may submit and what logging in adds
+  /// (spec §1). Shown only on the first step so it never becomes wallpaper.
+  Widget _intro() {
+    final l10n = context.l10n;
+    final isGuest = ref.watch(isGuestProvider);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Icon(Icons.description_outlined,
+                color: Colors.white, size: 22),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(l10n.compatibilityReportWithAnyone,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700)),
+            ),
+          ]),
+          const SizedBox(height: 8),
+          Text(
+              isGuest
+                  ? l10n.guestCanSubmitHoroscopeRequest
+                  : l10n.memberHoroscopeRequestTracked,
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 12.5, height: 1.5)),
+          if (isGuest) ...[
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => context.go('/login'),
+                icon: const Icon(Icons.login, size: 16, color: Colors.white),
+                label: Text(l10n.loginToTrackRequest,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        decoration: TextDecoration.underline,
+                        decorationColor: Colors.white)),
+                style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap),
               ),
             ),
-          ),
-        ),
-      );
+          ],
+        ],
+      ),
+    );
+  }
 
-  // ── Reusable bits ─────────────────────────────────────────────────────────
-  Widget _card(String title, IconData icon, List<Widget> children) => Container(
-        width: double.infinity,
+  Widget _progress() {
+    final labels = [
+      context.l10n.personOne,
+      context.l10n.personTwo,
+      context.l10n.contactStep,
+    ];
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Row(
+        children: List.generate(_steps, (i) {
+          final done = i < _step;
+          final active = i == _step;
+          final color =
+              (done || active) ? AppColors.primary : Colors.grey.shade400;
+          return Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 26,
+                  height: 26,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: (done || active) ? AppColors.primary : Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: color, width: 1.6),
+                  ),
+                  child: done
+                      ? const Icon(Icons.check, size: 14, color: Colors.white)
+                      : Text('${i + 1}',
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color:
+                                  active ? Colors.white : Colors.grey[600])),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(labels[i],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight:
+                              active ? FontWeight.w700 : FontWeight.w500,
+                          color: active
+                              ? AppColors.primary
+                              : Colors.grey[600])),
+                ),
+                if (i < _steps - 1)
+                  Container(width: 10, height: 1.4, color: Colors.grey[300]),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _card({required Widget child}) => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -753,75 +718,68 @@ class _RequestExternalReportScreenState
                 color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              Icon(icon, size: 18, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(title,
-                    style: const TextStyle(
-                        fontSize: 15,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary)),
-              ),
-            ]),
-            const Divider(height: 18),
-            ...children,
-          ],
-        ),
+        child: child,
       );
 
-  Widget _readRow(String k, String v) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
+  Widget _bottomBar() {
+    final l10n = context.l10n;
+    final last = _step == _steps - 1;
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06), blurRadius: 12),
+          ],
+        ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-                width: 120,
-                child: Text(k,
-                    style: TextStyle(fontSize: 12.5, color: Colors.grey[600]))),
+            if (_step > 0) ...[
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _busy ? null : _back,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(l10n.back),
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
             Expanded(
-              child: Text(v.trim().isEmpty ? '—' : v,
-                  style: const TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600)),
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: _busy ? null : (last ? _submit : _next),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor:
+                      AppColors.primary.withValues(alpha: 0.5),
+                  minimumSize: const Size.fromHeight(48),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: _busy
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.4, color: Colors.white))
+                    : Text(last ? l10n.submitRequest : l10n.continueLabel,
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w700)),
+              ),
             ),
           ],
         ),
-      );
-
-  /// A read-only display box that looks like an input but cannot be edited
-  /// (used for the auto-derived Age and locked Gender).
-  Widget _readOnlyBox(String label, String value, IconData icon) =>
-      InputDecorator(
-        decoration: _dec(label).copyWith(
-          fillColor: Colors.grey[200],
-          suffixIcon: const Icon(Icons.lock_outline, size: 16),
-          prefixIcon: Icon(icon, size: 18),
-        ),
-        child: Text(value.isEmpty ? '—' : value,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-      );
-
-  Widget _pickerField(
-          String label, String value, IconData icon, VoidCallback onTap) =>
-      InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: InputDecorator(
-          decoration: _dec(label).copyWith(suffixIcon: Icon(icon, size: 18)),
-          child: Text(value.isEmpty ? '' : value,
-              style: const TextStyle(fontSize: 14)),
-        ),
-      );
-
-  InputDecoration _dec(String label) => InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: AppColors.scaffoldBg,
-        isDense: true,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      );
+      ),
+    );
+  }
 }

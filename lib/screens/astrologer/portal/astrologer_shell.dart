@@ -526,14 +526,45 @@ class _RequestCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Request ${r.id}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+                Row(children: [
+                  Expanded(
+                    child: Text(r.displayRequestId,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary)),
+                  ),
+                  // A guest request has no account behind it — the contact
+                  // number below is the only way to answer it (spec §10/§12).
+                  if (r.guestRequest)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text('GUEST',
+                          style: TextStyle(
+                              color: AppColors.warning,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                ]),
                 const SizedBox(height: 6),
                 Text(r.userName,
                     style: const TextStyle(
                         fontWeight: FontWeight.w700, fontSize: 15)),
+                if (r.contactWhatsapp.trim().isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                      'WhatsApp: ${r.displayContactName} · '
+                      '+91 ${r.contactWhatsapp}',
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey[700])),
+                ],
                 if ((r.groomName ?? '').isNotEmpty ||
                     (r.brideName ?? '').isNotEmpty) ...[
                   const SizedBox(height: 2),

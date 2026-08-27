@@ -293,7 +293,12 @@ class AstrologerService {
     // (spec §4: pay online → booking created → reaches astrologer).
     // Single-company service: user-facing copy never names the individual
     // employee, and report notifications open the bottom-nav Reports tab.
-    if (request.userId.trim().isNotEmpty) {
+    //
+    // Skipped for a GUEST request: an anonymous session has no notification
+    // inbox to open, and `notifications` is guarded by `isAuthenticated()`, so
+    // the write would be a guaranteed permission-denied. The guest gets their
+    // Request ID and the WhatsApp hand-off on screen instead (spec §1/§9).
+    if (request.userId.trim().isNotEmpty && !request.guestRequest) {
       await _notify(
         request.userId,
         request.paid ? 'Payment Successful' : 'Booking Submitted',

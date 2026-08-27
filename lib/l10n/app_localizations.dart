@@ -6721,6 +6721,234 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Regenerate Horoscope'**
   String get regenerateHoroscope;
+
+  /// No description provided for @pleaseEnterFullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the full name'**
+  String get pleaseEnterFullName;
+
+  /// No description provided for @horoscopeImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope Image'**
+  String get horoscopeImage;
+
+  /// No description provided for @horoscopeUploadHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach a photo or PDF of the horoscope if you have one. You can still submit without it.'**
+  String get horoscopeUploadHint;
+
+  /// No description provided for @uploadImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Image'**
+  String get uploadImage;
+
+  /// No description provided for @uploadPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload PDF'**
+  String get uploadPdf;
+
+  /// No description provided for @replace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get replace;
+
+  /// No description provided for @attached.
+  ///
+  /// In en, this message translates to:
+  /// **'Attached'**
+  String get attached;
+
+  /// No description provided for @clearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All'**
+  String get clearAll;
+
+  /// No description provided for @removeAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove attachment'**
+  String get removeAttachment;
+
+  /// No description provided for @clearDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear these details?'**
+  String get clearDetailsTitle;
+
+  /// No description provided for @clearDetailsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Every field for this person will be emptied so you can enter someone else. Your own profile is not changed.'**
+  String get clearDetailsBody;
+
+  /// No description provided for @useMyProfileDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Use my profile details'**
+  String get useMyProfileDetails;
+
+  /// No description provided for @clearAndEnterNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear & enter new'**
+  String get clearAndEnterNew;
+
+  /// No description provided for @personOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Person 1'**
+  String get personOne;
+
+  /// No description provided for @personTwo.
+  ///
+  /// In en, this message translates to:
+  /// **'Person 2'**
+  String get personTwo;
+
+  /// No description provided for @personOneDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Person 1 — Horoscope Details'**
+  String get personOneDetails;
+
+  /// No description provided for @personTwoDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Person 2 — Horoscope Details'**
+  String get personTwoDetails;
+
+  /// No description provided for @personDetailsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Name, date, time and place of birth are required. Nakshatra, Rasi and the horoscope image are optional.'**
+  String get personDetailsSubtitle;
+
+  /// No description provided for @contactStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get contactStep;
+
+  /// No description provided for @contactDetailsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We will send the horoscope report and any questions to this WhatsApp number.'**
+  String get contactDetailsSubtitle;
+
+  /// No description provided for @whatsapp10DigitHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Exactly 10 digits, without the country code'**
+  String get whatsapp10DigitHelper;
+
+  /// No description provided for @whatsappRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the WhatsApp number'**
+  String get whatsappRequired;
+
+  /// No description provided for @whatsappMustBe10Digits.
+  ///
+  /// In en, this message translates to:
+  /// **'The WhatsApp number must be exactly 10 digits'**
+  String get whatsappMustBe10Digits;
+
+  /// No description provided for @reviewYourRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Review your request'**
+  String get reviewYourRequest;
+
+  /// No description provided for @requestSubmittedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request submitted'**
+  String get requestSubmittedTitle;
+
+  /// No description provided for @requestIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Request ID'**
+  String get requestIdLabel;
+
+  /// No description provided for @requestSubmittedWhatsappBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep this Request ID. Our astrologer will contact you on the WhatsApp number you gave. You can also send the details on WhatsApp right away.'**
+  String get requestSubmittedWhatsappBody;
+
+  /// No description provided for @sendOnWhatsapp.
+  ///
+  /// In en, this message translates to:
+  /// **'Send on WhatsApp'**
+  String get sendOnWhatsapp;
+
+  /// No description provided for @couldNotOpenWhatsapp.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open WhatsApp. Please try again.'**
+  String get couldNotOpenWhatsapp;
+
+  /// No description provided for @whatsappRequestIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello, I have submitted a horoscope matching request.'**
+  String get whatsappRequestIntro;
+
+  /// No description provided for @guestRequestTrackHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Login to track this request and see the report inside the app.'**
+  String get guestRequestTrackHint;
+
+  /// No description provided for @guestCanSubmitHoroscopeRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'You can submit a horoscope matching request without an account. Login if you want to track the request and read the report inside the app.'**
+  String get guestCanSubmitHoroscopeRequest;
+
+  /// No description provided for @memberHoroscopeRequestTracked.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter both horoscopes and a contact number. The request is linked to your account, so you can track it under Reports.'**
+  String get memberHoroscopeRequestTracked;
+
+  /// No description provided for @loginToTrackRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Login to track your request'**
+  String get loginToTrackRequest;
+
+  /// No description provided for @pleaseSelectDobFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select the date of birth for {who}'**
+  String pleaseSelectDobFor(String who);
+
+  /// No description provided for @pleaseSelectTobFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select the birth time for {who}'**
+  String pleaseSelectTobFor(String who);
+
+  /// No description provided for @pleaseSelectPlaceFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select the birth place for {who}'**
+  String pleaseSelectPlaceFor(String who);
+
+  /// No description provided for @exitApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit'**
+  String get exitApp;
 }
 
 class _AppLocalizationsDelegate

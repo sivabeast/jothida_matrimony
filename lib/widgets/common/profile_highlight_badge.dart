@@ -35,12 +35,21 @@ class ProfileHighlightBadge extends ConsumerWidget {
   /// profile carries exactly one badge and never a second quality label.
   final bool nakshatraOnly;
 
+  /// Variant for a badge drawn OVER a photo (spec §16).
+  ///
+  /// The tinted-on-white chip used inside a card disappears against a
+  /// photograph, so this paints a solid green pill with white text and a soft
+  /// shadow — legible over a dark sari or a bright sky alike, while staying the
+  /// same green the rest of the app uses for a positive state.
+  final bool onPhoto;
+
   const ProfileHighlightBadge({
     super.key,
     required this.profile,
     this.compact = false,
     this.color,
     this.nakshatraOnly = false,
+    this.onPhoto = false,
   });
 
   @override
@@ -59,6 +68,43 @@ class ProfileHighlightBadge extends ConsumerWidget {
 
     // Nakshatra compatibility is a POSITIVE signal → green chip with a check,
     // never the gold/amber pill used for the generic preference match.
+    if (isNakshatra && onPhoto) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.success,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.28),
+                blurRadius: 8,
+                offset: const Offset(0, 2)),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle, size: 13, color: Colors.white),
+            const SizedBox(width: 5),
+            // Wraps rather than clips: the Tamil label is long, and half a
+            // label is worse than two lines.
+            Flexible(
+              child: Text(
+                label,
+                softWrap: true,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (isNakshatra) {
       return Container(
         padding: EdgeInsets.symmetric(

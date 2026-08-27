@@ -1646,5 +1646,64 @@
   "viewFullProfile": "View Full Profile",
   "locationCityOnlyHint": "Search your city or town, or use your current location.",
   "generateHoroscope": "Generate Horoscope",
-  "regenerateHoroscope": "Regenerate Horoscope"
+  "regenerateHoroscope": "Regenerate Horoscope",
+  "pleaseEnterFullName": "Please enter the full name",
+  "horoscopeImage": "Horoscope Image",
+  "horoscopeUploadHint": "Attach a photo or PDF of the horoscope if you have one. You can still submit without it.",
+  "uploadImage": "Upload Image",
+  "uploadPdf": "Upload PDF",
+  "replace": "Replace",
+  "attached": "Attached",
+  "clearAll": "Clear All",
+  "removeAttachment": "Remove attachment",
+  "clearDetailsTitle": "Clear these details?",
+  "clearDetailsBody": "Every field for this person will be emptied so you can enter someone else. Your own profile is not changed.",
+  "useMyProfileDetails": "Use my profile details",
+  "clearAndEnterNew": "Clear & enter new",
+  "personOne": "Person 1",
+  "personTwo": "Person 2",
+  "personOneDetails": "Person 1 — Horoscope Details",
+  "personTwoDetails": "Person 2 — Horoscope Details",
+  "personDetailsSubtitle": "Name, date, time and place of birth are required. Nakshatra, Rasi and the horoscope image are optional.",
+  "contactStep": "Contact",
+  "contactDetailsSubtitle": "We will send the horoscope report and any questions to this WhatsApp number.",
+  "whatsapp10DigitHelper": "Exactly 10 digits, without the country code",
+  "whatsappRequired": "Please enter the WhatsApp number",
+  "whatsappMustBe10Digits": "The WhatsApp number must be exactly 10 digits",
+  "reviewYourRequest": "Review your request",
+  "requestSubmittedTitle": "Request submitted",
+  "requestIdLabel": "Request ID",
+  "requestSubmittedWhatsappBody": "Keep this Request ID. Our astrologer will contact you on the WhatsApp number you gave. You can also send the details on WhatsApp right away.",
+  "sendOnWhatsapp": "Send on WhatsApp",
+  "couldNotOpenWhatsapp": "Could not open WhatsApp. Please try again.",
+  "whatsappRequestIntro": "Hello, I have submitted a horoscope matching request.",
+  "guestRequestTrackHint": "Login to track this request and see the report inside the app.",
+  "guestCanSubmitHoroscopeRequest": "You can submit a horoscope matching request without an account. Login if you want to track the request and read the report inside the app.",
+  "memberHoroscopeRequestTracked": "Enter both horoscopes and a contact number. The request is linked to your account, so you can track it under Reports.",
+  "loginToTrackRequest": "Login to track your request",
+  "pleaseSelectDobFor": "Please select the date of birth for {who}",
+  "@pleaseSelectDobFor": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      }
+    }
+  },
+  "pleaseSelectTobFor": "Please select the birth time for {who}",
+  "@pleaseSelectTobFor": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      }
+    }
+  },
+  "pleaseSelectPlaceFor": "Please select the birth place for {who}",
+  "@pleaseSelectPlaceFor": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      }
+    }
+  },
+  "exitApp": "Exit"
 }

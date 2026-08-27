@@ -223,6 +223,22 @@ class ProfileModel {
   /// This is an internal document check, NOT the profile verification badge —
   /// the tick beside a member's name comes from [isProfileVerified].
   final bool isVerified;
+
+  /// The admin's EXPLICIT verification decision for this profile (spec
+  /// §13/§14), independent of the approval [status].
+  ///
+  /// Three states, and the third is the reason this is nullable:
+  ///   * `true`  — an admin verified the profile: green tick.
+  ///   * `false` — an admin REVOKED the verification. The account is untouched
+  ///     and the profile stays approved and browsable; only the badge goes.
+  ///   * `null`  — no explicit decision has ever been recorded, so the legacy
+  ///     rule applies and an approved profile still reads as verified. Without
+  ///     this fallback, shipping the feature would silently un-verify every
+  ///     member who was approved before it existed.
+  final bool? profileVerified;
+
+  /// When the current verification decision was made (either direction).
+  final DateTime? profileVerifiedAt;
   final int reportCount;
   final int viewCount;
   final int interestCount;
@@ -231,6 +247,14 @@ class ProfileModel {
   final bool isFeatured;
   final bool isActive;
   final bool isMarried; // true once the user marks themselves as married
+
+  /// When the member marked themselves married, and how they found their
+  /// partner ('app' | 'other'). Both are stamped by
+  /// `FirestoreService.markProfileMarried` and cleared by the undo, which is
+  /// what makes the admin's Married Members list orderable by recency and its
+  /// success rate computable from real data rather than a guess (spec §18/§20).
+  final DateTime? marriedAt;
+  final String marriedVia;
   // Test/seed profile flag. Dummy profiles are created by the admin "Test Data"
   // tool and can be bulk-deleted from there (or filtered by `isDummy == true`
   // in the Firebase console). Real user profiles never set this.
@@ -294,6 +318,8 @@ class ProfileModel {
     this.contactPrivacy = 'private',
     this.status = 'pending',
     this.isVerified = false,
+    this.profileVerified,
+    this.profileVerifiedAt,
     this.reportCount = 0,
     this.viewCount = 0,
     this.interestCount = 0,
@@ -302,6 +328,8 @@ class ProfileModel {
     this.isFeatured = false,
     this.isActive = true,
     this.isMarried = false,
+    this.marriedAt,
+    this.marriedVia = '',
     this.isDummy = false,
   });
 
@@ -369,6 +397,14 @@ class ProfileModel {
       contact: ContactDetails.fromMap(d['contact'] ?? {}),
       contactPrivacy: d['contactPrivacy'] ?? 'private',
       status: d['status'] ?? 'pending',
+      // A MISSING field is not `false` — it means "no decision recorded", so
+      // the approval status still decides. Only an explicit boolean overrides.
+      profileVerified: d['profileVerified'] is bool
+          ? d['profileVerified'] as bool
+          : null,
+      profileVerifiedAt: d['profileVerifiedAt'] is Timestamp
+          ? (d['profileVerifiedAt'] as Timestamp).toDate()
+          : null,
       isVerified: d['isVerified'] ?? false,
       reportCount: d['reportCount'] ?? 0,
       viewCount: d['viewCount'] ?? 0,
@@ -382,6 +418,10 @@ class ProfileModel {
       isFeatured: d['isFeatured'] ?? false,
       isActive: d['isActive'] ?? true,
       isMarried: d['isMarried'] ?? false,
+      marriedAt: d['marriedAt'] is Timestamp
+          ? (d['marriedAt'] as Timestamp).toDate()
+          : null,
+      marriedVia: (d['marriedVia'] ?? '').toString(),
       isDummy: d['isDummy'] ?? false,
     );
   }
@@ -454,6 +494,11 @@ class ProfileModel {
         // contacts read rule can honor it (§17/§18).
         'contactPrivacy': contactPrivacy,
         'status': status,
+        // Written only once an admin has actually decided, so an ordinary
+        // profile save can never invent a verification state.
+        if (profileVerified != null) 'profileVerified': profileVerified,
+        if (profileVerifiedAt != null)
+          'profileVerifiedAt': Timestamp.fromDate(profileVerifiedAt!),
         'isVerified': isVerified,
         'reportCount': reportCount,
         'viewCount': viewCount,
@@ -463,6 +508,8 @@ class ProfileModel {
         'isFeatured': isFeatured,
         'isActive': isActive,
         'isMarried': isMarried,
+        if (marriedAt != null) 'marriedAt': Timestamp.fromDate(marriedAt!),
+        if (marriedVia.isNotEmpty) 'marriedVia': marriedVia,
         'isDummy': isDummy,
       };
 
@@ -558,9 +605,15 @@ class ProfileModel {
   /// signed-in viewer may see it, without a mutually-accepted interest.
   bool get isContactPublic => contactPrivacy == 'public';
 
-  /// TRUE once an admin has verified this profile (the review queue action).
-  /// This single flag drives the green/dark verification tick everywhere.
-  bool get isProfileVerified => status == AppConstants.profileApproved;
+  /// TRUE once an admin has verified this profile. This single flag drives the
+  /// green/dark verification tick everywhere.
+  ///
+  /// An explicit admin decision ([profileVerified]) always wins — including a
+  /// revocation, which is exactly what makes verification reversible (spec
+  /// §14). Only when no decision was ever recorded does it fall back to the
+  /// approval status, so profiles from before the feature keep their badge.
+  bool get isProfileVerified =>
+      profileVerified ?? (status == AppConstants.profileApproved);
 
   /// TRUE while the profile is still waiting for admin verification.
   bool get isPendingVerification => status == AppConstants.profilePending;
@@ -663,6 +716,14 @@ class ProfileModel {
       contact: ContactDetails.fromMap(contactMap),
       contactPrivacy: d['contactPrivacy'] ?? 'private',
       status: d['status'] ?? 'pending',
+      // A MISSING field is not `false` — it means "no decision recorded", so
+      // the approval status still decides. Only an explicit boolean overrides.
+      profileVerified: d['profileVerified'] is bool
+          ? d['profileVerified'] as bool
+          : null,
+      profileVerifiedAt: d['profileVerifiedAt'] is Timestamp
+          ? (d['profileVerifiedAt'] as Timestamp).toDate()
+          : null,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -730,6 +791,11 @@ class ProfileModel {
         'contactDetails': contact.toMap(),
         'contactPrivacy': contactPrivacy,
         'status': status,
+        // Written only once an admin has actually decided, so an ordinary
+        // profile save can never invent a verification state.
+        if (profileVerified != null) 'profileVerified': profileVerified,
+        if (profileVerifiedAt != null)
+          'profileVerifiedAt': Timestamp.fromDate(profileVerifiedAt!),
       };
 
   ProfileModel copyWith({
@@ -786,9 +852,13 @@ class ProfileModel {
     String? contactPrivacy,
     String? status,
     bool? isVerified,
+    bool? profileVerified,
+    DateTime? profileVerifiedAt,
     bool? isFeatured,
     bool? isActive,
     bool? isMarried,
+    DateTime? marriedAt,
+    String? marriedVia,
     bool? isDummy,
     int? reportCount,
     int? viewCount,
@@ -853,6 +923,8 @@ class ProfileModel {
         contactPrivacy: contactPrivacy ?? this.contactPrivacy,
         status: status ?? this.status,
         isVerified: isVerified ?? this.isVerified,
+        profileVerified: profileVerified ?? this.profileVerified,
+        profileVerifiedAt: profileVerifiedAt ?? this.profileVerifiedAt,
         reportCount: reportCount ?? this.reportCount,
         viewCount: viewCount ?? this.viewCount,
         interestCount: interestCount ?? this.interestCount,
@@ -861,6 +933,8 @@ class ProfileModel {
         isFeatured: isFeatured ?? this.isFeatured,
         isActive: isActive ?? this.isActive,
         isMarried: isMarried ?? this.isMarried,
+        marriedAt: marriedAt ?? this.marriedAt,
+        marriedVia: marriedVia ?? this.marriedVia,
         isDummy: isDummy ?? this.isDummy,
       );
 
@@ -922,6 +996,8 @@ class ProfileModel {
         contactPrivacy: contactPrivacy,
         status: status,
         isVerified: isVerified,
+        profileVerified: profileVerified,
+        profileVerifiedAt: profileVerifiedAt,
         reportCount: reportCount,
         viewCount: viewCount,
         interestCount: interestCount,
@@ -930,6 +1006,8 @@ class ProfileModel {
         isFeatured: isFeatured,
         isActive: isActive,
         isMarried: isMarried,
+        marriedAt: marriedAt,
+        marriedVia: marriedVia,
         isDummy: isDummy,
       );
 }

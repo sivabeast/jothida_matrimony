@@ -22,6 +22,11 @@ final appUpdateConfigProvider =
 final installedVersionCodeProvider = FutureProvider<int>(
     (ref) => AppUpdateService.instance.installedVersionCode());
 
+/// This build's version NAME ("1.14.0"), for the admin's read-only display
+/// (spec §23). Empty when the platform cannot answer.
+final installedVersionNameProvider = FutureProvider<String>(
+    (ref) => AppUpdateService.instance.installedVersionName());
+
 /// Remembers what the member has already been shown, so an optional prompt is
 /// not repeated every time the app comes back to the foreground.
 ///

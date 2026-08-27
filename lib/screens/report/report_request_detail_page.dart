@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
@@ -83,14 +85,16 @@ class ReportRequestDetailPage extends ConsumerWidget {
             // External report — the second person is not a registered member,
             // so both sides come from the entered details instead of profiles.
             ExternalPartyCard(
-                title: 'Groom Details',
+                title: 'Person 1 Details',
                 icon: Icons.person,
                 data: r.externalRequester),
             const SizedBox(height: 12),
             ExternalPartyCard(
-                title: 'Bride Details',
+                title: 'Person 2 Details',
                 icon: Icons.person_add_alt_1,
                 data: r.externalOther),
+            const SizedBox(height: 12),
+            _ContactCard(request: r),
           ] else ...[
             _PersonCard(
               title: 'Groom Details',
@@ -136,6 +140,24 @@ class _RequestHeader extends StatelessWidget {
         ' · ${h.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')} $ampm';
   }
 
+  static Widget _kv(String label, String value) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+                width: 96,
+                child: Text(label,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey))),
+            Expanded(
+              child: Text(value.trim().isEmpty ? '—' : value,
+                  style: const TextStyle(
+                      fontSize: 12.5, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final r = request;
@@ -156,10 +178,12 @@ class _RequestHeader extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text('Request ${r.id}',
+                child: SelectableText(r.displayRequestId,
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary)),
               ),
               Container(
                 padding:
@@ -176,22 +200,168 @@ class _RequestHeader extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Text('Requested by ${r.userName}',
-              style:
-                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 2),
-          Text('Requested on ${_dateTime(r.createdAt)}',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-          if (r.isAssigned) ...[
-            const SizedBox(height: 2),
-            Text('Assigned to ${r.astrologerName.isEmpty ? r.astrologerEmail : r.astrologerName}',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-          ],
+          const SizedBox(height: 8),
+          _kv('Requested by', r.userName),
+          _kv('Created', _dateTime(r.createdAt)),
+          // WHO sent this — a guest has no account behind them, so the contact
+          // number below is the only route back to them (spec §10).
+          Row(children: [
+            const SizedBox(
+                width: 96,
+                child: Text('Account',
+                    style: TextStyle(fontSize: 12, color: Colors.grey))),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: (r.guestRequest ? AppColors.warning : AppColors.success)
+                    .withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(r.guestRequest ? 'GUEST' : 'REGISTERED USER',
+                  style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.bold,
+                      color: r.guestRequest
+                          ? AppColors.warning
+                          : AppColors.success)),
+            ),
+          ]),
+          if (!r.guestRequest && r.userId.trim().isNotEmpty)
+            _kv('User ID', r.userId),
+          _kv(
+              r.assignedToAdmin ? 'Assigned To' : 'Assigned To',
+              r.assignedToAdmin
+                  ? 'Admin'
+                  : (r.isAssigned
+                      ? (r.astrologerName.isEmpty
+                          ? r.astrologerEmail
+                          : '${r.astrologerName} (${r.astrologerEmail})')
+                      : 'Unassigned')),
+          if (r.completedAt != null)
+            _kv('Completed', _dateTime(r.completedAt!)),
           if (r.message.trim().isNotEmpty) ...[
             const SizedBox(height: 8),
             Text('Note: ${r.message}',
                 style: TextStyle(fontSize: 13, color: Colors.grey[800])),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── Contact person ───────────────────────────────────────────────────────────
+
+/// The contact person for a horoscope request (spec §10/§12).
+///
+/// The WhatsApp number is deliberately NOT masked or hidden: the admin and the
+/// assigned employee need it to deliver the finished horoscope, and for a guest
+/// request it is the ONLY way back to the requester. Both actions here are
+/// one-tap — open WhatsApp, or copy the number for a call.
+class _ContactCard extends StatelessWidget {
+  final AstrologerRequestModel request;
+  const _ContactCard({required this.request});
+
+  Future<void> _openWhatsapp(BuildContext context) async {
+    final dial = request.whatsappDialNumber;
+    final messenger = ScaffoldMessenger.of(context);
+    if (dial.isEmpty) {
+      messenger.showSnackBar(
+          const SnackBar(content: Text('No usable WhatsApp number stored.')));
+      return;
+    }
+    try {
+      final ok = await launchUrl(Uri.parse('https://wa.me/$dial'),
+          mode: LaunchMode.externalApplication);
+      if (!ok) {
+        messenger.showSnackBar(
+            const SnackBar(content: Text('Could not open WhatsApp.')));
+      }
+    } catch (e) {
+      messenger.showSnackBar(
+          SnackBar(content: Text('Could not open WhatsApp: $e')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final number = request.contactWhatsapp.trim();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: const Color(0xFF25D366).withValues(alpha: 0.12),
+              child: const Icon(Icons.contact_phone,
+                  color: Color(0xFF128C7E), size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Contact Information',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                  Text(request.displayContactName,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 15)),
+                ],
+              ),
+            ),
+          ]),
+          const SizedBox(height: 12),
+          Row(children: [
+            SizedBox(
+                width: 110,
+                child: Text('WhatsApp',
+                    style:
+                        TextStyle(color: Colors.grey[600], fontSize: 12.5))),
+            Expanded(
+              child: SelectableText(
+                  number.isEmpty ? '—' : '+91 $number',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 14)),
+            ),
+            if (number.isNotEmpty)
+              IconButton(
+                tooltip: 'Copy number',
+                icon: const Icon(Icons.copy_rounded, size: 18),
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: number));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Number copied.')));
+                },
+              ),
+          ]),
+          if (number.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _openWhatsapp(context),
+                icon: const Icon(Icons.chat, size: 17),
+                label: const Text('Message on WhatsApp'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  minimumSize: const Size.fromHeight(42),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(11)),
+                ),
+              ),
+            ),
           ],
         ],
       ),

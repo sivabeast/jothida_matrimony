@@ -67,26 +67,50 @@ class ReviewService {
   /// Records that something good happened, and asks for a review when enough
   /// has accumulated.
   ///
+  /// Returns TRUE when the ask was actually triggered on this call, so the
+  /// caller can mirror that to the account (see `ReviewController`). It is
+  /// never a claim that a dialog appeared — Play alone decides that, and tells
+  /// nobody.
+  ///
   /// Safe to call from anywhere, as often as you like — it is cheap, silent and
   /// self-throttling. Call it AFTER the action has visibly succeeded, never
   /// during registration, payment, booking, chat or profile creation itself
-  /// (spec §11).
-  Future<void> recordEngagement(ReviewTrigger trigger) async {
+  /// (spec §30).
+  Future<bool> recordEngagement(ReviewTrigger trigger) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      if (prefs.getBool(_doneKey) == true) return;
+      if (prefs.getBool(_doneKey) == true) return false;
 
       final points = (prefs.getInt(_pointsKey) ?? 0) + _weight(trigger);
       await prefs.setInt(_pointsKey, points);
-      if (points < _pointsNeeded) return;
+      if (points < _pointsNeeded) return false;
 
-      if (!await _mayAsk(prefs)) return;
+      if (!await _mayAsk(prefs)) return false;
       await _ask(prefs);
+      return true;
     } catch (e) {
       // Review is a nicety; it must never disturb the flow that called it.
       debugPrint('[Review] engagement skipped: $e');
+      return false;
     }
   }
+
+  /// Whether the rating flow has been completed on THIS device.
+  ///
+  /// The device layer only ever answers "yes" — a "no" means "not here", not
+  /// "never", which is why the account layer exists (spec §31).
+  Future<bool> hasRatedOnThisDevice() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_doneKey) == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Marks the rating flow complete on this device — used both when the member
+  /// rates here and when the ACCOUNT says they already rated elsewhere.
+  Future<void> markRatedOnThisDevice() => _markDone();
 
   /// True when enough time has passed since the last ask.
   Future<bool> _mayAsk(SharedPreferences prefs) async {

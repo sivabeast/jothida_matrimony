@@ -8,6 +8,7 @@ import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/profile_completion.dart';
 import '../../providers/profile_provider.dart';
 import 'dart:async';
+import '../../providers/review_provider.dart';
 import '../../services/review_service.dart';
 
 /// Step 12 — shown right after a profile is created. Celebrates completion and
@@ -17,16 +18,17 @@ class ProfileSuccessScreen extends ConsumerWidget {
 
   /// Completing a profile is real engagement, and this screen is shown only
   /// once the work is finished — never mid-flow (spec §11).
-  void _recordEngagement() {
-    unawaited(
-        ReviewService.instance.recordEngagement(ReviewTrigger.profileCompleted));
+  void _recordEngagement(WidgetRef ref) {
+    unawaited(ref
+        .read(reviewControllerProvider)
+        .record(ReviewTrigger.profileCompleted));
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // After the frame, so the celebration is on screen first and the review
     // sheet (if the service decides to ask at all) never fights it.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _recordEngagement());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _recordEngagement(ref));
     final profile = ref.watch(myProfileProvider).valueOrNull;
     final completion = computeProfileCompletion(profile);
     final percent = completion.percent;

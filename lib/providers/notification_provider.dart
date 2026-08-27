@@ -81,6 +81,14 @@ enum AppNotificationEvent {
 
   /// A newer app release is available (spec §5).
   appUpdate,
+
+  /// The member marked their own profile as Married (spec §21/§22).
+  ///
+  /// Home no longer carries a permanent "you are married" panel — the
+  /// confirmation is a transient snackbar with UNDO, and THIS is what remains
+  /// afterwards: one entry in the notification feed, reachable from the bell,
+  /// so the record is available without occupying the screen.
+  marriedConfirmed,
 }
 
 class NotificationNotifier extends Notifier<void> {
@@ -150,45 +158,6 @@ class NotificationNotifier extends Notifier<void> {
     }
   }
 
-  /// Announces a release to every member running an OLDER build (spec §5/§7).
-  ///
-  /// Returns how many members were notified, or -1 when the send failed.
-  ///
-  /// Two things stop this becoming spam: members already on [versionCode] or
-  /// newer are never selected, and each notification uses a deterministic
-  /// per-member-per-version id, so re-running it for the same release
-  /// overwrites the existing row instead of adding another.
-  Future<int> sendUpdateAnnouncement({
-    required int versionCode,
-    required String versionName,
-    String title = '',
-    String body = '',
-  }) async {
-    try {
-      final fs = ref.read(firestoreServiceProvider);
-      final uids = await fs.uidsBelowVersion(versionCode);
-      if (uids.isEmpty) return 0;
-      await fs.createUpdateNotifications(
-        uids: uids,
-        versionCode: versionCode,
-        title: title.trim().isEmpty ? 'New Update Available' : title.trim(),
-        body: body.trim().isEmpty
-            ? 'A new version of Jothida Matrimony is available. Update now '
-                'for new features and improvements.'
-            : body.trim(),
-        data: {
-          'route': '/home',
-          'versionCode': versionCode,
-          'versionName': versionName,
-        },
-      );
-      return uids.length;
-    } catch (e) {
-      debugPrint('[Notifications] sendUpdateAnnouncement failed: $e');
-      return -1;
-    }
-  }
-
   /// Canonical destination per event — used when the caller didn't pass an
   /// explicit route. Kept aligned with the NotificationsTab type fallback and
   /// the routes registered in app_router.dart.
@@ -211,6 +180,7 @@ class NotificationNotifier extends Notifier<void> {
         // Lands on Home, where AppUpdateHost is mounted and offers the
         // update immediately — never a dead screen or a raw store link.
         AppNotificationEvent.appUpdate => '/home',
+        AppNotificationEvent.marriedConfirmed => '/my-profile',
       };
 
   /// Stored `type` strings — kept aligned with the NotificationsTab visuals.
@@ -228,6 +198,7 @@ class NotificationNotifier extends Notifier<void> {
         AppNotificationEvent.adminProfileUpdate => 'admin_update',
         AppNotificationEvent.reportAssigned => 'report_assigned',
         AppNotificationEvent.appUpdate => 'app_update',
+        AppNotificationEvent.marriedConfirmed => 'married',
       };
 
   static ({String title, String body}) _template(
@@ -384,6 +355,19 @@ class NotificationNotifier extends Notifier<void> {
                 title: 'New Update Available 🎉',
                 body: 'A new version of Jothida Matrimony is available. '
                     'Update now for new features and improvements.'
+              );
+      case AppNotificationEvent.marriedConfirmed:
+        return ta
+            ? (
+                title: 'வாழ்த்துக்கள்! 🎉',
+                body: 'உங்கள் சுயவிவரம் "திருமணமானவர்" எனக் குறிக்கப்பட்டது. '
+                    'மாற்ற வேண்டுமெனில் My Profile-இல் இதைத் திரும்பப் '
+                    'பெறலாம்.'
+              )
+            : (
+                title: 'Congratulations! 🎉',
+                body: 'Your profile is now marked as Married. You can undo '
+                    'this any time from My Profile.'
               );
     }
   }

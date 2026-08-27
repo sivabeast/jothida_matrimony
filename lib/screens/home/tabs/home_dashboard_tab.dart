@@ -1195,26 +1195,21 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     // (The old "Upgrade To Premium" card was removed — the app has NO
     // subscription system; every matrimony feature is free.)
 
-    // 🎉 Married status — the "found your life partner" flow. Fully
-    // user-manageable: confirming asks the source + a final confirmation, and
-    // the married state can always be UNDONE (tap the card) to return the
-    // profile to normal matchmaking.
-    if (profile != null) {
-      cards.add(profile.isMarried
-          ? _notifCard(
-              emoji: '🎉',
-              title: context.l10n.married,
-              subtitle: context.l10n.marriedLeftMatchmaking,
-              accent: AppColors.success,
-              onTap: () => _confirmUndoMarried(context, profile),
-            )
-          : _notifCard(
-              emoji: '💍',
-              title: context.l10n.foundLifePartnerQ,
-              subtitle: context.l10n.markProfileMarried,
-              accent: AppColors.success,
-              onTap: () => _startMarriedFlow(context, profile),
-            ));
+    // 💍 "Found your life partner?" — the ENTRY POINT into the married flow,
+    // shown only while the member is still in matchmaking.
+    //
+    // Once they are married this card is deliberately GONE (spec §21/§22): the
+    // confirmation is a transient snackbar carrying UNDO, and what persists
+    // afterwards is a notification in the bell feed plus the status row on My
+    // Profile — not a large panel permanently occupying the bottom of Home.
+    if (profile != null && !profile.isMarried) {
+      cards.add(_notifCard(
+        emoji: '💍',
+        title: context.l10n.foundLifePartnerQ,
+        subtitle: context.l10n.markProfileMarried,
+        accent: AppColors.success,
+        onTap: () => _startMarriedFlow(context, profile),
+      ));
     }
 
     return cards;
@@ -1373,12 +1368,30 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         .read(accountControllerProvider.notifier)
         .markMarried(profile, via: via);
     ref.invalidate(newProfilesProvider);
+
+    // The lasting record lives in the notification feed, behind the bell with
+    // its unread badge (spec §22) — so nothing has to stay on screen for the
+    // member to find this later. Best-effort: a failed notification must never
+    // make a successful status change look like it failed.
+    final uid = profile.userId.trim();
+    if (uid.isNotEmpty) {
+      try {
+        await ref.read(notificationNotifierProvider.notifier).notify(
+              toUid: uid,
+              event: AppNotificationEvent.marriedConfirmed,
+            );
+      } catch (e) {
+        debugPrint('[Married] feed notification skipped: $e');
+      }
+    }
+
     if (!mounted) return;
+    // TRANSIENT confirmation: it carries UNDO for a few seconds and then gets
+    // out of the way on its own. Not using it keeps the Married status saved.
     messenger.showSnackBar(SnackBar(
       duration: const Duration(seconds: 6),
+      behavior: SnackBarBehavior.floating,
       content: Text(l10n.marriedSuccessSnack),
-      // One-tap UNDO right from the confirmation — accidental confirms are
-      // reversed instantly (the card's "Tap to undo" stays available after).
       action: SnackBarAction(
         label: l10n.undoUpper,
         onPressed: () async {
@@ -1432,39 +1445,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         ),
       ),
     );
-  }
-
-  /// UNDO — returns a married profile to normal matchmaking (accidental
-  /// confirmation or changed plans). Confirmed with its own dialog.
-  Future<void> _confirmUndoMarried(
-      BuildContext context, ProfileModel profile) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(context.l10n.undoMarriedTitle),
-        content: Text(context.l10n.undoMarriedBody),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(context.l10n.keepAsMarried)),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(context.l10n.undo),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !context.mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    final l10n = context.l10n; // capture before the async gap
-    await ref.read(accountControllerProvider.notifier).unmarkMarried(profile);
-    ref.invalidate(newProfilesProvider);
-    if (!mounted) return;
-    messenger.showSnackBar(SnackBar(content: Text(l10n.backInMatchmaking)));
   }
 
   // ── New Profiles (newly joined members) ─────────────────────────────────────

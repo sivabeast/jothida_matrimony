@@ -3732,4 +3732,136 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get regenerateHoroscope => 'ஜாதகத்தை மீண்டும் உருவாக்கு';
+
+  @override
+  String get pleaseEnterFullName => 'முழுப் பெயரை உள்ளிடவும்';
+
+  @override
+  String get horoscopeImage => 'ஜாதகப் படம்';
+
+  @override
+  String get horoscopeUploadHint =>
+      'ஜாதகத்தின் படம் அல்லது PDF இருந்தால் இணைக்கவும். இல்லாமலும் சமர்ப்பிக்கலாம்.';
+
+  @override
+  String get uploadImage => 'படம் பதிவேற்று';
+
+  @override
+  String get uploadPdf => 'PDF பதிவேற்று';
+
+  @override
+  String get replace => 'மாற்று';
+
+  @override
+  String get attached => 'இணைக்கப்பட்டது';
+
+  @override
+  String get clearAll => 'அனைத்தையும் அழி';
+
+  @override
+  String get removeAttachment => 'இணைப்பை நீக்கு';
+
+  @override
+  String get clearDetailsTitle => 'இந்த விவரங்களை அழிக்கவா?';
+
+  @override
+  String get clearDetailsBody =>
+      'இந்த நபரின் அனைத்து விவரங்களும் அழிக்கப்படும், வேறு ஒருவரின் விவரங்களை உள்ளிடலாம். உங்கள் சுயவிவரம் மாறாது.';
+
+  @override
+  String get useMyProfileDetails => 'எனது சுயவிவரத்தைப் பயன்படுத்து';
+
+  @override
+  String get clearAndEnterNew => 'அழித்து புதிதாக உள்ளிடு';
+
+  @override
+  String get personOne => 'நபர் 1';
+
+  @override
+  String get personTwo => 'நபர் 2';
+
+  @override
+  String get personOneDetails => 'நபர் 1 — ஜாதக விவரங்கள்';
+
+  @override
+  String get personTwoDetails => 'நபர் 2 — ஜாதக விவரங்கள்';
+
+  @override
+  String get personDetailsSubtitle =>
+      'பெயர், பிறந்த தேதி, நேரம் மற்றும் இடம் அவசியம். நட்சத்திரம், ராசி மற்றும் ஜாதகப் படம் விருப்பமானவை.';
+
+  @override
+  String get contactStep => 'தொடர்பு';
+
+  @override
+  String get contactDetailsSubtitle =>
+      'ஜாதகப் பொருத்த அறிக்கையையும் கேள்விகளையும் இந்த வாட்ஸ்அப் எண்ணுக்கு அனுப்புவோம்.';
+
+  @override
+  String get whatsapp10DigitHelper =>
+      'நாட்டுக் குறியீடு இல்லாமல் சரியாக 10 இலக்கங்கள்';
+
+  @override
+  String get whatsappRequired => 'வாட்ஸ்அப் எண்ணை உள்ளிடவும்';
+
+  @override
+  String get whatsappMustBe10Digits =>
+      'வாட்ஸ்அப் எண் சரியாக 10 இலக்கங்கள் இருக்க வேண்டும்';
+
+  @override
+  String get reviewYourRequest => 'உங்கள் கோரிக்கையைச் சரிபார்க்கவும்';
+
+  @override
+  String get requestSubmittedTitle => 'கோரிக்கை சமர்ப்பிக்கப்பட்டது';
+
+  @override
+  String get requestIdLabel => 'கோரிக்கை எண்';
+
+  @override
+  String get requestSubmittedWhatsappBody =>
+      'இந்த கோரிக்கை எண்ணை வைத்திருங்கள். நீங்கள் கொடுத்த வாட்ஸ்அப் எண்ணில் எங்கள் ஜோதிடர் தொடர்பு கொள்வார். விவரங்களை உடனே வாட்ஸ்அப்பில் அனுப்பவும் முடியும்.';
+
+  @override
+  String get sendOnWhatsapp => 'வாட்ஸ்அப்பில் அனுப்பு';
+
+  @override
+  String get couldNotOpenWhatsapp =>
+      'வாட்ஸ்அப்பைத் திறக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get whatsappRequestIntro =>
+      'வணக்கம், நான் ஒரு ஜாதகப் பொருத்தக் கோரிக்கையைச் சமர்ப்பித்துள்ளேன்.';
+
+  @override
+  String get guestRequestTrackHint =>
+      'இந்தக் கோரிக்கையைக் கண்காணிக்கவும் அறிக்கையைப் பார்க்கவும் உள்நுழையவும்.';
+
+  @override
+  String get guestCanSubmitHoroscopeRequest =>
+      'கணக்கு இல்லாமலேயே ஜாதகப் பொருத்தக் கோரிக்கையைச் சமர்ப்பிக்கலாம். கோரிக்கையைக் கண்காணிக்கவும் அறிக்கையைப் படிக்கவும் விரும்பினால் உள்நுழையவும்.';
+
+  @override
+  String get memberHoroscopeRequestTracked =>
+      'இரு ஜாதகங்களையும் தொடர்பு எண்ணையும் உள்ளிடவும். கோரிக்கை உங்கள் கணக்குடன் இணைக்கப்படும், அறிக்கைகள் பகுதியில் கண்காணிக்கலாம்.';
+
+  @override
+  String get loginToTrackRequest => 'கோரிக்கையைக் கண்காணிக்க உள்நுழையவும்';
+
+  @override
+  String pleaseSelectDobFor(String who) {
+    return '$who க்கான பிறந்த தேதியைத் தேர்ந்தெடுக்கவும்';
+  }
+
+  @override
+  String pleaseSelectTobFor(String who) {
+    return '$who க்கான பிறந்த நேரத்தைத் தேர்ந்தெடுக்கவும்';
+  }
+
+  @override
+  String pleaseSelectPlaceFor(String who) {
+    return '$who க்கான பிறந்த இடத்தைத் தேர்ந்தெடுக்கவும்';
+  }
+
+  @override
+  String get exitApp => 'வெளியேறு';
 }

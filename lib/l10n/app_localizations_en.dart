@@ -3689,4 +3689,136 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get regenerateHoroscope => 'Regenerate Horoscope';
+
+  @override
+  String get pleaseEnterFullName => 'Please enter the full name';
+
+  @override
+  String get horoscopeImage => 'Horoscope Image';
+
+  @override
+  String get horoscopeUploadHint =>
+      'Attach a photo or PDF of the horoscope if you have one. You can still submit without it.';
+
+  @override
+  String get uploadImage => 'Upload Image';
+
+  @override
+  String get uploadPdf => 'Upload PDF';
+
+  @override
+  String get replace => 'Replace';
+
+  @override
+  String get attached => 'Attached';
+
+  @override
+  String get clearAll => 'Clear All';
+
+  @override
+  String get removeAttachment => 'Remove attachment';
+
+  @override
+  String get clearDetailsTitle => 'Clear these details?';
+
+  @override
+  String get clearDetailsBody =>
+      'Every field for this person will be emptied so you can enter someone else. Your own profile is not changed.';
+
+  @override
+  String get useMyProfileDetails => 'Use my profile details';
+
+  @override
+  String get clearAndEnterNew => 'Clear & enter new';
+
+  @override
+  String get personOne => 'Person 1';
+
+  @override
+  String get personTwo => 'Person 2';
+
+  @override
+  String get personOneDetails => 'Person 1 — Horoscope Details';
+
+  @override
+  String get personTwoDetails => 'Person 2 — Horoscope Details';
+
+  @override
+  String get personDetailsSubtitle =>
+      'Name, date, time and place of birth are required. Nakshatra, Rasi and the horoscope image are optional.';
+
+  @override
+  String get contactStep => 'Contact';
+
+  @override
+  String get contactDetailsSubtitle =>
+      'We will send the horoscope report and any questions to this WhatsApp number.';
+
+  @override
+  String get whatsapp10DigitHelper =>
+      'Exactly 10 digits, without the country code';
+
+  @override
+  String get whatsappRequired => 'Please enter the WhatsApp number';
+
+  @override
+  String get whatsappMustBe10Digits =>
+      'The WhatsApp number must be exactly 10 digits';
+
+  @override
+  String get reviewYourRequest => 'Review your request';
+
+  @override
+  String get requestSubmittedTitle => 'Request submitted';
+
+  @override
+  String get requestIdLabel => 'Request ID';
+
+  @override
+  String get requestSubmittedWhatsappBody =>
+      'Keep this Request ID. Our astrologer will contact you on the WhatsApp number you gave. You can also send the details on WhatsApp right away.';
+
+  @override
+  String get sendOnWhatsapp => 'Send on WhatsApp';
+
+  @override
+  String get couldNotOpenWhatsapp =>
+      'Could not open WhatsApp. Please try again.';
+
+  @override
+  String get whatsappRequestIntro =>
+      'Hello, I have submitted a horoscope matching request.';
+
+  @override
+  String get guestRequestTrackHint =>
+      'Login to track this request and see the report inside the app.';
+
+  @override
+  String get guestCanSubmitHoroscopeRequest =>
+      'You can submit a horoscope matching request without an account. Login if you want to track the request and read the report inside the app.';
+
+  @override
+  String get memberHoroscopeRequestTracked =>
+      'Enter both horoscopes and a contact number. The request is linked to your account, so you can track it under Reports.';
+
+  @override
+  String get loginToTrackRequest => 'Login to track your request';
+
+  @override
+  String pleaseSelectDobFor(String who) {
+    return 'Please select the date of birth for $who';
+  }
+
+  @override
+  String pleaseSelectTobFor(String who) {
+    return 'Please select the birth time for $who';
+  }
+
+  @override
+  String pleaseSelectPlaceFor(String who) {
+    return 'Please select the birth place for $who';
+  }
+
+  @override
+  String get exitApp => 'Exit';
 }

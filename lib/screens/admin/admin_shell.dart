@@ -75,7 +75,7 @@ class AdminShell extends ConsumerWidget {
       _NavItem('Banners', Icons.image_outlined, '/admin/banners'),
       _NavItem('Announcements', Icons.campaign_outlined, '/admin/notifications'),
       _NavItem('App Popups', Icons.chat_bubble_outline, '/admin/popups'),
-      _NavItem('App Update', Icons.system_update_alt, '/admin/app-update'),
+      _NavItem('App Version', Icons.system_update_alt, '/admin/app-update'),
     ]),
     // There is deliberately no "General" hub and no "Pricing" page: General
     // only duplicated entries that already exist in this drawer, and the app

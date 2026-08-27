@@ -6,16 +6,22 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/app_dialogs.dart';
 import '../../models/app_update_config.dart';
 import '../../providers/app_update_provider.dart';
-import '../../providers/notification_provider.dart';
 
-/// **App Update** management (spec §6).
+/// **App Version** — the release gate the app reads (spec §23–§28).
 ///
-/// One admin page for the whole release gate: which version is current, which
-/// version is the floor, whether the update is mandatory, the wording members
-/// see, the Play link, and the optional update push.
+/// The admin does NOT push updates from here, and there is deliberately no
+/// "send update notification" action anywhere on this page: updates are
+/// delivered by Google Play like any other app update (spec §23/§24). What
+/// this page configures is only WHEN the app should insist:
 ///
-/// It writes the single `app_config/update` document that every app reads, so
-/// announcing a release never needs a code change or a rebuild.
+///   * **Latest Version Code** — builds below it are offered the update.
+///   * **Minimum Supported Version Code** — builds below it cannot continue.
+///     This is the mandatory-update floor from spec §25/§28: everything at or
+///     above it keeps working, so an ordinary Play release stays optional and
+///     only a genuinely broken build gets enforced.
+///
+/// It also SHOWS the current app version, read-only, which is all the admin
+/// needs to see about the running build.
 class AppUpdateManagementScreen extends ConsumerStatefulWidget {
   const AppUpdateManagementScreen({super.key});
 
@@ -33,14 +39,10 @@ class _AppUpdateManagementScreenState
   final _minVersionCode = TextEditingController();
   final _message = TextEditingController();
   final _storeUrl = TextEditingController();
-  final _notifTitle = TextEditingController();
-  final _notifBody = TextEditingController();
 
   bool _forceUpdate = false;
-  bool _sendNotification = false;
   bool _loaded = false;
   bool _saving = false;
-  bool _sending = false;
 
   @override
   void dispose() {
@@ -49,8 +51,6 @@ class _AppUpdateManagementScreenState
     _minVersionCode.dispose();
     _message.dispose();
     _storeUrl.dispose();
-    _notifTitle.dispose();
-    _notifBody.dispose();
     super.dispose();
   }
 
@@ -65,10 +65,7 @@ class _AppUpdateManagementScreenState
         c.minimumSupportedVersionCode > 0 ? '${c.minimumSupportedVersionCode}' : '';
     _message.text = c.updateMessage;
     _storeUrl.text = c.playStoreUrl;
-    _notifTitle.text = c.notificationTitle;
-    _notifBody.text = c.notificationBody;
     _forceUpdate = c.forceUpdate;
-    _sendNotification = c.sendNotification;
   }
 
   int _int(TextEditingController c) => int.tryParse(c.text.trim()) ?? 0;
@@ -83,9 +80,6 @@ class _AppUpdateManagementScreenState
       'forceUpdate': _forceUpdate,
       'updateMessage': _message.text.trim(),
       'playStoreUrl': _storeUrl.text.trim(),
-      'notificationTitle': _notifTitle.text.trim(),
-      'notificationBody': _notifBody.text.trim(),
-      'sendNotification': _sendNotification,
     });
     if (!mounted) return;
     final failed = ref.read(appUpdateConfigControllerProvider).hasError;
@@ -98,50 +92,12 @@ class _AppUpdateManagementScreenState
         error: failed);
   }
 
-  /// Sends the update push to every member on an older build.
-  ///
-  /// Deliberately a separate, explicit action rather than a side effect of
-  /// Save: an admin fixing a typo in the message must not re-notify everyone.
-  Future<void> _sendNotificationNow() async {
-    final code = _int(_versionCode);
-    if (code <= 0) {
-      showAppSnack(context, 'Set the latest version code first.', error: true);
-      return;
-    }
-    final ok = await showAppConfirmDialog(
-      context,
-      title: 'Send the update notification?',
-      message: 'Every member running a build older than $code will be '
-          'notified once. Members already on $code or newer are skipped, and '
-          'nobody is notified twice for the same version.',
-      confirmLabel: 'Send',
-      cancelLabel: 'Cancel',
-      icon: Icons.campaign_outlined,
-    );
-    if (!ok || !mounted) return;
-    setState(() => _sending = true);
-    final sent = await ref
-        .read(notificationNotifierProvider.notifier)
-        .sendUpdateAnnouncement(
-          versionCode: code,
-          versionName: _versionName.text.trim(),
-          title: _notifTitle.text.trim(),
-          body: _notifBody.text.trim(),
-        );
-    if (!mounted) return;
-    setState(() => _sending = false);
-    showAppSnack(
-        context,
-        sent < 0
-            ? 'Could not send the update notification.'
-            : 'Update notification queued for $sent member(s).',
-        error: sent < 0);
-  }
-
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(appUpdateConfigProvider);
     final installed = ref.watch(installedVersionCodeProvider).valueOrNull;
+    final installedName =
+        ref.watch(installedVersionNameProvider).valueOrNull;
     final config = async.valueOrNull;
     if (config != null) _seed(config);
 
@@ -155,7 +111,10 @@ class _AppUpdateManagementScreenState
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  _StatusCard(config: config, installedVersionCode: installed),
+                  _StatusCard(
+                      config: config,
+                      installedVersionCode: installed,
+                      installedVersionName: installedName),
                   const SizedBox(height: 16),
                   _section('Release', [
                     _text(_versionName, 'Latest Version Name',
@@ -199,47 +158,6 @@ class _AppUpdateManagementScreenState
                     _hint('Blank uses the app’s own Play listing. A value '
                         'that is not a play.google.com or market:// link is '
                         'ignored.'),
-                  ]),
-                  const SizedBox(height: 14),
-                  _section('Update notification', [
-                    _text(_notifTitle, 'Notification Title',
-                        hint: 'New Update Available 🎉'),
-                    const SizedBox(height: 12),
-                    _text(_notifBody, 'Notification Body',
-                        maxLines: 3,
-                        hint: 'Blank uses the app’s default wording'),
-                    const SizedBox(height: 4),
-                    SwitchListTile(
-                      value: _sendNotification,
-                      activeThumbColor: AppColors.success,
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Update notifications enabled'),
-                      subtitle: const Text(
-                          'Turn off to stop announcing this release.'),
-                      onChanged: (v) => setState(() => _sendNotification = v),
-                    ),
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      onPressed: (_sending || !_sendNotification)
-                          ? null
-                          : _sendNotificationNow,
-                      icon: _sending
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.send_outlined, size: 18),
-                      label: const Text('Send update notification now'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary),
-                        minimumSize: const Size.fromHeight(46),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    _hint('Only members on an older build are notified, and '
-                        'each member is notified once per version.'),
                   ]),
                   const SizedBox(height: 20),
                   SizedBox(
@@ -330,8 +248,13 @@ class _AppUpdateManagementScreenState
 class _StatusCard extends StatelessWidget {
   final AppUpdateConfig? config;
   final int? installedVersionCode;
+  final String? installedVersionName;
 
-  const _StatusCard({required this.config, required this.installedVersionCode});
+  const _StatusCard({
+    required this.config,
+    required this.installedVersionCode,
+    required this.installedVersionName,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -376,8 +299,22 @@ class _StatusCard extends StatelessWidget {
           Icon(Icons.phonelink_setup_outlined, size: 20, color: color),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(text,
-                style: const TextStyle(fontSize: 12.5, height: 1.45)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Read-only, and the only thing this page says about the
+                // running build (spec §23).
+                Text(
+                    'Current App Version: '
+                    '${installedVersionName?.isNotEmpty == true ? installedVersionName : '—'}'
+                    '${installed > 0 ? ' ($installed)' : ''}',
+                    style: const TextStyle(
+                        fontSize: 13.5, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 4),
+                Text(text,
+                    style: const TextStyle(fontSize: 12.5, height: 1.45)),
+              ],
+            ),
           ),
         ],
       ),

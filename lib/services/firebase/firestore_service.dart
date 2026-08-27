@@ -713,6 +713,27 @@ class FirestoreService {
     }
   }
 
+  /// Admin **profile verification** — the green tick beside a member's name
+  /// (spec §13/§14).
+  ///
+  /// Deliberately separate from the approval [status] and from the Aadhaar
+  /// check, because it must be REVERSIBLE: revoking writes `profileVerified:
+  /// false` rather than deleting the field or demoting the profile, so the
+  /// account, its data and its visibility are all untouched — only the badge
+  /// changes. Verify → revoke → verify again is a normal cycle, not an
+  /// exceptional one.
+  Future<void> setProfileVerified({
+    required String profileId,
+    required bool verified,
+    String adminUid = '',
+  }) =>
+      _db.collection(AppConstants.profilesCollection).doc(profileId).update({
+        'profileVerified': verified,
+        'profileVerifiedAt': FieldValue.serverTimestamp(),
+        if (adminUid.isNotEmpty) 'profileVerifiedBy': adminUid,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
   // ── Reports ───────────────────────────────────────────────────────────────
   Future<void> submitReport(ReportModel report) async {
     await _db
@@ -1161,58 +1182,52 @@ class FirestoreService {
     }
   }
 
-  /// Uids of members running a build OLDER than [versionCode].
+  // ── App rating (spec §29–§32) ─────────────────────────────────────────────
+
+  /// True once this ACCOUNT has completed the rating flow.
   ///
-  /// A member with no recorded version is included: they have not opened a
-  /// build new enough to report one, so they are by definition behind.
-  Future<List<String>> uidsBelowVersion(int versionCode) async {
-    if (versionCode <= 0) return const [];
-    final snap = await _db.collection(AppConstants.usersCollection).get();
-    final out = <String>[];
-    for (final d in snap.docs) {
-      final raw = d.data()['appVersionCode'];
-      final code = raw is int ? raw : int.tryParse('${raw ?? ''}') ?? 0;
-      if (code < versionCode) out.add(d.id);
+  /// Stored on the user document rather than only on the device so the promise
+  /// in spec §31 actually holds: a member who has rated is never asked again,
+  /// including after a reinstall or on a second phone. A read failure returns
+  /// false — the worst case is one extra ask, which the device-level cooldown
+  /// still throttles.
+  Future<bool> hasRatedApp(String uid) async {
+    if (uid.trim().isEmpty) return false;
+    try {
+      final doc =
+          await _db.collection(AppConstants.usersCollection).doc(uid).get();
+      return (doc.data() ?? const {})['appRated'] == true;
+    } catch (e) {
+      debugPrint('[Firestore] hasRatedApp skipped: $e');
+      return false;
     }
-    return out;
   }
 
-  /// Creates the update notification for [uids], ONE per member per version.
+  /// Records the account's rating state.
   ///
-  /// The document id is deterministic (`update_<uid>_<versionCode>`) and the
-  /// write is a `set`, so re-sending the same release overwrites the existing
-  /// row instead of stacking duplicates — the same dedupe idiom the interest
-  /// notifications use. A new version code produces a new id, i.e. a genuinely
-  /// new notification cycle.
-  Future<void> createUpdateNotifications({
-    required List<String> uids,
-    required int versionCode,
-    required String title,
-    required String body,
-    required Map<String, dynamic> data,
+  /// [rated] true is TERMINAL — nothing ever sets it back to false, because
+  /// "already rated" cannot become untrue. A false call only stamps WHEN the
+  /// member was last asked, which is what the cooldown reads.
+  Future<void> setRatingStatus({
+    required String uid,
+    required bool rated,
   }) async {
-    final col = _db.collection(AppConstants.notificationsCollection);
-    // Firestore batches cap at 500 writes.
-    for (var i = 0; i < uids.length; i += 400) {
-      final batch = _db.batch();
-      for (final uid in uids.skip(i).take(400)) {
-        if (uid.trim().isEmpty) continue;
-        batch.set(col.doc('update_${uid}_$versionCode'), {
-          'userId': uid,
-          'title': title,
-          'body': body,
-          'type': 'app_update',
-          'data': data,
-          'isRead': false,
-          'createdAt': FieldValue.serverTimestamp(),
-          'targetScreen': '/app-update',
-        });
-      }
-      await batch.commit();
+    if (uid.trim().isEmpty) return;
+    try {
+      await _db.collection(AppConstants.usersCollection).doc(uid).set({
+        if (rated) 'appRated': true,
+        if (rated) 'appRatedAt': FieldValue.serverTimestamp(),
+        'appRatingAskedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('[Firestore] setRatingStatus skipped: $e');
     }
   }
 
-  // ── App update / release configuration (spec §2/§6) ───────────────────────
+  // ── App version / release gate (spec §23–§28) ─────────────────────────────
+  //
+  // The app is updated through Google Play, never pushed from here — what
+  // this config carries is only WHEN the app should insist on it.
 
   DocumentReference<Map<String, dynamic>> get _updateConfigRef => _db
       .collection(AppConstants.appConfigCollection)

@@ -138,6 +138,10 @@ class UserDetailsScreen extends ConsumerWidget {
                 else ...[
                   ..._profileCards(profile, contact),
                   const SizedBox(height: 14),
+                  // The verification BADGE decision (spec 13/14) - separate
+                  // from the Aadhaar document check below it, and reversible.
+                  _ProfileVerificationCard(profile: profile),
+                  const SizedBox(height: 14),
                   _moderationActionsCard(context, ref, profile),
                   const SizedBox(height: 14),
                   _AadhaarVerificationCard(uid: uid, profileId: profile.id),
@@ -767,6 +771,201 @@ class _HeroProfileCard extends StatelessWidget {
       ),
     );
   }
+}
+
+
+/// Admin -> **Profile Verification** (spec §13/§14).
+///
+/// The single control behind the green tick members see beside a name. Two
+/// things make it deliberately different from every other admin toggle:
+///
+///  * It is REVERSIBLE. "Revoke Verification" is a first-class action, not an
+///    undo — an admin may verify and revoke as often as the facts require.
+///  * Revoking touches NOTHING else. The account is not deleted, disabled,
+///    blocked or hidden; the profile stays exactly where it was and only the
+///    badge disappears. Because that is easy to mistake for a heavier action,
+///    the revoke path asks for confirmation first.
+class _ProfileVerificationCard extends ConsumerStatefulWidget {
+  final ProfileModel profile;
+  const _ProfileVerificationCard({required this.profile});
+
+  @override
+  ConsumerState<_ProfileVerificationCard> createState() =>
+      _ProfileVerificationCardState();
+}
+
+class _ProfileVerificationCardState
+    extends ConsumerState<_ProfileVerificationCard> {
+  bool _busy = false;
+
+  /// Mirrors the write locally so the card flips immediately, before the
+  /// profile stream round-trips.
+  bool? _local;
+
+  bool get _verified => _local ?? widget.profile.isProfileVerified;
+
+  Future<void> _set(bool verified) async {
+    if (_busy) return;
+    final messenger = ScaffoldMessenger.of(context);
+
+    // Revoking is the destructive-looking direction — confirm it, and say
+    // plainly what does NOT happen, so nobody avoids the action out of fear.
+    if (!verified) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Revoke verification?'),
+          content: const Text(
+              'The green Verified badge will be removed from this profile '
+              'immediately.\n\nThe account is NOT deleted or disabled — the '
+              'member keeps their profile and can be verified again at any '
+              'time.'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Revoke'),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+
+    setState(() => _busy = true);
+    try {
+      await ref.read(firestoreServiceProvider).setProfileVerified(
+            profileId: widget.profile.id,
+            verified: verified,
+            adminUid:
+                ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ?? '',
+          );
+      if (!mounted) return;
+      setState(() => _local = verified);
+      messenger.showSnackBar(SnackBar(
+        backgroundColor: verified ? AppColors.success : null,
+        content: Text(verified
+            ? 'Profile verified — the green badge is now shown.'
+            : 'Verification revoked. The account is unchanged.'),
+      ));
+    } catch (e) {
+      debugPrint('[UserDetails] profile verification failed: $e');
+      if (!mounted) return;
+      messenger.showSnackBar(const SnackBar(
+          content: Text('Could not update the verification. Please try again.'),
+          backgroundColor: AppColors.error));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final verified = _verified;
+    final at = widget.profile.profileVerifiedAt;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Expanded(
+              child: Text('Profile Verification',
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary)),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: (verified ? AppColors.success : Colors.grey)
+                    .withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(verified ? Icons.verified : Icons.remove_circle_outline,
+                    size: 13,
+                    color: verified ? AppColors.success : Colors.grey),
+                const SizedBox(width: 4),
+                Text(verified ? 'VERIFIED' : 'NOT VERIFIED',
+                    style: TextStyle(
+                        color: verified ? AppColors.success : Colors.grey[700],
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.bold)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 6),
+          Text(
+              verified
+                  ? 'This member shows the green Verified tick beside their name.'
+                  : 'This member has no Verified badge.',
+              style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
+          if (at != null) ...[
+            const SizedBox(height: 4),
+            Text('Last changed ${_stamp(at)}',
+                style: TextStyle(fontSize: 11.5, color: Colors.grey[500])),
+          ],
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: _busy
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      child: SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2.4)),
+                    ),
+                  )
+                : verified
+                    ? OutlinedButton.icon(
+                        onPressed: () => _set(false),
+                        icon: const Icon(Icons.gpp_bad_outlined, size: 18),
+                        label: const Text('Revoke Verification'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.error,
+                          side: const BorderSide(color: AppColors.error),
+                          minimumSize: const Size.fromHeight(44),
+                        ),
+                      )
+                    : ElevatedButton.icon(
+                        onPressed: () => _set(true),
+                        icon: const Icon(Icons.verified_outlined, size: 18),
+                        label: const Text('Verify Profile'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          minimumSize: const Size.fromHeight(44),
+                        ),
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _stamp(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-${d.year}';
 }
 
 /// Admin Aadhaar review: the submitted number (masked) plus the front/back

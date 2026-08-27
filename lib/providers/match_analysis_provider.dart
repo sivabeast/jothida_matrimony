@@ -413,70 +413,106 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     }
   }
 
-  /// Spec §4 — the user requests an **External Horoscope Report**: a
-  /// compatibility report between themselves and a person who is NOT registered
-  /// in the app. [requester] holds the logged-in user's (auto-filled) details
-  /// and [other] the manually-entered second person's details; each carries the
-  /// horoscope image/PDF URLs already uploaded by the screen. Creates a PAID
-  /// `matching` request tagged with `externalRequest` (so the whole existing
-  /// assignment / payment / report pipeline is reused), then auto-assigns it to
-  /// the employee with the fewest pending reports. Returns the new request id
-  /// (the user-facing Request ID).
-  Future<String> requestExternalReport({
-    required Map<String, dynamic> requester,
-    required Map<String, dynamic> other,
-    required int amount,
+  /// **Horoscope Report Request** — the compatibility request for any two
+  /// people, submitted by a member OR by a guest (spec §1–§9).
+  ///
+  /// [personOne] / [personTwo] are the two chart SNAPSHOTS the form built. They
+  /// are stored verbatim and never re-derived from a profile afterwards, which
+  /// is the whole point of spec §7: a member who later edits their own profile
+  /// must not silently rewrite a request that has already been sent.
+  ///
+  /// [contactName] / [contactWhatsapp] are who the astrologer actually talks
+  /// to. The number is the ONLY way to reach a guest, so it is stored at the
+  /// top level of the document where the admin and the assigned employee can
+  /// always see it — never hidden behind a profile lookup (spec §9/§12).
+  ///
+  /// A GUEST request ([isGuest]) is written under the anonymous session's uid
+  /// and flagged `guestRequest: true`. Auto-assignment is skipped for it: the
+  /// assignment write is admin/employee territory, so the request simply lands
+  /// Unassigned and the admin routes it (spec §11).
+  ///
+  /// Returns the human-readable Request ID.
+  Future<String> requestHoroscopeReport({
+    required Map<String, dynamic> personOne,
+    required Map<String, dynamic> personTwo,
+    required String contactName,
+    required String contactWhatsapp,
+    required bool isGuest,
     String note = '',
-    String? paymentId,
   }) async {
     state = const AsyncLoading();
     try {
       final me = ref.read(myProfileProvider).valueOrNull;
       final user = ref.read(currentUserProvider).valueOrNull;
-      final uid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ??
+      final auth = ref.read(authRepositoryProvider);
+      var uid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ??
           user?.uid ??
+          auth.currentUserId ??
           '';
-      final location = me == null
-          ? ''
-          : [me.city, me.state].where((s) => s.trim().isNotEmpty).join(', ');
+
+      // Guest Mode normally starts an anonymous session at the splash, but a
+      // visitor can reach this form with NO Firebase session at all (the
+      // anonymous provider was unavailable, or the app was opened offline).
+      // Every write needs a uid, so one is started here rather than letting
+      // the submission fail with a rules denial.
+      if (uid.isEmpty && !kBypassAuth) {
+        await auth.signInAsGuest();
+        uid = auth.currentUserId ?? '';
+      }
+
       final lang = ref.read(localeProvider)?.languageCode ?? 'en';
       final now = DateTime.now();
-      final txnId = paymentId ??
-          (kPaymentTestMode
-              ? 'demo_${now.millisecondsSinceEpoch}'
-              : 'manual_${now.millisecondsSinceEpoch}');
 
-      final requesterName =
-          (requester['name'] ?? me?.fullName ?? user?.displayName ?? 'User')
-              .toString();
-      final otherName = (other['name'] ?? 'Second person').toString();
+      final oneName = (personOne['name'] ?? '').toString().trim();
+      final twoName = (personTwo['name'] ?? '').toString().trim();
+      final code = _newRequestCode(now);
+
+      // A guest has no profile and no account name — the contact person IS the
+      // requester as far as every list, card and notification is concerned.
+      final requesterName = isGuest
+          ? (contactName.trim().isEmpty ? 'Guest' : contactName.trim())
+          : (me?.fullName ?? user?.displayName ?? contactName.trim());
 
       final request = AstrologerRequestModel(
         id: 'new',
         astrologerId: '',
         astrologerName: '',
         userId: uid,
-        userName: me?.fullName ?? user?.displayName ?? 'User',
-        userPhotoUrl: me?.profilePhotoUrl ?? '',
-        userLocation: location,
+        userName: requesterName.isEmpty ? 'Guest' : requesterName,
+        userPhotoUrl: isGuest ? '' : (me?.profilePhotoUrl ?? ''),
+        userLocation: isGuest
+            ? (personOne['place'] ?? '').toString()
+            : (me == null
+                ? ''
+                : [me.city, me.state]
+                    .where((s) => s.trim().isNotEmpty)
+                    .join(', ')),
+        userPhone: contactWhatsapp,
         type: AstrologerRequestType.matching,
         status: AstrologerRequestStatus.pending,
         message: note.trim(),
-        amount: amount,
-        // Store the two names so the existing report cards/lists render properly
-        // even though the second person has no registered profile document.
-        profileAName: requesterName,
-        profileBName: otherName,
-        externalRequest: {'requester': requester, 'other': other},
+        amount: 0,
+        // The two names drive the existing request cards/lists, which have no
+        // profile document to fall back on for either person here.
+        profileAName: oneName.isEmpty ? 'Person 1' : oneName,
+        profileBName: twoName.isEmpty ? 'Person 2' : twoName,
+        externalRequest: {
+          'requester': personOne,
+          'other': personTwo,
+          'contact': {'name': contactName.trim(), 'whatsapp': contactWhatsapp},
+        },
+        requestCode: code,
+        contactName: contactName.trim(),
+        contactWhatsapp: contactWhatsapp,
+        guestRequest: isGuest,
         createdAt: now,
         userLanguage: lang,
-        paid: amount > 0,
-        paidAt: amount > 0 ? now : null,
-        paymentId: amount > 0 ? txnId : '',
         history: [
-          BookingHistoryEntry(at: now, label: 'External report requested'),
-          if (amount > 0)
-            BookingHistoryEntry(at: now, label: 'Payment received ($txnId)'),
+          BookingHistoryEntry(
+              at: now,
+              label: isGuest
+                  ? 'Horoscope request submitted (guest)'
+                  : 'Horoscope request submitted'),
         ],
       );
 
@@ -486,16 +522,31 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         ref.read(demoAstrologerRequestsProvider.notifier).add(request);
       } else {
         id = await ref.read(astrologerServiceProvider).createRequest(request);
-        await _tryAssign(id);
+        // Auto-assignment needs a registered session; a guest cannot write the
+        // assignment fields, so their request waits for the admin instead of
+        // failing the whole submission.
+        if (!isGuest) await _tryAssign(id);
       }
       state = const AsyncData(null);
-      return id;
+      return code;
     } catch (e, st) {
       state = AsyncError(e, st);
       rethrow;
     }
   }
 
+  /// A short, readable request number: "JH-260827-4821".
+  ///
+  /// Not a security token and never used as a Firestore key — it exists so a
+  /// member can quote their request over WhatsApp without reading out a 20
+  /// character document id. The time-of-day component keeps two requests
+  /// submitted on the same day apart.
+  static String _newRequestCode(DateTime at) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    final day = '${two(at.year % 100)}${two(at.month)}${two(at.day)}';
+    final serial = (at.millisecondsSinceEpoch % 10000).toString().padLeft(4, '0');
+    return 'JH-$day-$serial';
+  }
 
   /// Books a standalone **in-person Astrology appointment** from the Astrology
   /// page's "Book Your Appointment" flow. Writes ONE appointment request to the

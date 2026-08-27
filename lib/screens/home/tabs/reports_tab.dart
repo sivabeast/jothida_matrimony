@@ -81,28 +81,20 @@ class ReportsTab extends ConsumerWidget {
                     fontWeight: FontWeight.w700,
                     fontSize: 18)),
           ),
-          // Request a NEW compatibility report for someone who is NOT on the app
-          // (spec §4). Distinct from the internal accepted-match report flow.
+          // Request a NEW Horoscope Report for any two people (spec §1–§9).
           //
-          // Spec §15 — the "+" validates before the form opens:
-          //   Case 1: not logged in      → Login, then back here automatically.
-          //   Case 2: profile incomplete → the Tamil message + a
-          //           "Complete Profile" button; finishing pops straight back
-          //           to this page.
-          // The form itself then auto-fills the signed-in member's own details,
-          // so they only enter the other person's.
+          // NO gate of any kind: a guest opens the form, fills in both
+          // horoscopes and SUBMITS, all without an account. A signed-in member
+          // gets their own profile pre-filled into Person 1 — as editable
+          // defaults, never as locked values — and the request is linked to
+          // their account so they can track it here afterwards.
           Container(
             color: Colors.white,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () {
-                  // No gate here: a guest may open the form and fill in BOTH
-                  // horoscopes. The account is asked for at SUBMIT, in place,
-                  // so nothing they typed is lost to a detour through login.
-                  context.push('/request-external-report');
-                },
+                onPressed: () => context.push('/request-external-report'),
                 icon: const Icon(Icons.add_circle_outline, size: 18),
                 label: Text(context.l10n.requestNewHoroscopeReport,
                     maxLines: 1, overflow: TextOverflow.ellipsis),

@@ -177,9 +177,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         //   0 Home      — public, always browsable
         //   1 Matches   ┐ member-only: login + completed matrimony profile
         //   2 Interests ┘
-        //   3 Reports   — public: the page and its "+" are browsable by a
-        //                 guest, and only PRESSING "+" asks for a login, which
-        //                 then returns here to continue the request.
+        //   3 Reports   — public: a guest browses the page, opens the "+"
+        //                 horoscope request AND submits it without any
+        //                 login (spec §1). Logging in only adds tracking.
         //   4 Astrology — public services, browsable by a guest;
         //                 BOOKING inside it asks for a login only.
         onTap: (i) async {
