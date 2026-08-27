@@ -145,6 +145,55 @@ void main() {
       }
     });
 
+    test('the ONE guest write lives on astrologer_requests, and only there',
+        () {
+      // A guest may submit a horoscope report request (spec §1). That is the
+      // only anonymous write anywhere in this rule set, and it is easy to
+      // attach to the wrong collection — an identical
+      // `allow create: if isAuthenticated() && ...userId == request.auth.uid`
+      // line appears in several blocks. This pins it down.
+      final requests = _matchBlock(rules, 'astrologer_requests');
+      expect(requests, isNotNull);
+      expect(requests, contains('guestRequest == true'),
+          reason: 'the guest horoscope request rule must be here');
+
+      for (final collection in const [
+        'profiles',
+        'users',
+        'interests',
+        'notifications',
+        'chats',
+        'contacts',
+      ]) {
+        final block = _matchBlock(rules, collection);
+        if (block == null) continue;
+        expect(block.contains('guestRequest'), isFalse,
+            reason: '/$collection must not carry the guest write rule');
+      }
+    });
+
+    test('the guest write cannot smuggle in an assignment or a payment', () {
+      final block = _matchBlock(rules, 'astrologer_requests')!;
+      // Each of these is what stops a guest writing a request that looks
+      // already-paid, already-assigned or already-answered.
+      for (final guard in const [
+        "request.resource.data.status == 'pending'",
+        'request.resource.data.amount == 0',
+        'request.resource.data.paid == false',
+        "request.resource.data.astrologerId == ''",
+        "request.resource.data.astrologerEmail == ''",
+        "request.resource.data.analysisText == ''",
+        'request.resource.data.contactWhatsapp.size() == 10',
+        'request.resource.data.userId == request.auth.uid',
+      ]) {
+        expect(block, contains(guard),
+            reason: 'the guest create rule must still enforce: $guard');
+      }
+      // A guest may create and read their own — never update or delete.
+      expect(block.contains('allow update: if request.auth != null'), isFalse);
+      expect(block.contains('allow delete: if request.auth != null'), isFalse);
+    });
+
     test('personal collections are NOT readable by a guest', () {
       for (final collection in const [
         'notifications',

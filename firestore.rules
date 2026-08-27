@@ -209,34 +209,6 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow create: if isAuthenticated()
                     && request.resource.data.userId == request.auth.uid;
-      // GUEST horoscope request (spec §1): a visitor may submit a horoscope
-      // report request without registering. Deliberately narrow — this is the
-      // ONE write an anonymous session is allowed anywhere in this rule set,
-      // and it is fenced in on every side:
-      //   * it must be flagged `guestRequest: true`, so it can never be
-      //     confused with a member's request or edited into one;
-      //   * it must be owned by the anonymous caller's own uid;
-      //   * it must be an unpaid, pending `matching` request with NO astrologer
-      //     assigned and NO analysis attached, so a guest cannot inject a
-      //     completed report, an assignment or a paid flag; and
-      //   * it must carry a 10-digit contact number, which is the only way the
-      //     office can answer it.
-      // A guest may READ BACK only their own request, and may never update or
-      // delete one — assignment and the report stay admin/employee territory.
-      allow create: if request.auth != null
-                    && request.resource.data.guestRequest == true
-                    && request.resource.data.userId == request.auth.uid
-                    && request.resource.data.type == 'matching'
-                    && request.resource.data.status == 'pending'
-                    && request.resource.data.amount == 0
-                    && request.resource.data.paid == false
-                    && request.resource.data.astrologerId == ''
-                    && request.resource.data.astrologerEmail == ''
-                    && request.resource.data.analysisText == ''
-                    && request.resource.data.contactWhatsapp.size() == 10;
-      allow read: if request.auth != null
-                  && resource.data.guestRequest == true
-                  && resource.data.userId == request.auth.uid;
       // Admins may create profiles directly — used by the Test Data tool to
       // seed dummy testing profiles (isDummy == true) whose userId is a fixed
       // seed id rather than the admin's own uid.
@@ -689,6 +661,34 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow create: if isAuthenticated()
                     && request.resource.data.userId == request.auth.uid;
+      // GUEST horoscope request (spec §1): a visitor may submit a horoscope
+      // report request without registering. Deliberately narrow — this is the
+      // ONE write an anonymous session is allowed anywhere in this rule set,
+      // and it is fenced in on every side:
+      //   * it must be flagged `guestRequest: true`, so it can never be
+      //     confused with a member's request or edited into one;
+      //   * it must be owned by the anonymous caller's own uid;
+      //   * it must be an unpaid, pending `matching` request with NO astrologer
+      //     assigned and NO analysis attached, so a guest cannot inject a
+      //     completed report, an assignment or a paid flag; and
+      //   * it must carry a 10-digit contact number, which is the only way the
+      //     office can answer it.
+      // A guest may READ BACK only their own request, and may never update or
+      // delete one — assignment and the report stay admin/employee territory.
+      allow create: if request.auth != null
+                    && request.resource.data.guestRequest == true
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.type == 'matching'
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.amount == 0
+                    && request.resource.data.paid == false
+                    && request.resource.data.astrologerId == ''
+                    && request.resource.data.astrologerEmail == ''
+                    && request.resource.data.analysisText == ''
+                    && request.resource.data.contactWhatsapp.size() == 10;
+      allow read: if request.auth != null
+                  && resource.data.guestRequest == true
+                  && resource.data.userId == request.auth.uid;
       allow update: if isAuthenticated()
                     && resource.data.astrologerId == request.auth.uid;
       // The assigned astrologer (matched by Gmail) starts the analysis and
