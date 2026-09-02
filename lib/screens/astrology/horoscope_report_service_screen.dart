@@ -18,7 +18,9 @@ import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../services/billing/play_billing_service.dart';
 import '../../widgets/common/network_photo.dart';
+import '../../widgets/report/horoscope_fee_card.dart';
 import '../report/compatibility_report_screen.dart';
+import '../report/sample_compatibility_report_screen.dart';
 
 /// The **ONE** Horoscope Compatibility Report page (`/horoscope-report/:uid`).
 ///
@@ -26,7 +28,7 @@ import '../report/compatibility_report_screen.dart';
 /// profile page's CTA, the Accepted list's CTA, a member's horoscope page —
 /// and the whole flow is exactly:
 ///
-///   Profile → Horoscope Compatibility Report → ₹200 payment → Request created
+///   Profile → Horoscope Compatibility Report → ₹199 payment → Request created
 ///
 /// There is deliberately NO intermediate informational screen. The separate
 /// "Horoscope Match Result" page was merged into this one, so the free
@@ -51,11 +53,11 @@ class _HoroscopeReportServiceScreenState
     extends ConsumerState<HoroscopeReportServiceScreen> {
   /// Fallback price, shown only until Play's own price arrives (or if the store
   /// is unreachable). Play Console is the source of truth — see [_priceText].
-  static const int _fee = AppConstants.horoscopeAnalysisFee; // ₹200
+  static const int _fee = AppConstants.horoscopeAnalysisFee; // ₹199
 
   bool _busy = false;
 
-  /// Play's localized price for `horoscope_report` (e.g. "₹200.00"), loaded
+  /// Play's localized price for `horoscope_report` (e.g. "₹199.00"), loaded
   /// from the store when this screen opens. Null while the product is still
   /// resolving, on an emulator without Play, or if the product is not ACTIVE
   /// in Play Console.
@@ -63,7 +65,7 @@ class _HoroscopeReportServiceScreenState
 
   /// What the pay button and the Service Details row display. Prefers the real
   /// store price so changing the price in Play Console does NOT require an app
-  /// update — without this the button could promise ₹200 while Play charged
+  /// update — without this the button could promise ₹199 while Play charged
   /// something else.
   String get _priceText => _storePrice ?? '₹$_fee';
 
@@ -75,7 +77,7 @@ class _HoroscopeReportServiceScreenState
 
   /// Best-effort: an unreachable store (emulator without Play, no network)
   /// must never surface an error here — the button simply keeps showing the
-  /// built-in ₹200 until Play answers.
+  /// built-in ₹199 until Play answers.
   Future<void> _loadStorePrice() async {
     try {
       final billing = ref.read(playBillingServiceProvider);
@@ -93,6 +95,17 @@ class _HoroscopeReportServiceScreenState
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(m)));
+  }
+
+  /// The free sample (spec §3). Its own CTA comes straight back here and starts
+  /// the purchase, so "see it → buy it" is two taps.
+  void _openSample() {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => SampleCompatibilityReportScreen(
+        priceText: _priceText,
+        onRequestReport: _payAndRequest,
+      ),
+    ));
   }
 
   /// Resolve both profiles, launch the Google Play Billing purchase sheet for
@@ -251,6 +264,15 @@ class _HoroscopeReportServiceScreenState
         const SizedBox(height: 14),
         // ── What the report adds — shown ONCE, on this page only ──
         _includesCard(cfg),
+        // The free sample and the price, in that order and worded identically
+        // to the manual two-chart request — the fee is the same ₹199 whichever
+        // door the member came through (spec §2/§3/§13).
+        if (existing == null) ...[
+          const SizedBox(height: 14),
+          HoroscopeSamplePreviewCard(onView: _openSample),
+          const SizedBox(height: 14),
+          HoroscopeFeeCard(priceText: _priceText),
+        ],
         const SizedBox(height: 14),
         _metaCard(),
         const SizedBox(height: 18),

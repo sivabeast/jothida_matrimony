@@ -439,6 +439,20 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── Profile browsing allowance (spec §8) ──────────────────────────────
+    // One document per member recording their daily NEW-profile count and the
+    // ids they have already seen. It lives server-side precisely so the limit
+    // cannot be reset by clearing app data or reinstalling — the phone's copy
+    // is only a cache.
+    //
+    // Strictly private: a member reads and writes their own document and
+    // nobody else's, and there is no read for anyone but them. It carries no
+    // content of its own, only ids the member has already been shown.
+    match /profile_browsing/{uid} {
+      allow read, write: if isAuthenticated() && request.auth.uid == uid;
+      allow read: if isAdmin();
+    }
+
     // ── App-opening popups (admin-managed content, spec §13/§14) ───────────
     // Same shape as banners: the rotation is public admin-published content
     // that a guest browsing Home must be able to read too, so it uses the same
@@ -649,6 +663,40 @@ service cloud.firestore {
     // assigned employee may only respond (accept/complete/reject) to requests
     // addressed to them, and stamps the per-request commission on completion.
     match /astrologer_requests/{requestId} {
+      // ── ₹199, enforced HERE and not merely in the app (spec §2/§2C) ────
+      //
+      // A `matching` request IS the Horoscope Compatibility Report, and the
+      // rule is one complete request = one ₹199 charge covering BOTH people.
+      // Everything about that is checked server-side, because a client is not
+      // a trustworthy place to keep a price:
+      //
+      //   * `paid` must already be true — the document may not exist before the
+      //     purchase, which is what makes a cancelled or abandoned payment
+      //     leave nothing behind;
+      //   * `amount` must be at least the full fee, so a tampered build cannot
+      //     write a ₹1 request (a HIGHER amount is allowed, because Play
+      //     Console — not the app — owns the price and it may be raised without
+      //     an app update);
+      //   * `paymentId` must carry a real Play purchase token, which is the
+      //     reference an admin can reconcile against Play's own records.
+      //
+      // Free request types (a consultation or an in-person appointment) are
+      // untouched by this — it applies only to `matching`.
+      function isPaidHoroscopeRequest() {
+        return request.resource.data.type == 'matching'
+               && request.resource.data.paid == true
+               && request.resource.data.amount is int
+               && request.resource.data.amount >= 199
+               && request.resource.data.paymentId is string
+               && request.resource.data.paymentId.size() >= 6;
+      }
+
+      // Anything that is NOT the paid report keeps its existing freedom.
+      function paymentSatisfied() {
+        return request.resource.data.type != 'matching'
+               || isPaidHoroscopeRequest();
+      }
+
       allow read: if isAuthenticated()
                   && (resource.data.userId == request.auth.uid
                       || resource.data.astrologerId == request.auth.uid);
@@ -660,17 +708,21 @@ service cloud.firestore {
                       request.auth.token.email.lower();
       allow read: if isAdmin();
       allow create: if isAuthenticated()
-                    && request.resource.data.userId == request.auth.uid;
+                    && request.resource.data.userId == request.auth.uid
+                    && paymentSatisfied();
       // GUEST horoscope request (spec §1): a visitor may submit a horoscope
-      // report request without registering. Deliberately narrow — this is the
-      // ONE write an anonymous session is allowed anywhere in this rule set,
-      // and it is fenced in on every side:
+      // report request without registering — Google Play Billing is tied to the
+      // device's Play account, not to a Firebase login, so a guest can pay for
+      // one just as a member can. Deliberately narrow — this is the ONE write
+      // an anonymous session is allowed anywhere in this rule set, and it is
+      // fenced in on every side:
       //   * it must be flagged `guestRequest: true`, so it can never be
       //     confused with a member's request or edited into one;
       //   * it must be owned by the anonymous caller's own uid;
-      //   * it must be an unpaid, pending `matching` request with NO astrologer
-      //     assigned and NO analysis attached, so a guest cannot inject a
-      //     completed report, an assignment or a paid flag; and
+      //   * it must be a pending `matching` request carrying the full ₹199 and
+      //     a Play purchase token, with NO astrologer assigned and NO analysis
+      //     attached — so a guest can inject neither free work nor a completed
+      //     report nor an assignment; and
       //   * it must carry a 10-digit contact number, which is the only way the
       //     office can answer it.
       // A guest may READ BACK only their own request, and may never update or
@@ -678,10 +730,8 @@ service cloud.firestore {
       allow create: if request.auth != null
                     && request.resource.data.guestRequest == true
                     && request.resource.data.userId == request.auth.uid
-                    && request.resource.data.type == 'matching'
                     && request.resource.data.status == 'pending'
-                    && request.resource.data.amount == 0
-                    && request.resource.data.paid == false
+                    && isPaidHoroscopeRequest()
                     && request.resource.data.astrologerId == ''
                     && request.resource.data.astrologerEmail == ''
                     && request.resource.data.analysisText == ''

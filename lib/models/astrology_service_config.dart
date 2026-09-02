@@ -346,9 +346,12 @@ class AstrologyServiceConfig {
       'Overall compatibility verdict & recommendation',
     ],
     this.deliveryTime = 'Within 2 working days after your payment is confirmed',
-    // Horoscope Compatibility Report price — ₹200 (admin-editable; a saved
-    // astrology_service/config value overrides this default).
-    this.serviceCharge = 200,
+    // Horoscope Compatibility Report price — ₹199 for ONE complete request
+    // covering BOTH people (spec §2/§13). Kept in step with
+    // AppConstants.horoscopeAnalysisFee, which is what the pay buttons and the
+    // security rules use; this default only seeds the admin-editable
+    // astrology_service/config document.
+    this.serviceCharge = 199,
     this.analysisCommission = 150,
     this.appointmentCommission = 20,
     this.expertName = 'Our Astrology Expert',

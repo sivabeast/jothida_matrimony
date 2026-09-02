@@ -564,7 +564,11 @@ class MatchFilters {
   final String? occupation;
   final String? maritalStatus;
   final String? rasi;
-  final String? nakshatra;
+
+  // There is deliberately NO `nakshatra` filter here (spec §7). A star that
+  // does not match must never REMOVE a profile from the feed — it only affects
+  // the ⭐ badge and the sort order. Adding one back would silently hide
+  // eligible people, which is the exact behaviour this rule exists to stop.
 
   const MatchFilters({
     this.minAge,
@@ -578,7 +582,6 @@ class MatchFilters {
     this.occupation,
     this.maritalStatus,
     this.rasi,
-    this.nakshatra,
   });
 
   bool get isActive =>
@@ -592,8 +595,7 @@ class MatchFilters {
       _has(education) ||
       _has(occupation) ||
       _has(maritalStatus) ||
-      _has(rasi) ||
-      _has(nakshatra);
+      _has(rasi);
 
   static bool _has(String? s) => s != null && s.trim().isNotEmpty;
   static bool _eq(String a, String? b) =>
@@ -614,7 +616,6 @@ class MatchFilters {
     if (!_eq(p.occupation, occupation)) return false;
     if (!_eq(p.maritalStatus, maritalStatus)) return false;
     if (!_eq(p.horoscope.rasi, rasi)) return false;
-    if (!_eq(p.horoscope.nakshatra, nakshatra)) return false;
     return true;
   }
 }
@@ -738,7 +739,10 @@ PartnerPrefScore partnerPreferenceScore(
   check(_ppSet(pp.district), _ppEq(c.district, pp.district));
   check(_ppSet(pp.city), _ppEq(c.city, pp.city));
   check(_ppSet(pp.rasi), _ppEq(c.horoscope.rasi, pp.rasi));
-  check(_ppSet(pp.nakshatra), _ppEq(c.horoscope.nakshatra, pp.nakshatra));
+  // Nakshatra is intentionally absent (spec §7A): it is no longer a preference
+  // a member can set, so it cannot count for or against a candidate here.
+  // Star compatibility still surfaces — as the ⭐ badge and as the FIRST sort
+  // key in the feed — but it never decides eligibility.
 
   // Height — only an active constraint when both bounds AND the candidate's
   // height are recognised values.
@@ -771,8 +775,7 @@ bool partnerPreferencesComplete(ProfileModel? me) {
       _ppSet(pp.state) ||
       _ppSet(pp.city) ||
       _ppSet(pp.maritalStatus) ||
-      _ppSet(pp.rasi) ||
-      _ppSet(pp.nakshatra);
+      _ppSet(pp.rasi);
 }
 
 // ── MANDATORY vs OPTIONAL matching ──────────────────────────────────────────
@@ -786,9 +789,13 @@ bool partnerPreferencesComplete(ProfileModel? me) {
 //       status, Mother tongue, Physical status, Income, Country/State/District/
 //       City — filtered when set, lenient when the candidate is missing the
 //       value.
-//   RANKING ONLY (never removes a profile): height, rasi/nakshatra and the
-//   overall satisfied-ratio — see [partnerPreferenceScore]; nakshatra also
-//   drives the "Best Match"/"Nakshatra Match" badge.
+//   RANKING ONLY (never removes a profile): height, rasi and the overall
+//   satisfied-ratio — see [partnerPreferenceScore].
+//
+//   NAKSHATRA IS NEVER A FILTER (spec §7/§9). A candidate whose star is
+//   incompatible is shown exactly like one whose star matches, provided they
+//   pass the real eligibility rules. Compatibility only decides the ⭐ badge and
+//   which of the eligible profiles is shown FIRST.
 
 /// Whether [candidate] passes ALL of [me]'s set partner preferences (hard
 /// filter, lenient on missing candidate data). Returns true when [me] is null

@@ -1678,8 +1678,8 @@
   "couldNotOpenWhatsapp": "Could not open WhatsApp. Please try again.",
   "whatsappRequestIntro": "Hello, I have submitted a horoscope matching request.",
   "guestRequestTrackHint": "Login to track this request and see the report inside the app.",
-  "guestCanSubmitHoroscopeRequest": "You can submit a horoscope matching request without an account. Login if you want to track the request and read the report inside the app.",
-  "memberHoroscopeRequestTracked": "Enter both horoscopes and a contact number. The request is linked to your account, so you can track it under Reports.",
+  "guestCanSubmitHoroscopeRequest": "You can request a horoscope matching report without an account. One complete report covering both horoscopes costs ₹199, paid once at the end. Login if you also want to track the request inside the app.",
+  "memberHoroscopeRequestTracked": "Enter both horoscopes and a contact number. One complete report costs ₹199, paid once at the end, and the request is linked to your account so you can track it under Reports.",
   "loginToTrackRequest": "Login to track your request",
   "pleaseSelectDobFor": "Please select the date of birth for {who}",
   "@pleaseSelectDobFor": {
@@ -1705,5 +1705,99 @@
       }
     }
   },
-  "exitApp": "Exit"
+  "exitApp": "Exit",
+  "genderBasedOnProfile": "Taken from your profile",
+  "genderAutoFromPersonOne": "Set automatically — the opposite of Person 1",
+  "genderPickForThisPerson": "Choose the gender of the person you are entering",
+  "brideRole": "Bride",
+  "groomRole": "Groom",
+  "clearDetails": "Clear details",
+  "pleaseSelectGenderFor": "Please select the gender for {who}",
+  "@pleaseSelectGenderFor": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      }
+    }
+  },
+  "personOneFromYourProfile": "Loaded from your profile. Tap Clear to request a report for someone else.",
+  "personOneEnterManually": "Enter the first person’s birth details",
+  "personTwoPartnerSubtitle": "The partner / other person whose horoscope is being matched",
+  "paymentStep": "Payment",
+  "reviewAndPayTitle": "Review & Pay",
+  "reviewAndPaySubtitle": "Check both horoscopes, then pay once to send the request",
+  "retrySubmitRequest": "Retry · Send Request",
+  "paymentRequiredToSubmit": "Payment is required to submit this horoscope request. You have not been charged.",
+  "paidButRequestNotSavedRetry": "Your payment went through but the request could not be saved. Tap again to finish — you will not be charged twice.",
+  "amountPayable": "Amount payable",
+  "oneRequestOneFeeNote": "One complete compatibility report covering BOTH horoscopes. You are never charged per person.",
+  "notSureWhatYouGet": "See what you will receive",
+  "sampleReportTeaser": "View a full sample compatibility report — free, before you pay.",
+  "viewSampleReport": "View Sample Report",
+  "downloadSampleReport": "Download Sample Report",
+  "sampleReportTitle": "Sample Compatibility Report",
+  "couldNotPrepareSampleReport": "Could not prepare the sample report. Please try again.",
+  "getYourCompatibilityReport": "Get your own compatibility report",
+  "sampleReportBadge": "SAMPLE",
+  "sampleReportNotice": "This is a demo report with made-up names and chart values, shown only so you can see the format. It is not your report.",
+  "sampleReportFooterNotice": "End of sample. Your own report is prepared by our astrologer from the birth details you submit.",
+  "compatibilityReportCertificateTitle": "Marriage Compatibility Report",
+  "reportNumberLabel": "Report No.",
+  "compatibilityScoreLabel": "Compatibility score",
+  "sampleScoreCaption": "Eight of the eleven poruthams agree — a strong match overall.",
+  "sampleSectionPorutham": "Star & Rasi Porutham Analysis",
+  "sampleSectionSevvai": "Sevvai (Mars) Dosha Check",
+  "sampleSectionOtherDosham": "Other Dosha Check",
+  "sampleSectionDasa": "Dasa & Bhukti Position",
+  "sampleSectionObservations": "Important Observations",
+  "sampleSectionRemedies": "Dosha Remedies",
+  "sampleSectionMuhurtham": "Marriage Muhurtham Guidance",
+  "sampleSectionConclusion": "Overall Summary & Astrologer’s Conclusion",
+  "poruthamLabel": "Porutham",
+  "resultLabel": "Result",
+  "astrologerRemarksBy": "Prepared by",
+  "sampleObservation1": "Rajju porutham is absent, but Mars sits identically for both charts, so the affliction cancels itself out.",
+  "sampleObservation2": "Nadi porutham is present, which is regarded as favourable for children and long-term family health.",
+  "sampleObservation3": "Rasi and Rasi-adhipathi both agree, supporting harmony between the two families.",
+  "sampleRemedy1": "Offer prayers at a Murugan temple on Tuesdays for six weeks before the wedding.",
+  "sampleRemedy2": "A simple Navagraha archanai in both names on the day of the engagement.",
+  "sampleMuhurtham1": "Favourable months: February, May and September of the coming year.",
+  "sampleMuhurtham2": "Avoid the Aadi and Maargazhi months; exact muhurtham timings are given on request.",
+  "nakshatraNotAFilterNote": "Nakshatra is never used to hide profiles. Star-compatible matches are marked with a ⭐ and shown first, but every eligible profile still appears.",
+  "dailyNewProfileLimitTitle": "That’s today’s new profiles",
+  "dailyNewProfileLimitBody": "You have seen all {count} new profiles for today. The next one unlocks automatically — nothing is lost, and tomorrow continues from here.",
+  "@dailyNewProfileLimitBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nextNewProfileIn": "Next new profile in",
+  "previouslyViewedStillFree": "Profiles you have already seen stay open — revisit them as often as you like, they do not count against the daily limit.",
+  "browsePreviousProfiles": "Back to the profiles you have seen",
+  "newProfilesTodayCount": "{used} of {total} new profiles today",
+  "@newProfilesTodayCount": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "compatibilityReportTitle": "Compatibility Report",
+  "downloadReportPdfOrImage": "Download Report (PDF / Image)",
+  "pdfA4": "PDF (A4)",
+  "officialPrintableReport": "Official printable report",
+  "pngEveryPage": "PNG image of every page",
+  "saveDraft": "Save Draft",
+  "submitReportQuestion": "Submit report?",
+  "submitReportConfirmBody": "The member will see this report immediately and it can no longer be edited. Submit now?",
+  "draftSaved": "Draft saved. You can continue editing later.",
+  "couldNotSaveDraft": "Could not save the draft. Please try again.",
+  "reportSubmittedUserCanView": "Report submitted. The member can now view it.",
+  "couldNotPrepareReport": "Could not prepare the report. Please try again.",
+  "professionalMarriageCompatReport": "Professional Marriage Compatibility Report"
 }

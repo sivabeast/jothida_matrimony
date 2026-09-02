@@ -9,7 +9,9 @@ import 'package:intl/intl.dart';
 
 import '../../core/services/horoscope_calculation_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/horoscope_roles.dart';
 import '../../core/utils/l10n_ext.dart';
+import '../../core/utils/value_l10n.dart';
 import '../../models/location_model.dart';
 import '../../models/profile_model.dart';
 import '../../providers/service_providers.dart';
@@ -27,6 +29,15 @@ import '../../widgets/common/searchable_field.dart';
 /// rewrite a request that has already been sent (spec §7).
 class HoroscopePersonDraft {
   final TextEditingController name = TextEditingController();
+
+  /// Canonical `'Male'` / `'Female'` (never localized — Tamil is a DISPLAY
+  /// concern, handled by `context.localizeValue`). Empty means "not decided
+  /// yet", which only ever happens for a cleared Person 1 whose owner has not
+  /// picked a side.
+  ///
+  /// This is what drives the Bride / Groom mapping (spec §1E): Female → Bride,
+  /// Male → Groom, regardless of which slot the person was typed into.
+  String gender = '';
 
   DateTime? dob;
 
@@ -62,6 +73,14 @@ class HoroscopePersonDraft {
 
   /// True once the member has typed anything at all — drives whether "Clear"
   /// is worth offering.
+  /// The bride/groom role this person maps to, or `''` while the gender is
+  /// still unknown. Female → Bride, Male → Groom (spec §1E/§4C).
+  String get role => switch (gender) {
+        'Female' => kRoleBride,
+        'Male' => kRoleGroom,
+        _ => '',
+      };
+
   bool get isBlank =>
       name.text.trim().isEmpty &&
       dob == null &&
@@ -85,6 +104,7 @@ class HoroscopePersonDraft {
   /// (spec §6 — "Clear / Replace").
   void clear() {
     name.clear();
+    gender = '';
     dob = null;
     hour = null;
     minute = null;
@@ -101,6 +121,8 @@ class HoroscopePersonDraft {
   void fillFromProfile(ProfileModel p) {
     final h = p.horoscope;
     name.text = p.fullName;
+    // Gender comes from the profile and is never asked for again (spec §1B).
+    gender = normalizeHoroscopeGender(p.gender);
     dob = p.dateOfBirth;
 
     final parsed = _parseTime(
@@ -152,7 +174,8 @@ class HoroscopePersonDraft {
   /// The stored snapshot. Field names match what the admin / employee detail
   /// pages already read, with the new District / City / AM-PM parts added
   /// alongside rather than replacing anything (spec §10/§35).
-  Map<String, dynamic> toMap({String gender = ''}) {
+  Map<String, dynamic> toMap({String? gender}) {
+    final g = normalizeHoroscopeGender(gender ?? this.gender);
     final p = place;
     final city =
         p == null ? '' : (p.cityEn.isNotEmpty ? p.cityEn : p.city);
@@ -161,7 +184,10 @@ class HoroscopePersonDraft {
     return {
       'name': name.text.trim(),
       'age': age,
-      'gender': gender,
+      'gender': g,
+      // Denormalized so every reader — the employee report screen, the admin
+      // list, the PDF — gets the Bride/Groom side without re-deriving it.
+      'role': g == 'Female' ? kRoleBride : (g == 'Male' ? kRoleGroom : ''),
       'dob': dob == null ? '' : DateFormat('dd MMM yyyy').format(dob!),
       'dobIso': dob?.toIso8601String() ?? '',
       'tob': birthTimeText,
@@ -182,12 +208,34 @@ class HoroscopePersonDraft {
   void dispose() => name.dispose();
 }
 
+/// How this person's GENDER is decided — which is also how it is presented
+/// (spec §1B/§1D).
+enum HoroscopeGenderMode {
+  /// Person 1, seeded from the signed-in member's own profile. Read-only, and
+  /// captioned "Based on your profile" so it is obvious where it came from.
+  fromProfile,
+
+  /// Person 2. Always the opposite of Person 1, computed — never asked.
+  auto,
+
+  /// Person 1 after "Clear": this is now somebody else entirely, so the one
+  /// thing that cannot be inferred is asked for exactly once.
+  manual,
+}
+
 /// The editable card for ONE person in the horoscope request.
 ///
-/// Used for BOTH Person 1 and Person 2 (spec §4/§6): the same fields, the same
-/// validation and the same Auto-fill / Clear actions, so a member can request a
-/// horoscope for themselves, for their child, or for two people they have
-/// never met, without the form treating any of those as a special case.
+/// Used for BOTH Person 1 and Person 2 (spec §1A/§1C): the same fields and the
+/// same validation, so a member can request a horoscope for themselves, for
+/// their child, or for two people they have never met.
+///
+/// The two sides differ in exactly two ways, both driven by [genderMode]:
+///
+///  * Person 1 opens ALREADY FILLED from the profile and offers a single
+///    **Clear** action — there is deliberately no "Use my profile details"
+///    button, because the details are already there (spec §1A).
+///  * Person 2 never offers either action: it is a different person by
+///    definition, and its gender is derived from Person 1 (spec §1C/§1D).
 class HoroscopePersonForm extends ConsumerStatefulWidget {
   final HoroscopePersonDraft draft;
   final String title;
@@ -198,9 +246,12 @@ class HoroscopePersonForm extends ConsumerStatefulWidget {
   final List<String> nakshatraOptions;
   final List<String> rasiOptions;
 
-  /// Shown as "Use my profile details" when the member has a profile. Null
-  /// hides the action entirely (a guest, or a profile that is still loading).
-  final VoidCallback? onAutofill;
+  /// How the gender field behaves and reads.
+  final HoroscopeGenderMode genderMode;
+
+  /// Wipes the card so a completely different person can be entered. Null
+  /// hides the action — Person 2 has nothing pre-filled to clear (spec §1C).
+  final VoidCallback? onClear;
 
   /// Rebuilds the parent so its Continue button can re-evaluate validity.
   final VoidCallback onChanged;
@@ -214,7 +265,8 @@ class HoroscopePersonForm extends ConsumerStatefulWidget {
     required this.nakshatraOptions,
     required this.rasiOptions,
     required this.onChanged,
-    this.onAutofill,
+    this.genderMode = HoroscopeGenderMode.manual,
+    this.onClear,
   });
 
   @override
@@ -317,7 +369,9 @@ class _HoroscopePersonFormState extends ConsumerState<HoroscopePersonForm> {
       ),
     );
     if (ok != true) return;
-    d.clear();
+    // The PARENT owns the clear, because clearing Person 1 also re-opens the
+    // gender question and invalidates Person 2's derived gender.
+    (widget.onClear ?? d.clear).call();
     _touch();
   }
 
@@ -328,51 +382,33 @@ class _HoroscopePersonFormState extends ConsumerState<HoroscopePersonForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _header(),
-        const SizedBox(height: 12),
-        // Auto-fill / Clear — the two actions that make a pre-filled form
-        // usable for somebody OTHER than the member (spec §6).
-        Row(
-          children: [
-            if (widget.onAutofill != null)
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    widget.onAutofill!.call();
-                    _touch();
-                  },
-                  icon: const Icon(Icons.person_pin_circle_outlined, size: 17),
-                  label: Text(l10n.useMyProfileDetails,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12.5)),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
-                    padding: const EdgeInsets.symmetric(vertical: 9),
-                  ),
-                ),
+        // ONE action, and only where it means something: Person 1 opens
+        // pre-filled from the profile, so the only thing left to offer is a way
+        // to empty it and type somebody else (spec §1A). Person 2 passes no
+        // callback and therefore shows nothing here.
+        if (widget.onClear != null && !d.isBlank) ...[
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              onPressed: _confirmClear,
+              icon: const Icon(Icons.backspace_outlined, size: 16),
+              label: Text(l10n.clearDetails,
+                  style: const TextStyle(fontSize: 12.5)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.grey[700],
+                side: BorderSide(color: Colors.grey[400]!),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
               ),
-            if (widget.onAutofill != null && !d.isBlank)
-              const SizedBox(width: 10),
-            if (!d.isBlank)
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _confirmClear,
-                  icon: const Icon(Icons.backspace_outlined, size: 16),
-                  label: Text(l10n.clearAndEnterNew,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12.5)),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.grey[700],
-                    side: BorderSide(color: Colors.grey[400]!),
-                    padding: const EdgeInsets.symmetric(vertical: 9),
-                  ),
-                ),
-              ),
-          ],
-        ),
+            ),
+          ),
+        ],
         const SizedBox(height: 14),
+        _genderField(),
+        const SizedBox(height: 12),
         TextFormField(
           controller: d.name,
           textCapitalization: TextCapitalization.words,
@@ -462,6 +498,126 @@ class _HoroscopePersonFormState extends ConsumerState<HoroscopePersonForm> {
         const SizedBox(height: 16),
         _horoscopeUpload(),
       ],
+    );
+  }
+
+  // ── Gender (spec §1B / §1D) ───────────────────────────────────────────────
+
+  /// The gender control.
+  ///
+  /// For Person 1 seeded from the profile, and for Person 2 always, this is
+  /// **not an input** — it is a statement of a fact the app already knows,
+  /// captioned with where that fact came from. Only a cleared Person 1 (now
+  /// somebody else entirely) is ever asked.
+  ///
+  /// Whichever way it is decided, the Bride / Groom role is shown right next to
+  /// it, so the member can see the mapping the astrologer will work from before
+  /// they pay for anything.
+  Widget _genderField() {
+    final l10n = context.l10n;
+    final known = d.gender.isNotEmpty;
+    final caption = switch (widget.genderMode) {
+      HoroscopeGenderMode.fromProfile => l10n.genderBasedOnProfile,
+      HoroscopeGenderMode.auto => l10n.genderAutoFromPersonOne,
+      HoroscopeGenderMode.manual => l10n.genderPickForThisPerson,
+    };
+    final editable = widget.genderMode == HoroscopeGenderMode.manual;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 13),
+      decoration: BoxDecoration(
+        color: editable ? Colors.white : AppColors.primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+            color: editable
+                ? Colors.grey[400]!
+                : AppColors.primary.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.wc_outlined,
+                size: 18,
+                color: editable ? Colors.grey[600] : AppColors.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text('${l10n.gender} *',
+                  style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700])),
+            ),
+            if (known) _roleChip(),
+          ]),
+          const SizedBox(height: 9),
+          if (editable)
+            _genderChoice()
+          else
+            Text(known ? context.localizeValue(d.gender) : '—',
+                style: TextStyle(
+                    fontSize: 15.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w700,
+                    color: known ? AppColors.textPrimary : Colors.grey[500])),
+          const SizedBox(height: 5),
+          // Tamil captions run longer than English — this wraps freely inside a
+          // height-less container rather than being clipped (spec §5A).
+          Text(caption,
+              style: TextStyle(
+                  fontSize: 11.5, height: 1.45, color: Colors.grey[600])),
+        ],
+      ),
+    );
+  }
+
+  /// Male / Female, for a cleared Person 1 only. A Wrap (not a Row) so the two
+  /// options drop onto separate lines rather than overflowing when the Tamil
+  /// labels are wider than the card.
+  Widget _genderChoice() => Wrap(
+        spacing: 10,
+        runSpacing: 8,
+        children: [
+          for (final g in const ['Male', 'Female'])
+            ChoiceChip(
+              label: Text(context.localizeValue(g)),
+              selected: d.gender == g,
+              showCheckmark: false,
+              labelStyle: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: d.gender == g ? Colors.white : Colors.grey[800],
+              ),
+              selectedColor: AppColors.primary,
+              backgroundColor: Colors.white,
+              side: BorderSide(
+                  color: d.gender == g
+                      ? AppColors.primary
+                      : Colors.grey[400]!),
+              onSelected: (_) {
+                d.gender = g;
+                _touch();
+              },
+            ),
+        ],
+      );
+
+  /// "Bride" / "Groom" — the mapping this gender produces (spec §1E).
+  Widget _roleChip() {
+    final l10n = context.l10n;
+    final isBride = d.role == kRoleBride;
+    final color = isBride ? const Color(0xFFC2185B) : AppColors.info;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Text(isBride ? l10n.brideRole : l10n.groomRole,
+          style: TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w700, color: color)),
     );
   }
 

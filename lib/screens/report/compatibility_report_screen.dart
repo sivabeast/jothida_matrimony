@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../widgets/common/app_logo.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/l10n_ext.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../models/compatibility_report_model.dart';
 import '../../models/profile_model.dart';
@@ -151,16 +152,48 @@ class _CompatibilityReportScreenState
     );
   }
 
-  /// The person details shown/snapshotted for one side. While editing (or when
-  /// no snapshot exists yet) they come LIVE from the profile; a submitted
-  /// report always shows its stored snapshot so it never changes afterwards.
+  /// One side of a MANUALLY-ENTERED request, built straight from the chart the
+  /// member typed and paid for (spec §4A/§4B/§4D).
+  ///
+  /// This is what removes the duplicate data entry the old "Other Party"
+  /// section forced on the employee: every field the report needs — name, DOB,
+  /// birth time, birth place, star, rasi — is already on the request, so none
+  /// of it is ever asked for a second time.
+  CompatPerson _fromRequestDetails(
+      Map<String, dynamic> details, String fallbackName) {
+    String v(String k) => (details[k] ?? '').toString().trim();
+    final name = v('name');
+    return CompatPerson(
+      name: name.isNotEmpty ? name : fallbackName,
+      dob: v('dob'),
+      birthTime: v('tob'),
+      birthPlace: v('place'),
+      star: v('nakshatra'),
+      rasi: v('rasi'),
+    );
+  }
+
+  /// The person details shown/snapshotted for one side.
+  ///
+  /// Three sources, in priority order:
+  ///
+  ///  1. a SUBMITTED report's own snapshot — frozen, so a finished certificate
+  ///     never changes under the member's feet;
+  ///  2. the REQUEST's stored chart, for a manually-entered (external) request
+  ///     — the request is the source of truth and the employee re-keys nothing
+  ///     (spec §12);
+  ///  3. the live `profiles/{id}` document, for a request between two members.
   CompatPerson _person({
     required CompatPerson stored,
     required String? profileId,
     required String fallbackName,
     required bool editable,
+    Map<String, dynamic> requestDetails = const {},
   }) {
     if (!editable && stored.name.trim().isNotEmpty) return stored;
+    if (requestDetails.isNotEmpty) {
+      return _fromRequestDetails(requestDetails, fallbackName);
+    }
     final p = (profileId ?? '').isEmpty
         ? null
         : ref.watch(profileByIdProvider(profileId!)).valueOrNull;
@@ -251,9 +284,9 @@ class _CompatibilityReportScreenState
       await ref
           .read(matchAnalysisControllerProvider.notifier)
           .saveCompatReportDraft(requestId: widget.requestId, data: data);
-      if (mounted) _snack('Draft saved. You can continue editing later.');
+      if (mounted) _snack(context.l10n.draftSaved);
     } catch (_) {
-      if (mounted) _snack('Could not save the draft. Please try again.');
+      if (mounted) _snack(context.l10n.couldNotSaveDraft);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -268,19 +301,17 @@ class _CompatibilityReportScreenState
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Submit Report?'),
-        content: const Text(
-            'The user will see this report immediately and it can no longer '
-            'be edited. Submit now?'),
+        title: Text(context.l10n.submitReportQuestion),
+        content: Text(context.l10n.submitReportConfirmBody),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: Text(context.l10n.cancel)),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: _maroon, foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Submit'),
+            child: Text(context.l10n.submit),
           ),
         ],
       ),
@@ -300,12 +331,12 @@ class _CompatibilityReportScreenState
             explanation: report.explanation,
           );
       if (!mounted) return;
-      _snack('Report submitted. The user can now view it.');
+      _snack(context.l10n.reportSubmittedUserCanView);
       Navigator.of(context).pop();
     } catch (_) {
       if (!mounted) return;
       setState(() => _busy = false);
-      _snack('Could not submit the report. Please try again.');
+      _snack(context.l10n.couldNotSubmitReport);
     }
   }
 
@@ -325,17 +356,18 @@ class _CompatibilityReportScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 14, 16, 4),
-              child: Text('Download Report',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+              child: Text(context.l10n.downloadReport,
+                  style: const TextStyle(
+                      fontSize: 15, height: 1.3, fontWeight: FontWeight.w700)),
             ),
             ListTile(
               leading:
                   const Icon(Icons.picture_as_pdf_outlined, color: _maroon),
-              title: const Text('PDF (A4)'),
-              subtitle: const Text('Official printable report',
-                  style: TextStyle(fontSize: 12)),
+              title: Text(context.l10n.pdfA4),
+              subtitle: Text(context.l10n.officialPrintableReport,
+                  style: const TextStyle(fontSize: 12, height: 1.35)),
               onTap: () {
                 Navigator.pop(ctx);
                 _export(pdf: true);
@@ -343,9 +375,9 @@ class _CompatibilityReportScreenState
             ),
             ListTile(
               leading: const Icon(Icons.image_outlined, color: _maroon),
-              title: const Text('Image'),
-              subtitle: const Text('PNG image of every page',
-                  style: TextStyle(fontSize: 12)),
+              title: Text(context.l10n.imageLabel),
+              subtitle: Text(context.l10n.pngEveryPage,
+                  style: const TextStyle(fontSize: 12, height: 1.35)),
               onTap: () {
                 Navigator.pop(ctx);
                 _export(pdf: false);
@@ -380,7 +412,7 @@ class _CompatibilityReportScreenState
           baseName: 'jothida_compatibility_${widget.requestId}');
     }
     if (!ok && mounted) {
-      _snack('Could not prepare the report. Please try again.');
+      _snack(context.l10n.couldNotPrepareReport);
     }
   }
 
@@ -396,17 +428,29 @@ class _CompatibilityReportScreenState
         r.status == AstrologerRequestStatus.completed;
     final editable = widget.employee && !submitted;
 
+    // For a manually-entered request the two charts come from the request
+    // itself, already split into Bride and Groom by gender (spec §4C). For a
+    // member-to-member request these stay empty and the profiles are used.
+    final brideFromRequest = r.isExternalReport
+        ? r.brideDetails
+        : const <String, dynamic>{};
+    final groomFromRequest = r.isExternalReport
+        ? r.groomDetails
+        : const <String, dynamic>{};
+
     final bride = _person(
       stored: saved?.bride ?? const CompatPerson(),
       profileId: r.brideProfileId,
       fallbackName: r.brideName ?? '',
       editable: editable,
+      requestDetails: brideFromRequest,
     );
     final groom = _person(
       stored: saved?.groom ?? const CompatPerson(),
       profileId: r.groomProfileId,
       fallbackName: r.groomName ?? '',
       editable: editable,
+      requestDetails: groomFromRequest,
     );
 
     final number = CompatibilityReport.reportNumber(widget.requestId);
@@ -416,13 +460,15 @@ class _CompatibilityReportScreenState
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('Compatibility Report'),
+        title: Text(context.l10n.compatibilityReportTitle,
+            maxLines: 2,
+            style: const TextStyle(fontSize: 17, height: 1.2)),
         backgroundColor: _maroon,
         foregroundColor: Colors.white,
         actions: [
           if (submitted && saved != null && saved.isSubmitted)
             IconButton(
-              tooltip: 'Download',
+              tooltip: context.l10n.download,
               icon: const Icon(Icons.download_outlined),
               onPressed: _showDownloadSheet,
             ),
@@ -445,7 +491,10 @@ class _CompatibilityReportScreenState
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: const Text('Save Draft'),
+                        child: Text(context.l10n.saveDraft,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            style: const TextStyle(fontSize: 13.5, height: 1.2)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -466,9 +515,12 @@ class _CompatibilityReportScreenState
                                 height: 22,
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2, color: Colors.white))
-                            : const Text('Submit Report',
-                                style: TextStyle(
-                                    fontSize: 15.5,
+                            : Text(context.l10n.submitReport,
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                style: const TextStyle(
+                                    fontSize: 14.5,
+                                    height: 1.2,
                                     fontWeight: FontWeight.w700)),
                       ),
                     ),
@@ -553,7 +605,9 @@ class _CompatibilityReportScreenState
               ElevatedButton.icon(
                 onPressed: _showDownloadSheet,
                 icon: const Icon(Icons.download_outlined, size: 20),
-                label: const Text('Download Report (PDF / Image)',
+                label: Text(context.l10n.downloadReportPdfOrImage,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
                     style:
                         TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700)),
                 style: ElevatedButton.styleFrom(
@@ -592,7 +646,7 @@ class _CompatibilityReportScreenState
                     fontWeight: FontWeight.w800,
                     color: _maroon)),
             const SizedBox(height: 2),
-            Text('Professional Marriage Compatibility Report',
+            Text(context.l10n.professionalMarriageCompatReport,
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 10.5, color: Colors.grey[700])),
             const SizedBox(height: 10),

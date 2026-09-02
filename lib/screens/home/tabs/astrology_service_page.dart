@@ -221,22 +221,27 @@ class _Body extends StatelessWidget {
 
     if (cfg.expertIntro.trim().isNotEmpty || cfg.serviceIntro.trim().isNotEmpty) {
       final about = [
-        if (cfg.expertIntro.trim().isNotEmpty) cfg.expertIntro.trim(),
-        if (cfg.serviceIntro.trim().isNotEmpty) cfg.serviceIntro.trim(),
+        if (cfg.expertIntro.trim().isNotEmpty)
+          context.localizeValue(cfg.expertIntro.trim()),
+        if (cfg.serviceIntro.trim().isNotEmpty)
+          context.localizeValue(cfg.serviceIntro.trim()),
       ].join('\n\n');
       out.add(_section(context.l10n.about, Icons.info_outline,
           Text(about, style: const TextStyle(fontSize: 13.5, height: 1.5))));
     }
 
     if (cfg.expertExperience.trim().isNotEmpty) {
+      // Admin-managed content, rendered in the ACTIVE language: the strings we
+      // ship have Tamil translations, anything the admin rewrote is shown as
+      // typed (spec §5).
       out.add(_section(context.l10n.experience, Icons.workspace_premium_outlined,
-          Text(cfg.expertExperience,
+          Text(context.localizeValue(cfg.expertExperience),
               style: const TextStyle(fontSize: 13.5, height: 1.5))));
     }
 
     if (cfg.expertSpecialization.trim().isNotEmpty) {
       out.add(_section(context.l10n.specialization, Icons.star_outline,
-          Text(cfg.expertSpecialization,
+          Text(context.localizeValue(cfg.expertSpecialization),
               style: const TextStyle(fontSize: 13.5, height: 1.5))));
     }
 
@@ -256,10 +261,13 @@ class _Body extends StatelessWidget {
                     const Icon(Icons.check_circle,
                         size: 18, color: AppColors.success),
                     const SizedBox(width: 10),
+                    // Expanded + a line height and NO maxLines: a Tamil
+                    // service name runs to two or three lines and must grow
+                    // the row rather than be clipped (spec §5A).
                     Expanded(
-                        child: Text(s,
+                        child: Text(context.localizeValue(s),
                             style:
-                                const TextStyle(fontSize: 13.5, height: 1.4))),
+                                const TextStyle(fontSize: 13.5, height: 1.5))),
                   ],
                 ),
               ),

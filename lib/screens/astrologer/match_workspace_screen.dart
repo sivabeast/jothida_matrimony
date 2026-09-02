@@ -231,20 +231,22 @@ class _MatchWorkspaceScreenState extends ConsumerState<MatchWorkspaceScreen> {
           _requesterCard(r),
           const SizedBox(height: 16),
           if (r.isExternalReport) ...[
-            // External report: the second person is NOT a registered member, so
-            // show both parties' manually-entered details + uploaded horoscope
-            // files instead of loading profile documents.
-            const _SectionTitle('📄 External Horoscope Report'),
+            // Same Bride/Groom headings as every other request (spec §4C) —
+            // the details come from what the member entered and paid for, so
+            // nothing here is ever re-keyed by the astrologer.
+            const _SectionTitle('🤵 Groom Details'),
             const SizedBox(height: 8),
             ExternalPartyCard(
-                title: 'Requester (App User)',
-                icon: Icons.person,
-                data: r.externalRequester),
-            const SizedBox(height: 12),
+                title: 'மணமகன் (Groom)',
+                icon: Icons.male,
+                data: r.groomDetails),
+            const SizedBox(height: 16),
+            const _SectionTitle('👰 Bride Details'),
+            const SizedBox(height: 8),
             ExternalPartyCard(
-                title: 'Second Person',
-                icon: Icons.person_add_alt_1,
-                data: r.externalOther),
+                title: 'மணமகள் (Bride)',
+                icon: Icons.female,
+                data: r.brideDetails),
           ] else ...[
             const _SectionTitle('🤵 Groom Details'),
             const SizedBox(height: 8),

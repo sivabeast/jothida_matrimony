@@ -859,7 +859,7 @@ class _InterestCard extends ConsumerWidget {
   /// Before any request it opens the ONE Horoscope Compatibility Report page
   /// (`/horoscope-report/:uid`) directly — no intermediate informational
   /// screen. That page carries the free basic result, the service details and
-  /// the ₹200 pay CTA together (spec §5/§6).
+  /// the ₹199 pay CTA together (spec §5/§6).
   Widget _compatReportAction(BuildContext context, WidgetRef ref,
       String otherUserId, dynamic l10n) {
     // Partner PROFILE id: prefer the live profile doc; fall back to the id
@@ -1013,7 +1013,7 @@ class _InterestCard extends ConsumerWidget {
             const SizedBox(height: 10),
             // Horoscope Compatibility Report — the maroon primary CTA that
             // opens the ONE report page (free result + service details + the
-            // ₹200 payment). ONE request per partner profile (spec §12):
+            // ₹199 payment). ONE request per partner profile (spec §12):
             // before any request → the CTA; pending → a status chip;
             // completed → View Report.
             _compatReportAction(context, ref, otherUserId, l10n),

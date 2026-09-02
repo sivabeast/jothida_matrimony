@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -7,21 +6,29 @@ import '../../core/utils/app_dialogs.dart';
 import '../../models/app_update_config.dart';
 import '../../providers/app_update_provider.dart';
 
-/// **App Version** — the release gate the app reads (spec §23–§28).
+/// **App Version** — what the release gate is doing, and the one policy switch
+/// that changes it (spec §10).
 ///
-/// The admin does NOT push updates from here, and there is deliberately no
-/// "send update notification" action anywhere on this page: updates are
-/// delivered by Google Play like any other app update (spec §23/§24). What
-/// this page configures is only WHEN the app should insist:
+/// The admin does not, and cannot, type a version number here. Every number on
+/// this page is read from somewhere that actually knows it:
 ///
-///   * **Latest Version Code** — builds below it are offered the update.
-///   * **Minimum Supported Version Code** — builds below it cannot continue.
-///     This is the mandatory-update floor from spec §25/§28: everything at or
-///     above it keeps working, so an ordinary Play release stays optional and
-///     only a genuinely broken build gets enforced.
+///   * **Current App Version** — this build's own `PackageInfo`.
+///   * **Latest Published Version** — Google Play's live track, plus the
+///     `app_config/update` document that the newest build publishes on an
+///     admin's device. Both are automatic.
+///   * **Minimum Supported Version** — `kMinimumSupportedVersionCode`, compiled
+///     into the release and published with it.
 ///
-/// It also SHOWS the current app version, read-only, which is all the admin
-/// needs to see about the running build.
+/// The only control is **Force Update**: whether members on an out-of-date
+/// build are blocked until they update, or merely offered the update and
+/// allowed to continue (spec §10A/§10B/§10C). That is a policy decision, which
+/// is why it belongs to the admin — the version numbers are facts, which is why
+/// they do not.
+///
+/// Publishing happens quietly on open: if this build is newer than what the
+/// document records, it writes its own metadata across. So the way to publish a
+/// new version is simply to release it and open the app — there is no form and
+/// no "increase version" button, both of which were removed here.
 class AppUpdateManagementScreen extends ConsumerStatefulWidget {
   const AppUpdateManagementScreen({super.key});
 
@@ -32,153 +39,169 @@ class AppUpdateManagementScreen extends ConsumerStatefulWidget {
 
 class _AppUpdateManagementScreenState
     extends ConsumerState<AppUpdateManagementScreen> {
-  final _formKey = GlobalKey<FormState>();
-
-  final _versionName = TextEditingController();
-  final _versionCode = TextEditingController();
-  final _minVersionCode = TextEditingController();
-  final _message = TextEditingController();
-  final _storeUrl = TextEditingController();
-
-  bool _forceUpdate = false;
-  bool _loaded = false;
   bool _saving = false;
 
+  /// Guards against re-publishing on every rebuild — the config is a live
+  /// stream, so this widget rebuilds each time the document changes.
+  bool _publishAttempted = false;
+
   @override
-  void dispose() {
-    _versionName.dispose();
-    _versionCode.dispose();
-    _minVersionCode.dispose();
-    _message.dispose();
-    _storeUrl.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _publish());
   }
 
-  /// Seeds the form ONCE from the live config, so an admin's half-typed edit is
-  /// never overwritten by a snapshot arriving mid-typing.
-  void _seed(AppUpdateConfig c) {
-    if (_loaded) return;
-    _loaded = true;
-    _versionName.text = c.latestVersionName;
-    _versionCode.text = c.latestVersionCode > 0 ? '${c.latestVersionCode}' : '';
-    _minVersionCode.text =
-        c.minimumSupportedVersionCode > 0 ? '${c.minimumSupportedVersionCode}' : '';
-    _message.text = c.updateMessage;
-    _storeUrl.text = c.playStoreUrl;
-    _forceUpdate = c.forceUpdate;
+  /// Pushes this build's own version metadata to `app_config/update`, once per
+  /// visit. Silent and best-effort: it is housekeeping, not a user action, and
+  /// a failure changes nothing the admin can act on.
+  Future<void> _publish() async {
+    if (_publishAttempted) return;
+    _publishAttempted = true;
+    // Let the live config arrive first, so we compare against real values
+    // rather than publishing on top of a null.
+    await ref.read(appUpdateConfigProvider.future).catchError(
+        (_) => const AppUpdateConfig());
+    if (!mounted) return;
+    await ref.read(appUpdateConfigControllerProvider.notifier)
+        .publishRunningRelease();
   }
 
-  int _int(TextEditingController c) => int.tryParse(c.text.trim()) ?? 0;
-
-  Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+  Future<void> _setForceUpdate(bool enabled) async {
     setState(() => _saving = true);
-    await ref.read(appUpdateConfigControllerProvider.notifier).save({
-      'latestVersionName': _versionName.text.trim(),
-      'latestVersionCode': _int(_versionCode),
-      'minimumSupportedVersionCode': _int(_minVersionCode),
-      'forceUpdate': _forceUpdate,
-      'updateMessage': _message.text.trim(),
-      'playStoreUrl': _storeUrl.text.trim(),
-    });
+    await ref
+        .read(appUpdateConfigControllerProvider.notifier)
+        .setForceUpdate(enabled);
     if (!mounted) return;
     final failed = ref.read(appUpdateConfigControllerProvider).hasError;
     setState(() => _saving = false);
     showAppSnack(
-        context,
-        failed
-            ? 'Could not save the update settings.'
-            : 'Update settings saved.',
-        error: failed);
+      context,
+      failed
+          ? 'Could not change the Force Update policy.'
+          : (enabled
+              ? 'Force Update is ON — members below the minimum supported '
+                  'version must update to continue.'
+              : 'Force Update is OFF — members are offered the update and may '
+                  'continue.'),
+      error: failed,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(appUpdateConfigProvider);
-    final installed = ref.watch(installedVersionCodeProvider).valueOrNull;
-    final installedName =
-        ref.watch(installedVersionNameProvider).valueOrNull;
     final config = async.valueOrNull;
-    if (config != null) _seed(config);
+    final installed = ref.watch(installedVersionCodeProvider).valueOrNull ?? 0;
+    final installedName =
+        ref.watch(installedVersionNameProvider).valueOrNull ?? '';
+    final playLatest =
+        ref.watch(playAvailableVersionCodeProvider).valueOrNull ?? 0;
+    final compiledFloor = ref.watch(compiledMinimumVersionCodeProvider);
+
+    if (async.isLoading && config == null) {
+      return const Scaffold(
+        backgroundColor: AppColors.scaffoldBg,
+        body:
+            Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      );
+    }
+
+    // The published latest is whichever source knows about the newer build.
+    final publishedLatest = [
+      config?.latestVersionCode ?? 0,
+      playLatest,
+      installed,
+    ].reduce((a, b) => a > b ? a : b);
+    final minimum = config?.minimumSupportedVersionCode ?? compiledFloor;
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
-      body: async.isLoading && config == null
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
-          : Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _StatusCard(
-                      config: config,
-                      installedVersionCode: installed,
-                      installedVersionName: installedName),
-                  const SizedBox(height: 16),
-                  _section('Release', [
-                    _text(_versionName, 'Latest Version Name',
-                        hint: 'e.g. 1.12.0'),
-                    const SizedBox(height: 12),
-                    _number(_versionCode, 'Latest Version Code',
-                        hint: 'the +N from pubspec, e.g. 17',
-                        required: true),
-                    const SizedBox(height: 6),
-                    _hint('Members whose installed version code is BELOW this '
-                        'are offered the update.'),
-                    const SizedBox(height: 12),
-                    _number(_minVersionCode, 'Minimum Supported Version Code',
-                        hint: 'leave blank or 0 for no floor'),
-                    const SizedBox(height: 6),
-                    _hint('Members below this cannot continue without '
-                        'updating. Leave blank unless an old build is truly '
-                        'broken — this locks people out.'),
-                    const SizedBox(height: 4),
-                    SwitchListTile(
-                      value: _forceUpdate,
-                      activeThumbColor: AppColors.error,
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Force this release'),
-                      subtitle: const Text(
-                          'Makes the latest release mandatory for everyone '
-                          'below it, without raising the permanent floor.'),
-                      onChanged: (v) => setState(() => _forceUpdate = v),
-                    ),
-                  ]),
-                  const SizedBox(height: 14),
-                  _section('Wording', [
-                    _text(_message, 'Update Message',
-                        hint: 'Leave blank to use the app’s own '
-                            'Tamil/English wording',
-                        maxLines: 4),
-                    const SizedBox(height: 12),
-                    _text(_storeUrl, 'Play Store URL',
-                        hint: AppUpdateConfig.defaultPlayStoreUrl),
-                    const SizedBox(height: 6),
-                    _hint('Blank uses the app’s own Play listing. A value '
-                        'that is not a play.google.com or market:// link is '
-                        'ignored.'),
-                  ]),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _saving ? null : _save,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size.fromHeight(50),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                      ),
-                      child: Text(_saving ? 'Saving…' : 'Save Settings'),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _StatusCard(
+              config: config,
+              installedVersionCode: installed,
+              installedVersionName: installedName),
+          const SizedBox(height: 16),
+          _section('Version information', [
+            _readOnlyRow(
+              label: 'Current App Version',
+              value: _versionText(installedName, installed),
+              hint: 'The build this device is running.',
             ),
+            _readOnlyRow(
+              label: 'Latest Published Version',
+              value: _versionText(config?.latestVersionName ?? '', publishedLatest),
+              hint: playLatest > 0
+                  ? 'Reported by Google Play.'
+                  : 'Published automatically by the newest build. Google Play '
+                      'has not reported a newer release to this device.',
+            ),
+            _readOnlyRow(
+              label: 'Minimum Supported Version',
+              value: minimum > 0 ? '$minimum' : 'No floor set',
+              hint: minimum > 0
+                  ? 'Builds below this cannot continue while Force Update is '
+                      'ON.'
+                  : 'Every build is currently supported. The floor is compiled '
+                      'into the release, not set here.',
+            ),
+            _readOnlyRow(
+              label: 'Update Available',
+              value: publishedLatest > installed ? 'Yes' : 'No',
+              hint: publishedLatest > installed
+                  ? 'A newer build than this one exists.'
+                  : 'This device is on the newest known build.',
+              last: true,
+            ),
+          ]),
+          const SizedBox(height: 14),
+          _section('Update policy', [
+            // The ONE thing an admin decides here (spec §10A).
+            SwitchListTile(
+              value: config?.forceUpdate ?? false,
+              activeThumbColor: AppColors.error,
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Force Update',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
+              subtitle: const Text(
+                  'ON — members on an out-of-date build are blocked until they '
+                  'update, with no Later or Skip.\n'
+                  'OFF — members see an optional prompt and may tap Later and '
+                  'carry on.',
+                  style: TextStyle(fontSize: 12, height: 1.5)),
+              isThreeLine: true,
+              onChanged: _saving ? null : _setForceUpdate,
+            ),
+            if (_saving) ...[
+              const SizedBox(height: 8),
+              const LinearProgressIndicator(minHeight: 2),
+            ],
+          ]),
+          const SizedBox(height: 14),
+          _section('How versions are set', [
+            _note(
+                'Version numbers are read from the app itself and from Google '
+                'Play — they cannot be typed or increased by hand. Release a '
+                'new build to Play as usual; the number here updates on its '
+                'own the next time an admin opens this page on that build.'),
+            const SizedBox(height: 10),
+            _note(
+                'To stop an old build from being used at all, raise '
+                '`kMinimumSupportedVersionCode` in '
+                'lib/core/config/release_config.dart before cutting the '
+                'release, and turn Force Update ON.'),
+          ]),
+          const SizedBox(height: 24),
+        ],
+      ),
     );
+  }
+
+  static String _versionText(String name, int code) {
+    if (code <= 0) return name.isNotEmpty ? name : '—';
+    return name.isNotEmpty ? '$name ($code)' : '$code';
   }
 
   Widget _section(String title, List<Widget> children) => Container(
@@ -207,48 +230,67 @@ class _AppUpdateManagementScreenState
         ),
       );
 
-  Widget _text(TextEditingController c, String label,
-          {String? hint, int maxLines = 1}) =>
-      TextFormField(
-        controller: c,
-        maxLines: maxLines,
-        decoration: _dec(label, hint),
+  /// A label / value pair that is plainly NOT an input — no border, no cursor,
+  /// nothing that invites an edit.
+  Widget _readOnlyRow({
+    required String label,
+    required String value,
+    required String hint,
+    bool last = false,
+  }) =>
+      Padding(
+        padding: EdgeInsets.only(bottom: last ? 0 : 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Wrap so a long value drops below its label instead of colliding
+            // with it on a narrow screen.
+            Wrap(
+              spacing: 10,
+              runSpacing: 2,
+              crossAxisAlignment: WrapCrossAlignment.end,
+              children: [
+                Text(label,
+                    style: TextStyle(
+                        fontSize: 12.5,
+                        height: 1.4,
+                        color: Colors.grey[600])),
+                Text(value,
+                    style: const TextStyle(
+                        fontSize: 15,
+                        height: 1.3,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary)),
+              ],
+            ),
+            const SizedBox(height: 3),
+            Text(hint,
+                style: TextStyle(
+                    fontSize: 11.5, height: 1.45, color: Colors.grey[600])),
+          ],
+        ),
       );
 
-  Widget _number(TextEditingController c, String label,
-          {String? hint, bool required = false}) =>
-      TextFormField(
-        controller: c,
-        keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        decoration: _dec(label, hint),
-        validator: required
-            ? (v) => (int.tryParse((v ?? '').trim()) ?? 0) > 0
-                ? null
-                : 'Enter the version code'
-            : null,
-      );
-
-  Widget _hint(String text) => Text(text,
-      style: TextStyle(fontSize: 11.5, height: 1.4, color: Colors.grey[600]));
-
-  InputDecoration _dec(String label, String? hint) => InputDecoration(
-        labelText: label,
-        hintText: hint,
-        hintMaxLines: 2,
-        isDense: true,
-        filled: true,
-        fillColor: AppColors.scaffoldBg,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+  Widget _note(String text) => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, size: 15, color: Colors.grey[600]),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text,
+                style: TextStyle(
+                    fontSize: 11.5, height: 1.55, color: Colors.grey[700])),
+          ),
+        ],
       );
 }
 
 /// Shows what the config currently does — including to THIS device, which is
-/// the quickest way for an admin to sanity-check a change.
+/// the quickest way for an admin to sanity-check the policy.
 class _StatusCard extends StatelessWidget {
   final AppUpdateConfig? config;
-  final int? installedVersionCode;
-  final String? installedVersionName;
+  final int installedVersionCode;
+  final String installedVersionName;
 
   const _StatusCard({
     required this.config,
@@ -259,7 +301,7 @@ class _StatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = config;
-    final installed = installedVersionCode ?? 0;
+    final installed = installedVersionCode;
     final requirement =
         c?.requirementFor(installed) ?? AppUpdateRequirement.none;
     final configured = c?.isConfigured ?? false;
@@ -267,7 +309,7 @@ class _StatusCard extends StatelessWidget {
     final (color, text) = switch (requirement) {
       AppUpdateRequirement.forced => (
           AppColors.error,
-          'This build ($installed) would be FORCED to update.'
+          'This build ($installed) would be BLOCKED until it updates.'
         ),
       AppUpdateRequirement.optional => (
           AppColors.warning,
@@ -280,8 +322,8 @@ class _StatusCard extends StatelessWidget {
             )
           : (
               Colors.grey,
-              'No release configured yet, so nobody is prompted. Set the '
-                  'latest version code below to switch the gate on.'
+              'No release has been published yet, so nobody is prompted. '
+                  'Opening this page on the newest build publishes it.'
             ),
     };
 
@@ -302,14 +344,13 @@ class _StatusCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Read-only, and the only thing this page says about the
-                // running build (spec §23).
                 Text(
                     'Current App Version: '
-                    '${installedVersionName?.isNotEmpty == true ? installedVersionName : '—'}'
+                    '${installedVersionName.isNotEmpty ? installedVersionName : '—'}'
                     '${installed > 0 ? ' ($installed)' : ''}',
                     style: const TextStyle(
-                        fontSize: 13.5, fontWeight: FontWeight.w700)),
+                        fontSize: 13.5, height: 1.35,
+                        fontWeight: FontWeight.w700)),
                 const SizedBox(height: 4),
                 Text(text,
                     style: const TextStyle(fontSize: 12.5, height: 1.45)),

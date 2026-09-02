@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/utils/horoscope_roles.dart';
 import '../core/utils/working_hours.dart';
 
 /// Kind of request a matrimony user sends to an astrologer.
@@ -938,5 +939,41 @@ class AstrologerRequestModel {
   Map<String, dynamic> get externalContact =>
       externalRequest?['contact'] is Map
           ? Map<String, dynamic>.from(externalRequest!['contact'] as Map)
+          : const {};
+
+  // ── Bride / Groom (spec §1E / §4A / §4B / §4C) ─────────────────────────────
+
+  /// The BRIDE's chart on this request, and [groomDetails] the GROOM's.
+  ///
+  /// Resolution order, and why:
+  ///
+  ///  1. the `bride` / `groom` maps written at submission time — the request is
+  ///     the source of truth and already carries the resolved mapping;
+  ///  2. otherwise re-derived from the two genders with [splitByRole], which
+  ///     also repairs LEGACY requests submitted before genders were captured,
+  ///     as soon as either gender is known.
+  ///
+  /// An empty map means the sides genuinely cannot be told apart (both genders
+  /// missing on an old request). Callers show that state rather than guessing —
+  /// labelling a woman as the groom on a printed certificate is not a mistake
+  /// worth risking to avoid an empty card.
+  Map<String, dynamic> get brideDetails => _roleDetails(kRoleBride);
+  Map<String, dynamic> get groomDetails => _roleDetails(kRoleGroom);
+
+  Map<String, dynamic> _roleDetails(String role) {
+    final stored = externalRequest?[role];
+    if (stored is Map && stored.isNotEmpty) {
+      return Map<String, dynamic>.from(stored);
+    }
+    final split = splitByRole(externalRequester, externalOther);
+    final m = role == kRoleBride ? split.bride : split.groom;
+    return m == null ? const {} : Map<String, dynamic>.from(m);
+  }
+
+  /// The payment recorded against this request (`amount`, `provider`,
+  /// `paymentId`, `paidAt`), or an empty map for a legacy free request.
+  Map<String, dynamic> get externalPayment =>
+      externalRequest?['payment'] is Map
+          ? Map<String, dynamic>.from(externalRequest!['payment'] as Map)
           : const {};
 }

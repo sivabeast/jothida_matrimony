@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/horoscope_roles.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../models/profile_model.dart';
 import '../../providers/profile_provider.dart';
@@ -19,9 +20,14 @@ import '../../core/services/horoscope_calculation_service.dart';
 ///
 /// Nothing here is editable and nothing is fetched that the report form did
 /// not already need: it reads the same `profiles/{id}` documents the request
-/// points at. For an EXTERNAL report (the second person is not a member) the
-/// manually-entered details on the request are shown instead, so the reviewer
-/// still sees both sides before deciding.
+/// points at.
+///
+/// **There is no "Other Party" section** (spec §4). A horoscope request always
+/// has a Bride and a Groom, and which is which was settled the moment the two
+/// genders were captured — Female → Bride, Male → Groom (spec §4C). So a
+/// manually-entered request renders exactly the same two headings as one
+/// between members, filled straight from the request. The employee never
+/// re-keys a name, a date, a birth time, a place, a star or a rasi (spec §4D).
 class AnalysisProfileCards extends ConsumerWidget {
   final AstrologerRequestModel request;
 
@@ -30,21 +36,28 @@ class AnalysisProfileCards extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (request.isExternalReport) {
+      final bride = request.brideDetails;
+      final groom = request.groomDetails;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _sectionHeading(context),
           const SizedBox(height: 10),
+          // Groom first, then Bride — the same order as the member-to-member
+          // case below, so an employee working through a queue of requests
+          // always finds the two sides in the same place.
           _ExternalPartyCard(
-            title: 'Requester',
-            icon: Icons.person_outline,
-            details: request.externalRequester,
+            title: 'மணமகன் (Groom)',
+            icon: Icons.male,
+            accent: AppColors.info,
+            details: groom,
           ),
           const SizedBox(height: 12),
           _ExternalPartyCard(
-            title: 'Other Party',
-            icon: Icons.person_outline,
-            details: request.externalOther,
+            title: 'மணமகள் (Bride)',
+            icon: Icons.female,
+            accent: const Color(0xFFC2185B),
+            details: bride,
           ),
         ],
       );
@@ -436,11 +449,13 @@ class _ProfileReviewCard extends ConsumerWidget {
 class _ExternalPartyCard extends StatelessWidget {
   final String title;
   final IconData icon;
+  final Color accent;
   final Map<String, dynamic> details;
 
   const _ExternalPartyCard({
     required this.title,
     required this.icon,
+    required this.accent,
     required this.details,
   });
 
@@ -467,15 +482,16 @@ class _ExternalPartyCard extends StatelessWidget {
         .toList();
 
     return _card(
-      accent: AppColors.primary,
+      accent: accent,
       header: Row(
         children: [
           Icon(icon, size: 18, color: Colors.white),
           const SizedBox(width: 8),
           Expanded(
-            child: Text('$title (not a member)',
+            child: Text(title,
                 style: const TextStyle(
                     fontSize: 13,
+                    height: 1.3,
                     fontWeight: FontWeight.w700,
                     color: Colors.white)),
           ),
@@ -485,8 +501,12 @@ class _ExternalPartyCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (rows.isEmpty)
-            Text('No details were provided.',
-                style: TextStyle(fontSize: 12.5, color: Colors.grey[700]))
+            // Only reachable on a legacy request written before genders were
+            // captured, where neither side can be mapped to a role.
+            Text('Gender was not recorded on this request, so the Bride / '
+                'Groom sides could not be resolved automatically.',
+                style: TextStyle(
+                    fontSize: 12.5, height: 1.5, color: Colors.grey[700]))
           else
             Container(
               decoration: BoxDecoration(

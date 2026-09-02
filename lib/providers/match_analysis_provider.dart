@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/admin_config.dart';
 import '../core/config/dev_config.dart';
+import '../core/utils/horoscope_roles.dart';
 import '../core/utils/working_hours.dart';
 import '../core/utils/phone_utils.dart';
 import '../models/astrologer_request_model.dart';
@@ -431,6 +432,19 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
   /// assignment write is admin/employee territory, so the request simply lands
   /// Unassigned and the admin routes it (spec §11).
   ///
+  /// **Payment (spec §2/§13).** [paymentId] is the Google Play purchase token
+  /// for the ONE ₹199 charge that covers the whole request — both people, one
+  /// fee. This method is only ever reached AFTER Play has reported a verified
+  /// purchase, and the security rules refuse a `matching` request that does not
+  /// carry the full [amount] together with a token, so an unpaid request cannot
+  /// be written even by a tampered client. Calling with an empty [paymentId] is
+  /// a programming error and throws rather than quietly creating free work.
+  ///
+  /// The Bride / Groom mapping is computed HERE, once, from the two genders
+  /// (Female → bride, Male → groom) and stored on the request, so the employee
+  /// and admin screens never have to decide it — or disagree about it (spec
+  /// §1E/§4C/§12).
+  ///
   /// Returns the human-readable Request ID.
   Future<String> requestHoroscopeReport({
     required Map<String, dynamic> personOne,
@@ -438,8 +452,26 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
     required String contactName,
     required String contactWhatsapp,
     required bool isGuest,
+    required int amount,
+    required String paymentId,
     String note = '',
+    /// 'server' when Google Play itself confirmed the token via the
+    /// `verifyPlayPurchase` function, 'client' when only the local check ran
+    /// because that function is not deployed yet. Stored so an admin can tell
+    /// which payments still need reconciling against Play (spec §2C/§12).
+    String paymentVerifiedBy = 'client',
+
+    /// Play's own order id, when the server verifier returned one.
+    String paymentOrderId = '',
   }) async {
+    // Guard the invariant at the only door into it: no verified purchase, no
+    // request. The UI never calls this without one, and if it ever did, failing
+    // loudly is far better than creating an unpaid job for the astrologers.
+    if (paymentId.trim().isEmpty || amount <= 0) {
+      throw StateError(
+          'requestHoroscopeReport requires a verified payment (spec §2).');
+    }
+
     state = const AsyncLoading();
     try {
       final me = ref.read(myProfileProvider).valueOrNull;
@@ -467,6 +499,14 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
       final twoName = (personTwo['name'] ?? '').toString().trim();
       final code = _newRequestCode(now);
 
+      // Female → Bride, Male → Groom, whichever slot they were typed into
+      // (spec §1E). profileA is the GROOM side and profileB the BRIDE side
+      // everywhere else in this model, so the names line up with the existing
+      // `groomName` / `brideName` getters the report screens already read.
+      final roles = splitByRole(personOne, personTwo);
+      final brideName = (roles.bride?['name'] ?? '').toString().trim();
+      final groomName = (roles.groom?['name'] ?? '').toString().trim();
+
       // A guest has no profile and no account name — the contact person IS the
       // requester as far as every list, card and notification is concerned.
       final requesterName = isGuest
@@ -491,15 +531,36 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         type: AstrologerRequestType.matching,
         status: AstrologerRequestStatus.pending,
         message: note.trim(),
-        amount: 0,
+        amount: amount,
+        paid: true,
+        paidAt: now,
+        paymentId: paymentId,
         // The two names drive the existing request cards/lists, which have no
-        // profile document to fall back on for either person here.
-        profileAName: oneName.isEmpty ? 'Person 1' : oneName,
-        profileBName: twoName.isEmpty ? 'Person 2' : twoName,
+        // profile document to fall back on for either person here. Ordered by
+        // ROLE (A = groom, B = bride) so the employee report screen labels them
+        // correctly without any per-screen logic.
+        profileAName: groomName.isNotEmpty
+            ? groomName
+            : (oneName.isEmpty ? 'Person 1' : oneName),
+        profileBName: brideName.isNotEmpty
+            ? brideName
+            : (twoName.isEmpty ? 'Person 2' : twoName),
         externalRequest: {
           'requester': personOne,
           'other': personTwo,
+          // The resolved mapping, stored so every downstream reader — employee
+          // form, admin list, printed PDF — agrees without re-deriving it.
+          'bride': roles.bride,
+          'groom': roles.groom,
           'contact': {'name': contactName.trim(), 'whatsapp': contactWhatsapp},
+          'payment': {
+            'amount': amount,
+            'provider': 'google_play',
+            'paymentId': paymentId,
+            'orderId': paymentOrderId,
+            'verifiedBy': paymentVerifiedBy,
+            'paidAt': now.toIso8601String(),
+          },
         },
         requestCode: code,
         contactName: contactName.trim(),

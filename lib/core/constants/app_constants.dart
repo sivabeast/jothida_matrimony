@@ -83,11 +83,18 @@ class AppConstants {
   // system — the ONE-TIME fee for a Horoscope Request is the only payment in
   // the entire application. Appointments are free (settled at the office).
   static const int poruthamsPrice = 199;
-  // The one-time fee for a Horoscope Compatibility Report request (paid,
-  // auto-assigned, delivered to the user's Reports page). Charged via Google
-  // Play Billing (product id `horoscope_report`) — Play Console is the source
-  // of truth for what is actually charged; this is only the fallback label.
-  static const int horoscopeAnalysisFee = 200;
+  // The one-time fee for ONE COMPLETE Horoscope Compatibility Report request.
+  //
+  // "Complete" is the whole point: a request is always TWO people, and the fee
+  // is charged ONCE for the pair — never per person and never per profile. It
+  // is the same ₹199 whether the request was raised against an existing
+  // matrimony profile or by typing both charts in by hand.
+  //
+  // Charged via Google Play Billing (product id `horoscope_report`). Play
+  // Console is the source of truth for what is actually charged; this constant
+  // is the fallback label AND the amount the security rules insist on, so a
+  // tampered client cannot write a cheaper request.
+  static const int horoscopeAnalysisFee = 199;
 
   // Pagination
   static const int profilesPerPage = 20;

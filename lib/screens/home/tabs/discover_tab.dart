@@ -8,6 +8,7 @@ import '../../../core/utils/l10n_ext.dart';
 import '../../../core/utils/value_l10n.dart';
 import '../../../models/profile_model.dart';
 import '../../../core/services/porutham_match.dart';
+import '../../../providers/daily_profile_quota_provider.dart';
 import '../../../providers/interest_provider.dart';
 import '../../../providers/matches_prefs_provider.dart';
 import '../../../providers/profile_provider.dart';
@@ -23,6 +24,7 @@ import '../../../widgets/interest/interest_sent_overlay.dart';
 import '../../../widgets/interest/match_celebration.dart';
 import '../../../widgets/interest/pending_interest_card.dart';
 import 'dart:async';
+import 'dart:ui' show FontFeature;
 import '../../../providers/review_provider.dart';
 import '../../../services/review_service.dart';
 
@@ -42,6 +44,11 @@ import '../../../services/review_service.dart';
 ///     per user, so reopening the app continues from there instead of profile 1.
 ///     Swiping RIGHT moves on to newer/unseen profiles, swiping LEFT goes back
 ///     through the ones already viewed.
+///   • **Five NEW profiles a day** (spec §8) — discovering someone new spends
+///     one of the day's five; re-reading anybody already seen is free and
+///     unlimited. Past the fifth, the pager ends on a countdown page instead of
+///     the sixth stranger, and the day after continues at the sixth rather than
+///     restarting at the first. See [dailyProfileQuotaProvider].
 ///
 /// A compact single-line card above the pager shows the member's Nakshatra, the
 /// "View Matching Stars" action and the position within the feed.
@@ -107,12 +114,24 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
 
   /// Remembers where the member is, so the next session resumes here (§4).
   void _onPageChanged(int page, List<ProfileModel> profiles) {
-    if (page < 0 || page >= profiles.length) {
+    // The countdown page sits at index [_unlockedCount], which is usually
+    // still INSIDE the profile list — there are more profiles, they are just
+    // tomorrow's. Landing on it must not record the profile hiding behind it
+    // as seen, or the resume anchor would point at someone the member has
+    // never actually been shown.
+    if (page < 0 ||
+        page >= profiles.length ||
+        page >= _unlockedCount(profiles)) {
       setState(() => _index = page);
       return;
     }
     final profile = profiles[page];
     setState(() => _index = page);
+    // Spends one of the day's five if — and only if — this profile is new to
+    // them (spec §8E). The pager never lets them reach a locked page, so this
+    // is bookkeeping rather than a gate; the gate is [_unlockedCount].
+    unawaited(
+        ref.read(dailyProfileQuotaProvider.notifier).registerView(profile.id));
     ref.read(viewedProfilesProvider.notifier).markViewed(profile.id);
     // Ordinary browsing counts a little towards the review ask.
     unawaited(ref
@@ -141,13 +160,21 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
 
     await ref.read(viewedProfilesProvider.notifier).restored;
     await ref.read(lastViewedProfileProvider.notifier).restored;
+    // The allowance decides how far the pager reaches, so it has to be known
+    // before we jump — resuming onto a page that is about to be locked would
+    // bounce the member straight back.
+    await ref.read(dailyProfileQuotaProvider.notifier).restored;
     if (!mounted) return;
 
+    final unlocked = _unlockedCount(profiles);
+    // With nothing unlocked the feed opens straight on the countdown page, so
+    // there is no profile to resume onto.
+    if (unlocked == 0) return;
     final target = resolveResumeIndex(
       profileIds: profiles.map((p) => p.id).toList(),
       viewed: ref.read(viewedProfilesProvider),
       lastViewed: ref.read(lastViewedProfileProvider),
-    );
+    ).clamp(0, unlocked - 1);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_pageController.hasClients) return;
       if (target != _index) {
@@ -156,7 +183,12 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
       }
       // Record the resumed profile so a session that only *looks* at it still
       // counts as viewed.
-      ref.read(viewedProfilesProvider.notifier).markViewed(profiles[target].id);
+      if (target < profiles.length) {
+        ref.read(viewedProfilesProvider.notifier).markViewed(profiles[target].id);
+        unawaited(ref
+            .read(dailyProfileQuotaProvider.notifier)
+            .registerView(profiles[target].id));
+      }
     });
   }
 
@@ -343,6 +375,7 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
       child: Column(
         children: [
           _topCompactCard(profiles.length),
+          _quotaStrip(),
           Expanded(
             child: Builder(builder: (_) {
               if (state.isLoading && profiles.isEmpty) {
@@ -457,6 +490,66 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     );
   }
 
+  /// "2 of 5 new profiles today" — so the allowance is visible BEFORE it runs
+  /// out, rather than arriving as a surprise on the sixth swipe (spec §8A).
+  ///
+  /// Hidden entirely while the allowance is still loading, so it never flashes
+  /// a wrong number.
+  Widget _quotaStrip() {
+    final q = ref.watch(dailyProfileQuotaProvider);
+    if (!q.loaded) return const SizedBox.shrink();
+    final used = q.usedAt(DateTime.now());
+    final exhausted = used >= kDailyNewProfileLimit;
+    final color = exhausted ? AppColors.warning : AppColors.primary;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 6, 14, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(exhausted ? Icons.hourglass_bottom_rounded : Icons.explore_outlined,
+              size: 15, color: color),
+          const SizedBox(width: 7),
+          // Expanded + wrapping text: the Tamil sentence is roughly twice as
+          // long as the English one and must grow this strip, not spill out of
+          // it (spec §5A).
+          Expanded(
+            child: Text(
+                context.l10n.newProfilesTodayCount(used, kDailyNewProfileLimit),
+                style: TextStyle(
+                    fontSize: 11.5,
+                    height: 1.4,
+                    fontWeight: FontWeight.w600,
+                    color: color)),
+          ),
+          const SizedBox(width: 8),
+          // Five dots: filled for each new profile spent today.
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < kDailyNewProfileLimit; i++)
+                Container(
+                  width: 7,
+                  height: 7,
+                  margin: const EdgeInsets.only(left: 3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: i < used ? color : color.withValues(alpha: 0.22),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Bottom sheet listing every nakshatra compatible with the user's star.
   void _showMatchingStars() {
     final l10n = context.l10n;
@@ -562,6 +655,30 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
     );
   }
 
+  // ── The daily allowance (spec §8) ─────────────────────────────────────────
+
+  /// How far into [profiles] the member may go today.
+  ///
+  /// Walks the ranked feed in order and spends the remaining allowance on the
+  /// profiles they have NOT seen. Everything already seen is free and does not
+  /// consume anything, so a member who has viewed profiles 1-5 can still swipe
+  /// through all five whenever they like — the window simply stops at the first
+  /// unseen profile once the five are gone.
+  ///
+  /// Returns [profiles.length] while the allowance is still loading: a member
+  /// must never be locked out on state we have not read yet.
+  int _unlockedCount(List<ProfileModel> profiles) {
+    final q = ref.watch(dailyProfileQuotaProvider);
+    if (!q.loaded) return profiles.length;
+    var remaining = q.remainingAt(DateTime.now());
+    for (var i = 0; i < profiles.length; i++) {
+      if (q.hasSeen(profiles[i].id)) continue; // free, for ever (§8D/§8E)
+      if (remaining == 0) return i; // the first NEW one they cannot open yet
+      remaining--;
+    }
+    return profiles.length;
+  }
+
   // ── The horizontal browser (§1) ────────────────────────────────────────────
 
   /// One page per profile, swiped left/right — OR moved with the two subtle
@@ -572,8 +689,14 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
   /// There is deliberately NO instruction text under the profile: the arrows
   /// are the affordance, and swiping keeps working exactly as before.
   Widget _swipeBrowser(List<ProfileModel> profiles, DiscoverState state) {
-    final showTail = state.hasMore || state.isLoadingMore;
-    final pageCount = profiles.length + (showTail ? 1 : 0);
+    // Today's allowance, not the length of the feed, decides where the pager
+    // ends (spec §8A). When it bites, the page after the last unlocked profile
+    // is the countdown — never a blank "no more profiles", because there ARE
+    // more; they are simply tomorrow's (spec §8B).
+    final unlocked = _unlockedCount(profiles);
+    final quotaLocked = unlocked < profiles.length;
+    final showTail = !quotaLocked && (state.hasMore || state.isLoadingMore);
+    final pageCount = unlocked + (quotaLocked || showTail ? 1 : 0);
     final width = MediaQuery.of(context).size.width;
     // The photo is a full-width square, so its vertical centre — where the
     // arrows belong — sits half a screen-width down the page.
@@ -592,7 +715,9 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
             itemCount: pageCount,
             onPageChanged: (i) => _onPageChanged(i, profiles),
             itemBuilder: (_, i) {
-              if (i >= profiles.length) return _tailPage(state);
+              if (i >= unlocked) {
+                return quotaLocked ? _quotaLockPage() : _tailPage(state);
+              }
               final p = profiles[i];
               return _MatchProfileCard(
                 key: ValueKey(p.id),
@@ -637,6 +762,110 @@ class _DiscoverTabState extends ConsumerState<DiscoverTab> {
       page,
       duration: const Duration(milliseconds: 280),
       curve: Curves.easeOutCubic,
+    );
+  }
+
+  /// The page the member lands on after their fifth new profile of the day
+  /// (spec §8B).
+  ///
+  /// Deliberately NOT "no more profiles": there are more, and saying otherwise
+  /// would be untrue and would read as a bug. It says exactly what happened,
+  /// counts down to the moment the next one unlocks, and points back at the
+  /// profiles they can still open right now for free (§8D).
+  Widget _quotaLockPage() {
+    final l10n = context.l10n;
+    final left = ref.watch(quotaCountdownProvider).valueOrNull ??
+        nextQuotaResetAt(DateTime.now()).difference(DateTime.now());
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 78,
+              height: 78,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.hourglass_bottom_rounded,
+                  size: 36, color: AppColors.primary),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(l10n.dailyNewProfileLimitTitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 17,
+                  height: 1.35,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary)),
+          const SizedBox(height: 8),
+          Text(l10n.dailyNewProfileLimitBody(kDailyNewProfileLimit),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: 13, height: 1.6, color: Colors.grey[700])),
+          const SizedBox(height: 20),
+          // The countdown itself — a live "hh:mm:ss" to the next reset.
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                Text(l10n.nextNewProfileIn,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12.5,
+                        height: 1.45,
+                        fontWeight: FontWeight.w600)),
+                const SizedBox(height: 6),
+                // FittedBox so the monospaced clock shrinks rather than
+                // overflowing on a narrow phone.
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(formatCountdown(left),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 34,
+                          height: 1.15,
+                          letterSpacing: 1.5,
+                          fontFeatures: [FontFeature.tabularFigures()],
+                          fontWeight: FontWeight.w800)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(l10n.previouslyViewedStillFree,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: 12, height: 1.6, color: Colors.grey[600])),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _index > 0 ? () => _goToPage(_index - 1) : null,
+            icon: const Icon(Icons.chevron_left_rounded, size: 20),
+            label: Text(l10n.browsePreviousProfiles,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                style: const TextStyle(fontSize: 13, height: 1.25)),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary),
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

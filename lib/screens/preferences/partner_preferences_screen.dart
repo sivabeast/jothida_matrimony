@@ -54,7 +54,6 @@ class _PartnerPreferencesScreenState
   String _income = _any;
   String _maritalStatus = _any;
   String _rasi = _any;
-  String _nakshatra = _any;
   String _language = _any;
   String _religion = _any;
   String? _religionId;
@@ -65,7 +64,6 @@ class _PartnerPreferencesScreenState
   List<String> get _incomeOpts => [_any, ...AppConstants.incomeList];
   List<String> get _maritalOpts => [_any, ...AppConstants.maritalStatusList];
   List<String> get _rasiOpts => [_any, ...AppConstants.rasiEnList];
-  List<String> get _nakshatraOpts => [_any, ...AppConstants.nakshatraList];
   List<String> get _languageOpts => [_any, ...AppConstants.motherTongueList];
 
   void _populate(PartnerPreferences p) {
@@ -97,7 +95,6 @@ class _PartnerPreferencesScreenState
     _maritalStatus = _safe(
         AppConstants.normalizeMaritalStatus(p.maritalStatus), _maritalOpts);
     _rasi = _safe(p.rasi, _rasiOpts);
-    _nakshatra = _safe(p.nakshatra, _nakshatraOpts);
     _language = _safe(p.motherTongue, _languageOpts);
     _religion = p.religion.isEmpty ? _any : p.religion;
     _religionId = p.religionId;
@@ -124,7 +121,9 @@ class _PartnerPreferencesScreenState
         state: (_state ?? '').trim().isEmpty ? null : _state!.trim(),
         district: (_district ?? '').trim().isEmpty ? null : _district!.trim(),
         rasi: _rasi == _any ? null : _rasi,
-        nakshatra: _nakshatra == _any ? null : _nakshatra,
+        // Nakshatra is deliberately NOT written (spec §7A) — see the horoscope
+        // card below. Any value left on an old profile stops being read the
+        // moment these preferences are saved again.
         maritalStatus: _maritalStatus,
         motherTongue: _language,
       );
@@ -322,14 +321,33 @@ class _PartnerPreferencesScreenState
           _card(
             icon: Icons.auto_awesome_outlined,
             title: context.l10n.horoscopePreferences,
-            // The "Horoscope Match Required" switch was removed here (§11).
+            // No Nakshatra option here, by design (spec §7A). Offering one
+            // would let a member restrict their feed to star-compatible
+            // profiles only — which is precisely the hard filter the product
+            // no longer wants. Star compatibility is still shown on every
+            // card as a ⭐ badge and still ranks the feed; it just never hides
+            // anybody. The "Horoscope Match Required" switch was removed for
+            // the same reason.
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _dropdown(context.l10n.rasi, _rasi, _rasiOpts,
                     (v) => setState(() => _rasi = v!)),
-                const SizedBox(height: 12),
-                _dropdown(context.l10n.nakshatra, _nakshatra, _nakshatraOpts,
-                    (v) => setState(() => _nakshatra = v!)),
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline, size: 15, color: Colors.grey[600]),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: Text(context.l10n.nakshatraNotAFilterNote,
+                          style: TextStyle(
+                              fontSize: 11.5,
+                              height: 1.5,
+                              color: Colors.grey[600])),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

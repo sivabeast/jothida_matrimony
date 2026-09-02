@@ -3838,11 +3838,11 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get guestCanSubmitHoroscopeRequest =>
-      'கணக்கு இல்லாமலேயே ஜாதகப் பொருத்தக் கோரிக்கையைச் சமர்ப்பிக்கலாம். கோரிக்கையைக் கண்காணிக்கவும் அறிக்கையைப் படிக்கவும் விரும்பினால் உள்நுழையவும்.';
+      'கணக்கு இல்லாமலேயே ஜாதகப் பொருத்த அறிக்கையைக் கோரலாம். இரு ஜாதகங்களையும் உள்ளடக்கிய ஒரு முழு அறிக்கைக்கு ₹199 — கடைசியில் ஒரே ஒரு முறை மட்டும். கோரிக்கையை ஆப்பிலேயே கண்காணிக்க விரும்பினால் உள்நுழையவும்.';
 
   @override
   String get memberHoroscopeRequestTracked =>
-      'இரு ஜாதகங்களையும் தொடர்பு எண்ணையும் உள்ளிடவும். கோரிக்கை உங்கள் கணக்குடன் இணைக்கப்படும், அறிக்கைகள் பகுதியில் கண்காணிக்கலாம்.';
+      'இரு ஜாதகங்களையும் தொடர்பு எண்ணையும் உள்ளிடவும். ஒரு முழு அறிக்கைக்கு ₹199 — கடைசியில் ஒரே ஒரு முறை. கோரிக்கை உங்கள் கணக்குடன் இணைக்கப்படும், அறிக்கைகள் பகுதியில் கண்காணிக்கலாம்.';
 
   @override
   String get loginToTrackRequest => 'கோரிக்கையைக் கண்காணிக்க உள்நுழையவும்';
@@ -3864,4 +3864,255 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get exitApp => 'வெளியேறு';
+
+  @override
+  String get genderBasedOnProfile =>
+      'உங்கள் சுயவிவரத்திலிருந்து எடுக்கப்பட்டது';
+
+  @override
+  String get genderAutoFromPersonOne =>
+      'தானாகவே அமைக்கப்பட்டது — நபர் 1-க்கு எதிர் பாலினம்';
+
+  @override
+  String get genderPickForThisPerson =>
+      'நீங்கள் பதிவு செய்யும் நபரின் பாலினத்தைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get brideRole => 'மணமகள்';
+
+  @override
+  String get groomRole => 'மணமகன்';
+
+  @override
+  String get clearDetails => 'விவரங்களை அழிக்கவும்';
+
+  @override
+  String pleaseSelectGenderFor(String who) {
+    return '$who க்கான பாலினத்தைத் தேர்ந்தெடுக்கவும்';
+  }
+
+  @override
+  String get personOneFromYourProfile =>
+      'உங்கள் சுயவிவரத்திலிருந்து ஏற்றப்பட்டது. வேறு ஒருவருக்கு அறிக்கை வேண்டுமெனில் \"அழிக்கவும்\" என்பதைத் தட்டவும்.';
+
+  @override
+  String get personOneEnterManually =>
+      'முதல் நபரின் பிறப்பு விவரங்களைப் பதிவு செய்யவும்';
+
+  @override
+  String get personTwoPartnerSubtitle =>
+      'ஜாதகம் பொருத்திப் பார்க்கப்படும் துணை / மற்ற நபர்';
+
+  @override
+  String get paymentStep => 'கட்டணம்';
+
+  @override
+  String get reviewAndPayTitle => 'சரிபார்த்து கட்டணம் செலுத்தவும்';
+
+  @override
+  String get reviewAndPaySubtitle =>
+      'இரு ஜாதகங்களையும் சரிபார்த்து, ஒரு முறை கட்டணம் செலுத்தி கோரிக்கையை அனுப்பவும்';
+
+  @override
+  String get retrySubmitRequest =>
+      'மீண்டும் முயற்சிக்க · கோரிக்கையை அனுப்பவும்';
+
+  @override
+  String get paymentRequiredToSubmit =>
+      'இந்த ஜாதக கோரிக்கையை அனுப்ப கட்டணம் செலுத்த வேண்டும். உங்களிடமிருந்து எதுவும் வசூலிக்கப்படவில்லை.';
+
+  @override
+  String get paidButRequestNotSavedRetry =>
+      'உங்கள் கட்டணம் செலுத்தப்பட்டது, ஆனால் கோரிக்கையைச் சேமிக்க முடியவில்லை. முடிக்க மீண்டும் தட்டவும் — இரண்டாவது முறை கட்டணம் வசூலிக்கப்படாது.';
+
+  @override
+  String get amountPayable => 'செலுத்த வேண்டிய தொகை';
+
+  @override
+  String get oneRequestOneFeeNote =>
+      'இரு ஜாதகங்களையும் உள்ளடக்கிய ஒரு முழுமையான பொருத்த அறிக்கை. ஒவ்வொரு நபருக்கும் தனித்தனியாக கட்டணம் இல்லை.';
+
+  @override
+  String get notSureWhatYouGet => 'நீங்கள் பெறுவது என்ன என்பதைப் பாருங்கள்';
+
+  @override
+  String get sampleReportTeaser =>
+      'கட்டணம் செலுத்தும் முன், முழுமையான மாதிரி பொருத்த அறிக்கையை இலவசமாகப் பாருங்கள்.';
+
+  @override
+  String get viewSampleReport => 'மாதிரி அறிக்கையைப் பார்க்கவும்';
+
+  @override
+  String get downloadSampleReport => 'மாதிரி அறிக்கையைப் பதிவிறக்கவும்';
+
+  @override
+  String get sampleReportTitle => 'மாதிரி பொருத்த அறிக்கை';
+
+  @override
+  String get couldNotPrepareSampleReport =>
+      'மாதிரி அறிக்கையைத் தயாரிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get getYourCompatibilityReport =>
+      'உங்கள் சொந்த பொருத்த அறிக்கையைப் பெறுங்கள்';
+
+  @override
+  String get sampleReportBadge => 'மாதிரி';
+
+  @override
+  String get sampleReportNotice =>
+      'இது கற்பனையான பெயர்கள் மற்றும் ஜாதக விவரங்களுடன் கூடிய மாதிரி அறிக்கை; வடிவத்தை நீங்கள் பார்ப்பதற்காக மட்டுமே. இது உங்கள் அறிக்கை அல்ல.';
+
+  @override
+  String get sampleReportFooterNotice =>
+      'மாதிரி முடிவடைந்தது. நீங்கள் அளிக்கும் பிறப்பு விவரங்களைக் கொண்டு எங்கள் ஜோதிடர் உங்கள் அறிக்கையைத் தயாரிப்பார்.';
+
+  @override
+  String get compatibilityReportCertificateTitle => 'திருமண பொருத்த அறிக்கை';
+
+  @override
+  String get reportNumberLabel => 'அறிக்கை எண்';
+
+  @override
+  String get compatibilityScoreLabel => 'பொருத்த மதிப்பெண்';
+
+  @override
+  String get sampleScoreCaption =>
+      'பதினொரு பொருத்தங்களில் எட்டு அமைந்துள்ளன — மொத்தத்தில் நல்ல பொருத்தம்.';
+
+  @override
+  String get sampleSectionPorutham => 'நட்சத்திர மற்றும் ராசி பொருத்த ஆய்வு';
+
+  @override
+  String get sampleSectionSevvai => 'செவ்வாய் தோஷ பரிசோதனை';
+
+  @override
+  String get sampleSectionOtherDosham => 'பிற தோஷ பரிசோதனை';
+
+  @override
+  String get sampleSectionDasa => 'திசா புத்தி நிலை';
+
+  @override
+  String get sampleSectionObservations => 'முக்கிய கவனிப்புகள்';
+
+  @override
+  String get sampleSectionRemedies => 'தோஷ பரிகாரங்கள்';
+
+  @override
+  String get sampleSectionMuhurtham => 'திருமண முகூர்த்த வழிகாட்டல்';
+
+  @override
+  String get sampleSectionConclusion =>
+      'ஒட்டுமொத்த சுருக்கம் மற்றும் ஜோதிடர் முடிவு';
+
+  @override
+  String get poruthamLabel => 'பொருத்தம்';
+
+  @override
+  String get resultLabel => 'முடிவு';
+
+  @override
+  String get astrologerRemarksBy => 'தயாரித்தவர்';
+
+  @override
+  String get sampleObservation1 =>
+      'ரஜ்ஜு பொருத்தம் அமையவில்லை; ஆனால் இரு ஜாதகங்களிலும் செவ்வாய் ஒரே நிலையில் இருப்பதால் தோஷம் தானாகவே நீங்குகிறது.';
+
+  @override
+  String get sampleObservation2 =>
+      'நாடி பொருத்தம் அமைந்துள்ளது; இது சந்ததி வளத்திற்கும் நீண்டகால குடும்ப நலனுக்கும் உகந்ததாகக் கருதப்படுகிறது.';
+
+  @override
+  String get sampleObservation3 =>
+      'ராசி மற்றும் ராசி அதிபதி இரண்டும் பொருந்துவதால், இரு குடும்பங்களுக்கும் இடையே நல்லிணக்கம் அமையும்.';
+
+  @override
+  String get sampleRemedy1 =>
+      'திருமணத்திற்கு முன் ஆறு வாரங்களுக்கு செவ்வாய்க்கிழமைகளில் முருகன் கோயிலில் வழிபாடு செய்யவும்.';
+
+  @override
+  String get sampleRemedy2 =>
+      'நிச்சயதார்த்த நாளில் இருவர் பெயரிலும் எளிய நவகிரக அர்ச்சனை செய்யவும்.';
+
+  @override
+  String get sampleMuhurtham1 =>
+      'உகந்த மாதங்கள்: வரும் ஆண்டின் பிப்ரவரி, மே மற்றும் செப்டம்பர்.';
+
+  @override
+  String get sampleMuhurtham2 =>
+      'ஆடி மற்றும் மார்கழி மாதங்களைத் தவிர்க்கவும்; சரியான முகூர்த்த நேரங்கள் கோரிக்கையின் பேரில் வழங்கப்படும்.';
+
+  @override
+  String get nakshatraNotAFilterNote =>
+      'நட்சத்திரத்தை வைத்து எந்த சுயவிவரமும் மறைக்கப்படுவதில்லை. நட்சத்திரப் பொருத்தம் உள்ளவை ⭐ குறியுடன் முதலில் காட்டப்படும்; ஆனால் தகுதியான அனைத்து சுயவிவரங்களும் காட்டப்படும்.';
+
+  @override
+  String get dailyNewProfileLimitTitle => 'இன்றைய புதிய சுயவிவரங்கள் முடிந்தன';
+
+  @override
+  String dailyNewProfileLimitBody(int count) {
+    return 'இன்றைக்கான $count புதிய சுயவிவரங்களையும் நீங்கள் பார்த்துவிட்டீர்கள். அடுத்தது தானாகவே திறக்கும் — எதுவும் இழக்கப்படாது, நாளை இங்கிருந்தே தொடரும்.';
+  }
+
+  @override
+  String get nextNewProfileIn => 'அடுத்த புதிய சுயவிவரம் வர';
+
+  @override
+  String get previouslyViewedStillFree =>
+      'நீங்கள் ஏற்கனவே பார்த்த சுயவிவரங்கள் எப்போதும் திறந்தே இருக்கும் — எத்தனை முறை வேண்டுமானாலும் பார்க்கலாம், தினசரி வரம்பில் சேராது.';
+
+  @override
+  String get browsePreviousProfiles =>
+      'நீங்கள் பார்த்த சுயவிவரங்களுக்குத் திரும்பு';
+
+  @override
+  String newProfilesTodayCount(int used, int total) {
+    return 'இன்று $total-ல் $used புதிய சுயவிவரங்கள்';
+  }
+
+  @override
+  String get compatibilityReportTitle => 'பொருத்த அறிக்கை';
+
+  @override
+  String get downloadReportPdfOrImage =>
+      'அறிக்கையைப் பதிவிறக்கவும் (PDF / படம்)';
+
+  @override
+  String get pdfA4 => 'PDF (A4)';
+
+  @override
+  String get officialPrintableReport => 'அச்சிடக்கூடிய அதிகாரப்பூர்வ அறிக்கை';
+
+  @override
+  String get pngEveryPage => 'ஒவ்வொரு பக்கத்திற்கும் PNG படம்';
+
+  @override
+  String get saveDraft => 'வரைவைச் சேமிக்கவும்';
+
+  @override
+  String get submitReportQuestion => 'அறிக்கையைச் சமர்ப்பிக்கவா?';
+
+  @override
+  String get submitReportConfirmBody =>
+      'இந்த அறிக்கையை உறுப்பினர் உடனடியாகப் பார்ப்பார்; அதன் பிறகு திருத்த முடியாது. இப்போது சமர்ப்பிக்கவா?';
+
+  @override
+  String get draftSaved =>
+      'வரைவு சேமிக்கப்பட்டது. பின்னர் தொடர்ந்து திருத்தலாம்.';
+
+  @override
+  String get couldNotSaveDraft =>
+      'வரைவைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get reportSubmittedUserCanView =>
+      'அறிக்கை சமர்ப்பிக்கப்பட்டது. உறுப்பினர் இப்போது அதைப் பார்க்கலாம்.';
+
+  @override
+  String get couldNotPrepareReport =>
+      'அறிக்கையைத் தயாரிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get professionalMarriageCompatReport =>
+      'தொழில்முறை திருமண பொருத்த அறிக்கை';
 }

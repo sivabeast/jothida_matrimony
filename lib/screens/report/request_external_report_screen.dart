@@ -3,43 +3,56 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../../core/services/master_astrology_data.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/horoscope_roles.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/phone_utils.dart';
+import '../../core/utils/value_l10n.dart';
 import '../../models/profile_model.dart';
 import '../../providers/astrology_config_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../providers/service_providers.dart';
+import '../../services/billing/play_billing_service.dart';
+import '../../widgets/report/horoscope_fee_card.dart';
 import 'horoscope_request_person_form.dart';
+import 'sample_compatibility_report_screen.dart';
 
 /// **Horoscope Report Request** — the compatibility request for any two people
-/// (spec §1–§9).
+/// (spec §1, §2, §12).
 ///
-/// Three steps, in this order:
+/// Four steps, in this order:
 ///
-///   Person 1 details  →  Person 2 details  →  Contact person + WhatsApp
+///   Person 1  →  Person 2  →  Contact  →  Review + ₹199 payment
 ///
-/// Two rules shape everything here:
+/// The rules that shape everything here:
 ///
-///  * **A guest may submit.** No login is demanded before or during the form,
-///    and none at submit either (spec §1). Signing in is offered as an upgrade
-///    — it links the request to the account so it can be TRACKED later — never
-///    as a gate. A guest's request is stored exactly the same way and reaches
-///    the admin identically; the contact WhatsApp number is how it is answered.
+///  * **Person 1 is already filled in.** The signed-in member's profile is
+///    loaded the moment the screen opens — no "Use my profile details" button
+///    to press (spec §1A). A single **Clear** empties the card so a report can
+///    be requested for somebody else entirely.
 ///
-///  * **The stored request is a SNAPSHOT** (spec §7). A signed-in member's
-///    profile only supplies DEFAULTS for Person 1, and every one of those
-///    defaults stays editable — or can be wiped with "Clear" so a completely
-///    different person is entered. What gets written at submission time is
-///    frozen: editing the profile afterwards can never rewrite a request that
-///    has already been sent.
+///  * **Gender is never asked twice.** Person 1's comes from the profile;
+///    Person 2's is the opposite of Person 1's; Female is the Bride and Male is
+///    the Groom (spec §1B/§1D/§1E). Only a cleared Person 1 is asked, once.
 ///
-/// Person 1 is not "the member" and Person 2 is not "the other party" — they
-/// are simply the two charts being matched, which is why both use the SAME
-/// form ([HoroscopePersonForm]) with the same auto-fill and clear actions.
+///  * **Nothing exists until it is paid for.** ONE complete request — both
+///    charts together — costs ₹199, charged once, and the request document is
+///    written only after Play reports a verified purchase (spec §2). A
+///    cancelled, failed or abandoned payment leaves nothing behind and the
+///    member can simply try again.
+///
+///  * **The stored request is a SNAPSHOT** (spec §12). The profile supplies
+///    DEFAULTS only; what is written at payment time is frozen, so editing the
+///    profile afterwards can never rewrite a request already sent.
+///
+/// A guest may do all of this without an account: Play Billing is tied to the
+/// device's Google account, not to a Firebase login. Signing in is offered
+/// afterwards purely so the request can be TRACKED.
 class RequestExternalReportScreen extends ConsumerStatefulWidget {
   const RequestExternalReportScreen({super.key});
 
@@ -50,7 +63,12 @@ class RequestExternalReportScreen extends ConsumerStatefulWidget {
 
 class _RequestExternalReportScreenState
     extends ConsumerState<RequestExternalReportScreen> {
-  static const int _steps = 3;
+  static const int _steps = 4;
+
+  /// The fixed fee for ONE complete compatibility request — both people, one
+  /// charge (spec §2). Play Console is the source of truth for what is actually
+  /// billed; this is the fallback label and the amount the rules enforce.
+  static const int _fee = AppConstants.horoscopeAnalysisFee; // ₹199
 
   final _personOneKey = GlobalKey<FormState>();
   final _personTwoKey = GlobalKey<FormState>();
@@ -69,6 +87,29 @@ class _RequestExternalReportScreenState
   /// step never silently overwrites edits the member has since made.
   bool _autofilled = false;
 
+  /// True once the member has emptied Person 1 to enter somebody else. That is
+  /// the ONE case where the gender has to be asked, and it also stops the
+  /// profile from seeding the card a second time.
+  bool _oneCleared = false;
+
+  /// Play's own localized price (e.g. "₹199.00"), or null until the store
+  /// answers. Never blocks anything — the built-in ₹199 stands in.
+  String? _storePrice;
+
+  /// A verified purchase token that has been PAID FOR but whose request has not
+  /// been written yet (the network dropped between the two). Holding it means
+  /// a retry re-uses the payment instead of charging a second time.
+  String _paidToken = '';
+
+  /// How that held payment was verified, carried alongside the token so a retry
+  /// records the same provenance the original purchase had.
+  String _paidVerifiedBy = 'client';
+  String _paidOrderId = '';
+
+  /// What went wrong with the last payment attempt, shown above the pay button
+  /// so a cancelled purchase explains itself instead of failing silently.
+  String? _paymentError;
+
   List<String> _rasiOptions = const [];
   List<String> _nakOptions = const [];
 
@@ -76,6 +117,7 @@ class _RequestExternalReportScreenState
   void initState() {
     super.initState();
     _loadMasterOptions();
+    _loadStorePrice();
   }
 
   @override
@@ -96,6 +138,23 @@ class _RequestExternalReportScreenState
     });
   }
 
+  /// Best-effort: an unreachable store (emulator without Play, no network)
+  /// must never surface an error here — the UI keeps showing the built-in ₹199
+  /// until Play answers.
+  Future<void> _loadStorePrice() async {
+    try {
+      final billing = ref.read(playBillingServiceProvider);
+      await billing.init();
+      if (!mounted) return;
+      setState(() =>
+          _storePrice = billing.priceLabel(BillingProducts.horoscopeReport));
+    } catch (_) {
+      // Keep the fallback price.
+    }
+  }
+
+  String get _priceText => _storePrice ?? '₹$_fee';
+
   void _snack(String m) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -107,9 +166,11 @@ class _RequestExternalReportScreenState
   /// Only ever runs once, and only while the step is still untouched — the
   /// member's own edits always win (spec §5/§6).
   void _maybeAutofill(ProfileModel? me) {
-    if (_autofilled || me == null || !_one.isBlank) return;
+    if (_autofilled || _oneCleared || me == null || !_one.isBlank) return;
     _autofilled = true;
     _one.fillFromProfile(me);
+    // Person 2's gender falls out of Person 1's — never asked (spec §1D).
+    _syncPersonTwoGender();
     _contactName.text = me.contact.contactPersonName.trim().isNotEmpty
         ? me.contact.contactPersonName.trim()
         : me.fullName;
@@ -124,6 +185,31 @@ class _RequestExternalReportScreenState
     }
   }
 
+  // ── Gender & Bride/Groom mapping (spec §1B/§1D/§1E) ───────────────────────
+
+  /// Person 2 is always the opposite of Person 1. Re-run whenever Person 1's
+  /// gender can have changed, so the two can never drift apart.
+  void _syncPersonTwoGender() {
+    _two.gender = oppositeHoroscopeGender(_one.gender);
+  }
+
+  /// How Person 1's gender is presented: taken from the profile until the
+  /// member clears the card, after which this is a different person and the
+  /// gender is the one thing that cannot be inferred.
+  HoroscopeGenderMode get _personOneGenderMode =>
+      (_autofilled && !_oneCleared)
+          ? HoroscopeGenderMode.fromProfile
+          : HoroscopeGenderMode.manual;
+
+  /// "Clear" on Person 1 (spec §1A). Empties the card, remembers that the
+  /// profile must not seed it again, and drops Person 2's derived gender with
+  /// it — it was derived from a person who is no longer in the form.
+  void _clearPersonOne() {
+    _one.clear();
+    _oneCleared = true;
+    _syncPersonTwoGender();
+  }
+
   // ── Step validation ───────────────────────────────────────────────────────
 
   /// Person steps: Name, DOB, birth time and place are required; Nakshatra,
@@ -132,6 +218,11 @@ class _RequestExternalReportScreenState
       GlobalKey<FormState> key, HoroscopePersonDraft d, String who) {
     final l10n = context.l10n;
     if (!(key.currentState?.validate() ?? false)) return false;
+    // Only ever fails for a cleared Person 1 — every other case is derived.
+    if (d.gender.isEmpty) {
+      _snack(l10n.pleaseSelectGenderFor(who));
+      return false;
+    }
     if (d.dob == null) {
       _snack(l10n.pleaseSelectDobFor(who));
       return false;
@@ -150,10 +241,23 @@ class _RequestExternalReportScreenState
   String get _personOneLabel => context.l10n.personOne;
   String get _personTwoLabel => context.l10n.personTwo;
 
+  /// The contact step, checked before the member is allowed near the payment
+  /// step — nobody should reach a pay button and then be told their phone
+  /// number is wrong.
+  bool _validateContact() {
+    if (!(_contactKey.currentState?.validate() ?? false)) return false;
+    if (_whatsapp.text.replaceAll(RegExp(r'\D'), '').length != 10) {
+      _snack(context.l10n.whatsappMustBe10Digits);
+      return false;
+    }
+    return true;
+  }
+
   void _next() {
     final ok = switch (_step) {
       0 => _validatePerson(_personOneKey, _one, _personOneLabel),
       1 => _validatePerson(_personTwoKey, _two, _personTwoLabel),
+      2 => _validateContact(),
       _ => true,
     };
     if (!ok) return;
@@ -168,24 +272,77 @@ class _RequestExternalReportScreenState
     setState(() => _step -= 1);
   }
 
-  // ── Submit ────────────────────────────────────────────────────────────────
+  // ── Payment, then submit (spec §2) ────────────────────────────────────────
 
-  Future<void> _submit() async {
+  /// ₹199 → Play → verified purchase → request created. In that order, always.
+  ///
+  /// Three failure modes are handled distinctly, because they mean different
+  /// things to the member:
+  ///
+  ///  * **Cancelled / failed / unavailable** — nothing was charged and nothing
+  ///    was written. The pay button comes back with a plain explanation.
+  ///  * **Purchased, but the write failed** — the token is KEPT in [_paidToken]
+  ///    so pressing the button again re-uses that payment. This is the case
+  ///    that would otherwise charge somebody twice for one report.
+  ///  * **Purchased and written** — the confirmation sheet, exactly as before.
+  Future<void> _payAndSubmit() async {
     if (_busy) return;
-    if (!(_contactKey.currentState?.validate() ?? false)) return;
-    // Belt and braces behind the formatter + validator: the number that
-    // reaches Firestore is ALWAYS exactly 10 digits (spec §8).
-    final digits = _whatsapp.text.replaceAll(RegExp(r'\D'), '');
-    if (digits.length != 10) {
-      _snack(context.l10n.whatsappMustBe10Digits);
+    if (!_validateContact()) {
+      setState(() => _step = 2); // send them back to the field that failed
       return;
     }
+    // Belt and braces behind the formatter + validator: the number that
+    // reaches Firestore is ALWAYS exactly 10 digits.
+    final digits = _whatsapp.text.replaceAll(RegExp(r'\D'), '');
 
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _paymentError = null;
+    });
     final l10n = context.l10n;
     final isGuest = ref.read(isGuestProvider);
+    final billing = ref.read(playBillingServiceProvider);
 
     try {
+      // Re-use an already-paid-for token rather than charging again.
+      var token = _paidToken;
+      var charged = _fee;
+      var verifiedBy = _paidVerifiedBy;
+      var orderId = _paidOrderId;
+
+      if (token.isEmpty) {
+        final result =
+            await billing.buyConsumable(BillingProducts.horoscopeReport);
+        if (!mounted) return;
+        if (!result.isPurchased) {
+          setState(() {
+            _busy = false;
+            _paymentError = switch (result.outcome) {
+              BillingOutcome.canceled => l10n.paymentRequiredToSubmit,
+              BillingOutcome.unavailable =>
+                result.message ?? l10n.billingUnavailable,
+              _ => result.message ?? l10n.paymentCouldNotComplete,
+            };
+          });
+          return;
+        }
+        token = result.purchaseToken.isNotEmpty
+            ? result.purchaseToken
+            : 'play_billing';
+        verifiedBy = result.verification == BillingVerification.server
+            ? 'server'
+            : 'client';
+        orderId = result.orderId;
+        // Record what Play ACTUALLY charged, so revenue stays correct if the
+        // Console price is changed without an app update.
+        final raw = billing.rawPrice(BillingProducts.horoscopeReport);
+        if (raw != null && raw > 0) charged = raw.round();
+        // Survive a failed write: the money is spent, the token must not be.
+        _paidToken = token;
+        _paidVerifiedBy = verifiedBy;
+        _paidOrderId = orderId;
+      }
+
       final id = await ref
           .read(matchAnalysisControllerProvider.notifier)
           .requestHoroscopeReport(
@@ -194,13 +351,27 @@ class _RequestExternalReportScreenState
             contactName: _contactName.text.trim(),
             contactWhatsapp: digits,
             isGuest: isGuest,
+            amount: charged,
+            paymentId: token,
+            paymentVerifiedBy: verifiedBy,
+            paymentOrderId: orderId,
           );
       if (!mounted) return;
+      _paidToken = ''; // consumed
+      _paidVerifiedBy = 'client';
+      _paidOrderId = '';
       await _showSubmitted(id, digits);
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
-      setState(() => _busy = false);
-      _snack(l10n.couldNotCreateRequest);
+      setState(() {
+        _busy = false;
+        // Distinguish "you were charged, we could not save it" from "payment
+        // failed" — telling someone their payment failed after taking their
+        // money is the worst thing this screen could say.
+        _paymentError = _paidToken.isNotEmpty
+            ? l10n.paidButRequestNotSavedRetry
+            : l10n.couldNotCreateRequest;
+      });
     }
   }
 
@@ -400,19 +571,27 @@ class _RequestExternalReportScreenState
   }
 
   Widget _stepBody(ProfileModel? me) {
+    final l10n = context.l10n;
     switch (_step) {
       case 0:
         return Form(
           key: _personOneKey,
           child: HoroscopePersonForm(
             draft: _one,
-            title: context.l10n.personOneDetails,
-            subtitle: context.l10n.personDetailsSubtitle,
+            title: l10n.personOneDetails,
+            // Says whose details these ARE, which is the whole point of loading
+            // them automatically (spec §1A).
+            subtitle: _personOneGenderMode == HoroscopeGenderMode.fromProfile
+                ? l10n.personOneFromYourProfile
+                : l10n.personOneEnterManually,
             icon: Icons.person_outline,
             nakshatraOptions: _nakOptions,
             rasiOptions: _rasiOptions,
-            onChanged: () => setState(() {}),
-            onAutofill: me == null ? null : () => _one.fillFromProfile(me),
+            genderMode: _personOneGenderMode,
+            // Person 1 is the ONLY side with a Clear action, and only once
+            // there is something to clear.
+            onClear: me == null && _one.isBlank ? null : _clearPersonOne,
+            onChanged: () => setState(_syncPersonTwoGender),
           ),
         );
       case 1:
@@ -420,17 +599,21 @@ class _RequestExternalReportScreenState
           key: _personTwoKey,
           child: HoroscopePersonForm(
             draft: _two,
-            title: context.l10n.personTwoDetails,
-            subtitle: context.l10n.personDetailsSubtitle,
+            title: l10n.personTwoDetails,
+            subtitle: l10n.personTwoPartnerSubtitle,
             icon: Icons.person_add_alt_1_outlined,
             nakshatraOptions: _nakOptions,
             rasiOptions: _rasiOptions,
+            // Derived from Person 1, and there is deliberately NO "use my
+            // profile details" here: Person 2 is somebody else (spec §1C).
+            genderMode: HoroscopeGenderMode.auto,
             onChanged: () => setState(() {}),
-            onAutofill: me == null ? null : () => _two.fillFromProfile(me),
           ),
         );
-      default:
+      case 2:
         return Form(key: _contactKey, child: _contactStep());
+      default:
+        return _payStep();
     }
   }
 
@@ -509,8 +692,79 @@ class _RequestExternalReportScreenState
             return null;
           },
         ),
-        const SizedBox(height: 18),
+      ],
+    );
+  }
+
+  // ── Step 4: review + ₹199 payment (spec §2/§3) ───────────────────────────
+
+  Widget _payStep() {
+    final l10n = context.l10n;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: const Icon(Icons.verified_outlined,
+                color: AppColors.primary, size: 20),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.reviewAndPayTitle,
+                    style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15.5)),
+                const SizedBox(height: 2),
+                Text(l10n.reviewAndPaySubtitle,
+                    style: TextStyle(
+                        fontSize: 12, height: 1.4, color: Colors.grey[600])),
+              ],
+            ),
+          ),
+        ]),
+        const SizedBox(height: 16),
         _summaryCard(),
+        const SizedBox(height: 14),
+        // Free sample FIRST, price second: the member should know what ₹199
+        // buys before they are asked for it (spec §3).
+        HoroscopeSamplePreviewCard(
+          onView: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const SampleCompatibilityReportScreen())),
+        ),
+        const SizedBox(height: 14),
+        HoroscopeFeeCard(priceText: _priceText),
+        if (_paymentError != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.error.withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(12),
+              border:
+                  Border.all(color: AppColors.error.withValues(alpha: 0.30)),
+            ),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Icon(Icons.error_outline, size: 18, color: AppColors.error),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(_paymentError!,
+                    style: const TextStyle(
+                        fontSize: 12.5, height: 1.45, color: AppColors.error)),
+              ),
+            ]),
+          ),
+        ],
       ],
     );
   }
@@ -538,16 +792,37 @@ class _RequestExternalReportScreenState
           ),
         );
 
+    // The heading carries the Bride/Groom mapping the astrologer will use, so
+    // it can be checked before paying rather than queried afterwards (§1E).
     Widget person(String title, HoroscopePersonDraft d) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary)),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary)),
+                if (d.role.isNotEmpty)
+                  Text(
+                      d.role == kRoleBride
+                          ? '· ${l10n.brideRole}'
+                          : '· ${l10n.groomRole}',
+                      style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: d.role == kRoleBride
+                              ? const Color(0xFFC2185B)
+                              : AppColors.info)),
+              ],
+            ),
             const SizedBox(height: 4),
             line(l10n.fullName, d.name.text),
+            line(l10n.gender, context.localizeValue(d.gender)),
             line(l10n.dateOfBirth,
                 d.dob == null ? '' : '${d.dob!.day}-${d.dob!.month}-${d.dob!.year}'),
             line(l10n.timeOfBirth, d.birthTimeText),
@@ -623,37 +898,69 @@ class _RequestExternalReportScreenState
                   : l10n.memberHoroscopeRequestTracked,
               style: const TextStyle(
                   color: Colors.white, fontSize: 12.5, height: 1.5)),
-          if (isGuest) ...[
-            const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () => context.go('/login'),
-                icon: const Icon(Icons.login, size: 16, color: Colors.white),
-                label: Text(l10n.loginToTrackRequest,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        decoration: TextDecoration.underline,
-                        decorationColor: Colors.white)),
-                style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+          const SizedBox(height: 10),
+          // Wrap, not Row: in Tamil these two labels do not fit side by side on
+          // a 360px phone, and they must stack rather than overflow (§5A).
+          Wrap(
+            spacing: 18,
+            runSpacing: 6,
+            children: [
+              // The free sample, on the very first screen — before a single
+              // field has been filled in (spec §3).
+              _introLink(
+                icon: Icons.auto_stories_outlined,
+                label: l10n.viewSampleReport,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    // No pay CTA here: the member is already inside the flow
+                    // and both charts still have to be filled in, so closing
+                    // the sample simply returns them to the form.
+                    builder: (_) => const SampleCompatibilityReportScreen(),
+                  ),
+                ),
               ),
-            ),
-          ],
+              if (isGuest)
+                _introLink(
+                  icon: Icons.login,
+                  label: l10n.loginToTrackRequest,
+                  onTap: () => context.go('/login'),
+                ),
+            ],
+          ),
         ],
       ),
     );
   }
+
+  /// An underlined white link inside the maroon intro card.
+  Widget _introLink({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) =>
+      TextButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 16, color: Colors.white),
+        label: Text(label,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12.5,
+                height: 1.35,
+                fontWeight: FontWeight.w700,
+                decoration: TextDecoration.underline,
+                decorationColor: Colors.white)),
+        style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+      );
 
   Widget _progress() {
     final labels = [
       context.l10n.personOne,
       context.l10n.personTwo,
       context.l10n.contactStep,
+      context.l10n.paymentStep,
     ];
     return Container(
       color: Colors.white,
@@ -755,7 +1062,7 @@ class _RequestExternalReportScreenState
             Expanded(
               flex: 2,
               child: ElevatedButton(
-                onPressed: _busy ? null : (last ? _submit : _next),
+                onPressed: _busy ? null : (last ? _payAndSubmit : _next),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -772,9 +1079,20 @@ class _RequestExternalReportScreenState
                         height: 20,
                         child: CircularProgressIndicator(
                             strokeWidth: 2.4, color: Colors.white))
-                    : Text(last ? l10n.submitRequest : l10n.continueLabel,
+                    : Text(
+                        last
+                            ? (_paidToken.isNotEmpty
+                                ? l10n.retrySubmitRequest
+                                : l10n.payAndRequestReport(_priceText))
+                            : l10n.continueLabel,
+                        textAlign: TextAlign.center,
+                        // Tamil runs long and the price is appended — two lines
+                        // inside the button beats a clipped label (spec §5A).
+                        maxLines: 2,
                         style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w700)),
+                            fontSize: 14.5,
+                            height: 1.25,
+                            fontWeight: FontWeight.w700)),
               ),
             ),
           ],

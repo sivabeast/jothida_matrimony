@@ -82,17 +82,21 @@ class ReportRequestDetailPage extends ConsumerWidget {
           _RequestHeader(request: r),
           const SizedBox(height: 14),
           if (r.isExternalReport) ...[
-            // External report — the second person is not a registered member,
-            // so both sides come from the entered details instead of profiles.
+            // A horoscope request always has a Bride and a Groom, and which is
+            // which was settled by the two genders at submission time — Female
+            // → Bride, Male → Groom (spec §4C). There is deliberately no
+            // "Person 1 / Person 2" or "Other Party" framing here: the reviewer
+            // reads the same two headings whether or not either side happens to
+            // be a registered member.
             ExternalPartyCard(
-                title: 'Person 1 Details',
-                icon: Icons.person,
-                data: r.externalRequester),
+                title: 'மணமகன் (Groom)',
+                icon: Icons.male,
+                data: r.groomDetails),
             const SizedBox(height: 12),
             ExternalPartyCard(
-                title: 'Person 2 Details',
-                icon: Icons.person_add_alt_1,
-                data: r.externalOther),
+                title: 'மணமகள் (Bride)',
+                icon: Icons.female,
+                data: r.brideDetails),
             const SizedBox(height: 12),
             _ContactCard(request: r),
           ] else ...[

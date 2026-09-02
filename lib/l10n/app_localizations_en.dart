@@ -3795,11 +3795,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guestCanSubmitHoroscopeRequest =>
-      'You can submit a horoscope matching request without an account. Login if you want to track the request and read the report inside the app.';
+      'You can request a horoscope matching report without an account. One complete report covering both horoscopes costs ₹199, paid once at the end. Login if you also want to track the request inside the app.';
 
   @override
   String get memberHoroscopeRequestTracked =>
-      'Enter both horoscopes and a contact number. The request is linked to your account, so you can track it under Reports.';
+      'Enter both horoscopes and a contact number. One complete report costs ₹199, paid once at the end, and the request is linked to your account so you can track it under Reports.';
 
   @override
   String get loginToTrackRequest => 'Login to track your request';
@@ -3821,4 +3821,248 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exitApp => 'Exit';
+
+  @override
+  String get genderBasedOnProfile => 'Taken from your profile';
+
+  @override
+  String get genderAutoFromPersonOne =>
+      'Set automatically — the opposite of Person 1';
+
+  @override
+  String get genderPickForThisPerson =>
+      'Choose the gender of the person you are entering';
+
+  @override
+  String get brideRole => 'Bride';
+
+  @override
+  String get groomRole => 'Groom';
+
+  @override
+  String get clearDetails => 'Clear details';
+
+  @override
+  String pleaseSelectGenderFor(String who) {
+    return 'Please select the gender for $who';
+  }
+
+  @override
+  String get personOneFromYourProfile =>
+      'Loaded from your profile. Tap Clear to request a report for someone else.';
+
+  @override
+  String get personOneEnterManually => 'Enter the first person’s birth details';
+
+  @override
+  String get personTwoPartnerSubtitle =>
+      'The partner / other person whose horoscope is being matched';
+
+  @override
+  String get paymentStep => 'Payment';
+
+  @override
+  String get reviewAndPayTitle => 'Review & Pay';
+
+  @override
+  String get reviewAndPaySubtitle =>
+      'Check both horoscopes, then pay once to send the request';
+
+  @override
+  String get retrySubmitRequest => 'Retry · Send Request';
+
+  @override
+  String get paymentRequiredToSubmit =>
+      'Payment is required to submit this horoscope request. You have not been charged.';
+
+  @override
+  String get paidButRequestNotSavedRetry =>
+      'Your payment went through but the request could not be saved. Tap again to finish — you will not be charged twice.';
+
+  @override
+  String get amountPayable => 'Amount payable';
+
+  @override
+  String get oneRequestOneFeeNote =>
+      'One complete compatibility report covering BOTH horoscopes. You are never charged per person.';
+
+  @override
+  String get notSureWhatYouGet => 'See what you will receive';
+
+  @override
+  String get sampleReportTeaser =>
+      'View a full sample compatibility report — free, before you pay.';
+
+  @override
+  String get viewSampleReport => 'View Sample Report';
+
+  @override
+  String get downloadSampleReport => 'Download Sample Report';
+
+  @override
+  String get sampleReportTitle => 'Sample Compatibility Report';
+
+  @override
+  String get couldNotPrepareSampleReport =>
+      'Could not prepare the sample report. Please try again.';
+
+  @override
+  String get getYourCompatibilityReport => 'Get your own compatibility report';
+
+  @override
+  String get sampleReportBadge => 'SAMPLE';
+
+  @override
+  String get sampleReportNotice =>
+      'This is a demo report with made-up names and chart values, shown only so you can see the format. It is not your report.';
+
+  @override
+  String get sampleReportFooterNotice =>
+      'End of sample. Your own report is prepared by our astrologer from the birth details you submit.';
+
+  @override
+  String get compatibilityReportCertificateTitle =>
+      'Marriage Compatibility Report';
+
+  @override
+  String get reportNumberLabel => 'Report No.';
+
+  @override
+  String get compatibilityScoreLabel => 'Compatibility score';
+
+  @override
+  String get sampleScoreCaption =>
+      'Eight of the eleven poruthams agree — a strong match overall.';
+
+  @override
+  String get sampleSectionPorutham => 'Star & Rasi Porutham Analysis';
+
+  @override
+  String get sampleSectionSevvai => 'Sevvai (Mars) Dosha Check';
+
+  @override
+  String get sampleSectionOtherDosham => 'Other Dosha Check';
+
+  @override
+  String get sampleSectionDasa => 'Dasa & Bhukti Position';
+
+  @override
+  String get sampleSectionObservations => 'Important Observations';
+
+  @override
+  String get sampleSectionRemedies => 'Dosha Remedies';
+
+  @override
+  String get sampleSectionMuhurtham => 'Marriage Muhurtham Guidance';
+
+  @override
+  String get sampleSectionConclusion =>
+      'Overall Summary & Astrologer’s Conclusion';
+
+  @override
+  String get poruthamLabel => 'Porutham';
+
+  @override
+  String get resultLabel => 'Result';
+
+  @override
+  String get astrologerRemarksBy => 'Prepared by';
+
+  @override
+  String get sampleObservation1 =>
+      'Rajju porutham is absent, but Mars sits identically for both charts, so the affliction cancels itself out.';
+
+  @override
+  String get sampleObservation2 =>
+      'Nadi porutham is present, which is regarded as favourable for children and long-term family health.';
+
+  @override
+  String get sampleObservation3 =>
+      'Rasi and Rasi-adhipathi both agree, supporting harmony between the two families.';
+
+  @override
+  String get sampleRemedy1 =>
+      'Offer prayers at a Murugan temple on Tuesdays for six weeks before the wedding.';
+
+  @override
+  String get sampleRemedy2 =>
+      'A simple Navagraha archanai in both names on the day of the engagement.';
+
+  @override
+  String get sampleMuhurtham1 =>
+      'Favourable months: February, May and September of the coming year.';
+
+  @override
+  String get sampleMuhurtham2 =>
+      'Avoid the Aadi and Maargazhi months; exact muhurtham timings are given on request.';
+
+  @override
+  String get nakshatraNotAFilterNote =>
+      'Nakshatra is never used to hide profiles. Star-compatible matches are marked with a ⭐ and shown first, but every eligible profile still appears.';
+
+  @override
+  String get dailyNewProfileLimitTitle => 'That’s today’s new profiles';
+
+  @override
+  String dailyNewProfileLimitBody(int count) {
+    return 'You have seen all $count new profiles for today. The next one unlocks automatically — nothing is lost, and tomorrow continues from here.';
+  }
+
+  @override
+  String get nextNewProfileIn => 'Next new profile in';
+
+  @override
+  String get previouslyViewedStillFree =>
+      'Profiles you have already seen stay open — revisit them as often as you like, they do not count against the daily limit.';
+
+  @override
+  String get browsePreviousProfiles => 'Back to the profiles you have seen';
+
+  @override
+  String newProfilesTodayCount(int used, int total) {
+    return '$used of $total new profiles today';
+  }
+
+  @override
+  String get compatibilityReportTitle => 'Compatibility Report';
+
+  @override
+  String get downloadReportPdfOrImage => 'Download Report (PDF / Image)';
+
+  @override
+  String get pdfA4 => 'PDF (A4)';
+
+  @override
+  String get officialPrintableReport => 'Official printable report';
+
+  @override
+  String get pngEveryPage => 'PNG image of every page';
+
+  @override
+  String get saveDraft => 'Save Draft';
+
+  @override
+  String get submitReportQuestion => 'Submit report?';
+
+  @override
+  String get submitReportConfirmBody =>
+      'The member will see this report immediately and it can no longer be edited. Submit now?';
+
+  @override
+  String get draftSaved => 'Draft saved. You can continue editing later.';
+
+  @override
+  String get couldNotSaveDraft => 'Could not save the draft. Please try again.';
+
+  @override
+  String get reportSubmittedUserCanView =>
+      'Report submitted. The member can now view it.';
+
+  @override
+  String get couldNotPrepareReport =>
+      'Could not prepare the report. Please try again.';
+
+  @override
+  String get professionalMarriageCompatReport =>
+      'Professional Marriage Compatibility Report';
 }

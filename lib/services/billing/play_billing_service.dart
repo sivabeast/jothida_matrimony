@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../firebase/callable_functions_client.dart';
 import '../firebase/firestore_service.dart';
 
 /// The Play Console product IDs. Create + ACTIVATE these under
@@ -25,19 +26,41 @@ class BillingProducts {
 /// (unlock / show a message / reset its button).
 enum BillingOutcome { purchased, pending, canceled, error, unavailable }
 
+/// How a purchase was checked before it was accepted (spec §2C).
+enum BillingVerification {
+  /// Google Play itself confirmed the token, via the `verifyPlayPurchase`
+  /// Cloud Function. The only verdict that cannot be forged by a tampered app.
+  server,
+
+  /// The backend verifier is not deployed / not yet authorised in Play Console,
+  /// so only the local check ran. Recorded on the request so these can be
+  /// reconciled against Play later.
+  client,
+}
+
 class BillingResult {
   final BillingOutcome outcome;
   final String productId;
 
   /// The Play purchase token (`serverVerificationData`) — persisted with the
-  /// unlocked entitlement and what a server-side verifier would check.
+  /// unlocked entitlement and what the server-side verifier checks.
   final String purchaseToken;
+
+  /// Which check actually passed. Callers store this alongside the token.
+  final BillingVerification verification;
+
+  /// Play's own order id when the server verifier returned one — the reference
+  /// an admin reconciles against Play's records.
+  final String orderId;
+
   final String? message;
 
   const BillingResult(
     this.outcome, {
     this.productId = '',
     this.purchaseToken = '',
+    this.verification = BillingVerification.client,
+    this.orderId = '',
     this.message,
   });
 
@@ -56,8 +79,17 @@ class BillingResult {
 /// so a single `purchaseStream` listener owns every update. `buyConsumable`
 /// launches the Play sheet and completes when the stream reports a terminal
 /// state for that product.
+/// What [PlayBillingService._verifyPurchase] concluded, and on whose authority.
+class _VerificationOutcome {
+  final bool ok;
+  final BillingVerification by;
+  final String orderId;
+  const _VerificationOutcome(this.ok, this.by, {this.orderId = ''});
+}
+
 class PlayBillingService {
   final InAppPurchase _iap = InAppPurchase.instance;
+  final CallableFunctionsClient _functions = CallableFunctionsClient();
 
   StreamSubscription<List<PurchaseDetails>>? _sub;
   final Map<String, ProductDetails> _products = {};
@@ -171,32 +203,76 @@ class PlayBillingService {
           break;
         case PurchaseStatus.purchased:
         case PurchaseStatus.restored:
-          final verified = await _verifyPurchase(p);
+          final v = await _verifyPurchase(p);
           await _finish(p);
           // NEW payments only (not restores) get the "Payment Successful"
           // notification + push. Detached: a notification hiccup must never
           // affect the purchase result.
-          if (verified && p.status == PurchaseStatus.purchased) {
+          if (v.ok && p.status == PurchaseStatus.purchased) {
             unawaited(_notifyPaymentSuccess(p));
           }
-          _resolve(p, verified ? BillingOutcome.purchased : BillingOutcome.error,
-              message: verified ? null : 'Purchase verification failed.');
+          _resolve(p, v.ok ? BillingOutcome.purchased : BillingOutcome.error,
+              verification: v.by,
+              orderId: v.orderId,
+              message: v.ok ? null : 'Purchase verification failed.');
           break;
       }
     }
   }
 
-  /// CLIENT-SIDE verification.
+  /// Verifies a purchase before it is allowed to unlock anything (spec §2C).
   ///
-  /// TODO(server): production-grade verification checks the purchase token
-  /// against the Google Play Developer API from a TRUSTED backend (a Cloud
-  /// Function) before granting entitlement — a client can be tampered with. That
-  /// needs a server, which is out of scope for local-only work, so this accepts
-  /// a locally-valid purchase (non-empty token + known product). The token is
-  /// persisted with the unlocked report so the backend can reconcile later.
-  Future<bool> _verifyPurchase(PurchaseDetails p) async {
+  /// Two layers, in order:
+  ///
+  ///  1. **Local sanity** — a non-empty token for a product we actually sell.
+  ///     Cheap, and it rejects obvious nonsense without a round trip.
+  ///  2. **Google Play, via the `verifyPlayPurchase` Cloud Function** — the
+  ///     token is checked against the Play Developer API from a trusted
+  ///     backend. This is the layer a tampered client cannot fake.
+  ///
+  /// Fail-closed vs fail-open is decided by WHO said no. A verdict from the
+  /// function (`verified: false`, an unknown token, a cancelled purchase) is
+  /// final and the purchase is refused. The function being **unreachable** — it
+  /// is not deployed yet, the Play service account has not been authorised, or
+  /// the device is offline — is not a verdict, and refusing every purchase over
+  /// our own missing configuration would be worse than the risk. In that case
+  /// the local check stands and the result is stamped
+  /// [BillingVerification.client] so the request records how it was accepted.
+  Future<_VerificationOutcome> _verifyPurchase(PurchaseDetails p) async {
     final token = p.verificationData.serverVerificationData;
-    return token.isNotEmpty && BillingProducts.all.contains(p.productID);
+    if (token.isEmpty || !BillingProducts.all.contains(p.productID)) {
+      return const _VerificationOutcome(false, BillingVerification.client);
+    }
+
+    try {
+      final res = await _functions.call(
+        'verifyPlayPurchase',
+        data: {'productId': p.productID, 'purchaseToken': token},
+        timeout: const Duration(seconds: 20),
+      );
+      final verified = res['verified'] == true;
+      if (!verified) {
+        debugPrint('[Billing] Play REJECTED the purchase: ${res['reason']}');
+      }
+      return _VerificationOutcome(
+        verified,
+        BillingVerification.server,
+        orderId: '${res['orderId'] ?? ''}',
+      );
+    } on CallableFunctionException catch (e) {
+      if (e.isUnavailable || e.code == 'unavailable') {
+        debugPrint('[Billing] server verification unavailable ($e) — '
+            'accepting on the local check and recording it as unverified.');
+        return const _VerificationOutcome(true, BillingVerification.client);
+      }
+      // A real refusal from the backend (invalid-argument, permission-denied…).
+      debugPrint('[Billing] server verification refused the purchase: $e');
+      return const _VerificationOutcome(false, BillingVerification.server);
+    } catch (e) {
+      debugPrint('[Billing] server verification errored ($e) — '
+          'falling back to the local check.');
+      return const _VerificationOutcome(true, BillingVerification.client);
+    }
   }
 
   /// Writes the in-app "Payment Successful" notification for the signed-in
@@ -275,13 +351,21 @@ class PlayBillingService {
     }
   }
 
-  void _resolve(PurchaseDetails p, BillingOutcome outcome, {String? message}) {
+  void _resolve(
+    PurchaseDetails p,
+    BillingOutcome outcome, {
+    String? message,
+    BillingVerification verification = BillingVerification.client,
+    String orderId = '',
+  }) {
     final c = _pending.remove(p.productID);
     if (c != null && !c.isCompleted) {
       c.complete(BillingResult(
         outcome,
         productId: p.productID,
         purchaseToken: p.verificationData.serverVerificationData,
+        verification: verification,
+        orderId: orderId,
         message: message,
       ));
     }

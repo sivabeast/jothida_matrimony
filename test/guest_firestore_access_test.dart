@@ -172,14 +172,13 @@ void main() {
       }
     });
 
-    test('the guest write cannot smuggle in an assignment or a payment', () {
+    test('the guest write cannot smuggle in an assignment or free work', () {
       final block = _matchBlock(rules, 'astrologer_requests')!;
       // Each of these is what stops a guest writing a request that looks
-      // already-paid, already-assigned or already-answered.
+      // already-assigned or already-answered — or that was never paid for.
       for (final guard in const [
         "request.resource.data.status == 'pending'",
-        'request.resource.data.amount == 0',
-        'request.resource.data.paid == false',
+        'isPaidHoroscopeRequest()',
         "request.resource.data.astrologerId == ''",
         "request.resource.data.astrologerEmail == ''",
         "request.resource.data.analysisText == ''",
@@ -192,6 +191,24 @@ void main() {
       // A guest may create and read their own — never update or delete.
       expect(block.contains('allow update: if request.auth != null'), isFalse);
       expect(block.contains('allow delete: if request.auth != null'), isFalse);
+    });
+
+    test('the fee is enforced by the rules, not just by the app', () {
+      final block = _matchBlock(rules, 'astrologer_requests')!;
+      // Spec §2C: the amount, the paid flag and a real Play purchase token are
+      // all checked server-side, so a tampered client cannot write a cheaper —
+      // or a free — compatibility report request.
+      for (final guard in const [
+        "request.resource.data.type == 'matching'",
+        'request.resource.data.paid == true',
+        'request.resource.data.amount >= 199',
+        'request.resource.data.paymentId.size() >= 6',
+      ]) {
+        expect(block, contains(guard),
+            reason: 'the paid-request rule must enforce: $guard');
+      }
+      // …and every `matching` create goes through it, members included.
+      expect(block, contains('paymentSatisfied()'));
     });
 
     test('personal collections are NOT readable by a guest', () {

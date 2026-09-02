@@ -250,6 +250,31 @@ const Map<String, String> kTamilValueMap = {
           'expert.':
       'உங்களுக்கும் உங்கள் இணைக்கும் இடையேயான விரிவான, தொழில்முறை ஜாதகப் '
           'பொருத்த ஆய்வு — எங்கள் ஜோதிட நிபுணரால் நேரடியாகத் தயாரிக்கப்படுகிறது.',
+
+  // ── Astrology page: the SHIPPED service list and expert blurb (spec §5) ──
+  //
+  // These strings live in Firestore (`astrology_service/config`) so the admin
+  // can rewrite them, which means they cannot be ordinary l10n keys. The
+  // defaults we ship are known, though, so they are translated here and the
+  // Tamil page reads as Tamil instead of as a Tamil frame around English
+  // bullet points. An admin's own wording falls through unchanged — at which
+  // point they own it in whichever language they typed it.
+  'Horoscope (Jathagam) Compatibility Matching':
+      'ஜாதகப் பொருத்தம் பார்த்தல்',
+  'Horoscope Compatibility Matching': 'ஜாதகப் பொருத்தம் பார்த்தல்',
+  'Star & Rasi Porutham Analysis':
+      'நட்சத்திர மற்றும் ராசி பொருத்த ஆய்வு',
+  'Dosha Check & Remedies': 'தோஷ பரிசோதனையும் பரிகாரங்களும்',
+  'Marriage Muhurtham Guidance': 'திருமண முகூர்த்த வழிகாட்டல்',
+  'Personal Astrology Consultation': 'தனிப்பட்ட ஜோதிட ஆலோசனை',
+  '15+ years experience': '15+ ஆண்டுகள் அனுபவம்',
+  'Tamil Jathagam · Porutham Matching':
+      'தமிழ் ஜாதகம் · பொருத்தம் பார்த்தல்',
+  'A trusted astrologer with years of experience in marriage horoscope '
+          'matching, guiding families with clear and reliable compatibility '
+          'analysis.':
+      'திருமண ஜாதகப் பொருத்தத்தில் பல ஆண்டுகள் அனுபவம் பெற்ற நம்பகமான ஜோதிடர் — '
+          'தெளிவான, நம்பகமான பொருத்த ஆய்வுடன் குடும்பங்களுக்கு வழிகாட்டுகிறார்.',
 };
 
 /// Astrology values (Rasi · Nakshatra · Lagnam) are stored in TAMIL script,

@@ -11,9 +11,11 @@ import 'package:jothida_matrimony/core/services/porutham_match.dart';
 
 void main() {
   group('Paid-service pricing', () {
-    // The ONE-TIME Horoscope Request fee is the only payment in the app.
-    test('Horoscope Compatibility Report costs ₹200', () {
-      expect(AppConstants.horoscopeAnalysisFee, 200);
+    // The ONE-TIME Horoscope Request fee is the only payment in the app, and
+    // it buys ONE COMPLETE report covering BOTH people — never one per person
+    // and never one per profile (spec §2/§13).
+    test('a complete Horoscope Compatibility Report costs ₹199', () {
+      expect(AppConstants.horoscopeAnalysisFee, 199);
     });
   });
 

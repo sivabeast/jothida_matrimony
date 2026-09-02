@@ -104,10 +104,10 @@ void main() {
           findsOneWidget);
     }
 
-    // The paid CTA names the ₹200 charge explicitly and sits below the free
+    // The paid CTA names the ₹199 charge explicitly and sits below the free
     // result (spec §8).
     expect(find.textContaining('Request Report'), findsOneWidget);
-    expect(find.textContaining('₹200'), findsWidgets);
+    expect(find.textContaining('₹199'), findsWidgets);
   });
 
   testWidgets('service information appears exactly once — no duplicate pages',

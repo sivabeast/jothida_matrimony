@@ -85,6 +85,29 @@ class AppUpdateService {
     }
   }
 
+  /// The version code Google Play currently has live for this app, or 0 when
+  /// Play cannot say (spec §10).
+  ///
+  /// This is the AUTHORITATIVE "latest published version": it is Play's own
+  /// answer, so nobody — admin included — types a version number anywhere. It
+  /// returns 0 for a sideloaded build, a device without Play Services, a
+  /// staged rollout this device is not in, or no network. Every caller treats 0
+  /// as "no information", never as "up to date" and never as "out of date".
+  Future<int> playAvailableVersionCode() async {
+    if (!_supported) return 0;
+    try {
+      final info = await InAppUpdate.checkForUpdate()
+          .timeout(const Duration(seconds: 15));
+      if (info.updateAvailability != UpdateAvailability.updateAvailable) {
+        return 0;
+      }
+      return info.availableVersionCode ?? 0;
+    } catch (e) {
+      debugPrint('[AppUpdate] Play version lookup unavailable: $e');
+      return 0;
+    }
+  }
+
   /// Runs the update for [requirement].
   ///
   /// Forced → Play's IMMEDIATE flow (Play itself blocks the app until the

@@ -6911,13 +6911,13 @@ abstract class AppLocalizations {
   /// No description provided for @guestCanSubmitHoroscopeRequest.
   ///
   /// In en, this message translates to:
-  /// **'You can submit a horoscope matching request without an account. Login if you want to track the request and read the report inside the app.'**
+  /// **'You can request a horoscope matching report without an account. One complete report covering both horoscopes costs ₹199, paid once at the end. Login if you also want to track the request inside the app.'**
   String get guestCanSubmitHoroscopeRequest;
 
   /// No description provided for @memberHoroscopeRequestTracked.
   ///
   /// In en, this message translates to:
-  /// **'Enter both horoscopes and a contact number. The request is linked to your account, so you can track it under Reports.'**
+  /// **'Enter both horoscopes and a contact number. One complete report costs ₹199, paid once at the end, and the request is linked to your account so you can track it under Reports.'**
   String get memberHoroscopeRequestTracked;
 
   /// No description provided for @loginToTrackRequest.
@@ -6949,6 +6949,426 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Exit'**
   String get exitApp;
+
+  /// No description provided for @genderBasedOnProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Taken from your profile'**
+  String get genderBasedOnProfile;
+
+  /// No description provided for @genderAutoFromPersonOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Set automatically — the opposite of Person 1'**
+  String get genderAutoFromPersonOne;
+
+  /// No description provided for @genderPickForThisPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the gender of the person you are entering'**
+  String get genderPickForThisPerson;
+
+  /// No description provided for @brideRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Bride'**
+  String get brideRole;
+
+  /// No description provided for @groomRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Groom'**
+  String get groomRole;
+
+  /// No description provided for @clearDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear details'**
+  String get clearDetails;
+
+  /// No description provided for @pleaseSelectGenderFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select the gender for {who}'**
+  String pleaseSelectGenderFor(String who);
+
+  /// No description provided for @personOneFromYourProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Loaded from your profile. Tap Clear to request a report for someone else.'**
+  String get personOneFromYourProfile;
+
+  /// No description provided for @personOneEnterManually.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the first person’s birth details'**
+  String get personOneEnterManually;
+
+  /// No description provided for @personTwoPartnerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The partner / other person whose horoscope is being matched'**
+  String get personTwoPartnerSubtitle;
+
+  /// No description provided for @paymentStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get paymentStep;
+
+  /// No description provided for @reviewAndPayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review & Pay'**
+  String get reviewAndPayTitle;
+
+  /// No description provided for @reviewAndPaySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check both horoscopes, then pay once to send the request'**
+  String get reviewAndPaySubtitle;
+
+  /// No description provided for @retrySubmitRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry · Send Request'**
+  String get retrySubmitRequest;
+
+  /// No description provided for @paymentRequiredToSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment is required to submit this horoscope request. You have not been charged.'**
+  String get paymentRequiredToSubmit;
+
+  /// No description provided for @paidButRequestNotSavedRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Your payment went through but the request could not be saved. Tap again to finish — you will not be charged twice.'**
+  String get paidButRequestNotSavedRetry;
+
+  /// No description provided for @amountPayable.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount payable'**
+  String get amountPayable;
+
+  /// No description provided for @oneRequestOneFeeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'One complete compatibility report covering BOTH horoscopes. You are never charged per person.'**
+  String get oneRequestOneFeeNote;
+
+  /// No description provided for @notSureWhatYouGet.
+  ///
+  /// In en, this message translates to:
+  /// **'See what you will receive'**
+  String get notSureWhatYouGet;
+
+  /// No description provided for @sampleReportTeaser.
+  ///
+  /// In en, this message translates to:
+  /// **'View a full sample compatibility report — free, before you pay.'**
+  String get sampleReportTeaser;
+
+  /// No description provided for @viewSampleReport.
+  ///
+  /// In en, this message translates to:
+  /// **'View Sample Report'**
+  String get viewSampleReport;
+
+  /// No description provided for @downloadSampleReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Download Sample Report'**
+  String get downloadSampleReport;
+
+  /// No description provided for @sampleReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample Compatibility Report'**
+  String get sampleReportTitle;
+
+  /// No description provided for @couldNotPrepareSampleReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not prepare the sample report. Please try again.'**
+  String get couldNotPrepareSampleReport;
+
+  /// No description provided for @getYourCompatibilityReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Get your own compatibility report'**
+  String get getYourCompatibilityReport;
+
+  /// No description provided for @sampleReportBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'SAMPLE'**
+  String get sampleReportBadge;
+
+  /// No description provided for @sampleReportNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a demo report with made-up names and chart values, shown only so you can see the format. It is not your report.'**
+  String get sampleReportNotice;
+
+  /// No description provided for @sampleReportFooterNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'End of sample. Your own report is prepared by our astrologer from the birth details you submit.'**
+  String get sampleReportFooterNotice;
+
+  /// No description provided for @compatibilityReportCertificateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Marriage Compatibility Report'**
+  String get compatibilityReportCertificateTitle;
+
+  /// No description provided for @reportNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Report No.'**
+  String get reportNumberLabel;
+
+  /// No description provided for @compatibilityScoreLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibility score'**
+  String get compatibilityScoreLabel;
+
+  /// No description provided for @sampleScoreCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Eight of the eleven poruthams agree — a strong match overall.'**
+  String get sampleScoreCaption;
+
+  /// No description provided for @sampleSectionPorutham.
+  ///
+  /// In en, this message translates to:
+  /// **'Star & Rasi Porutham Analysis'**
+  String get sampleSectionPorutham;
+
+  /// No description provided for @sampleSectionSevvai.
+  ///
+  /// In en, this message translates to:
+  /// **'Sevvai (Mars) Dosha Check'**
+  String get sampleSectionSevvai;
+
+  /// No description provided for @sampleSectionOtherDosham.
+  ///
+  /// In en, this message translates to:
+  /// **'Other Dosha Check'**
+  String get sampleSectionOtherDosham;
+
+  /// No description provided for @sampleSectionDasa.
+  ///
+  /// In en, this message translates to:
+  /// **'Dasa & Bhukti Position'**
+  String get sampleSectionDasa;
+
+  /// No description provided for @sampleSectionObservations.
+  ///
+  /// In en, this message translates to:
+  /// **'Important Observations'**
+  String get sampleSectionObservations;
+
+  /// No description provided for @sampleSectionRemedies.
+  ///
+  /// In en, this message translates to:
+  /// **'Dosha Remedies'**
+  String get sampleSectionRemedies;
+
+  /// No description provided for @sampleSectionMuhurtham.
+  ///
+  /// In en, this message translates to:
+  /// **'Marriage Muhurtham Guidance'**
+  String get sampleSectionMuhurtham;
+
+  /// No description provided for @sampleSectionConclusion.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall Summary & Astrologer’s Conclusion'**
+  String get sampleSectionConclusion;
+
+  /// No description provided for @poruthamLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Porutham'**
+  String get poruthamLabel;
+
+  /// No description provided for @resultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Result'**
+  String get resultLabel;
+
+  /// No description provided for @astrologerRemarksBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepared by'**
+  String get astrologerRemarksBy;
+
+  /// No description provided for @sampleObservation1.
+  ///
+  /// In en, this message translates to:
+  /// **'Rajju porutham is absent, but Mars sits identically for both charts, so the affliction cancels itself out.'**
+  String get sampleObservation1;
+
+  /// No description provided for @sampleObservation2.
+  ///
+  /// In en, this message translates to:
+  /// **'Nadi porutham is present, which is regarded as favourable for children and long-term family health.'**
+  String get sampleObservation2;
+
+  /// No description provided for @sampleObservation3.
+  ///
+  /// In en, this message translates to:
+  /// **'Rasi and Rasi-adhipathi both agree, supporting harmony between the two families.'**
+  String get sampleObservation3;
+
+  /// No description provided for @sampleRemedy1.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer prayers at a Murugan temple on Tuesdays for six weeks before the wedding.'**
+  String get sampleRemedy1;
+
+  /// No description provided for @sampleRemedy2.
+  ///
+  /// In en, this message translates to:
+  /// **'A simple Navagraha archanai in both names on the day of the engagement.'**
+  String get sampleRemedy2;
+
+  /// No description provided for @sampleMuhurtham1.
+  ///
+  /// In en, this message translates to:
+  /// **'Favourable months: February, May and September of the coming year.'**
+  String get sampleMuhurtham1;
+
+  /// No description provided for @sampleMuhurtham2.
+  ///
+  /// In en, this message translates to:
+  /// **'Avoid the Aadi and Maargazhi months; exact muhurtham timings are given on request.'**
+  String get sampleMuhurtham2;
+
+  /// No description provided for @nakshatraNotAFilterNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Nakshatra is never used to hide profiles. Star-compatible matches are marked with a ⭐ and shown first, but every eligible profile still appears.'**
+  String get nakshatraNotAFilterNote;
+
+  /// No description provided for @dailyNewProfileLimitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'That’s today’s new profiles'**
+  String get dailyNewProfileLimitTitle;
+
+  /// No description provided for @dailyNewProfileLimitBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You have seen all {count} new profiles for today. The next one unlocks automatically — nothing is lost, and tomorrow continues from here.'**
+  String dailyNewProfileLimitBody(int count);
+
+  /// No description provided for @nextNewProfileIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Next new profile in'**
+  String get nextNewProfileIn;
+
+  /// No description provided for @previouslyViewedStillFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Profiles you have already seen stay open — revisit them as often as you like, they do not count against the daily limit.'**
+  String get previouslyViewedStillFree;
+
+  /// No description provided for @browsePreviousProfiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the profiles you have seen'**
+  String get browsePreviousProfiles;
+
+  /// No description provided for @newProfilesTodayCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{used} of {total} new profiles today'**
+  String newProfilesTodayCount(int used, int total);
+
+  /// No description provided for @compatibilityReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibility Report'**
+  String get compatibilityReportTitle;
+
+  /// No description provided for @downloadReportPdfOrImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Download Report (PDF / Image)'**
+  String get downloadReportPdfOrImage;
+
+  /// No description provided for @pdfA4.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF (A4)'**
+  String get pdfA4;
+
+  /// No description provided for @officialPrintableReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Official printable report'**
+  String get officialPrintableReport;
+
+  /// No description provided for @pngEveryPage.
+  ///
+  /// In en, this message translates to:
+  /// **'PNG image of every page'**
+  String get pngEveryPage;
+
+  /// No description provided for @saveDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Draft'**
+  String get saveDraft;
+
+  /// No description provided for @submitReportQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit report?'**
+  String get submitReportQuestion;
+
+  /// No description provided for @submitReportConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The member will see this report immediately and it can no longer be edited. Submit now?'**
+  String get submitReportConfirmBody;
+
+  /// No description provided for @draftSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft saved. You can continue editing later.'**
+  String get draftSaved;
+
+  /// No description provided for @couldNotSaveDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the draft. Please try again.'**
+  String get couldNotSaveDraft;
+
+  /// No description provided for @reportSubmittedUserCanView.
+  ///
+  /// In en, this message translates to:
+  /// **'Report submitted. The member can now view it.'**
+  String get reportSubmittedUserCanView;
+
+  /// No description provided for @couldNotPrepareReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not prepare the report. Please try again.'**
+  String get couldNotPrepareReport;
+
+  /// No description provided for @professionalMarriageCompatReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Professional Marriage Compatibility Report'**
+  String get professionalMarriageCompatReport;
 }
 
 class _AppLocalizationsDelegate

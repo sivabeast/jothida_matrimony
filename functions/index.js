@@ -1144,3 +1144,142 @@ exports.deleteCloudinaryAssets = onCall(
     return { deleted, failed, results };
   }
 );
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// verifyPlayPurchase — SERVER-SIDE verification of a Google Play purchase
+// (spec §2C).
+//
+// The client cannot be trusted about money. Before a ₹199 horoscope request is
+// written, the app hands the Play purchase token to this function, which asks
+// Google Play itself whether that token is real, whether it is for the product
+// we sold, and whether it is actually in the PURCHASED state.
+//
+// No npm dependency is needed: Cloud Functions run as a service account, so an
+// access token for the Play Developer API comes from the metadata server and
+// the REST call goes out with the runtime's own `fetch` (Node 20).
+//
+// ## One-time setup (required before this returns anything but `unavailable`)
+//
+//  1. Google Play Console → Users and permissions → invite this project's
+//     App Engine default service account
+//     (`<projectId>@appspot.gserviceaccount.com`) and grant it
+//     **View financial data** on the app.
+//  2. Google Cloud Console → APIs & Services → enable
+//     **Google Play Android Developer API**.
+//  3. Deploy: `firebase deploy --only functions:verifyPlayPurchase`
+//     (needs the Blaze plan — Cloud Functions are not available on Spark).
+//
+// Until step 3 the callable simply is not reachable; the app treats that as
+// "not verified server-side yet", records `paymentVerifiedBy: 'client'` on the
+// request and carries on, so billing keeps working. It never fails open on a
+// verdict this function actually returned.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// The applicationId in android/app/build.gradle. A mismatch here would verify
+/// tokens against the wrong app, so it is a constant rather than a parameter
+/// the caller supplies.
+const PLAY_PACKAGE_NAME = 'com.jothida.jothida_matrimony';
+
+/// Product ids this function is willing to verify. A token for anything else is
+/// rejected outright rather than passed to Play.
+const PLAY_PRODUCT_IDS = new Set(['horoscope_report']);
+
+/// An OAuth access token for the Play Developer API, from the runtime's own
+/// service account. Cached for slightly less than its lifetime.
+let _playToken = null;
+let _playTokenExpiresAt = 0;
+
+async function playAccessToken() {
+  const now = Date.now();
+  if (_playToken && now < _playTokenExpiresAt - 60_000) return _playToken;
+
+  const url =
+    'http://metadata.google.internal/computeMetadata/v1/instance/' +
+    'service-accounts/default/token' +
+    '?scopes=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fandroidpublisher';
+  const res = await fetch(url, { headers: { 'Metadata-Flavor': 'Google' } });
+  if (!res.ok) {
+    throw new Error(`metadata token ${res.status}: ${await res.text()}`);
+  }
+  const body = await res.json();
+  _playToken = body.access_token;
+  _playTokenExpiresAt = now + (body.expires_in || 3000) * 1000;
+  return _playToken;
+}
+
+exports.verifyPlayPurchase = onCall(async (request) => {
+  // Anonymous sessions included: a GUEST may buy a horoscope report, and Play
+  // Billing is tied to the device's Play account rather than to a login.
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Sign in first.');
+  }
+
+  const productId = `${request.data?.productId || ''}`.trim();
+  const token = `${request.data?.purchaseToken || ''}`.trim();
+
+  if (!PLAY_PRODUCT_IDS.has(productId)) {
+    throw new HttpsError('invalid-argument', 'Unknown product.');
+  }
+  if (token.length < 10) {
+    throw new HttpsError('invalid-argument', 'Missing purchase token.');
+  }
+
+  let accessToken;
+  try {
+    accessToken = await playAccessToken();
+  } catch (e) {
+    // The service account cannot mint a Play token — almost always the setup
+    // above is incomplete. Report it as unavailable, NOT as "not verified":
+    // refusing every purchase because of our own misconfiguration would be
+    // worse than the risk it is guarding against.
+    console.error('[play] could not obtain an access token', e);
+    throw new HttpsError('unavailable', 'Play verification is not configured.');
+  }
+
+  const url =
+    `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/` +
+    `${encodeURIComponent(PLAY_PACKAGE_NAME)}/purchases/products/` +
+    `${encodeURIComponent(productId)}/tokens/${encodeURIComponent(token)}`;
+
+  let res;
+  try {
+    res = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+  } catch (e) {
+    console.error('[play] purchase lookup failed', e);
+    throw new HttpsError('unavailable', 'Could not reach Google Play.');
+  }
+
+  if (res.status === 404 || res.status === 400) {
+    // Play does not know this token for this product — a forged or reused one.
+    console.warn(`[play] token rejected (${res.status}) for ${productId}`);
+    return { verified: false, reason: 'unknown-token' };
+  }
+  if (res.status === 401 || res.status === 403) {
+    console.error('[play] service account lacks Play Console access');
+    throw new HttpsError('unavailable', 'Play verification is not authorised.');
+  }
+  if (!res.ok) {
+    console.error(`[play] unexpected ${res.status}: ${await res.text()}`);
+    throw new HttpsError('unavailable', 'Google Play did not answer.');
+  }
+
+  const purchase = await res.json();
+  // purchaseState: 0 purchased · 1 cancelled · 2 pending.
+  const verified = purchase.purchaseState === 0;
+  if (!verified) {
+    console.warn(`[play] purchaseState=${purchase.purchaseState} for ${productId}`);
+  }
+
+  // Recorded so an admin can reconcile a request against Play's own records.
+  return {
+    verified,
+    productId,
+    orderId: purchase.orderId || '',
+    purchaseState: purchase.purchaseState ?? null,
+    purchaseTimeMillis: purchase.purchaseTimeMillis || '',
+    reason: verified ? '' : 'not-purchased',
+  };
+});
