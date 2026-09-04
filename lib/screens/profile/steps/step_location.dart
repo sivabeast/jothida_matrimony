@@ -101,10 +101,7 @@ class _StepLocationState extends ConsumerState<StepLocation> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(context.l10n.locationDetails, style: AppTextStyles.heading2),
-          const SizedBox(height: 8),
-          Text(context.l10n.locationStepSubtitle,
-              style: const TextStyle(color: Colors.grey)),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           LocationPickerSection(
             key: _v.anchor('location'),
             initialState: _state,

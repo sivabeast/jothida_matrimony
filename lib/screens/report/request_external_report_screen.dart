@@ -9,7 +9,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/horoscope_roles.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/phone_utils.dart';
-import '../../core/utils/value_l10n.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/profile_model.dart';
 import '../../providers/astrology_config_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -18,7 +18,6 @@ import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../services/billing/play_billing_service.dart';
-import '../../widgets/report/horoscope_fee_card.dart';
 import 'horoscope_request_person_form.dart';
 import 'sample_compatibility_report_screen.dart';
 
@@ -53,6 +52,28 @@ import 'sample_compatibility_report_screen.dart';
 /// A guest may do all of this without an account: Play Billing is tied to the
 /// device's Google account, not to a Firebase login. Signing in is offered
 /// afterwards purely so the request can be TRACKED.
+/// What (if anything) is wrong with a horoscope request's contact details,
+/// as a message ready to show — or null when they are fine.
+///
+/// Deliberately a VALUE check with no Form involved, and top-level so it can be
+/// exercised on its own. The contact `Form` only exists in the widget tree
+/// while the contact step is on screen, so by the time the pay button is
+/// pressed its `currentState` is null. A check routed through the Form read
+/// that null as "invalid" and sent the member back a step — which is exactly
+/// why pressing "Pay ₹199 · Request report" looked like it navigated backwards
+/// instead of opening Google Play.
+String? horoscopeContactProblem({
+  required String name,
+  required String whatsapp,
+  required AppLocalizations l10n,
+}) {
+  if (name.trim().length < 2) return l10n.pleaseEnterFullName;
+  final digits = whatsapp.replaceAll(RegExp(r'\D'), '');
+  if (digits.isEmpty) return l10n.whatsappRequired;
+  if (digits.length != 10) return l10n.whatsappMustBe10Digits;
+  return null;
+}
+
 class RequestExternalReportScreen extends ConsumerStatefulWidget {
   const RequestExternalReportScreen({super.key});
 
@@ -241,23 +262,32 @@ class _RequestExternalReportScreenState
   String get _personOneLabel => context.l10n.personOne;
   String get _personTwoLabel => context.l10n.personTwo;
 
-  /// The contact step, checked before the member is allowed near the payment
-  /// step — nobody should reach a pay button and then be told their phone
-  /// number is wrong.
-  bool _validateContact() {
-    if (!(_contactKey.currentState?.validate() ?? false)) return false;
-    if (_whatsapp.text.replaceAll(RegExp(r'\D'), '').length != 10) {
-      _snack(context.l10n.whatsappMustBe10Digits);
+  /// What (if anything) is wrong with the contact details, as a message.
+  String? _contactProblem() => horoscopeContactProblem(
+        name: _contactName.text,
+        whatsapp: _whatsapp.text,
+        l10n: context.l10n,
+      );
+
+  /// The contact step's own Continue: paints the inline field errors (the Form
+  /// IS mounted here) and refuses to advance while anything is wrong.
+  bool _validateContactStep() {
+    // `?? true` and not `?? false`: a missing Form state means the step is not
+    // on screen, which is never a reason to call the values invalid.
+    final formOk = _contactKey.currentState?.validate() ?? true;
+    final problem = _contactProblem();
+    if (problem != null) {
+      _snack(problem);
       return false;
     }
-    return true;
+    return formOk;
   }
 
   void _next() {
     final ok = switch (_step) {
       0 => _validatePerson(_personOneKey, _one, _personOneLabel),
       1 => _validatePerson(_personTwoKey, _two, _personTwoLabel),
-      2 => _validateContact(),
+      2 => _validateContactStep(),
       _ => true,
     };
     if (!ok) return;
@@ -287,8 +317,12 @@ class _RequestExternalReportScreenState
   ///  * **Purchased and written** — the confirmation sheet, exactly as before.
   Future<void> _payAndSubmit() async {
     if (_busy) return;
-    if (!_validateContact()) {
-      setState(() => _step = 2); // send them back to the field that failed
+    // Only a REAL problem with the contact details sends the member back a
+    // step, and it always says why. Valid details go straight to Play.
+    final problem = _contactProblem();
+    if (problem != null) {
+      setState(() => _step = 2);
+      _snack(problem);
       return;
     }
     // Belt and braces behind the formatter + validator: the number that
@@ -696,53 +730,38 @@ class _RequestExternalReportScreenState
     );
   }
 
-  // ── Step 4: review + ₹199 payment (spec §2/§3) ───────────────────────────
+  // ── Step 4: review + payment ─────────────────────────────────────────────
 
+  /// A confirmation screen, not a sales page.
+  ///
+  /// One card: who the report is for, what they entered, and what it costs.
+  /// The fee sits inside the same card as the two names rather than in a
+  /// separate banner, and the sample teaser is not repeated here — it is
+  /// already offered on the first step, before any details are typed. Three
+  /// stacked cards of explanation were burying the one thing this step exists
+  /// for: check the details, then pay.
   Widget _payStep() {
     final l10n = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: const Icon(Icons.verified_outlined,
-                color: AppColors.primary, size: 20),
-          ),
-          const SizedBox(width: 11),
+          const Icon(Icons.verified_outlined,
+              color: AppColors.primary, size: 21),
+          const SizedBox(width: 9),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l10n.reviewAndPayTitle,
-                    style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15.5)),
-                const SizedBox(height: 2),
-                Text(l10n.reviewAndPaySubtitle,
-                    style: TextStyle(
-                        fontSize: 12, height: 1.4, color: Colors.grey[600])),
-              ],
-            ),
+            child: Text(l10n.reviewAndPayTitle,
+                style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w700,
+                    height: 1.3,
+                    fontSize: 16)),
           ),
         ]),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         _summaryCard(),
-        const SizedBox(height: 14),
-        // Free sample FIRST, price second: the member should know what ₹199
-        // buys before they are asked for it (spec §3).
-        HoroscopeSamplePreviewCard(
-          onView: () => Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => const SampleCompatibilityReportScreen())),
-        ),
-        const SizedBox(height: 14),
-        HoroscopeFeeCard(priceText: _priceText),
+        const SizedBox(height: 12),
+        _feeRow(),
         if (_paymentError != null) ...[
           const SizedBox(height: 12),
           Container(
@@ -769,6 +788,37 @@ class _RequestExternalReportScreenState
     );
   }
 
+  /// "Amount payable — ₹199", on one line. The price is Play's own whenever the
+  /// store has answered, so it can never disagree with what is actually
+  /// charged.
+  Widget _feeRow() => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        decoration: BoxDecoration(
+          gradient: AppColors.primaryGradient,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Wrap(
+          spacing: 10,
+          runSpacing: 2,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(context.l10n.amountPayable,
+                style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12.5,
+                    height: 1.4,
+                    fontWeight: FontWeight.w600)),
+            Text(_priceText,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 23,
+                    height: 1.2,
+                    fontWeight: FontWeight.w800)),
+          ],
+        ),
+      );
+
   /// A read-only recap of exactly what will be stored, so the member can catch
   /// a wrong DOB before the request goes out rather than after.
   Widget _summaryCard() {
@@ -781,37 +831,47 @@ class _RequestExternalReportScreenState
               SizedBox(
                 width: 96,
                 child: Text(label,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                    style: TextStyle(
+                        fontSize: 12, height: 1.35, color: Colors.grey[600])),
               ),
               Expanded(
                 child: Text(value.trim().isEmpty ? '—' : value,
                     style: const TextStyle(
-                        fontSize: 12.5, fontWeight: FontWeight.w600)),
+                        fontSize: 12.5,
+                        height: 1.35,
+                        fontWeight: FontWeight.w600)),
               ),
             ],
           ),
         );
 
-    // The heading carries the Bride/Groom mapping the astrologer will use, so
-    // it can be checked before paying rather than queried afterwards (§1E).
+    // The heading carries the person's NAME and the Bride/Groom mapping the
+    // astrologer will use, so both can be checked at a glance before paying.
     Widget person(String title, HoroscopePersonDraft d) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(title,
+                style: TextStyle(
+                    fontSize: 11.5,
+                    height: 1.3,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[600])),
+            const SizedBox(height: 2),
             Wrap(
               spacing: 8,
-              runSpacing: 4,
+              runSpacing: 2,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Text(title,
+                Text(
+                    d.name.text.trim().isEmpty ? '—' : d.name.text.trim(),
                     style: const TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary)),
+                        fontSize: 15,
+                        height: 1.3,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w700)),
                 if (d.role.isNotEmpty)
                   Text(
-                      d.role == kRoleBride
-                          ? '· ${l10n.brideRole}'
-                          : '· ${l10n.groomRole}',
+                      d.role == kRoleBride ? l10n.brideRole : l10n.groomRole,
                       style: TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w700,
@@ -820,11 +880,11 @@ class _RequestExternalReportScreenState
                               : AppColors.info)),
               ],
             ),
-            const SizedBox(height: 4),
-            line(l10n.fullName, d.name.text),
-            line(l10n.gender, context.localizeValue(d.gender)),
+            const SizedBox(height: 6),
             line(l10n.dateOfBirth,
-                d.dob == null ? '' : '${d.dob!.day}-${d.dob!.month}-${d.dob!.year}'),
+                d.dob == null
+                    ? ''
+                    : '${d.dob!.day}-${d.dob!.month}-${d.dob!.year}'),
             line(l10n.timeOfBirth, d.birthTimeText),
             line(l10n.placeOfBirthLabel, d.place?.display ?? ''),
             if ((d.nakshatra ?? '').isNotEmpty)
@@ -845,17 +905,12 @@ class _RequestExternalReportScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            const Icon(Icons.fact_check_outlined,
-                size: 17, color: AppColors.primary),
-            const SizedBox(width: 7),
-            Text(l10n.reviewYourRequest,
-                style: const TextStyle(
-                    fontWeight: FontWeight.w700, fontSize: 13.5)),
-          ]),
-          const SizedBox(height: 10),
+          Text(l10n.horoscopeCompatibilityReport,
+              style: const TextStyle(
+                  fontWeight: FontWeight.w700, fontSize: 13.5, height: 1.3)),
+          const SizedBox(height: 12),
           person(_personOneLabel, _one),
-          const Divider(height: 20),
+          const Divider(height: 22),
           person(_personTwoLabel, _two),
         ],
       ),
@@ -864,75 +919,42 @@ class _RequestExternalReportScreenState
 
   // ── Chrome ────────────────────────────────────────────────────────────────
 
-  /// Explains, up front, that a guest may submit and what logging in adds
-  /// (spec §1). Shown only on the first step so it never becomes wallpaper.
+  /// The two things worth offering before a single field is filled in: a look
+  /// at a finished report, and — for a guest — a login so the request can be
+  /// tracked afterwards. Both are links, not a card: the paragraph that used to
+  /// sit here explained a flow the member is already standing in.
+  ///
+  /// Shown only on the first step so it never becomes wallpaper.
   Widget _intro() {
     final l10n = context.l10n;
     final isGuest = ref.watch(isGuestProvider);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            const Icon(Icons.description_outlined,
-                color: Colors.white, size: 22),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(l10n.compatibilityReportWithAnyone,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700)),
+    return Wrap(
+      spacing: 18,
+      runSpacing: 4,
+      children: [
+        _introLink(
+          icon: Icons.auto_stories_outlined,
+          label: l10n.viewSampleReport,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              // No pay CTA here: the member is already inside the flow and
+              // both charts still have to be filled in, so closing the sample
+              // simply returns them to the form.
+              builder: (_) => const SampleCompatibilityReportScreen(),
             ),
-          ]),
-          const SizedBox(height: 8),
-          Text(
-              isGuest
-                  ? l10n.guestCanSubmitHoroscopeRequest
-                  : l10n.memberHoroscopeRequestTracked,
-              style: const TextStyle(
-                  color: Colors.white, fontSize: 12.5, height: 1.5)),
-          const SizedBox(height: 10),
-          // Wrap, not Row: in Tamil these two labels do not fit side by side on
-          // a 360px phone, and they must stack rather than overflow (§5A).
-          Wrap(
-            spacing: 18,
-            runSpacing: 6,
-            children: [
-              // The free sample, on the very first screen — before a single
-              // field has been filled in (spec §3).
-              _introLink(
-                icon: Icons.auto_stories_outlined,
-                label: l10n.viewSampleReport,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    // No pay CTA here: the member is already inside the flow
-                    // and both charts still have to be filled in, so closing
-                    // the sample simply returns them to the form.
-                    builder: (_) => const SampleCompatibilityReportScreen(),
-                  ),
-                ),
-              ),
-              if (isGuest)
-                _introLink(
-                  icon: Icons.login,
-                  label: l10n.loginToTrackRequest,
-                  onTap: () => context.go('/login'),
-                ),
-            ],
           ),
-        ],
-      ),
+        ),
+        if (isGuest)
+          _introLink(
+            icon: Icons.login,
+            label: l10n.loginToTrackRequest,
+            onTap: () => context.go('/login'),
+          ),
+      ],
     );
   }
 
-  /// An underlined white link inside the maroon intro card.
+  /// An underlined brand-coloured link above the first step's form.
   Widget _introLink({
     required IconData icon,
     required String label,
@@ -940,15 +962,15 @@ class _RequestExternalReportScreenState
   }) =>
       TextButton.icon(
         onPressed: onTap,
-        icon: Icon(icon, size: 16, color: Colors.white),
+        icon: Icon(icon, size: 16, color: AppColors.primary),
         label: Text(label,
             style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.primary,
                 fontSize: 12.5,
                 height: 1.35,
                 fontWeight: FontWeight.w700,
                 decoration: TextDecoration.underline,
-                decorationColor: Colors.white)),
+                decorationColor: AppColors.primary)),
         style: TextButton.styleFrom(
             padding: EdgeInsets.zero,
             minimumSize: Size.zero,

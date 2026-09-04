@@ -731,6 +731,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get changePhoto => 'புகைப்படத்தை மாற்று';
 
   @override
+  String get takePhoto => 'புகைப்படம் எடுக்க';
+
+  @override
+  String get chooseFromGallery => 'கேலரியிலிருந்து தேர்ந்தெடுக்க';
+
+  @override
   String get uploadPhoto => 'புகைப்படத்தைப் பதிவேற்று';
 
   @override
@@ -1251,6 +1257,15 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get noCompletedReports => 'முடிந்த அறிக்கைகள் இன்னும் இல்லை.';
+
+  @override
+  String get noReportsYetHint => 'புதிய ஜாதகப் பொருத்த அறிக்கையை கோருங்கள்.';
+
+  @override
+  String get yourMatch => 'உங்கள் பொருத்தம்';
+
+  @override
+  String get statusUnderAnalysis => 'பகுப்பாய்வில்';
 
   @override
   String get couldNotLoadYourReports => 'உங்கள் அறிக்கைகளை ஏற்ற முடியவில்லை';

@@ -103,4 +103,47 @@ void main() {
       expect(kTamilValueMap.values, isNot(contains('கணவரை இழந்தவர்')));
     });
   });
+
+  group('the children question follows marital status', () {
+    test('someone who has never married is never asked', () {
+      expect(AppConstants.showsChildrenQuestion('Never Married'), isFalse);
+    });
+
+    test('everyone who has been married is asked', () {
+      expect(AppConstants.showsChildrenQuestion('Married'), isTrue);
+      expect(AppConstants.showsChildrenQuestion('Divorced'), isTrue);
+      expect(AppConstants.showsChildrenQuestion('Widowed'), isTrue);
+    });
+
+    test('a legacy stored value is judged on what it maps onto', () {
+      // 'Unmarried' folds onto Never Married → still not asked…
+      expect(AppConstants.showsChildrenQuestion('Unmarried'), isFalse);
+      // …while the gendered/retired spellings all fold onto statuses that are.
+      expect(AppConstants.showsChildrenQuestion('Widow'), isTrue);
+      expect(AppConstants.showsChildrenQuestion('Widower'), isTrue);
+      expect(AppConstants.showsChildrenQuestion('Awaiting Divorce'), isTrue);
+      expect(AppConstants.showsChildrenQuestion('Separated'), isTrue);
+    });
+
+    test('nothing chosen yet asks nothing', () {
+      expect(AppConstants.showsChildrenQuestion(null), isFalse);
+      expect(AppConstants.showsChildrenQuestion(''), isFalse);
+      expect(AppConstants.showsChildrenQuestion('   '), isFalse);
+    });
+
+    test('an unrecognised value never opens the question by accident', () {
+      expect(AppConstants.showsChildrenQuestion('Complicated'), isFalse);
+    });
+
+    test('every option in the list is decided one way or the other', () {
+      // The rule must cover the whole dropdown — a new option added to
+      // maritalStatusList without a decision here would silently hide the
+      // children question for those members.
+      for (final v in AppConstants.maritalStatusList) {
+        final asked = AppConstants.showsChildrenQuestion(v);
+        expect(asked, v != 'Never Married',
+            reason: '$v should ${v == 'Never Married' ? 'not ' : ''}be asked');
+      }
+    });
+  });
 }

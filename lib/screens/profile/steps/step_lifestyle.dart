@@ -5,7 +5,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
-import '../../../widgets/common/gradient_button.dart';
+import '../../../widgets/common/step_actions.dart';
 import '../../../widgets/common/searchable_field.dart';
 
 /// Lifestyle step — Eating / Smoking / Drinking habits, Hobbies, Interests and
@@ -17,7 +17,11 @@ import '../../../widgets/common/searchable_field.dart';
 /// editable afterwards from My Profile → Lifestyle (`/edit/lifestyle`).
 class StepLifestyle extends ConsumerStatefulWidget {
   final VoidCallback onNext;
-  const StepLifestyle({super.key, required this.onNext});
+
+  /// Moves on without saving anything. Null hides the Skip button (single-
+  /// section editing, where there is nothing to skip to).
+  final VoidCallback? onSkip;
+  const StepLifestyle({super.key, required this.onNext, this.onSkip});
 
   @override
   ConsumerState<StepLifestyle> createState() => _StepLifestyleState();
@@ -91,10 +95,7 @@ class _StepLifestyleState extends ConsumerState<StepLifestyle> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(l10n.lifestyleDetails, style: AppTextStyles.heading2),
-          const SizedBox(height: 8),
-          Text(l10n.lifestyleStepSubtitle,
-              style: const TextStyle(color: Colors.grey)),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           SearchableField(
             label: l10n.eatingHabit,
             items: AppConstants.eatingHabitList,
@@ -134,7 +135,7 @@ class _StepLifestyleState extends ConsumerState<StepLifestyle> {
               label: l10n.languagesKnown,
               hint: l10n.languagesKnownHint),
           const SizedBox(height: 36),
-          GradientButton(onPressed: _saveAndNext, text: l10n.continueLabel),
+          StepActions(onContinue: _saveAndNext, onSkip: widget.onSkip),
         ],
       ),
     );

@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../widgets/common/app_logo.dart';
 import '../../../core/utils/file_actions.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../core/utils/report_pdf.dart';
+import '../../../core/utils/value_l10n.dart';
+import '../../../widgets/common/app_logo.dart';
+import '../../../widgets/common/network_photo.dart';
 import '../../../models/astrologer_request_model.dart';
 import '../../../models/compatibility_report_model.dart';
 import '../../../providers/match_analysis_provider.dart';
@@ -91,22 +93,7 @@ class ReportsTab extends ConsumerWidget {
           Container(
             color: Colors.white,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => context.push('/request-external-report'),
-                icon: const Icon(Icons.add_circle_outline, size: 18),
-                label: Text(context.l10n.requestNewHoroscopeReport,
-                    maxLines: 1, overflow: TextOverflow.ellipsis),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
-                  minimumSize: const Size.fromHeight(46),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
+            child: const _NewReportButton(),
           ),
           Container(
             color: Colors.white,
@@ -156,7 +143,10 @@ class ReportsTab extends ConsumerWidget {
             context, Icons.error_outline, context.l10n.couldNotLoadYourReports,
             retry: () => ref.invalidate(myMatchAnalysisRequestsProvider));
       }
-      return _empty(context, Icons.description_outlined, emptyText);
+      // A blank page tells the member nothing. The empty state names what is
+      // missing and offers the one action that fills it (spec §45).
+      return _empty(context, Icons.description_outlined, emptyText,
+          hint: context.l10n.noReportsYetHint, showRequestCta: true);
     }
     return RefreshIndicator(
       color: AppColors.primary,
@@ -177,25 +167,76 @@ class ReportsTab extends ConsumerWidget {
     );
   }
 
-  Widget _empty(BuildContext context, IconData icon, String text,
-          {VoidCallback? retry}) =>
+  Widget _empty(
+    BuildContext context,
+    IconData icon,
+    String text, {
+    VoidCallback? retry,
+    String? hint,
+    bool showRequestCta = false,
+  }) =>
       Center(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 56, color: AppColors.primary.withOpacity(0.35)),
-              const SizedBox(height: 12),
+              Icon(icon,
+                  size: 56, color: AppColors.primary.withValues(alpha: 0.35)),
+              const SizedBox(height: 14),
               Text(text,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+                  style: const TextStyle(
+                      fontSize: 15.5,
+                      height: 1.4,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Poppins')),
+              if (hint != null) ...[
+                const SizedBox(height: 8),
+                Text(hint,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: Colors.grey[600], fontSize: 13, height: 1.5)),
+              ],
               if (retry != null) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 OutlinedButton(
                     onPressed: retry, child: Text(context.l10n.tryAgain)),
               ],
+              if (showRequestCta) ...[
+                const SizedBox(height: 20),
+                const _NewReportButton(),
+              ],
             ],
+          ),
+        ),
+      );
+}
+
+/// The "+ Request a new horoscope report" action. Lives in two places — above
+/// the tabs and inside the empty state — so it is defined once.
+class _NewReportButton extends StatelessWidget {
+  const _NewReportButton();
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: () => context.push('/request-external-report'),
+          icon: const Icon(Icons.add_circle_outline, size: 19),
+          label: Text(context.l10n.requestNewHoroscopeReport,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              style: const TextStyle(
+                  fontSize: 14.5, height: 1.25, fontWeight: FontWeight.w700)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(vertical: 13),
+            minimumSize: const Size.fromHeight(48),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
       );
@@ -209,191 +250,277 @@ int _stageIndex(AstrologerRequestModel r) =>
 
 const int _stageCount = 4;
 
+/// One report, presented by WHO it is about.
+///
+/// The card leads with the other person — their photo on the left, their name
+/// on the right — because "whose report is this?" is the only question a list
+/// of reports has to answer at a glance. Everything else (type, status,
+/// progress, dates, the request id) sits underneath in decreasing importance,
+/// and the request id is deliberately the quietest thing on the card: it is a
+/// support reference, not something anyone reads by choice.
+///
+/// Every value is resolved from the stored request — there is no placeholder
+/// name and no invented percentage. When the other person is a registered
+/// member their live profile supplies the photo and the current name; when they
+/// are not (an external two-chart request) the entered name stands and the
+/// photo falls back to a gender-appropriate avatar rather than a broken image.
 class _ReportCard extends ConsumerWidget {
   final AstrologerRequestModel report;
   final String myName;
   const _ReportCard({required this.report, required this.myName});
 
-  String _date(DateTime? d) => d == null
+  static String _date(DateTime? d) => d == null
       ? '—'
       : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
-  String get _partnerName {
-    // External report → the second (non-registered) person's entered name.
+  /// The other person's profile document id, when they are a registered member.
+  ///
+  /// A request stores the groom side as profileA and the bride side as
+  /// profileB; whichever of the two is not the viewer's own profile is the
+  /// partner. External requests have no second profile at all.
+  String? _partnerProfileId(String? myProfileId) {
+    if (report.isExternalReport) return null;
+    final a = (report.profileAId ?? '').trim();
+    final b = (report.profileBId ?? '').trim();
+    if (myProfileId != null && myProfileId.isNotEmpty) {
+      if (a == myProfileId) return b.isEmpty ? null : b;
+      if (b == myProfileId) return a.isEmpty ? null : a;
+    }
+    // No profile of our own to compare against — take whichever side exists.
+    if (b.isNotEmpty) return b;
+    return a.isEmpty ? null : a;
+  }
+
+  /// The name stored on the request for the other person. Used as-is when the
+  /// partner has no live profile to read a current name from.
+  String _storedPartnerName(BuildContext context) {
     if (report.isExternalReport) {
       final other = (report.externalOther['name'] ?? '').toString().trim();
       if (other.isNotEmpty) return other;
     }
-    final groom = report.groomName ?? '';
-    final bride = report.brideName ?? '';
+    final groom = (report.groomName ?? '').trim();
+    final bride = (report.brideName ?? '').trim();
     if (myName.isNotEmpty && groom == myName && bride.isNotEmpty) return bride;
     if (myName.isNotEmpty && bride == myName && groom.isNotEmpty) return groom;
     final both = [groom, bride].where((s) => s.isNotEmpty).join(' & ');
-    return both.isEmpty ? 'Your match' : both;
+    return both.isEmpty ? context.l10n.yourMatch : both;
+  }
+
+  /// The other person's gender, so a photo-less card still shows the right
+  /// avatar instead of a generic silhouette.
+  String get _partnerGender {
+    if (report.isExternalReport) {
+      return (report.externalOther['gender'] ?? '').toString();
+    }
+    // profileB is the bride side, profileA the groom side.
+    final bride = (report.brideName ?? '').trim();
+    return myName.isNotEmpty && bride == myName ? 'Male' : 'Female';
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final completed = report.status == AstrologerRequestStatus.completed;
-    final idx = _stageIndex(report);
-    final color = completed ? Colors.green : Colors.blue;
-    final label = completed ? l10n.statusCompleted : l10n.statusPending;
+    final rejected = report.status == AstrologerRequestStatus.rejected;
+
+    // The partner's live profile, when there is one to read. A failed or
+    // still-loading lookup simply leaves the stored name and the avatar in
+    // place — the card never waits on it and never shows an error for it.
+    final myProfileId = ref.watch(myProfileProvider).valueOrNull?.id;
+    final partnerId = _partnerProfileId(myProfileId);
+    final partner = partnerId == null
+        ? null
+        : ref.watch(profileByIdProvider(partnerId)).valueOrNull;
+
+    final livePartnerName =
+        (partner?.displayName(context.isTamil) ?? '').trim();
+    final partnerName = livePartnerName.isNotEmpty
+        ? livePartnerName
+        : _storedPartnerName(context);
+    final photoUrl = partner?.profilePhotoUrl ?? '';
+
+    final statusColor = completed
+        ? AppColors.success
+        : rejected
+            ? AppColors.error
+            : AppColors.info;
+    final statusLabel = completed
+        ? l10n.statusCompleted
+        : rejected
+            ? l10n.statusRejected
+            : l10n.statusUnderAnalysis;
+    final statusIcon = completed
+        ? Icons.check_circle
+        : rejected
+            ? Icons.cancel_outlined
+            : Icons.hourglass_bottom;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 12,
               offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Who this report is about ────────────────────────────────────
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.auto_awesome,
-                    color: AppColors.primary, size: 20),
-              ),
-              const SizedBox(width: 10),
+              _photo(photoUrl),
+              const SizedBox(width: 13),
               Expanded(
-                child: Text(_partnerName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 15.5, fontWeight: FontWeight.w700)),
-              ),
-              // Status indicator with an icon (better at-a-glance state).
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                        completed
-                            ? Icons.check_circle
-                            : Icons.hourglass_bottom,
-                        size: 12,
-                        color: color),
-                    const SizedBox(width: 4),
-                    Text(label,
+                    Text(partnerName,
+                        maxLines: 2,
+                        style: const TextStyle(
+                            fontSize: 16.5,
+                            height: 1.25,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 3),
+                    Text(l10n.horoscopeCompatibilityReport,
+                        maxLines: 2,
                         style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: color)),
+                            fontSize: 12.5,
+                            height: 1.35,
+                            color: Colors.grey[600])),
+                    const SizedBox(height: 8),
+                    _statusChip(statusLabel, statusColor, statusIcon),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: (idx + 1) / _stageCount,
-              minHeight: 6,
-              backgroundColor: Colors.grey.shade200,
-              valueColor: AlwaysStoppedAnimation(color),
+          // ── Progress — the real stage, never an invented percentage ──────
+          if (!rejected) ...[
+            const SizedBox(height: 14),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: (_stageIndex(report) + 1) / _stageCount,
+                minHeight: 6,
+                backgroundColor: Colors.grey.shade200,
+                valueColor: AlwaysStoppedAnimation(statusColor),
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            completed ? l10n.reportReadyMsg : l10n.reportPreparingMsg,
-            style: TextStyle(fontSize: 11.5, color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 10),
-          _typeBadge(),
-          const SizedBox(height: 8),
-          _row('Request ID', report.id),
+            const SizedBox(height: 6),
+            Text(completed ? l10n.reportReadyMsg : l10n.reportPreparingMsg,
+                style: TextStyle(
+                    fontSize: 11.5, height: 1.4, color: Colors.grey[600])),
+          ],
+          const SizedBox(height: 12),
           _row(l10n.requestDate, _date(report.createdAt)),
           if (completed) _row(l10n.completedDate, _date(report.completedAt)),
+          const SizedBox(height: 6),
+          // The request id is a support reference — small, grey, last.
+          Text('${l10n.requestIdLabel}: ${report.id}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 10.5, color: Colors.grey[400])),
+          const SizedBox(height: 12),
+          // ── One strong primary action ───────────────────────────────────
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => completed
+                  ? _viewReport(context, partnerName)
+                  : Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) =>
+                          ReportSubmissionDetailsScreen(request: report),
+                    )),
+              icon: Icon(
+                  completed
+                      ? Icons.visibility_outlined
+                      : Icons.description_outlined,
+                  size: 18),
+              label: Text(completed ? l10n.viewReport : l10n.viewDetails,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  style: const TextStyle(
+                      fontSize: 14, height: 1.25, fontWeight: FontWeight.w700)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                minimumSize: const Size.fromHeight(46),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          // §15 — the submitted details stay reachable from a COMPLETED report
+          // too, so the member can always review exactly what they sent.
+          // Read-only: there is deliberately no edit here (§16).
           if (completed) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 9),
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _viewReport(context),
-                    icon: const Icon(Icons.visibility_outlined, size: 18),
-                    label: Text(l10n.viewReport),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
+                  child: _DownloadReportButton(
+                      report: report,
+                      myName: myName,
+                      partnerName: partnerName),
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => ReportSubmissionDetailsScreen(
+                                request: report))),
+                    icon: const Icon(Icons.description_outlined, size: 17),
+                    label: Text(l10n.viewDetails,
+                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: BorderSide(
+                          color: AppColors.primary.withValues(alpha: 0.5)),
                       minimumSize: const Size.fromHeight(42),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _DownloadReportButton(
-                      report: report,
-                      myName: myName,
-                      partnerName: _partnerName),
-                ),
               ],
             ),
           ],
-          // §15 — View Details on EVERY report, Under Analysis and Completed
-          // alike, so the member can always review exactly what they
-          // submitted. Read-only: there is deliberately no edit here (§16).
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) =>
-                    ReportSubmissionDetailsScreen(request: report),
-              )),
-              icon: const Icon(Icons.description_outlined, size: 18),
-              label: Text(l10n.viewDetails),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: BorderSide(
-                    color: AppColors.primary.withValues(alpha: 0.5)),
-                minimumSize: const Size.fromHeight(42),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  /// Request-type chip: external (second person not on the app) vs the internal
-  /// accepted-match compatibility report.
-  Widget _typeBadge() {
-    final external = report.isExternalReport;
-    final color = external ? AppColors.gold : AppColors.primary;
-    final label =
-        external ? 'External Horoscope Report' : 'Internal Compatibility';
-    final icon = external ? Icons.public : Icons.favorite;
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+  /// The other person's photo: big enough to identify them at a glance, and a
+  /// gender-appropriate avatar — never a broken image — when there is none.
+  Widget _photo(String url) => ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: NetworkPhoto(
+          url: url,
+          width: 78,
+          height: 78,
+          fit: BoxFit.cover,
+          fallbackIcon: _partnerGender == 'Male'
+              ? Icons.man_outlined
+              : Icons.woman_outlined,
+          fallbackIconSize: 38,
+        ),
+      );
+
+  Widget _statusChip(String label, Color color, IconData icon) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -401,28 +528,30 @@ class _ReportCard extends ConsumerWidget {
           children: [
             Icon(icon, size: 13, color: color),
             const SizedBox(width: 5),
-            Text(label,
-                style: TextStyle(
-                    fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+            Flexible(
+              child: Text(label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: color)),
+            ),
           ],
         ),
-      ),
-    );
-  }
+      );
 
   Widget _row(String k, String v) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
                 width: 120,
                 child: Text(k,
-                    style:
-                        TextStyle(fontSize: 12.5, color: Colors.grey[600]))),
+                    style: TextStyle(fontSize: 12.5, color: Colors.grey[600]))),
             Expanded(
               child: Text(v,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                       fontSize: 12.5, fontWeight: FontWeight.w600)),
             ),
@@ -431,7 +560,7 @@ class _ReportCard extends ConsumerWidget {
       );
 
   /// Opens the right in-app viewer for the report's content type.
-  void _viewReport(BuildContext context) {
+  void _viewReport(BuildContext context, String partnerName) {
     // Structured Marriage Compatibility Report → the read-only A4-style page.
     final compat = CompatibilityReport.tryFrom(report.compatReport);
     if (compat != null && compat.isSubmitted) {
@@ -459,7 +588,7 @@ class _ReportCard extends ConsumerWidget {
     // Text / mixed → styled full report page (one complete report experience).
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => ReportViewScreen(
-          report: report, myName: myName, partnerName: _partnerName),
+          report: report, myName: myName, partnerName: partnerName),
     ));
   }
 }

@@ -33,8 +33,13 @@ import 'steps/step_review.dart';
 /// Each input step is a focused page so the form never feels overwhelming.
 /// Required fields are validated per step. Progress is auto-saved as a draft
 /// so a signed-out user can resume on the next sign-in. There is NO
-/// "Save & Exit" — navigation is Next/Continue only, with a Skip action on
-/// the OPTIONAL sections (Lifestyle, Photos, Upload Horoscope).
+/// "Save & Exit" — navigation is Next/Continue only.
+///
+/// The OPTIONAL sections (Lifestyle, Photos, Upload Horoscope) carry their Skip
+/// where the member is already looking: a full-width **Skip** button directly
+/// under **Continue**, at the bottom of the page. There is no Skip in the app
+/// bar — a destructive-looking action tucked into the header is easy to hit by
+/// accident and easy to miss when you actually want it.
 ///
 /// EDIT MODE ([editProfileId] non-null, opened via Menu → Profile → Edit
 /// Profile): the wizard is seeded with the EXISTING profile so every field —
@@ -103,14 +108,6 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   /// The 11 shared profile steps, plus the admin-only Login Credentials step.
   static const int _memberSteps = 11;
   int get _totalSteps => _isAdminMode ? _memberSteps + 1 : _memberSteps;
-
-  /// Steps the user may SKIP — only the optional sections: Lifestyle (5),
-  /// Photos (7) and Upload Horoscope (8). Mandatory steps never show Skip.
-  ///
-  /// Partner Preferences is NO LONGER skippable: the partner AGE range is
-  /// mandatory (§11), so that step must be completed. Lifestyle carries no
-  /// required field at all, so an empty Lifestyle can never block creation.
-  static const Set<int> _skippableSteps = {5, 7, 8};
 
   /// The 11 profile-creation steps, in wizard order.
   /// Titles are ALWAYS read from the l10n dictionary so they follow the
@@ -249,6 +246,10 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
           duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     }
   }
+
+  /// Skipping an optional step is simply "move on without saving anything".
+  /// Null in section-edit mode, which hides the Skip button entirely.
+  VoidCallback? get _skipAction => _isSectionMode ? null : _nextStep;
 
   /// Jump directly to [step] — used by the Review step's "Edit" actions.
   void _goToStep(int step) {
@@ -436,11 +437,14 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
       StepEducation(onNext: _nextStep),
       StepReligious(onNext: _nextStep),
       Step3Horoscope(onNext: _nextStep),
-      // Lifestyle — fully OPTIONAL (no validation, and skippable).
-      StepLifestyle(onNext: _nextStep),
+      // Lifestyle — fully OPTIONAL (no validation, and skippable). The three
+      // optional steps render their own Continue + Skip pair at the bottom;
+      // `onSkip` is null in section-edit mode, where there is nothing to skip
+      // to.
+      StepLifestyle(onNext: _nextStep, onSkip: _skipAction),
       StepPartnerPreference(onNext: _nextStep),
-      Step6Photos(onNext: _nextStep),
-      StepHoroscopeUpload(onNext: _nextStep),
+      Step6Photos(onNext: _nextStep, onSkip: _skipAction),
+      StepHoroscopeUpload(onNext: _nextStep, onSkip: _skipAction),
       Step7Contact(onNext: _nextStep),
       StepReview(
         onSubmit: _nextStep,
@@ -482,9 +486,9 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
                         tooltip: context.l10n.logout,
                         onPressed: _confirmLogout,
                       ),
-        // No "Save & Exit" (removed per spec) — only a Skip action on the
-        // OPTIONAL sections, plus the submit spinner. Section mode never
-        // shows Skip (closing already discards).
+        // No "Save & Exit" and no Skip: the only thing the app bar carries is
+        // the submit spinner. Skip lives at the bottom of the optional steps,
+        // beneath Continue.
         actions: [
           if (creationState.isLoading || _provisioning)
             const Padding(
@@ -496,12 +500,6 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white)),
               ),
-            )
-          else if (!_isSectionMode && _skippableSteps.contains(_currentStep))
-            TextButton(
-              onPressed: _nextStep,
-              child: Text(context.l10n.skip,
-                  style: const TextStyle(color: Colors.white, fontSize: 14)),
             ),
         ],
       ),

@@ -53,10 +53,14 @@ void main() {
 
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
-    // Step 1 is Person 1, and a guest is told they may submit without an
-    // account rather than being blocked by a login wall.
+    // Step 1 is Person 1. A guest is not blocked by a login wall: the form is
+    // simply there, with the two things worth offering before anything has
+    // been typed — a look at a finished report, and a login for anyone who
+    // also wants to track the request afterwards. Both are links, not a
+    // paragraph explaining the flow the member is already standing in.
     expect(find.text(l10n.personOneDetails), findsOneWidget);
-    expect(find.text(l10n.guestCanSubmitHoroscopeRequest), findsOneWidget);
+    expect(find.text(l10n.viewSampleReport), findsOneWidget);
+    expect(find.text(l10n.loginToTrackRequest), findsOneWidget);
     expect(find.text(l10n.continueLabel), findsOneWidget);
 
     // Continue with an empty form must NOT advance — the required fields are
@@ -79,5 +83,68 @@ void main() {
 
     final l10n = await AppLocalizations.delegate.load(const Locale('ta'));
     expect(find.text(l10n.personOneDetails), findsOneWidget);
+  });
+
+  group('the pay button is never a step backwards', () {
+    // The regression: the contact details were validated through their Form,
+    // and that Form is only in the tree while the contact step is showing. By
+    // the time "Pay ₹199 · Request report" was pressed its state was null, the
+    // check read null as "invalid", and the member was silently sent back to
+    // the contact step instead of into Google Play.
+    //
+    // The check is a VALUE check now, so it cannot depend on what happens to
+    // be mounted.
+    late AppLocalizations l10n;
+
+    setUpAll(() async {
+      l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    });
+
+    test('complete details are accepted with no Form anywhere in sight', () {
+      expect(
+        horoscopeContactProblem(
+            name: 'Meena R', whatsapp: '9876543210', l10n: l10n),
+        isNull,
+      );
+    });
+
+    test('spacing inside a ten-digit number is ignored', () {
+      expect(
+        horoscopeContactProblem(
+            name: 'Meena R', whatsapp: '98765 43210', l10n: l10n),
+        isNull,
+      );
+    });
+
+    test('a country code left in the field is rejected, not silently stored',
+        () {
+      // The field's formatter trims a pasted "+91…" down to the local number,
+      // so twelve digits reaching here means something went wrong upstream —
+      // and twelve digits is not a number worth writing to the request.
+      expect(
+        horoscopeContactProblem(
+            name: 'Meena R', whatsapp: '+91 98765 43210', l10n: l10n),
+        l10n.whatsappMustBe10Digits,
+      );
+    });
+
+    test('a missing name says so', () {
+      expect(
+        horoscopeContactProblem(name: ' ', whatsapp: '9876543210', l10n: l10n),
+        l10n.pleaseEnterFullName,
+      );
+    });
+
+    test('an empty and a short number are told apart', () {
+      expect(
+        horoscopeContactProblem(name: 'Meena R', whatsapp: '', l10n: l10n),
+        l10n.whatsappRequired,
+      );
+      expect(
+        horoscopeContactProblem(
+            name: 'Meena R', whatsapp: '98765', l10n: l10n),
+        l10n.whatsappMustBe10Digits,
+      );
+    });
   });
 }

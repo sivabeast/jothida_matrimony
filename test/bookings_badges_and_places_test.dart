@@ -259,10 +259,12 @@ void main() {
 
     // Row order is [Ramanathapuram, Sivaganga, "use what I typed"], so index 1
     // is the Sivaganga village — NOT `.last`, which is the free-text fallback.
-    await tester.tap(find.byIcon(Icons.add_circle_outline).at(1));
+    //
+    // Tapping the row IS the selection: there is no "+" to stage it with and
+    // no Save button to confirm it, and the sheet closes on the tap.
+    await tester.tap(find.byType(ListTile).at(1));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Save'));
-    await tester.pumpAndSettle();
+    expect(find.byType(ListTile), findsNothing, reason: 'the sheet closed');
 
     expect(picked, isNotNull);
     expect(picked!.display, 'Athikkolam, Sivaganga, Tamil Nadu');

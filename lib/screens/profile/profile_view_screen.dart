@@ -1071,12 +1071,24 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                       profile.weight),
                   _InfoItem(Icons.wc, context.l10n.maritalStatus,
                       context.localizeValue(profile.maritalStatus)),
-                  _InfoItem(
-                      Icons.child_care_outlined,
-                      context.l10n.childrenCountLabel,
-                      profile.childrenCount > 0
-                          ? '${profile.childrenCount}'
-                          : ''),
+                  // Children — asked only of someone who has been married, so
+                  // only shown for those profiles. A blank value hides the row
+                  // outright (see _buildInfoSection), which is exactly what a
+                  // never-married profile should render: nothing.
+                  if (AppConstants.showsChildrenQuestion(profile.maritalStatus))
+                    _InfoItem(
+                        Icons.child_care_outlined,
+                        context.l10n.childrenCountLabel,
+                        profile.childrenCount > 0
+                            ? '${profile.childrenCount}'
+                            : context.l10n.no),
+                  if (AppConstants.showsChildrenQuestion(profile.maritalStatus) &&
+                      profile.childrenCount > 0)
+                    _InfoItem(
+                        Icons.home_outlined,
+                        context.l10n.childrenLivingStatus,
+                        context.localizeValue(
+                            profile.childrenLivingStatus ?? '')),
                   _InfoItem(Icons.accessibility_new, context.l10n.physicalStatus,
                       context.localizeValue(profile.physicalStatus)),
                   _InfoItem(Icons.translate, context.l10n.motherTongue,

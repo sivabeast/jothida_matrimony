@@ -238,13 +238,30 @@ class AppConstants {
     return legacyMaritalStatusAliases[v];
   }
 
-  /// Marital statuses that imply the user may have children → show the
-  /// children count / living-status fields. Includes the legacy spellings so
-  /// the check works on a raw stored value too.
+  /// Marital statuses that imply the member may have children → the
+  /// "Do you have children?" question (and, once answered yes, the count and
+  /// living status) is shown. Includes the legacy spellings so the check works
+  /// on a raw stored value too.
+  ///
+  /// `Never Married` is deliberately ABSENT: someone who has never married is
+  /// never asked about children, so the question — and every field under it —
+  /// is hidden outright rather than shown and ignored.
   static const List<String> maritalStatusesWithChildren = [
-    'Divorced', 'Widowed',
+    'Married', 'Divorced', 'Widowed',
     'Widow', 'Widower', 'Awaiting Divorce', 'Separated',
   ];
+
+  /// Whether the children question belongs on the form for [maritalStatus].
+  ///
+  /// Normalises first, so a legacy stored value ('Widow', 'Unmarried') is
+  /// judged on the option it actually maps to. An empty / not-yet-chosen
+  /// status shows nothing: the question only appears once the member has said
+  /// they were married at some point.
+  static bool showsChildrenQuestion(String? maritalStatus) {
+    final canonical = normalizeMaritalStatus(maritalStatus);
+    if (canonical == null) return false;
+    return maritalStatusesWithChildren.contains(canonical);
+  }
 
   /// Gender options. Hardcoded `['Male', 'Female']` literals were scattered
   /// across the member and admin forms; they all read this now.

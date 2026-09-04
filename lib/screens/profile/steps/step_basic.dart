@@ -18,10 +18,12 @@ import '../../../widgets/common/searchable_field.dart';
 /// optional per §1), Gender, Date of Birth, Height, Weight, Marital Status,
 /// Physical Status, and the children question.
 ///
-/// Children are asked DIRECTLY (§2) — "உங்களுக்கு குழந்தைகள் உள்ளனவா?" — not
-/// inferred from marital status. The old rule only offered the field to
-/// divorced/widowed members, which both missed people who have children and
-/// forced the question on people who do not.
+/// The children question — "உங்களுக்கு குழந்தைகள் உள்ளனவா?" — is CONDITIONAL on
+/// marital status. Someone who has never married is never asked it: the
+/// question, the count stepper and the living-status field are all absent from
+/// the form, not merely ignored on save. Married / Divorced / Widowed members
+/// are asked, and answering "No" hides the count again.
+/// [AppConstants.showsChildrenQuestion] is the single rule behind that.
 class StepBasic extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   const StepBasic({super.key, required this.onNext});
@@ -51,13 +53,17 @@ class _StepBasicState extends ConsumerState<StepBasic> {
   String? _physicalStatus;
   String? _childrenLivingStatus;
 
-  /// §2 — asked outright, independent of marital status. Null until answered,
-  /// which is what makes the question required.
+  /// Null until answered, which is what makes the question required — but only
+  /// while it is actually being asked (see [_showChildren]).
   bool? _hasChildren;
 
   /// Only meaningful while [_hasChildren] is true. Starts at 1 because that is
-  /// the answer for anyone who just said "yes" (§2).
+  /// the answer for anyone who just said "yes".
   int _childrenCount = 1;
+
+  /// Whether the children block belongs on the form at all. Driven purely by
+  /// marital status, so "Never Married" removes the question outright.
+  bool get _showChildren => AppConstants.showsChildrenQuestion(_maritalStatus);
 
   @override
   void initState() {
@@ -81,17 +87,20 @@ class _StepBasicState extends ConsumerState<StepBasic> {
         AppConstants.normalizeMaritalStatus(data['maritalStatus'] as String?);
     _physicalStatus = data['physicalStatus'] as String?;
     _childrenLivingStatus = data['childrenLivingStatus'] as String?;
-    // `hasChildren` is the new explicit answer; a draft written before it
-    // existed is recovered from the count it already stored, so reopening an
-    // old draft does not silently re-ask a question the member answered.
-    final count = data['childrenCount'];
-    final savedHas = data['hasChildren'];
-    if (savedHas is bool) {
-      _hasChildren = savedHas;
-    } else if (count is int) {
-      _hasChildren = count > 0;
+    // `hasChildren` is the explicit answer; a draft written before it existed
+    // is recovered from the count it already stored, so reopening an old draft
+    // does not silently re-ask a question the member answered. Only seeded when
+    // the saved marital status still asks the question at all.
+    if (_showChildren) {
+      final count = data['childrenCount'];
+      final savedHas = data['hasChildren'];
+      if (savedHas is bool) {
+        _hasChildren = savedHas;
+      } else if (count is int) {
+        _hasChildren = count > 0;
+      }
+      if (count is int && count > 0) _childrenCount = count;
     }
-    if (count is int && count > 0) _childrenCount = count;
   }
 
   @override
@@ -158,13 +167,16 @@ class _StepBasicState extends ConsumerState<StepBasic> {
           l10n.pleaseSelect(l10n.maritalStatus)),
       FieldCheck.notEmpty('physicalStatus', _physicalStatus,
           l10n.pleaseSelect(l10n.physicalStatus)),
-      // §2 — the yes/no answer itself is required…
-      FieldCheck(
-          id: 'hasChildren',
-          valid: _hasChildren != null,
-          message: l10n.pleaseSelect(l10n.haveChildren)),
+      // The yes/no answer is required only while the question is on screen —
+      // a never-married member is never blocked by a question they were never
+      // asked.
+      if (_showChildren)
+        FieldCheck(
+            id: 'hasChildren',
+            valid: _hasChildren != null,
+            message: l10n.pleaseSelect(l10n.haveChildren)),
       // …and the living status only matters once the answer is yes.
-      if (_hasChildren == true)
+      if (_showChildren && _hasChildren == true)
         FieldCheck.notEmpty('childrenLivingStatus', _childrenLivingStatus,
             l10n.pleaseSelect(l10n.childrenLivingStatus)),
     ];
@@ -181,10 +193,13 @@ class _StepBasicState extends ConsumerState<StepBasic> {
       'weight': _weightController.text.trim(),
       'maritalStatus': _maritalStatus,
       'physicalStatus': _physicalStatus,
-      'hasChildren': _hasChildren ?? false,
-      'childrenCount': _hasChildren == true ? _childrenCount : 0,
+      // A hidden question stores a clean "no children" rather than whatever
+      // was picked before the marital status changed.
+      'hasChildren': _showChildren && _hasChildren == true,
+      'childrenCount':
+          _showChildren && _hasChildren == true ? _childrenCount : 0,
       'childrenLivingStatus':
-          _hasChildren == true ? _childrenLivingStatus : null,
+          _showChildren && _hasChildren == true ? _childrenLivingStatus : null,
     });
     widget.onNext();
   }
@@ -198,10 +213,7 @@ class _StepBasicState extends ConsumerState<StepBasic> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(context.l10n.basicDetails, style: AppTextStyles.heading2),
-            const SizedBox(height: 8),
-            Text(context.l10n.letsStartEssentials,
-                style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             SearchableField(
               key: _v.anchor('profileFor'),
               label: context.l10n.profileCreatedFor,
@@ -333,6 +345,9 @@ class _StepBasicState extends ConsumerState<StepBasic> {
               onChanged: (v) => setState(() {
                 _maritalStatus = v;
                 _v.clear('maritalStatus');
+                // Switching to a status that does not ask about children must
+                // not leave a stale answer behind for the save to pick up.
+                if (!_showChildren) _resetChildren();
               }),
             ),
             const SizedBox(height: 16),
@@ -349,46 +364,50 @@ class _StepBasicState extends ConsumerState<StepBasic> {
                 _v.clear('physicalStatus');
               }),
             ),
-            // ── §2 Children — asked directly, never inferred ───────────────
-            const SizedBox(height: 20),
-            Text('${context.l10n.haveChildren} *',
-                key: _v.anchor('hasChildren'),
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(child: _yesNoCard(true, context.l10n.yes)),
-                const SizedBox(width: 16),
-                Expanded(child: _yesNoCard(false, context.l10n.no)),
+            // ── Children — only for someone who has been married ───────────
+            // "Never Married" removes the whole block: no question, no count,
+            // no living status.
+            if (_showChildren) ...[
+              const SizedBox(height: 20),
+              Text('${context.l10n.haveChildren} *',
+                  key: _v.anchor('hasChildren'),
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(child: _yesNoCard(true, context.l10n.yes)),
+                  const SizedBox(width: 16),
+                  Expanded(child: _yesNoCard(false, context.l10n.no)),
+                ],
+              ),
+              InlineFieldError(_v.errorOf('hasChildren')),
+              // "No" hides the count entirely — the stepper only exists once
+              // there is something to count.
+              if (_hasChildren == true) ...[
+                const SizedBox(height: 16),
+                NumberStepperField(
+                  label: context.l10n.numberOfChildren,
+                  value: _childrenCount,
+                  min: 1,
+                  max: 15,
+                  prefixIcon: Icons.child_care_outlined,
+                  onChanged: (v) => setState(() => _childrenCount = v),
+                ),
+                const SizedBox(height: 16),
+                SearchableField(
+                  key: _v.anchor('childrenLivingStatus'),
+                  label: context.l10n.childrenLivingStatus,
+                  isRequired: true,
+                  items: AppConstants.childrenLivingStatusList,
+                  selectedItem: _childrenLivingStatus,
+                  prefixIcon: Icons.home_outlined,
+                  errorText: _v.errorOf('childrenLivingStatus'),
+                  onChanged: (v) => setState(() {
+                    _childrenLivingStatus = v;
+                    _v.clear('childrenLivingStatus');
+                  }),
+                ),
               ],
-            ),
-            InlineFieldError(_v.errorOf('hasChildren')),
-            // "No" hides the count entirely (§2) — the stepper only exists
-            // once there is something to count.
-            if (_hasChildren == true) ...[
-              const SizedBox(height: 16),
-              NumberStepperField(
-                label: context.l10n.numberOfChildren,
-                value: _childrenCount,
-                min: 1,
-                max: 15,
-                prefixIcon: Icons.child_care_outlined,
-                onChanged: (v) => setState(() => _childrenCount = v),
-              ),
-              const SizedBox(height: 16),
-              SearchableField(
-                key: _v.anchor('childrenLivingStatus'),
-                label: context.l10n.childrenLivingStatus,
-                isRequired: true,
-                items: AppConstants.childrenLivingStatusList,
-                selectedItem: _childrenLivingStatus,
-                prefixIcon: Icons.home_outlined,
-                errorText: _v.errorOf('childrenLivingStatus'),
-                onChanged: (v) => setState(() {
-                  _childrenLivingStatus = v;
-                  _v.clear('childrenLivingStatus');
-                }),
-              ),
             ],
             const SizedBox(height: 36),
             GradientButton(
@@ -399,21 +418,26 @@ class _StepBasicState extends ConsumerState<StepBasic> {
     );
   }
 
-  /// One half of the ஆம் / இல்லை pair (§2). Styled like [_genderCard] so the
-  /// two choice rows on this step read as the same control.
+  /// Wipes every children answer. Called both when "No" is chosen and when the
+  /// marital status stops asking the question, so neither route can leave a
+  /// stale count or living status behind for the save to pick up.
+  void _resetChildren({bool keepAnswer = false}) {
+    if (!keepAnswer) _hasChildren = null;
+    _childrenCount = 1;
+    _childrenLivingStatus = null;
+    _v.clear('hasChildren');
+    _v.clear('childrenLivingStatus');
+  }
+
+  /// One half of the ஆம் / இல்லை pair. Styled like [_genderCard] so the two
+  /// choice rows on this step read as the same control.
   Widget _yesNoCard(bool answer, String label) {
     final selected = _hasChildren == answer;
     return GestureDetector(
       onTap: () => setState(() {
+        if (!answer) _resetChildren();
         _hasChildren = answer;
         _v.clear('hasChildren');
-        if (!answer) {
-          // Answering "no" must not leave a stale count or living status
-          // behind for the save to pick up.
-          _childrenCount = 1;
-          _childrenLivingStatus = null;
-          _v.clear('childrenLivingStatus');
-        }
       }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),

@@ -258,6 +258,14 @@
   "couldNotDeleteAccount": "Could not delete your account. Please try again.",
   "viewPhoto": "View Photo",
   "changePhoto": "Change Photo",
+  "takePhoto": "Take Photo",
+  "@takePhoto": {
+    "description": "Photo-source sheet: open the camera."
+  },
+  "chooseFromGallery": "Choose from Gallery",
+  "@chooseFromGallery": {
+    "description": "Photo-source sheet: pick an existing image."
+  },
   "uploadPhoto": "Upload Photo",
   "removePhoto": "Remove Photo",
   "removePhotoConfirm": "Remove your profile photo?",
@@ -460,6 +468,18 @@
   "completedDate": "Completed Date",
   "noReportsUnderAnalysis": "No reports under analysis.\nRequest a Horoscope Compatibility Report from an accepted match.",
   "noCompletedReports": "No completed reports yet.",
+  "noReportsYetHint": "Request a new horoscope compatibility report.",
+  "@noReportsYetHint": {
+    "description": "Supporting line under the empty Reports state, above the request button."
+  },
+  "yourMatch": "Your match",
+  "@yourMatch": {
+    "description": "Fallback name on a report card when neither person has been named."
+  },
+  "statusUnderAnalysis": "Under Analysis",
+  "@statusUnderAnalysis": {
+    "description": "Report status shown while an astrologer is still preparing it."
+  },
   "couldNotLoadYourReports": "Could not load your reports",
   "preparingReport": "Preparing your report…",
   "reportDownloadFailed": "Could not download the report. Please try again.",

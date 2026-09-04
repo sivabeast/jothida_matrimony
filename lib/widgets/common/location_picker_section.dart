@@ -234,13 +234,7 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
               : '${_city!.nameFor(_lang)}, ${_district?.nameFor(_lang) ?? ''}, ${TnState.nameFor(_lang)}',
           onChanged: _onPlaceSearched,
         ),
-        const SizedBox(height: 6),
-        Padding(
-          padding: const EdgeInsets.only(left: 4),
-          child: Text(context.l10n.locationCityOnlyHint,
-              style: TextStyle(fontSize: 11.5, color: Colors.grey[600])),
-        ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         // ── 📍 Use My Location ──
         OutlinedButton.icon(
           onPressed: _detecting ? null : _useMyLocation,
@@ -261,32 +255,16 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         ),
+        // The resolved place already reads back inside the field above, so
+        // there is no second "City, State" summary line under it — one answer
+        // is shown once.
         if (_locError != null)
           Padding(
-            padding: const EdgeInsets.only(top: 6, left: 2),
+            padding: const EdgeInsets.only(top: 8, left: 2),
             child: Text(_locError!,
-                style: const TextStyle(color: AppColors.error, fontSize: 12.5)),
+                style: const TextStyle(
+                    color: AppColors.error, fontSize: 12.5, height: 1.35)),
           ),
-
-        // ── 📍 City, State summary — confirms what was resolved ──
-        if (_city != null || (_legacyCity ?? '').isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Icon(Icons.place, size: 16, color: AppColors.primary),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  '${_city?.nameFor(_lang) ?? _legacyCity}, ${TnState.nameFor(_lang)}',
-                  style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13),
-                ),
-              ),
-            ],
-          ),
-        ],
       ],
     );
   }

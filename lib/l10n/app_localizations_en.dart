@@ -728,6 +728,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get changePhoto => 'Change Photo';
 
   @override
+  String get takePhoto => 'Take Photo';
+
+  @override
+  String get chooseFromGallery => 'Choose from Gallery';
+
+  @override
   String get uploadPhoto => 'Upload Photo';
 
   @override
@@ -1232,6 +1238,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noCompletedReports => 'No completed reports yet.';
+
+  @override
+  String get noReportsYetHint =>
+      'Request a new horoscope compatibility report.';
+
+  @override
+  String get yourMatch => 'Your match';
+
+  @override
+  String get statusUnderAnalysis => 'Under Analysis';
 
   @override
   String get couldNotLoadYourReports => 'Could not load your reports';

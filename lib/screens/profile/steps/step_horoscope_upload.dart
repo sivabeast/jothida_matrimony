@@ -9,7 +9,7 @@ import '../../../core/utils/file_actions.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../models/profile_model.dart';
 import '../../../providers/profile_provider.dart';
-import '../../../widgets/common/gradient_button.dart';
+import '../../../widgets/common/step_actions.dart';
 import '../../../widgets/common/horoscope_documents_view.dart';
 
 /// Horoscope Upload step — optionally attach the horoscope as **images
@@ -22,7 +22,10 @@ import '../../../widgets/common/horoscope_documents_view.dart';
 /// view/download actions. Skipping is always allowed.
 class StepHoroscopeUpload extends ConsumerStatefulWidget {
   final VoidCallback onNext;
-  const StepHoroscopeUpload({super.key, required this.onNext});
+
+  /// Moves on without saving anything. Null hides the Skip button.
+  final VoidCallback? onSkip;
+  const StepHoroscopeUpload({super.key, required this.onNext, this.onSkip});
 
   @override
   ConsumerState<StepHoroscopeUpload> createState() =>
@@ -215,8 +218,7 @@ class _StepHoroscopeUploadState extends ConsumerState<StepHoroscopeUpload> {
           ],
 
           const SizedBox(height: 32),
-          GradientButton(
-              onPressed: widget.onNext, text: l10n.continueLabel),
+          StepActions(onContinue: widget.onNext, onSkip: widget.onSkip),
         ],
       ),
     );

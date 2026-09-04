@@ -11,7 +11,9 @@ import '../../core/utils/value_l10n.dart';
 /// Behaviour:
 ///  • Selected values appear as deletable chips ABOVE the field;
 ///  • tapping the field opens a modal bottom sheet with a search box —
-///    type to filter, tap an item to toggle it, keep searching and adding;
+///    type to filter, tap an item to toggle it, keep searching and adding,
+///    then confirm with the full-width **Done** button pinned to the bottom
+///    of the sheet;
 ///  • removing a chip (✕) deselects instantly;
 ///  • [maxSelection] caps how many can be on at once (the rest grey out).
 ///
@@ -40,6 +42,10 @@ class SearchableMultiSelectField extends StatelessWidget {
   /// Maximum number of simultaneously selected values; null means unlimited.
   final int? maxSelection;
 
+  /// Appends the ` *` marker to the label so a mandatory multi-select reads the
+  /// same as every other required field on the page.
+  final bool isRequired;
+
   const SearchableMultiSelectField({
     super.key,
     required this.label,
@@ -52,6 +58,7 @@ class SearchableMultiSelectField extends StatelessWidget {
     this.options,
     this.showEnglishInBrackets = false,
     this.maxSelection,
+    this.isRequired = false,
   });
 
   /// Builds the field straight from a bilingual catalogue.
@@ -66,6 +73,7 @@ class SearchableMultiSelectField extends StatelessWidget {
     this.hint,
     this.showEnglishInBrackets = false,
     this.maxSelection,
+    this.isRequired = false,
   })  : options = options,
         items = options.values;
 
@@ -115,11 +123,21 @@ class SearchableMultiSelectField extends StatelessWidget {
             runSpacing: 6,
             children: selected
                 .map((v) => Chip(
-                      label: Text(_display(context, v),
-                          style: const TextStyle(
-                              fontSize: 12.5,
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600)),
+                      // A long degree name wraps inside the chip instead of
+                      // running past the screen edge — the chip is capped just
+                      // under the page width and grows downwards.
+                      label: ConstrainedBox(
+                        constraints: BoxConstraints(
+                            maxWidth:
+                                MediaQuery.of(context).size.width - 110),
+                        child: Text(_display(context, v),
+                            softWrap: true,
+                            style: const TextStyle(
+                                fontSize: 12.5,
+                                height: 1.3,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600)),
+                      ),
                       backgroundColor: AppColors.primary.withValues(alpha: 0.08),
                       side: BorderSide(
                           color: AppColors.primary.withValues(alpha: 0.3)),
@@ -139,11 +157,11 @@ class SearchableMultiSelectField extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           child: InputDecorator(
             decoration: InputDecoration(
-              labelText: label,
+              labelText: isRequired ? '$label *' : label,
               prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
               suffixIcon: const Icon(Icons.arrow_drop_down),
               filled: true,
-              fillColor: enabled ? Colors.grey[50] : Colors.grey[200],
+              fillColor: enabled ? Colors.white : Colors.grey[200],
               border:
                   OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               enabledBorder: OutlineInputBorder(
@@ -168,8 +186,9 @@ class SearchableMultiSelectField extends StatelessWidget {
 }
 
 /// The search + toggle sheet. Selection state lives here while open; the final
-/// list is returned on close (either the ✓ Done button or dismissing the
-/// sheet backdrop returns via [Navigator.pop] with the current selection).
+/// list is returned on close (either the full-width Done button pinned to the
+/// bottom, or dismissing the sheet backdrop, which returns via
+/// [Navigator.pop] with the current selection).
 class _MultiSelectSheet extends StatefulWidget {
   final String label;
   final List<String> items;
@@ -242,25 +261,43 @@ class _MultiSelectSheetState extends State<_MultiSelectSheet> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 12, 4),
+                padding: const EdgeInsets.fromLTRB(20, 16, 8, 4),
                 child: Row(
                   children: [
                     Expanded(
                       child: Text(
                         l10n.selectFieldTitle(widget.label),
+                        maxLines: 2,
                         style: const TextStyle(
                           fontSize: 16,
+                          height: 1.3,
                           fontWeight: FontWeight.bold,
                           fontFamily: 'Poppins',
                         ),
                       ),
                     ),
-                    TextButton.icon(
+                    // The count belongs beside the title, not on the confirm
+                    // action — the confirm action is a real button now, at the
+                    // bottom of the sheet where a thumb reaches it.
+                    if (_selected.isNotEmpty)
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(l10n.countSelected(_selected.length),
+                            style: const TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary)),
+                      ),
+                    IconButton(
                       onPressed: _done,
-                      icon: const Icon(Icons.check, size: 18),
-                      label: Text(l10n.doneCount(_selected.length)),
-                      style: TextButton.styleFrom(
-                          foregroundColor: AppColors.primary),
+                      icon: const Icon(Icons.close),
+                      tooltip: l10n.close,
                     ),
                   ],
                 ),
@@ -327,7 +364,39 @@ class _MultiSelectSheetState extends State<_MultiSelectSheet> {
                         },
                       ),
               ),
-              const SizedBox(height: 8),
+              // The confirm action, as an actual button: full width, filled,
+              // properly tall and with real touch feedback.
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _done,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        minimumSize: const Size.fromHeight(50),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: Text(
+                        _selected.isEmpty
+                            ? l10n.done
+                            : l10n.doneCount(_selected.length),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        style: const TextStyle(
+                            fontSize: 15,
+                            height: 1.25,
+                            fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

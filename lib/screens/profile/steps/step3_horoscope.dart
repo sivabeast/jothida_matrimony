@@ -29,6 +29,11 @@ import '../../../widgets/common/place_picker_field.dart';
 ///
 /// The generated values are always kept alongside the effective ones, so a
 /// member's manual change never destroys what the engine computed.
+///
+/// The three pickers are shown even when the engine could not produce a
+/// result (an unrecognised birth place, no network): a failed calculation
+/// explains itself above them, and the member can still choose the values and
+/// continue rather than being stuck on a step they cannot complete.
 class Step3Horoscope extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   const Step3Horoscope({super.key, required this.onNext});
@@ -165,6 +170,14 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
       (_genRasi ?? '').isNotEmpty &&
       (_genNakshatra ?? '').isNotEmpty &&
       (_genLagnam ?? '').isNotEmpty;
+
+  /// True once ANY of the three values is set, however it got there — so the
+  /// "enter your birth details first" hint disappears the moment the member
+  /// starts filling them in by hand.
+  bool get _hasAnyValue =>
+      (_effRasi ?? '').isNotEmpty ||
+      (_effNakshatra ?? '').isNotEmpty ||
+      (_effLagnam ?? '').isNotEmpty;
 
   // ── Pickers / inputs ─────────────────────────────────────────────────────
   Future<void> _pickDob() async {
@@ -317,12 +330,7 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
             l10n.horoscopeDetails,
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.horoscopeStepSubtitle,
-            style: const TextStyle(color: Colors.grey, height: 1.4),
-          ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 22),
 
           // ── Birth details ────────────────────────────────────────────────
           AppTextField(
@@ -374,9 +382,21 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
               const SizedBox(width: 12),
               Expanded(child: Text(l10n.calculatingHoroscope)),
             ])
-          else if (_error != null)
-            HoroscopeErrorBox(message: _error!)
-          else if (_hasGenerated)
+          else ...[
+            // A failed calculation explains itself, but it is never a dead
+            // end: the three pickers below stay available so the member can
+            // enter Rasi / Nakshatra / Lagnam themselves and carry on.
+            if (_error != null) ...[
+              HoroscopeErrorBox(message: _error!),
+              const SizedBox(height: 14),
+            ] else if (!_hasGenerated && !_hasAnyValue) ...[
+              Text(
+                l10n.selectDateTimePlaceHint,
+                style: TextStyle(
+                    color: Colors.grey[600], fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 14),
+            ],
             CalculatedHoroscopeCard(
               rasi: _effRasi ?? '',
               nakshatra: _effNakshatra ?? '',
@@ -396,13 +416,8 @@ class _Step3State extends ConsumerState<Step3Horoscope> {
                 _ovrLagnam = v;
                 _v.clear('horoscope');
               }),
-            )
-          else
-            Text(
-              l10n.selectDateTimePlaceHint,
-              style: TextStyle(
-                  color: Colors.grey[600], fontSize: 13, height: 1.4),
             ),
+          ],
 
           const SizedBox(height: 32),
           GradientButton(onPressed: _saveAndNext, text: l10n.continueLabel),

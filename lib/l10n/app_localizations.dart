@@ -1502,6 +1502,18 @@ abstract class AppLocalizations {
   /// **'Change Photo'**
   String get changePhoto;
 
+  /// Photo-source sheet: open the camera.
+  ///
+  /// In en, this message translates to:
+  /// **'Take Photo'**
+  String get takePhoto;
+
+  /// Photo-source sheet: pick an existing image.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from Gallery'**
+  String get chooseFromGallery;
+
   /// No description provided for @uploadPhoto.
   ///
   /// In en, this message translates to:
@@ -2419,6 +2431,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No completed reports yet.'**
   String get noCompletedReports;
+
+  /// Supporting line under the empty Reports state, above the request button.
+  ///
+  /// In en, this message translates to:
+  /// **'Request a new horoscope compatibility report.'**
+  String get noReportsYetHint;
+
+  /// Fallback name on a report card when neither person has been named.
+  ///
+  /// In en, this message translates to:
+  /// **'Your match'**
+  String get yourMatch;
+
+  /// Report status shown while an astrologer is still preparing it.
+  ///
+  /// In en, this message translates to:
+  /// **'Under Analysis'**
+  String get statusUnderAnalysis;
 
   /// No description provided for @couldNotLoadYourReports.
   ///

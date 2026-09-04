@@ -186,10 +186,7 @@ class _StepEducationState extends ConsumerState<StepEducation> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(l10n.educationCareer, style: AppTextStyles.heading2),
-          const SizedBox(height: 8),
-          Text(l10n.educationCareerSubtitle,
-              style: const TextStyle(color: Colors.grey)),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // ── 1. Education Level ────────────────────────────────────────────
           SearchableField.fromOptions(
@@ -209,6 +206,7 @@ class _StepEducationState extends ConsumerState<StepEducation> {
             SearchableMultiSelectField.fromOptions(
               key: _v.anchor('degrees'),
               label: l10n.degreesLabel,
+              isRequired: true,
               options: EducationCatalog.degreesFor(_educationLevel),
               selected: _degrees,
               prefixIcon: Icons.menu_book_outlined,
@@ -236,12 +234,6 @@ class _StepEducationState extends ConsumerState<StepEducation> {
                     ..clear()
                     ..addAll(v);
                 }),
-              ),
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsets.only(left: 12),
-                child: Text(l10n.profileDisplayQualificationHelp,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
               ),
             ],
           ],
