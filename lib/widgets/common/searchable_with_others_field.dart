@@ -1,45 +1,47 @@
 import 'package:flutter/material.dart';
 import '../../core/data/master_option.dart';
-import '../../core/utils/l10n_ext.dart';
-import '../../core/utils/value_l10n.dart';
-import 'app_text_field.dart';
 import 'searchable_field.dart';
+import 'searchable_with_add_field.dart';
 
 export 'searchable_field.dart' show SearchablePopupMode;
 
-/// Sentinel value for the single "Others" entry appended to every dropdown.
-/// It is never stored — picking it only reveals the custom textbox.
-const String kOthersSentinel = '__others__';
-
-/// A [SearchableField] with exactly ONE **"Others"** entry pinned to the top
-/// of the list. Picking it reveals a plain text input directly below the
-/// dropdown; whatever the member types becomes the stored value.
+/// A searchable dropdown that also accepts a value the list has never heard of.
 ///
-/// This replaced the old "+" Add button: a typed value is kept ONLY on this
-/// profile and is never written back to the shared master data. A saved value
-/// that isn't one of [items] is automatically treated as an "Others" value, so
-/// drafts and edit-mode restore straight into the custom textbox.
+/// The name is historical. It used to mean *"a dropdown with an **Others**
+/// entry"*: picking "மற்றவை" revealed a second textbox underneath, and only
+/// then could a member type the caste or degree that was missing. That is three
+/// controls and a hidden mode for one question, and it was the single most
+/// common place people got stuck — so the "Others" entry is gone everywhere.
 ///
-/// [onChanged] emits `''` while "Others" is selected but nothing has been typed
-/// yet, so a `isRequired` step validation still catches it (spec §4).
-class SearchableWithOthersField extends StatefulWidget {
+/// What happens now is [SearchableWithAddField], the field the app already uses
+/// for Profession Type and City: the search box IS the custom input. Type, and
+/// either tap a matching option or tap **+ Add "…"** — one tap, immediately
+/// selected, no confirmation step. This widget stays as the thin adapter so
+/// every caller keeps its existing API and its stored values (a custom value
+/// is, as before, just the typed string, kept only on this record and never
+/// written back to the shared master data).
+class SearchableWithOthersField extends StatelessWidget {
   final String label;
   final List<String> items;
 
-  /// The stored value — a list item, or a custom string typed under "Others".
+  /// The stored value — a list item, or a custom string the member typed.
   final String? value;
   final ValueChanged<String?> onChanged;
 
   final bool isRequired;
   final bool enabled;
   final IconData? prefixIcon;
+
+  /// Kept for source compatibility. The picker is now always the bottom sheet:
+  /// an anchored menu has nowhere to put the "+ Add" row on a phone, and two
+  /// presentations of the same control is one more thing to learn.
   final SearchablePopupMode popupMode;
 
-  /// Label of the revealed textbox. Defaults to "Custom <label>".
+  /// Historical: labelled the revealed "custom" textbox, which no longer
+  /// exists. Ignored.
   final String? customLabel;
 
-  /// Inline error shown under whichever control currently needs fixing — the
-  /// dropdown, or the custom textbox while "Others" is selected (§10).
+  /// Inline error rendered under the field (§10).
   final String? errorText;
 
   /// Bilingual catalogue backing [items] (§7/§9).
@@ -81,130 +83,29 @@ class SearchableWithOthersField extends StatefulWidget {
   })  : options = options,
         items = options.values;
 
-  @override
-  State<SearchableWithOthersField> createState() =>
-      _SearchableWithOthersFieldState();
-}
-
-class _SearchableWithOthersFieldState extends State<SearchableWithOthersField> {
-  late final TextEditingController _custom =
-      TextEditingController(text: _isKnown(widget.value) ? '' : (widget.value ?? ''));
-
-  /// Explicit "Others" pick — kept even before anything has been typed.
-  bool _othersPicked = false;
-
-  /// A literal "Other" / "Others" entry inside a master list is dropped: the
-  /// pinned sentinel is the ONE way to enter a custom value, so members never
-  /// see two near-identical options.
+  /// A literal "Other" / "Others" row inside a master list is dropped: it is a
+  /// dead end now that anything can be typed, and two ways to say "not listed"
+  /// is worse than none.
   static bool _isOtherLiteral(String v) {
     final s = v.trim().toLowerCase();
     return s == 'other' || s == 'others';
   }
 
-  List<String> get _cleanItems =>
-      widget.items.where((i) => !_isOtherLiteral(i)).toList();
-
-  bool _isKnown(String? v) {
-    final value = (v ?? '').trim().toLowerCase();
-    if (value.isEmpty) return false;
-    return _cleanItems.any((i) => i.trim().toLowerCase() == value);
-  }
-
-  bool get _othersMode =>
-      _othersPicked || ((widget.value ?? '').isNotEmpty && !_isKnown(widget.value));
-
   @override
-  void didUpdateWidget(covariant SearchableWithOthersField oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // A parent-driven reset (e.g. Religion changed → Caste cleared) must drop
-    // the custom text as well, otherwise a stale value would linger.
-    if (widget.value != oldWidget.value &&
-        (widget.value ?? '').isEmpty &&
-        !_othersPicked) {
-      _custom.clear();
-    }
-  }
-
-  @override
-  void dispose() {
-    _custom.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final othersMode = _othersMode;
-    // "Others" is pinned FIRST so it stays reachable in long, scrollable lists.
-    final items = <String>[kOthersSentinel, ..._cleanItems];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SearchableField(
-          label: widget.label,
-          isRequired: widget.isRequired,
-          enabled: widget.enabled,
-          prefixIcon: widget.prefixIcon,
-          popupMode: widget.popupMode,
-          // While "Others" is active the message belongs under the textbox
-          // below, not under the dropdown.
-          errorText: othersMode ? null : widget.errorText,
-          items: items,
-          options: widget.options,
-          showEnglishInBrackets: widget.showEnglishInBrackets,
-          itemLabel: (item) {
-            if (item == kOthersSentinel) return l10n.othersOption;
-            final option = widget.options?.byValue(item);
-            return option?.display(
-                  tamil: context.isTamil,
-                  withEnglish: widget.showEnglishInBrackets,
-                ) ??
-                context.localizeValue(item);
-          },
-          selectedItem: othersMode
-              ? kOthersSentinel
-              : (_isKnown(widget.value) ? widget.value : null),
-          onChanged: (v) {
-            if (v == kOthersSentinel) {
-              // Re-tapping "Others" while already in custom mode must not wipe
-              // what has been typed so far.
-              if (othersMode) return;
-              setState(() {
-                _othersPicked = true;
-                _custom.clear();
-              });
-              // Cleared until specified, so a required check still fires.
-              widget.onChanged('');
-              return;
-            }
-            setState(() {
-              _othersPicked = false;
-              _custom.clear();
-            });
-            widget.onChanged(v);
-          },
-        ),
-        if (othersMode) ...[
-          const SizedBox(height: 12),
-          AppTextField(
-            controller: _custom,
-            label: widget.isRequired
-                ? '${widget.customLabel ?? l10n.customField(widget.label)} *'
-                : (widget.customLabel ?? l10n.customField(widget.label)),
-            hint: l10n.typeHere,
-            enabled: widget.enabled,
-            errorText: widget.errorText,
-            textCapitalization: TextCapitalization.words,
-            onChanged: (v) => widget.onChanged(v.trim()),
-            validator: widget.isRequired
-                ? (v) => (v == null || v.trim().isEmpty)
-                    ? l10n.pleaseEnterField(widget.label)
-                    : null
-                : null,
-          ),
+  Widget build(BuildContext context) => SearchableWithAddField(
+        label: label,
+        items: [
+          for (final i in items)
+            if (i.trim().isNotEmpty && !_isOtherLiteral(i)) i,
         ],
-      ],
-    );
-  }
+        options: options,
+        value: value,
+        onChanged: onChanged,
+        isRequired: isRequired,
+        enabled: enabled,
+        prefixIcon: prefixIcon,
+        errorText: errorText,
+        showEnglishInBrackets: showEnglishInBrackets,
+        allowClear: !isRequired,
+      );
 }

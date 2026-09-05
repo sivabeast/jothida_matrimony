@@ -1620,5 +1620,22 @@
   "couldNotSaveDraft": "வரைவைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
   "reportSubmittedUserCanView": "அறிக்கை சமர்ப்பிக்கப்பட்டது. உறுப்பினர் இப்போது அதைப் பார்க்கலாம்.",
   "couldNotPrepareReport": "அறிக்கையைத் தயாரிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
+  "addThisPlace": "இந்த இடத்தைச் சேர்க்கவும்",
+  "additionalDetails": "கூடுதல் விவரங்கள்",
+  "communityCaste": "சமுதாயம் / சாதி",
+  "personalSocialDetailsNote": "விருப்பம் — சரியான மரபில் ஜாதகம் பார்க்க உதவும்.",
+  "reviewIncompleteTitle": "ஏதோ ஒன்று விடுபட்டுள்ளது",
+  "reviewFixInStep": "{step} பக்கத்தில் சரிசெய்யவும்",
+  "@reviewFixInStep": {
+    "placeholders": {
+      "step": {
+        "type": "String"
+      }
+    }
+  },
+  "personOneIncomplete": "நபர் 1 இன் விவரங்கள் முழுமையாக இல்லை.",
+  "personTwoIncomplete": "நபர் 2 இன் விவரங்கள் முழுமையாக இல்லை.",
+  "contactIncomplete": "தொடர்பு விவரங்கள் முழுமையாக இல்லை.",
+  "startingPayment": "Google Play திறக்கப்படுகிறது…",
   "professionalMarriageCompatReport": "தொழில்முறை திருமண பொருத்த அறிக்கை"
 }

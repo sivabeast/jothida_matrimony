@@ -7394,6 +7394,66 @@ abstract class AppLocalizations {
   /// **'Could not prepare the report. Please try again.'**
   String get couldNotPrepareReport;
 
+  /// No description provided for @addThisPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Add this place'**
+  String get addThisPlace;
+
+  /// No description provided for @additionalDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional Details'**
+  String get additionalDetails;
+
+  /// No description provided for @communityCaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Community / Caste'**
+  String get communityCaste;
+
+  /// No description provided for @personalSocialDetailsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional — helps the astrologer read the chart in the right tradition.'**
+  String get personalSocialDetailsNote;
+
+  /// No description provided for @reviewIncompleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Something is still missing'**
+  String get reviewIncompleteTitle;
+
+  /// No description provided for @reviewFixInStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix in {step}'**
+  String reviewFixInStep(String step);
+
+  /// No description provided for @personOneIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Person 1’s details are incomplete.'**
+  String get personOneIncomplete;
+
+  /// No description provided for @personTwoIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Person 2’s details are incomplete.'**
+  String get personTwoIncomplete;
+
+  /// No description provided for @contactIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'The contact details are incomplete.'**
+  String get contactIncomplete;
+
+  /// No description provided for @startingPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening Google Play…'**
+  String get startingPayment;
+
   /// No description provided for @professionalMarriageCompatReport.
   ///
   /// In en, this message translates to:

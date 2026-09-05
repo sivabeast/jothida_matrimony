@@ -9,6 +9,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/horoscope_roles.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/phone_utils.dart';
+import '../../core/utils/value_l10n.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/profile_model.dart';
 import '../../providers/astrology_config_provider.dart';
@@ -17,7 +18,7 @@ import '../../providers/match_analysis_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
-import '../../services/billing/play_billing_service.dart';
+import '../../services/billing/horoscope_report_purchase.dart';
 import 'horoscope_request_person_form.dart';
 import 'sample_compatibility_report_screen.dart';
 
@@ -72,6 +73,20 @@ String? horoscopeContactProblem({
   if (digits.isEmpty) return l10n.whatsappRequired;
   if (digits.length != 10) return l10n.whatsappMustBe10Digits;
   return null;
+}
+
+/// A step the request cannot be paid for without, and why.
+class _IncompleteStep {
+  /// Index into the four-step form — where the [message] can be fixed.
+  final int step;
+
+  /// The step's own label, so the "Fix in …" button names a place the member
+  /// recognises from the progress bar.
+  final String label;
+
+  final String message;
+
+  const _IncompleteStep(this.step, this.label, this.message);
 }
 
 class RequestExternalReportScreen extends ConsumerStatefulWidget {
@@ -131,6 +146,11 @@ class _RequestExternalReportScreenState
   /// so a cancelled purchase explains itself instead of failing silently.
   String? _paymentError;
 
+  /// Which step still has a gap in it, once the pay button has been pressed.
+  /// Rendered as a banner on the review step WITH a button to go and fix it —
+  /// the member decides when the page moves, not the pay handler.
+  _IncompleteStep? _incomplete;
+
   List<String> _rasiOptions = const [];
   List<String> _nakOptions = const [];
 
@@ -163,15 +183,10 @@ class _RequestExternalReportScreenState
   /// must never surface an error here — the UI keeps showing the built-in ₹199
   /// until Play answers.
   Future<void> _loadStorePrice() async {
-    try {
-      final billing = ref.read(playBillingServiceProvider);
-      await billing.init();
-      if (!mounted) return;
-      setState(() =>
-          _storePrice = billing.priceLabel(BillingProducts.horoscopeReport));
-    } catch (_) {
-      // Keep the fallback price.
-    }
+    final price = await loadHoroscopeReportPrice(
+        () => ref.read(playBillingServiceProvider));
+    if (!mounted || price == null) return;
+    setState(() => _storePrice = price);
   }
 
   String get _priceText => _storePrice ?? '₹$_fee';
@@ -283,6 +298,29 @@ class _RequestExternalReportScreenState
     return formOk;
   }
 
+  /// The first step that is not finished, or null when the request is ready to
+  /// be paid for.
+  ///
+  /// Every check here is a VALUE check — `HoroscopePersonDraft.isComplete` and
+  /// [horoscopeContactProblem], never a `Form`. Only one step's `Form` is
+  /// mounted at a time, so on the review step all three `currentState`s are
+  /// null; a check routed through them reads that null as "invalid" and
+  /// declares a perfectly complete request broken.
+  _IncompleteStep? _missingPiece() {
+    final l10n = context.l10n;
+    if (!_one.isComplete) {
+      return _IncompleteStep(0, l10n.personOne, l10n.personOneIncomplete);
+    }
+    if (!_two.isComplete) {
+      return _IncompleteStep(1, l10n.personTwo, l10n.personTwoIncomplete);
+    }
+    final contact = _contactProblem();
+    if (contact != null) {
+      return _IncompleteStep(2, l10n.contactStep, contact);
+    }
+    return null;
+  }
+
   void _next() {
     final ok = switch (_step) {
       0 => _validatePerson(_personOneKey, _one, _personOneLabel),
@@ -291,7 +329,7 @@ class _RequestExternalReportScreenState
       _ => true,
     };
     if (!ok) return;
-    setState(() => _step = (_step + 1).clamp(0, _steps - 1));
+    _goTo(_step + 1);
   }
 
   void _back() {
@@ -299,7 +337,20 @@ class _RequestExternalReportScreenState
       context.pop();
       return;
     }
-    setState(() => _step -= 1);
+    _goTo(_step - 1);
+  }
+
+  /// The ONE place the step index changes. Nothing entered is touched — the
+  /// drafts and the contact controllers live on this State, so moving between
+  /// steps (or leaving for Google Play and coming back) rebuilds the fields
+  /// from values that never went anywhere (spec §12).
+  void _goTo(int step) {
+    setState(() {
+      _step = step.clamp(0, _steps - 1);
+      // The banner named a gap on the step being opened; it has served its
+      // purpose and would otherwise still be there after the fix.
+      _incomplete = null;
+    });
   }
 
   // ── Payment, then submit (spec §2) ────────────────────────────────────────
@@ -317,12 +368,16 @@ class _RequestExternalReportScreenState
   ///  * **Purchased and written** — the confirmation sheet, exactly as before.
   Future<void> _payAndSubmit() async {
     if (_busy) return;
-    // Only a REAL problem with the contact details sends the member back a
-    // step, and it always says why. Valid details go straight to Play.
-    final problem = _contactProblem();
-    if (problem != null) {
-      setState(() => _step = 2);
-      _snack(problem);
+
+    // Anything still missing is reported HERE, on this step, next to a button
+    // the member can choose to press. The screen does not move on its own:
+    // silently jumping back to the contact step is what made this button look
+    // like it navigated backwards instead of opening Google Play, and a
+    // payment CTA that answers by changing the page is indistinguishable from
+    // one that is broken (spec §3/§13/§15).
+    final missing = _missingPiece();
+    if (missing != null) {
+      setState(() => _incomplete = missing);
       return;
     }
     // Belt and braces behind the formatter + validator: the number that
@@ -331,11 +386,11 @@ class _RequestExternalReportScreenState
 
     setState(() {
       _busy = true;
+      _incomplete = null;
       _paymentError = null;
     });
     final l10n = context.l10n;
     final isGuest = ref.read(isGuestProvider);
-    final billing = ref.read(playBillingServiceProvider);
 
     try {
       // Re-use an already-paid-for token rather than charging again.
@@ -345,32 +400,22 @@ class _RequestExternalReportScreenState
       var orderId = _paidOrderId;
 
       if (token.isEmpty) {
-        final result =
-            await billing.buyConsumable(BillingProducts.horoscopeReport);
+        // The SAME purchase the profile-based Horoscope Compatibility Report
+        // runs: one Play product, one verification path, one recorded amount.
+        final payment = await buyHoroscopeReport(
+            () => ref.read(playBillingServiceProvider));
         if (!mounted) return;
-        if (!result.isPurchased) {
+        if (!payment.isPaid) {
           setState(() {
             _busy = false;
-            _paymentError = switch (result.outcome) {
-              BillingOutcome.canceled => l10n.paymentRequiredToSubmit,
-              BillingOutcome.unavailable =>
-                result.message ?? l10n.billingUnavailable,
-              _ => result.message ?? l10n.paymentCouldNotComplete,
-            };
+            _paymentError = payment.failureMessage(l10n);
           });
           return;
         }
-        token = result.purchaseToken.isNotEmpty
-            ? result.purchaseToken
-            : 'play_billing';
-        verifiedBy = result.verification == BillingVerification.server
-            ? 'server'
-            : 'client';
-        orderId = result.orderId;
-        // Record what Play ACTUALLY charged, so revenue stays correct if the
-        // Console price is changed without an app update.
-        final raw = billing.rawPrice(BillingProducts.horoscopeReport);
-        if (raw != null && raw > 0) charged = raw.round();
+        token = payment.purchaseToken;
+        verifiedBy = payment.verifiedBy;
+        orderId = payment.orderId;
+        charged = payment.chargedAmount;
         // Survive a failed write: the money is spent, the token must not be.
         _paidToken = token;
         _paidVerifiedBy = verifiedBy;
@@ -589,7 +634,15 @@ class _RequestExternalReportScreenState
             _progress(),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                // The sticky pay bar sits on top of the list, so the bottom
+                // padding has to clear it — otherwise the last field of every
+                // step is typed into from behind a button.
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
+                // Dismissing the keyboard by scrolling is the gesture people
+                // already use to reach the field below the one they just
+                // filled in.
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 children: [
                   if (_step == 0) _intro(),
                   if (_step == 0) const SizedBox(height: 14),
@@ -762,31 +815,93 @@ class _RequestExternalReportScreenState
         _summaryCard(),
         const SizedBox(height: 12),
         _feeRow(),
+        if (_incomplete != null) ...[
+          const SizedBox(height: 12),
+          _incompleteBanner(_incomplete!),
+        ],
         if (_paymentError != null) ...[
           const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.error.withValues(alpha: 0.07),
-              borderRadius: BorderRadius.circular(12),
-              border:
-                  Border.all(color: AppColors.error.withValues(alpha: 0.30)),
-            ),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Icon(Icons.error_outline, size: 18, color: AppColors.error),
-              const SizedBox(width: 9),
-              Expanded(
-                child: Text(_paymentError!,
-                    style: const TextStyle(
-                        fontSize: 12.5, height: 1.45, color: AppColors.error)),
-              ),
-            ]),
-          ),
+          _noticeBanner(_paymentError!),
         ],
       ],
     );
   }
+
+  /// "Person 2's details are incomplete — **Fix in Person 2**".
+  ///
+  /// The button is the only thing that moves the page, and the member presses
+  /// it. Everything they have typed is still on this State, so the trip there
+  /// and back costs nothing.
+  Widget _incompleteBanner(_IncompleteStep missing) {
+    final l10n = context.l10n;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.40)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Icon(Icons.info_outline, size: 18, color: AppColors.warning),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.reviewIncompleteTitle,
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 3),
+                  Text(missing.message,
+                      style: const TextStyle(fontSize: 12.5, height: 1.45)),
+                ],
+              ),
+            ),
+          ]),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              onPressed: () => _goTo(missing.step),
+              icon: const Icon(Icons.edit_outlined, size: 15),
+              label: Text(l10n.reviewFixInStep(missing.label),
+                  style: const TextStyle(fontSize: 12.5)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _noticeBanner(String message) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.error.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.error.withValues(alpha: 0.30)),
+        ),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Icon(Icons.error_outline, size: 18, color: AppColors.error),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(message,
+                style: const TextStyle(
+                    fontSize: 12.5, height: 1.45, color: AppColors.error)),
+          ),
+        ]),
+      );
 
   /// "Amount payable — ₹199", on one line. The price is Play's own whenever the
   /// store has answered, so it can never disagree with what is actually
@@ -847,15 +962,20 @@ class _RequestExternalReportScreenState
 
     // The heading carries the person's NAME and the Bride/Groom mapping the
     // astrologer will use, so both can be checked at a glance before paying.
-    Widget person(String title, HoroscopePersonDraft d) => Column(
+    Widget person(String title, HoroscopePersonDraft d, int step) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: TextStyle(
-                    fontSize: 11.5,
-                    height: 1.3,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[600])),
+            Row(children: [
+              Expanded(
+                child: Text(title,
+                    style: TextStyle(
+                        fontSize: 11.5,
+                        height: 1.3,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[600])),
+              ),
+              _editLink(step),
+            ]),
             const SizedBox(height: 2),
             Wrap(
               spacing: 8,
@@ -890,6 +1010,10 @@ class _RequestExternalReportScreenState
             if ((d.nakshatra ?? '').isNotEmpty)
               line(l10n.nakshatra, d.nakshatra!),
             if ((d.rasi ?? '').isNotEmpty) line(l10n.rasi, d.rasi!),
+            if ((d.religion ?? '').isNotEmpty)
+              line(l10n.religion, context.localizeValue(d.religion)),
+            if ((d.caste ?? '').isNotEmpty)
+              line(l10n.communityCaste, context.localizeValue(d.caste)),
             if (d.imageUrl.isNotEmpty || d.pdfUrl.isNotEmpty)
               line(l10n.horoscopeImage, l10n.attached),
           ],
@@ -909,13 +1033,47 @@ class _RequestExternalReportScreenState
               style: const TextStyle(
                   fontWeight: FontWeight.w700, fontSize: 13.5, height: 1.3)),
           const SizedBox(height: 12),
-          person(_personOneLabel, _one),
+          person(_personOneLabel, _one, 0),
           const Divider(height: 22),
-          person(_personTwoLabel, _two),
+          person(_personTwoLabel, _two, 1),
+          const Divider(height: 22),
+          // Where the finished report is sent. It was collected two steps ago
+          // and never shown again — which is how a report goes out to a
+          // mistyped number nobody had a chance to check.
+          Row(children: [
+            Expanded(
+              child: Text(l10n.contactDetailsTitle,
+                  style: TextStyle(
+                      fontSize: 11.5,
+                      height: 1.3,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[600])),
+            ),
+            _editLink(2),
+          ]),
+          const SizedBox(height: 4),
+          line(l10n.contactPersonName, _contactName.text.trim()),
+          line(l10n.whatsappNumber,
+              _whatsapp.text.trim().isEmpty ? '' : '+91 ${_whatsapp.text.trim()}'),
         ],
       ),
     );
   }
+
+  /// A quiet "Edit" beside each block of the recap. The review step is where a
+  /// wrong birth time gets noticed, and noticing it should not mean pressing
+  /// Back three times and finding your way forward again.
+  Widget _editLink(int step) => TextButton.icon(
+        onPressed: _busy ? null : () => _goTo(step),
+        icon: const Icon(Icons.edit_outlined, size: 14),
+        label: Text(context.l10n.edit, style: const TextStyle(fontSize: 12)),
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+      );
 
   // ── Chrome ────────────────────────────────────────────────────────────────
 
@@ -1095,12 +1253,33 @@ class _RequestExternalReportScreenState
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),
+                // The spinner keeps its label: "Opening Google Play…" tells the
+                // member the store sheet is on its way, where a bare spinner
+                // on a payment button reads as a hang.
                 child: _busy
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2.4, color: Colors.white))
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2.4, color: Colors.white)),
+                          const SizedBox(width: 10),
+                          Flexible(
+                            child: Text(
+                                _paidToken.isNotEmpty
+                                    ? l10n.processingPayment
+                                    : l10n.startingPayment,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    fontSize: 13.5,
+                                    height: 1.25,
+                                    fontWeight: FontWeight.w700)),
+                          ),
+                        ],
+                      )
                     : Text(
                         last
                             ? (_paidToken.isNotEmpty

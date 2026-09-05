@@ -102,10 +102,61 @@ class PlayBillingService {
   bool get isAvailable => _available;
   ProductDetails? product(String id) => _products[id];
 
+  /// How long the store gets to answer "are you there?" and "what do you
+  /// sell?".
+  ///
+  /// Bounded because these two calls sit in front of the pay button. A Play
+  /// Services connection that stalls — a device mid-update, a broken install,
+  /// an emulator with the plugin registered but nothing behind it — returns a
+  /// future that never completes, and an unbounded await there is a payment
+  /// button that spins forever with nothing on screen to explain why. Timing
+  /// out reads as "the store is unavailable", which is both true and something
+  /// the member can act on.
+  ///
+  /// The PURCHASE itself is deliberately never timed out: that clock belongs to
+  /// a person deciding in the Play sheet, and cancelling it out from under them
+  /// is how a charge and a request get out of step.
+  static const Duration _storeTimeout = Duration(seconds: 10);
+
+  /// The store deadlines currently ticking, so [dispose] can cancel them.
+  /// A bare `Future.timeout` leaves its timer running after the thing that
+  /// wanted the answer has gone away.
+  final Set<Timer> _storeTimers = {};
+
+  /// [future], but giving up after [_storeTimeout] with [onTimeout] — and
+  /// without leaving a timer behind once it resolves either way.
+  ///
+  /// Errors still propagate: a store that refuses is not the same as a store
+  /// that never answers, and the caller decides what to do about each.
+  Future<T> _bounded<T>(Future<T> future, T onTimeout, String what) {
+    final completer = Completer<T>();
+    late final Timer timer;
+
+    void settle(T value) {
+      timer.cancel();
+      _storeTimers.remove(timer);
+      if (!completer.isCompleted) completer.complete(value);
+    }
+
+    timer = Timer(_storeTimeout, () {
+      debugPrint('[Billing] $what did not answer within '
+          '${_storeTimeout.inSeconds}s — treating the store as unavailable.');
+      settle(onTimeout);
+    });
+    _storeTimers.add(timer);
+
+    future.then(settle, onError: (Object e, StackTrace s) {
+      timer.cancel();
+      _storeTimers.remove(timer);
+      if (!completer.isCompleted) completer.completeError(e, s);
+    });
+    return completer.future;
+  }
+
   /// Connects to the store and starts listening to the purchase stream. Safe to
   /// call repeatedly; the stream listener is attached once.
   Future<void> init() async {
-    _available = await _iap.isAvailable();
+    _available = await _bounded(_iap.isAvailable(), false, 'isAvailable()');
     _sub ??= _iap.purchaseStream.listen(
       _onPurchaseUpdates,
       onError: (Object e) => debugPrint('[Billing] purchaseStream error: $e'),
@@ -122,7 +173,11 @@ class PlayBillingService {
   /// here are usually not-yet-created / inactive in Play Console.
   Future<void> loadProducts() async {
     try {
-      final resp = await _iap.queryProductDetails(BillingProducts.all);
+      final resp = await _bounded<ProductDetailsResponse?>(
+          _iap.queryProductDetails(BillingProducts.all),
+          null,
+          'queryProductDetails()');
+      if (resp == null) return; // timed out — the fallback price stands.
       for (final p in resp.productDetails) {
         _products[p.id] = p;
       }
@@ -383,6 +438,11 @@ class PlayBillingService {
   }
 
   void dispose() {
+    // Whatever the store still owes us, nobody is waiting for it any more.
+    for (final timer in _storeTimers) {
+      timer.cancel();
+    }
+    _storeTimers.clear();
     _sub?.cancel();
     _sub = null;
   }

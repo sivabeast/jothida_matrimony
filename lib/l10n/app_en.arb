@@ -1819,5 +1819,22 @@
   "couldNotSaveDraft": "Could not save the draft. Please try again.",
   "reportSubmittedUserCanView": "Report submitted. The member can now view it.",
   "couldNotPrepareReport": "Could not prepare the report. Please try again.",
+  "addThisPlace": "Add this place",
+  "additionalDetails": "Additional Details",
+  "communityCaste": "Community / Caste",
+  "personalSocialDetailsNote": "Optional — helps the astrologer read the chart in the right tradition.",
+  "reviewIncompleteTitle": "Something is still missing",
+  "reviewFixInStep": "Fix in {step}",
+  "@reviewFixInStep": {
+    "placeholders": {
+      "step": {
+        "type": "String"
+      }
+    }
+  },
+  "personOneIncomplete": "Person 1’s details are incomplete.",
+  "personTwoIncomplete": "Person 2’s details are incomplete.",
+  "contactIncomplete": "The contact details are incomplete.",
+  "startingPayment": "Opening Google Play…",
   "professionalMarriageCompatReport": "Professional Marriage Compatibility Report"
 }

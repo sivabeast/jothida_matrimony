@@ -53,7 +53,7 @@ class FieldCheck {
 /// ```dart
 /// final _v = InlineValidation();
 /// ...
-/// SearchableWithOthersField(
+/// SearchableWithAddField(
 ///   key: _v.anchor('education'),
 ///   errorText: _v.errorOf('education'),
 ///   ...

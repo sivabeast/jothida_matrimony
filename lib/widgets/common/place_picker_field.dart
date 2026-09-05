@@ -285,9 +285,14 @@ class _PlaceSearchSheetState extends State<_PlaceSearchSheet> {
                               }
                               // Free-typed fallback for a place the master
                               // data does not carry. Stays inside this form.
+                              // Captioned "Add this place", not "Others": the
+                              // member is naming a village, not picking a
+                              // catch-all category.
                               return _row(
                                 title: _q,
-                                subtitle: l10n.othersOption,
+                                subtitle: l10n.addThisPlace,
+                                leading: const Icon(Icons.add_location_alt_outlined,
+                                    size: 20, color: AppColors.primary),
                                 onTap: () =>
                                     _select(PlaceSelection.custom(_q)),
                               );
@@ -308,10 +313,12 @@ class _PlaceSearchSheetState extends State<_PlaceSearchSheet> {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    Widget? leading,
   }) =>
       ListTile(
         onTap: onTap,
         dense: true,
+        leading: leading,
         title: Text(title,
             maxLines: 2,
             style: const TextStyle(

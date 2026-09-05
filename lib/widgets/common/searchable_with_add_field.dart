@@ -42,6 +42,16 @@ class SearchableWithAddField extends StatelessWidget {
   /// Helper line under the field. Defaults to the "can't find it?" hint.
   final String? helperText;
 
+  /// Append the English name in brackets in Tamil mode — "இளங்கலை அறிவியல்
+  /// (B.Sc)". On for degrees and occupations, where the English term is what
+  /// people actually say out loud; off for ordinary vocabulary.
+  final bool showEnglishInBrackets;
+
+  /// Offer a × that empties the field. On for anything optional — a Nakshatra
+  /// picked by mistake has to be removable, and on a required field the only
+  /// way out is another value anyway.
+  final bool allowClear;
+
   const SearchableWithAddField({
     super.key,
     required this.label,
@@ -54,7 +64,25 @@ class SearchableWithAddField extends StatelessWidget {
     this.errorText,
     this.options,
     this.helperText,
+    this.showEnglishInBrackets = false,
+    this.allowClear = false,
   });
+
+  /// What the member reads for [item]: the catalogue's bilingual name when
+  /// there is one, otherwise the standard value → Tamil mapping. A value added
+  /// through `+` has no catalogue record and simply shows as typed.
+  static String displayOf(
+    BuildContext context,
+    String item, {
+    List<MasterOption>? options,
+    bool withEnglish = false,
+  }) {
+    final option = options?.byValue(item);
+    if (option != null) {
+      return option.display(tamil: context.isTamil, withEnglish: withEnglish);
+    }
+    return context.localizeValue(item);
+  }
 
   Future<void> _open(BuildContext context) async {
     final picked = await showModalBottomSheet<String>(
@@ -66,6 +94,7 @@ class SearchableWithAddField extends StatelessWidget {
         items: items,
         options: options,
         selected: value,
+        showEnglishInBrackets: showEnglishInBrackets,
       ),
     );
     if (picked != null) onChanged(picked);
@@ -87,11 +116,29 @@ class SearchableWithAddField extends StatelessWidget {
           helperText: helperText ?? context.l10n.addYourOwnHint,
           helperMaxLines: 2,
           prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
-          suffixIcon: const Icon(Icons.search, size: 20),
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (shown.isNotEmpty && allowClear && enabled)
+                IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  splashRadius: 18,
+                  tooltip: context.l10n.clear,
+                  onPressed: () => onChanged(null),
+                ),
+              const Padding(
+                padding: EdgeInsets.only(right: 12),
+                child: Icon(Icons.search, size: 20),
+              ),
+            ],
+          ),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
         child: Text(
-          shown.isEmpty ? context.l10n.searchOrTypeHint : shown,
+          shown.isEmpty
+              ? context.l10n.searchOrTypeHint
+              : displayOf(context, shown,
+                  options: options, withEnglish: showEnglishInBrackets),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
@@ -112,12 +159,14 @@ class _AddableSearchSheet extends StatefulWidget {
   final List<String> items;
   final List<MasterOption>? options;
   final String? selected;
+  final bool showEnglishInBrackets;
 
   const _AddableSearchSheet({
     required this.title,
     required this.items,
     required this.options,
     required this.selected,
+    required this.showEnglishInBrackets,
   });
 
   @override
@@ -140,9 +189,14 @@ class _AddableSearchSheetState extends State<_AddableSearchSheet> {
   bool _matches(BuildContext context, String item, String q) {
     final option = widget.options?.byValue(item);
     if (option != null && option.matches(q)) return true;
-    if (context.localizeValue(item).toLowerCase().contains(q)) return true;
+    if (_display(context, item).toLowerCase().contains(q)) return true;
     return searchableFormsOf(item).any((f) => f.contains(q));
   }
+
+  String _display(BuildContext context, String item) =>
+      SearchableWithAddField.displayOf(context, item,
+          options: widget.options,
+          withEnglish: widget.showEnglishInBrackets);
 
   List<String> _results(BuildContext context) {
     final q = _q.toLowerCase();
@@ -158,7 +212,7 @@ class _AddableSearchSheetState extends State<_AddableSearchSheet> {
     final q = _q.toLowerCase();
     return !widget.items.any((i) =>
         i.toLowerCase() == q ||
-        context.localizeValue(i).toLowerCase() == q ||
+        _display(context, i).toLowerCase() == q ||
         searchableFormsOf(i).contains(q));
   }
 
@@ -266,10 +320,11 @@ class _AddableSearchSheetState extends State<_AddableSearchSheet> {
                             ListTile(
                               onTap: () => Navigator.pop(context, item),
                               dense: true,
-                              title: Text(context.localizeValue(item),
-                                  maxLines: 1,
+                              title: Text(_display(context, item),
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 14.5)),
+                                  style: const TextStyle(
+                                      fontSize: 14.5, height: 1.3)),
                               trailing: item == widget.selected
                                   ? const Icon(Icons.check_circle,
                                       color: AppColors.success, size: 20)

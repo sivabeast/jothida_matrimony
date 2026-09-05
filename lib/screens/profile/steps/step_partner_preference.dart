@@ -301,7 +301,7 @@ class _StepPartnerPreferenceState
                 color: AppColors.primary)),
       );
 
-  /// Every preference dropdown offers "Others" → custom textbox, exactly like
+  /// Every preference dropdown accepts a typed value via `+ Add`, exactly like
   /// the mandatory profile fields.
   Widget _pref(String label, List<String> items, String? value,
       ValueChanged<String?> onChanged) {

@@ -16,7 +16,7 @@ import '../../providers/match_analysis_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
-import '../../services/billing/play_billing_service.dart';
+import '../../services/billing/horoscope_report_purchase.dart';
 import '../../widgets/common/network_photo.dart';
 import '../../widgets/report/horoscope_fee_card.dart';
 import '../report/compatibility_report_screen.dart';
@@ -79,15 +79,10 @@ class _HoroscopeReportServiceScreenState
   /// must never surface an error here — the button simply keeps showing the
   /// built-in ₹199 until Play answers.
   Future<void> _loadStorePrice() async {
-    try {
-      final billing = ref.read(playBillingServiceProvider);
-      await billing.init();
-      if (!mounted) return;
-      setState(() =>
-          _storePrice = billing.priceLabel(BillingProducts.horoscopeReport));
-    } catch (_) {
-      // Keep the fallback price.
-    }
+    final price = await loadHoroscopeReportPrice(
+        () => ref.read(playBillingServiceProvider));
+    if (!mounted || price == null) return;
+    setState(() => _storePrice = price);
   }
 
   void _snack(String m) {
@@ -143,20 +138,14 @@ class _HoroscopeReportServiceScreenState
         bride = me;
       }
 
-      // Google Play Billing purchase sheet (one-time consumable product).
-      final result = await ref
-          .read(playBillingServiceProvider)
-          .buyConsumable(BillingProducts.horoscopeReport);
+      // Google Play Billing purchase sheet (one-time consumable product) — the
+      // SAME call the standalone New Horoscope Report request makes, so both
+      // entry points charge, verify and record a report identically.
+      final payment = await buyHoroscopeReport(
+          () => ref.read(playBillingServiceProvider));
       if (!mounted) return;
 
-      if (result.isPurchased) {
-        // Record what Play ACTUALLY charged rather than the hardcoded constant,
-        // so admin revenue stays correct if the Console price is ever changed.
-        final raw = ref
-            .read(playBillingServiceProvider)
-            .rawPrice(BillingProducts.horoscopeReport);
-        final chargedAmount = (raw != null && raw > 0) ? raw.round() : _fee;
-
+      if (payment.isPaid) {
         // Verified purchase → save the purchase + auto-assign the analysis, then
         // unlock via the Reports tab.
         await ref
@@ -164,10 +153,8 @@ class _HoroscopeReportServiceScreenState
             .requestAndAssignAnalysis(
               groom: groom,
               bride: bride,
-              amount: chargedAmount,
-              paymentId: result.purchaseToken.isNotEmpty
-                  ? result.purchaseToken
-                  : 'play_billing',
+              amount: payment.chargedAmount,
+              paymentId: payment.purchaseToken,
             );
         if (!mounted) return;
         _snack(l10n.paymentSuccessReportAssigned);
@@ -177,16 +164,7 @@ class _HoroscopeReportServiceScreenState
       }
 
       // Not purchased → nothing is created; explain and reset the button.
-      switch (result.outcome) {
-        case BillingOutcome.canceled:
-          _snack(l10n.paymentCancelledNotCharged);
-          break;
-        case BillingOutcome.unavailable:
-          _snack(result.message ?? l10n.billingUnavailable);
-          break;
-        default:
-          _snack(result.message ?? l10n.paymentCouldNotComplete);
-      }
+      _snack(payment.failureMessage(l10n));
       if (mounted) setState(() => _busy = false);
     } catch (_) {
       if (mounted) setState(() => _busy = false);

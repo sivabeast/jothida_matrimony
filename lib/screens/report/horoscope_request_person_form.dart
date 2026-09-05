@@ -13,11 +13,14 @@ import '../../core/utils/horoscope_roles.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/value_l10n.dart';
 import '../../models/location_model.dart';
+import '../../models/master_data.dart';
 import '../../models/profile_model.dart';
+import '../../providers/master_data_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/network_photo.dart';
 import '../../widgets/common/place_picker_field.dart';
 import '../../widgets/common/searchable_field.dart';
+import '../../widgets/common/searchable_with_add_field.dart';
 
 /// One person's horoscope details inside a Horoscope Report Request
 /// (spec §3/§4).
@@ -56,6 +59,14 @@ class HoroscopePersonDraft {
   String? nakshatra;
   String? rasi;
 
+  /// Religion and community, both optional. They change nothing in the
+  /// porutham arithmetic — they tell the astrologer which family tradition to
+  /// read the chart in, which is why a report for a Christian couple does not
+  /// come back full of Hindu remedies. Free text is legitimate here: the master
+  /// list is a convenience, not a closed set of the religions that exist.
+  String? religion;
+  String? caste;
+
   /// Optional uploaded horoscope. Images and PDFs are both accepted; the image
   /// is what the admin previews, the PDF is linked.
   String imageUrl = '';
@@ -88,8 +99,25 @@ class HoroscopePersonDraft {
       place == null &&
       (nakshatra ?? '').isEmpty &&
       (rasi ?? '').isEmpty &&
+      (religion ?? '').isEmpty &&
+      (caste ?? '').isEmpty &&
       imageUrl.isEmpty &&
       pdfUrl.isEmpty;
+
+  /// Everything the request cannot be sent without (spec §3): a name, a date,
+  /// a time and a place. Nakshatra, Rasi, religion, community and the upload
+  /// are all deliberately optional.
+  ///
+  /// A VALUE check with no `Form` involved, so the review step can ask "is
+  /// Person 1 complete?" while Person 1's form is off-screen — the exact trap
+  /// that made the pay button behave like a step backwards.
+  bool get isComplete =>
+      name.text.trim().length >= 2 &&
+      gender.isNotEmpty &&
+      dob != null &&
+      hasBirthTime &&
+      place != null &&
+      !place!.isEmpty;
 
   int get age {
     final d = dob;
@@ -112,6 +140,8 @@ class HoroscopePersonDraft {
     place = null;
     nakshatra = null;
     rasi = null;
+    religion = null;
+    caste = null;
     imageUrl = '';
     pdfUrl = '';
   }
@@ -148,6 +178,8 @@ class HoroscopePersonDraft {
 
     nakshatra = h.nakshatra.trim().isEmpty ? null : h.nakshatra.trim();
     rasi = h.rasi.trim().isEmpty ? null : h.rasi.trim();
+    religion = p.religion.trim().isEmpty ? null : p.religion.trim();
+    caste = (p.caste ?? '').trim().isEmpty ? null : p.caste!.trim();
     if (h.horoscopeImages.isNotEmpty) imageUrl = h.horoscopeImages.first;
     if (h.horoscopePdfUrls.isNotEmpty) pdfUrl = h.horoscopePdfUrls.first;
   }
@@ -198,8 +230,13 @@ class HoroscopePersonDraft {
       'placeCity': city,
       'placeDistrict': district,
       'placeState': p?.state ?? '',
+      // A chart is cast from a point on the globe, so the country is stored
+      // alongside the other three levels rather than left to be inferred.
+      'placeCountry': p?.country ?? '',
       'nakshatra': (nakshatra ?? '').trim(),
       'rasi': (rasi ?? '').trim(),
+      'religion': (religion ?? '').trim(),
+      'caste': (caste ?? '').trim(),
       'horoscopeImageUrl': imageUrl,
       'horoscopePdfUrl': pdfUrl,
     };
@@ -275,6 +312,11 @@ class HoroscopePersonForm extends ConsumerStatefulWidget {
 }
 
 class _HoroscopePersonFormState extends ConsumerState<HoroscopePersonForm> {
+  /// One vertical rhythm for every field in the card, so a column of mixed
+  /// controls reads as a list rather than as things that happened to land near
+  /// each other (spec §17).
+  static const double _fieldGap = 12;
+
   bool _uploading = false;
 
   HoroscopePersonDraft get d => widget.draft;
@@ -406,9 +448,14 @@ class _HoroscopePersonFormState extends ConsumerState<HoroscopePersonForm> {
             ),
           ),
         ],
-        const SizedBox(height: 14),
+
+        // ── A. Basic details ────────────────────────────────────────────────
+        // Who this is and when and where they were born: the four facts the
+        // request cannot be sent without, plus the gender that decides the
+        // Bride / Groom mapping.
+        _section(l10n.basicDetails, Icons.badge_outlined),
         _genderField(),
-        const SizedBox(height: 12),
+        const SizedBox(height: _fieldGap),
         TextFormField(
           controller: d.name,
           textCapitalization: TextCapitalization.words,
@@ -417,7 +464,7 @@ class _HoroscopePersonFormState extends ConsumerState<HoroscopePersonForm> {
               (v ?? '').trim().length < 2 ? l10n.pleaseEnterFullName : null,
           onChanged: (_) => widget.onChanged(),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: _fieldGap),
         Row(
           children: [
             Expanded(
@@ -436,7 +483,7 @@ class _HoroscopePersonFormState extends ConsumerState<HoroscopePersonForm> {
               _pill('${l10n.age}: ${d.age}', AppColors.primary),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: _fieldGap),
         // Birth time + the AM/PM selector as its own control (spec §3): the
         // member can flip the half without reopening the time picker, which is
         // exactly the mistake that ruins a horoscope.
@@ -459,9 +506,10 @@ class _HoroscopePersonFormState extends ConsumerState<HoroscopePersonForm> {
             _amPmToggle(),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: _fieldGap),
         // Place of birth = City / Village + District + State in ONE control,
-        // so District and City can never disagree with each other.
+        // so District and City can never disagree with each other. Tapping a
+        // search result selects it outright — there is no Save step.
         PlacePickerField(
           label: l10n.placeOfBirthLabel,
           isRequired: true,
@@ -471,7 +519,13 @@ class _HoroscopePersonFormState extends ConsumerState<HoroscopePersonForm> {
             _touch();
           },
         ),
-        const SizedBox(height: 12),
+
+        // ── B. Horoscope details ────────────────────────────────────────────
+        // Both optional, and both deliberately CLOSED lists: there are 27
+        // nakshatras and 12 rasis, and a free-typed twenty-eighth would not be
+        // a custom value, it would be a porutham the astrologer cannot compute.
+        // This is the one place in the form where "+ Add" would be a bug.
+        _section(l10n.horoscopeDetails, Icons.auto_awesome_outlined),
         SearchableField(
           label: '${l10n.nakshatra} (${l10n.optional})',
           selectedItem: d.nakshatra,
@@ -483,7 +537,7 @@ class _HoroscopePersonFormState extends ConsumerState<HoroscopePersonForm> {
             _touch();
           },
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: _fieldGap),
         SearchableField(
           label: '${l10n.rasi} (${l10n.optional})',
           selectedItem: d.rasi,
@@ -495,11 +549,104 @@ class _HoroscopePersonFormState extends ConsumerState<HoroscopePersonForm> {
             _touch();
           },
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         _horoscopeUpload(),
+
+        // ── C. Religion & community ─────────────────────────────────────────
+        _section(l10n.additionalDetails, Icons.spa_outlined),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(l10n.personalSocialDetailsNote,
+              style: TextStyle(
+                  fontSize: 11.5, height: 1.45, color: Colors.grey[600])),
+        ),
+        _religionField(),
+        const SizedBox(height: _fieldGap),
+        _casteField(),
       ],
     );
   }
+
+  /// Religion — a searchable list of what the master data knows, and a
+  /// **+ Add** for everything it does not. No "Others" entry: a religion the
+  /// list has never heard of is still a religion, and it is typed into this
+  /// field rather than into a second one revealed underneath.
+  Widget _religionField() {
+    final religions = ref.watch(religionsProvider).valueOrNull ?? const [];
+    return SearchableWithAddField(
+      label: '${context.l10n.religion} (${context.l10n.optional})',
+      value: d.religion,
+      items: [for (final r in religions) r.name],
+      options: [for (final r in religions) r.asOption],
+      prefixIcon: Icons.spa_outlined,
+      allowClear: true,
+      onChanged: (v) {
+        d.religion = v;
+        // The community list hangs off the religion, so a religion that
+        // changed leaves a community that no longer belongs to anything.
+        d.caste = null;
+        _touch();
+      },
+    );
+  }
+
+  /// Community / caste, scoped to the chosen religion when that religion is one
+  /// the master data carries. A typed religion has no children to offer, so the
+  /// field becomes pure free text — which is the correct behaviour, not a
+  /// degraded one.
+  Widget _casteField() {
+    final religions = ref.watch(religionsProvider).valueOrNull ?? const [];
+    final religion = _matchingReligion(religions);
+    final castes = religion == null
+        ? const <Caste>[]
+        : (ref.watch(castesProvider(religion.id)).valueOrNull ?? const []);
+    return SearchableWithAddField(
+      label: '${context.l10n.communityCaste} (${context.l10n.optional})',
+      value: d.caste,
+      items: [for (final c in castes) c.name],
+      options: [for (final c in castes) c.asOption],
+      prefixIcon: Icons.groups_outlined,
+      allowClear: true,
+      onChanged: (v) {
+        d.caste = v;
+        _touch();
+      },
+    );
+  }
+
+  /// The master-data religion the current value names, or null when it was
+  /// typed by hand.
+  Religion? _matchingReligion(List<Religion> religions) {
+    final name = (d.religion ?? '').trim().toLowerCase();
+    if (name.isEmpty) return null;
+    for (final r in religions) {
+      if (r.name.trim().toLowerCase() == name) return r;
+    }
+    return null;
+  }
+
+  /// A section heading: a rule, an icon and a title. The person card carries
+  /// three groups of questions and used to run them together as one long
+  /// column, which is why it read as a wall — this is what tells a member that
+  /// the required part is behind them.
+  Widget _section(String title, IconData icon) => Padding(
+        padding: const EdgeInsets.only(top: 20, bottom: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: AppColors.primary),
+            const SizedBox(width: 7),
+            Text(title,
+                style: const TextStyle(
+                    fontSize: 12.5,
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.2,
+                    color: AppColors.primary)),
+            const SizedBox(width: 10),
+            Expanded(child: Container(height: 1, color: Colors.grey[200])),
+          ],
+        ),
+      );
 
   // ── Gender (spec §1B / §1D) ───────────────────────────────────────────────
 

@@ -21,9 +21,11 @@ enum SearchablePopupMode { menu, modalBottomSheet }
 /// text. Supports dependent dropdowns: when the parent value changes, pass a
 /// new [items] list (and reset [selectedItem]).
 ///
-/// There is NO "+" Add button any more: a value missing from the list is
-/// entered through the "Others" option — see [SearchableWithOthersField],
-/// which wraps this field and reveals a custom textbox below it.
+/// This is the CLOSED-list picker: every legal answer is already in [items].
+/// For a field where a member may legitimately have a value the catalogue does
+/// not carry — a religion, a community, a village — use
+/// [SearchableWithAddField] instead, which offers `+ Add "…"` for whatever was
+/// typed. There is no "Others" entry anywhere in the app any more.
 class SearchableField extends StatelessWidget {
   final String label;
   final List<String> items;
@@ -50,8 +52,7 @@ class SearchableField extends StatelessWidget {
   final SearchablePopupMode popupMode;
 
   /// Optional display-text override for an item, applied BEFORE the standard
-  /// value localization. Used by [SearchableWithOthersField] to render its
-  /// "Others" sentinel with the localized label.
+  /// value localization.
   final String Function(String item)? itemLabel;
 
   /// Inline error rendered under the field and used to paint the border red

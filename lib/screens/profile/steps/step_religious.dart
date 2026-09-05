@@ -14,7 +14,8 @@ import '../../../widgets/common/searchable_with_others_field.dart';
 ///
 /// Gothram and Kuladeivam were REMOVED from profile creation (spec §7); the
 /// underlying model fields are untouched so existing profiles keep their data.
-/// Each dropdown offers "Others" → custom textbox instead of a "+" button.
+/// Each dropdown accepts a typed value through `+ Add "…"`, so a community the
+/// catalogue does not carry never blocks the step.
 class StepReligious extends ConsumerStatefulWidget {
   final VoidCallback onNext;
   const StepReligious({super.key, required this.onNext});

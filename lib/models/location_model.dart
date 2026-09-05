@@ -10,6 +10,10 @@
 // the UI can display either language while profiles keep storing the
 // canonical English name + stable numeric id.
 
+/// The fixed country. Every place the app knows about is in India; it is named
+/// rather than assumed so a stored location says so out loud.
+const String kDefaultCountry = 'India';
+
 /// The fixed state — the app supports Tamil Nadu only.
 class TnState {
   static const String id = 'TN';
@@ -108,6 +112,13 @@ class PlaceSelection {
   final String districtEn;
   final int? districtId;
   final String state;
+
+  /// The country the place sits in. The app serves Tamil Nadu only, so this is
+  /// India everywhere today — it is stored explicitly all the same, because a
+  /// horoscope is cast from a real point on the globe and a birth place with no
+  /// country is not one.
+  final String country;
+
   final bool custom;
 
   const PlaceSelection({
@@ -118,10 +129,12 @@ class PlaceSelection {
     this.districtEn = '',
     this.districtId,
     this.state = TnState.nameEn,
+    this.country = kDefaultCountry,
     this.custom = false,
   });
 
-  /// A place the member typed themselves — only the name is known.
+  /// A place the member typed themselves — only the name is known. The country
+  /// still stands: an unlisted village is an unlisted INDIAN village.
   const PlaceSelection.custom(this.city)
       : cityEn = '',
         cityId = null,
@@ -129,6 +142,7 @@ class PlaceSelection {
         districtEn = '',
         districtId = null,
         state = '',
+        country = kDefaultCountry,
         custom = true;
 
   /// "Athikkolam, Ramanathapuram, Tamil Nadu" — what the field displays and

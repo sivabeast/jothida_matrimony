@@ -20,10 +20,10 @@ const String kOtherMasterId = 'other';
 /// enforces the dependency rules (changing Religion clears Caste & Sub-caste;
 /// changing Caste clears Sub-caste) and reports the selected **id + name**.
 ///
-/// There is NO "+" Add button any more: each level ends with an **"Others"**
-/// entry that reveals a custom textbox below the dropdown. The typed value is
-/// kept ONLY on this profile (stored with [kOtherMasterId] as its id) and is
-/// never written back to the shared master data.
+/// None of the three levels is a closed list: a member whose community is not
+/// in the catalogue types it into the same field and taps **+ Add**. The typed
+/// value is kept ONLY on this profile (stored with [kOtherMasterId] as its id)
+/// and is never written back to the shared master data.
 class ReligionCasteFields extends ConsumerStatefulWidget {
   final String? religionId;
   final String? religionName;

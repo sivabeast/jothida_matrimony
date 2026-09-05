@@ -4079,6 +4079,39 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not prepare the report. Please try again.';
 
   @override
+  String get addThisPlace => 'Add this place';
+
+  @override
+  String get additionalDetails => 'Additional Details';
+
+  @override
+  String get communityCaste => 'Community / Caste';
+
+  @override
+  String get personalSocialDetailsNote =>
+      'Optional — helps the astrologer read the chart in the right tradition.';
+
+  @override
+  String get reviewIncompleteTitle => 'Something is still missing';
+
+  @override
+  String reviewFixInStep(String step) {
+    return 'Fix in $step';
+  }
+
+  @override
+  String get personOneIncomplete => 'Person 1’s details are incomplete.';
+
+  @override
+  String get personTwoIncomplete => 'Person 2’s details are incomplete.';
+
+  @override
+  String get contactIncomplete => 'The contact details are incomplete.';
+
+  @override
+  String get startingPayment => 'Opening Google Play…';
+
+  @override
   String get professionalMarriageCompatReport =>
       'Professional Marriage Compatibility Report';
 }

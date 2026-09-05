@@ -4128,6 +4128,39 @@ class AppLocalizationsTa extends AppLocalizations {
       'அறிக்கையைத் தயாரிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
+  String get addThisPlace => 'இந்த இடத்தைச் சேர்க்கவும்';
+
+  @override
+  String get additionalDetails => 'கூடுதல் விவரங்கள்';
+
+  @override
+  String get communityCaste => 'சமுதாயம் / சாதி';
+
+  @override
+  String get personalSocialDetailsNote =>
+      'விருப்பம் — சரியான மரபில் ஜாதகம் பார்க்க உதவும்.';
+
+  @override
+  String get reviewIncompleteTitle => 'ஏதோ ஒன்று விடுபட்டுள்ளது';
+
+  @override
+  String reviewFixInStep(String step) {
+    return '$step பக்கத்தில் சரிசெய்யவும்';
+  }
+
+  @override
+  String get personOneIncomplete => 'நபர் 1 இன் விவரங்கள் முழுமையாக இல்லை.';
+
+  @override
+  String get personTwoIncomplete => 'நபர் 2 இன் விவரங்கள் முழுமையாக இல்லை.';
+
+  @override
+  String get contactIncomplete => 'தொடர்பு விவரங்கள் முழுமையாக இல்லை.';
+
+  @override
+  String get startingPayment => 'Google Play திறக்கப்படுகிறது…';
+
+  @override
   String get professionalMarriageCompatReport =>
       'தொழில்முறை திருமண பொருத்த அறிக்கை';
 }
