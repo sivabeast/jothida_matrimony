@@ -424,10 +424,23 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       if (pending == null) return const SizedBox.shrink();
       // The receiver of a pending interest NEVER sees "Send Interest" — only
       // this premium Accept / Reject card (duplicate-interest prevention).
-      return PendingInterestCard(
+      final card = PendingInterestCard(
         name: profile.fullName,
         onAccept: () => _acceptInterest(profile, pending.id),
         onReject: () => _rejectInterest(profile, pending.id),
+      );
+      // A PUBLIC profile keeps its direct actions while the interest waits: a
+      // published profile is reachable, and answering the proposal is a
+      // separate decision from being able to talk (spec §4). Answering it
+      // stays the primary action, so the card sits on top.
+      if (!profile.isContactPublic) return card;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          card,
+          const SizedBox(height: 14),
+          _connectedActionsCard(profile, MemberAccess.publicProfile),
+        ],
       );
     }
 
