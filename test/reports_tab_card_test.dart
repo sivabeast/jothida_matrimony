@@ -4,8 +4,12 @@
 // off the request, which is how a placeholder second-person name ended up
 // being the most prominent thing on the page. It now shows the other person's
 // live profile photo and current name, falling back to the stored name and a
-// gender-appropriate avatar — never a broken image — when there is no profile
-// to read.
+// plain person avatar — never a broken image — when there is no profile to
+// read.
+//
+// The card layout itself is pinned here too (spec S6-S10): the photo on the
+// LEFT, name / location / request date on the RIGHT, and one full-width View
+// Details beneath them.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -159,11 +163,45 @@ void main() {
     expect(tester.takeException(), isNull);
 
     expect(find.text('Kavitha S'), findsOneWidget);
-    // No profile → no URL → NetworkPhoto renders its branded fallback rather
-    // than a broken image, and the icon follows the person's gender.
+    // No profile -> no URL -> NetworkPhoto renders the default person avatar
+    // rather than a broken image: a plain glyph, at the SAME size a real photo
+    // would occupy, so the row never shifts (spec S8).
     final photo = tester.widget<NetworkPhoto>(find.byType(NetworkPhoto).first);
     expect(photo.url, isEmpty);
-    expect(photo.fallbackIcon, Icons.woman_outlined);
+    expect(photo.fallbackIcon, Icons.person);
+    expect(photo.width, 78);
+    expect(photo.height, 78);
+  });
+
+  testWidgets('the card is photo-left, facts-right, action-full-width',
+      (tester) async {
+    final l10n = await _pump(
+      tester,
+      [_internalReport(status: AstrologerRequestStatus.pending)],
+      partner: _profile(id: 'theirs', name: 'Kavitha S'),
+    );
+    expect(tester.takeException(), isNull);
+
+    // RIGHT column: the name, where they are, and when it was requested —
+    // every one of them read from real data, none of them hardcoded (S11).
+    expect(find.text('Kavitha S'), findsOneWidget);
+    expect(find.text('Madurai, Tamil Nadu'), findsOneWidget);
+    expect(find.text('${l10n.requestDateLabel}: 04/09/2026'), findsOneWidget);
+
+    // The photo really is to the LEFT of the name, not a thumbnail above it.
+    final photoX = tester.getCenter(find.byType(NetworkPhoto).first).dx;
+    final nameX = tester.getCenter(find.text('Kavitha S')).dx;
+    expect(photoX, lessThan(nameX));
+
+    // …and the action spans the card rather than sitting in a corner.
+    final button = find.widgetWithText(ElevatedButton, l10n.viewDetails);
+    expect(button, findsOneWidget);
+    final cardWidth = tester.getSize(find.byType(ListView)).width;
+    expect(tester.getSize(button).width, greaterThan(cardWidth * 0.8));
+
+    // The metadata that used to bury the card is gone (S10).
+    expect(find.textContaining('REQ-1'), findsNothing);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
   });
 
   testWidgets('a completed report leads with View Report', (tester) async {

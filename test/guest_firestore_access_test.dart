@@ -65,7 +65,6 @@ void main() {
       // router bounces guests to /login-required instead.
       for (final route in const [
         '/home', // banners + app popups
-        '/astrology-appointment', // astrology_service/config
         '/muhurtham-calendar',
         '/help',
         '/privacy-policy',

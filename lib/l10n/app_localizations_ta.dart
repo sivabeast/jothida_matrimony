@@ -4161,6 +4161,73 @@ class AppLocalizationsTa extends AppLocalizations {
   String get startingPayment => 'Google Play திறக்கப்படுகிறது…';
 
   @override
+  String get publicProfileTitle => 'பொது சுயவிவரம்';
+
+  @override
+  String get publicProfileBody =>
+      'இந்த உறுப்பினர் தனது சுயவிவரத்தைப் பகிரங்கமாக வைத்துள்ளார் — நேரடியாகத் தொடர்பு கொள்ளலாம்.';
+
+  @override
+  String get paymentSuccessfulTitle => 'கட்டணம் வெற்றிகரமாக செலுத்தப்பட்டது';
+
+  @override
+  String get paymentSuccessfulBody =>
+      'உங்கள் ஜாதகப் பொருத்த அறிக்கை கோரிக்கை எங்கள் ஜோதிடக் குழுவிடம் உள்ளது. அறிக்கைகள் பக்கத்தில் பார்க்கவும்.';
+
+  @override
+  String get requestDateLabel => 'கோரிக்கை தேதி';
+
+  @override
+  String get shareOnWhatsapp => 'WhatsApp இல் பகிரவும்';
+
+  @override
+  String get shareReportOnWhatsapp => 'அறிக்கையை WhatsApp இல் பகிரவும்';
+
+  @override
+  String get preparingReportFile => 'அறிக்கை தயாராகிறது…';
+
+  @override
+  String get couldNotPrepareShare =>
+      'பகிர்வதற்கு அறிக்கையைத் தயாரிக்க முடியவில்லை.';
+
+  @override
+  String get noWhatsappNumberForMember =>
+      'இந்த உறுப்பினரின் தொலைபேசி எண் பதிவில் இல்லை, எனவே WhatsApp இல் அறிக்கையை அனுப்ப முடியாது.';
+
+  @override
+  String get reportSharedOnWhatsapp =>
+      'அறிக்கை தயார் — அனுப்ப WhatsApp ஐத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get aboutAstrologer => 'ஜோதிடர் பற்றி';
+
+  @override
+  String get astrologerExperience => 'அனுபவம்';
+
+  @override
+  String get astrologerExpertise => 'நிபுணத்துவம்';
+
+  @override
+  String get contactAstrologer => 'ஜோதிடரைத் தொடர்பு கொள்ளவும்';
+
+  @override
+  String get astrologySupportBody =>
+      'எங்கள் ஜோதிடர் ஜாதகப் பொருத்தம் மற்றும் ஆலோசனையில் உறுப்பினர்களுக்கு உதவுகிறார். நேரடியாகத் தொடர்பு கொள்ளுங்கள்.';
+
+  @override
+  String get couldNotOpenDialer => 'தொலைபேசி டயலரைத் திறக்க முடியவில்லை.';
+
+  @override
+  String get copy => 'நகலெடு';
+
+  @override
+  String get openWhatsappChat => 'WhatsApp உரையாடலைத் திறக்கவும்';
+
+  @override
+  String get attachReportHint =>
+      'பின்னர் அந்த உரையாடலில் அறிக்கையை இணைக்கவும் — பகிர்வு பட்டியலில் WhatsApp ஐத் தேர்ந்தெடுக்கவும்.';
+
+  @override
   String get professionalMarriageCompatReport =>
       'தொழில்முறை திருமண பொருத்த அறிக்கை';
 }

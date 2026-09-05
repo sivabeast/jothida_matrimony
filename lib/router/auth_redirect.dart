@@ -15,10 +15,9 @@ const Set<String> kGuestAllowedRoutes = {
   '/login-required',
   '/home', // browse + explore (personalized cards gate themselves)
   '/muhurtham-calendar', // public almanac
-  // Astrology services are public content a guest may browse (§6). BOOKING an
-  // appointment is gated separately — it needs a login (but NOT a matrimony
-  // profile, §8) — inside the booking screen itself.
-  '/astrology-appointment',
+  // Astrology services are public content a guest may browse (§6). The page
+  // lives on the /home shell as a TAB, so it needs no route of its own here —
+  // and there is no longer a booking flow behind it to gate (§21).
   '/help',
   '/language',
   '/privacy-policy',

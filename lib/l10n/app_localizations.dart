@@ -7454,6 +7454,126 @@ abstract class AppLocalizations {
   /// **'Opening Google Play…'**
   String get startingPayment;
 
+  /// No description provided for @publicProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Public Profile'**
+  String get publicProfileTitle;
+
+  /// No description provided for @publicProfileBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This member shares their profile openly — you can contact them straight away.'**
+  String get publicProfileBody;
+
+  /// No description provided for @paymentSuccessfulTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Successful'**
+  String get paymentSuccessfulTitle;
+
+  /// No description provided for @paymentSuccessfulBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your horoscope compatibility report request is with our astrology team. Track it on the Reports page.'**
+  String get paymentSuccessfulBody;
+
+  /// No description provided for @requestDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Date'**
+  String get requestDateLabel;
+
+  /// No description provided for @shareOnWhatsapp.
+  ///
+  /// In en, this message translates to:
+  /// **'Share on WhatsApp'**
+  String get shareOnWhatsapp;
+
+  /// No description provided for @shareReportOnWhatsapp.
+  ///
+  /// In en, this message translates to:
+  /// **'Share report on WhatsApp'**
+  String get shareReportOnWhatsapp;
+
+  /// No description provided for @preparingReportFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing the report…'**
+  String get preparingReportFile;
+
+  /// No description provided for @couldNotPrepareShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not prepare the report for sharing.'**
+  String get couldNotPrepareShare;
+
+  /// No description provided for @noWhatsappNumberForMember.
+  ///
+  /// In en, this message translates to:
+  /// **'This member has no phone number on record, so the report cannot be sent on WhatsApp.'**
+  String get noWhatsappNumberForMember;
+
+  /// No description provided for @reportSharedOnWhatsapp.
+  ///
+  /// In en, this message translates to:
+  /// **'Report ready — choose WhatsApp to send it.'**
+  String get reportSharedOnWhatsapp;
+
+  /// No description provided for @aboutAstrologer.
+  ///
+  /// In en, this message translates to:
+  /// **'About the Astrologer'**
+  String get aboutAstrologer;
+
+  /// No description provided for @astrologerExperience.
+  ///
+  /// In en, this message translates to:
+  /// **'Experience'**
+  String get astrologerExperience;
+
+  /// No description provided for @astrologerExpertise.
+  ///
+  /// In en, this message translates to:
+  /// **'Expertise'**
+  String get astrologerExpertise;
+
+  /// No description provided for @contactAstrologer.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact the Astrologer'**
+  String get contactAstrologer;
+
+  /// No description provided for @astrologySupportBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Our astrologer supports members with horoscope matching and compatibility guidance. Get in touch directly.'**
+  String get astrologySupportBody;
+
+  /// No description provided for @couldNotOpenDialer.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the phone dialer.'**
+  String get couldNotOpenDialer;
+
+  /// No description provided for @copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
+
+  /// No description provided for @openWhatsappChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Open WhatsApp chat'**
+  String get openWhatsappChat;
+
+  /// No description provided for @attachReportHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Then attach the report to that chat — pick WhatsApp in the share sheet.'**
+  String get attachReportHint;
+
   /// No description provided for @professionalMarriageCompatReport.
   ///
   /// In en, this message translates to:

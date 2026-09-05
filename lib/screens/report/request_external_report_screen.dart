@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/services/master_astrology_data.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/horoscope_roles.dart';
 import '../../core/utils/l10n_ext.dart';
-import '../../core/utils/phone_utils.dart';
 import '../../core/utils/value_l10n.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/profile_model.dart';
-import '../../providers/astrology_config_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../providers/navigation_provider.dart';
@@ -439,7 +436,7 @@ class _RequestExternalReportScreenState
       _paidToken = ''; // consumed
       _paidVerifiedBy = 'client';
       _paidOrderId = '';
-      await _showSubmitted(id, digits);
+      await _showSubmitted(id);
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -454,87 +451,90 @@ class _RequestExternalReportScreenState
     }
   }
 
-  /// Confirmation sheet — the request id to keep, plus the WhatsApp hand-off
-  /// (spec §9). Guests are additionally offered a login, because that is the
-  /// ONLY thing an account adds here: tracking the request later.
-  Future<void> _showSubmitted(String id, String whatsapp) async {
+  /// Payment confirmation (spec §5/§20).
+  ///
+  /// One thing happened — the payment went through and the request exists — so
+  /// the popup says exactly that: a tick, the line, the Request ID worth
+  /// keeping, and Done.
+  ///
+  /// There is deliberately **no WhatsApp action here.** It used to hand the
+  /// member a pre-typed message to send to the office, which asked somebody who
+  /// had just paid us to go and do our filing. WhatsApp belongs at the other
+  /// end of this flow, where the finished report is sent BACK to them by the
+  /// astrologer (§17) — not to the person who has only just paid.
+  Future<void> _showSubmitted(String id) async {
     final l10n = context.l10n;
     final isGuest = ref.read(isGuestProvider);
-    await showModalBottomSheet<void>(
+    await showDialog<void>(
       context: context,
-      isDismissible: false,
-      enableDrag: false,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
-      builder: (ctx) => SafeArea(
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.white,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(children: [
-                const Icon(Icons.check_circle,
-                    color: AppColors.success, size: 26),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(l10n.requestSubmittedTitle,
-                      style: const TextStyle(
-                          fontSize: 17,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w700)),
+              // The same success mark the Interest Sent confirmation uses, so
+              // "it worked" reads identically wherever it happens.
+              Container(
+                width: 84,
+                height: 84,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.success.withValues(alpha: 0.12),
                 ),
-              ]),
-              const SizedBox(height: 12),
+                alignment: Alignment.center,
+                child: const Icon(Icons.check_rounded,
+                    size: 46, color: AppColors.success),
+              ),
+              const SizedBox(height: 18),
+              Text(l10n.paymentSuccessfulTitle,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 18,
+                      height: 1.3,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              Text(l10n.paymentSuccessfulBody,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 13, height: 1.5, color: Colors.grey[700])),
+              const SizedBox(height: 18),
+              // The one thing worth carrying away from this screen.
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(13),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(l10n.requestIdLabel,
-                        style:
-                            TextStyle(fontSize: 11.5, color: Colors.grey[600])),
+                        style: TextStyle(
+                            fontSize: 11.5, color: Colors.grey[600])),
                     const SizedBox(height: 3),
                     SelectableText(id,
+                        textAlign: TextAlign.center,
                         style: const TextStyle(
-                            fontSize: 15,
+                            fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: AppColors.primary)),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
-              Text(l10n.requestSubmittedWhatsappBody,
-                  style: TextStyle(
-                      fontSize: 13, height: 1.5, color: Colors.grey[700])),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _openWhatsapp(id, whatsapp),
-                  icon: const Icon(Icons.chat, size: 18),
-                  label: Text(l10n.sendOnWhatsapp),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF25D366),
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(46),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ),
               if (isGuest) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: 14),
                 Text(l10n.guestRequestTrackHint,
+                    textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -547,20 +547,27 @@ class _RequestExternalReportScreenState
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
                       side: const BorderSide(color: AppColors.primary),
-                      minimumSize: const Size.fromHeight(44),
+                      minimumSize: const Size.fromHeight(46),
                     ),
                   ),
                 ),
               ],
-              const SizedBox(height: 6),
-              Center(
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    _leave(trackable: !isGuest);
-                  },
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(50),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
                   child: Text(l10n.done,
-                      style: const TextStyle(color: Colors.grey)),
+                      style: const TextStyle(
+                          fontSize: 15.5, fontWeight: FontWeight.w700)),
                 ),
               ),
             ],
@@ -580,31 +587,6 @@ class _RequestExternalReportScreenState
       ref.read(homeTabIndexProvider.notifier).state = kReportsTabIndex;
     }
     context.go('/home');
-  }
-
-  /// Opens WhatsApp with the request summary pre-typed, addressed to the
-  /// office number from the admin-managed astrology config. Falls back to the
-  /// contact person's own number when the office has not configured one, so
-  /// the hand-off is never a dead button.
-  Future<void> _openWhatsapp(String id, String contactNumber) async {
-    final cfg = ref.read(astrologyServiceConfigValueProvider);
-    final office = cfg.whatsappNumber.trim();
-    final target = office.isNotEmpty ? office : contactNumber;
-    final text = Uri.encodeComponent(
-        '${context.l10n.whatsappRequestIntro}\n'
-        'Request ID: $id\n'
-        '${_one.name.text.trim()} — ${_one.birthTimeText} — '
-        '${_one.place?.display ?? ''}\n'
-        '${_two.name.text.trim()} — ${_two.birthTimeText} — '
-        '${_two.place?.display ?? ''}\n'
-        'Contact: ${_contactName.text.trim()} (+91 $contactNumber)');
-    final uri = Uri.parse('${whatsappUri(target)}?text=$text');
-    try {
-      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!ok && mounted) _snack(context.l10n.couldNotOpenWhatsapp);
-    } catch (_) {
-      if (mounted) _snack(context.l10n.couldNotOpenWhatsapp);
-    }
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────

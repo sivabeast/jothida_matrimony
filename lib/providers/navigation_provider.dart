@@ -32,6 +32,22 @@ void goToReportsTab(BuildContext context, WidgetRef ref) {
 bool isReportsRoute(String route) =>
     route == '/reports' || route == '/my-analysis';
 
+/// Opens the bottom-nav ASTROLOGY tab from anywhere.
+///
+/// The astrology page is a TAB, never a route, so a deep link that names it
+/// has to be translated rather than pushed - `context.push('/astrology')`
+/// finds no route and does nothing at all.
+void goToAstrologyTab(BuildContext context, WidgetRef ref) {
+  ref.read(homeTabIndexProvider.notifier).state = kAstrologyTabIndex;
+  GoRouter.of(context).go('/home');
+}
+
+/// True when [route] targets the astrology page - the current '/astrology'
+/// value and the '/my-appointments' links stored in notification documents
+/// written before appointment booking was removed.
+bool isAstrologyRoute(String route) =>
+    route == '/astrology' || route == '/my-appointments';
+
 /// A pair the user wants an astrologer to analyse, stashed when they tap
 /// "Consult Astrologer" (from a horoscope-match result or a member's profile)
 /// so the Astrologers list / booking flow can pre-fill the partner.

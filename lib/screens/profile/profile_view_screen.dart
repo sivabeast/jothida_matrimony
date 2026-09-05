@@ -6,6 +6,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/l10n_ext.dart';
+import '../../core/utils/profile_access.dart';
 import '../../core/utils/value_l10n.dart';
 import '../../models/astrologer_request_model.dart';
 import '../../models/compatibility_report_model.dart';
@@ -430,7 +431,23 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       );
     }
 
-    if (accepted) return _connectedActionsCard(profile);
+    if (accepted) return _connectedActionsCard(profile, MemberAccess.connected);
+
+    // A PUBLIC profile is a standing invitation (spec §4): Chat, Contact and
+    // the Horoscope Report open straight away, with no interest round-trip.
+    // The interest button stays underneath — publishing a profile does not
+    // stop it being a matrimony profile, and an interest is still how a
+    // proposal is made.
+    if (profile.isContactPublic) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _connectedActionsCard(profile, MemberAccess.publicProfile),
+          const SizedBox(height: 14),
+          _interestOnlyAction(profile, alreadySent: alreadySent),
+        ],
+      );
+    }
 
     if (alreadySent) {
       return SizedBox(
@@ -450,6 +467,30 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       );
     }
 
+    return _interestOnlyAction(profile, alreadySent: false);
+  }
+
+  /// Just the interest button in its two states. Factored out because a public
+  /// profile shows it BENEATH the direct-action card rather than instead of it.
+  Widget _interestOnlyAction(ProfileModel profile,
+      {required bool alreadySent}) {
+    if (alreadySent) {
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: null,
+          icon: const Icon(Icons.hourglass_top),
+          label: Text(context.l10n.interestSent),
+          style: ElevatedButton.styleFrom(
+            disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
+            disabledForegroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(52),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      );
+    }
     return SizedBox(
       width: double.infinity,
       child: GradientButton(
@@ -459,22 +500,24 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     );
   }
 
-  /// The bottom card AFTER both members are connected (spec §5).
+  /// The card carrying the direct actions — Contact, Chat, Horoscope Report.
   ///
-  /// Interest buttons are gone; what replaces them is one premium card:
-  ///   • a "You are Connected" banner;
-  ///   • **View Contact Details** as the single full-width primary action;
-  ///   • the connected actions — **Chat** and **Horoscope Matching** — as two
-  ///     equal tiles beneath it.
+  /// It renders for the two cases that earn them, and says which one applies:
+  ///   • [MemberAccess.connected] — a mutually accepted interest (spec §3);
+  ///   • [MemberAccess.publicProfile] — the owner publishes their profile, so
+  ///     the same actions open with no interest at all (spec §4).
   ///
-  /// None of these exist before acceptance: this whole card only ever renders
-  /// in the accepted branch of [_statusInterestAction].
-  Widget _connectedActionsCard(ProfileModel profile) {
+  /// The only thing the two do not share is the profile DOWNLOAD, which stays
+  /// connection-only: publishing a profile makes you reachable, it does not
+  /// hand out a copy of the member's registration form.
+  Widget _connectedActionsCard(ProfileModel profile, MemberAccess access) {
     final l10n = context.l10n;
     // The horoscope request (if any) decides what the Horoscope Matching tile
     // does — book, wait, or open the finished report.
     final reqAsync = ref.watch(compatRequestForPairProvider(profile.id));
     final req = reqAsync.valueOrNull;
+    final connected = access.isConnected;
+    final bannerColor = connected ? AppColors.success : AppColors.info;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -484,7 +527,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.success.withValues(alpha: 0.30)),
+            border: Border.all(color: bannerColor.withValues(alpha: 0.30)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.05),
@@ -503,26 +546,36 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                     width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      color: AppColors.success.withValues(alpha: 0.12),
+                      color: bannerColor.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
-                    child: const Icon(Icons.verified_user_outlined,
-                        size: 22, color: AppColors.success),
+                    child: Icon(
+                        connected
+                            ? Icons.verified_user_outlined
+                            : Icons.public_outlined,
+                        size: 22,
+                        color: bannerColor),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(l10n.connectedTitle,
-                            style: const TextStyle(
+                        Text(
+                            connected
+                                ? l10n.connectedTitle
+                                : l10n.publicProfileTitle,
+                            style: TextStyle(
                                 fontSize: 15,
                                 fontFamily: 'Poppins',
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.success)),
+                                color: bannerColor)),
                         const SizedBox(height: 2),
-                        Text(l10n.connectedBody,
+                        Text(
+                            connected
+                                ? l10n.connectedBody
+                                : l10n.publicProfileBody,
                             style: TextStyle(
                                 fontSize: 12,
                                 height: 1.35,
@@ -590,11 +643,13 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
               // ── Download this member's profile ──
-              // Lives inside the connected card ON PURPOSE: this card only
-              // exists in the accepted branch, so the download is structurally
-              // impossible before the interest is accepted.
+              // CONNECTION-ONLY, and structurally so: a public profile renders
+              // this same card but never reaches this branch, so the export is
+              // impossible without a mutually accepted interest (the guard in
+              // _downloadProfile re-asserts it).
+              if (connected) ...[
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
@@ -627,6 +682,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                   ),
                 ),
               ),
+              ],
             ],
           ),
         ),

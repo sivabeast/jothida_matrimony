@@ -904,12 +904,49 @@ service cloud.firestore {
     // automatic "booking accepted" message because the thread is pre-created by
     // the USER at booking time — the astrologer only SENDS into that existing
     // thread on accept (allowed below for any participant), never creating one.
+    // Creating a conversation is where communication access is decided, and it
+    // is decided ONCE, here (spec §32). A member may open a thread with
+    // somebody only when one of the two conditions the app also shows in the
+    // UI actually holds:
+    //
+    //   * a mutually accepted interest — the /connections/{pair} document that
+    //     already gates contact details (private profiles, spec §3); or
+    //   * the other member publishes their profile
+    //     (`contactPrivacy == 'public'`, spec §4).
+    //
+    // Without this the create rule was "any authenticated participant", so a
+    // tampered client could start a conversation with anyone regardless of
+    // visibility. READ and UPDATE stay participant-based: once a thread
+    // legitimately exists, both sides own it equally — which is also what makes
+    // it ONE conversation rather than one per direction (spec §33).
+    function chatCounterpart() {
+      return request.resource.data.participantIds[0] == request.auth.uid
+             ? request.resource.data.participantIds[1]
+             : request.resource.data.participantIds[0];
+    }
+    //
+    // The third condition is the STAFF thread: a member opens a conversation
+    // with the astrologer / employee handling their horoscope report. That
+    // counterpart has no matrimony profile and no connection, and it is always
+    // the member who creates the thread (staff may only send into an existing
+    // one — see !isAstrologer() above), so it is named explicitly rather than
+    // left to fall out of the member rules.
+    function mayOpenChatWith(otherUid) {
+      return exists(/databases/$(database)/documents/connections/$(pairId(otherUid, request.auth.uid)))
+             || (exists(/databases/$(database)/documents/profiles/$(otherUid))
+                 && get(/databases/$(database)/documents/profiles/$(otherUid)).data.get('contactPrivacy', 'private') == 'public')
+             || (exists(/databases/$(database)/documents/users/$(otherUid))
+                 && get(/databases/$(database)/documents/users/$(otherUid)).data.get('role', 'user') in ['astrologer', 'admin', 'super_admin']);
+    }
+
     match /chats/{threadId} {
       allow read, update: if isAuthenticated()
                           && request.auth.uid in resource.data.participantIds;
       allow create: if isAuthenticated()
                     && request.auth.uid in request.resource.data.participantIds
-                    && !isAstrologer();
+                    && request.resource.data.participantIds.size() == 2
+                    && !isAstrologer()
+                    && mayOpenChatWith(chatCounterpart());
 
       match /messages/{messageId} {
         allow read: if isAuthenticated()

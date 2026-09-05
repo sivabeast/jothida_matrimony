@@ -1,19 +1,14 @@
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/appointment_status.dart';
 import '../../../core/utils/file_actions.dart';
 import '../../../core/utils/l10n_ext.dart';
-import '../../../core/utils/slot_generator.dart';
+import '../../../core/utils/phone_utils.dart';
 import '../../../core/utils/value_l10n.dart';
-import '../../../models/astrologer_request_model.dart';
 import '../../../models/astrology_service_config.dart';
-import '../../../providers/appointment_provider.dart';
 import '../../../providers/astrology_config_provider.dart';
 import '../../../widgets/common/network_photo.dart';
 
@@ -22,8 +17,12 @@ import '../../../widgets/common/network_photo.dart';
 /// EVERYTHING here is loaded LIVE from the admin-managed `astrology_service/config`
 /// ([astrologyServiceConfigProvider]): the hero photo, name, address, about,
 /// experience, specialization, services, certificates, awards, news & media and
-/// contact details. Nothing is hardcoded. A large "Book Your Appointment" CTA
-/// opens the in-person appointment booking flow.
+/// contact details. Nothing is hardcoded.
+///
+/// The page is astrologer DETAILS + CONTACT, and nothing else (spec §24). It
+/// used to end in a "Book Your Appointment" CTA over a date/time booking flow;
+/// that flow is gone, and the sticky bar now carries Call and WhatsApp, which
+/// is what members were actually trying to reach through it.
 class AstrologyServicePage extends ConsumerWidget {
   const AstrologyServicePage({super.key});
 
@@ -126,7 +125,6 @@ class _Body extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
             children: [
-              const _AppointmentStatusCard(),
               _hero(),
               const SizedBox(height: 14),
               _nameAddress(),
@@ -136,7 +134,7 @@ class _Body extends StatelessWidget {
             ],
           ),
         ),
-        _bottomCta(context),
+        _contactActions(context),
       ],
     );
   }
@@ -568,9 +566,25 @@ class _Body extends StatelessWidget {
         ),
       );
 
-  // ── Sticky CTA ──────────────────────────────────────────────────────────
-  Widget _bottomCta(BuildContext context) {
-    final open = cfg.bookingEnabled;
+  // ── Sticky contact actions (spec S27/S28) ─────────────────────────────
+  //
+  // This bar used to be "Book Your Appointment". There is no booking any more:
+  // the astrologer is reached directly, so the same prominent slot now carries
+  // the two ways to do that. Both numbers come from the admin-managed astrology
+  // config - nothing here is hardcoded (spec S26).
+  Widget _contactActions(BuildContext context) {
+    final l10n = context.l10n;
+    final phone = cfg.expertContactPhone.trim().isNotEmpty
+        ? cfg.expertContactPhone.trim()
+        : cfg.officeContactNumber.trim();
+    final whatsapp = cfg.whatsappNumber.trim().isNotEmpty
+        ? cfg.whatsappNumber.trim()
+        : phone;
+
+    // With no number configured at all there is nothing to press, so the bar
+    // does not render rather than showing two dead buttons.
+    if (phone.isEmpty && whatsapp.isEmpty) return const SizedBox.shrink();
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
       decoration: BoxDecoration(
@@ -584,29 +598,52 @@ class _Body extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed:
-                open ? () => context.push('/astrology-appointment') : null,
-            icon: Icon(open ? Icons.event_available : Icons.event_busy,
-                size: 20),
-            label: Text(
-              open
-                  ? context.l10n.bookYourAppointment
-                  : context.l10n.bookingCurrentlyClosed,
-              style:
-                  const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: Colors.grey.shade300,
-              minimumSize: const Size.fromHeight(54),
-              shape:
-                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            ),
-          ),
+        child: Row(
+          children: [
+            if (phone.isNotEmpty)
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _launch(context, phoneCallUri(phone),
+                      l10n.couldNotOpenDialer),
+                  icon: const Icon(Icons.call_outlined, size: 19),
+                  label: Text(l10n.callAction,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 14.5, fontWeight: FontWeight.w700)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                    minimumSize: const Size.fromHeight(52),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+            if (phone.isNotEmpty && whatsapp.isNotEmpty)
+              const SizedBox(width: 12),
+            if (whatsapp.isNotEmpty)
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _launch(context, whatsappUri(whatsapp),
+                      l10n.couldNotOpenWhatsapp),
+                  icon: const Icon(Icons.chat, size: 19),
+                  label: const Text('WhatsApp',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontSize: 14.5, fontWeight: FontWeight.w700)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF25D366),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    minimumSize: const Size.fromHeight(52),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -643,152 +680,6 @@ class _Body extends StatelessWidget {
         ),
       );
 }
-
-// ── Appointment status card (top of the Astrology page) ───────────────────────
-
-/// The compact CURRENT / UPCOMING booking card at the top of the Astrology
-/// page (spec §3): title, status badge, date, time, a short status message and
-/// a "View My Bookings" action that opens the ONE booking-history page.
-///
-/// Prefers the soonest still-open booking so a member with an upcoming visit
-/// always sees THAT one; with none open it falls back to the most recent
-/// booking. Renders nothing when the user has never booked. Updates in real
-/// time as the admin changes the status (Pending → Confirmed → Completed /
-/// Cancelled).
-class _AppointmentStatusCard extends ConsumerWidget {
-  const _AppointmentStatusCard();
-
-  /// The booking to feature: the soonest OPEN one, else the latest of all.
-  static AstrologerRequestModel? _featured(
-      List<AstrologerRequestModel> list) {
-    if (list.isEmpty) return null;
-    final open = list.where((a) => isOpenAppointment(a.status)).toList()
-      ..sort((a, b) {
-        final ad = a.visitDate, bd = b.visitDate;
-        if (ad == null && bd == null) return b.createdAt.compareTo(a.createdAt);
-        if (ad == null) return 1;
-        if (bd == null) return -1;
-        return ad.compareTo(bd);
-      });
-    return open.isNotEmpty ? open.first : list.first;
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    final list = ref.watch(myAppointmentsProvider).valueOrNull ?? const [];
-    final appt = _featured(list);
-    if (appt == null) return const SizedBox.shrink();
-    final color = appointmentStatusColor(appt.status);
-    final date = appt.visitDate == null
-        ? '—'
-        : DateFormat('d MMMM yyyy').format(appt.visitDate!);
-    final time = appt.session.isNotEmpty
-        ? context.localizeValue(appt.sessionLabel)
-        : (appt.slotStartMinutes == null
-            ? '—'
-            : formatMinutes(appt.slotStartMinutes!));
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.35)),
-        boxShadow: [
-          BoxShadow(color: color.withOpacity(0.08), blurRadius: 12),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.event_available, size: 18, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                    isOpenAppointment(appt.status)
-                        ? l10n.upcomingBookingTitle
-                        : l10n.yourAppointment,
-                    style: const TextStyle(
-                        fontSize: 15,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary)),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    Icon(appointmentStatusIcon(appt.status), size: 14, color: color),
-                    const SizedBox(width: 4),
-                    Text(appointmentTimelineLabel(l10n, appt),
-                        style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: color)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const Divider(height: 18),
-          _row(Icons.event_outlined, l10n.dateLabel, date),
-          const SizedBox(height: 8),
-          _row(Icons.schedule_outlined, l10n.timeLabel, time),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.07),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(appointmentStatusMessage(l10n, appt.status),
-                style: TextStyle(
-                    fontSize: 12.5, height: 1.4, color: Colors.grey[800])),
-          ),
-          const SizedBox(height: 6),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: () => context.push('/my-appointments'),
-              icon: const Icon(Icons.receipt_long_outlined, size: 16),
-              label: Text(context.l10n.viewMyBookings),
-              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _row(IconData icon, String label, String value) => Row(
-        children: [
-          Icon(icon, size: 17, color: AppColors.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            flex: 3,
-            child: Text(label,
-                style: TextStyle(fontSize: 12.5, color: Colors.grey[600])),
-          ),
-          Expanded(
-            flex: 5,
-            child: Text(value,
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w600)),
-          ),
-        ],
-      );
-}
-
-// ── Full-screen image viewer (tap a certificate/award/news image) ─────────────
 
 void _showFullScreenImage(BuildContext context, String url, String title) {
   if (url.trim().isEmpty) return;

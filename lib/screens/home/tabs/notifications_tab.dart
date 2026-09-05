@@ -147,7 +147,7 @@ void _openNotificationTarget(
       'announcement' =>
         n.targetId.isNotEmpty ? '/announcement/${n.targetId}' : '',
       'appointment' || 'appointment_cancelled' || 'appointment_status' =>
-        '/my-appointments',
+        '/astrology',
       'report_assigned' => '/astrologer-dashboard',
       // The member's profile went live — Home is where they see themselves
       // back in the flow. (Free-text admin notices have no destination.)
@@ -169,6 +169,11 @@ void _openNotificationTarget(
   // tab — the standalone "My Reports" page no longer exists.
   if (isReportsRoute(route)) {
     goToReportsTab(context, ref);
+    return;
+  }
+  // Astrology is a tab too (and older documents still say '/my-appointments').
+  if (isAstrologyRoute(route)) {
+    goToAstrologyTab(context, ref);
     return;
   }
   context.push(route);

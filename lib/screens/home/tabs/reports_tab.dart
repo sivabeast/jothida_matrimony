@@ -10,6 +10,7 @@ import '../../../core/utils/value_l10n.dart';
 import '../../../widgets/common/app_logo.dart';
 import '../../../widgets/common/network_photo.dart';
 import '../../../models/astrologer_request_model.dart';
+import '../../../models/profile_model.dart';
 import '../../../models/compatibility_report_model.dart';
 import '../../../providers/match_analysis_provider.dart';
 import '../../../providers/profile_provider.dart';
@@ -242,14 +243,6 @@ class _NewReportButton extends StatelessWidget {
       );
 }
 
-/// Index of the current user-facing stage for [r]: any paid-but-not-completed
-/// request is "Under Analysis"; completed is the final stage. Assignment steps
-/// stay internal (spec §8).
-int _stageIndex(AstrologerRequestModel r) =>
-    r.status == AstrologerRequestStatus.completed ? 3 : 1;
-
-const int _stageCount = 4;
-
 /// One report, presented by WHO it is about.
 ///
 /// The card leads with the other person — their photo on the left, their name
@@ -306,15 +299,32 @@ class _ReportCard extends ConsumerWidget {
     return both.isEmpty ? context.l10n.yourMatch : both;
   }
 
-  /// The other person's gender, so a photo-less card still shows the right
-  /// avatar instead of a generic silhouette.
-  String get _partnerGender {
-    if (report.isExternalReport) {
-      return (report.externalOther['gender'] ?? '').toString();
+  /// Where the other person is from - "Virudhunagar, Tamil Nadu".
+  ///
+  /// Live profile first (it is the current truth), then the snapshot stored on
+  /// the request, which is all an EXTERNAL request has: those two people are
+  /// not members, so their birth place is the only location that exists.
+  /// Nothing here is invented - an empty result renders no row at all rather
+  /// than a placeholder city (spec S11).
+  String _partnerLocation(ProfileModel? partner) {
+    List<String> tidy(List<String> raw) {
+      final parts =
+          raw.map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+      // "Erode, Erode, Tamil Nadu" reads as a stutter - drop the repeat.
+      if (parts.length > 1 &&
+          parts[0].toLowerCase() == parts[1].toLowerCase()) {
+        parts.removeAt(1);
+      }
+      return parts.take(2).toList();
     }
-    // profileB is the bride side, profileA the groom side.
-    final bride = (report.brideName ?? '').trim();
-    return myName.isNotEmpty && bride == myName ? 'Male' : 'Female';
+
+    if (partner != null) {
+      final parts = tidy([partner.city, partner.district, partner.state]);
+      if (parts.isNotEmpty) return parts.join(', ');
+    }
+    final stored = (report.externalOther['place'] ?? '').toString().trim();
+    if (stored.isEmpty) return '';
+    return tidy(stored.split(',')).join(', ');
   }
 
   @override
@@ -355,6 +365,8 @@ class _ReportCard extends ConsumerWidget {
             ? Icons.cancel_outlined
             : Icons.hourglass_bottom;
 
+    final location = _partnerLocation(partner);
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -371,7 +383,15 @@ class _ReportCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Who this report is about ────────────────────────────────────
+          // -- Photo on the LEFT, the three facts on the RIGHT (spec S6/S7) --
+          //
+          // What used to live here as well - a repeated "Horoscope
+          // Compatibility Report" subtitle, a progress bar, a "we are
+          // preparing it" sentence, the completed date and the request id in
+          // grey 10.5pt - said almost nothing per line and made every card a
+          // wall. The status chip stays, because the lifecycle IS what a
+          // member opens this page to check (spec S13); the rest moved to the
+          // details screen, one tap away.
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -383,17 +403,42 @@ class _ReportCard extends ConsumerWidget {
                   children: [
                     Text(partnerName,
                         maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                             fontSize: 16.5,
                             height: 1.25,
                             fontFamily: 'Poppins',
                             fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 3),
-                    Text(l10n.horoscopeCompatibilityReport,
-                        maxLines: 2,
+                    if (location.isNotEmpty) ...[
+                      const SizedBox(height: 5),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.location_on_outlined,
+                              size: 14, color: Colors.grey[500]),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(location,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    fontSize: 12.5,
+                                    height: 1.3,
+                                    color: Colors.grey[700])),
+                          ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 5),
+                    Text(
+                        l10n.requestDateLabel +
+                            ': ' +
+                            _date(report.createdAt),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                             fontSize: 12.5,
-                            height: 1.35,
+                            height: 1.3,
                             color: Colors.grey[600])),
                     const SizedBox(height: 8),
                     _statusChip(statusLabel, statusColor, statusIcon),
@@ -402,34 +447,8 @@ class _ReportCard extends ConsumerWidget {
               ),
             ],
           ),
-          // ── Progress — the real stage, never an invented percentage ──────
-          if (!rejected) ...[
-            const SizedBox(height: 14),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: LinearProgressIndicator(
-                value: (_stageIndex(report) + 1) / _stageCount,
-                minHeight: 6,
-                backgroundColor: Colors.grey.shade200,
-                valueColor: AlwaysStoppedAnimation(statusColor),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(completed ? l10n.reportReadyMsg : l10n.reportPreparingMsg,
-                style: TextStyle(
-                    fontSize: 11.5, height: 1.4, color: Colors.grey[600])),
-          ],
-          const SizedBox(height: 12),
-          _row(l10n.requestDate, _date(report.createdAt)),
-          if (completed) _row(l10n.completedDate, _date(report.completedAt)),
-          const SizedBox(height: 6),
-          // The request id is a support reference — small, grey, last.
-          Text('${l10n.requestIdLabel}: ${report.id}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 10.5, color: Colors.grey[400])),
-          const SizedBox(height: 12),
-          // ── One strong primary action ───────────────────────────────────
+          const SizedBox(height: 14),
+          // -- One full-width primary action (spec S9) --
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -454,15 +473,14 @@ class _ReportCard extends ConsumerWidget {
                 foregroundColor: Colors.white,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                minimumSize: const Size.fromHeight(46),
+                minimumSize: const Size.fromHeight(48),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),
-          // §15 — the submitted details stay reachable from a COMPLETED report
-          // too, so the member can always review exactly what they sent.
-          // Read-only: there is deliberately no edit here (§16).
+          // A finished report adds the two things that only exist once it is
+          // finished: the file, and the details behind it. Read-only (S16).
           if (completed) ...[
             const SizedBox(height: 9),
             Row(
@@ -501,8 +519,12 @@ class _ReportCard extends ConsumerWidget {
     );
   }
 
-  /// The other person's photo: big enough to identify them at a glance, and a
-  /// gender-appropriate avatar — never a broken image — when there is none.
+  /// The other person's photo - big enough to identify them at a glance.
+  ///
+  /// With no photo it falls back to a plain person glyph on a soft tint, the
+  /// way a messaging app does: it reads as "no picture yet", takes exactly the
+  /// same space as a real one so the row never shifts, and is unmistakably not
+  /// a photograph of somebody (spec S8).
   Widget _photo(String url) => ClipRRect(
         borderRadius: BorderRadius.circular(14),
         child: NetworkPhoto(
@@ -510,10 +532,8 @@ class _ReportCard extends ConsumerWidget {
           width: 78,
           height: 78,
           fit: BoxFit.cover,
-          fallbackIcon: _partnerGender == 'Male'
-              ? Icons.man_outlined
-              : Icons.woman_outlined,
-          fallbackIconSize: 38,
+          fallbackIcon: Icons.person,
+          fallbackIconSize: 44,
         ),
       );
 
@@ -541,23 +561,6 @@ class _ReportCard extends ConsumerWidget {
         ),
       );
 
-  Widget _row(String k, String v) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-                width: 120,
-                child: Text(k,
-                    style: TextStyle(fontSize: 12.5, color: Colors.grey[600]))),
-            Expanded(
-              child: Text(v,
-                  style: const TextStyle(
-                      fontSize: 12.5, fontWeight: FontWeight.w600)),
-            ),
-          ],
-        ),
-      );
 
   /// Opens the right in-app viewer for the report's content type.
   void _viewReport(BuildContext context, String partnerName) {

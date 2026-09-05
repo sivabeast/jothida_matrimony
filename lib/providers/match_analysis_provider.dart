@@ -754,7 +754,7 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         await ref.read(notificationNotifierProvider.notifier).notify(
               toUid: uid,
               event: AppNotificationEvent.appointmentConfirmed,
-              route: '/my-appointments',
+              route: '/astrology',
             );
       }
       state = const AsyncData(null);

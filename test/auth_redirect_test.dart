@@ -425,10 +425,12 @@ void main() {
       }
     });
 
-    // Spec §6/§8: astrology services are public content; the booking
-    // action inside asks for a login (never a matrimony profile).
+    // Astrology services are public content (§6). The page is a TAB on the
+    // /home shell, so browsing it is exactly "a guest may open /home"; the
+    // booking route it used to sit beside no longer exists at all (§21).
     test('a guest may browse astrology services', () {
-      expect(guestAt('/astrology-appointment'), isNull);
+      expect(guestAt('/home'), isNull);
+      expect(isGuestAllowedRoute('/astrology-appointment'), isFalse);
     });
 
     test('a guest never reaches the admin panel or the employee portal', () {

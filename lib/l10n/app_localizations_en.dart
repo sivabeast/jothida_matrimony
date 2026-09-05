@@ -4112,6 +4112,73 @@ class AppLocalizationsEn extends AppLocalizations {
   String get startingPayment => 'Opening Google Play…';
 
   @override
+  String get publicProfileTitle => 'Public Profile';
+
+  @override
+  String get publicProfileBody =>
+      'This member shares their profile openly — you can contact them straight away.';
+
+  @override
+  String get paymentSuccessfulTitle => 'Payment Successful';
+
+  @override
+  String get paymentSuccessfulBody =>
+      'Your horoscope compatibility report request is with our astrology team. Track it on the Reports page.';
+
+  @override
+  String get requestDateLabel => 'Request Date';
+
+  @override
+  String get shareOnWhatsapp => 'Share on WhatsApp';
+
+  @override
+  String get shareReportOnWhatsapp => 'Share report on WhatsApp';
+
+  @override
+  String get preparingReportFile => 'Preparing the report…';
+
+  @override
+  String get couldNotPrepareShare =>
+      'Could not prepare the report for sharing.';
+
+  @override
+  String get noWhatsappNumberForMember =>
+      'This member has no phone number on record, so the report cannot be sent on WhatsApp.';
+
+  @override
+  String get reportSharedOnWhatsapp =>
+      'Report ready — choose WhatsApp to send it.';
+
+  @override
+  String get aboutAstrologer => 'About the Astrologer';
+
+  @override
+  String get astrologerExperience => 'Experience';
+
+  @override
+  String get astrologerExpertise => 'Expertise';
+
+  @override
+  String get contactAstrologer => 'Contact the Astrologer';
+
+  @override
+  String get astrologySupportBody =>
+      'Our astrologer supports members with horoscope matching and compatibility guidance. Get in touch directly.';
+
+  @override
+  String get couldNotOpenDialer => 'Could not open the phone dialer.';
+
+  @override
+  String get copy => 'Copy';
+
+  @override
+  String get openWhatsappChat => 'Open WhatsApp chat';
+
+  @override
+  String get attachReportHint =>
+      'Then attach the report to that chat — pick WhatsApp in the share sheet.';
+
+  @override
   String get professionalMarriageCompatReport =>
       'Professional Marriage Compatibility Report';
 }

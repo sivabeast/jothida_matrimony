@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/chat_model.dart';
 import '../../providers/chat_provider.dart';
-import '../../providers/interest_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../widgets/common/network_photo.dart';
 import '../../core/utils/l10n_ext.dart';
@@ -47,9 +46,6 @@ class ChatListView extends ConsumerWidget {
         ref.read(chatControllerProvider).markDelivered(threads);
       }
     });
-    // Chat access control (spec §5/§8): only conversations with users the signed
-    // in member has a mutually-accepted interest with are listed here.
-    final acceptedUids = ref.watch(acceptedChatUserIdsProvider);
 
     return Container(
       color: AppColors.scaffoldBg,
@@ -67,19 +63,33 @@ class ChatListView extends ConsumerWidget {
             onRetry: () => ref.invalidate(myChatThreadsProvider),
           );
         },
-        data: (allThreads) {
-          // Show ONLY conversations with users whose interest is mutually
-          // accepted (spec §5/§8). This naturally excludes pre-created booking /
-          // astrology-analysis threads (those counterparts aren't accepted-
-          // interest matches) — those stay reachable via their own shortcuts.
-          final threads = allThreads
-              .where((t) => acceptedUids.contains(t.otherId(myUid)))
-              .toList();
+        data: (threads) {
+          // Every thread this member is a participant of, and nothing else.
+          //
+          // This list used to be filtered again by "is there an accepted
+          // interest with the other party?", derived from the two interest
+          // streams. That was the bug behind "we accepted but chat does not
+          // work": those streams read `valueOrNull ?? []`, so for the whole
+          // time they were still loading — and permanently if either was
+          // denied — the set was EMPTY and every conversation vanished from
+          // the list, including the one just created by accepting.
+          //
+          // It was also about to become wrong on purpose: a chat with a PUBLIC
+          // profile has no accepted interest at all (spec §4), so it would
+          // have been filtered out forever.
+          //
+          // Participation IS the access rule, and it is enforced where it
+          // belongs — a thread only exists because the Firestore rules let
+          // somebody create it (accepted connection, or a public profile), and
+          // `myChatThreadsProvider` already drops threads whose counterpart
+          // deleted their account.
           if (threads.isEmpty) {
             return const _ChatsPlaceholder(
               icon: Icons.chat_bubble_outline,
               title: 'No conversations yet',
-              subtitle: 'Chat unlocks once an interest is accepted.',
+              subtitle:
+                  'Chat opens once an interest is accepted — or straight away '
+                  'with members who share a public profile.',
             );
           }
           return ListView.separated(

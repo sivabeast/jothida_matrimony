@@ -364,7 +364,7 @@ class AstrologerService {
         'Your appointment request was received. Booking ID: $id.',
         'appointment',
         id: 'appointment_booked_user_$id',
-        data: {'requestId': id, 'route': '/my-appointments'},
+        data: {'requestId': id, 'route': '/astrology'},
       );
     }
     return id;
@@ -475,7 +475,7 @@ class AstrologerService {
         // completed, cancelled…) notifies once; retries of the SAME
         // transition collapse.
         id: 'appointment_status_${r.id}_${status.name}',
-        data: {'requestId': r.id, 'route': '/my-appointments'},
+        data: {'requestId': r.id, 'route': '/astrology'},
       );
     }
   }

@@ -11,9 +11,6 @@ import '../providers/service_providers.dart';
 import 'auth_redirect.dart';
 import '../models/astrologer_request_model.dart';
 import '../screens/astrology/horoscope_report_service_screen.dart';
-import '../screens/astrology/astrology_appointment_screen.dart';
-import '../screens/astrology/appointment_confirmation_screen.dart';
-import '../screens/astrology/my_appointments_screen.dart';
 import '../screens/astrologer/match_workspace_screen.dart';
 // Employee Portal (admin-provisioned horoscope-analysis staff; they sign in
 // through the SAME common login as everyone else — there is no separate
@@ -306,9 +303,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
-      // ── Horoscope Compatibility Report (in-person appointment) ───────────
-      // Service details page → appointment booking → confirmation. Opened from
-      // an accepted match's "Get Horoscope Compatibility Report".
+      // ── Horoscope Compatibility Report (online service) ──────────────────
+      // Service details → ₹199 payment → the request is created. Opened from a
+      // profile's "Get Horoscope Compatibility Report". Nothing is booked and
+      // nobody visits: the astrologer returns the finished report in the app.
       GoRoute(
         path: '/horoscope-report/:userId',
         builder: (_, state) => HoroscopeReportServiceScreen(
@@ -320,27 +318,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/request-external-report',
         builder: (_, __) => const RequestExternalReportScreen(),
-      ),
-      // Standalone "Book Your Appointment" from the Astrology page (not tied to
-      // a matched partner). Distinct path so the /astrology exact-match
-      // redirect guard never catches it.
-      GoRoute(
-        path: '/astrology-appointment',
-        builder: (_, __) => const AstrologyAppointmentScreen(),
-      ),
-      // The signed-in user's appointment booking history (status + date/time).
-      GoRoute(
-        path: '/my-appointments',
-        builder: (_, __) => const MyAppointmentsScreen(),
-      ),
-      GoRoute(
-        path: '/appointment-confirmation/:id',
-        builder: (_, state) => AppointmentConfirmationScreen(
-          bookingId: state.pathParameters['id']!,
-          extra: state.extra is Map<String, dynamic>
-              ? state.extra as Map<String, dynamic>
-              : null,
-        ),
       ),
       // ── Match-analysis pipeline ──────────────────────────────────────────
       // (The standalone "My Reports" page was removed — the user's reports live

@@ -12,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/match_analysis_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../widgets/report/analysis_profile_cards.dart';
+import '../../widgets/report/share_report_on_whatsapp.dart';
 import 'compatibility_report_print.dart';
 import '../../core/services/horoscope_calculation_service.dart';
 
@@ -416,6 +417,127 @@ class _CompatibilityReportScreenState
     }
   }
 
+  /// Save Draft + Submit Report, and beneath them Share on WhatsApp.
+  ///
+  /// Sharing needs a report that has actually been written — the capture
+  /// renders the SAVED document, not the half-filled form — so it is disabled
+  /// until there is one, rather than producing an empty PDF.
+  Widget _submissionBar(CompatPerson bride, CompatPerson groom,
+      {required bool editable, CompatibilityReport? saved}) {
+    final l10n = context.l10n;
+    final canShare = saved != null && !_busy;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (editable)
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _busy ? null : () => _saveDraft(bride, groom),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _maroon,
+                        side: const BorderSide(color: _maroon),
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text(l10n.saveDraft,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          style: const TextStyle(fontSize: 13.5, height: 1.2)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: _busy ? null : () => _submit(bride, groom),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _maroon,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(50),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: _busy
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : Text(l10n.submitReport,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              style: const TextStyle(
+                                  fontSize: 14.5,
+                                  height: 1.2,
+                                  fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ],
+              ),
+            if (editable) const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: canShare ? _shareOnWhatsapp : null,
+                icon: const Icon(Icons.chat, size: 19),
+                label: Text(l10n.shareOnWhatsapp,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    style: const TextStyle(
+                        fontSize: 14, height: 1.2, fontWeight: FontWeight.w700)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF25D366),
+                  side: const BorderSide(color: Color(0xFF25D366)),
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Hands the finished report to the member on WhatsApp. The recipient comes
+  /// from the REQUEST, never from the signed-in astrologer (spec S18).
+  void _shareOnWhatsapp() {
+    showShareReportOnWhatsapp(
+      context,
+      request: _request,
+      exportFile: ({required bool pdf}) => _exportForShare(pdf: pdf),
+    );
+  }
+
+  /// The same A4 capture the download uses, returning whether a file was
+  /// actually produced so the sheet can say so.
+  Future<bool> _exportForShare({required bool pdf}) async {
+    final r = _request;
+    final saved = CompatibilityReport.tryFrom(r.compatReport);
+    if (saved == null) return false;
+    final number = CompatibilityReport.reportNumber(widget.requestId);
+    final date = _fmtDate(saved.submittedAt ?? r.completedAt ?? DateTime.now());
+    if (pdf) {
+      return exportCompatReportPdf(context,
+          report: saved,
+          reportNumber: number,
+          reportDate: date,
+          fileName: 'jothida_compatibility_${widget.requestId}.pdf');
+    }
+    return exportCompatReportImages(context,
+        report: saved,
+        reportNumber: number,
+        reportDate: date,
+        baseName: 'jothida_compatibility_${widget.requestId}');
+  }
+
   // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
@@ -474,60 +596,21 @@ class _CompatibilityReportScreenState
             ),
         ],
       ),
-      bottomNavigationBar: editable
-          ? SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed:
-                            _busy ? null : () => _saveDraft(bride, groom),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: _maroon,
-                          side: const BorderSide(color: _maroon),
-                          minimumSize: const Size.fromHeight(48),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: Text(context.l10n.saveDraft,
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            style: const TextStyle(fontSize: 13.5, height: 1.2)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton(
-                        onPressed: _busy ? null : () => _submit(bride, groom),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _maroon,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(50),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: _busy
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white))
-                            : Text(context.l10n.submitReport,
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                style: const TextStyle(
-                                    fontSize: 14.5,
-                                    height: 1.2,
-                                    fontWeight: FontWeight.w700)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
+      // ── Submission area (spec S15) ──────────────────────────────────────
+      //
+      // The astrologer finishes a report and then has TWO ways to deliver it,
+      // and they are different actions rather than two names for one:
+      //
+      //   * Submit Report  — saves it, marks the request Completed and makes
+      //     it readable in the member's app (S16);
+      //   * Share on WhatsApp — sends the finished document to the member's
+      //     own number (S17/S18).
+      //
+      // Sharing stays available AFTER submission too, which is when it is
+      // most often wanted: the report is already final and the member is
+      // asking where it is.
+      bottomNavigationBar: widget.employee
+          ? _submissionBar(bride, groom, editable: editable, saved: saved)
           : null,
       body: ListView(
         padding: const EdgeInsets.all(14),
