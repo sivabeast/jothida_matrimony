@@ -2363,10 +2363,10 @@ class FirestoreService {
       if (!await run()) failed.add(label);
     }
 
-    await step(
-        'astrologer_requests',
-        () => _deleteWhere(
-            AppConstants.astrologerRequestsCollection, 'astrologerId', uid));
+    // NOT deleted: `astrologer_requests` assigned to this employee. Those are
+    // MEMBERS' records — their paid horoscope-report requests and the reports
+    // written for them — so deleting the employee's account must not destroy
+    // them. They stay for an admin to reassign.
     // Reviews about this astrologer live in astrologers/{uid}/reviews.
     await step(
         'astrologer_reviews',

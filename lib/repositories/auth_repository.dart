@@ -320,55 +320,85 @@ class AuthRepository {
     await _auth.signOut();
   }
 
-  /// Immediately and permanently deletes the signed-in account — no admin
-  /// approval, no waiting period.
-  ///
-  /// Firestore data is removed FIRST (while the user is still authenticated, so
-  /// the owner-only security rules permit it), then the Firebase Auth account is
-  /// deleted and the Google + Firebase sessions are cleared. After this the
-  /// `users/{uid}` (and `astrologers/{uid}`) documents no longer exist, so the
-  /// same Google account signing in again is treated as a brand-new user.
-  ///
-  /// The result reports BOTH halves honestly (spec §3/§4):
-  ///
-  ///  * [AccountDeletionResult.authDeleted] — whether the Firebase **Auth**
-  ///    record itself went. False means re-authentication was cancelled or
-  ///    refused, so the same uid can sign in again.
-  ///  * [AccountDeletionResult.failedSteps] — the Firestore collections that
-  ///    could not be cleared, and [AccountDeletionResult.residualData] —
-  ///    whether a verification re-read still finds a profile or account
-  ///    document.
-  ///
-  /// Those two together are what make the dangerous combination visible: a
-  /// surviving auth record AND surviving data is exactly the state in which the
-  /// "deleted" profile reappears at the next sign-in.
-  Future<AccountDeletionResult> deleteAccount(String uid,
+  // ── Permanent account deletion ─────────────────────────────────────────────
+  //
+  // The ORDER is owned by `AccountDeletionFlow` (core/utils/
+  // account_deletion_flow.dart). These are its individual steps. None of them
+  // signs out except [endSessionAfterDeletion], which the flow calls only once
+  // the Firebase Auth user is gone.
+
+  /// The providers linked to the signed-in account ('password', 'google.com').
+  List<String> get currentProviderIds => _auth.currentProviderIds;
+
+  /// When the signed-in user last authenticated (the ID token's `auth_time`).
+  Future<DateTime?> lastSignInTime() => _auth.lastSignInTime();
+
+  /// Re-authenticates the signed-in account with its password. Throws
+  /// [AuthException] (e.g. `invalid-credential`, `too-many-requests`).
+  Future<void> reauthenticateWithPassword(String password) =>
+      _auth.reauthenticateWithPassword(password);
+
+  /// Re-authenticates the signed-in account with Google. False when the member
+  /// cancelled the picker; throws [AuthException] (e.g. `user-mismatch`).
+  Future<bool> reauthenticateWithGoogle() => _auth.reauthenticateWithGoogle();
+
+  /// Deletes the member's Firestore data while they are still authenticated,
+  /// then verifies. Returns the steps that failed and whether a profile or
+  /// account document can still be read.
+  Future<({List<String> failedSteps, bool residual})> deleteAccountData(
+      String uid,
       {required bool isAstrologer}) async {
-    debugPrint('[AuthRepository] deleteAccount($uid, isAstrologer=$isAstrologer)');
-    // Clear the push token first so a deleted account can never keep receiving
-    // notifications on this device.
+    debugPrint('[AuthRepository] deleteAccountData($uid, '
+        'isAstrologer=$isAstrologer)');
+    // Push token first, so a deleted account stops receiving notifications on
+    // this device even if a later step fails.
     try {
       await _fcm.deleteToken(uid);
     } catch (e) {
-      debugPrint('[AuthRepository] deleteAccount: FCM token delete skipped: $e');
+      debugPrint('[AuthRepository] deleteAccountData: FCM token delete '
+          'skipped: $e');
     }
     final failedSteps = isAstrologer
         ? await _firestore.deleteAstrologerAccountData(uid)
         : await _firestore.deleteUserAccountData(uid);
     // VERIFY rather than assume — still signed in, so the owner rules that
-    // permitted the deletes permit this read too. After the auth account goes,
-    // it would only be denied.
+    // permitted the deletes permit this read too.
     final residual = await _firestore.hasResidualAccountData(uid);
-    final authDeleted = await _auth.deleteCurrentUser();
-    debugPrint('[AuthRepository] deleteAccount: done '
-        '(authAccountDeleted=$authDeleted, residualData=$residual, '
-        'failed=${failedSteps.isEmpty ? 'none' : failedSteps.join(',')}).');
-    return AccountDeletionResult(
-      authDeleted: authDeleted,
-      failedSteps: failedSteps,
-      residualData: residual,
-    );
+    debugPrint('[AuthRepository] deleteAccountData: residual=$residual, '
+        'failed=${failedSteps.isEmpty ? 'none' : failedSteps.join(',')}');
+    return (failedSteps: failedSteps, residual: residual);
   }
+
+  /// Permanently deletes the signed-in Firebase Auth user. Does NOT sign out
+  /// and does NOT swallow the failure — see [AuthService.deleteAuthUser].
+  Future<void> deleteAuthUser() => _auth.deleteAuthUser();
+
+  /// Ends every session after the Auth user has been deleted.
+  Future<void> endSessionAfterDeletion() => _auth.endSessionAfterDeletion();
+}
+
+/// How an account deletion ended — what the member is told.
+enum AccountDeletionOutcome {
+  /// The Firebase Auth user was deleted along with the member's data.
+  deleted,
+
+  /// No signed-in (non-guest) account — nothing was attempted.
+  notSignedIn,
+
+  /// Re-authentication was cancelled or failed — nothing was deleted.
+  cancelled,
+
+  /// Re-authentication was required but the account has no method this app
+  /// can re-authenticate with — nothing was deleted.
+  reauthUnsupported,
+
+  /// Identity data could not be deleted — the Auth user was kept so the member
+  /// can retry. Still signed in.
+  dataNotDeleted,
+
+  /// The data was deleted but the Firebase Auth user was not. Still signed in;
+  /// retrying finishes the deletion.
+  loginNotDeleted,
 }
 
 /// What actually happened during an account deletion.
@@ -388,11 +418,29 @@ class AccountDeletionResult {
   /// `users/{uid}` document).
   final bool residualData;
 
+  /// How the deletion ended. Only [AccountDeletionOutcome.deleted] may be
+  /// reported to the member as a deleted account.
+  final AccountDeletionOutcome? _outcome;
+
   const AccountDeletionResult({
     required this.authDeleted,
     this.failedSteps = const [],
     this.residualData = false,
-  });
+    AccountDeletionOutcome? outcome,
+  }) : _outcome = outcome;
+
+  /// A deletion that stopped before removing anything.
+  const AccountDeletionResult.stopped(AccountDeletionOutcome outcome)
+      : authDeleted = false,
+        failedSteps = const [],
+        residualData = false,
+        _outcome = outcome;
+
+  AccountDeletionOutcome get outcome =>
+      _outcome ??
+      (authDeleted
+          ? AccountDeletionOutcome.deleted
+          : AccountDeletionOutcome.loginNotDeleted);
 
   /// True when the account is genuinely, completely gone.
   bool get isComplete => authDeleted && failedSteps.isEmpty && !residualData;

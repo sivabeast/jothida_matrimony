@@ -4219,4 +4219,46 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get placeWithStateHint =>
       'Outside Tamil Nadu? Type the place with its state, e.g. \"Kochi, Kerala\".';
+
+  @override
+  String get accountDeletedSuccess =>
+      'Your account has been permanently deleted.';
+
+  @override
+  String get deleteAccountConfirmPasswordTitle => 'Confirm your password';
+
+  @override
+  String get deleteAccountConfirmPasswordBody =>
+      'For your security, enter your password to permanently delete your account.';
+
+  @override
+  String get deleteAccountWrongPassword =>
+      'Incorrect password. Please try again.';
+
+  @override
+  String get deleteAccountTooManyAttempts =>
+      'Too many attempts. Please wait a few minutes and try again.';
+
+  @override
+  String get deleteAccountNetworkError =>
+      'No internet connection. Please check your network and try again.';
+
+  @override
+  String get deleteAccountNotDeleted => 'Your account was not deleted.';
+
+  @override
+  String get deleteAccountGoogleMismatch =>
+      'Please choose the same Google account you signed in with.';
+
+  @override
+  String get deleteAccountSignInAgain =>
+      'For your security, please sign out, sign in again, and then delete your account.';
+
+  @override
+  String get deleteAccountDataNotDeleted =>
+      'Some of your data could not be deleted, so your account was kept. Please try again.';
+
+  @override
+  String get deleteAccountLoginNotDeleted =>
+      'Your profile data was removed, but your login could not be deleted yet. Please try Delete Account again.';
 }

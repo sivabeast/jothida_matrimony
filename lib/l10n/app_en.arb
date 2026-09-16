@@ -1867,5 +1867,16 @@
   "paidButReportNotSavedRetry": "Your payment went through but the report request could not be saved. Tap Pay again — you will not be charged twice.",
   "nearestTownHint": "Your exact locality isn't listed. Choose the nearest main town:",
   "locationsLoadFailed": "Locations could not be loaded.",
-  "placeWithStateHint": "Outside Tamil Nadu? Type the place with its state, e.g. \"Kochi, Kerala\"."
+  "placeWithStateHint": "Outside Tamil Nadu? Type the place with its state, e.g. \"Kochi, Kerala\".",
+  "accountDeletedSuccess": "Your account has been permanently deleted.",
+  "deleteAccountConfirmPasswordTitle": "Confirm your password",
+  "deleteAccountConfirmPasswordBody": "For your security, enter your password to permanently delete your account.",
+  "deleteAccountWrongPassword": "Incorrect password. Please try again.",
+  "deleteAccountTooManyAttempts": "Too many attempts. Please wait a few minutes and try again.",
+  "deleteAccountNetworkError": "No internet connection. Please check your network and try again.",
+  "deleteAccountNotDeleted": "Your account was not deleted.",
+  "deleteAccountGoogleMismatch": "Please choose the same Google account you signed in with.",
+  "deleteAccountSignInAgain": "For your security, please sign out, sign in again, and then delete your account.",
+  "deleteAccountDataNotDeleted": "Some of your data could not be deleted, so your account was kept. Please try again.",
+  "deleteAccountLoginNotDeleted": "Your profile data was removed, but your login could not be deleted yet. Please try Delete Account again."
 }

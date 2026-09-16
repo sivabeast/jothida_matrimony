@@ -10,8 +10,12 @@ import 'demo_data_provider.dart';
 import 'matches_prefs_provider.dart';
 import 'profile_provider.dart';
 import 'service_providers.dart';
-import '../repositories/auth_repository.dart' show AccountDeletionResult;
+import '../core/errors/auth_exception.dart';
+import '../core/utils/account_deletion_flow.dart';
+import '../repositories/auth_repository.dart'
+    show AccountDeletionOutcome, AccountDeletionResult;
 import '../services/cloudinary/cloudinary_storage_service.dart';
+import '../services/firebase/storage_service.dart';
 
 /// Account lifecycle: "Mark as Married" and immediate self-service account
 /// deletion. Works in demo mode (in-memory) and real mode (Firestore).
@@ -70,27 +74,27 @@ class AccountController extends Notifier<AsyncValue<void>> {
     });
   }
 
-  /// Immediately and permanently deletes the signed-in account (no admin
-  /// approval). Removes all Firestore data, deletes the Firebase Auth user,
-  /// signs out of Google + Firebase, clears local caches, and resets in-memory
-  /// session providers. The caller navigates to the Login screen afterwards.
+  /// Permanently deletes the signed-in account — the member's data AND the
+  /// Firebase Authentication user — in the order `AccountDeletionFlow`
+  /// defines (see core/utils/account_deletion_flow.dart for why):
   ///
-  /// Rethrows on failure (in ADDITION to recording the error in [state]) so the
-  /// Settings screen's try/catch can actually show its "could not delete"
-  /// message — `AsyncValue.guard` alone swallows the error, which used to make
-  /// a failed deletion look like a successful one.
+  ///   signed-in check → re-authenticate if Firebase would require it →
+  ///   files + chats + Firestore data (still authenticated) → Firebase Auth
+  ///   user → ONLY THEN sign out and clear local state.
   ///
-  /// Returns what actually happened ([AccountDeletionResult]) rather than a
-  /// bare "it worked": the Firebase Auth record and the Firestore data fail
-  /// independently, and only the caller can decide what to tell the member.
-  Future<AccountDeletionResult> deleteAccount(
-      {required bool isAstrologer}) async {
+  /// Nothing signs the member out before the Auth user is gone. When
+  /// [AccountDeletionResult.outcome] is anything other than
+  /// [AccountDeletionOutcome.deleted] the member is still signed in and the
+  /// caller must NOT report a deletion.
+  ///
+  /// [reauthenticate] is supplied by the screen: it shows the password prompt
+  /// (or the Google picker) and returns whether the member re-authenticated.
+  Future<AccountDeletionResult> deleteAccount({
+    required bool isAstrologer,
+    required Reauthenticate reauthenticate,
+  }) async {
     state = const AsyncLoading();
     try {
-      final repo = ref.read(authRepositoryProvider);
-      final uid = repo.currentUserId;
-      var result = const AccountDeletionResult(authDeleted: true);
-
       if (kBypassAuth) {
         // Demo mode: drop the locally-created profile / astrologer session.
         final demoId = ref.read(myDemoProfileIdProvider);
@@ -98,84 +102,121 @@ class AccountController extends Notifier<AsyncValue<void>> {
           ref.read(demoProfilesProvider.notifier).remove(demoId);
         }
         ref.read(myDemoProfileIdProvider.notifier).state = null;
-      } else if (uid != null) {
-        // Cloudinary assets FIRST, while the profile document still exists —
-        // once it is deleted the URLs are gone and the images would be
-        // orphaned in Cloudinary forever (spec §12). Best-effort: whatever
-        // cannot be deleted is queued in `cloudinary_cleanup` by the cleanup
-        // service, never silently dropped.
-        await _deleteCloudinaryAssets(uid);
-        // Chats FIRST, while the session still satisfies the participant-only
-        // rules. The thread document is shared, so it cannot be deleted by the
-        // leaving member — it is tombstoned instead, which removes their name,
-        // photo and the whole conversation from the other member's Chats list
-        // (spec §2). Best-effort: a chat that cannot be cleared must never
-        // block the account deletion itself, but it IS logged so an orphaned
-        // thread can be found later rather than failing silently.
-        if (!isAstrologer) {
-          try {
-            final failed =
-                await ref.read(chatServiceProvider).tombstoneThreadsFor(uid);
-            if (failed != 0) {
-              debugPrint('[AccountController] chat tombstone incomplete for '
-                  '$uid (failed=$failed) — threads may still show this member.');
+        await _endLocalSession();
+        state = const AsyncData(null);
+        return const AccountDeletionResult(authDeleted: true);
+      }
+
+      final repo = ref.read(authRepositoryProvider);
+      final flow = AccountDeletionFlow(
+        AccountDeletionPorts(
+          currentUid: () => repo.currentUserId,
+          isAnonymous: () => repo.isGuest,
+          providerIds: () => repo.currentProviderIds,
+          lastSignInTime: repo.lastSignInTime,
+          deleteUserFiles: _deleteUserFiles,
+          clearChats: (uid) => _clearChats(uid, isAstrologer: isAstrologer),
+          deleteUserData: (uid) async => (await repo.deleteAccountData(uid,
+                  isAstrologer: isAstrologer))
+              .failedSteps,
+          hasResidualData: (uid) =>
+              ref.read(firestoreServiceProvider).hasResidualAccountData(uid),
+          deleteAuthUser: () async {
+            try {
+              await repo.deleteAuthUser();
+            } on AuthException catch (e) {
+              throw DeletionAuthError(e.code, e.message);
             }
-          } catch (e) {
-            debugPrint('[AccountController] chat tombstone skipped: $e');
-          }
-        }
-        result = await repo.deleteAccount(uid, isAstrologer: isAstrologer);
-      }
-
-      // Local cleanup — SharedPreferences holds cached login/role/onboarding
-      // state. (This app does not use flutter_secure_storage.)
-      await _clearLocalStorage();
-      // ...and the IMAGE caches, which SharedPreferences knows nothing about.
-      // `cached_network_image` keeps the bytes on disk keyed by URL, and
-      // Flutter keeps decoded frames in memory; neither notices that the
-      // account they belonged to is gone. Left alone, the next person to use
-      // this device can be shown the previous member's photo the moment a
-      // stale URL is rendered (spec §4/§27).
-      await _clearImageCaches();
-
-      // Belt and braces: even if `deleteAccount` above bailed out early, the
-      // session must end. A signed-OUT user is what sends the router to /login.
-      try {
-        await repo.signOut();
-      } catch (e) {
-        debugPrint('[AccountController] post-delete signOut skipped: $e');
-      }
-
-      // Reset in-memory session so nothing stale survives into the next login.
-      ref.invalidate(currentUserProvider);
-      ref.invalidate(myProfileProvider);
-      ref.invalidate(viewedProfilesProvider);
+          },
+          endSession: () async {
+            await repo.endSessionAfterDeletion();
+            await _endLocalSession();
+          },
+        ),
+        log: (m) => debugPrint('[AccountDeletion] $m'),
+      );
+      final result = await flow.run(reauthenticate);
+      debugPrint('[AccountController] deleteAccount → ${result.outcome} '
+          '(authDeleted=${result.authDeleted}, '
+          'failedSteps=${result.failedSteps}, '
+          'residual=${result.residualData})');
       state = const AsyncData(null);
       return result;
     } catch (e, st) {
+      debugPrint('[AccountController] deleteAccount crashed: $e\n$st');
       state = AsyncError(e, st);
       rethrow;
     }
   }
 
-  /// Removes every Cloudinary asset this member uploaded — profile photos and
-  /// horoscope images/PDFs (spec §12).
-  ///
-  /// Reads the URLs off the LIVE profile before anything is deleted, because
-  /// once the profile document is gone there is no way to know which assets
-  /// belonged to them. Never throws: a failed cleanup must not stop the
-  /// account deletion, and the cleanup service queues anything it could not
-  /// delete so orphans stay findable.
-  Future<void> _deleteCloudinaryAssets(String uid) async {
+  /// Clears everything this device still holds for the deleted account — run
+  /// only after the Firebase Auth user is gone.
+  Future<void> _endLocalSession() async {
+    // SharedPreferences holds cached login/role/onboarding state. (This app
+    // does not use flutter_secure_storage.)
+    await _clearLocalStorage();
+    // ...and the IMAGE caches, which SharedPreferences knows nothing about.
+    // `cached_network_image` keeps the bytes on disk keyed by URL, and
+    // Flutter keeps decoded frames in memory; neither notices that the
+    // account they belonged to is gone (spec §4/§27).
+    await _clearImageCaches();
+    // Reset in-memory session so nothing stale survives into the next login —
+    // including the long-lived Matches feed and any profile-wizard data, which
+    // are not tied to the auth stream.
+    ref.invalidate(currentUserProvider);
+    ref.invalidate(myProfileProvider);
+    ref.invalidate(viewedProfilesProvider);
+    ref.invalidate(discoverProvider);
+    ref.invalidate(profileCreationProvider);
+  }
+
+  /// Removes the member from shared chat threads while the participant-only
+  /// rules still recognise them. A thread is shared, so it is tombstoned (name,
+  /// photo and the conversation disappear for the other member) rather than
+  /// deleted. Best-effort and logged.
+  Future<void> _clearChats(String uid, {required bool isAstrologer}) async {
+    if (isAstrologer) return;
     try {
-      final profile = ref.read(myProfileProvider).valueOrNull;
-      if (profile == null) return;
-      final h = profile.horoscope;
+      final failed = await ref.read(chatServiceProvider).tombstoneThreadsFor(uid);
+      if (failed != 0) {
+        debugPrint('[AccountController] chat tombstone incomplete for $uid '
+            '(failed=$failed) — threads may still show this member.');
+      }
+    } catch (e) {
+      debugPrint('[AccountController] chat tombstone skipped: $e');
+    }
+  }
+
+  /// Deletes every file this member uploaded, while their documents still say
+  /// which files those are:
+  ///
+  ///  * Cloudinary — profile photo, horoscope images and PDFs, and the Aadhaar
+  ///    ID-proof images. URLs come from the FULL profile (a hidden photo or
+  ///    horoscope is stored in the private copy) and the Aadhaar record.
+  ///    Anything the trusted delete function could not remove is queued in
+  ///    `cloudinary_cleanup` by the cleanup service, so it stays findable.
+  ///  * Firebase Storage — the member's own `profiles/{uid}/` folder, where
+  ///    media lived before the move to Cloudinary.
+  ///
+  /// Never throws: a file that cannot be removed must not strand the member
+  /// half-deleted, and every failure is logged.
+  Future<void> _deleteUserFiles(String uid) async {
+    try {
+      final firestore = ref.read(firestoreServiceProvider);
+      final profile = await firestore.getFullProfileByUserId(uid);
+      final aadhaar = await firestore.getAadhaar(uid).catchError((Object e) {
+        debugPrint('[AccountController] Aadhaar record unreadable: $e');
+        return null;
+      });
       final urls = <String?>[
-        profile.profilePhotoUrl,
-        ...profile.photos,
-        ...h.horoscopeImages,
-        ...h.allPdfUrls,
+        if (profile != null) ...[
+          profile.profilePhotoUrl,
+          ...profile.photos,
+          ...profile.horoscope.horoscopeImages,
+          ...profile.horoscope.allPdfUrls,
+        ],
+        aadhaar?.frontUrl,
+        aadhaar?.backUrl,
       ];
       final storage = ref.read(storageServiceProvider);
       if (storage is CloudinaryStorageService) {
@@ -186,6 +227,11 @@ class AccountController extends Notifier<AsyncValue<void>> {
       }
     } catch (e) {
       debugPrint('[AccountController] Cloudinary cleanup skipped: $e');
+    }
+    final storageFiles = await FirebaseStorageService.deleteUserFolder(uid);
+    if (storageFiles < 0) {
+      debugPrint('[AccountController] Firebase Storage cleanup for $uid '
+          'incomplete (see log above).');
     }
   }
 

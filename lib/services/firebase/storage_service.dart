@@ -167,6 +167,42 @@ class FirebaseStorageService implements StorageService {
     }
   }
 
+  /// Deletes EVERY file under `profiles/{userId}/` in Firebase Storage —
+  /// photos, horoscope documents and ID proofs uploaded before media moved to
+  /// Cloudinary — for account deletion.
+  ///
+  /// Scoped to the one member's own folder, so nothing belonging to anyone else
+  /// can be touched; the storage rules only allow the owner to write (and
+  /// delete) there anyway. Returns the number of files deleted, or -1 when
+  /// Storage could not be reached. Never throws.
+  static Future<int> deleteUserFolder(String userId,
+      {FirebaseStorage? storage}) async {
+    if (userId.trim().isEmpty) return 0;
+    var deleted = 0;
+    Future<void> sweep(Reference folder) async {
+      final list = await folder.listAll().timeout(const Duration(seconds: 15));
+      for (final item in list.items) {
+        await item.delete().timeout(const Duration(seconds: 15));
+        deleted++;
+      }
+      for (final sub in list.prefixes) {
+        await sweep(sub);
+      }
+    }
+
+    try {
+      final bucket = storage ?? FirebaseStorage.instance;
+      await sweep(bucket.ref('profiles/${userId.trim()}'));
+      debugPrint('FirebaseStorageService.deleteUserFolder($userId): '
+          '$deleted file(s) deleted.');
+      return deleted;
+    } catch (e) {
+      debugPrint('FirebaseStorageService.deleteUserFolder($userId) '
+          'incomplete after $deleted file(s): $e');
+      return -1;
+    }
+  }
+
   @override
   Future<void> deleteProfilePhotos(String userId) async {
     try {

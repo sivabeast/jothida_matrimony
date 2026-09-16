@@ -7645,6 +7645,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Outside Tamil Nadu? Type the place with its state, e.g. \"Kochi, Kerala\".'**
   String get placeWithStateHint;
+
+  /// No description provided for @accountDeletedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account has been permanently deleted.'**
+  String get accountDeletedSuccess;
+
+  /// No description provided for @deleteAccountConfirmPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your password'**
+  String get deleteAccountConfirmPasswordTitle;
+
+  /// No description provided for @deleteAccountConfirmPasswordBody.
+  ///
+  /// In en, this message translates to:
+  /// **'For your security, enter your password to permanently delete your account.'**
+  String get deleteAccountConfirmPasswordBody;
+
+  /// No description provided for @deleteAccountWrongPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect password. Please try again.'**
+  String get deleteAccountWrongPassword;
+
+  /// No description provided for @deleteAccountTooManyAttempts.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attempts. Please wait a few minutes and try again.'**
+  String get deleteAccountTooManyAttempts;
+
+  /// No description provided for @deleteAccountNetworkError.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection. Please check your network and try again.'**
+  String get deleteAccountNetworkError;
+
+  /// No description provided for @deleteAccountNotDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account was not deleted.'**
+  String get deleteAccountNotDeleted;
+
+  /// No description provided for @deleteAccountGoogleMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose the same Google account you signed in with.'**
+  String get deleteAccountGoogleMismatch;
+
+  /// No description provided for @deleteAccountSignInAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'For your security, please sign out, sign in again, and then delete your account.'**
+  String get deleteAccountSignInAgain;
+
+  /// No description provided for @deleteAccountDataNotDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Some of your data could not be deleted, so your account was kept. Please try again.'**
+  String get deleteAccountDataNotDeleted;
+
+  /// No description provided for @deleteAccountLoginNotDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile data was removed, but your login could not be deleted yet. Please try Delete Account again.'**
+  String get deleteAccountLoginNotDeleted;
 }
 
 class _AppLocalizationsDelegate

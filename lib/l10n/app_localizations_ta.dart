@@ -4268,4 +4268,46 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get placeWithStateHint =>
       'தமிழ்நாட்டுக்கு வெளியிலா? இடத்தை மாநிலத்துடன் உள்ளிடவும், எ.கா. \"Kochi, Kerala\".';
+
+  @override
+  String get accountDeletedSuccess => 'உங்கள் கணக்கு நிரந்தரமாக நீக்கப்பட்டது.';
+
+  @override
+  String get deleteAccountConfirmPasswordTitle =>
+      'உங்கள் கடவுச்சொல்லை உறுதிப்படுத்தவும்';
+
+  @override
+  String get deleteAccountConfirmPasswordBody =>
+      'பாதுகாப்புக்காக, உங்கள் கணக்கை நிரந்தரமாக நீக்க உங்கள் கடவுச்சொல்லை உள்ளிடவும்.';
+
+  @override
+  String get deleteAccountWrongPassword =>
+      'கடவுச்சொல் தவறானது. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get deleteAccountTooManyAttempts =>
+      'பல முறை முயற்சிக்கப்பட்டது. சில நிமிடங்கள் கழித்து மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get deleteAccountNetworkError =>
+      'இணைய இணைப்பு இல்லை. உங்கள் நெட்வொர்க்கைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get deleteAccountNotDeleted => 'உங்கள் கணக்கு நீக்கப்படவில்லை.';
+
+  @override
+  String get deleteAccountGoogleMismatch =>
+      'நீங்கள் உள்நுழைந்த அதே Google கணக்கைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get deleteAccountSignInAgain =>
+      'பாதுகாப்புக்காக, வெளியேறி மீண்டும் உள்நுழைந்த பிறகு உங்கள் கணக்கை நீக்கவும்.';
+
+  @override
+  String get deleteAccountDataNotDeleted =>
+      'உங்கள் சில தரவுகளை நீக்க முடியவில்லை, எனவே உங்கள் கணக்கு வைக்கப்பட்டுள்ளது. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get deleteAccountLoginNotDeleted =>
+      'உங்கள் சுயவிவரத் தரவு நீக்கப்பட்டது, ஆனால் உங்கள் உள்நுழைவை இன்னும் நீக்க முடியவில்லை. கணக்கை நீக்கு என்பதை மீண்டும் முயற்சிக்கவும்.';
 }
