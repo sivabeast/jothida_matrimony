@@ -244,16 +244,41 @@ service cloud.firestore {
     // interest between the two has been accepted — i.e. a matching
     // /connections/{pair} document exists. (User Premium "contact unlock"
     // also flows through an accepted connection.)
+    // PUBLIC contact sharing, decided on the member's own profile document.
+    //
+    // The old check looked up `profiles/{uid}` — but profile documents have
+    // AUTO-GENERATED ids, never the uid, so that document never existed and
+    // PUBLIC sharing silently behaved exactly like PRIVATE: contact details
+    // and chat stayed locked until an interest was accepted. A rule cannot
+    // query by field, so `contacts/{uid}.profileId` (maintained by the app)
+    // points at the profile, and the pointer is only trusted when that profile
+    // really belongs to the same uid. The profile must also be live (approved
+    // and active) — a suspended or unverified member is not publicly reachable.
+    function isPublicContactOf(uid) {
+      return exists(/databases/$(database)/documents/contacts/$(uid))
+             && get(/databases/$(database)/documents/contacts/$(uid)).data.get('profileId', '') != ''
+             && isPublicLiveProfile(
+                  get(/databases/$(database)/documents/contacts/$(uid)).data.profileId,
+                  uid);
+    }
+    function isPublicLiveProfile(profileId, uid) {
+      return exists(/databases/$(database)/documents/profiles/$(profileId))
+             && get(/databases/$(database)/documents/profiles/$(profileId)).data.userId == uid
+             && get(/databases/$(database)/documents/profiles/$(profileId)).data.get('contactPrivacy', 'private') == 'public'
+             && get(/databases/$(database)/documents/profiles/$(profileId)).data.get('status', '') == 'approved'
+             && get(/databases/$(database)/documents/profiles/$(profileId)).data.get('isActive', false) == true;
+    }
+
     match /contacts/{ownerId} {
+      // Phone numbers are NOT on this document while the owner hides them —
+      // they live in /contact_private — so opening it never bypasses "Hide
+      // Phone Number", whichever of the paths below granted the read.
       allow read: if isOwner(ownerId)
                   || isAdmin()
-                  // Public sharing (§17/§18): the owner chose to expose contact
-                  // to any signed-in viewer. The choice lives on the public
-                  // profile doc; legacy profiles with no setting default to
-                  // 'private', so nobody's contact becomes visible unexpectedly.
-                  || (isAuthenticated()
-                      && exists(/databases/$(database)/documents/profiles/$(ownerId))
-                      && get(/databases/$(database)/documents/profiles/$(ownerId)).data.get('contactPrivacy', 'private') == 'public')
+                  // PUBLIC sharing: no interest needed.
+                  || (isAuthenticated() && isPublicContactOf(ownerId))
+                  // PRIVATE sharing: a mutually ACCEPTED interest. A pending
+                  // or rejected interest never creates this document.
                   || (isAuthenticated()
                       && exists(/databases/$(database)/documents/connections/$(pairId(ownerId, request.auth.uid))));
       // Admins may edit a member's contact details too — the Admin panel's
@@ -261,6 +286,37 @@ service cloud.firestore {
       // fails with permission-denied after the profile update succeeded.
       allow create, update: if isOwner(ownerId) || isAdmin();
       allow delete: if isOwner(ownerId) || isAdmin();
+    }
+
+    // ── Private field copies (server-side field privacy) ─────────────────
+    // Rules protect whole documents, so a value a member HIDES cannot stay on
+    // a document other members can read. The app keeps the original values
+    // here and blanks them on /profiles and /contacts while the switch is on:
+    //
+    //   profile_private/{uid} — photo, salary, horoscope (images + PDFs).
+    //     Readable by the owner, admins, and staff handling horoscope reports
+    //     (who need the horoscope to prepare a paid report).
+    //   contact_private/{uid} — mobile + WhatsApp numbers. Owner and admins.
+    //
+    // No member can read another member's copy through any path, which is
+    // what makes the four privacy switches real. Admins bypass them by role,
+    // never by changing the member's stored settings.
+    match /profile_private/{uid} {
+      allow read: if (isAuthenticated() && isOwner(uid))
+                  || isAdmin()
+                  || isAstrologer();
+      allow create, update: if (isAuthenticated() && isOwner(uid)
+                                && request.resource.data.userId == uid)
+                            || isAdmin();
+      allow delete: if (isAuthenticated() && isOwner(uid)) || isAdmin();
+    }
+
+    match /contact_private/{uid} {
+      allow read: if (isAuthenticated() && isOwner(uid)) || isAdmin();
+      allow create, update: if (isAuthenticated() && isOwner(uid)
+                                && request.resource.data.userId == uid)
+                            || isAdmin();
+      allow delete: if (isAuthenticated() && isOwner(uid)) || isAdmin();
     }
 
     // ── Connections (mutual-acceptance contact unlock) ─────────────────────
@@ -940,10 +996,14 @@ service cloud.firestore {
     // the member who creates the thread (staff may only send into an existing
     // one — see !isAstrologer() above), so it is named explicitly rather than
     // left to fall out of the member rules.
+    //
+    // The PUBLIC arm uses isPublicContactOf (see /contacts): it used to look up
+    // `profiles/{uid}`, a document that never exists because profile ids are
+    // auto-generated — which is why a PUBLIC member could still only be
+    // messaged after an accepted interest.
     function mayOpenChatWith(otherUid) {
       return exists(/databases/$(database)/documents/connections/$(pairId(otherUid, request.auth.uid)))
-             || (exists(/databases/$(database)/documents/profiles/$(otherUid))
-                 && get(/databases/$(database)/documents/profiles/$(otherUid)).data.get('contactPrivacy', 'private') == 'public')
+             || isPublicContactOf(otherUid)
              || (exists(/databases/$(database)/documents/users/$(otherUid))
                  && get(/databases/$(database)/documents/users/$(otherUid)).data.get('role', 'user') in ['astrologer', 'admin', 'super_admin']);
     }

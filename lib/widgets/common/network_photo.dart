@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../services/cloudinary/cloudinary_asset_id.dart';
 
 /// A robust remote image with consistent empty-URL, loading and error handling.
 ///
@@ -59,17 +60,37 @@ class NetworkPhoto extends StatelessWidget {
   Widget build(BuildContext context) {
     final trimmed = url.trim();
     if (trimmed.isEmpty) return _fallback();
-    return CachedNetworkImage(
-      imageUrl: trimmed,
-      width: width,
-      height: height,
-      fit: fit,
-      alignment: alignment,
-      useOldImageOnUrlChange: true,
-      fadeInDuration: const Duration(milliseconds: 150),
-      placeholder: (_, __) => _loading(),
-      errorWidget: (_, __, ___) => _fallback(),
+    final known = width;
+    if (known != null && known.isFinite) {
+      return _image(context, trimmed, known);
+    }
+    return LayoutBuilder(
+      builder: (context, box) => _image(context, trimmed, box.maxWidth),
     );
+  }
+
+  /// Downloads a DISPLAY-SIZED copy of a Cloudinary image rather than the
+  /// full-resolution original (see [cloudinaryDisplayUrl]); if that ever
+  /// fails — a Cloudinary account with strict transformations, say — the
+  /// original URL is loaded instead, so a photo can never disappear because
+  /// of the optimisation.
+  Widget _image(BuildContext context, String original, double logicalWidth) {
+    final dpr = MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0;
+    final sized = cloudinaryDisplayUrl(original,
+        width: logicalWidth.isFinite ? logicalWidth * dpr : 0);
+    Widget load(String src, Widget Function() onError) => CachedNetworkImage(
+          imageUrl: src,
+          width: width,
+          height: height,
+          fit: fit,
+          alignment: alignment,
+          useOldImageOnUrlChange: true,
+          fadeInDuration: const Duration(milliseconds: 150),
+          placeholder: (_, __) => _loading(),
+          errorWidget: (_, __, ___) => onError(),
+        );
+    if (sized == original) return load(original, _fallback);
+    return load(sized, () => load(original, _fallback));
   }
 
   Widget _loading() => Container(
@@ -106,10 +127,16 @@ class NetworkPhoto extends StatelessWidget {
 /// required so those spots still benefit from the on-disk cache instead of
 /// re-downloading via a bare `NetworkImage`. Returns null for an empty URL so
 /// callers can fall back to an icon/child.
-ImageProvider? cachedPhotoProvider(String url) {
+///
+/// [logicalSize] is the size the image is drawn at (an avatar's diameter); a
+/// Cloudinary image is then fetched at that size instead of full resolution.
+ImageProvider? cachedPhotoProvider(String url, {double? logicalSize}) {
   final trimmed = url.trim();
   if (trimmed.isEmpty) return null;
-  return CachedNetworkImageProvider(trimmed);
+  final size = logicalSize;
+  return CachedNetworkImageProvider(size == null
+      ? trimmed
+      : cloudinaryDisplayUrl(trimmed, width: size * 3));
 }
 
 /// Forgets everything the device has cached for [url] (spec §25).

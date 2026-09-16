@@ -7627,6 +7627,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your payment went through but the report request could not be saved. Tap Pay again — you will not be charged twice.'**
   String get paidButReportNotSavedRetry;
+
+  /// No description provided for @nearestTownHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your exact locality isn\'t listed. Choose the nearest main town:'**
+  String get nearestTownHint;
+
+  /// No description provided for @locationsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Locations could not be loaded.'**
+  String get locationsLoadFailed;
+
+  /// No description provided for @placeWithStateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Outside Tamil Nadu? Type the place with its state, e.g. \"Kochi, Kerala\".'**
+  String get placeWithStateHint;
 }
 
 class _AppLocalizationsDelegate

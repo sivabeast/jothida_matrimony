@@ -29,7 +29,30 @@ class ProfileRepository {
   Future<ProfileModel?> getApprovedProfileByUserId(String userId) =>
       _firestore.getApprovedProfileByUserId(userId);
 
+  Stream<ProfileModel?> watchApprovedProfileByUserId(String userId) =>
+      _firestore.watchApprovedProfileByUserId(userId);
+
   Stream<ProfileModel?> watchProfile(String profileId) => _firestore.watchProfile(profileId);
+
+  // FULL reads — the public document with the member's private copy (hidden
+  // photo / salary / horoscope) merged back in. For the OWNER and for admins
+  // and staff only; see core/utils/profile_privacy.dart.
+  Stream<ProfileModel?> watchFullProfile(String profileId) =>
+      _firestore.watchFullProfile(profileId);
+  Future<ProfileModel?> getFullProfile(String profileId) =>
+      _firestore.getFullProfile(profileId);
+  Stream<ProfileModel?> watchFullProfileByUserId(String userId) =>
+      _firestore.watchFullProfileByUserId(userId);
+  Future<ProfileModel?> getFullProfileByUserId(String userId) =>
+      _firestore.getFullProfileByUserId(userId);
+  Future<ContactDetails?> getFullContact(String userId) =>
+      _firestore.getFullContact(userId);
+  Stream<ContactDetails?> watchFullContact(String userId) =>
+      _firestore.watchFullContact(userId);
+
+  Future<MemberPrivacyRepair> reconcileMemberPrivacy(String profileId,
+          {bool adminRepair = false}) =>
+      _firestore.reconcileMemberPrivacy(profileId, adminRepair: adminRepair);
 
   Future<List<ProfileModel>> searchProfiles({
     required String gender,
@@ -121,7 +144,8 @@ class ProfileRepository {
       _firestore.watchContact(userId);
 
   /// Creates/updates the caller's own contact details in the gated
-  /// `contacts/{userId}` collection.
+  /// `contacts/{userId}` collection (phone numbers split per "Hide Phone
+  /// Number").
   Future<void> saveContact(String userId, ContactDetails contact) =>
       _firestore.saveContact(userId, contact);
 }

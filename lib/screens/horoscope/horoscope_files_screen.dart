@@ -9,6 +9,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/file_actions.dart';
 import '../../providers/horoscope_files_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../widgets/common/network_photo.dart';
 
 /// Horoscope / Jathagam document manager for the signed-in user.
 ///
@@ -127,14 +128,12 @@ class HoroscopeFilesScreen extends ConsumerWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              url,
+            // Cached, display-sized grid thumbnail (with an automatic fallback
+            // to the original); the full image opens in the gallery on tap.
+            child: NetworkPhoto(
+              url: url,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: AppColors.primary.withOpacity(0.08),
-                child: const Icon(Icons.broken_image_outlined,
-                    color: AppColors.primary),
-              ),
+              fallbackIcon: Icons.broken_image_outlined,
             ),
           ),
           Positioned(

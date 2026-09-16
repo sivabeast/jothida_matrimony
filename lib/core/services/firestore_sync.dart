@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 
@@ -63,6 +65,91 @@ class FirestoreSync {
       if (sort != null) out.sort(sort);
       return out;
     });
+  }
+
+  /// The raw data of a document the caller MAY be unable to read, live.
+  ///
+  /// Emits null for a missing document AND for a denied or failed read, and
+  /// keeps the stream alive-looking (a final null) instead of erroring. Used
+  /// for the optional private half of a profile: a member whose private copy
+  /// does not exist yet — or a build running against rules that were not
+  /// deployed yet — must still load the rest of their profile.
+  static Stream<Map<String, dynamic>?> optionalDocData(
+    DocumentReference<Map<String, dynamic>> ref, {
+    String label = 'optionalDoc',
+  }) {
+    return ref.snapshots().map((d) => d.exists ? d.data() : null).transform(
+          StreamTransformer<Map<String, dynamic>?,
+              Map<String, dynamic>?>.fromHandlers(
+            handleError: (e, st, sink) {
+              debugPrint('[FirestoreSync] $label unavailable: $e');
+              sink.add(null);
+            },
+          ),
+        );
+  }
+
+  /// Emits [combine] of the latest values of [a] and [b] once both have
+  /// emitted, and again whenever either changes. Both subscriptions are
+  /// cancelled together, so combining never leaks a listener.
+  static Stream<R> combineLatest2<A, B, R>(
+    Stream<A> a,
+    Stream<B> b,
+    R Function(A a, B b) combine,
+  ) {
+    late StreamController<R> controller;
+    StreamSubscription<A>? subA;
+    StreamSubscription<B>? subB;
+    late A lastA;
+    late B lastB;
+    var hasA = false, hasB = false, doneA = false, doneB = false;
+
+    void emit() {
+      if (!hasA || !hasB || controller.isClosed) return;
+      try {
+        controller.add(combine(lastA, lastB));
+      } catch (e, st) {
+        controller.addError(e, st);
+      }
+    }
+
+    void maybeClose() {
+      if (doneA && doneB && !controller.isClosed) controller.close();
+    }
+
+    controller = StreamController<R>(
+      onListen: () {
+        subA = a.listen((v) {
+          lastA = v;
+          hasA = true;
+          emit();
+        }, onError: controller.addError, onDone: () {
+          doneA = true;
+          maybeClose();
+        });
+        subB = b.listen((v) {
+          lastB = v;
+          hasB = true;
+          emit();
+        }, onError: controller.addError, onDone: () {
+          doneB = true;
+          maybeClose();
+        });
+      },
+      onPause: () {
+        subA?.pause();
+        subB?.pause();
+      },
+      onResume: () {
+        subA?.resume();
+        subB?.resume();
+      },
+      onCancel: () async {
+        await subA?.cancel();
+        await subB?.cancel();
+      },
+    );
+    return controller.stream;
   }
 
   /// A live single document mapped with [fromDoc]; emits null when the document

@@ -91,7 +91,11 @@ class _PhotoFormState extends ConsumerState<_PhotoForm> {
       // of its cached bytes (§25).
       await ref.read(profileEditControllerProvider.notifier).save(
             updated: p.withProfilePhoto(url),
-            patch: {'profilePhotoUrl': url, 'additionalPhotos': <String>[]},
+            patch: {
+              'profilePhotoUrl': url,
+              'additionalPhotos': <String>[],
+              'photos': <String>[],
+            },
           );
       if (mounted) _snack(context.l10n.photoUpdated);
     } catch (_) {
@@ -126,7 +130,13 @@ class _PhotoFormState extends ConsumerState<_PhotoForm> {
       final p = _p;
       await ref.read(profileEditControllerProvider.notifier).save(
             updated: p.withProfilePhoto(null),
-            patch: {'profilePhotoUrl': null, 'additionalPhotos': <String>[]},
+            // Both legacy arrays too — an image left in either is still read
+            // as the profile photo when `profilePhotoUrl` is empty.
+            patch: {
+              'profilePhotoUrl': null,
+              'additionalPhotos': <String>[],
+              'photos': <String>[],
+            },
           );
       if (mounted) _snack(context.l10n.photoRemoved);
     } catch (_) {

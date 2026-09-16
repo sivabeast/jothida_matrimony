@@ -67,6 +67,13 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     return myUid != null && myUid == profile.userId;
   }
 
+  /// True when the viewer sees every field regardless of the member's privacy
+  /// switches: the OWNER, or an ADMIN / staff member. For an admin the profile
+  /// providers also return the private copy, so what is shown really is the
+  /// complete profile — not a placeholder over a blank.
+  bool _seesPrivateFields(ProfileModel profile) =>
+      _isOwner(profile) || ref.watch(viewerBypassesPrivacyProvider);
+
   /// Records a single profile view per screen-open, and never when the owner
   /// views their own profile. This previously lived inside build(), so it fired
   /// on every rebuild (photo swipes, scrolls, parent rebuilds) and also counted
@@ -989,9 +996,19 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
   Widget build(BuildContext context) {
     // Prefer the UID lookup when opened from an accepted interest; otherwise use
     // the profile-document id. Both yield AsyncValue<ProfileModel?>.
-    final profileAsync = widget.userId != null
+    var profileAsync = widget.userId != null
         ? ref.watch(profileByUserIdProvider(widget.userId!))
         : ref.watch(profileByIdProvider(widget.profileId!));
+    // Opening your OWN profile: use your full profile (with the private copy
+    // of anything you hide), not the redacted member-readable document.
+    final loaded = profileAsync.valueOrNull;
+    final myUid = ref.watch(memberUidProvider);
+    if (loaded != null && myUid != null && loaded.userId == myUid) {
+      final mine = ref.watch(myProfileProvider).valueOrNull;
+      if (mine != null && mine.id == loaded.id) {
+        profileAsync = AsyncData(mine);
+      }
+    }
 
     return Scaffold(
       body: profileAsync.when(
@@ -1066,11 +1083,13 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
 
   Widget _buildProfileView(ProfileModel profile) {
     final isOwner = _isOwner(profile);
-    // §16/§17 — the four privacy switches. The owner always sees their own
-    // data; for everyone else a hidden field is simply not rendered, and
-    // accepting an interest does NOT change that.
-    final hidePhoto = !isOwner && profile.hidesPhoto;
-    final hideSalary = !isOwner && profile.hidesSalary;
+    // §16/§17 — the four privacy switches. The owner and admins always see the
+    // data; for every other member a hidden field is simply not rendered (and
+    // is not even on the document they can read), and accepting an interest
+    // does NOT change that.
+    final seesAll = _seesPrivateFields(profile);
+    final hidePhoto = !seesAll && profile.hidesPhoto;
+    final hideSalary = !seesAll && profile.hidesSalary;
 
     return CustomScrollView(
       slivers: [
@@ -1247,6 +1266,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
                 // showing both put the same heading and the same button on the
                 // page twice, opening the identical dialog.
                 if (isOwner ||
+                    ref.watch(viewerIsAdminProvider) ||
                     (profile.isContactPublic &&
                         ref.watch(
                                 interestStatusForProfileProvider(profile.id)) !=
@@ -1727,13 +1747,16 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
   ///    Available" indicator, and can tap "Consult Astrologer".
   Widget _horoscopeSection(ProfileModel profile) {
     final isOwner = _isOwner(profile);
+    final seesAll = _seesPrivateFields(profile);
     final h = profile.horoscopeDetails;
 
-    if (!isOwner && profile.hidesHoroscope) {
+    if (!seesAll && profile.hidesHoroscope) {
       return _hiddenSectionCard(context.l10n.horoscopeDetails);
     }
 
-    if (isOwner) {
+    // The owner — and an admin, who is never restricted by member privacy —
+    // sees every horoscope value and every uploaded document.
+    if (isOwner || seesAll) {
       // The owner always sees their own uploaded documents — no gate.
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1923,10 +1946,10 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
   /// room — the Chats tab and this button always land on the same chat (§7).
   Future<void> _openChat(ProfileModel profile) async {
     final messenger = ScaffoldMessenger.of(context);
-    final pic = profile.profilePhotoUrl ?? '';
-    final photo = pic.isNotEmpty
-        ? pic
-        : (profile.photos.isNotEmpty ? profile.photos.first : '');
+    // Copied into the shared thread document the counterpart reads — so it
+    // honours their "Hide Profile Photo" switch even when THIS viewer (an
+    // admin) is allowed to see the photo.
+    final photo = profile.sharedPhotoUrl;
     try {
       final id = await ref.read(chatControllerProvider).openChatWith(
             otherUid: profile.userId,

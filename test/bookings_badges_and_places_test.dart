@@ -254,8 +254,10 @@ void main() {
 
     // Both villages are offered, each disambiguated by its own district.
     expect(find.text('Athikkolam'), findsNWidgets(2));
-    expect(find.text('Ramanathapuram, Tamil Nadu'), findsOneWidget);
-    expect(find.text('Sivaganga, Tamil Nadu'), findsOneWidget);
+    // The subtitle names the level explicitly (spec §26):
+    // "Virudhunagar District, Tamil Nadu".
+    expect(find.text('Ramanathapuram District, Tamil Nadu'), findsOneWidget);
+    expect(find.text('Sivaganga District, Tamil Nadu'), findsOneWidget);
 
     // Row order is [Ramanathapuram, Sivaganga, "use what I typed"], so index 1
     // is the Sivaganga village — NOT `.last`, which is the free-text fallback.

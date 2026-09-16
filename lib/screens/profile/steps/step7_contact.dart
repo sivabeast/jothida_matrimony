@@ -8,6 +8,7 @@ import '../../../core/utils/value_l10n.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
+import '../../../widgets/profile/contact_sharing_selector.dart';
 
 /// Contact step — Contact Person Name (req), Relationship (req), Mobile Number
 /// (req) and an optional WhatsApp number with a "same as mobile" toggle.
@@ -128,57 +129,6 @@ class _Step7State extends ConsumerState<Step7Contact> {
       'contactPrivacy': _contactPrivacy,
     });
     widget.onNext();
-  }
-
-  /// A selectable Private / Public contact-sharing option card.
-  Widget _privacyOption({
-    required String value,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    final selected = _contactPrivacy == value;
-    const maroon = Color(0xFF800020);
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () => setState(() => _contactPrivacy = value),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: selected ? maroon.withValues(alpha: 0.06) : Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? maroon : Colors.grey.shade300,
-            width: selected ? 1.6 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: selected ? maroon : Colors.grey[600], size: 22),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title,
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: selected ? maroon : Colors.black87)),
-                  const SizedBox(height: 2),
-                  Text(subtitle,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[700])),
-                ],
-              ),
-            ),
-            Icon(
-              selected ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: selected ? maroon : Colors.grey[400],
-              size: 20,
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -315,18 +265,9 @@ class _Step7State extends ConsumerState<Step7Contact> {
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
             ),
             const SizedBox(height: 10),
-            _privacyOption(
-              value: 'private',
-              icon: Icons.lock_outline,
-              title: context.l10n.contactPrivateTitle,
-              subtitle: context.l10n.contactPrivateDesc,
-            ),
-            const SizedBox(height: 10),
-            _privacyOption(
-              value: 'public',
-              icon: Icons.public,
-              title: context.l10n.contactPublicTitle,
-              subtitle: context.l10n.contactPublicDesc,
+            ContactSharingSelector(
+              value: _contactPrivacy,
+              onChanged: (v) => setState(() => _contactPrivacy = v),
             ),
             const SizedBox(height: 12),
             Row(

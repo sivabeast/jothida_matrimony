@@ -4,34 +4,37 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
+import '../../core/utils/location_search.dart';
 import '../../core/utils/value_l10n.dart';
 import '../../models/location_model.dart';
 
-/// Reads the Tamil Nadu location master data (districts + cities, English and
-/// Tamil) with **Firestore as the source of truth** and the bundled JSON
-/// assets as the offline / not-yet-seeded fallback.
+/// Reads the location master data (districts + cities, English and Tamil)
+/// from the **bundled JSON** under `assets/master_data/location/` — the
+/// primary source (spec §23). Firestore `master_data/*` is used only if an
+/// asset cannot be read.
 ///
-/// Firestore layout (seeded by matrimony_website/scripts/seed-master-data.mjs):
-///   master_data/districts_en · master_data/districts_ta
-///   master_data/cities_en    · master_data/cities_ta
-///   — each { key, version, itemCount, chunked, items } (chunked datasets keep
-///     their rows in a `chunks` subcollection, Firestore docs max out at 1 MB).
+/// It used to be the other way round: every session started with four
+/// Firestore reads (plus chunk reads) before the first place picker could
+/// open, and the app searched whatever copy Firestore held — a separately
+/// seeded dataset that could differ from the one shipped with the app. The
+/// bundled JSON is on the device already, identical for every member, and
+/// needs no network.
 ///
-/// All four datasets are fetched once per session, joined by id into
-/// [TnDistrict] / [TnCity] (one object carries both languages) and indexed in
-/// memory, so every dropdown open after the first is instant and language
-/// switching needs no re-fetch. Firestore's own offline persistence caches the
-/// documents across launches; a cold start with no network still works via the
-/// bundled assets.
+/// All four files are read and joined ONCE per session into [TnDistrict] /
+/// [TnCity] (one object carries both languages), and the shared
+/// [PlaceSearchIndex] is built from them once — every picker afterwards
+/// searches in memory. A failed load is not cached, so the next open retries.
 class LocationRepository {
   static const _collection = 'master_data';
   static const _assetDir = 'assets/master_data/location';
   static const _keys = ['districts_en', 'districts_ta', 'cities_en', 'cities_ta'];
 
-  final FirebaseFirestore _db;
+  FirebaseFirestore? _firestore;
+  FirebaseFirestore get _db => _firestore ??= FirebaseFirestore.instance;
 
-  LocationRepository({FirebaseFirestore? firestore})
-      : _db = firestore ?? FirebaseFirestore.instance;
+  /// Firestore is touched only if a bundled file cannot be read, so the
+  /// instance is resolved lazily.
+  LocationRepository({FirebaseFirestore? firestore}) : _firestore = firestore;
 
   // ── In-memory cache (loaded once, kept for the session) ────────────────────
   List<TnDistrict>? _districts;
@@ -100,37 +103,60 @@ class LocationRepository {
         '${cities.length} cities.');
   }
 
-  /// One dataset: Firestore first, bundled asset when Firestore is
-  /// unreachable or not seeded yet.
+  /// One dataset: the bundled asset first; Firestore only when the asset
+  /// cannot be read.
   Future<List<dynamic>> _readDataset(String key) async {
     try {
-      final snap = await _db.collection(_collection).doc(key).get();
-      if (!snap.exists) throw StateError('master_data/$key not seeded');
-      final meta = snap.data()!;
-      if (meta['chunked'] == true) {
-        final chunks = await _db
-            .collection(_collection)
-            .doc(key)
-            .collection('chunks')
-            .orderBy('index')
-            .get();
-        return [
-          for (final c in chunks.docs) ...(c.data()['items'] as List? ?? []),
-        ];
-      }
-      final items = meta['items'];
-      if (items is! List || items.isEmpty) {
-        throw StateError('master_data/$key has no items');
-      }
-      return items;
-    } catch (e) {
-      debugPrint('[LocationRepository] Firestore $key unavailable ($e) — '
-          'using bundled asset.');
       final raw = await rootBundle.loadString('$_assetDir/$key.json');
       final decoded = jsonDecode(raw);
-      if (decoded is! List) throw FormatException('Expected array in $key.json');
+      if (decoded is! List || decoded.isEmpty) {
+        throw FormatException('Expected a non-empty array in $key.json');
+      }
       return decoded;
+    } catch (e) {
+      debugPrint('[LocationRepository] bundled $key unavailable ($e) — '
+          'trying Firestore.');
+      return _readFirestoreDataset(key);
     }
+  }
+
+  Future<List<dynamic>> _readFirestoreDataset(String key) async {
+    final snap = await _db.collection(_collection).doc(key).get();
+    if (!snap.exists) throw StateError('master_data/$key not seeded');
+    final meta = snap.data()!;
+    if (meta['chunked'] == true) {
+      final chunks = await _db
+          .collection(_collection)
+          .doc(key)
+          .collection('chunks')
+          .orderBy('index')
+          .get();
+      return [
+        for (final c in chunks.docs) ...(c.data()['items'] as List? ?? []),
+      ];
+    }
+    final items = meta['items'];
+    if (items is! List || items.isEmpty) {
+      throw StateError('master_data/$key has no items');
+    }
+    return items;
+  }
+
+  PlaceSearchIndex? _index;
+
+  /// The shared place search index, built once from the loaded data.
+  Future<PlaceSearchIndex> searchIndex() async {
+    await _ensureLoaded();
+    return _index ??=
+        PlaceSearchIndex.build(districts: _districts!, cities: _cities!);
+  }
+
+  Future<TnCity?> cityById(int id) async {
+    await _ensureLoaded();
+    for (final c in _cities!) {
+      if (c.id == id) return c;
+    }
+    return null;
   }
 
   // ── Reads ──────────────────────────────────────────────────────────────────
@@ -172,6 +198,11 @@ class LocationRepository {
   static bool _same(String a, String b) {
     final na = _norm(a), nb = _norm(b);
     if (na.isEmpty || nb.isEmpty) return false;
+    // Transliteration-tolerant equality before the loose contains-match, so
+    // "Kancheepuram" resolves to "Kanchipuram" rather than to whichever town
+    // name merely CONTAINS the text.
+    final ka = placeKey(a), kb = placeKey(b);
+    if (ka.isNotEmpty && ka == kb) return true;
     return na == nb || na.contains(nb) || nb.contains(na);
   }
 

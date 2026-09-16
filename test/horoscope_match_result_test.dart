@@ -39,7 +39,9 @@ import 'package:jothida_matrimony/screens/astrology/horoscope_report_service_scr
 Widget _host(ProfileModel me, ProfileModel other) => ProviderScope(
       overrides: [
         myProfileProvider.overrideWith((ref) => Stream.value(me)),
-        profileByUserIdProvider(other.userId).overrideWith((ref) async => other),
+        // A live stream now (served from the local cache on re-open).
+        profileByUserIdProvider(other.userId)
+            .overrideWith((ref) => Stream.value(other)),
         // No paid request exists for this pair → the CTA is offered.
         myMatchAnalysisRequestsProvider.overrideWith(
             (ref) => Stream.value(const <AstrologerRequestModel>[])),

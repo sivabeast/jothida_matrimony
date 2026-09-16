@@ -4257,4 +4257,15 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get paidButReportNotSavedRetry =>
       'உங்கள் பணம் செலுத்தப்பட்டது, ஆனால் அறிக்கை கோரிக்கையைச் சேமிக்க முடியவில்லை. மீண்டும் பணம் செலுத்து என்பதை அழுத்தவும் — இருமுறை கட்டணம் வசூலிக்கப்படாது.';
+
+  @override
+  String get nearestTownHint =>
+      'உங்கள் சரியான ஊர் பட்டியலில் இல்லை. அருகிலுள்ள முக்கிய நகரத்தைத் தேர்ந்தெடுக்கவும்:';
+
+  @override
+  String get locationsLoadFailed => 'இடங்களை ஏற்ற முடியவில்லை.';
+
+  @override
+  String get placeWithStateHint =>
+      'தமிழ்நாட்டுக்கு வெளியிலா? இடத்தை மாநிலத்துடன் உள்ளிடவும், எ.கா. \"Kochi, Kerala\".';
 }

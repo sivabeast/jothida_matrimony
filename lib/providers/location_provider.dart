@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/utils/location_search.dart';
 import '../models/location_model.dart';
 import '../services/firebase/location_repository.dart';
 import 'locale_provider.dart';
@@ -29,6 +30,16 @@ final allCityNamesProvider = FutureProvider<List<String>>((ref) async {
   final cities = await ref.watch(locationRepositoryProvider).getAllCities();
   final names = {for (final c in cities) c.nameFor(lang)}.toList()..sort();
   return names;
+});
+
+/// The shared place search index (town + district + nickname matching,
+/// transliteration-tolerant, nearest-town fallback) — built once per session
+/// from the bundled location JSON and reused by every place field.
+final placeSearchIndexProvider = FutureProvider<PlaceSearchIndex>((ref) async {
+  // Derived from [allPlaceOptionsProvider] (itself cached for the session), so
+  // there is exactly one load of the location data behind every picker.
+  final options = await ref.watch(allPlaceOptionsProvider.future);
+  return PlaceSearchIndex.fromOptions(options);
 });
 
 /// Every city joined to its district — the source for the app's ONE

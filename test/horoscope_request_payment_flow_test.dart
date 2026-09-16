@@ -275,7 +275,7 @@ void main() {
 
     // The result carries the hierarchy the astrologer needs, not just a name.
     expect(find.text('Virudhunagar'), findsWidgets);
-    expect(find.text('Virudhunagar, Tamil Nadu'), findsOneWidget);
+    expect(find.text('Virudhunagar District, Tamil Nadu'), findsOneWidget);
     // No confirm step of any kind — the row IS the selection (spec §5).
     expect(find.text(l10n.save), findsNothing);
 

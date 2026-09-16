@@ -5,6 +5,8 @@ import '../../core/data/dummy_profiles.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/app_dialogs.dart';
 import '../../providers/service_providers.dart';
+import '../../services/firebase/firestore_service.dart'
+    show PrivacyRepairSummary;
 
 /// Admin **Test Data** tool (spec §3).
 ///
@@ -88,9 +90,34 @@ class _AdminTestDataScreenState extends ConsumerState<AdminTestDataScreen> {
     }
   }
 
+  PrivacyRepairSummary? _repair;
+
+  /// Runs the privacy + photo-mapping repair over EVERY profile: hidden values
+  /// are moved out of member-readable documents, the contact-sharing pointer
+  /// the rules need is written, and a photo still referenced only from a
+  /// legacy field (or from the member's own account mirror, inside their own
+  /// Cloudinary folder) is mapped back onto the profile. Nothing is deleted
+  /// and member privacy settings are not changed.
+  Future<void> _repairPrivacy() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final r = await ref.read(firestoreServiceProvider).repairAllMemberPrivacy();
+      if (mounted) setState(() => _repair = r);
+      _snack('Checked ${r.total} profiles — ${r.changed} updated, '
+          '${r.recoveredPhotos} photo(s) restored.');
+    } catch (e) {
+      debugPrint('[TestData] privacy repair failed: $e');
+      _snack('Could not run the repair. Please try again.', error: true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final count = _count;
+    final repair = _repair;
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
@@ -199,6 +226,47 @@ class _AdminTestDataScreenState extends ConsumerState<AdminTestDataScreen> {
             'dummy_f1…) — it never creates duplicates.',
             style: TextStyle(fontSize: 12, color: Colors.grey[600]),
           ),
+          const SizedBox(height: 28),
+          // ── Data repair: privacy + photo mapping ──
+          const Text('Profile data repair',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          const SizedBox(height: 6),
+          Text(
+            'Moves every hidden photo, salary, horoscope and phone number out '
+            'of the documents other members can read, sets up Public contact '
+            'sharing, and restores profile photos that exist in Cloudinary but '
+            'were only referenced from an old field. Nothing is deleted and no '
+            'member privacy setting is changed. Safe to run more than once.',
+            style: TextStyle(fontSize: 12.5, color: Colors.grey[700]),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _busy ? null : _repairPrivacy,
+            icon: const Icon(Icons.build_circle_outlined),
+            label: const Text('Repair privacy & photo mapping'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary),
+              minimumSize: const Size.fromHeight(52),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          if (repair != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Profiles checked: ${repair.total} · updated: ${repair.changed} · '
+              'photos restored: ${repair.recoveredPhotos} · skipped: '
+              '${repair.skipped} · failed: ${repair.failed}',
+              style: TextStyle(fontSize: 12.5, color: Colors.grey[800]),
+            ),
+            if (repair.skipped > 0)
+              Text(
+                'Skipped profiles could not be updated safely — usually '
+                'because the latest firestore.rules are not deployed yet.',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+          ],
         ],
       ),
     );

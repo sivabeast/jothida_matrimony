@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:flutter/foundation.dart';
@@ -5,6 +7,8 @@ import '../../core/constants/app_constants.dart';
 import '../../core/config/admin_config.dart';
 import '../../core/services/firestore_sync.dart';
 import '../../core/utils/login_identifier.dart';
+import '../../core/utils/matrimony_photo.dart';
+import '../../core/utils/profile_privacy.dart';
 import '../../models/aadhaar_details.dart';
 import '../../models/blocked_entry.dart';
 import '../../models/profile_model.dart';
@@ -18,6 +22,35 @@ import '../../models/banner_model.dart';
 import '../../models/user_model.dart';
 import '../../models/dashboard_analytics.dart';
 import 'login_directory_service.dart';
+
+/// Outcome of [FirestoreService.reconcileMemberPrivacy] for one member.
+class MemberPrivacyRepair {
+  final bool changed;
+  final bool recoveredPhoto;
+  final bool skipped;
+  const MemberPrivacyRepair({required this.changed, required this.recoveredPhoto})
+      : skipped = false;
+  const MemberPrivacyRepair.skipped()
+      : changed = false,
+        recoveredPhoto = false,
+        skipped = true;
+}
+
+/// Totals of the admin "Repair privacy & photos" action.
+class PrivacyRepairSummary {
+  final int total;
+  final int changed;
+  final int recoveredPhotos;
+  final int skipped;
+  final int failed;
+  const PrivacyRepairSummary({
+    required this.total,
+    required this.changed,
+    required this.recoveredPhotos,
+    required this.skipped,
+    required this.failed,
+  });
+}
 
 /// A single page of search results plus the cursor for the next page.
 typedef ProfilePage = ({
@@ -297,27 +330,51 @@ class FirestoreService {
           'deleting the rest.');
       await _deleteDocs(existing.skip(1).toList());
     }
-    // 1) Save the public profile FIRST. ProfileModel.toFirestore() no longer
-    //    includes contact details. This write succeeds under the standard
-    //    profile-create rule, so onboarding can never be blocked by the
-    //    separate contact write below.
+    // 1) Save the profile FIRST. ProfileModel.toFirestore() no longer includes
+    //    contact details, so onboarding can never be blocked by the separate
+    //    contact write below.
+    //
+    //    The fields the member chose to hide are split off (see
+    //    core/utils/profile_privacy.dart): their real values go to
+    //    `profile_private/{uid}` and the member-readable document carries a
+    //    blank for each. Both halves are ONE batch, so a hidden value can never
+    //    be blanked without its private copy landing too.
     //
     //    `set` WITHOUT merge is deliberate when an id is being reused: the new
     //    profile must replace the old document wholesale, never inherit stray
     //    fields from whoever filled it in before.
-    await doc.set(profile.copyWith().toFirestore());
+    final data = profile.copyWith().toFirestore();
+    final split = splitProfileWrite(data, profile.privacySettings);
+    final batch = _db.batch()
+      ..set(doc, split.public)
+      ..set(_privateProfileRef(profile.userId), {
+        ...privateSnapshotOf(data),
+        'userId': profile.userId,
+        'profileId': doc.id,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    if (profile.userId.isEmpty || !await _commitPrivacyBatch(batch)) {
+      // The private collection is not writable yet (rules not deployed). Keep
+      // the previous behaviour — the full profile on one document — rather than
+      // lose a value; the next reconcile moves it once the rules are live.
+      await doc.set(data);
+    }
 
     // 2) Store contact details in the access-gated `contacts/{userId}`
     //    collection. This is intentionally NON-FATAL: if the `contacts`
     //    security rule hasn't been deployed yet (firebase deploy --only
     //    firestore:rules), the write is denied — but the profile must still
     //    save, so we log and continue instead of failing the whole save.
-    // Gated on ANY contact value (not just a phone number): a member who
-    // entered only an e-mail used to get no `contacts/{userId}` record at all,
-    // which made the Contact Details popup report "not provided" forever.
-    if (profile.userId.isNotEmpty && profile.contact.hasAnyValue) {
+    //
+    //    Written even with NO contact values: the record also carries the
+    //    `profileId` pointer the security rules use to find this member's
+    //    Public/Private contact-sharing choice (a uid alone cannot locate a
+    //    profile document from inside a rule).
+    if (profile.userId.isNotEmpty) {
       try {
-        await saveContact(profile.userId, profile.contact);
+        await saveContact(profile.userId, profile.contact,
+            profileId: doc.id,
+            hidePhone: profile.hidesPhone);
       } catch (e) {
         debugPrint('[FirestoreService] contact save skipped ($e). '
             'Deploy firestore.rules to enable the contacts collection.');
@@ -325,6 +382,79 @@ class FirestoreService {
     }
     return doc.id;
   }
+
+  // ── Field privacy (server-side) ─────────────────────────────────────────────
+  //
+  // See core/utils/profile_privacy.dart for the model. In short: a hidden
+  // photo / salary / horoscope / phone number is stored ONLY in a private
+  // document the viewer cannot read, so a member cannot get it back out of the
+  // API by skipping the screen that hides it.
+
+  DocumentReference<Map<String, dynamic>> _privateProfileRef(String uid) =>
+      _db.collection(AppConstants.profilePrivateCollection).doc(uid);
+
+  DocumentReference<Map<String, dynamic>> _privateContactRef(String uid) =>
+      _db.collection(AppConstants.contactPrivateCollection).doc(uid);
+
+  /// Commits a batch that writes a private document. Returns false — instead
+  /// of throwing — when the private collections are not writable yet, i.e. the
+  /// updated firestore.rules have not been deployed, so the caller can fall
+  /// back to the old single-document write without losing anything.
+  ///
+  /// A batch is atomic: when it is refused, NOTHING in it was applied, so the
+  /// public document was not blanked either.
+  Future<bool> _commitPrivacyBatch(WriteBatch batch) async {
+    try {
+      await commitWrite(batch.commit());
+      return true;
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') {
+        debugPrint('[FirestoreService] private field storage refused '
+            '(${e.message}). Deploy firestore.rules — falling back to the '
+            'single-document write.');
+        return false;
+      }
+      rethrow;
+    }
+  }
+
+  /// The private half of a profile, or null when it does not exist yet or the
+  /// caller may not read it.
+  Future<Map<String, dynamic>?> _readPrivateProfile(String uid) async {
+    if (uid.trim().isEmpty) return null;
+    try {
+      final snap = await _privateProfileRef(uid).get();
+      return snap.exists ? snap.data() : null;
+    } on FirebaseException catch (e) {
+      debugPrint('[FirestoreService] profile_private/$uid unreadable: '
+          '${e.code}');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> _readPrivateContact(String uid) async {
+    if (uid.trim().isEmpty) return null;
+    try {
+      final snap = await _privateContactRef(uid).get();
+      return snap.exists ? snap.data() : null;
+    } on FirebaseException catch (e) {
+      debugPrint('[FirestoreService] contact_private/$uid unreadable: '
+          '${e.code}');
+      return null;
+    }
+  }
+
+  /// Every hideable value in a write must be a plain value for the projection
+  /// to reason about it — a FieldValue sentinel (arrayUnion, delete…) cannot be
+  /// copied into a snapshot. No caller does that today; this keeps a future one
+  /// on the old path rather than corrupting data.
+  static bool _hasSentinelInPrivateFields(Map<String, dynamic> data) =>
+      data.entries.any((e) {
+        final top = e.key.split('.').first;
+        return (HiddenProfileField.privateKeys.contains(top) ||
+                top == 'privacySettings') &&
+            e.value is FieldValue;
+      });
 
   /// Every profile document currently stored under [userId], newest first.
   ///
@@ -356,11 +486,71 @@ class FirestoreService {
     return DateTime.fromMillisecondsSinceEpoch(0);
   }
 
-  Future<void> updateProfile(String profileId, Map<String, dynamic> data) =>
-      _db.collection(AppConstants.profilesCollection).doc(profileId).update({
-        ...data,
+  /// Updates a profile, keeping hidden fields out of the member-readable
+  /// document.
+  ///
+  /// A write that touches no hideable field (and not the privacy switches) is
+  /// the plain update it always was. Anything else is resolved against the
+  /// member's FULL data — public document plus private copy — so a partial
+  /// write (one horoscope key, say) can never leave the private copy holding a
+  /// fragment, and a switch change re-projects every hideable field at once.
+  Future<void> updateProfile(String profileId, Map<String, dynamic> data) async {
+    final ref = _db.collection(AppConstants.profilesCollection).doc(profileId);
+    Future<void> plainUpdate() =>
+        ref.update({...data, 'updatedAt': FieldValue.serverTimestamp()});
+
+    if (!touchesPrivateProfileFields(data) ||
+        _hasSentinelInPrivateFields(data)) {
+      await plainUpdate();
+      if (data.containsKey('contactPrivacy')) {
+        await _ensureContactPointerFor(profileId);
+      }
+      return;
+    }
+
+    final snap = await ref.get();
+    final publicData = snap.data();
+    final uid = '${publicData?['userId'] ?? ''}'.trim();
+    if (publicData == null || uid.isEmpty) {
+      await plainUpdate(); // surfaces not-found exactly as before
+      return;
+    }
+
+    final privateData = await _readPrivateProfile(uid);
+    final truth = applyProfileWrite(
+        mergePrivateProfileData(publicData, privateData), data);
+    final privacy = ProfilePrivacy.fromMap(truth['privacySettings']);
+
+    // Hideable fields come from the projection (real value or blank); the
+    // legacy photo arrays pass through as written — the projection overrides
+    // them with a blank only while the photo is hidden.
+    final publicPatch = <String, dynamic>{
+      for (final e in data.entries)
+        if (!HiddenProfileField.privateKeys.contains(e.key.split('.').first))
+          e.key: e.value,
+      ...projectPublicPrivateFields(truth, privacy),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    final batch = _db.batch()
+      ..update(ref, publicPatch)
+      ..set(_privateProfileRef(uid), {
+        ...privateSnapshotOf(truth),
+        'userId': uid,
+        'profileId': profileId,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+    if (!await _commitPrivacyBatch(batch)) {
+      await plainUpdate();
+      return;
+    }
+
+    // A change to "Hide Phone Number" moves the numbers too.
+    if (data.containsKey('privacySettings')) {
+      await _reprojectContact(uid,
+          profileId: profileId,
+          hidePhone: ProfilePrivacy.isHidden(privacy, ProfilePrivacy.phone));
+    }
+  }
 
   // ── Test data (dummy profiles) — spec §3 ──────────────────────────────────
   // The admin "Test Data" tool seeds realistic profiles for end-to-end testing
@@ -506,10 +696,130 @@ class FirestoreService {
     return ProfileModel.fromFirestore(snap.docs.first);
   }
 
+  /// LIVE [getApprovedProfileByUserId] — same rule-mirroring filters. Served
+  /// from the local cache first, so re-opening a row is instant.
+  Stream<ProfileModel?> watchApprovedProfileByUserId(String userId) => _db
+      .collection(AppConstants.profilesCollection)
+      .where('userId', isEqualTo: userId)
+      .where('status', isEqualTo: 'approved')
+      .where('isActive', isEqualTo: true)
+      .snapshots()
+      .map((s) => newestProfileOf(s.docs));
+
   Stream<ProfileModel?> watchProfile(String profileId) =>
       _db.collection(AppConstants.profilesCollection).doc(profileId).snapshots().map(
             (doc) => doc.exists ? ProfileModel.fromFirestore(doc) : null,
           );
+
+  // ── FULL profile reads (owner / admin / staff only) ─────────────────────────
+  //
+  // The member-readable document has every hidden field blanked. These reads
+  // lay the private copy back over it. Only call them for a viewer the rules
+  // let read `profile_private` — the owner, an admin, or staff. For anyone else
+  // the private half is simply absent and the result equals the public read.
+
+  ProfileModel _fullOf(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+    Map<String, dynamic>? privateData,
+  ) =>
+      ProfileModel.fromData(
+          doc.id, mergePrivateProfileData(doc.data()!, privateData));
+
+  /// LIVE full profile of [userId] — newest profile document under the uid,
+  /// merged with the private copy.
+  Stream<ProfileModel?> watchFullProfileByUserId(String userId) =>
+      FirestoreSync.combineLatest2<QuerySnapshot<Map<String, dynamic>>,
+          Map<String, dynamic>?, ProfileModel?>(
+        _db
+            .collection(AppConstants.profilesCollection)
+            .where('userId', isEqualTo: userId)
+            .snapshots(),
+        FirestoreSync.optionalDocData(_privateProfileRef(userId),
+            label: 'profile_private/$userId'),
+        (snap, privateData) {
+          if (snap.docs.isEmpty) return null;
+          return newestProfile([
+            for (final d in snap.docs) _fullOf(d, privateData),
+          ]);
+        },
+      );
+
+  Future<ProfileModel?> getFullProfileByUserId(String userId) async {
+    final snap = await _db
+        .collection(AppConstants.profilesCollection)
+        .where('userId', isEqualTo: userId)
+        .get();
+    if (snap.docs.isEmpty) return null;
+    final privateData = await _readPrivateProfile(userId);
+    return newestProfile([for (final d in snap.docs) _fullOf(d, privateData)]);
+  }
+
+  /// LIVE full profile by document id.
+  Stream<ProfileModel?> watchFullProfile(String profileId) async* {
+    final ref = _db.collection(AppConstants.profilesCollection).doc(profileId);
+    final first = await ref.get();
+    final uid = '${first.data()?['userId'] ?? ''}'.trim();
+    if (!first.exists || uid.isEmpty) {
+      yield* watchProfile(profileId);
+      return;
+    }
+    yield* FirestoreSync.combineLatest2<DocumentSnapshot<Map<String, dynamic>>,
+        Map<String, dynamic>?, ProfileModel?>(
+      ref.snapshots(),
+      FirestoreSync.optionalDocData(_privateProfileRef(uid),
+          label: 'profile_private/$uid'),
+      (doc, privateData) => doc.exists ? _fullOf(doc, privateData) : null,
+    );
+  }
+
+  Future<ProfileModel?> getFullProfile(String profileId) async {
+    final doc = await _db
+        .collection(AppConstants.profilesCollection)
+        .doc(profileId)
+        .get();
+    if (!doc.exists) return null;
+    final uid = '${doc.data()?['userId'] ?? ''}';
+    return _fullOf(doc, await _readPrivateProfile(uid));
+  }
+
+  /// Every private profile copy, keyed by uid — admin only. Emits an empty map
+  /// (never an error) when it cannot be read, so the admin lists still load.
+  Stream<Map<String, Map<String, dynamic>>> _watchAllPrivateProfiles() => _db
+      .collection(AppConstants.profilePrivateCollection)
+      .snapshots()
+      .map((s) => {for (final d in s.docs) d.id: d.data()})
+      .transform(StreamTransformer<Map<String, Map<String, dynamic>>,
+          Map<String, Map<String, dynamic>>>.fromHandlers(
+        handleError: (e, st, sink) {
+          debugPrint('[FirestoreService] profile_private list unavailable: $e');
+          sink.add(const {});
+        },
+      ));
+
+  /// [profiles] (a live admin query) with each member's private copy merged.
+  Stream<List<ProfileModel>> _mergeAllPrivate(
+    Query<Map<String, dynamic>> profiles, {
+    required int Function(ProfileModel a, ProfileModel b) sort,
+    required String label,
+  }) =>
+      FirestoreSync.combineLatest2<QuerySnapshot<Map<String, dynamic>>,
+          Map<String, Map<String, dynamic>>, List<ProfileModel>>(
+        profiles.snapshots(),
+        _watchAllPrivateProfiles(),
+        (snap, privates) {
+          final out = <ProfileModel>[];
+          for (final d in snap.docs) {
+            try {
+              final uid = '${d.data()['userId'] ?? ''}';
+              out.add(_fullOf(d, privates[uid]));
+            } catch (e) {
+              debugPrint('[FirestoreSync] $label: skipped ${d.id}: $e');
+            }
+          }
+          out.sort(sort);
+          return out;
+        },
+      );
 
   Future<List<ProfileModel>> searchProfiles({
     required String gender,
@@ -758,15 +1068,310 @@ class FirestoreService {
         label: 'contact',
       );
 
-  /// Creates/updates the caller's own contact details.
-  Future<void> saveContact(String userId, ContactDetails contact) => _db
-      .collection(AppConstants.contactsCollection)
-      .doc(userId)
-      .set({
-        ...contact.toMap(),
-        'userId': userId,
+  /// FULL contact details — the gated record with the private phone numbers
+  /// laid back over it. Owner and admin reads only.
+  Future<ContactDetails?> getFullContact(String userId) async {
+    final doc = await _db
+        .collection(AppConstants.contactsCollection)
+        .doc(userId)
+        .get();
+    final privateData = await _readPrivateContact(userId);
+    if (!doc.exists && privateData == null) return null;
+    return ContactDetails.fromMap(
+        mergePrivateContactData(doc.data() ?? const {}, privateData));
+  }
+
+  /// LIVE [getFullContact].
+  Stream<ContactDetails?> watchFullContact(String userId) =>
+      FirestoreSync.combineLatest2<DocumentSnapshot<Map<String, dynamic>>,
+          Map<String, dynamic>?, ContactDetails?>(
+        _db.collection(AppConstants.contactsCollection).doc(userId).snapshots(),
+        FirestoreSync.optionalDocData(_privateContactRef(userId),
+            label: 'contact_private/$userId'),
+        (doc, privateData) => (!doc.exists && privateData == null)
+            ? null
+            : ContactDetails.fromMap(
+                mergePrivateContactData(doc.data() ?? const {}, privateData)),
+      );
+
+  /// Creates/updates a member's contact details.
+  ///
+  /// The phone numbers are always stored in `contact_private/{uid}`; the
+  /// shareable `contacts/{uid}` record carries them only while "Hide Phone
+  /// Number" is off. The record also carries [profileId] — the pointer the
+  /// security rules follow to the member's Public/Private sharing choice.
+  ///
+  /// [profileId] / [hidePhone] are looked up from the member's profile when
+  /// not supplied.
+  Future<void> saveContact(
+    String userId,
+    ContactDetails contact, {
+    String? profileId,
+    bool? hidePhone,
+  }) async {
+    if (profileId == null || hidePhone == null) {
+      final docs = await _profileDocsFor(userId);
+      if (docs.isNotEmpty) {
+        profileId ??= docs.first.id;
+        hidePhone ??= ProfilePrivacy.isHidden(
+            ProfilePrivacy.fromMap(docs.first.data()['privacySettings']),
+            ProfilePrivacy.phone);
+      }
+    }
+    final values = contact.hasAnyValue ? contact.toMap() : <String, dynamic>{};
+    await _writeContact(userId,
+        values: values,
+        profileId: profileId,
+        hidePhone: hidePhone ?? false);
+  }
+
+  Future<void> _writeContact(
+    String userId, {
+    required Map<String, dynamic> values,
+    required String? profileId,
+    required bool hidePhone,
+  }) async {
+    final split = splitContactWrite(values, hidePhone: hidePhone);
+    final meta = <String, dynamic>{
+      'userId': userId,
+      if ((profileId ?? '').isNotEmpty) 'profileId': profileId,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    final contactRef =
+        _db.collection(AppConstants.contactsCollection).doc(userId);
+    final batch = _db.batch()
+      ..set(contactRef, {...split.public, ...meta}, SetOptions(merge: true));
+    if (split.private.isNotEmpty) {
+      batch.set(
+          _privateContactRef(userId),
+          {
+            ...split.private,
+            'userId': userId,
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true));
+    }
+    if (!await _commitPrivacyBatch(batch)) {
+      await contactRef.set({...values, ...meta}, SetOptions(merge: true));
+    }
+  }
+
+  /// Re-applies "Hide Phone Number" to the stored contact record after the
+  /// switch changed. Best-effort: the profile save that triggered it already
+  /// succeeded.
+  Future<void> _reprojectContact(
+    String userId, {
+    required String profileId,
+    required bool hidePhone,
+  }) async {
+    try {
+      final full = await getFullContact(userId);
+      await _writeContact(userId,
+          values: full?.toMap() ?? const {},
+          profileId: profileId,
+          hidePhone: hidePhone);
+    } catch (e) {
+      debugPrint('[FirestoreService] contact re-projection for $userId '
+          'skipped: $e');
+    }
+  }
+
+  /// Makes sure `contacts/{uid}` points at [profileId], so the rules can find
+  /// the member's contact-sharing choice. Best-effort.
+  Future<void> _ensureContactPointerFor(String profileId) async {
+    try {
+      final doc = await _db
+          .collection(AppConstants.profilesCollection)
+          .doc(profileId)
+          .get();
+      final uid = '${doc.data()?['userId'] ?? ''}'.trim();
+      if (uid.isEmpty) return;
+      await commitWrite(_db
+          .collection(AppConstants.contactsCollection)
+          .doc(uid)
+          .set({'userId': uid, 'profileId': profileId},
+              SetOptions(merge: true)));
+    } catch (e) {
+      debugPrint('[FirestoreService] contact pointer for $profileId '
+          'skipped: $e');
+    }
+  }
+
+  /// Brings ONE member's stored documents in line with their privacy switches
+  /// and repairs the photo mapping — idempotent, and a no-op when everything
+  /// is already right.
+  ///
+  /// Runs for the member themself once per session, and for every member from
+  /// the admin "Repair privacy & photos" action. In order, and never
+  /// destructively:
+  ///
+  ///  1. **Photo mapping.** A profile with no `profilePhotoUrl` whose image is
+  ///     still referenced from a legacy `photos` / `additionalPhotos` array gets
+  ///     it back. [adminRepair] also accepts the member's `users/{uid}.photoUrl`
+  ///     mirror — but only for an upload inside that member's OWN Cloudinary
+  ///     folder, so nobody can be given someone else's picture.
+  ///  2. **Contact record.** Contact details embedded in the public profile by
+  ///     an old build are moved into the gated record (if it is empty), phone
+  ///     numbers are split per "Hide Phone Number", and the `profileId` pointer
+  ///     the rules need is written.
+  ///  3. **Private copy + projection.** The full photo / salary / horoscope go
+  ///     to `profile_private/{uid}` and the public document is blanked for
+  ///     every switch that is on, restored for every switch that is off. One
+  ///     batch, so a blank never lands without its private copy.
+  ///
+  /// Returns what changed, for the admin summary.
+  Future<MemberPrivacyRepair> reconcileMemberPrivacy(
+    String profileId, {
+    bool adminRepair = false,
+  }) async {
+    final ref = _db.collection(AppConstants.profilesCollection).doc(profileId);
+    final snap = await ref.get();
+    final publicData = snap.data();
+    final uid = '${publicData?['userId'] ?? ''}'.trim();
+    if (publicData == null || uid.isEmpty) {
+      return const MemberPrivacyRepair.skipped();
+    }
+    final privateData = await _readPrivateProfile(uid);
+    if (privateData == null && !await _canWritePrivate(uid, profileId)) {
+      // Rules not deployed: blanking public fields would be unsafe.
+      return const MemberPrivacyRepair.skipped();
+    }
+
+    // 1) photo mapping
+    var recovered = legacyProfilePhoto(publicData);
+    if (recovered.isEmpty && adminRepair) {
+      try {
+        final user = await _db
+            .collection(AppConstants.usersCollection)
+            .doc(uid)
+            .get();
+        final mirror = '${user.data()?['photoUrl'] ?? ''}'.trim();
+        if (mirror.isNotEmpty &&
+            !isAuthProviderPhoto(mirror) &&
+            isMemberCloudinaryAsset(mirror, uid)) {
+          recovered = mirror;
+        }
+      } catch (e) {
+        debugPrint('[Reconcile] users/$uid mirror unreadable: $e');
+      }
+    }
+
+    // 2) contact record
+    var contactChanged = false;
+    var contactSafe = false;
+    try {
+      final contactDoc = await _db
+          .collection(AppConstants.contactsCollection)
+          .doc(uid)
+          .get();
+      final contactPrivate = await _readPrivateContact(uid);
+      final stored = mergePrivateContactData(
+          contactDoc.data() ?? const {}, contactPrivate);
+      var truthContact = ContactDetails.fromMap(stored);
+      final embedded = publicData['contact'];
+      if (!truthContact.hasAnyValue && embedded is Map) {
+        truthContact =
+            ContactDetails.fromMap(Map<String, dynamic>.from(embedded));
+      }
+      final hidePhone = ProfilePrivacy.isHidden(
+          ProfilePrivacy.fromMap(publicData['privacySettings']),
+          ProfilePrivacy.phone);
+      final wantPublic = splitContactWrite(
+              truthContact.hasAnyValue ? truthContact.toMap() : {},
+              hidePhone: hidePhone)
+          .public;
+      final current = contactDoc.data() ?? const <String, dynamic>{};
+      final needsWrite = current['profileId'] != profileId ||
+          wantPublic.entries.any((e) => '${current[e.key] ?? ''}' !=
+              '${e.value ?? ''}') ||
+          (hidePhone &&
+              truthContact.hasAnyValue &&
+              contactPrivate == null &&
+              (truthContact.mobileNumber.isNotEmpty ||
+                  (truthContact.whatsappNumber ?? '').isNotEmpty));
+      if (needsWrite) {
+        await _writeContact(uid,
+            values: truthContact.hasAnyValue ? truthContact.toMap() : {},
+            profileId: profileId,
+            hidePhone: hidePhone);
+        contactChanged = true;
+      }
+      contactSafe = true;
+    } catch (e) {
+      debugPrint('[Reconcile] contact record for $uid skipped: $e');
+    }
+
+    // 3) private copy + projection. The embedded contact copy is removed from
+    //    the public profile only once the gated record is known to be safe.
+    final plan = planPrivacyReconcile(
+      publicData: contactSafe
+          ? publicData
+          : (Map<String, dynamic>.of(publicData)..remove('contact')),
+      privateData: privateData,
+      recoveredPhoto: recovered,
+    );
+    if (plan.isNoop) {
+      return MemberPrivacyRepair(
+          changed: contactChanged, recoveredPhoto: false);
+    }
+    final batch = _db.batch();
+    if (plan.privateWrite != null) {
+      batch.set(_privateProfileRef(uid), {
+        ...plan.privateWrite!,
+        'userId': uid,
+        'profileId': profileId,
         'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      });
+    }
+    if (plan.publicUpdate.isNotEmpty) batch.update(ref, plan.publicUpdate);
+    if (!await _commitPrivacyBatch(batch)) {
+      return const MemberPrivacyRepair.skipped();
+    }
+    if (plan.recoveredPhoto.isNotEmpty) {
+      debugPrint('[Reconcile] $uid: photo mapping restored from a legacy '
+          'reference.');
+    }
+    return MemberPrivacyRepair(
+        changed: true, recoveredPhoto: plan.recoveredPhoto.isNotEmpty);
+  }
+
+  /// Probes whether `profile_private/{uid}` accepts writes (rules deployed)
+  /// without changing anything meaningful: it writes only the id fields.
+  Future<bool> _canWritePrivate(String uid, String profileId) async {
+    final batch = _db.batch()
+      ..set(_privateProfileRef(uid), {'userId': uid, 'profileId': profileId},
+          SetOptions(merge: true));
+    return _commitPrivacyBatch(batch);
+  }
+
+  /// ADMIN: runs [reconcileMemberPrivacy] for every profile. Sequential and
+  /// best-effort per member — one failure never stops the rest.
+  Future<PrivacyRepairSummary> repairAllMemberPrivacy() async {
+    final snap =
+        await _db.collection(AppConstants.profilesCollection).limit(5000).get();
+    var changed = 0, photos = 0, skipped = 0, failed = 0;
+    for (final d in snap.docs) {
+      try {
+        final r = await reconcileMemberPrivacy(d.id, adminRepair: true);
+        if (r.skipped) {
+          skipped++;
+        } else if (r.changed) {
+          changed++;
+        }
+        if (r.recoveredPhoto) photos++;
+      } catch (e) {
+        failed++;
+        debugPrint('[Reconcile] ${d.id} failed: $e');
+      }
+    }
+    return PrivacyRepairSummary(
+      total: snap.docs.length,
+      changed: changed,
+      recoveredPhotos: photos,
+      skipped: skipped,
+      failed: failed,
+    );
+  }
 
   // ── Aadhaar verification (gated aadhaar/{userId}) ─────────────────────────
   /// Saves/updates a user's Aadhaar record. A USER save always resets
@@ -1480,12 +2085,17 @@ class FirestoreService {
   // refresh. Defensive per-doc parsing + client-side sort are centralized in
   // [FirestoreSync.collectionStream].
 
-  /// Realtime [getAllUsers] — matrimony users only, newest-first.
+  /// Realtime [getAllUsers] — matrimony members, newest-first.
+  ///
+  /// A member is any account that is not staff, a dedicated admin or a
+  /// wedding-workspace family login. `super_admin` is kept: that account is a
+  /// matrimony member with an admin shortcut, and dropping it hid a real
+  /// profile from the admin panel.
   Stream<List<UserModel>> watchAllUsers({int limit = 300}) =>
       FirestoreSync.collectionStream<UserModel>(
         _db.collection(AppConstants.usersCollection).limit(limit),
         fromDoc: UserModel.fromFirestore,
-        where: (u) => u.role == 'user',
+        where: (u) => !const {'admin', 'astrologer', 'family'}.contains(u.role),
         sort: (a, b) => b.createdAt.compareTo(a.createdAt),
         label: 'allUsers',
       );
@@ -1493,22 +2103,23 @@ class FirestoreService {
   /// Realtime [getAllProfiles] — every profile, newest-first. The limit
   /// bounds runaway reads while keeping the admin dashboard's profile stats
   /// accurate far beyond the visible list size.
-  Stream<List<ProfileModel>> watchAllProfiles({int limit = 1000}) =>
-      FirestoreSync.collectionStream<ProfileModel>(
+  ///
+  /// ADMIN view: each profile carries its private copy (hidden photo, salary,
+  /// horoscope), because member privacy settings never apply to an admin.
+  Stream<List<ProfileModel>> watchAllProfiles({int limit = 5000}) =>
+      _mergeAllPrivate(
         _db.collection(AppConstants.profilesCollection).limit(limit),
-        fromDoc: ProfileModel.fromFirestore,
         sort: (a, b) => b.createdAt.compareTo(a.createdAt),
         label: 'allProfiles',
       );
 
   /// Realtime [getPendingProfiles] — oldest-first (FIFO moderation). Sorted
-  /// client-side to avoid the where + orderBy composite index.
-  Stream<List<ProfileModel>> watchPendingProfiles() =>
-      FirestoreSync.collectionStream<ProfileModel>(
+  /// client-side to avoid the where + orderBy composite index. Admin view, so
+  /// hidden fields are merged back in like [watchAllProfiles].
+  Stream<List<ProfileModel>> watchPendingProfiles() => _mergeAllPrivate(
         _db
             .collection(AppConstants.profilesCollection)
             .where('status', isEqualTo: 'pending'),
-        fromDoc: ProfileModel.fromFirestore,
         sort: (a, b) => a.createdAt.compareTo(b.createdAt),
         label: 'pendingProfiles',
       );
@@ -1662,6 +2273,12 @@ class FirestoreService {
             AppConstants.connectionsCollection, 'uids', uid));
     await step('contacts',
         () => _deleteDocSafe(AppConstants.contactsCollection, uid));
+    // The private halves of the profile and contact record (hidden photo,
+    // salary, horoscope, phone numbers) must not outlive the account either.
+    await step('contact_private',
+        () => _deleteDocSafe(AppConstants.contactPrivateCollection, uid));
+    await step('profile_private',
+        () => _deleteDocSafe(AppConstants.profilePrivateCollection, uid));
     // Sensitive KYC record — must not outlive the account.
     await step('aadhaar',
         () => _deleteDocSafe(AppConstants.aadhaarCollection, uid));

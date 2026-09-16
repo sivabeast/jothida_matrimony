@@ -61,16 +61,30 @@ class UserDetailsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final users = ref.watch(allUsersProvider).valueOrNull ?? const [];
-    UserModel? user;
-    for (final u in users) {
-      if (u.uid == uid) {
-        user = u;
-        break;
-      }
-    }
+    // The account document is read DIRECTLY by uid. It used to be looked up in
+    // the all-users list, so any member outside that (capped, role-filtered)
+    // list left this page on an endless spinner.
+    final userAsync = ref.watch(adminUserByUidProvider(uid));
     // LIVE profile + contact — a member's edit lands here immediately (§6).
-    final profile = ref.watch(adminProfileByUserIdProvider(uid)).valueOrNull;
+    // The FULL profile: hidden photo / salary / horoscope included, because
+    // member privacy settings never restrict the admin.
+    final profileAsync = ref.watch(adminProfileByUserIdProvider(uid));
+    final profile = profileAsync.valueOrNull;
+    UserModel? user = userAsync.valueOrNull;
+    // A profile whose account document is missing is still a member the admin
+    // must be able to open — show it with what the profile knows.
+    if (user == null && !userAsync.isLoading && profile != null) {
+      user = UserModel(
+        uid: uid,
+        displayName: profile.fullName,
+        gender: profile.gender,
+        isProfileComplete: true,
+        createdAt: profile.createdAt,
+        updatedAt: profile.updatedAt,
+      );
+    }
+    final stillLoading = user == null &&
+        (userAsync.isLoading || profileAsync.isLoading);
     final contact = ref.watch(adminContactByUserIdProvider(uid)).valueOrNull;
     final requests =
         ref.watch(_userRequestsProvider(uid)).valueOrNull ?? const [];
@@ -89,8 +103,16 @@ class UserDetailsScreen extends ConsumerWidget {
         ],
       ),
       body: user == null
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? Center(
+              child: stillLoading
+                  ? const CircularProgressIndicator(color: AppColors.primary)
+                  : const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Text(
+                          'This account no longer exists — no account or '
+                          'profile record was found.',
+                          textAlign: TextAlign.center),
+                    ))
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [

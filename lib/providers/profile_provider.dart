@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/dev_config.dart';
 import '../core/constants/app_constants.dart';
 import '../core/services/porutham_match.dart';
+import '../core/utils/location_search.dart' show placeKey;
 import '../models/profile_model.dart';
 import '../services/cloudinary/cloudinary_exception.dart';
 import '../services/firebase/firestore_service.dart' show ProfilePage;
@@ -39,8 +40,12 @@ final myProfileProvider = StreamProvider.autoDispose<ProfileModel?>((ref) {
   // LIVE snapshot stream (was a one-shot get() converted to a stream). Admin
   // edits to the profile document now reach the user app in real time —
   // no stale cache, no re-login needed.
+  //
+  // FULL read: the member's own hidden photo / salary / horoscope live in
+  // `profile_private/{uid}` and are merged back in, so the owner always sees
+  // and edits their real data (core/utils/profile_privacy.dart).
   return scopeToAccount(
-    ref.watch(profileRepositoryProvider).watchProfileByUserId(userId),
+    ref.watch(profileRepositoryProvider).watchFullProfileByUserId(userId),
     userId,
   );
 });
@@ -78,7 +83,13 @@ final profileByIdProvider =
     ref.watch(demoProfilesProvider); // stay reactive
     return Stream.value(ref.read(demoProfilesProvider.notifier).byId(profileId));
   }
-  return ref.watch(profileRepositoryProvider).watchProfile(profileId);
+  // Admins and staff are not subject to member privacy settings: they get the
+  // profile with its private copy merged. Everybody else gets exactly what the
+  // security rules let them read — the document with hidden fields blank.
+  final repo = ref.watch(profileRepositoryProvider);
+  return ref.watch(viewerBypassesPrivacyProvider)
+      ? repo.watchFullProfile(profileId)
+      : repo.watchProfile(profileId);
 });
 
 /// Look up another user's PUBLIC profile by their owner USER id (UID).
@@ -94,16 +105,31 @@ final profileByIdProvider =
 /// read rule's public path so the query is permitted (a userId-only query is
 /// rejected with permission-denied for non-owners). An accepted match is, by
 /// definition, an approved & active profile, so it resolves correctly.
+///
+/// LIVE (a snapshot listener rather than a one-shot get): a re-opened row is
+/// served from Firestore's local cache immediately instead of waiting on a
+/// fresh network round-trip, and a change the other member makes shows up by
+/// itself. Admins, staff and the owner read the FULL profile without the
+/// approved/active restriction — an admin must see pending and suspended
+/// members too, and member privacy settings never apply to them.
 final profileByUserIdProvider =
-    FutureProvider.autoDispose.family<ProfileModel?, String>((ref, userId) {
+    StreamProvider.autoDispose.family<ProfileModel?, String>((ref, userId) {
   if (kBypassAuth) {
     final all = ref.watch(demoProfilesProvider); // stays reactive to the store
     for (final p in all) {
-      if (p.userId == userId) return Future.value(p);
+      if (p.userId == userId) return Stream.value(p);
     }
-    return Future.value(null);
+    return Stream.value(null);
   }
-  return ref.watch(profileRepositoryProvider).getApprovedProfileByUserId(userId);
+  final repo = ref.watch(profileRepositoryProvider);
+  final isOwner = ref.watch(memberUidProvider) == userId;
+  // The unrestricted uid query is only permitted to the owner and admins by
+  // the `profiles` rules; staff read approved profiles like members do (and
+  // reach the private copy through profileByIdProvider).
+  if (isOwner || ref.watch(viewerIsAdminProvider)) {
+    return repo.watchFullProfileByUserId(userId);
+  }
+  return repo.watchApprovedProfileByUserId(userId);
 });
 
 /// Another user's gated contact details, keyed by their USER id.
@@ -111,11 +137,15 @@ final profileByUserIdProvider =
 /// Resolves to the contact only when it is unlocked for the caller (owner /
 /// admin / mutually-accepted connection). Otherwise the underlying Firestore
 /// read is denied and this surfaces as an AsyncError, which the UI renders as
-/// a "locked" state. Returns null in demo mode.
+/// a "locked" state. Returns null in demo mode. The owner and admins get the
+/// phone numbers from the private copy as well.
 final contactByUserIdProvider =
     FutureProvider.autoDispose.family<ContactDetails?, String>((ref, userId) {
   if (kBypassAuth) return Future.value(null);
-  return ref.watch(profileRepositoryProvider).getContact(userId);
+  final repo = ref.watch(profileRepositoryProvider);
+  final full = ref.watch(memberUidProvider) == userId ||
+      ref.watch(viewerIsAdminProvider);
+  return full ? repo.getFullContact(userId) : repo.getContact(userId);
 });
 
 /// LIVE version of [contactByUserIdProvider] — the contact record entered in
@@ -127,7 +157,10 @@ final contactByUserIdProvider =
 final contactStreamByUserIdProvider =
     StreamProvider.autoDispose.family<ContactDetails?, String>((ref, userId) {
   if (kBypassAuth) return Stream.value(null);
-  return ref.watch(profileRepositoryProvider).watchContact(userId);
+  final repo = ref.watch(profileRepositoryProvider);
+  final full = ref.watch(memberUidProvider) == userId ||
+      ref.watch(viewerIsAdminProvider);
+  return full ? repo.watchFullContact(userId) : repo.watchContact(userId);
 });
 
 // Profile creation / editing notifier
@@ -401,7 +434,11 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
           ..remove('isMarried')
           ..remove('reportCount')
           ..remove('viewCount')
-          ..remove('interestCount');
+          ..remove('interestCount')
+          // The wizard's data map never carries the test-data flag, so the
+          // model defaults it to false — writing that would silently turn a
+          // seeded test profile into a "real" one on its first edit.
+          ..remove('isDummy');
         debugPrint('[submitProfile] ▶ updating profile $editProfileId...');
         await repo.updateProfile(editProfileId, map);
         // Keep the gated contact record in sync with the edited details —
@@ -430,6 +467,7 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
               photoUrls.isNotEmpty && existingPhotos.isNotEmpty
                   ? existingPhotos.first
                   : null,
+          hidePhoto: profile.hidesPhoto,
         );
         debugPrint('[submitProfile] ✅ profile updated (id=$profileId)');
       } else {
@@ -450,6 +488,7 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
           name: profile.fullName,
           photoUrl: profile.profilePhotoUrl,
           replacedPhotoUrl: null,
+          hidePhoto: profile.hidesPhoto,
         );
         if (adminCreated) {
           // Admin-created profiles are live immediately — tell the member.
@@ -497,6 +536,7 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
     required String name,
     required String? photoUrl,
     required String? replacedPhotoUrl,
+    bool hidePhoto = false,
   }) async {
     if (userId.isEmpty) return;
     final photo = (photoUrl ?? '').trim();
@@ -508,10 +548,11 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
       debugPrint('[submitProfile] users/$userId photo mirror skipped: $e');
     }
     try {
+      // Other participants read this cache — a hidden photo stays out of it.
       await ref.read(chatServiceProvider).syncParticipantIdentity(
             uid: userId,
             name: name.trim(),
-            photoUrl: photo,
+            photoUrl: hidePhoto ? '' : photo,
           );
     } catch (e) {
       debugPrint('[submitProfile] chat identity sync skipped: $e');
@@ -666,15 +707,24 @@ class MatchFilters {
   static bool _eq(String a, String? b) =>
       b == null || b.trim().isEmpty || a.trim().toLowerCase() == b.trim().toLowerCase();
 
+  /// Location equality that tolerates transliteration spellings ("Viluppuram"
+  /// = "Villupuram", "Kancheepuram" = "Kanchipuram"), so a location filter
+  /// finds every profile stored under the same place (spec §35).
+  static bool _placeEq(String a, String? b) {
+    if (_eq(a, b)) return true;
+    final ka = placeKey(a), kb = placeKey(b ?? '');
+    return ka.isNotEmpty && ka == kb;
+  }
+
   /// Whether [p] passes every SET filter. [me] is accepted for signature
   /// compatibility with callers but no longer needed (the porutham-grade
   /// filter was removed with the rating system).
   bool matches(ProfileModel p, ProfileModel? me) {
     if (minAge != null && p.age < minAge!) return false;
     if (maxAge != null && p.age > maxAge!) return false;
-    if (!_eq(p.state, state)) return false;
-    if (!_eq(p.district, district)) return false;
-    if (!_eq(p.city, city)) return false;
+    if (!_placeEq(p.state, state)) return false;
+    if (!_placeEq(p.district, district)) return false;
+    if (!_placeEq(p.city, city)) return false;
     if (!_eq(p.religion, religion)) return false;
     if (!_eq(p.caste ?? '', caste)) return false;
     if (!_eq(p.education, education)) return false;
@@ -1189,9 +1239,12 @@ class DiscoverNotifier extends Notifier<DiscoverState> {
       final pool = <ProfileModel>[];
       var hasMore = true;
       for (var i = 0; i < _kMaxAutoPages && hasMore; i++) {
+        // The FIRST page asks for the whole ranking pool at once: it used to
+        // take three sequential 20-document round-trips to reach 60, which is
+        // most of the time Matches spent on its spinner.
         final ProfilePage page = await repo.searchProfilesPage(
           gender: _gender,
-          limit: _kDiscoverPageSize,
+          limit: i == 0 ? 60 : _kDiscoverPageSize,
           startAfter: _lastDoc,
         );
         _lastDoc = page.lastDoc;

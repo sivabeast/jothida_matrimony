@@ -11,6 +11,9 @@ import '../../providers/announcement_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../providers/profile_provider.dart';
+import '../../providers/service_providers.dart';
+import '../../core/config/dev_config.dart';
 import '../../widgets/common/app_drawer.dart';
 import '../interests/interests_center_screen.dart';
 import 'tabs/astrology_service_page.dart';
@@ -29,6 +32,9 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  /// Profile ids already reconciled this app session.
+  static final Set<String> _privacyReconciled = <String>{};
+
   // Tab index → widget. Order matches the spec bottom navigation:
   // Home · Matches · Interests · Reports · Astrology. Chat moved to the Home
   // header (icon + unread badge); Profile lives in the header Drawer.
@@ -55,6 +61,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final threads = next.valueOrNull;
       if (threads != null && threads.isNotEmpty) {
         ref.read(chatControllerProvider).markDelivered(threads);
+      }
+    });
+    // Once per session per profile: bring the member's stored documents in
+    // line with their privacy switches (hidden values moved out of the
+    // member-readable documents) and restore a photo that is still referenced
+    // only from a legacy field. Idempotent and silent; see
+    // FirestoreService.reconcileMemberPrivacy.
+    ref.listen(myProfileProvider, (_, next) {
+      final profile = next.valueOrNull;
+      if (kBypassAuth || profile == null) return;
+      if (!_privacyReconciled.add(profile.id)) return;
+      try {
+        ref
+            .read(profileRepositoryProvider)
+            .reconcileMemberPrivacy(profile.id)
+            .then((_) {}, onError: (Object e) {
+          debugPrint('[Home] privacy reconcile skipped: $e');
+        });
+      } catch (e) {
+        debugPrint('[Home] privacy reconcile unavailable: $e');
       }
     });
     // Admin icon visibility. Gated on `isAdmin` (admin OR super_admin, with the

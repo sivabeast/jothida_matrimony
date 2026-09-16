@@ -1864,5 +1864,8 @@
   "marriedStatusCardMarriedBody": "Your profile is marked as Married and has left matchmaking.",
   "horoscopeRequestSubmitted": "Horoscope Request Submitted",
   "horoscopeRequestStatusLine": "Status: Pending",
-  "paidButReportNotSavedRetry": "Your payment went through but the report request could not be saved. Tap Pay again — you will not be charged twice."
+  "paidButReportNotSavedRetry": "Your payment went through but the report request could not be saved. Tap Pay again — you will not be charged twice.",
+  "nearestTownHint": "Your exact locality isn't listed. Choose the nearest main town:",
+  "locationsLoadFailed": "Locations could not be loaded.",
+  "placeWithStateHint": "Outside Tamil Nadu? Type the place with its state, e.g. \"Kochi, Kerala\"."
 }

@@ -290,12 +290,9 @@ class InterestNotifier extends Notifier<AsyncValue<void>> {
         final other = await ref.read(profileByUserIdProvider(otherUid).future);
         final name = other?.fullName.trim() ?? '';
         if (name.isNotEmpty) otherName = name;
-        final photoUrl = other?.profilePhotoUrl ?? '';
-        otherPhoto = photoUrl.isNotEmpty
-            ? photoUrl
-            : (other != null && other.photos.isNotEmpty
-                ? other.photos.first
-                : '');
+        // Stored on the shared thread the other member reads — honour their
+        // "Hide Profile Photo" switch (an admin viewer may hold the real URL).
+        otherPhoto = other?.sharedPhotoUrl ?? '';
       } catch (e) {
         debugPrint('[InterestNotifier] accepted-chat: profile lookup for '
             '$otherUid failed ($e) — using fallback name');

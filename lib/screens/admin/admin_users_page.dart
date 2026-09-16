@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/admin_member_rows.dart';
 import '../../core/utils/matrimony_photo.dart';
 import '../../core/utils/profile_status.dart';
 import '../../core/utils/profile_completion.dart';
@@ -17,6 +18,7 @@ import '../../models/user_model.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/data_states.dart';
+import '../../widgets/common/network_photo.dart' show cachedPhotoProvider;
 
 /// Admin → Users. Manages MATRIMONY USERS only.
 ///
@@ -605,7 +607,10 @@ class _UsersTabState extends ConsumerState<_UsersTab>
     final profiles =
         profilesAsync.valueOrNull ?? const <String, ProfileModel>{};
 
-    final all = usersAsync.valueOrNull ?? const <UserModel>[];
+    // Every member: account documents plus profiles whose account document
+    // is missing (they used to be invisible here).
+    final all = adminMemberRows(
+        usersAsync.valueOrNull ?? const <UserModel>[], profiles);
     final cutoff = DateTime.now().subtract(const Duration(days: 7));
 
     // The users↔profiles join drives the tabs (Incomplete = no joined
@@ -1046,7 +1051,10 @@ class _UserCard extends ConsumerWidget {
           CircleAvatar(
             radius: 24,
             backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-            backgroundImage: photo != null ? NetworkImage(photo) : null,
+            // Cached + display-sized: a bare NetworkImage re-downloaded every
+            // member's full-resolution original on each scroll of this list.
+            backgroundImage:
+                photo != null ? cachedPhotoProvider(photo, logicalSize: 48) : null,
             child: photo == null
                 ? Text(_name.isNotEmpty ? _name[0].toUpperCase() : '?',
                     style: const TextStyle(

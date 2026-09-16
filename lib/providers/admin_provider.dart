@@ -30,8 +30,12 @@ final allAstrologersProvider =
 /// Realtime list of every matrimony user (newest first). A StreamProvider, so
 /// the admin Users list re-renders the instant a user is added / edited /
 /// blocked / deleted — no manual refresh, no stale rows (spec §1-3).
+///
+/// Was capped at 300 UNORDERED documents with staff and admin accounts counted
+/// inside that cap, so once the collection grew past it members silently fell
+/// off the admin panel. The cap is now a runaway guard, not a page size.
 final allUsersProvider = StreamProvider.autoDispose<List<UserModel>>(
-    (ref) => ref.read(adminRepositoryProvider).watchAllUsers(limit: 300));
+    (ref) => ref.read(adminRepositoryProvider).watchAllUsers(limit: 5000));
 
 /// LIVE stream of one member's full profile, for the admin User Details page
 /// (§6).
@@ -42,20 +46,32 @@ final allUsersProvider = StreamProvider.autoDispose<List<UserModel>>(
 /// read every profile, including pending / suspended ones. Because it is a
 /// snapshot stream, an edit the member makes in the app shows up in the admin
 /// panel immediately, with no refresh.
+///
+/// ADMIN BYPASS: the member's private copy is merged in, so a hidden photo,
+/// salary or horoscope is still shown here. The member's privacy settings are
+/// untouched — they govern what OTHER MEMBERS can read, never the admin.
 final adminProfileByUserIdProvider =
     StreamProvider.autoDispose.family<ProfileModel?, String>((ref, uid) =>
-        ref.read(profileRepositoryProvider).watchProfileByUserId(uid));
+        ref.read(profileRepositoryProvider).watchFullProfileByUserId(uid));
 
 /// The member's gated contact record, readable by admins (§6 — "show complete
-/// profile information"). Returns null when it hasn't been created yet.
+/// profile information"), phone numbers included even when the member hides
+/// them. Returns null when it hasn't been created yet.
 final adminContactByUserIdProvider =
     FutureProvider.autoDispose.family<ContactDetails?, String>((ref, uid) async {
   try {
-    return await ref.read(profileRepositoryProvider).getContact(uid);
+    return await ref.read(profileRepositoryProvider).getFullContact(uid);
   } catch (_) {
     return null; // not created yet / rules not deployed — show the rest
   }
 });
+
+/// One account document, live — the admin User Details page reads it directly
+/// instead of searching the (bounded) all-users list, which is what left the
+/// page spinning forever for any member outside that list.
+final adminUserByUidProvider =
+    StreamProvider.autoDispose.family<UserModel?, String>((ref, uid) =>
+        ref.read(firestoreServiceProvider).watchUser(uid));
 
 /// Live stream of EVERY astrologer request document — report requests AND
 /// appointment bookings. Only cross-cutting screens (payments, per-user
@@ -98,10 +114,18 @@ final allProfilesProvider = StreamProvider.autoDispose<List<ProfileModel>>(
 
 /// `userId → ProfileModel` lookup for quickly enriching a user row with its
 /// matrimony profile (age, district, photo).
+///
+/// The list is newest-first, so the FIRST profile seen for a uid is kept —
+/// the old map literal let each later (older) entry overwrite it, which
+/// served a stale duplicate profile over the current one.
 final profilesByUserIdProvider =
     FutureProvider.autoDispose<Map<String, ProfileModel>>((ref) async {
   final list = await ref.watch(allProfilesProvider.future);
-  return {for (final p in list) p.userId: p};
+  final byUid = <String, ProfileModel>{};
+  for (final p in list) {
+    byUid.putIfAbsent(p.userId, () => p);
+  }
+  return byUid;
 });
 
 /// Realtime pending-moderation queue (oldest first) — a newly submitted or

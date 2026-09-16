@@ -103,9 +103,10 @@ Future<void> syncProfileIdentity(
     }
   }
   try {
-    final updated = await ref
-        .read(chatServiceProvider)
-        .syncParticipantIdentity(uid: uid, name: name, photoUrl: photo);
+    // The thread cache is read by the OTHER participant, so it carries the
+    // photo only while the member is not hiding it.
+    final updated = await ref.read(chatServiceProvider).syncParticipantIdentity(
+        uid: uid, name: name, photoUrl: after.sharedPhotoUrl);
     debugPrint('[ProfileIdentity] $uid: refreshed $updated chat thread(s).');
   } catch (e) {
     debugPrint('[ProfileIdentity] chat identity sync skipped: $e');

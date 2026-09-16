@@ -345,7 +345,7 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         CircleAvatar(
           radius: 20,
           backgroundColor: Colors.white24,
-          backgroundImage: cachedPhotoProvider(photo),
+          backgroundImage: cachedPhotoProvider(photo, logicalSize: 44),
           child: photo.isEmpty
               ? Text(firstName.isNotEmpty ? firstName[0].toUpperCase() : '?',
                   style: const TextStyle(

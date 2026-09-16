@@ -66,6 +66,13 @@ class _ContactDetailsDialogState extends ConsumerState<_ContactDetailsDialog> {
   ///     also written back so every future viewer reads it normally.
   Future<ContactDetails?> _load() async {
     final repo = ref.read(profileRepositoryProvider);
+    // The owner and admins read the FULL record — phone numbers are kept in
+    // the private copy while "Hide Phone Number" is on. Everyone else reads
+    // only the shareable record, which carries them blank.
+    if (_isOwner || ref.read(viewerIsAdminProvider)) {
+      final full = await repo.getFullContact(widget.profile.userId);
+      if (full != null && full.hasAnyValue) return full;
+    }
     ContactDetails? stored;
     try {
       stored = await repo.getContact(widget.profile.userId);
@@ -119,8 +126,13 @@ class _ContactDetailsDialogState extends ConsumerState<_ContactDetailsDialog> {
     // popup, which used to swallow a member's e-mail and contact person too —
     // details they never asked to hide. If the switch leaves nothing to show,
     // [_contactBody] falls back to the hidden-by-owner message.
-    final hidePhoneNumbers = !_isOwner && profile.hidesPhone;
-    final allowed = _isOwner || accepted || profile.isContactPublic;
+    //
+    // ADMIN BYPASS: an admin is never restricted by member privacy or contact
+    // sharing — both only govern what other MEMBERS may see.
+    final isAdmin = ref.watch(viewerIsAdminProvider);
+    final hidePhoneNumbers = !_isOwner && !isAdmin && profile.hidesPhone;
+    final allowed =
+        _isOwner || isAdmin || accepted || profile.isContactPublic;
 
     Widget body;
     if (!allowed) {

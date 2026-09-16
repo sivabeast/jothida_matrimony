@@ -94,6 +94,31 @@ final currentUserProvider = FutureProvider<UserModel?>((ref) async {
   return model;
 });
 
+/// True when the signed-in account is exempt from member privacy settings:
+/// an ADMIN (admin / super_admin), or STAFF handling horoscope reports.
+///
+/// Such a viewer reads profiles with the private copy merged back in, so a
+/// hidden photo, salary, horoscope or phone number is still visible to them.
+/// This only decides what the app ASKS for — whether the private documents are
+/// actually readable is decided by the `profile_private` / `contact_private`
+/// security rules, which key off the same server-side `role`. The member's
+/// stored privacy settings are never touched.
+///
+/// Uses `select`, so ordinary user-document refreshes (last login, FCM token)
+/// do not re-run every provider that depends on this.
+final viewerBypassesPrivacyProvider = Provider<bool>((ref) {
+  return ref.watch(currentUserProvider.select((u) {
+    final user = u.valueOrNull;
+    return user != null && (user.isAdmin || user.isAstrologer);
+  }));
+});
+
+/// Admin only (not staff) — the contact numbers stay admin-only.
+final viewerIsAdminProvider = Provider<bool>((ref) {
+  return ref.watch(
+      currentUserProvider.select((u) => u.valueOrNull?.isAdmin ?? false));
+});
+
 // Auth state notifier
 class AuthNotifier extends AsyncNotifier<UserModel?> {
   @override

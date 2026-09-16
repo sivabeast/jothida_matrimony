@@ -250,14 +250,26 @@ final chatThreadProvider =
   return ref.read(chatServiceProvider).watchThread(threadId);
 });
 
+/// How many of the newest messages of a thread are loaded. Starts at one page
+/// and grows when the member scrolls up to the oldest loaded message.
+const int kChatMessagePage = 50;
+
+final chatMessageLimitProvider =
+    StateProvider.autoDispose.family<int, String>((ref, _) => kChatMessagePage);
+
 /// Messages newest-first (UI renders the list reversed).
+///
+/// ONE listener per open conversation: it is keyed by thread id, disposed when
+/// the chat closes (autoDispose), and only replaced when the page size grows.
+/// Typing, sending and rebuilding never create another one.
 final chatMessagesProvider = StreamProvider.autoDispose
     .family<List<ChatMessage>, String>((ref, threadId) {
   if (kBypassAuth) {
     return Stream.value(
         ref.watch(demoChatProvider).messages[threadId] ?? const []);
   }
-  return ref.read(chatServiceProvider).watchMessages(threadId);
+  final limit = ref.watch(chatMessageLimitProvider(threadId));
+  return ref.read(chatServiceProvider).watchMessages(threadId, limit: limit);
 });
 
 /// Imperative chat actions shared by screens.
@@ -277,7 +289,9 @@ class ChatController {
     final myName = myProfile?.fullName ??
         _ref.read(currentUserProvider).valueOrNull?.displayName ??
         'Me';
-    final myPhoto = myProfile?.profilePhotoUrl ?? '';
+    // Written into the shared thread document, which the other member reads:
+    // it must honour MY "Hide Profile Photo" switch.
+    final myPhoto = myProfile?.sharedPhotoUrl ?? '';
 
     if (kBypassAuth) {
       return _ref.read(demoChatProvider.notifier).openThread(
@@ -339,9 +353,10 @@ class ChatController {
   }
 
   Future<void> sendMessage(String threadId, String text,
-      {String? messageId}) async {
+      {String? messageId, String? otherUid}) async {
     final myUid = _ref.read(myUidProvider);
-    if (myUid == null || text.trim().isEmpty) return;
+    if (myUid == null) throw StateError('Not signed in');
+    if (text.trim().isEmpty) return;
     if (kBypassAuth) {
       _ref
           .read(demoChatProvider.notifier)
@@ -352,8 +367,16 @@ class ChatController {
         threadId: threadId,
         senderId: myUid,
         text: text.trim(),
-        messageId: messageId);
+        messageId: messageId,
+        otherUid: otherUid);
   }
+
+  /// A message id generated locally, before anything is written — so the
+  /// screen can show the message immediately and recognise it when the stored
+  /// copy arrives.
+  String newMessageId(String threadId) => kBypassAuth
+      ? 'local_${DateTime.now().microsecondsSinceEpoch}'
+      : _ref.read(chatServiceProvider).newMessageId(threadId);
 
   /// Uploads [file] (image / pdf / document) to the thread's storage folder and
   /// sends it as an attachment message. The Cloudinary URL is real even in demo

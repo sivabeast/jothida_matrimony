@@ -177,7 +177,12 @@ class ChatMessage {
     this.fileName = '',
     this.fileType = '',
     this.isPending = false,
+    this.isFailed = false,
   });
+
+  /// A LOCAL outgoing message whose write failed or timed out — shown with a
+  /// retry action, never as an endless "Sending…". Never stored.
+  final bool isFailed;
 
   bool get isAttachment => type != ChatMessageType.text;
   bool get isImage => type == ChatMessageType.image;

@@ -55,7 +55,11 @@ class _EditableProfilePhotoState extends ConsumerState<EditableProfilePhoto> {
           patch: {
             'profilePhotoUrl': url,
             // Multi-photo support is gone — clear any legacy extras (§1).
+            // Both legacy arrays: the app still READS an image out of them for
+            // a profile with no `profilePhotoUrl`, so a removed photo left in
+            // one would come back.
             'additionalPhotos': <String>[],
+            'photos': <String>[],
           },
         );
     if (!kBypassAuth) ref.invalidate(currentUserProvider);

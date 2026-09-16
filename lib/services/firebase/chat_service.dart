@@ -218,7 +218,11 @@ class ChatService {
   /// Messages newest-first. `includeMetadataChanges` so an optimistic local
   /// write emits immediately with `hasPendingWrites` (→ "Sending…") and again
   /// once the server acknowledges it (→ "Sent").
-  Stream<List<ChatMessage>> watchMessages(String threadId, {int limit = 100}) =>
+  ///
+  /// [limit] is the newest N messages — the chat screen starts with a page and
+  /// raises it when the member scrolls to the oldest loaded message, so a long
+  /// history is never downloaded in full just to open the conversation.
+  Stream<List<ChatMessage>> watchMessages(String threadId, {int limit = 50}) =>
       _chats
           .doc(threadId)
           .collection(AppConstants.messagesSubcollection)
@@ -236,6 +240,23 @@ class ChatService {
   /// accepted-interest greeting ('greeting_&lt;threadId&gt;') so the client and the
   /// interest-accepted Cloud Function can both try to post it without ever
   /// producing two greeting bubbles.
+  ///
+  /// ROOT CAUSE of "Send keeps spinning": this used to run inside
+  /// `runTransaction`, only to READ the thread for the other participant's id.
+  /// A transaction never touches the local cache — it needs a live server
+  /// round-trip, retries on contention (both members typing) and only gives up
+  /// after its ~30 s timeout. So the message did not appear, the send button
+  /// spun, and on a weak network the whole thing failed. The "Sending…" state
+  /// driven by `hasPendingWrites` could never show, because a transaction
+  /// produces no pending local write.
+  ///
+  /// It is now ONE atomic batch: the message and the thread preview commit
+  /// together, the batch is applied to the local cache immediately (the
+  /// message is on screen at once, marked Sending), and the returned future
+  /// completes on the server ack. [otherUid] is supplied by the caller, which
+  /// already holds the thread; without it the thread is read from the local
+  /// cache first. Re-sending with the same [messageId] rewrites the same
+  /// document, so a retry can never create a duplicate message.
   Future<void> sendMessage({
     required String threadId,
     required String senderId,
@@ -245,6 +266,7 @@ class ChatService {
     String fileName = '',
     String fileType = '',
     String? messageId,
+    String? otherUid,
   }) async {
     final threadRef = _chats.doc(threadId);
     final messages = threadRef.collection(AppConstants.messagesSubcollection);
@@ -252,14 +274,12 @@ class ChatService {
         ? messages.doc()
         : messages.doc(messageId);
     final preview = chatPreviewFor(type: type, text: text, fileName: fileName);
+    final otherId = (otherUid ?? '').trim().isNotEmpty
+        ? otherUid!.trim()
+        : await _otherParticipant(threadRef, senderId);
 
-    await _db.runTransaction((txn) async {
-      final thread = await txn.get(threadRef);
-      final participants =
-          List<String>.from(thread.data()?['participantIds'] ?? const []);
-      final otherId = participants.firstWhere((id) => id != senderId,
-          orElse: () => senderId);
-      txn.set(msgRef, {
+    final batch = _db.batch()
+      ..set(msgRef, {
         'senderId': senderId,
         'text': text,
         'sentAt': FieldValue.serverTimestamp(),
@@ -267,14 +287,44 @@ class ChatService {
         if (attachmentUrl.isNotEmpty) 'attachmentUrl': attachmentUrl,
         if (fileName.isNotEmpty) 'fileName': fileName,
         if (fileType.isNotEmpty) 'fileType': fileType,
-      });
-      txn.update(threadRef, {
+      })
+      ..update(threadRef, {
         'lastMessage': preview,
         'lastSenderId': senderId,
         'lastMessageAt': FieldValue.serverTimestamp(),
-        'unread.$otherId': FieldValue.increment(1),
+        if (otherId.isNotEmpty && otherId != senderId)
+          'unread.$otherId': FieldValue.increment(1),
       });
-    });
+    await batch.commit();
+  }
+
+  /// A new message document id, generated locally (no network). Lets the UI
+  /// show the message before the write and match it to the stored one after.
+  String newMessageId(String threadId) => _chats
+      .doc(threadId)
+      .collection(AppConstants.messagesSubcollection)
+      .doc()
+      .id;
+
+  /// The other participant of [threadRef], cache first.
+  Future<String> _otherParticipant(
+      DocumentReference<Map<String, dynamic>> threadRef, String me) async {
+    DocumentSnapshot<Map<String, dynamic>>? snap;
+    try {
+      snap = await threadRef.get(const GetOptions(source: Source.cache));
+    } catch (_) {
+      snap = null;
+    }
+    if (snap == null || !snap.exists) {
+      try {
+        snap = await threadRef.get();
+      } catch (e) {
+        debugPrint('[ChatService] thread read for unread count failed: $e');
+        return '';
+      }
+    }
+    final ids = List<String>.from(snap.data()?['participantIds'] ?? const []);
+    return ids.firstWhere((id) => id != me, orElse: () => '');
   }
 
   /// Clears [uid]'s unread count AND stamps their read receipt — a message of

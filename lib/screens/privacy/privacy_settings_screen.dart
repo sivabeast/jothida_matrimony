@@ -7,6 +7,7 @@ import '../../models/profile_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/profile/contact_sharing_selector.dart';
 
 /// Privacy Settings — exactly FOUR switches (§15/§16):
 /// Hide Phone Number · Hide Salary · Hide Horoscope Details · Hide Profile
@@ -48,9 +49,27 @@ class _PrivacyState extends ConsumerState<PrivacySettingsScreen> {
     setState(() => _saving = true);
     final settings = _effective(profile);
     try {
+      // Server-side enforcement: the service moves every newly-hidden value
+      // into the member's private documents and blanks it on the documents
+      // other members can read (and restores it when a switch is turned off).
+      // The switches themselves are stored exactly as chosen.
       await commitWrite(ref
           .read(firestoreServiceProvider)
-          .updateProfile(profile.id, {'privacySettings': settings}));
+          .updateProfile(profile.id, {'privacySettings': settings}),
+          timeout: const Duration(seconds: 20));
+      // Chat threads cache each participant's photo for the other member to
+      // read — a hidden photo must leave that cache too.
+      final hidesPhoto =
+          ProfilePrivacy.isHidden(settings, ProfilePrivacy.photo);
+      if (hidesPhoto != profile.hidesPhoto) {
+        try {
+          await ref.read(chatServiceProvider).syncParticipantIdentity(
+                uid: profile.userId,
+                name: profile.fullName,
+                photoUrl: hidesPhoto ? '' : (profile.profilePhotoUrl ?? ''),
+              );
+        } catch (_) {/* cache only — the profile is already saved */}
+      }
       // Mirror onto the account document so the admin panel / website read the
       // same values. Best-effort: the profile document is the source of truth.
       final uid = ref.read(firebaseAuthStreamProvider).valueOrNull?.uid;
@@ -79,12 +98,22 @@ class _PrivacyState extends ConsumerState<PrivacySettingsScreen> {
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(m)));
 
-  /// Flips the contact-sharing preference (§17) on the user's profile doc.
+  /// Sets contact sharing to PUBLIC or PRIVATE on the user's profile doc.
+  ///
+  ///  * PUBLIC  — chat and contact details open without an interest.
+  ///  * PRIVATE — an interest must be sent AND accepted first.
+  ///
+  /// Either way the field switches above still apply: a hidden phone number
+  /// stays hidden. The security rules read this same value (through the
+  /// `contacts/{uid}.profileId` pointer the service maintains), so the choice
+  /// is enforced server-side, not just in the UI.
   Future<void> _setContactPrivacy(String profileId, bool public) async {
     final l10n = context.l10n;
     try {
       await commitWrite(ref.read(firestoreServiceProvider).updateProfile(
-          profileId, {'contactPrivacy': public ? 'public' : 'private'}));
+          profileId, {
+        'contactPrivacy': public ? ContactSharing.public : ContactSharing.private
+      }));
       if (mounted) {
         _snack(public ? l10n.contactPublicNote : l10n.contactPrivateNote);
       }
@@ -171,31 +200,32 @@ class _PrivacyState extends ConsumerState<PrivacySettingsScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          // ── Contact sharing (§17) — Public vs Private, changeable any time.
+          // ── Contact sharing — an explicit PUBLIC / PRIVATE choice, the same
+          // two cards as the profile wizard's Contact step. Saved on tap.
           Card(
             margin: EdgeInsets.zero,
-            child: SwitchListTile(
-              secondary: Icon(
-                (profile?.isContactPublic ?? false)
-                    ? Icons.public
-                    : Icons.lock_outline,
-                color: AppColors.primary,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(l10n.contactSharingQuestion,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 15)),
+                  const SizedBox(height: 10),
+                  ContactSharingSelector(
+                    value: (profile?.isContactPublic ?? false)
+                        ? ContactSharing.public
+                        : ContactSharing.private,
+                    onChanged: profile == null
+                        ? null
+                        : (v) => _setContactPrivacy(
+                            profile.id, v == ContactSharing.public),
+                  ),
+                ],
               ),
-              title: Text(l10n.shareContactPublicly,
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text(
-                (profile?.isContactPublic ?? false)
-                    ? l10n.contactPublicNote
-                    : l10n.contactPrivateNote,
-                style: const TextStyle(fontSize: 12),
-              ),
-              value: profile?.isContactPublic ?? false,
-              onChanged: profile == null
-                  ? null
-                  : (v) => _setContactPrivacy(profile.id, v),
-              activeColor: AppColors.primary,
-              shape:
-                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ],

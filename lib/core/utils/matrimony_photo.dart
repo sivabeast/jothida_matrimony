@@ -46,3 +46,37 @@ String matrimonyPhotoUrl(String? profilePhotoUrl, [String? accountPhotoUrl]) {
   if (a.isNotEmpty && !isAuthProviderPhoto(a)) return a;
   return '';
 }
+
+/// True when [url] is an upload inside [uid]'s OWN Cloudinary folder
+/// (`jothida_matrimony/profiles/{uid}/…`) — the deterministic user ↔ asset
+/// mapping every profile upload uses. A recovered photo must pass this, so a
+/// repair can never attach another member's image to a profile.
+bool isMemberCloudinaryAsset(String? url, String uid) {
+  final u = (url ?? '').trim();
+  if (u.isEmpty || uid.trim().isEmpty) return false;
+  return u.contains('res.cloudinary.com') &&
+      u.contains('/jothida_matrimony/profiles/${uid.trim()}/');
+}
+
+/// The photo a LEGACY profile document still references outside
+/// `profilePhotoUrl`, or `''`.
+///
+/// Before one-photo-per-member, a profile carried `profilePhotoUrl` plus an
+/// `additionalPhotos` list, and an older edit path wrote a `photos` array. A
+/// document whose `profilePhotoUrl` was never set (or was blanked) but still
+/// lists an uploaded image in one of those arrays displayed that image under the
+/// old model — and showed NOTHING after the model switched to reading
+/// `profilePhotoUrl` only, although the Cloudinary asset was still there. This
+/// is the read-side recovery of that mapping; `reconcileMemberPrivacy` writes it
+/// back into `profilePhotoUrl`.
+String legacyProfilePhoto(Map<String, dynamic> data) {
+  for (final key in const ['photos', 'additionalPhotos']) {
+    final list = data[key];
+    if (list is! List) continue;
+    for (final entry in list) {
+      final url = entry is String ? entry.trim() : '';
+      if (url.isNotEmpty && !isAuthProviderPhoto(url)) return url;
+    }
+  }
+  return '';
+}

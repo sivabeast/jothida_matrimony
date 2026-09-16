@@ -92,6 +92,10 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   late int _currentStep = widget.sectionStep?.clamp(0, _totalSteps - 1) ?? 0;
   bool _ready = false; // draft/profile loaded → safe to build steps that prefill
 
+  /// EDIT mode only: the existing profile could not be loaded, so the form
+  /// must not be offered — saving it would blank the stored data.
+  bool _prefillFailed = false;
+
   /// True while the member's Firebase Auth account is being created (admin
   /// mode). Keeps the app-bar spinner up across that step too.
   bool _provisioning = false;
@@ -148,11 +152,17 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
       // never leak values into this one.
       ref.read(profileCreationProvider.notifier).reset();
       if (_isEditMode) {
+        _prefillFailed = false;
         try {
+          // The FULL profile — a hidden photo / salary / horoscope lives in
+          // the private copy, and seeding the wizard without it would save
+          // blanks over the member's real values.
           final profile = await ref
               .read(profileRepositoryProvider)
-              .getProfile(widget.editProfileId!);
-          if (profile != null) {
+              .getFullProfile(widget.editProfileId!);
+          if (profile == null) {
+            _prefillFailed = true;
+          } else {
             ref
                 .read(profileCreationProvider.notifier)
                 .updateData(profile.toWizardData());
@@ -162,7 +172,7 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
             try {
               final contact = await ref
                   .read(firestoreServiceProvider)
-                  .getContact(profile.userId);
+                  .getFullContact(profile.userId);
               if (contact != null) {
                 ref.read(profileCreationProvider.notifier).updateData({
                   'contactDetails': contact.toMap(),
@@ -173,7 +183,13 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
             }
           }
         } catch (e) {
+          // FAIL CLOSED. An edit saves the WHOLE profile, so continuing with an
+          // empty form would overwrite the stored photo and horoscope document
+          // URLs with blanks — the uploads stay in Cloudinary but the profile
+          // loses every reference to them. The form is not shown until the
+          // current profile has actually loaded.
           debugPrint('[ProfileCreation] edit prefill failed: $e');
+          _prefillFailed = true;
         }
       } else if (!_isAdminMode) {
         // Admin mode always starts blank: the admin's OWN abandoned draft must
@@ -388,6 +404,9 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   }
 
   Future<void> _submitProfile() async {
+    // Never save an edit whose current values were not loaded (see
+    // [_prefillFailed]).
+    if (_isEditMode && _prefillFailed) return;
     if (_isAdminMode) {
       await _submitAsAdmin();
       return;
@@ -522,6 +541,29 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
       body: !_ready
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary))
+          : (_isEditMode && _prefillFailed)
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(context.l10n.couldNotLoadProfileRetry,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.grey)),
+                        const SizedBox(height: 16),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            setState(() => _ready = false);
+                            _prepareThenReady();
+                          },
+                          icon: const Icon(Icons.refresh),
+                          label: Text(context.l10n.tryAgain),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
           : _isSectionMode
               // Single-section editor: just the one step, no progress chrome.
               ? steps[_currentStep]

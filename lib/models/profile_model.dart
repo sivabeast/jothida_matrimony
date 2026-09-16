@@ -333,10 +333,16 @@ class ProfileModel {
     this.isDummy = false,
   });
 
-  factory ProfileModel.fromFirestore(DocumentSnapshot doc) {
-    final d = doc.data() as Map<String, dynamic>;
+  factory ProfileModel.fromFirestore(DocumentSnapshot doc) =>
+      ProfileModel.fromData(doc.id, doc.data() as Map<String, dynamic>);
+
+  /// Parses stored profile data for document [id]. Separate from
+  /// [ProfileModel.fromFirestore] so the owner / admin view can parse the
+  /// public document with its private copy already laid over it
+  /// (`mergePrivateProfileData`).
+  factory ProfileModel.fromData(String id, Map<String, dynamic> d) {
     return ProfileModel(
-      id: doc.id,
+      id: id,
       userId: d['userId'] ?? '',
       profileCreatedBy: d['profileCreatedBy'] ?? 'Myself',
       profileCreatedFor: d['profileCreatedFor'] ?? 'Myself',
@@ -390,9 +396,15 @@ class ProfileModel {
       // MATRIMONY photo only (§6/§17): an identity-provider avatar that ever
       // reached this field is dropped on read, so no card, list or admin view
       // can display a Google account picture as a matrimony photo.
-      profilePhotoUrl: _matrimonyPhoto(d['profilePhotoUrl']),
+      //
+      // A legacy document whose image is only referenced from the old
+      // `photos` / `additionalPhotos` arrays still shows it (see
+      // [legacyProfilePhoto]) — the upload exists, only the field moved.
+      profilePhotoUrl: _matrimonyPhoto(d['profilePhotoUrl']) ??
+          _matrimonyPhoto(legacyProfilePhoto(d)),
       privacySettings: ProfilePrivacy.fromMap(d['privacySettings']),
-      horoscope: HoroscopeDetails.fromMap(d['horoscope'] ?? {}),
+      horoscope: HoroscopeDetails.fromMap(
+          d['horoscope'] is Map ? Map<String, dynamic>.from(d['horoscope']) : {}),
       partnerPreferences: PartnerPreferences.fromMap(d['partnerPreferences'] ?? {}),
       contact: ContactDetails.fromMap(d['contact'] ?? {}),
       contactPrivacy: d['contactPrivacy'] ?? 'private',
@@ -482,7 +494,10 @@ class ProfileModel {
         'profilePhotoUrl': profilePhotoUrl,
         // Written as an empty list so any legacy extra photos are cleared the
         // next time the profile is saved — multi-photo support is gone (§1).
+        // A legacy image is read into [profilePhotoUrl] before this runs, so
+        // clearing the arrays never drops the member's photo.
         'additionalPhotos': const <String>[],
+        'photos': const <String>[],
         'privacySettings': privacySettings,
         'horoscope': horoscope.toMap(),
         'partnerPreferences': partnerPreferences.toMap(),
@@ -637,6 +652,12 @@ class ProfileModel {
 
   /// True when the member has a profile photo.
   bool get hasPhoto => (profilePhotoUrl?.trim() ?? '').isNotEmpty;
+
+  /// The photo that may be COPIED into a document other members read (a chat
+  /// thread's participant cache, a notification) — blank while the member
+  /// hides their photo. The owner's and the admin's own views use
+  /// [profilePhotoUrl]; nothing that leaves the member's private reads may.
+  String get sharedPhotoUrl => hidesPhoto ? '' : (profilePhotoUrl?.trim() ?? '');
 
   // ── Privacy helpers (§16/§17) — default HIDDEN, never auto-revealed. ──
   bool get hidesPhone => ProfilePrivacy.isHidden(privacySettings, ProfilePrivacy.phone);

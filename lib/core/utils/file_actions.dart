@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:open_file/open_file.dart';
@@ -316,7 +317,9 @@ class _ImageGalleryScreenState extends State<_ImageGalleryScreen> {
         loadingBuilder: (_, __) => const Center(
             child: CircularProgressIndicator(color: Colors.white)),
         builder: (_, i) => PhotoViewGalleryPageOptions(
-          imageProvider: NetworkImage(widget.imageUrls[i]),
+          // Full-resolution original (this is the zoom viewer), but from the
+          // on-disk cache — horoscope pages re-downloaded on every open.
+          imageProvider: CachedNetworkImageProvider(widget.imageUrls[i]),
           minScale: PhotoViewComputedScale.contained,
           maxScale: PhotoViewComputedScale.covered * 4,
           errorBuilder: (_, __, ___) => const Center(

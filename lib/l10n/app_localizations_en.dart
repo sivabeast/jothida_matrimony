@@ -4208,4 +4208,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get paidButReportNotSavedRetry =>
       'Your payment went through but the report request could not be saved. Tap Pay again — you will not be charged twice.';
+
+  @override
+  String get nearestTownHint =>
+      'Your exact locality isn\'t listed. Choose the nearest main town:';
+
+  @override
+  String get locationsLoadFailed => 'Locations could not be loaded.';
+
+  @override
+  String get placeWithStateHint =>
+      'Outside Tamil Nadu? Type the place with its state, e.g. \"Kochi, Kerala\".';
 }

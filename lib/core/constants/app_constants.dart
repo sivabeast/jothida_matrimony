@@ -53,6 +53,14 @@ class AppConstants {
   // mutually-accepted interest (recorded in `connections`).
   static const String contactsCollection = 'contacts';
   static const String connectionsCollection = 'connections';
+  // The ORIGINAL values of the fields a member can hide (photo, salary,
+  // horoscope — keyed by uid). Readable by the owner, admins and staff only;
+  // the member-readable `profiles/{id}` document carries them only while they
+  // are NOT hidden. See core/utils/profile_privacy.dart.
+  static const String profilePrivateCollection = 'profile_private';
+  // The member's phone numbers while "Hide Phone Number" is on (keyed by uid).
+  // Owner + admin only; `contacts/{uid}` then carries them blank.
+  static const String contactPrivateCollection = 'contact_private';
   // Aadhaar verification records — SENSITIVE, gated to owner + admin only.
   static const String aadhaarCollection = 'aadhaar';
   // Immutable audit trail of important admin actions (approve/reject/suspend/

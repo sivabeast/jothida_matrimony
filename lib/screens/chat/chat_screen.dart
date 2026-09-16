@@ -1,5 +1,7 @@
-﻿import 'dart:io';
+﻿import 'dart:async';
+import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/chat_outbox.dart';
 import '../../core/utils/file_actions.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../models/chat_model.dart';
@@ -14,6 +17,7 @@ import '../../providers/astrologer_provider.dart';
 import '../../providers/block_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../services/cloudinary/cloudinary_asset_id.dart';
 import '../../widgets/common/network_photo.dart';
 
 /// One conversation: realtime message stream + composer.
@@ -33,7 +37,20 @@ class ChatScreen extends ConsumerStatefulWidget {
 class _ChatScreenState extends ConsumerState<ChatScreen>
     with WidgetsBindingObserver {
   final _controller = TextEditingController();
+
+  /// True only while an ATTACHMENT uploads. Text messages never block the
+  /// composer — they go through the outbox below.
   bool _sending = false;
+
+  /// Outgoing text messages not yet confirmed by the stream (see
+  /// core/utils/chat_outbox.dart). Keyed by the locally generated message id.
+  final Map<String, OutgoingMessage> _outbox = {};
+  final Map<String, Timer> _sendTimers = {};
+
+  /// How long a message may stay "Sending…" before it is marked Failed and
+  /// offered for retry. A write still queued by Firestore is not lost — if it
+  /// lands later, the stored copy replaces the failed marker by itself.
+  static const _sendTimeout = Duration(seconds: 20);
 
   /// The newest incoming message already marked read — so messages arriving
   /// WHILE the chat is open are marked read exactly once each (the badge
@@ -78,38 +95,66 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _chatController?.leaveThreadPresence(widget.threadId);
+    for (final t in _sendTimers.values) {
+      t.cancel();
+    }
+    _sendTimers.clear();
     _controller.dispose();
     super.dispose();
   }
 
-  Future<void> _send() async {
+  /// Send button: the message goes straight into the conversation and the
+  /// composer clears at once — the write runs in the background.
+  void _send() {
     final text = _controller.text.trim();
-    if (text.isEmpty || _sending) return;
-    final sent = await _sendText(text);
-    if (sent) _controller.clear();
+    if (text.isEmpty) return;
+    _controller.clear();
+    _sendText(text);
   }
 
-  /// Sends [text] as a normal chat message. Used both by the composer's Send
-  /// button and the user's quick-reply buttons (which send instantly, with no
-  /// confirmation dialog). Returns true on success.
-  Future<bool> _sendText(String text) async {
+  /// Sends [text] as a normal chat message. Used by the composer's Send button
+  /// and the quick-reply buttons. Never awaited by the UI and never blocks it:
+  /// the message is shown immediately as "Sending…", becomes a normal message
+  /// once the server acknowledges it, or turns into "Failed · Tap to retry"
+  /// if the write is refused or does not complete within [_sendTimeout].
+  void _sendText(String text, {String? retryId}) {
     final msg = text.trim();
-    if (msg.isEmpty || _sending) return false;
-    setState(() => _sending = true);
-    try {
-      await ref.read(chatControllerProvider).sendMessage(widget.threadId, msg);
-      return true;
-    } catch (e) {
-      debugPrint('[ChatScreen] send failed: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.messageNotSent)),
-        );
+    if (msg.isEmpty) return;
+    final chat = ref.read(chatControllerProvider);
+    final myUid = ref.read(myUidProvider) ?? '';
+    final id = retryId ?? chat.newMessageId(widget.threadId);
+    final otherUid =
+        ref.read(chatThreadProvider(widget.threadId)).valueOrNull?.otherId(myUid);
+
+    setState(() => _outbox[id] = OutgoingMessage(
+          id: id,
+          text: msg,
+          createdAt: _outbox[id]?.createdAt ?? DateTime.now(),
+        ));
+
+    var settled = false;
+    void markFailed(Object e) {
+      if (settled) return;
+      settled = true;
+      _sendTimers.remove(id)?.cancel();
+      debugPrint('[ChatScreen] send $id failed: $e');
+      if (mounted && _outbox.containsKey(id)) {
+        setState(
+            () => _outbox[id] = _outbox[id]!.withStatus(OutgoingStatus.failed));
       }
-      return false;
-    } finally {
-      if (mounted) setState(() => _sending = false);
     }
+
+    _sendTimers.remove(id)?.cancel();
+    _sendTimers[id] = Timer(_sendTimeout,
+        () => markFailed(TimeoutException('no server acknowledgement')));
+    chat
+        .sendMessage(widget.threadId, msg, messageId: id, otherUid: otherUid)
+        .then((_) {
+      if (settled) return;
+      settled = true;
+      _sendTimers.remove(id)?.cancel();
+      if (mounted) setState(() => _outbox.remove(id));
+    }, onError: markFailed);
   }
 
   /// Image extensions we treat as inline-previewable images.
@@ -349,6 +394,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     ref.listen(chatMessagesProvider(widget.threadId), (_, next) {
       final msgs = next.valueOrNull;
       if (msgs == null || msgs.isEmpty) return;
+      // Outgoing messages the server has now acknowledged leave the outbox —
+      // including one that had been marked Failed but landed after all.
+      final confirmed = confirmedOutboxIds(msgs, _outbox.values);
+      if (confirmed.isNotEmpty) {
+        setState(() {
+          for (final id in confirmed) {
+            _outbox.remove(id);
+            _sendTimers.remove(id)?.cancel();
+          }
+        });
+      }
       final newest = msgs.first;
       if (newest.senderId != myUid && newest.id != _lastReadMsgId) {
         _lastReadMsgId = newest.id;
@@ -410,7 +466,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
             CircleAvatar(
               radius: 17,
               backgroundColor: Colors.white24,
-              backgroundImage: cachedPhotoProvider(photo),
+              backgroundImage: cachedPhotoProvider(photo, logicalSize: 34),
               child: photo.isEmpty
                   ? Text(name.isNotEmpty ? name[0] : '?',
                       style: const TextStyle(color: Colors.white))
@@ -498,7 +554,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                   ),
                 );
               },
-              data: (messages) {
+              data: (storedMessages) {
+                // Stored messages + my not-yet-confirmed outgoing ones.
+                final messages = mergeOutbox(
+                  stored: storedMessages,
+                  outbox: _outbox.values,
+                  myUid: myUid,
+                );
+                final limit =
+                    ref.watch(chatMessageLimitProvider(widget.threadId));
+                final mayHaveOlder = storedMessages.length >= limit;
                 if (messages.isEmpty) {
                   return Center(
                     child: Text(context.l10n.sayHelloTo(name),
@@ -511,6 +576,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                   itemCount: messages.length,
                   itemBuilder: (_, i) {
+                    // Reached the OLDEST loaded message: load one more page.
+                    // Only the page size changes — the provider swaps its
+                    // single listener for a larger query, it never adds one.
+                    if (i == messages.length - 1 && mayHaveOlder) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        final ctrl = ref.read(
+                            chatMessageLimitProvider(widget.threadId).notifier);
+                        if (ctrl.state == limit) {
+                          ctrl.state = limit + kChatMessagePage;
+                        }
+                      });
+                    }
                     final msg = messages[i];
                     final isMine = msg.senderId == myUid;
                     // Messages are newest-first; the next index is the
@@ -537,6 +615,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                           isMine: isMine,
                           thread: thread,
                           myUid: myUid,
+                          onRetry: msg.isFailed
+                              ? () => _sendText(msg.text, retryId: msg.id)
+                              : null,
                         ),
                         if (showSeenAgo)
                           Align(
@@ -616,15 +697,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                   CircleAvatar(
                     radius: 22,
                     backgroundColor: AppColors.primary,
+                    // Never a spinner: a text message is on screen the moment
+                    // it is sent, and its own bubble shows Sending / Failed.
                     child: IconButton(
-                      icon: _sending
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
-                          : const Icon(Icons.send,
-                              color: Colors.white, size: 20),
+                      icon: const Icon(Icons.send,
+                          color: Colors.white, size: 20),
                       onPressed: _send,
                     ),
                   ),
@@ -708,11 +785,15 @@ class _Bubble extends StatelessWidget {
   final bool isMine;
   final ChatThread? thread;
   final String myUid;
+
+  /// Re-sends a FAILED outgoing message (same id — never a duplicate).
+  final VoidCallback? onRetry;
   const _Bubble({
     required this.message,
     required this.isMine,
     this.thread,
     this.myUid = '',
+    this.onRetry,
   });
 
   /// Receipt for MY messages, from the OTHER participant's thread stamps:
@@ -748,6 +829,12 @@ class _Bubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bubble = _bubble(context);
+    if (!message.isFailed || onRetry == null) return bubble;
+    return GestureDetector(onTap: onRetry, child: bubble);
+  }
+
+  Widget _bubble(BuildContext context) {
     final isImage = message.isImage && message.attachmentUrl.isNotEmpty;
     return Align(
       alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
@@ -787,20 +874,30 @@ class _Bubble extends StatelessWidget {
                 children: [
                   Text(
                     // 12-hour AM/PM time for every message (spec §14). A
-                    // pending write shows "Sending…" instead of a fake time.
-                    message.isPending
-                        ? 'Sending…'
-                        : DateFormat('h:mm a').format(message.sentAt),
+                    // pending write shows "Sending…" instead of a fake time;
+                    // one that failed says so and offers a retry.
+                    message.isFailed
+                        ? 'Failed · Tap to retry'
+                        : message.isPending
+                            ? 'Sending…'
+                            : DateFormat('h:mm a').format(message.sentAt),
                     style: TextStyle(
                         fontSize: 10,
-                        color: isMine && !isImage
-                            ? Colors.white70
-                            : Colors.grey[500]),
+                        fontWeight:
+                            message.isFailed ? FontWeight.w700 : null,
+                        color: message.isFailed
+                            ? const Color(0xFFFFD2D2)
+                            : isMine && !isImage
+                                ? Colors.white70
+                                : Colors.grey[500]),
                   ),
                   // Receipt tick — my messages only (Sent → Delivered → Seen).
                   if (isMine) ...[
                     const SizedBox(width: 4),
-                    _receiptIcon(!isImage),
+                    message.isFailed
+                        ? const Icon(Icons.error_outline,
+                            size: 13, color: Color(0xFFFFD2D2))
+                        : _receiptIcon(!isImage),
                   ],
                 ],
               ),
@@ -840,8 +937,13 @@ class _Bubble extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 240, minWidth: 140),
-          child: Image.network(
-            message.attachmentUrl,
+          // Cached (was a bare Image.network that re-downloaded the full
+          // original on every rebuild) and display-sized; the full image
+          // opens on tap.
+          child: Image(
+            image: CachedNetworkImageProvider(cloudinaryDisplayUrl(
+                message.attachmentUrl,
+                width: 240 * MediaQuery.devicePixelRatioOf(context))),
             fit: BoxFit.cover,
             loadingBuilder: (ctx, child, progress) {
               if (progress == null) return child;

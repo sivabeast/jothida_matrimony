@@ -95,6 +95,32 @@ List<CloudinaryAssetRef> cloudinaryRefsFromUrls(Iterable<String?> urls) {
   return out.toList();
 }
 
+/// A display-sized delivery URL for a Cloudinary IMAGE, or [url] unchanged for
+/// anything else (a PDF, a non-Cloudinary link, an already-transformed URL).
+///
+/// Every upload is stored at full camera resolution, and every card, avatar
+/// and thumbnail used to download that original — megabytes per profile on a
+/// Matches page. Cloudinary resizes on delivery: `c_limit,w_<w>` scales down
+/// (never up) and `q_auto` picks an efficient quality. The width is rounded up
+/// to a 200 px bucket so nearby sizes share one cached file. The ORIGINAL URL
+/// stays the stored value and is what the full-screen viewer opens.
+///
+/// Format is deliberately left as uploaded (no `f_auto`): `f_auto` can serve
+/// AVIF, which Flutter's decoder does not support on every device.
+String cloudinaryDisplayUrl(String url, {required double width}) {
+  final raw = url.trim();
+  if (raw.isEmpty || !raw.contains('res.cloudinary.com')) return raw;
+  const marker = '/image/upload/';
+  final at = raw.indexOf(marker);
+  if (at < 0) return raw;
+  final rest = raw.substring(at + marker.length);
+  final firstSegment = rest.split('/').first;
+  if (_looksLikeTransformation(firstSegment)) return raw;
+  if (!width.isFinite || width <= 0) return raw;
+  final bucket = (((width / 200).ceil()) * 200).clamp(200, 1600);
+  return '${raw.substring(0, at + marker.length)}c_limit,w_$bucket,q_auto/$rest';
+}
+
 bool _looksLikeTransformation(String seg) =>
     seg.contains('_') &&
     seg.split(',').every((p) => RegExp(r'^[a-z]+_[^,]+$').hasMatch(p));
