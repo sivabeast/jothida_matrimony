@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
+import '../common/network_photo.dart' show PhotoAvatar;
 
 /// Full-screen premium celebration played the moment an interest is ACCEPTED —
 /// floating hearts, a scale-in badge and a clear "you are now connected"
@@ -130,17 +131,13 @@ class _MatchCelebrationDialogState extends State<_MatchCelebrationDialog>
                     padding: const EdgeInsets.all(4),
                     decoration: const BoxDecoration(
                         shape: BoxShape.circle, color: Colors.white),
-                    child: CircleAvatar(
+                    child: PhotoAvatar(
+                      url: widget.photoUrl,
                       radius: 40,
                       backgroundColor:
                           AppColors.primary.withValues(alpha: 0.08),
-                      backgroundImage: widget.photoUrl.isNotEmpty
-                          ? NetworkImage(widget.photoUrl)
-                          : null,
-                      child: widget.photoUrl.isEmpty
-                          ? const Icon(Icons.favorite,
-                              color: AppColors.primary, size: 40)
-                          : null,
+                      placeholder: const Icon(Icons.favorite,
+                          color: AppColors.primary, size: 40),
                     ),
                   ),
                 ),

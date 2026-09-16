@@ -463,14 +463,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
         titleSpacing: 0,
         title: Row(
           children: [
-            CircleAvatar(
+            PhotoAvatar(
+              url: photo,
               radius: 17,
               backgroundColor: Colors.white24,
-              backgroundImage: cachedPhotoProvider(photo, logicalSize: 34),
-              child: photo.isEmpty
-                  ? Text(name.isNotEmpty ? name[0] : '?',
-                      style: const TextStyle(color: Colors.white))
-                  : null,
+              placeholder: Text(name.isNotEmpty ? name[0] : '?',
+                  style: const TextStyle(color: Colors.white)),
             ),
             const SizedBox(width: 10),
             Expanded(

@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../models/profile_model.dart';
 import '../../providers/admin_provider.dart';
 import '../../widgets/common/data_states.dart';
+import '../../widgets/common/network_photo.dart' show PhotoAvatar;
 import '../../widgets/common/skeletons.dart';
 
 /// Admin → Profile Verification (/admin/approvals).
@@ -87,14 +88,12 @@ class _ApprovalCard extends ConsumerWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
+                // Admin view: the full profile photo, whatever the member's
+                // privacy switches — cached, with the icon if it cannot load.
+                PhotoAvatar(
+                  url: profile.photos.isNotEmpty ? profile.photos.first : '',
                   radius: 30,
-                  backgroundImage: profile.photos.isNotEmpty
-                      ? NetworkImage(profile.photos.first)
-                      : null,
-                  child: profile.photos.isEmpty
-                      ? const Icon(Icons.person, size: 30)
-                      : null,
+                  placeholder: const Icon(Icons.person, size: 30),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

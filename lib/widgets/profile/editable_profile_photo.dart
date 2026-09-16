@@ -12,6 +12,7 @@ import '../../providers/profile_edit_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../screens/profile/square_crop_screen.dart';
 import '../common/fullscreen_photo_viewer.dart';
+import '../common/network_photo.dart';
 
 /// Tappable profile avatar with a camera badge. Tapping opens View / Change /
 /// Remove options. Changing runs the picked image through the MANDATORY 1:1
@@ -76,15 +77,22 @@ class _EditableProfilePhotoState extends ConsumerState<EditableProfilePhoto> {
     if (cropped == null || !mounted) return;
 
     setState(() => _busy = true);
+    final uid = widget.profile!.userId;
     try {
+      debugPrint('[ProfilePhoto] uid=$uid uploading ${cropped.path}');
+      // Upload FIRST. Only a real `secure_url` returned by the upload is ever
+      // saved — a failed upload throws before Firestore is touched, so the
+      // current photo stays exactly as it was.
       final url = await ref.read(storageServiceProvider).uploadProfilePhoto(
-            userId: widget.profile!.userId,
+            userId: uid,
             file: cropped,
             index: 0,
           );
+      debugPrint('[ProfilePhoto] uid=$uid uploaded → $url');
       await _persist(url);
       if (mounted) _snack(context.l10n.photoUpdated);
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('[ProfilePhoto] uid=$uid photo change FAILED: $e\n$st');
       if (mounted) _snack(context.l10n.couldNotUpdatePhoto);
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -187,14 +195,14 @@ class _EditableProfilePhotoState extends ConsumerState<EditableProfilePhoto> {
       onTap: profile == null ? null : _showOptions,
       child: Stack(
         children: [
-          CircleAvatar(
+          // Cached, with the person placeholder for BOTH "no photo" and "photo
+          // could not load" — a bare NetworkImage painted an empty circle.
+          PhotoAvatar(
+            url: hasPhoto ? photoUrl : '',
             radius: widget.radius,
             backgroundColor: AppColors.primary.withOpacity(0.1),
-            backgroundImage: hasPhoto ? NetworkImage(photoUrl) : null,
-            child: hasPhoto
-                ? null
-                : Icon(Icons.person,
-                    size: widget.radius, color: AppColors.primary),
+            placeholder:
+                Icon(Icons.person, size: widget.radius, color: AppColors.primary),
           ),
           if (_busy)
             const Positioned.fill(

@@ -142,14 +142,12 @@ class _ThreadTile extends ConsumerWidget {
           'name': name,
           'photo': photo,
         }),
-        leading: CircleAvatar(
+        leading: PhotoAvatar(
+          url: photo,
           radius: 24,
           backgroundColor: AppColors.primary.withOpacity(0.1),
-          backgroundImage: cachedPhotoProvider(photo, logicalSize: 52),
-          child: photo.isEmpty
-              ? Text(name.isNotEmpty ? name[0] : '?',
-                  style: const TextStyle(color: AppColors.primary))
-              : null,
+          placeholder: Text(name.isNotEmpty ? name[0] : '?',
+              style: const TextStyle(color: AppColors.primary)),
         ),
         title: Row(
           children: [

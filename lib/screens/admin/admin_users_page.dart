@@ -18,7 +18,7 @@ import '../../models/user_model.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/data_states.dart';
-import '../../widgets/common/network_photo.dart' show cachedPhotoProvider;
+import '../../widgets/common/network_photo.dart' show PhotoAvatar;
 
 /// Admin → Users. Manages MATRIMONY USERS only.
 ///
@@ -1048,20 +1048,19 @@ class _UserCard extends ConsumerWidget {
                 onChanged: onToggle == null ? null : (_) => onToggle!(),
               ),
             ),
-          CircleAvatar(
+          // Cached, display-sized with a fallback to the original, and the
+          // initial letter when there is no photo OR it cannot be loaded.
+          // The URL is the member's FULL profile photo (hidden copies merged
+          // in for the admin) — member privacy never applies here.
+          PhotoAvatar(
+            url: photo ?? '',
             radius: 24,
             backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-            // Cached + display-sized: a bare NetworkImage re-downloaded every
-            // member's full-resolution original on each scroll of this list.
-            backgroundImage:
-                photo != null ? cachedPhotoProvider(photo, logicalSize: 48) : null,
-            child: photo == null
-                ? Text(_name.isNotEmpty ? _name[0].toUpperCase() : '?',
-                    style: const TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins'))
-                : null,
+            placeholder: Text(_name.isNotEmpty ? _name[0].toUpperCase() : '?',
+                style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Poppins')),
           ),
           const SizedBox(width: 12),
           Expanded(

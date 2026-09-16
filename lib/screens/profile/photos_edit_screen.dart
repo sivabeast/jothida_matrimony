@@ -12,6 +12,7 @@ import '../../providers/profile_edit_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../widgets/common/fullscreen_photo_viewer.dart';
+import '../../widgets/common/network_photo.dart' show NetworkPhoto;
 import 'square_crop_screen.dart';
 
 /// Profile Photo editor — exactly ONE photo per member (§1).
@@ -78,12 +79,17 @@ class _PhotoFormState extends ConsumerState<_PhotoForm> {
       return;
     }
     setState(() => _busy = true);
+    final uid = _p.userId;
     try {
+      debugPrint('[ProfilePhoto] uid=$uid uploading ${cropped.path}');
+      // Upload first; only a returned `secure_url` is ever saved, so a failed
+      // upload leaves the current photo untouched.
       final url = await ref.read(storageServiceProvider).uploadProfilePhoto(
-            userId: _p.userId,
+            userId: uid,
             file: cropped,
             index: 0,
           );
+      debugPrint('[ProfilePhoto] uid=$uid uploaded → $url');
       final p = _p;
       // `save` owns everything the new photo implies: the Firestore write, the
       // `users/{uid}.photoUrl` mirror, the chat participant refresh (§2), the
@@ -98,7 +104,8 @@ class _PhotoFormState extends ConsumerState<_PhotoForm> {
             },
           );
       if (mounted) _snack(context.l10n.photoUpdated);
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('[ProfilePhoto] uid=$uid photo change FAILED: $e\n$st');
       if (mounted) _snack(context.l10n.couldNotUpdatePhoto);
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -183,15 +190,13 @@ class _PhotoFormState extends ConsumerState<_PhotoForm> {
                               : GestureDetector(
                                   onTap: () =>
                                       FullScreenPhotoViewer.open(context, photo),
-                                  child: Image.network(photo,
+                                  // Cached; an image that cannot load shows the
+                                  // same person placeholder as "no photo", not
+                                  // a broken-image icon.
+                                  child: NetworkPhoto(
+                                      url: photo,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
-                                            color: AppColors.primary
-                                                .withOpacity(0.08),
-                                            child: const Icon(
-                                                Icons.broken_image_outlined,
-                                                color: AppColors.primary),
-                                          )),
+                                      fallbackIconSize: 72),
                                 ),
                         ),
                       ),

@@ -103,13 +103,16 @@ String _weightText(BuildContext c, String w) {
   return c.isTamil ? '$v கிலோ' : '$v kg';
 }
 
-/// The signed-in member's own contact record (access-gated `contacts/{uid}`;
-/// the owner can always read their own).
+/// The signed-in member's own contact record — the FULL one: a phone number
+/// hidden from other members lives in `contact_private/{uid}`, and the owner
+/// must still see it on their own page.
 final myContactProvider = FutureProvider.autoDispose<ContactDetails?>((ref) async {
   final profile = ref.watch(myProfileProvider).valueOrNull;
   if (profile == null) return null;
   try {
-    return await ref.read(firestoreServiceProvider).getContact(profile.userId);
+    return await ref
+        .read(firestoreServiceProvider)
+        .getFullContact(profile.userId);
   } catch (_) {
     return null; // gated / offline — the section simply shows no rows
   }

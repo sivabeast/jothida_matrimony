@@ -30,9 +30,20 @@ class ProfileEditController extends Notifier<AsyncValue<void>> {
       if (kBypassAuth) {
         ref.read(demoProfilesProvider.notifier).upsert(updated);
       } else {
+        if (patch.containsKey('profilePhotoUrl')) {
+          debugPrint('[ProfilePhoto] saving profiles/${current.id} '
+              '(userId=${current.userId}) profilePhotoUrl='
+              '${patch['profilePhotoUrl'] ?? 'null (removed)'}');
+        }
+        // A failed write THROWS here, before anything below runs: the old
+        // photo stays stored, nothing is retired, and the caller reports it.
         await ref
             .read(profileRepositoryProvider)
             .updateProfile(current.id, patch);
+        if (patch.containsKey('profilePhotoUrl')) {
+          debugPrint('[ProfilePhoto] profiles/${current.id} photo write '
+              'committed.');
+        }
         // Keep the denormalized mirrors of the member's IDENTITY in step with
         // the profile they just saved (spec §2/§25). The profile document is
         // the source of truth and every screen resolves from it; these are
@@ -53,7 +64,12 @@ class ProfileEditController extends Notifier<AsyncValue<void>> {
               newUrl: updated.profilePhotoUrl,
               reason: 'profile_photo_replaced:${updated.userId}');
         }
-        ref.invalidate(myProfileProvider);
+        // NOT invalidated any more. `myProfileProvider` is a live snapshot
+        // stream, and Firestore delivers the write above to it straight from
+        // the local cache — so the new photo is already on screen. Re-creating
+        // the provider restarted the stream, which first emits NO profile: for
+        // a moment every photo reverted to the placeholder, as if the upload
+        // had not been saved.
       }
       state = const AsyncData(null);
     } catch (e, st) {

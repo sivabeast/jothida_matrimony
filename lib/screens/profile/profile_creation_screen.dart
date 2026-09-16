@@ -1,9 +1,11 @@
 import 'dart:async' show unawaited;
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
@@ -87,6 +89,9 @@ class ProfileCreationScreen extends ConsumerStatefulWidget {
 
 class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   static const String _draftKey = 'profile_draft_v1';
+
+  /// Path of the draft's chosen photo (a file cannot live in the JSON draft).
+  static const String _draftPhotoKey = 'profile_draft_photo_v1';
   late final PageController _pageController =
       PageController(initialPage: _currentStep);
   late int _currentStep = widget.sectionStep?.clamp(0, _totalSteps - 1) ?? 0;
@@ -203,6 +208,16 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
               ref.read(profileCreationProvider.notifier).updateData(map);
             }
           }
+          // The chosen photo is a FILE, which the JSON draft above cannot
+          // hold — without this a resumed draft silently lost it and the
+          // profile was created with no photo.
+          final photoPath = prefs.getString(_draftPhotoKey);
+          if (photoPath != null && await File(photoPath).exists()) {
+            ref
+                .read(profileCreationProvider.notifier)
+                .setPhotos([File(photoPath)]);
+            debugPrint('[ProfileCreation] draft photo restored: $photoPath');
+          }
         } catch (e) {
           debugPrint('[ProfileCreation] draft restore failed: $e');
         }
@@ -217,18 +232,54 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
     // for someone else (it would resurface as the admin's own draft).
     if (_isEditMode || _isAdminMode) return;
     try {
-      final data = ref.read(profileCreationProvider).data;
+      final state = ref.read(profileCreationProvider);
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_draftKey, jsonEncode(data));
+      await prefs.setString(_draftKey, jsonEncode(state.data));
+      await _saveDraftPhoto(prefs, state.photos);
     } catch (e) {
       debugPrint('[ProfileCreation] draft save failed: $e');
     }
+  }
+
+  /// Keeps the chosen (cropped) photo with the draft. The crop screen writes
+  /// to the TEMP directory, which the OS may empty, so the file is copied once
+  /// into app storage and the draft remembers that path.
+  Future<void> _saveDraftPhoto(
+      SharedPreferences prefs, List<File> photos) async {
+    final previous = prefs.getString(_draftPhotoKey);
+    if (photos.isEmpty) {
+      await prefs.remove(_draftPhotoKey);
+      if (previous != null) await _deleteQuietly(previous);
+      return;
+    }
+    final file = photos.first;
+    final dir = await getApplicationSupportDirectory();
+    var path = file.path;
+    if (!path.startsWith(dir.path)) {
+      final copy = await file.copy('${dir.path}${Platform.pathSeparator}'
+          'profile_draft_photo_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      path = copy.path;
+      ref.read(profileCreationProvider.notifier).setPhotos([copy]);
+    }
+    if (previous != null && previous != path) await _deleteQuietly(previous);
+    await prefs.setString(_draftPhotoKey, path);
+  }
+
+  static Future<void> _deleteQuietly(String path) async {
+    try {
+      final f = File(path);
+      if (await f.exists()) await f.delete();
+    } catch (_) {}
   }
 
   Future<void> _clearDraft() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_draftKey);
+      final photo = prefs.getString(_draftPhotoKey);
+      await prefs.remove(_draftPhotoKey);
+      // Only cleared after a successful submit — the photo is uploaded by then.
+      if (photo != null) await _deleteQuietly(photo);
     } catch (_) {}
   }
 

@@ -344,21 +344,30 @@ class FirestoreService {
     //    profile must replace the old document wholesale, never inherit stray
     //    fields from whoever filled it in before.
     final data = profile.copyWith().toFirestore();
-    final split = splitProfileWrite(data, profile.privacySettings);
-    final batch = _db.batch()
-      ..set(doc, split.public)
-      ..set(_privateProfileRef(profile.userId), {
-        ...privateSnapshotOf(data),
-        'userId': profile.userId,
-        'profileId': doc.id,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    if (profile.userId.isEmpty || !await _commitPrivacyBatch(batch)) {
-      // The private collection is not writable yet (rules not deployed). Keep
-      // the previous behaviour — the full profile on one document — rather than
+    var written = false;
+    if (await _useSplitWrites(profile.userId,
+        hidesSomething: _hidesAnyProfileField(profile.privacySettings))) {
+      final split = splitProfileWrite(data, profile.privacySettings);
+      final batch = _db.batch()
+        ..set(doc, split.public)
+        ..set(_privateProfileRef(profile.userId), {
+          ...privateSnapshotOf(data),
+          'userId': profile.userId,
+          'profileId': doc.id,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      written = await _commitPrivacyBatch(batch, uid: profile.userId);
+    }
+    if (!written) {
+      // The private collection is not usable (rules not deployed). Keep the
+      // previous behaviour — the full profile on one document — rather than
       // lose a value; the next reconcile moves it once the rules are live.
       await doc.set(data);
     }
+    debugPrint('[Firestore] createProfile: profiles/${doc.id} written for '
+        'userId=${profile.userId} (profilePhotoUrl='
+        '${(profile.profilePhotoUrl ?? '').isEmpty ? 'none' : 'set'}, '
+        'privateCopy=$written)');
 
     // 2) Store contact details in the access-gated `contacts/{userId}`
     //    collection. This is intentionally NON-FATAL: if the `contacts`
@@ -396,22 +405,78 @@ class FirestoreService {
   DocumentReference<Map<String, dynamic>> _privateContactRef(String uid) =>
       _db.collection(AppConstants.contactPrivateCollection).doc(uid);
 
+  /// Whether `profile_private` / `contact_private` can be used for [uid] —
+  /// i.e. the firestore.rules that allow them are deployed. Remembered for the
+  /// session once known.
+  ///
+  /// WHY THIS EXISTS (a photo URL could be lost): every write that touches a
+  /// hideable field used to be ATTEMPTED as a private-copy batch and fall back
+  /// to the plain write only when the server answered `permission-denied`. That
+  /// answer is not instant, and the batch went through `commitWrite`, which
+  /// treats "no server answer within 10 s" as success-queued-offline. On a slow
+  /// connection — typically right after a photo upload — the refusal arrived
+  /// AFTER the timeout: the app counted the save as done, the fallback never
+  /// ran, the server then rolled the whole batch back, and the new
+  /// `profilePhotoUrl` never reached Firestore although the image was already
+  /// in Cloudinary. Asking first, with a READ that has no side effects, removes
+  /// that race: a write is only ever sent in a shape the rules accept.
+  final Map<String, bool> _privateStorageReady = {};
+
+  Future<bool?> _privateStorageAvailable(String uid) async {
+    final known = _privateStorageReady[uid];
+    if (known != null) return known;
+    try {
+      await _privateProfileRef(uid)
+          .get(const GetOptions(source: Source.server))
+          .timeout(const Duration(seconds: 12));
+      return _privateStorageReady[uid] = true; // readable ⇒ rules deployed
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') {
+        debugPrint('[FirestoreService] profile_private is not readable '
+            '(firestore.rules not deployed?) — using single-document writes.');
+        return _privateStorageReady[uid] = false;
+      }
+      debugPrint('[FirestoreService] private storage check for $uid '
+          'inconclusive (${e.code}).');
+      return null;
+    } catch (e) {
+      debugPrint('[FirestoreService] private storage check for $uid '
+          'inconclusive ($e).');
+      return null; // offline / timed out — unknown, not remembered
+    }
+  }
+
+  /// Whether a write for [uid] should use the private-copy split. Only when
+  /// the private collections are known to work — or, when that cannot be told
+  /// right now (offline), when the write carries a HIDDEN value, because
+  /// writing that onto the member-readable document would expose it.
+  Future<bool> _useSplitWrites(String uid, {required bool hidesSomething}) async {
+    if (uid.trim().isEmpty) return false;
+    final available = await _privateStorageAvailable(uid);
+    return available ?? hidesSomething;
+  }
+
+  static bool _hidesAnyProfileField(Map<String, bool> privacy) =>
+      ProfilePrivacy.isHidden(privacy, ProfilePrivacy.photo) ||
+      ProfilePrivacy.isHidden(privacy, ProfilePrivacy.salary) ||
+      ProfilePrivacy.isHidden(privacy, ProfilePrivacy.horoscope);
+
   /// Commits a batch that writes a private document. Returns false — instead
-  /// of throwing — when the private collections are not writable yet, i.e. the
-  /// updated firestore.rules have not been deployed, so the caller can fall
-  /// back to the old single-document write without losing anything.
+  /// of throwing — when the private collections are refused anyway, so the
+  /// caller falls back to the single-document write without losing anything.
   ///
   /// A batch is atomic: when it is refused, NOTHING in it was applied, so the
   /// public document was not blanked either.
-  Future<bool> _commitPrivacyBatch(WriteBatch batch) async {
+  Future<bool> _commitPrivacyBatch(WriteBatch batch, {String uid = ''}) async {
     try {
-      await commitWrite(batch.commit());
+      await commitWrite(batch.commit(), timeout: const Duration(seconds: 20));
       return true;
     } on FirebaseException catch (e) {
       if (e.code == 'permission-denied') {
         debugPrint('[FirestoreService] private field storage refused '
             '(${e.message}). Deploy firestore.rules — falling back to the '
             'single-document write.');
+        if (uid.isNotEmpty) _privateStorageReady[uid] = false;
         return false;
       }
       rethrow;
@@ -424,10 +489,12 @@ class FirestoreService {
     if (uid.trim().isEmpty) return null;
     try {
       final snap = await _privateProfileRef(uid).get();
+      _privateStorageReady[uid] = true;
       return snap.exists ? snap.data() : null;
     } on FirebaseException catch (e) {
       debugPrint('[FirestoreService] profile_private/$uid unreadable: '
           '${e.code}');
+      if (e.code == 'permission-denied') _privateStorageReady[uid] = false;
       return null;
     }
   }
@@ -496,8 +563,14 @@ class FirestoreService {
   /// fragment, and a switch change re-projects every hideable field at once.
   Future<void> updateProfile(String profileId, Map<String, dynamic> data) async {
     final ref = _db.collection(AppConstants.profilesCollection).doc(profileId);
-    Future<void> plainUpdate() =>
-        ref.update({...data, 'updatedAt': FieldValue.serverTimestamp()});
+    // Bounded: with offline persistence a raw `update` only completes on a
+    // SERVER acknowledgement, which is what left a photo save spinning forever
+    // on a bad connection. A write still pending after the timeout is already
+    // in the local cache (and on screen) and syncs by itself; a real refusal
+    // still throws.
+    Future<void> plainUpdate() => commitWrite(
+        ref.update({...data, 'updatedAt': FieldValue.serverTimestamp()}),
+        timeout: const Duration(seconds: 20));
 
     if (!touchesPrivateProfileFields(data) ||
         _hasSentinelInPrivateFields(data)) {
@@ -520,6 +593,16 @@ class FirestoreService {
     final truth = applyProfileWrite(
         mergePrivateProfileData(publicData, privateData), data);
     final privacy = ProfilePrivacy.fromMap(truth['privacySettings']);
+    if (!await _useSplitWrites(uid,
+        hidesSomething: _hidesAnyProfileField(privacy))) {
+      await plainUpdate();
+      if (data.containsKey('privacySettings')) {
+        await _reprojectContact(uid,
+            profileId: profileId,
+            hidePhone: ProfilePrivacy.isHidden(privacy, ProfilePrivacy.phone));
+      }
+      return;
+    }
 
     // Hideable fields come from the projection (real value or blank); the
     // legacy photo arrays pass through as written — the projection overrides
@@ -539,7 +622,7 @@ class FirestoreService {
         'profileId': profileId,
         'updatedAt': FieldValue.serverTimestamp(),
       });
-    if (!await _commitPrivacyBatch(batch)) {
+    if (!await _commitPrivacyBatch(batch, uid: uid)) {
       await plainUpdate();
       return;
     }
@@ -1131,7 +1214,6 @@ class FirestoreService {
     required String? profileId,
     required bool hidePhone,
   }) async {
-    final split = splitContactWrite(values, hidePhone: hidePhone);
     final meta = <String, dynamic>{
       'userId': userId,
       if ((profileId ?? '').isNotEmpty) 'profileId': profileId,
@@ -1139,6 +1221,11 @@ class FirestoreService {
     };
     final contactRef =
         _db.collection(AppConstants.contactsCollection).doc(userId);
+    if (!await _useSplitWrites(userId, hidesSomething: hidePhone)) {
+      await contactRef.set({...values, ...meta}, SetOptions(merge: true));
+      return;
+    }
+    final split = splitContactWrite(values, hidePhone: hidePhone);
     final batch = _db.batch()
       ..set(contactRef, {...split.public, ...meta}, SetOptions(merge: true));
     if (split.private.isNotEmpty) {
@@ -1151,7 +1238,7 @@ class FirestoreService {
           },
           SetOptions(merge: true));
     }
-    if (!await _commitPrivacyBatch(batch)) {
+    if (!await _commitPrivacyBatch(batch, uid: userId)) {
       await contactRef.set({...values, ...meta}, SetOptions(merge: true));
     }
   }
@@ -1232,14 +1319,18 @@ class FirestoreService {
       return const MemberPrivacyRepair.skipped();
     }
     final privateData = await _readPrivateProfile(uid);
-    if (privateData == null && !await _canWritePrivate(uid, profileId)) {
-      // Rules not deployed: blanking public fields would be unsafe.
-      return const MemberPrivacyRepair.skipped();
-    }
+    final storageReady = await _privateStorageAvailable(uid) == true;
 
-    // 1) photo mapping
-    var recovered = legacyProfilePhoto(publicData);
-    if (recovered.isEmpty && adminRepair) {
+    // 1) photo mapping — a photo that exists but that `profilePhotoUrl` lost.
+    //    First the legacy arrays on the profile itself, then the
+    //    `users/{uid}.photoUrl` mirror that every photo save also writes. The
+    //    mirror lives on the member's OWN account document (only they and an
+    //    admin can write it), and must be an image uploaded through this app's
+    //    Cloudinary account — never an identity-provider avatar.
+    final hasPhoto = hasStoredValue(publicData['profilePhotoUrl']) ||
+        hasStoredValue(privateData?['profilePhotoUrl']);
+    var recovered = hasPhoto ? '' : legacyProfilePhoto(publicData);
+    if (!hasPhoto && recovered.isEmpty) {
       try {
         final user = await _db
             .collection(AppConstants.usersCollection)
@@ -1248,11 +1339,28 @@ class FirestoreService {
         final mirror = '${user.data()?['photoUrl'] ?? ''}'.trim();
         if (mirror.isNotEmpty &&
             !isAuthProviderPhoto(mirror) &&
-            isMemberCloudinaryAsset(mirror, uid)) {
+            isAppCloudinaryImage(mirror)) {
           recovered = mirror;
         }
       } catch (e) {
         debugPrint('[Reconcile] users/$uid mirror unreadable: $e');
+      }
+    }
+
+    if (!storageReady) {
+      // The private collections are not usable (rules not deployed): nothing
+      // may be blanked. A lost photo reference is still restored — with a
+      // plain update of the one field, which the existing rules allow.
+      if (recovered.isEmpty) return const MemberPrivacyRepair.skipped();
+      try {
+        await commitWrite(ref.update({'profilePhotoUrl': recovered}),
+            timeout: const Duration(seconds: 20));
+        debugPrint('[Reconcile] $uid: profilePhotoUrl restored on '
+            'profiles/$profileId from an existing reference.');
+        return const MemberPrivacyRepair(changed: true, recoveredPhoto: true);
+      } catch (e) {
+        debugPrint('[Reconcile] $uid: photo restore failed: $e');
+        return const MemberPrivacyRepair.skipped();
       }
     }
 
@@ -1324,24 +1432,15 @@ class FirestoreService {
       });
     }
     if (plan.publicUpdate.isNotEmpty) batch.update(ref, plan.publicUpdate);
-    if (!await _commitPrivacyBatch(batch)) {
+    if (!await _commitPrivacyBatch(batch, uid: uid)) {
       return const MemberPrivacyRepair.skipped();
     }
     if (plan.recoveredPhoto.isNotEmpty) {
-      debugPrint('[Reconcile] $uid: photo mapping restored from a legacy '
+      debugPrint('[Reconcile] $uid: photo mapping restored from an existing '
           'reference.');
     }
     return MemberPrivacyRepair(
         changed: true, recoveredPhoto: plan.recoveredPhoto.isNotEmpty);
-  }
-
-  /// Probes whether `profile_private/{uid}` accepts writes (rules deployed)
-  /// without changing anything meaningful: it writes only the id fields.
-  Future<bool> _canWritePrivate(String uid, String profileId) async {
-    final batch = _db.batch()
-      ..set(_privateProfileRef(uid), {'userId': uid, 'profileId': profileId},
-          SetOptions(merge: true));
-    return _commitPrivacyBatch(batch);
   }
 
   /// ADMIN: runs [reconcileMemberPrivacy] for every profile. Sequential and

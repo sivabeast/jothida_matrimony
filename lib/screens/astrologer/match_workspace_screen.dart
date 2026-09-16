@@ -17,6 +17,7 @@ import '../../providers/match_analysis_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../widgets/common/external_party_card.dart';
 import '../../widgets/common/horoscope_documents_view.dart';
+import '../../widgets/common/network_photo.dart' show PhotoAvatar;
 import '../../widgets/common/rasi_chart.dart';
 import '../../core/services/horoscope_calculation_service.dart';
 
@@ -945,15 +946,11 @@ class _PartyCard extends ConsumerWidget {
       children: [
         Row(
           children: [
-            CircleAvatar(
+            PhotoAvatar(
+              url: p.profilePhotoUrl ?? '',
               radius: 26,
               backgroundColor: AppColors.primary.withOpacity(0.1),
-              backgroundImage: (p.profilePhotoUrl ?? '').isNotEmpty
-                  ? NetworkImage(p.profilePhotoUrl!)
-                  : null,
-              child: (p.profilePhotoUrl ?? '').isEmpty
-                  ? const Icon(Icons.person, color: AppColors.primary)
-                  : null,
+              placeholder: const Icon(Icons.person, color: AppColors.primary),
             ),
             const SizedBox(width: 12),
             Expanded(

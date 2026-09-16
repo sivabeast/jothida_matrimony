@@ -58,6 +58,20 @@ bool isMemberCloudinaryAsset(String? url, String uid) {
       u.contains('/jothida_matrimony/profiles/${uid.trim()}/');
 }
 
+/// The Cloudinary cloud every upload in this app goes to (see
+/// `CloudinaryStorageService.cloudName`).
+const String kAppCloudinaryCloud = 'dh8hzjx5q';
+
+/// True when [url] is an IMAGE delivered by this app's Cloudinary account —
+/// i.e. something a member (or an admin) uploaded through the app, as opposed
+/// to an identity-provider avatar or an arbitrary link. Independent of the
+/// folder, so it also holds for accounts whose Cloudinary folders are not part
+/// of the delivery URL.
+bool isAppCloudinaryImage(String? url) {
+  final u = (url ?? '').trim();
+  return u.startsWith('https://res.cloudinary.com/$kAppCloudinaryCloud/image/upload/');
+}
+
 /// The photo a LEGACY profile document still references outside
 /// `profilePhotoUrl`, or `''`.
 ///

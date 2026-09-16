@@ -43,6 +43,11 @@ class NetworkPhoto extends StatelessWidget {
   /// of cards isn't filled with spinners.
   final bool showLoadingSpinner;
 
+  /// Replaces the default icon placeholder — shown for an empty URL AND for a
+  /// photo that fails to load, so a missing image looks exactly like "no
+  /// photo" (e.g. an initial letter in an avatar) rather than a broken box.
+  final Widget? fallback;
+
   const NetworkPhoto({
     super.key,
     required this.url,
@@ -54,6 +59,7 @@ class NetworkPhoto extends StatelessWidget {
     this.fallbackIconSize = 44,
     this.fallbackBg,
     this.showLoadingSpinner = false,
+    this.fallback,
   });
 
   @override
@@ -87,7 +93,13 @@ class NetworkPhoto extends StatelessWidget {
           useOldImageOnUrlChange: true,
           fadeInDuration: const Duration(milliseconds: 150),
           placeholder: (_, __) => _loading(),
-          errorWidget: (_, __, ___) => onError(),
+          errorWidget: (_, failedUrl, error) {
+            // A photo that does not load must be diagnosable, not just a
+            // placeholder: the URL and the actual error (404 for a deleted
+            // asset, a blocked transformation, no network…) are logged.
+            debugPrint('[NetworkPhoto] load failed for $failedUrl: $error');
+            return onError();
+          },
         );
     if (sized == original) return load(original, _fallback);
     return load(sized, () => load(original, _fallback));
@@ -110,33 +122,83 @@ class NetworkPhoto extends StatelessWidget {
             : null,
       );
 
-  Widget _fallback() => Container(
-        width: width,
-        height: height,
-        color: fallbackBg ?? AppColors.primary.withOpacity(0.08),
-        alignment: Alignment.center,
-        child: Icon(fallbackIcon,
-            size: fallbackIconSize, color: AppColors.primary.withOpacity(0.55)),
-      );
+  Widget _fallback() => fallback != null
+      ? SizedBox(width: width, height: height, child: fallback)
+      : Container(
+          width: width,
+          height: height,
+          color: fallbackBg ?? AppColors.primary.withOpacity(0.08),
+          alignment: Alignment.center,
+          child: Icon(fallbackIcon,
+              size: fallbackIconSize,
+              color: AppColors.primary.withOpacity(0.55)),
+        );
+}
+
+/// A circular profile photo — the drop-in for
+/// `CircleAvatar(backgroundImage: NetworkImage(url), child: placeholder)`.
+///
+/// That pattern is why photos "did not show" on several screens: a bare
+/// `NetworkImage` is not cached, and when it fails `CircleAvatar` paints an
+/// EMPTY coloured circle — the placeholder child is only used when there is no
+/// URL at all, so a broken or slow photo looked exactly like a missing one and
+/// nothing was logged. This renders through [NetworkPhoto] instead: cached,
+/// display-sized with an automatic fallback to the original URL, and the SAME
+/// placeholder for "no photo" and "photo failed to load". Same size, colour and
+/// shape as the avatar it replaces.
+class PhotoAvatar extends StatelessWidget {
+  final String url;
+  final double radius;
+  final Color? backgroundColor;
+
+  /// Shown when there is no photo or it cannot be loaded (an icon, an initial).
+  final Widget placeholder;
+
+  const PhotoAvatar({
+    super.key,
+    required this.url,
+    required this.radius,
+    required this.placeholder,
+    this.backgroundColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final side = radius * 2;
+    final trimmed = url.trim();
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: backgroundColor,
+      child: trimmed.isEmpty
+          ? placeholder
+          : ClipOval(
+              child: NetworkPhoto(
+                url: trimmed,
+                width: side,
+                height: side,
+                fit: BoxFit.cover,
+                fallback: Container(
+                  color: backgroundColor,
+                  alignment: Alignment.center,
+                  child: placeholder,
+                ),
+              ),
+            ),
+    );
+  }
 }
 
 /// Shared [ImageProvider] for places that need a raw provider (e.g.
-/// `CircleAvatar.backgroundImage` or `DecorationImage`) rather than a widget.
+/// `DecorationImage`) rather than a widget.
 ///
-/// Prefer [NetworkPhoto] when you can. Use this only where an [ImageProvider] is
-/// required so those spots still benefit from the on-disk cache instead of
-/// re-downloading via a bare `NetworkImage`. Returns null for an empty URL so
-/// callers can fall back to an icon/child.
-///
-/// [logicalSize] is the size the image is drawn at (an avatar's diameter); a
-/// Cloudinary image is then fetched at that size instead of full resolution.
-ImageProvider? cachedPhotoProvider(String url, {double? logicalSize}) {
+/// Prefer [PhotoAvatar] / [NetworkPhoto]: an [ImageProvider] has no error
+/// fallback, which is why this always loads the ORIGINAL URL — never a
+/// resized variant that could fail with nothing to fall back to. Cached on
+/// disk, unlike a bare `NetworkImage`. Returns null for an empty URL.
+ImageProvider? cachedPhotoProvider(String url) {
   final trimmed = url.trim();
   if (trimmed.isEmpty) return null;
-  final size = logicalSize;
-  return CachedNetworkImageProvider(size == null
-      ? trimmed
-      : cloudinaryDisplayUrl(trimmed, width: size * 3));
+  return CachedNetworkImageProvider(trimmed);
 }
 
 /// Forgets everything the device has cached for [url] (spec §25).

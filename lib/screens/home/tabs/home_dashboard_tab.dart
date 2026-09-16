@@ -342,17 +342,16 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           ),
         ),
         const SizedBox(width: 2),
-        CircleAvatar(
+        PhotoAvatar(
+          url: photo,
           radius: 20,
           backgroundColor: Colors.white24,
-          backgroundImage: cachedPhotoProvider(photo, logicalSize: 44),
-          child: photo.isEmpty
-              ? Text(firstName.isNotEmpty ? firstName[0].toUpperCase() : '?',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16))
-              : null,
+          placeholder: Text(
+              firstName.isNotEmpty ? firstName[0].toUpperCase() : '?',
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16)),
         ),
         const SizedBox(width: 10),
         Expanded(
