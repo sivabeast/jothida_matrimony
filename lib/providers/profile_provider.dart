@@ -11,6 +11,7 @@ import '../services/cloudinary/cloudinary_exception.dart';
 import '../services/firebase/firestore_service.dart' show ProfilePage;
 import 'block_provider.dart';
 import 'demo_data_provider.dart';
+import 'profile_edit_provider.dart' show retireReplacedPhoto;
 import 'notification_provider.dart';
 import 'service_providers.dart';
 import 'auth_provider.dart';
@@ -416,6 +417,20 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
           }
         }
         profileId = editProfileId;
+        // The member's IDENTITY may have just changed — a new name, a new
+        // photo, or both. Everything that keeps a denormalized copy of it has
+        // to hear about that (spec §2/§8/§25), and the asset the new photo
+        // replaced has to be retired (§6/§24) — but only AFTER the profile
+        // document above was written, never before.
+        await _syncIdentityAfterSave(
+          userId: userId,
+          name: profile.fullName,
+          photoUrl: profile.profilePhotoUrl,
+          replacedPhotoUrl:
+              photoUrls.isNotEmpty && existingPhotos.isNotEmpty
+                  ? existingPhotos.first
+                  : null,
+        );
         debugPrint('[submitProfile] ✅ profile updated (id=$profileId)');
       } else {
         debugPrint('[submitProfile] ▶ writing profile to Firestore...');
@@ -426,6 +441,16 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
         debugPrint('[submitProfile] ▶ marking profile completed for userId=$userId');
         await ref.read(firestoreServiceProvider).markProfileCompleted(userId);
         debugPrint('[submitProfile] ✅ markProfileCompleted done');
+        // Mirror the uploaded photo onto users/{uid} straight away, so the very
+        // first Home render after onboarding shows the member's own image
+        // rather than nothing (spec §8). Admin-created profiles get it too —
+        // the member never had to upload anything for it to be theirs.
+        await _syncIdentityAfterSave(
+          userId: userId,
+          name: profile.fullName,
+          photoUrl: profile.profilePhotoUrl,
+          replacedPhotoUrl: null,
+        );
         if (adminCreated) {
           // Admin-created profiles are live immediately — tell the member.
           await ref.read(notificationNotifierProvider.notifier).notify(
@@ -458,6 +483,46 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
   }
 
   void reset() => state = const ProfileCreationState();
+
+  /// Pushes the just-saved name / photo out to the denormalized copies of them,
+  /// and retires the Cloudinary asset a new photo replaced.
+  ///
+  /// All of it is BEST-EFFORT and deliberately so: the profile is already
+  /// saved by the time this runs, and a failed cache refresh (or a Cloudinary
+  /// cleanup the Cloud Function could not perform) must never turn a successful
+  /// save into "Could not save your profile". Whatever could not be deleted is
+  /// queued by the cleanup service, so nothing is lost silently.
+  Future<void> _syncIdentityAfterSave({
+    required String userId,
+    required String name,
+    required String? photoUrl,
+    required String? replacedPhotoUrl,
+  }) async {
+    if (userId.isEmpty) return;
+    final photo = (photoUrl ?? '').trim();
+    try {
+      await ref
+          .read(firestoreServiceProvider)
+          .updateUserPhoto(userId, photo.isEmpty ? null : photo);
+    } catch (e) {
+      debugPrint('[submitProfile] users/$userId photo mirror skipped: $e');
+    }
+    try {
+      await ref.read(chatServiceProvider).syncParticipantIdentity(
+            uid: userId,
+            name: name.trim(),
+            photoUrl: photo,
+          );
+    } catch (e) {
+      debugPrint('[submitProfile] chat identity sync skipped: $e');
+    }
+    await retireReplacedPhoto(
+      ref,
+      oldUrl: replacedPhotoUrl,
+      newUrl: photo,
+      reason: 'profile_photo_replaced:$userId',
+    );
+  }
 
   /// Turn raw upload/Firestore errors into actionable messages instead of
   /// dumping `e.toString()` (e.g. `[firebase_storage/object-not-found] No

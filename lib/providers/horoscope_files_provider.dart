@@ -1,8 +1,11 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/dev_config.dart';
 import '../models/profile_model.dart';
+import '../services/cloudinary/cloudinary_storage_service.dart';
+import '../widgets/common/network_photo.dart' show evictCachedImage;
 import 'demo_data_provider.dart';
 import 'profile_provider.dart';
 import 'service_providers.dart';
@@ -10,9 +13,16 @@ import 'service_providers.dart';
 /// Create / read / delete / replace for the signed-in user's horoscope
 /// documents — MULTIPLE images and MULTIPLE PDFs.
 ///
-/// Files are stored on Cloudinary (unsigned uploads can't be deleted from the
-/// client), so "delete" removes the URL reference from the profile document;
-/// the orphaned remote asset is simply no longer linked.
+/// Files live on Cloudinary. A delete or a replace does TWO things, in this
+/// order: the reference comes off the profile document first, and only then is
+/// the remote asset destroyed (spec §10/§24). Unlinking first is what makes the
+/// operation safe — if the destroy fails the member has simply lost a file they
+/// asked to remove, never a file they still expect to see.
+///
+/// The destroy itself must be signed with the Cloudinary API secret, which
+/// never ships in the app, so it runs in the `deleteCloudinaryAssets` Cloud
+/// Function; anything it cannot delete is queued in `cloudinary_cleanup` rather
+/// than left as an invisible orphan (spec §32).
 class HoroscopeFilesController extends Notifier<AsyncValue<void>> {
   @override
   AsyncValue<void> build() => const AsyncData(null);
@@ -51,6 +61,22 @@ class HoroscopeFilesController extends Notifier<AsyncValue<void>> {
         .uploadHoroscopeDoc(userId: p.userId, file: file, isPdf: isPdf);
   }
 
+  /// Destroys the Cloudinary asset behind [url] once it is no longer referenced
+  /// by the profile. Never throws — an unlink that succeeded must not be
+  /// reported as a failure because the remote cleanup did not.
+  Future<void> _destroy(String url, String reason) async {
+    if (url.trim().isEmpty || kBypassAuth) return;
+    await evictCachedImage(url);
+    try {
+      final storage = ref.read(storageServiceProvider);
+      if (storage is! CloudinaryStorageService) return;
+      final deleted = await storage.deleteFiles([url], reason: reason);
+      debugPrint('[HoroscopeFiles] destroyed $deleted asset(s) ($reason).');
+    } catch (e) {
+      debugPrint('[HoroscopeFiles] asset cleanup skipped: $e');
+    }
+  }
+
   // ── Images ────────────────────────────────────────────────────────────────
   Future<void> addImages(List<File> files) => _run(() async {
         final p = _profile;
@@ -68,6 +94,7 @@ class HoroscopeFilesController extends Notifier<AsyncValue<void>> {
         final urls =
             p.horoscope.horoscopeImages.where((u) => u != url).toList();
         await _persist(p.horoscope.copyWith(horoscopeImages: urls));
+        await _destroy(url, 'horoscope_image_deleted:${p.userId}');
       });
 
   Future<void> replaceImage(String oldUrl, File newFile) => _run(() async {
@@ -79,6 +106,10 @@ class HoroscopeFilesController extends Notifier<AsyncValue<void>> {
             .toList();
         if (!urls.contains(newUrl)) urls.add(newUrl);
         await _persist(p.horoscope.copyWith(horoscopeImages: urls));
+        // Only once the replacement is safely stored (spec §6/§24).
+        if (!urls.contains(oldUrl)) {
+          await _destroy(oldUrl, 'horoscope_image_replaced:${p.userId}');
+        }
       });
 
   // ── PDFs (folds the legacy single PDF into the multi-PDF list) ───────────────
@@ -99,6 +130,7 @@ class HoroscopeFilesController extends Notifier<AsyncValue<void>> {
         final urls = p.horoscope.allPdfUrls.where((u) => u != url).toList();
         await _persist(p.horoscope
             .copyWith(horoscopePdfUrls: urls, horoscopePdfUrl: ''));
+        await _destroy(url, 'horoscope_pdf_deleted:${p.userId}');
       });
 
   Future<void> replacePdf(String oldUrl, File newFile) => _run(() async {
@@ -111,6 +143,9 @@ class HoroscopeFilesController extends Notifier<AsyncValue<void>> {
         if (!urls.contains(newUrl)) urls.add(newUrl);
         await _persist(p.horoscope
             .copyWith(horoscopePdfUrls: urls, horoscopePdfUrl: ''));
+        if (!urls.contains(oldUrl)) {
+          await _destroy(oldUrl, 'horoscope_pdf_replaced:${p.userId}');
+        }
       });
 }
 

@@ -442,6 +442,25 @@ enum InterestUiStatus {
   receivedPending,
 }
 
+/// Whether [interestStatusForProfileProvider] can be TRUSTED yet (spec §19).
+///
+/// The status is derived from two Firestore streams, and both read
+/// `valueOrNull ?? []` — so during the first moments after a screen opens, "no
+/// interest either way" and "we do not know yet" are the same value. That is
+/// what let a profile the member had ALREADY written to still offer them a
+/// fresh "Send Interest" button. Disabling the action until this is true makes
+/// the button reflect backend state and nothing else.
+///
+/// A stream that ERRORED counts as settled, deliberately. A denied Firestore
+/// listener never retries, so waiting for a value that will never arrive would
+/// disable the button permanently — far worse than briefly allowing a send the
+/// rules and the deterministic interest id already de-duplicate server-side.
+final interestStatusReadyProvider = Provider.autoDispose<bool>((ref) {
+  bool settled(AsyncValue<Object?> v) => v.hasValue || v.hasError;
+  return settled(ref.watch(sentInterestsProvider)) &&
+      settled(ref.watch(receivedInterestsProvider));
+});
+
 /// Resolves the [InterestUiStatus] between the signed-in user and the profile
 /// [profileId]. Acceptance (either direction) wins, then a sent interest, then
 /// a received-pending one. Used to render the correct, non-duplicating button.

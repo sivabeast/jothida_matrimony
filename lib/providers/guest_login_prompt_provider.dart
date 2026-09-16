@@ -64,15 +64,25 @@ class GuestLoginPromptStore {
 
 /// Pure decision function, extracted so the interval rule is unit-testable.
 ///
-/// [lastShownMs] is null the very first time — a guest is prompted once
-/// shortly after they start browsing, then only every [interval] after that.
+/// [lastShownMs] is null the very first time. A guest is prompted ONCE per app
+/// launch, as soon as Home is up (spec §14), and then only every [interval]
+/// while they keep browsing in that same session.
+///
+/// [promptedThisLaunch] is what separates the two: pass `false` for the first
+/// check after Home appears — an app OPEN always earns the prompt, even if the
+/// guest was already prompted nine minutes ago in the previous session — and
+/// `true` for every check after that, which is where the interval takes over.
+/// It defaults to `true` so a caller that only cares about the interval rule
+/// reads exactly as before.
 bool shouldShowGuestLoginPrompt({
   required bool isGuest,
   required int? lastShownMs,
   required DateTime now,
   Duration interval = kGuestLoginPromptInterval,
+  bool promptedThisLaunch = true,
 }) {
   if (!isGuest) return false;
+  if (!promptedThisLaunch) return true;
   if (lastShownMs == null) return true;
   final last = DateTime.fromMillisecondsSinceEpoch(lastShownMs);
   // A stamp in the future (device clock moved backwards) is treated as "due"
@@ -83,6 +93,14 @@ bool shouldShowGuestLoginPrompt({
 
 final guestLoginPromptStoreProvider =
     Provider<GuestLoginPromptStore>((ref) => const GuestLoginPromptStore());
+
+/// Whether the login prompt has already been shown in THIS app launch.
+///
+/// Deliberately in-memory only: it must reset on every cold start, because
+/// "show it when the app opens" (spec §14) is exactly a per-launch event. The
+/// persisted stamp in [GuestLoginPromptStore] governs what happens afterwards,
+/// within the session.
+final guestPromptShownThisLaunchProvider = StateProvider<bool>((ref) => false);
 
 /// Watches the auth state and wipes the stamp once the visitor is a member, so
 /// the prompt can never resurface for a signed-in account.

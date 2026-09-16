@@ -8,8 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../models/profile_model.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/demo_data_provider.dart';
-import '../../providers/profile_provider.dart';
+import '../../providers/profile_edit_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../screens/profile/square_crop_screen.dart';
 import '../common/fullscreen_photo_viewer.dart';
@@ -40,26 +39,26 @@ class _EditableProfilePhotoState extends ConsumerState<EditableProfilePhoto> {
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(m)));
 
+  /// Saves the new photo reference through the ONE profile-edit path
+  /// ([ProfileEditController.save]).
+  ///
+  /// Everything that has to happen alongside it lives there and happens for
+  /// every screen that edits a profile, not just this one: the Firestore write,
+  /// the `users/{uid}.photoUrl` mirror, the chat participant refresh (§2), the
+  /// deletion of the Cloudinary asset being replaced (§6/§24) and the eviction
+  /// of its cached bytes (§25). Writing the document directly from here is what
+  /// previously made this widget the odd one out.
   Future<void> _persist(String? url) async {
     final profile = widget.profile!;
-    if (kBypassAuth) {
-      ref
-          .read(demoProfilesProvider.notifier)
-          .upsert(profile.withProfilePhoto(url));
-    } else {
-      await ref.read(profileRepositoryProvider).updateProfile(profile.id, {
-        'profilePhotoUrl': url,
-        // Multi-photo support is gone — clear any legacy extras (§1).
-        'additionalPhotos': <String>[],
-      });
-      // Keep the denormalized users/{uid}.photoUrl in sync so the new image
-      // also shows in the home header, chats and elsewhere that reads it.
-      await ref
-          .read(firestoreServiceProvider)
-          .updateUserPhoto(profile.userId, url);
-      ref.invalidate(myProfileProvider);
-      ref.invalidate(currentUserProvider);
-    }
+    await ref.read(profileEditControllerProvider.notifier).save(
+          updated: profile.withProfilePhoto(url),
+          patch: {
+            'profilePhotoUrl': url,
+            // Multi-photo support is gone — clear any legacy extras (§1).
+            'additionalPhotos': <String>[],
+          },
+        );
+    if (!kBypassAuth) ref.invalidate(currentUserProvider);
   }
 
   Future<void> _changePhoto() async {

@@ -92,31 +92,21 @@ class ProfileRepository {
   }) =>
       _storage.uploadHoroscopeDoc(userId: userId, file: file, isPdf: isPdf);
 
-  /// Replaces a single profile photo (e.g. from an "Edit profile" screen)
-  /// and updates the `photos` array on the profile document.
-  Future<String> updateProfilePhoto({
-    required String userId,
-    required String profileId,
-    required File file,
-    required int index,
-    required List<String> currentPhotos,
-    void Function(double)? onProgress,
-  }) async {
-    final url = await _storage.updateProfilePhoto(
-      userId: userId,
-      file: file,
-      index: index,
-      onProgress: onProgress,
-    );
-    final photos = [...currentPhotos];
-    if (index < photos.length) {
-      photos[index] = url;
-    } else {
-      photos.add(url);
-    }
-    await _firestore.updateProfile(profileId, {'photos': photos});
-    return url;
-  }
+  // REMOVED: `updateProfilePhoto`.
+  //
+  // It uploaded a new image and then wrote it to a `photos` ARRAY on the
+  // profile document — a field `ProfileModel.fromFirestore` does not read. The
+  // stored photo is `profilePhotoUrl` (one photo per member, §1), so anything
+  // saved through that method uploaded correctly to Cloudinary and then never
+  // appeared anywhere in the app: exactly the "images are uploaded but not
+  // fetched/displayed" symptom, waiting for the next caller to hit it.
+  //
+  // Photo replacement belongs to `ProfileEditController.save`, which is the one
+  // path that writes the right field AND does everything else a new photo
+  // implies — the `users/{uid}.photoUrl` mirror, the chat participant refresh
+  // (§2), deleting the Cloudinary asset it replaced (§6/§24) and evicting its
+  // cached bytes (§25). A second, half-correct way to do the same thing is how
+  // those stopped being applied consistently in the first place.
 
   Future<void> incrementViewCount(String profileId) => _firestore.incrementViewCount(profileId);
 

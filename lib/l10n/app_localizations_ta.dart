@@ -4230,4 +4230,31 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get professionalMarriageCompatReport =>
       'தொழில்முறை திருமண பொருத்த அறிக்கை';
+
+  @override
+  String get navAstrologers => 'ஜோதிடர்';
+
+  @override
+  String get marriedStatusCardTitle => 'திருமணம் ஆகிவிட்டதா?';
+
+  @override
+  String get marriedStatusCardBody =>
+      'உங்கள் சுயவிவரத்தில் திருமண நிலையைப் புதுப்பிக்கவும்.';
+
+  @override
+  String get marriedStatusCardAction => 'நிலையைப் புதுப்பிக்கவும்';
+
+  @override
+  String get marriedStatusCardMarriedBody =>
+      'உங்கள் சுயவிவரம் திருமணமானது எனக் குறிக்கப்பட்டு, பொருத்தப் பட்டியலிலிருந்து விலக்கப்பட்டுள்ளது.';
+
+  @override
+  String get horoscopeRequestSubmitted => 'ஜாதக கோரிக்கை சமர்ப்பிக்கப்பட்டது';
+
+  @override
+  String get horoscopeRequestStatusLine => 'நிலை: நிலுவையில்';
+
+  @override
+  String get paidButReportNotSavedRetry =>
+      'உங்கள் பணம் செலுத்தப்பட்டது, ஆனால் அறிக்கை கோரிக்கையைச் சேமிக்க முடியவில்லை. மீண்டும் பணம் செலுத்து என்பதை அழுத்தவும் — இருமுறை கட்டணம் வசூலிக்கப்படாது.';
 }

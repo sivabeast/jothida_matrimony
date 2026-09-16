@@ -20,25 +20,39 @@ void main() {
   group('astrology centre location', () {
     const cfg = AstrologyServiceConfig();
 
-    test('defaults to the configured centre', () {
-      expect(cfg.officeAddress,
-          '45, Lakshmiyapuram Street, Thoppatti, Rajapalayam');
-      expect(cfg.officeCity, 'Rajapalayam');
-      expect(cfg.officeDistrict, 'Virudhunagar');
-      expect(cfg.officeState, 'Tamil Nadu');
+    test('there is exactly ONE location, and it is the address (§11/§12)', () {
+      // The centre's address used to live in four fields, which the Astrology
+      // page then rendered as two separate rows ("Office" and "Location") —
+      // two halves of one address, free to disagree. Only `officeAddress`
+      // carries it now; the legacy parts default to blank.
+      expect(cfg.officeCity, isEmpty);
+      expect(cfg.officeDistrict, isEmpty);
+      expect(cfg.officeState, isEmpty);
+      expect(cfg.fullAddress, cfg.officeAddress);
       expect(cfg.mapLocation, 'https://maps.app.goo.gl/YY8ZxTMdhx1bfm3o6');
     });
 
-    test('fullAddress is street → city → district → state', () {
-      expect(
-        cfg.fullAddress,
-        '45, Lakshmiyapuram Street, Thoppatti, Rajapalayam, Rajapalayam, '
-        'Virudhunagar, Tamil Nadu',
-      );
+    test('fullAddress is complete enough for Google to geocode', () {
+      // A share-style Maps short link carries no coordinates, so the address
+      // IS the directions destination — it has to name the town and state.
+      expect(cfg.fullAddress, contains('Rajapalayam'));
+      expect(cfg.fullAddress, contains('Virudhunagar'));
+      expect(cfg.fullAddress, contains('Tamil Nadu'));
+      // ...and it must not repeat any part of itself.
+      expect('Rajapalayam,'.allMatches(cfg.fullAddress).length, 1);
     });
 
-    test('the location hierarchy reads City, District, State', () {
-      expect(cfg.locationHierarchy, 'Rajapalayam, Virudhunagar, Tamil Nadu');
+    test('a pre-§12 document still resolves to one complete address', () {
+      // Legacy stored config: address split across the four old fields. It
+      // must keep working until the admin re-saves it as one line.
+      const legacy = AstrologyServiceConfig(
+        officeAddress: '45, Lakshmiyapuram Street',
+        officeCity: 'Rajapalayam',
+        officeDistrict: 'Virudhunagar',
+        officeState: 'Tamil Nadu',
+      );
+      expect(legacy.fullAddress,
+          '45, Lakshmiyapuram Street, Rajapalayam, Virudhunagar, Tamil Nadu');
     });
 
     test('a share-style short link carries no coordinates to route to', () {
@@ -57,7 +71,6 @@ void main() {
         officeState: 'Tamil Nadu',
       );
       expect(partial.fullAddress, 'Some Street, Rajapalayam, Tamil Nadu');
-      expect(partial.locationHierarchy, 'Rajapalayam, Tamil Nadu');
     });
   });
 

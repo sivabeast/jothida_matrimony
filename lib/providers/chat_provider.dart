@@ -1,10 +1,14 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/dev_config.dart';
+import '../core/utils/matrimony_photo.dart';
 import '../models/chat_model.dart';
+import '../models/profile_model.dart';
 import 'auth_provider.dart';
 import 'demo_data_provider.dart';
+import 'locale_provider.dart';
 import 'profile_provider.dart';
 import 'service_providers.dart';
 
@@ -173,6 +177,70 @@ final myUnreadChatCountProvider = Provider.autoDispose<int>((ref) {
   }
   return total;
 });
+
+/// Who the OTHER member of a conversation is, right now (spec §2).
+///
+/// The thread document snapshots the counterpart's name and photo at creation
+/// time. That snapshot is a render cache, NOT the truth: a member who renames
+/// themselves or replaces their photo must appear renamed in every existing
+/// conversation, and reading the stored copy is what left the old name and the
+/// old picture sitting in the chat forever.
+///
+/// So the live matrimony profile wins, and the snapshot is only the fallback
+/// for the moment before it loads (or for a counterpart whose profile is not
+/// readable). The photo goes through [matrimonyPhotoUrl], so a Google account
+/// picture can never reach a chat header either (§5).
+class ChatIdentity {
+  final String name;
+  final String photoUrl;
+  const ChatIdentity({required this.name, required this.photoUrl});
+}
+
+/// Resolves [ChatIdentity] for the counterpart of [thread].
+///
+/// A `ref`-taking helper rather than a provider family, matching
+/// `watchMemberAccess`: the caller already HOLDS the thread (the Chats list
+/// builds a row from it, the chat screen watches it), so keying a family by
+/// thread id would only open a second listener on a document that is already
+/// on screen. The profile lookup underneath IS a provider, shared across rows
+/// and served from the Firestore cache.
+ChatIdentity watchChatIdentity(
+  WidgetRef ref, {
+  required ChatThread? thread,
+  required String myUid,
+}) {
+  final otherId = thread?.otherId(myUid) ?? '';
+  return resolveChatIdentity(
+    profile: otherId.isEmpty
+        ? null
+        : ref.watch(profileByUserIdProvider(otherId)).valueOrNull,
+    isTamil: ref.watch(localeProvider)?.languageCode == 'ta',
+    snapshotName: thread?.otherName(myUid) ?? '',
+    snapshotPhoto: thread?.otherPhoto(myUid) ?? '',
+  );
+}
+
+/// Pure resolution rule behind [chatCounterpartIdentityProvider], extracted so
+/// the "live profile wins, snapshot is the fallback" contract is testable
+/// without Firestore.
+@visibleForTesting
+ChatIdentity resolveChatIdentity({
+  required ProfileModel? profile,
+  required bool isTamil,
+  required String snapshotName,
+  required String snapshotPhoto,
+}) {
+  final liveName = profile?.displayName(isTamil).trim() ?? '';
+  final livePhoto = matrimonyPhotoUrl(profile?.profilePhotoUrl);
+  return ChatIdentity(
+    name: liveName.isNotEmpty ? liveName : snapshotName,
+    // A member who REMOVED their photo has no photo — the stale snapshot must
+    // not put it back. The fallback applies only while no profile is loaded.
+    photoUrl: profile != null
+        ? livePhoto
+        : matrimonyPhotoUrl(snapshotPhoto),
+  );
+}
 
 final chatThreadProvider =
     StreamProvider.autoDispose.family<ChatThread?, String>((ref, threadId) {

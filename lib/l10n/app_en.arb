@@ -1856,5 +1856,13 @@
   "copy": "Copy",
   "openWhatsappChat": "Open WhatsApp chat",
   "attachReportHint": "Then attach the report to that chat — pick WhatsApp in the share sheet.",
-  "professionalMarriageCompatReport": "Professional Marriage Compatibility Report"
+  "professionalMarriageCompatReport": "Professional Marriage Compatibility Report",
+  "navAstrologers": "Astrologers",
+  "marriedStatusCardTitle": "Already married?",
+  "marriedStatusCardBody": "Update your marital status in your profile.",
+  "marriedStatusCardAction": "Update status",
+  "marriedStatusCardMarriedBody": "Your profile is marked as Married and has left matchmaking.",
+  "horoscopeRequestSubmitted": "Horoscope Request Submitted",
+  "horoscopeRequestStatusLine": "Status: Pending",
+  "paidButReportNotSavedRetry": "Your payment went through but the report request could not be saved. Tap Pay again — you will not be charged twice."
 }

@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/painting.dart' show PaintingBinding;
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/config/dev_config.dart';
@@ -8,6 +10,7 @@ import 'demo_data_provider.dart';
 import 'matches_prefs_provider.dart';
 import 'profile_provider.dart';
 import 'service_providers.dart';
+import '../repositories/auth_repository.dart' show AccountDeletionResult;
 import '../services/cloudinary/cloudinary_storage_service.dart';
 
 /// Account lifecycle: "Mark as Married" and immediate self-service account
@@ -77,15 +80,16 @@ class AccountController extends Notifier<AsyncValue<void>> {
   /// message — `AsyncValue.guard` alone swallows the error, which used to make
   /// a failed deletion look like a successful one.
   ///
-  /// Returns true when the Firebase Auth account itself was removed. False
-  /// means the local data is gone and the user is signed out, but the auth
-  /// record survived (re-authentication was refused) — worth telling the user.
-  Future<bool> deleteAccount({required bool isAstrologer}) async {
+  /// Returns what actually happened ([AccountDeletionResult]) rather than a
+  /// bare "it worked": the Firebase Auth record and the Firestore data fail
+  /// independently, and only the caller can decide what to tell the member.
+  Future<AccountDeletionResult> deleteAccount(
+      {required bool isAstrologer}) async {
     state = const AsyncLoading();
     try {
       final repo = ref.read(authRepositoryProvider);
       final uid = repo.currentUserId;
-      var authDeleted = true;
+      var result = const AccountDeletionResult(authDeleted: true);
 
       if (kBypassAuth) {
         // Demo mode: drop the locally-created profile / astrologer session.
@@ -120,12 +124,19 @@ class AccountController extends Notifier<AsyncValue<void>> {
             debugPrint('[AccountController] chat tombstone skipped: $e');
           }
         }
-        authDeleted = await repo.deleteAccount(uid, isAstrologer: isAstrologer);
+        result = await repo.deleteAccount(uid, isAstrologer: isAstrologer);
       }
 
       // Local cleanup — SharedPreferences holds cached login/role/onboarding
       // state. (This app does not use flutter_secure_storage.)
       await _clearLocalStorage();
+      // ...and the IMAGE caches, which SharedPreferences knows nothing about.
+      // `cached_network_image` keeps the bytes on disk keyed by URL, and
+      // Flutter keeps decoded frames in memory; neither notices that the
+      // account they belonged to is gone. Left alone, the next person to use
+      // this device can be shown the previous member's photo the moment a
+      // stale URL is rendered (spec §4/§27).
+      await _clearImageCaches();
 
       // Belt and braces: even if `deleteAccount` above bailed out early, the
       // session must end. A signed-OUT user is what sends the router to /login.
@@ -140,7 +151,7 @@ class AccountController extends Notifier<AsyncValue<void>> {
       ref.invalidate(myProfileProvider);
       ref.invalidate(viewedProfilesProvider);
       state = const AsyncData(null);
-      return authDeleted;
+      return result;
     } catch (e, st) {
       state = AsyncError(e, st);
       rethrow;
@@ -185,6 +196,21 @@ class AccountController extends Notifier<AsyncValue<void>> {
   /// which is not what "delete my account" should do.
   /// Must stay in sync with `_kLocaleKey` in locale_provider.dart.
   static const _preservedPrefKeys = <String>['app_locale'];
+
+  /// Empties both image caches so nothing of the deleted account can still be
+  /// painted on this device. Best-effort — a cache that will not clear must
+  /// never block the deletion.
+  Future<void> _clearImageCaches() async {
+    try {
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+    } catch (_) {/* no binding (tests) */}
+    try {
+      await DefaultCacheManager().emptyCache();
+    } catch (e) {
+      debugPrint('[AccountController] image cache clear skipped: $e');
+    }
+  }
 
   Future<void> _clearLocalStorage() async {
     try {

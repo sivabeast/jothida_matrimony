@@ -64,7 +64,7 @@ Future<void> confirmAndDeleteAccount(BuildContext context, WidgetRef ref) async 
   }
 
   try {
-    final authDeleted = await ref
+    final result = await ref
         .read(accountControllerProvider.notifier)
         .deleteAccount(isAstrologer: isAstrologer);
     closeProgress();
@@ -72,10 +72,16 @@ Future<void> confirmAndDeleteAccount(BuildContext context, WidgetRef ref) async 
     // The router's redirect independently enforces this: the account is signed
     // out and its user document is gone, so every gated route sends it here.
     router.go('/login');
-    if (!authDeleted) {
-      // Firestore data + session are gone, but the Firebase Auth record
-      // survived (re-authentication was refused). Say so rather than silently
-      // implying a clean deletion.
+    if (!result.isComplete) {
+      // Something survived — the Firebase Auth record (re-authentication was
+      // refused), a Firestore collection that could not be cleared, or both.
+      // Say so rather than silently implying a clean deletion; the combination
+      // in `mayResurrect` is the one that can bring the old profile back at the
+      // next sign-in, and it is logged in full so it can be finished off.
+      debugPrint('[accountDeletion] INCOMPLETE — authDeleted='
+          '${result.authDeleted}, residualData=${result.residualData}, '
+          'failedSteps=${result.failedSteps.join(',')}, '
+          'mayResurrect=${result.mayResurrect}');
       messenger?.showSnackBar(SnackBar(content: Text(couldNotDelete)));
     }
   } catch (e) {

@@ -399,6 +399,10 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     final status = ref.watch(interestStatusForProfileProvider(profile.id));
     final accepted = status == InterestUiStatus.accepted;
     final alreadySent = status == InterestUiStatus.sent;
+    // Until the interest streams have answered, "no interest yet" and "we do
+    // not know yet" look identical — see [interestStatusReadyProvider]. The
+    // button stays disabled for that moment rather than inviting a duplicate.
+    final statusKnown = ref.watch(interestStatusReadyProvider);
 
     if (status == InterestUiStatus.rejected) {
       return SizedBox(
@@ -457,7 +461,8 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
         children: [
           _connectedActionsCard(profile, MemberAccess.publicProfile),
           const SizedBox(height: 14),
-          _interestOnlyAction(profile, alreadySent: alreadySent),
+          _interestOnlyAction(profile,
+              alreadySent: alreadySent, enabled: statusKnown),
         ],
       );
     }
@@ -467,7 +472,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
         width: double.infinity,
         child: ElevatedButton.icon(
           onPressed: null,
-          icon: const Icon(Icons.hourglass_top),
+          icon: const Icon(Icons.check),
           label: Text(context.l10n.interestSent),
           style: ElevatedButton.styleFrom(
             disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
@@ -480,19 +485,20 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
       );
     }
 
-    return _interestOnlyAction(profile, alreadySent: false);
+    return _interestOnlyAction(profile,
+        alreadySent: false, enabled: statusKnown);
   }
 
   /// Just the interest button in its two states. Factored out because a public
   /// profile shows it BENEATH the direct-action card rather than instead of it.
   Widget _interestOnlyAction(ProfileModel profile,
-      {required bool alreadySent}) {
+      {required bool alreadySent, bool enabled = true}) {
     if (alreadySent) {
       return SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(
           onPressed: null,
-          icon: const Icon(Icons.hourglass_top),
+          icon: const Icon(Icons.check),
           label: Text(context.l10n.interestSent),
           style: ElevatedButton.styleFrom(
             disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
@@ -507,7 +513,7 @@ class _ProfileViewScreenState extends ConsumerState<ProfileViewScreen> {
     return SizedBox(
       width: double.infinity,
       child: GradientButton(
-        onPressed: () => _sendInterest(profile),
+        onPressed: enabled ? () => _sendInterest(profile) : null,
         text: context.l10n.sendInterest,
       ),
     );

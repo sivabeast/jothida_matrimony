@@ -154,6 +154,62 @@ class ChatService {
     return failed;
   }
 
+  /// Pushes [uid]'s CURRENT matrimony name and photo into every thread they
+  /// take part in (spec §2).
+  ///
+  /// The thread document snapshots both so the Chats list can render without a
+  /// profile read per row. A snapshot is a cache, and a cache that is never
+  /// refreshed is just stale data: renaming yourself or changing your photo
+  /// left the other member looking at the old one forever.
+  ///
+  /// The UI no longer DEPENDS on this — [ChatThread.otherName] / `otherPhoto`
+  /// are a fallback behind the live profile (see `chatCounterpartIdentity`) —
+  /// so this is the cache catching up, not the source of truth. It is
+  /// therefore best-effort and bounded: only threads whose stored values
+  /// actually differ are written, and a failure never propagates into the
+  /// profile save that triggered it.
+  ///
+  /// Returns the number of threads updated.
+  Future<int> syncParticipantIdentity({
+    required String uid,
+    required String name,
+    required String photoUrl,
+  }) async {
+    if (uid.isEmpty) return 0;
+    var updated = 0;
+    try {
+      final snap =
+          await _chats.where('participantIds', arrayContains: uid).get();
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        // A member who deleted their account is tombstoned with blank name and
+        // photo — never resurrect that entry.
+        final deleted =
+            List<String>.from(data['deletedParticipants'] ?? const []);
+        if (deleted.contains(uid)) continue;
+        final names = Map<String, dynamic>.from(
+            data['participantNames'] ?? const <String, dynamic>{});
+        final photos = Map<String, dynamic>.from(
+            data['participantPhotos'] ?? const <String, dynamic>{});
+        if ((names[uid] ?? '') == name && (photos[uid] ?? '') == photoUrl) {
+          continue; // already current
+        }
+        try {
+          await doc.reference.update({
+            'participantNames.$uid': name,
+            'participantPhotos.$uid': photoUrl,
+          });
+          updated++;
+        } catch (e) {
+          debugPrint('[ChatService] identity sync failed for ${doc.id}: $e');
+        }
+      }
+    } catch (e) {
+      debugPrint('[ChatService] syncParticipantIdentity($uid) query failed: $e');
+    }
+    return updated;
+  }
+
   Stream<ChatThread?> watchThread(String threadId) => _chats
       .doc(threadId)
       .snapshots()

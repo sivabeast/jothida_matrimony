@@ -293,7 +293,11 @@ class _BottomNav extends StatelessWidget {
       l10n.search,
       l10n.interests,
       l10n.reports,
-      l10n.astrology,
+      // This tab lists the ASTROLOGERS (their profile, services, certificates
+      // and contact), not astrology as a subject — so it is labelled for the
+      // people: "Astrologers" / "ஜோதிடர்" (§15). `l10n.astrology` stays in use
+      // wherever the SERVICE is meant (quick actions, section headings).
+      l10n.navAstrologers,
     ];
     return Container(
       decoration: BoxDecoration(

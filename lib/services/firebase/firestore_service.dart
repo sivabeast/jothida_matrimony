@@ -17,6 +17,7 @@ import '../../models/app_update_config.dart';
 import '../../models/banner_model.dart';
 import '../../models/user_model.dart';
 import '../../models/dashboard_analytics.dart';
+import 'login_directory_service.dart';
 
 /// A single page of search results plus the cursor for the next page.
 typedef ProfilePage = ({
@@ -272,12 +273,38 @@ class FirestoreService {
   // all matrimony features are free and only per-booking astrology is paid.)
 
   // ── Profiles ──────────────────────────────────────────────────────────────
+  /// Creates the member's profile document — or REPLACES the one they already
+  /// have, so an account can never end up owning two (spec §4/§23).
+  ///
+  /// The reuse matters most in exactly the case that used to break: an account
+  /// is deleted, the auth record survives the delete (`requires-recent-login`,
+  /// a refused re-authentication) so the same uid signs in again, and the
+  /// member creates a "new" profile. Writing a fresh document there would leave
+  /// the DELETED profile sitting in the collection under the same uid, free to
+  /// be served instead of the new one. Reusing the existing document id means
+  /// the new profile OVERWRITES the old data rather than living beside it.
+  ///
+  /// Any further stale documents found under the uid are removed in the same
+  /// pass, so the invariant is restored rather than merely avoided.
   Future<String> createProfile(ProfileModel profile) async {
-    final doc = _db.collection(AppConstants.profilesCollection).doc();
+    final existing = await _profileDocsFor(profile.userId);
+    final doc = existing.isEmpty
+        ? _db.collection(AppConstants.profilesCollection).doc()
+        : existing.first.reference;
+    if (existing.length > 1) {
+      debugPrint('[Firestore] createProfile: ${existing.length} existing '
+          'profiles for userId=${profile.userId} — reusing ${doc.id} and '
+          'deleting the rest.');
+      await _deleteDocs(existing.skip(1).toList());
+    }
     // 1) Save the public profile FIRST. ProfileModel.toFirestore() no longer
     //    includes contact details. This write succeeds under the standard
     //    profile-create rule, so onboarding can never be blocked by the
     //    separate contact write below.
+    //
+    //    `set` WITHOUT merge is deliberate when an id is being reused: the new
+    //    profile must replace the old document wholesale, never inherit stray
+    //    fields from whoever filled it in before.
     await doc.set(profile.copyWith().toFirestore());
 
     // 2) Store contact details in the access-gated `contacts/{userId}`
@@ -297,6 +324,36 @@ class FirestoreService {
       }
     }
     return doc.id;
+  }
+
+  /// Every profile document currently stored under [userId], newest first.
+  ///
+  /// Owner-scoped (`userId == request.auth.uid`) or admin, which is exactly who
+  /// calls it. Returns empty — never throws — when the query is not permitted,
+  /// so a create is never blocked by a lookup that was only there to keep the
+  /// collection tidy.
+  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _profileDocsFor(
+      String userId) async {
+    if (userId.trim().isEmpty) return const [];
+    try {
+      final snap = await _db
+          .collection(AppConstants.profilesCollection)
+          .where('userId', isEqualTo: userId)
+          .get();
+      final docs = snap.docs.toList()
+        ..sort((a, b) => _createdAtOf(b).compareTo(_createdAtOf(a)));
+      return docs;
+    } catch (e) {
+      debugPrint('[Firestore] existing-profile lookup for $userId '
+          'skipped (non-fatal): $e');
+      return const [];
+    }
+  }
+
+  static DateTime _createdAtOf(QueryDocumentSnapshot<Map<String, dynamic>> d) {
+    final v = d.data()['createdAt'];
+    if (v is Timestamp) return v.toDate();
+    return DateTime.fromMillisecondsSinceEpoch(0);
   }
 
   Future<void> updateProfile(String profileId, Map<String, dynamic> data) =>
@@ -367,23 +424,66 @@ class FirestoreService {
     final snap = await _db
         .collection(AppConstants.profilesCollection)
         .where('userId', isEqualTo: userId)
-        .limit(1)
         .get();
-    if (snap.docs.isEmpty) return null;
-    return ProfileModel.fromFirestore(snap.docs.first);
+    return newestProfileOf(snap.docs);
   }
 
   /// LIVE stream of the signed-in user's OWN profile (query by userId). This
   /// is the admin↔user sync backbone: any edit the admin makes on the profile
   /// document (details, horoscope, photos, Aadhaar, preferences…) reaches the
   /// user app in real time — no re-login, no stale one-shot cache.
+  ///
+  /// NOTE THE MISSING `.limit(1)` — removing it is a correctness fix, not an
+  /// oversight (spec §4/§23).
+  ///
+  /// An account is supposed to own exactly one profile, and [createProfile]
+  /// now enforces that. But a uid CAN come back to a collection that still
+  /// holds an older document under it: the obvious way is deleting the account
+  /// and signing in again before every delete has landed — Firebase reuses the
+  /// uid whenever the auth record itself survived (`requires-recent-login`, a
+  /// cancelled re-auth), so the new profile lands beside the old one.
+  ///
+  /// `limit(1)` on an UNORDERED query is then actively dangerous: Firestore is
+  /// free to return either document, and what it actually returns is the first
+  /// by document id — which has nothing to do with which profile is current.
+  /// That is precisely the "I deleted my account, made a new profile, and the
+  /// OLD one came back" report. Reading every match and taking the NEWEST by
+  /// `createdAt` makes the answer deterministic and always the live profile.
+  /// The query is still one equality filter on a single-field index, and an
+  /// account has one or two documents, so this costs nothing.
   Stream<ProfileModel?> watchProfileByUserId(String userId) => _db
       .collection(AppConstants.profilesCollection)
       .where('userId', isEqualTo: userId)
-      .limit(1)
       .snapshots()
-      .map((s) =>
-          s.docs.isEmpty ? null : ProfileModel.fromFirestore(s.docs.first));
+      .map((s) => newestProfileOf(s.docs));
+
+  /// The CURRENT profile among [docs]: the most recently created one.
+  ///
+  /// Ties (equal or missing `createdAt`) fall back to the most recently
+  /// updated, then to the document id, so the choice is always stable rather
+  /// than dependent on result ordering.
+  static ProfileModel? newestProfileOf(
+          List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) =>
+      newestProfile(docs.map(ProfileModel.fromFirestore).toList());
+
+  /// The selection rule itself, over already-parsed profiles — pure, so the
+  /// "the newest profile always wins" contract is testable without Firestore.
+  @visibleForTesting
+  static ProfileModel? newestProfile(List<ProfileModel> profiles) {
+    if (profiles.isEmpty) return null;
+    if (profiles.length == 1) return profiles.first;
+    final sorted = [...profiles]..sort((a, b) {
+        final byCreated = b.createdAt.compareTo(a.createdAt);
+        if (byCreated != 0) return byCreated;
+        final byUpdated = b.updatedAt.compareTo(a.updatedAt);
+        if (byUpdated != 0) return byUpdated;
+        return b.id.compareTo(a.id);
+      });
+    debugPrint('[Firestore] ⚠ ${sorted.length} profiles found for '
+        'userId=${sorted.first.userId} — serving the newest '
+        '(${sorted.first.id}). The others are stale and should be removed.');
+    return sorted.first;
+  }
 
   /// Look up ANOTHER user's public profile by their UID.
   ///
@@ -1498,25 +1598,137 @@ class FirestoreService {
   /// "no existing doc → create new user (isProfileComplete=false)" branch of
   /// [createOrUpdateUserOnLogin], i.e. it is treated as a brand-new member and
   /// sent through Profile Creation.
-  Future<void> deleteUserAccountData(String uid) async {
+  /// Permanently removes every Firestore record belonging to [uid].
+  ///
+  /// Returns the names of the steps that did NOT complete — empty means the
+  /// account's data is genuinely gone. That return value is the point of this
+  /// method's shape (spec §3/§4/§26).
+  ///
+  /// Each step used to swallow its own failure and carry on, which made a
+  /// PARTIAL deletion indistinguishable from a complete one. That is how the
+  /// worst bug in this area happened: the profile delete quietly failed, the
+  /// Firebase Auth record also survived (`requires-recent-login`), the same uid
+  /// signed in again — and the "deleted" profile was still there waiting. The
+  /// caller now knows what survived and can say so instead of reporting
+  /// success.
+  ///
+  /// ORDER MATTERS. `users/{uid}` is deleted LAST: the security rules resolve
+  /// `isAdmin()` and several ownership checks by reading that very document, so
+  /// removing it first would revoke the caller's own access half way through
+  /// and deny everything after it.
+  Future<List<String>> deleteUserAccountData(String uid) async {
     debugPrint('[Firestore] 🗑 deleteUserAccountData($uid)');
-    await _deleteWhere(AppConstants.profilesCollection, 'userId', uid);
-    await _deleteWhere(AppConstants.interestsCollection, 'senderId', uid);
-    await _deleteWhere(AppConstants.interestsCollection, 'receiverId', uid);
-    await _deleteWhere(AppConstants.notificationsCollection, 'userId', uid);
-    await _deleteWhere(
-        AppConstants.accountDeletionRequestsCollection, 'userId', uid);
+    final failed = <String>[];
+    Future<void> step(String label, Future<bool> Function() run) async {
+      if (!await run()) failed.add(label);
+    }
+
+    // The profile FIRST and verified: it is the document that makes a deleted
+    // member still look like a member.
+    await step('profiles',
+        () => _deleteWhere(AppConstants.profilesCollection, 'userId', uid));
+    await step('interests(sent)',
+        () => _deleteWhere(AppConstants.interestsCollection, 'senderId', uid));
+    await step(
+        'interests(received)',
+        () =>
+            _deleteWhere(AppConstants.interestsCollection, 'receiverId', uid));
+    await step(
+        'notifications',
+        () =>
+            _deleteWhere(AppConstants.notificationsCollection, 'userId', uid));
+    await step(
+        'account_deletion_requests',
+        () => _deleteWhere(
+            AppConstants.accountDeletionRequestsCollection, 'userId', uid));
     // Horoscope-report / appointment bookings this member created. Owned by
     // them per the rules, so the delete is permitted.
-    await _deleteWhere(
-        AppConstants.astrologerRequestsCollection, 'userId', uid);
-    await _deleteWhere(AppConstants.consultationsCollection, 'userId', uid);
-    await _deleteArrayContains(
-        AppConstants.connectionsCollection, 'uids', uid);
-    await _deleteDocSafe(AppConstants.contactsCollection, uid);
+    await step(
+        'astrologer_requests',
+        () => _deleteWhere(
+            AppConstants.astrologerRequestsCollection, 'userId', uid));
+    await step(
+        'consultations',
+        () =>
+            _deleteWhere(AppConstants.consultationsCollection, 'userId', uid));
+    // Moderation records this member created. The ones filed AGAINST them are
+    // deliberately left for admins — a deleted account must not erase the
+    // reports about it.
+    await step('blocks',
+        () => _deleteWhere(AppConstants.blocksCollection, 'blockerUid', uid));
+    await step(
+        'connections',
+        () => _deleteArrayContains(
+            AppConstants.connectionsCollection, 'uids', uid));
+    await step('contacts',
+        () => _deleteDocSafe(AppConstants.contactsCollection, uid));
     // Sensitive KYC record — must not outlive the account.
-    await _deleteDocSafe(AppConstants.aadhaarCollection, uid);
-    await _deleteDocSafe(AppConstants.usersCollection, uid);
+    await step('aadhaar',
+        () => _deleteDocSafe(AppConstants.aadhaarCollection, uid));
+    // The mobile → sign-in-address index. Leaving it behind is what makes a
+    // deleted member's phone number look "already registered" forever, and
+    // points it at an auth address that no longer exists (spec §4/§21).
+    await step('login_index', () => _deleteLoginIndexFor(uid));
+    // LAST — see the ordering note above.
+    await step('users',
+        () => _deleteDocSafe(AppConstants.usersCollection, uid));
+
+    if (failed.isEmpty) {
+      debugPrint('[Firestore] ✅ deleteUserAccountData($uid): all data removed.');
+    } else {
+      debugPrint('[Firestore] ⚠ deleteUserAccountData($uid): these did NOT '
+          'complete → ${failed.join(', ')}');
+    }
+    return failed;
+  }
+
+  /// Removes the `login_index` entry (or entries) pointing at [uid].
+  ///
+  /// Keyed by mobile number rather than uid, so it has to be looked up by its
+  /// `uid` field. The index is publicly readable by design (a phone login has
+  /// to resolve an address BEFORE anyone is authenticated), so this query is
+  /// always permitted.
+  Future<bool> _deleteLoginIndexFor(String uid) async {
+    try {
+      final snap = await _db
+          .collection(LoginDirectoryService.collection)
+          .where('uid', isEqualTo: uid)
+          .get();
+      if (snap.docs.isEmpty) return true;
+      await _deleteDocs(snap.docs);
+      return true;
+    } catch (e) {
+      debugPrint('[Firestore] login_index cleanup for $uid failed: $e');
+      return false;
+    }
+  }
+
+  /// Whether any Firestore data is still stored for [uid].
+  ///
+  /// Used to VERIFY a deletion rather than assume it (spec §4). Only the
+  /// documents that would resurrect the account are checked — the profile and
+  /// the account document — because those are what a later sign-in reads.
+  Future<bool> hasResidualAccountData(String uid) async {
+    try {
+      final profiles = await _profileDocsFor(uid);
+      if (profiles.isNotEmpty) {
+        debugPrint('[Firestore] residual check: ${profiles.length} profile(s) '
+            'still stored for $uid.');
+        return true;
+      }
+      final user =
+          await _db.collection(AppConstants.usersCollection).doc(uid).get();
+      if (user.exists) {
+        debugPrint('[Firestore] residual check: users/$uid still exists.');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      // A denied/failed check is not evidence of residue — say "clean" rather
+      // than alarm the member, and let the per-step failures above speak.
+      debugPrint('[Firestore] residual check for $uid skipped: $e');
+      return false;
+    }
   }
 
   /// Permanently deletes ALL Firestore data owned by an astrologer: their
@@ -1525,24 +1737,44 @@ class FirestoreService {
   /// NOT cascade-delete subcollections, so it must be cleared explicitly), every
   /// `astrologer_requests` addressed to them, any stale deletion request, and
   /// the `users/{uid}` role document.
-  Future<void> deleteAstrologerAccountData(String uid) async {
+  /// Returns the steps that did not complete — see [deleteUserAccountData] for
+  /// why the result is reported rather than swallowed.
+  Future<List<String>> deleteAstrologerAccountData(String uid) async {
     debugPrint('[Firestore] 🗑 deleteAstrologerAccountData($uid)');
-    await _deleteWhere(
-        AppConstants.astrologerRequestsCollection, 'astrologerId', uid);
+    final failed = <String>[];
+    Future<void> step(String label, Future<bool> Function() run) async {
+      if (!await run()) failed.add(label);
+    }
+
+    await step(
+        'astrologer_requests',
+        () => _deleteWhere(
+            AppConstants.astrologerRequestsCollection, 'astrologerId', uid));
     // Reviews about this astrologer live in astrologers/{uid}/reviews.
-    await _deleteSubcollection(
-        AppConstants.astrologersCollection, uid,
-        AppConstants.astrologerReviewsSubcollection);
-    await _deleteWhere(
-        AppConstants.accountDeletionRequestsCollection, 'userId', uid);
-    await _deleteDocSafe(AppConstants.astrologersCollection, uid);
-    await _deleteDocSafe(AppConstants.usersCollection, uid);
+    await step(
+        'astrologer_reviews',
+        () => _deleteSubcollection(AppConstants.astrologersCollection, uid,
+            AppConstants.astrologerReviewsSubcollection));
+    await step(
+        'account_deletion_requests',
+        () => _deleteWhere(
+            AppConstants.accountDeletionRequestsCollection, 'userId', uid));
+    await step('astrologers',
+        () => _deleteDocSafe(AppConstants.astrologersCollection, uid));
+    // LAST: the rules read users/{uid} to authorise the steps above.
+    await step('users',
+        () => _deleteDocSafe(AppConstants.usersCollection, uid));
+    if (failed.isNotEmpty) {
+      debugPrint('[Firestore] ⚠ deleteAstrologerAccountData($uid): these did '
+          'NOT complete → ${failed.join(', ')}');
+    }
+    return failed;
   }
 
   /// Deletes every document in the `{parentCollection}/{parentId}/{sub}`
   /// subcollection. Guarded so a failure (e.g. rules) can't abort the wider
   /// account-deletion sequence.
-  Future<void> _deleteSubcollection(
+  Future<bool> _deleteSubcollection(
       String parentCollection, String parentId, String sub) async {
     try {
       final snap = await _db
@@ -1551,25 +1783,35 @@ class FirestoreService {
           .collection(sub)
           .get();
       await _deleteDocs(snap.docs);
+      return true;
     } catch (e) {
       debugPrint('[Firestore] deleteSubcollection('
-          '$parentCollection/$parentId/$sub) skipped: $e');
+          '$parentCollection/$parentId/$sub) FAILED: $e');
+      return false;
     }
   }
 
   /// Deletes every document in [collection] where [field] == [value].
-  Future<void> _deleteWhere(String collection, String field, String value) async {
+  ///
+  /// Returns whether it completed. The boolean is what lets
+  /// [deleteUserAccountData] tell a partial deletion from a whole one instead
+  /// of logging a failure and moving on as if nothing happened.
+  Future<bool> _deleteWhere(
+      String collection, String field, String value) async {
     try {
       final snap =
           await _db.collection(collection).where(field, isEqualTo: value).get();
       await _deleteDocs(snap.docs);
+      return true;
     } catch (e) {
-      debugPrint('[Firestore] deleteWhere($collection.$field==$value) skipped: $e');
+      debugPrint('[Firestore] deleteWhere($collection.$field==$value) FAILED: $e');
+      return false;
     }
   }
 
-  /// Deletes every document in [collection] whose [arrayField] contains [value].
-  Future<void> _deleteArrayContains(
+  /// Deletes every document in [collection] whose [arrayField] contains
+  /// [value]. Returns whether it completed.
+  Future<bool> _deleteArrayContains(
       String collection, String arrayField, String value) async {
     try {
       final snap = await _db
@@ -1577,8 +1819,10 @@ class FirestoreService {
           .where(arrayField, arrayContains: value)
           .get();
       await _deleteDocs(snap.docs);
+      return true;
     } catch (e) {
-      debugPrint('[Firestore] deleteArrayContains($collection.$arrayField) skipped: $e');
+      debugPrint('[Firestore] deleteArrayContains($collection.$arrayField) FAILED: $e');
+      return false;
     }
   }
 
@@ -1594,12 +1838,16 @@ class FirestoreService {
     }
   }
 
-  /// Deletes a single document, swallowing a missing-doc / permission error.
-  Future<void> _deleteDocSafe(String collection, String id) async {
+  /// Deletes a single document. Returns whether it completed — a missing
+  /// document counts as success (there is nothing left to remove), a denied or
+  /// failed delete does not.
+  Future<bool> _deleteDocSafe(String collection, String id) async {
     try {
       await _db.collection(collection).doc(id).delete();
+      return true;
     } catch (e) {
-      debugPrint('[Firestore] delete $collection/$id skipped: $e');
+      debugPrint('[Firestore] delete $collection/$id FAILED: $e');
+      return false;
     }
   }
 

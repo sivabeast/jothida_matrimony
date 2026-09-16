@@ -723,7 +723,9 @@ class MatchAnalysisController extends Notifier<AsyncValue<void>> {
         visitDate: visitDay,
         session: session,
         slotStartMinutes: AppointmentSession.startMinutes(session),
-        officeAddress: config.officeAddress,
+        // The COMPLETE address, not just the street line — this is snapshotted
+        // onto the booking and is what the member is told to travel to (§11).
+        officeAddress: config.fullAddress,
         officeContact: config.officeContactNumber,
         history: [
           BookingHistoryEntry(at: now, label: 'Appointment booked'),

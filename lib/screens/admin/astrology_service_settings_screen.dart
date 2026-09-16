@@ -72,11 +72,15 @@ class _AstrologyServiceSettingsScreenState
     _ctrl('officeContactNumber', cfg.officeContactNumber);
     _ctrl('whatsappNumber', cfg.whatsappNumber);
     _ctrl('email', cfg.email);
-    _ctrl('officeAddress', cfg.officeAddress);
+    // ONE location field (spec §12). The centre's address used to be split
+    // across four inputs — street, city, district, state — which is four ways
+    // for the same address to disagree with itself. It is now a single field,
+    // SEEDED with the complete address (`fullAddress`) so an existing split
+    // address is carried over intact and nothing is lost; saving then writes it
+    // back as one string and blanks the three legacy parts, so there is exactly
+    // one address from that point on.
+    _ctrl('officeAddress', cfg.fullAddress);
     _ctrl('mapLocation', cfg.mapLocation);
-    _ctrl('officeCity', cfg.officeCity);
-    _ctrl('officeDistrict', cfg.officeDistrict);
-    _ctrl('officeState', cfg.officeState);
     _ctrl('appointmentRules', cfg.appointmentRules);
     _ctrl('serviceIntro', cfg.serviceIntro);
     _ctrl('reportIncludes', cfg.reportIncludes.join('\n'));
@@ -185,9 +189,12 @@ class _AstrologyServiceSettingsScreenState
       email: _ctrl('email').text.trim(),
       officeAddress: _ctrl('officeAddress').text.trim(),
       mapLocation: _ctrl('mapLocation').text.trim(),
-      officeCity: _ctrl('officeCity').text.trim(),
-      officeDistrict: _ctrl('officeDistrict').text.trim(),
-      officeState: _ctrl('officeState').text.trim(),
+      // The legacy city / district / state parts are folded INTO the single
+      // address above (see _seed) and cleared here, so `fullAddress` can never
+      // repeat them and there is only one authoritative location (§12).
+      officeCity: '',
+      officeDistrict: '',
+      officeState: '',
       appointmentRules: _ctrl('appointmentRules').text.trim(),
       serviceIntro: _ctrl('serviceIntro').text.trim(),
       reportIncludes: _lines('reportIncludes'),
@@ -378,16 +385,14 @@ class _AstrologyServiceSettingsScreenState
           _field('officeContactNumber', 'Phone'),
           _field('whatsappNumber', 'WhatsApp'),
           _field('email', 'Email'),
-          _field('officeAddress', 'Office address (street)', maxLines: 2),
-          _field('officeCity', 'City'),
-          _field('officeDistrict', 'District'),
-          _field('officeState', 'State'),
+          _field('officeAddress', 'Location (full address)', maxLines: 3),
           _field('mapLocation', 'Google Maps link'),
           _emptyHint(
-              'Street + City + District + State together are the DIRECTIONS '
-              'destination whenever the Maps link is a share-style short link '
-              '(maps.app.goo.gl/…), which carries no coordinates. Keep all '
-              'four filled in so Get Directions lands on the exact centre.'),
+              'This one address IS the astrology centre location: it is what '
+              'the Astrology page shows and what Get Directions routes to. '
+              'Write it complete — street, city, district, state — because a '
+              'share-style Maps short link (maps.app.goo.gl/…) carries no '
+              'coordinates, and the address is then what Google geocodes.'),
         ]),
 
         // ── Appointment settings ───────────────────────────────────────────

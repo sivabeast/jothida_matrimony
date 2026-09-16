@@ -7579,6 +7579,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Professional Marriage Compatibility Report'**
   String get professionalMarriageCompatReport;
+
+  /// No description provided for @navAstrologers.
+  ///
+  /// In en, this message translates to:
+  /// **'Astrologers'**
+  String get navAstrologers;
+
+  /// No description provided for @marriedStatusCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Already married?'**
+  String get marriedStatusCardTitle;
+
+  /// No description provided for @marriedStatusCardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Update your marital status in your profile.'**
+  String get marriedStatusCardBody;
+
+  /// No description provided for @marriedStatusCardAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Update status'**
+  String get marriedStatusCardAction;
+
+  /// No description provided for @marriedStatusCardMarriedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile is marked as Married and has left matchmaking.'**
+  String get marriedStatusCardMarriedBody;
+
+  /// No description provided for @horoscopeRequestSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Horoscope Request Submitted'**
+  String get horoscopeRequestSubmitted;
+
+  /// No description provided for @horoscopeRequestStatusLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Status: Pending'**
+  String get horoscopeRequestStatusLine;
+
+  /// No description provided for @paidButReportNotSavedRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Your payment went through but the report request could not be saved. Tap Pay again — you will not be charged twice.'**
+  String get paidButReportNotSavedRetry;
 }
 
 class _AppLocalizationsDelegate

@@ -17,6 +17,7 @@ import '../../widgets/export/download_saved_dialog.dart';
 import '../../widgets/export/profile_form_export.dart';
 import '../../core/services/horoscope_calculation_service.dart';
 import '../../widgets/common/horoscope_documents_view.dart';
+import '../../widgets/common/fullscreen_photo_viewer.dart';
 import '../../widgets/common/network_photo.dart';
 
 /// Live counts of a user's Horoscope Analysis + Appointment bookings.
@@ -729,9 +730,17 @@ class _HeroProfileCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Tap to open the member's photo full-screen (spec §9) — the SAME
+          // viewer, and the same Cloudinary image, the member sees on their own
+          // profile. Nothing to tap when they have not uploaded one.
           AspectRatio(
             aspectRatio: 1,
-            child: NetworkPhoto(url: photoUrl, fallbackIconSize: 72),
+            child: GestureDetector(
+              onTap: photoUrl.trim().isEmpty
+                  ? null
+                  : () => FullScreenPhotoViewer.open(context, photoUrl),
+              child: NetworkPhoto(url: photoUrl, fallbackIconSize: 72),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
@@ -1051,9 +1060,9 @@ class _AadhaarVerificationCard extends ConsumerWidget {
             ]),
             const SizedBox(height: 10),
             Row(children: [
-              Expanded(child: _image('Front', a.frontUrl)),
+              Expanded(child: _image(context, 'Front', a.frontUrl)),
               const SizedBox(width: 10),
-              Expanded(child: _image('Back', a.backUrl)),
+              Expanded(child: _image(context, 'Back', a.backUrl)),
             ]),
             const SizedBox(height: 10),
             SwitchListTile(
@@ -1074,7 +1083,7 @@ class _AadhaarVerificationCard extends ConsumerWidget {
     );
   }
 
-  Widget _image(String label, String url) => Column(
+  Widget _image(BuildContext context, String label, String url) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
@@ -1092,7 +1101,12 @@ class _AadhaarVerificationCard extends ConsumerWidget {
                 ? const Center(
                     child: Icon(Icons.image_not_supported_outlined,
                         color: Colors.grey))
-                : NetworkPhoto(url: url, fit: BoxFit.cover),
+                : GestureDetector(
+                    // An ID document is unreadable at 110px — it has to open
+                    // full-screen to be checkable at all (spec §9).
+                    onTap: () => FullScreenPhotoViewer.open(context, url),
+                    child: NetworkPhoto(url: url, fit: BoxFit.cover),
+                  ),
           ),
         ],
       );

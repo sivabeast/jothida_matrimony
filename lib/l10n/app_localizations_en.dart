@@ -4181,4 +4181,31 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get professionalMarriageCompatReport =>
       'Professional Marriage Compatibility Report';
+
+  @override
+  String get navAstrologers => 'Astrologers';
+
+  @override
+  String get marriedStatusCardTitle => 'Already married?';
+
+  @override
+  String get marriedStatusCardBody =>
+      'Update your marital status in your profile.';
+
+  @override
+  String get marriedStatusCardAction => 'Update status';
+
+  @override
+  String get marriedStatusCardMarriedBody =>
+      'Your profile is marked as Married and has left matchmaking.';
+
+  @override
+  String get horoscopeRequestSubmitted => 'Horoscope Request Submitted';
+
+  @override
+  String get horoscopeRequestStatusLine => 'Status: Pending';
+
+  @override
+  String get paidButReportNotSavedRetry =>
+      'Your payment went through but the report request could not be saved. Tap Pay again — you will not be charged twice.';
 }

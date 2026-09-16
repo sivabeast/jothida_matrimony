@@ -333,7 +333,23 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
         .submitProfile(account.uid, adminCreated: true);
     if (!mounted) return;
     if (profileId == null) {
+      // The login was created but the profile was not. The account was
+      // provisioned as "profile complete" — that is only true when the profile
+      // actually landed — so put it back, or the member signs in and is dropped
+      // straight onto a Home page with no profile behind it and no way to
+      // create one (spec §21/§28). The admin can finish the profile later from
+      // Users, and the member is asked for it at first sign-in until then.
+      try {
+        await ref
+            .read(firestoreServiceProvider)
+            .updateUser(account.uid, {'isProfileComplete': false,
+              'profileCompleted': false});
+      } catch (e) {
+        debugPrint('[ProfileCreation] could not reset the profile-complete '
+            'flag for ${account.uid}: $e');
+      }
       final error = ref.read(profileCreationProvider).error;
+      if (!mounted) return;
       messenger.showSnackBar(SnackBar(
           content: Text(error ?? context.l10n.failedToCreateProfile)));
       return;

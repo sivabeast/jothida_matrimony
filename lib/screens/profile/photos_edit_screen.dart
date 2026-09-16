@@ -85,13 +85,14 @@ class _PhotoFormState extends ConsumerState<_PhotoForm> {
             index: 0,
           );
       final p = _p;
+      // `save` owns everything the new photo implies: the Firestore write, the
+      // `users/{uid}.photoUrl` mirror, the chat participant refresh (§2), the
+      // deletion of the Cloudinary asset it replaced (§6/§24) and the eviction
+      // of its cached bytes (§25).
       await ref.read(profileEditControllerProvider.notifier).save(
             updated: p.withProfilePhoto(url),
             patch: {'profilePhotoUrl': url, 'additionalPhotos': <String>[]},
           );
-      // Keep the denormalized users/{uid}.photoUrl in sync so the same 1:1
-      // image shows in the header, chats and everywhere else.
-      await ref.read(firestoreServiceProvider).updateUserPhoto(p.userId, url);
       if (mounted) _snack(context.l10n.photoUpdated);
     } catch (_) {
       if (mounted) _snack(context.l10n.couldNotUpdatePhoto);
@@ -127,7 +128,6 @@ class _PhotoFormState extends ConsumerState<_PhotoForm> {
             updated: p.withProfilePhoto(null),
             patch: {'profilePhotoUrl': null, 'additionalPhotos': <String>[]},
           );
-      await ref.read(firestoreServiceProvider).updateUserPhoto(p.userId, null);
       if (mounted) _snack(context.l10n.photoRemoved);
     } catch (_) {
       if (mounted) _snack(context.l10n.couldNotRemovePhoto);

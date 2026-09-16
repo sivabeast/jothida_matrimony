@@ -1034,6 +1034,10 @@ class _MatchProfileCard extends ConsumerWidget {
     if (status == InterestUiStatus.none && interestSent) {
       status = InterestUiStatus.sent;
     }
+    // Until the interest streams have answered, "none" also means "unknown"
+    // (see [interestStatusReadyProvider]) — so the send action is held back
+    // rather than inviting a duplicate on a profile already written to.
+    final statusKnown = ref.watch(interestStatusReadyProvider);
 
     // No card wrapper: the photo runs edge-to-edge and the details sit straight
     // on the page, so one profile reads as a single continuous layout.
@@ -1052,7 +1056,7 @@ class _MatchProfileCard extends ConsumerWidget {
               children: [
                 _summary(context),
                 const SizedBox(height: 18),
-                _actions(context, ref, status),
+                _actions(context, ref, status, statusKnown: statusKnown),
               ],
             ),
           ),
@@ -1278,8 +1282,8 @@ class _MatchProfileCard extends ConsumerWidget {
   }
 
   // ── Actions ────────────────────────────────────────────────────────────────
-  Widget _actions(
-      BuildContext context, WidgetRef ref, InterestUiStatus status) {
+  Widget _actions(BuildContext context, WidgetRef ref, InterestUiStatus status,
+      {required bool statusKnown}) {
     // A pending RECEIVED interest replaces the whole action row with the
     // premium Accept/Reject card — this member must never be offered a
     // (duplicate) "Express Interest" while one is already waiting for them.
@@ -1311,7 +1315,8 @@ class _MatchProfileCard extends ConsumerWidget {
     }
     return Row(
       children: [
-        Expanded(child: _interestButton(context, status)),
+        Expanded(
+            child: _interestButton(context, status, statusKnown: statusKnown)),
         const SizedBox(width: 12),
         Expanded(
           child: _outlinedButton(
@@ -1328,7 +1333,8 @@ class _MatchProfileCard extends ConsumerWidget {
   /// relationship that already exists never offers a duplicate "Express
   /// Interest"). Every variant shares the exact button geometry of
   /// [_outlinedButton] so the two actions always line up.
-  Widget _interestButton(BuildContext context, InterestUiStatus status) {
+  Widget _interestButton(BuildContext context, InterestUiStatus status,
+      {required bool statusKnown}) {
     final l10n = context.l10n;
     switch (status) {
       case InterestUiStatus.accepted:
@@ -1364,7 +1370,7 @@ class _MatchProfileCard extends ConsumerWidget {
         return _filledButton(
           icon: Icons.favorite_border,
           label: l10n.expressInterest,
-          onPressed: onInterest,
+          onPressed: statusKnown ? onInterest : null,
           background: AppColors.primary,
         );
     }

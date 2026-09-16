@@ -258,25 +258,26 @@ class AstrologyServiceConfig {
   final String mapLocation;
 
   // ── The astrology centre's fixed location ────────────────────────────────
-  /// City / District / State of the centre. They are a FIXED hierarchy (the
-  /// office does not move), snapshotted onto every appointment and shown
-  /// consistently wherever the centre's location appears.
+  /// LEGACY city / district / state parts of the centre's address.
+  ///
+  /// The centre has ONE location (spec §12), and [officeAddress] is it. These
+  /// three fields are all that remains of the old split-address form: they are
+  /// still READ so an address saved before the change is not lost, and the
+  /// admin screen folds them into the single address field the first time it
+  /// saves — after which they are blank for good. Nothing should write them.
   final String officeCity;
   final String officeDistrict;
   final String officeState;
 
-  /// The centre's complete postal address, in the order Google Maps geocodes
-  /// most reliably: street, city, district, state. This is what the Get
-  /// Directions action routes to when the stored Maps link has no coordinates.
+  /// **The** astrology location — the single authoritative address, used
+  /// everywhere the centre is shown and as the Get Directions destination
+  /// whenever the stored Maps link carries no coordinates.
+  ///
+  /// Normally this is just [officeAddress]; the legacy parts are appended only
+  /// while a pre-§12 document has not been re-saved yet, in the order Google
+  /// geocodes most reliably (street, city, district, state).
   String get fullAddress => [
         officeAddress.trim(),
-        officeCity.trim(),
-        officeDistrict.trim(),
-        officeState.trim(),
-      ].where((p) => p.isNotEmpty).join(', ');
-
-  /// "City, District, State" for display.
-  String get locationHierarchy => [
         officeCity.trim(),
         officeDistrict.trim(),
         officeState.trim(),
@@ -373,14 +374,22 @@ class AstrologyServiceConfig {
     this.awards = const [],
     this.news = const [],
     this.expertContactPhone = '',
-    this.officeAddress = '45, Lakshmiyapuram Street, Thoppatti, Rajapalayam',
+    // ONE seed address (§12), used only until the admin saves the live
+    // `astrology_service/config` document — which is the authority everywhere,
+    // including Get Directions. The legacy city / district / state parts
+    // default to blank so `fullAddress` is this string and nothing else; a
+    // pre-§12 stored document still fills them in and is folded back into one
+    // line the first time the admin saves.
+    this.officeAddress =
+        '45, Lakshmiyapuram Street, Thoppatti, Rajapalayam, Virudhunagar, '
+        'Tamil Nadu',
     this.officeContactNumber = '+91 90000 00000',
     this.whatsappNumber = '',
     this.email = '',
     this.mapLocation = 'https://maps.app.goo.gl/YY8ZxTMdhx1bfm3o6',
-    this.officeCity = 'Rajapalayam',
-    this.officeDistrict = 'Virudhunagar',
-    this.officeState = 'Tamil Nadu',
+    this.officeCity = '',
+    this.officeDistrict = '',
+    this.officeState = '',
     this.workingWeekdays = const [1, 2, 3, 4, 5],
     this.slotStartMinutes = 600, // 10:00 AM
     this.slotEndMinutes = 1020, // 5:00 PM

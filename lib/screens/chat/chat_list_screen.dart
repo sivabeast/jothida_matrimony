@@ -111,8 +111,13 @@ class _ThreadTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final name = thread.otherName(myUid);
-    final photo = thread.otherPhoto(myUid);
+    // CURRENT name and photo (spec §2) — resolved from the counterpart's live
+    // profile, with the thread's stored snapshot only as a fallback. Renaming
+    // yourself or changing your photo is reflected in every existing
+    // conversation without anything having to be rewritten first.
+    final identity = watchChatIdentity(ref, thread: thread, myUid: myUid);
+    final name = identity.name;
+    final photo = identity.photoUrl;
     final unread = thread.unreadFor(myUid);
     // Verified badge — resolved from the counterpart's (readable, cached)
     // profile. Reads the SAME admin profile-verification status as the tick

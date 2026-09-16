@@ -16,6 +16,7 @@ import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../services/billing/horoscope_report_purchase.dart';
+import '../../widgets/report/horoscope_payment_success_dialog.dart';
 import 'horoscope_request_person_form.dart';
 import 'sample_compatibility_report_screen.dart';
 
@@ -453,9 +454,11 @@ class _RequestExternalReportScreenState
 
   /// Payment confirmation (spec §5/§20).
   ///
-  /// One thing happened — the payment went through and the request exists — so
-  /// the popup says exactly that: a tick, the line, the Request ID worth
-  /// keeping, and Done.
+  /// TWO things happened — the payment went through AND the request now
+  /// exists, pending — so the popup says both, plus the Request ID worth
+  /// keeping. The dialog itself is shared with the profile-based Horoscope
+  /// Compatibility Report ([HoroscopePaymentSuccessDialog]) so one payment
+  /// always tells the member the same thing, whichever door they came in by.
   ///
   /// There is deliberately **no WhatsApp action here.** It used to hand the
   /// member a pre-typed message to send to the office, which asked somebody who
@@ -463,118 +466,9 @@ class _RequestExternalReportScreenState
   /// end of this flow, where the finished report is sent BACK to them by the
   /// astrologer (§17) — not to the person who has only just paid.
   Future<void> _showSubmitted(String id) async {
-    final l10n = context.l10n;
     final isGuest = ref.read(isGuestProvider);
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.white,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 28),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // The same success mark the Interest Sent confirmation uses, so
-              // "it worked" reads identically wherever it happens.
-              Container(
-                width: 84,
-                height: 84,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.success.withValues(alpha: 0.12),
-                ),
-                alignment: Alignment.center,
-                child: const Icon(Icons.check_rounded,
-                    size: 46, color: AppColors.success),
-              ),
-              const SizedBox(height: 18),
-              Text(l10n.paymentSuccessfulTitle,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 18,
-                      height: 1.3,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
-              Text(l10n.paymentSuccessfulBody,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontSize: 13, height: 1.5, color: Colors.grey[700])),
-              const SizedBox(height: 18),
-              // The one thing worth carrying away from this screen.
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    Text(l10n.requestIdLabel,
-                        style: TextStyle(
-                            fontSize: 11.5, color: Colors.grey[600])),
-                    const SizedBox(height: 3),
-                    SelectableText(id,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary)),
-                  ],
-                ),
-              ),
-              if (isGuest) ...[
-                const SizedBox(height: 14),
-                Text(l10n.guestRequestTrackHint,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      context.go('/login');
-                    },
-                    icon: const Icon(Icons.login, size: 18),
-                    label: Text(l10n.loginToContinue),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary),
-                      minimumSize: const Size.fromHeight(46),
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(50),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                  ),
-                  child: Text(l10n.done,
-                      style: const TextStyle(
-                          fontSize: 15.5, fontWeight: FontWeight.w700)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    await HoroscopePaymentSuccessDialog.show(context,
+        requestId: id, isGuest: isGuest);
     if (mounted) _leave(trackable: !isGuest);
   }
 

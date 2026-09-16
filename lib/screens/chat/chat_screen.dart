@@ -357,10 +357,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     });
 
     final thread = threadAsync.valueOrNull;
-    final name =
-        thread?.otherName(myUid) ?? widget.extra?['name'] as String? ?? 'Chat';
-    final photo =
-        thread?.otherPhoto(myUid) ?? widget.extra?['photo'] as String? ?? '';
+    // CURRENT name and photo (spec §2). The counterpart's LIVE matrimony
+    // profile is the source of truth; the thread's stored snapshot — and the
+    // `extra` the opening screen passed for an instant first paint — are only
+    // fallbacks while it loads. A member who renames themselves or replaces
+    // their photo is shown correctly here without the thread document having
+    // to be rewritten first.
+    final identity = watchChatIdentity(ref, thread: thread, myUid: myUid);
+    final name = identity.name.isNotEmpty
+        ? identity.name
+        : (widget.extra?['name'] as String? ?? 'Chat');
+    final photo = identity.photoUrl.isNotEmpty
+        ? identity.photoUrl
+        : (thread == null ? (widget.extra?['photo'] as String? ?? '') : '');
 
     // The user's two quick-reply buttons appear ONLY when the other participant
     // is an astrologer. That single condition also guarantees the ASTROLOGER

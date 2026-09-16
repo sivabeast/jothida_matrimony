@@ -10,16 +10,20 @@ import '../../providers/auth_provider.dart';
 import '../../providers/guest_login_prompt_provider.dart';
 import '../common/app_logo.dart';
 
-/// Hosts the periodic GUEST login prompt (§3).
+/// Hosts the GUEST login prompt (§3/§14).
 ///
 /// Renders nothing of its own — it wraps Home and opens a dialog OVER it, so
 /// the page underneath keeps working exactly as before. Behaviour:
 ///
-///   • only for a guest / not-logged-in visitor — a member never sees it;
-///   • at most once every [kGuestLoginPromptInterval], enforced by a
-///     PERSISTED timestamp rather than by widget rebuilds, so navigating
-///     around the app or reopening it cannot bring the prompt back early;
-///   • closing it restarts the interval, so it never re-opens immediately;
+///   • only for a guest / not-logged-in visitor — a member never sees it, so
+///     an authenticated user is never asked to log in again;
+///   • ONCE PER APP OPEN, as soon as Home has been laid out (§14): opening the
+///     app is itself the moment to ask;
+///   • after that, at most once every [kGuestLoginPromptInterval] for the rest
+///     of the session, enforced by a PERSISTED timestamp rather than by widget
+///     rebuilds, so navigating around the app cannot bring it back early;
+///   • it is always dismissible — barrier tap, Maybe Later, or back — and
+///     closing it restarts the interval, so there is no login loop;
 ///   • the moment the guest logs in the ticker stops and the stamp is cleared.
 class GuestLoginPromptHost extends ConsumerStatefulWidget {
   final Widget child;
@@ -45,9 +49,11 @@ class _GuestLoginPromptHostState extends ConsumerState<GuestLoginPromptHost> {
   void initState() {
     super.initState();
     _restartTimer();
-    // First check shortly after Home settles, so the prompt does not fight the
-    // app-opening popup or the first frame.
-    Future.delayed(const Duration(seconds: 3), _maybeShow);
+    // App open -> Home -> prompt (spec §14). The short delay is not a
+    // throttle: it lets Home lay out underneath and keeps the prompt from
+    // fighting the app-opening popup or a required-update gate for the same
+    // frame. `_maybeShow` re-checks that Home is still the current route.
+    Future.delayed(const Duration(milliseconds: 900), _maybeShow);
   }
 
   @override
@@ -76,10 +82,13 @@ class _GuestLoginPromptHostState extends ConsumerState<GuestLoginPromptHost> {
     final last = await store.lastShownMs();
     if (!mounted || _open) return;
     if (ModalRoute.of(context)?.isCurrent != true) return;
+    // An app OPEN always earns the prompt; after that the 10-minute interval
+    // takes over for the rest of the session (spec §14).
     if (!shouldShowGuestLoginPrompt(
       isGuest: ref.read(isGuestProvider),
       lastShownMs: last,
       now: DateTime.now(),
+      promptedThisLaunch: ref.read(guestPromptShownThisLaunchProvider),
     )) {
       return;
     }
@@ -87,6 +96,7 @@ class _GuestLoginPromptHostState extends ConsumerState<GuestLoginPromptHost> {
     _open = true;
     // Stamped BEFORE the dialog opens so a dismissal (or an unexpected error)
     // can never loop the prompt.
+    ref.read(guestPromptShownThisLaunchProvider.notifier).state = true;
     await store.markShown();
     if (!mounted) {
       _open = false;
@@ -107,6 +117,9 @@ class _GuestLoginPromptHostState extends ConsumerState<GuestLoginPromptHost> {
     // Stop ticking the moment the guest logs in; start again if they sign out.
     ref.listen<bool>(isGuestProvider, (_, isGuest) {
       if (isGuest) {
+        // Signing out mid-session starts a fresh guest visit: it counts as an
+        // "open" for prompting purposes, so the prompt is due again.
+        ref.read(guestPromptShownThisLaunchProvider.notifier).state = false;
         _restartTimer();
       } else {
         _timer?.cancel();

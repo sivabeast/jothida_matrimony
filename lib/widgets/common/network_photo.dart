@@ -111,3 +111,33 @@ ImageProvider? cachedPhotoProvider(String url) {
   if (trimmed.isEmpty) return null;
   return CachedNetworkImageProvider(trimmed);
 }
+
+/// Forgets everything the device has cached for [url] (spec §25).
+///
+/// Every profile photo is cached twice over: in Flutter's in-memory
+/// [ImageCache] and on disk by `cached_network_image`. Both survive the
+/// Firestore document changing, so after replacing or removing a photo the app
+/// happily kept painting the old bytes — the image looked unchanged even though
+/// the reference had already moved on.
+///
+/// Call this with the URL that is going AWAY, right before/after the new one is
+/// stored. Best-effort and never throws: failing to clear a cache must not
+/// break the save that triggered it.
+Future<void> evictCachedImage(String? url) async {
+  final trimmed = (url ?? '').trim();
+  if (trimmed.isEmpty) return;
+  try {
+    // In-memory: both provider shapes the app uses for the same URL.
+    PaintingBinding.instance.imageCache
+        .evict(CachedNetworkImageProvider(trimmed));
+    PaintingBinding.instance.imageCache.evict(NetworkImage(trimmed));
+  } catch (_) {
+    // A test binding without an image cache, or an unparseable URL.
+  }
+  try {
+    // On disk.
+    await CachedNetworkImage.evictFromCache(trimmed);
+  } catch (_) {
+    // No cache manager available (unit tests) — nothing to clear.
+  }
+}

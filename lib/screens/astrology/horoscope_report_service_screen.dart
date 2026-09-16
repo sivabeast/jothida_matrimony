@@ -17,6 +17,7 @@ import '../../providers/navigation_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../services/billing/horoscope_report_purchase.dart';
+import '../../widgets/report/horoscope_payment_success_dialog.dart';
 import '../../widgets/common/network_photo.dart';
 import '../../widgets/report/horoscope_fee_card.dart';
 import '../report/compatibility_report_screen.dart';
@@ -108,6 +109,12 @@ class _HoroscopeReportServiceScreenState
   /// verified purchase — create + auto-assign the analysis (saving the purchase
   /// token to Firestore) and unlock it on the Reports tab. A cancelled or failed
   /// purchase leaves the report locked and charges nothing.
+  /// A Play purchase token that has been CHARGED but whose request could not
+  /// be written yet. Kept so pressing Pay again reuses the payment instead of
+  /// taking the money a second time; cleared the moment the request lands.
+  String _paidToken = '';
+  int _paidAmount = 0;
+
   Future<void> _payAndRequest() async {
     if (_busy) return;
     final l10n = context.l10n;
@@ -141,34 +148,59 @@ class _HoroscopeReportServiceScreenState
       // Google Play Billing purchase sheet (one-time consumable product) — the
       // SAME call the standalone New Horoscope Report request makes, so both
       // entry points charge, verify and record a report identically.
-      final payment = await buyHoroscopeReport(
-          () => ref.read(playBillingServiceProvider));
-      if (!mounted) return;
-
-      if (payment.isPaid) {
-        // Verified purchase → save the purchase + auto-assign the analysis, then
-        // unlock via the Reports tab.
-        await ref
-            .read(matchAnalysisControllerProvider.notifier)
-            .requestAndAssignAnalysis(
-              groom: groom,
-              bride: bride,
-              amount: payment.chargedAmount,
-              paymentId: payment.purchaseToken,
-            );
+      //
+      // A token kept from a previous attempt is REUSED rather than charging
+      // again: the money was already taken, and only the write that follows
+      // failed. This is the one case that would otherwise bill somebody twice
+      // for one report.
+      var token = _paidToken;
+      var charged = _paidAmount;
+      if (token.isEmpty) {
+        final payment = await buyHoroscopeReport(
+            () => ref.read(playBillingServiceProvider));
         if (!mounted) return;
-        _snack(l10n.paymentSuccessReportAssigned);
-        ref.read(homeTabIndexProvider.notifier).state = kReportsTabIndex;
-        context.go('/home');
-        return;
+        if (!payment.isPaid) {
+          // Not purchased → NOTHING is created; explain and reset the button.
+          // No success message of any kind can be shown on this path.
+          _snack(payment.failureMessage(l10n));
+          setState(() => _busy = false);
+          return;
+        }
+        token = payment.purchaseToken;
+        charged = payment.chargedAmount;
+        // Survive a failed write: the money is spent, the token must not be.
+        _paidToken = token;
+        _paidAmount = charged;
       }
 
-      // Not purchased → nothing is created; explain and reset the button.
-      _snack(payment.failureMessage(l10n));
-      if (mounted) setState(() => _busy = false);
-    } catch (_) {
-      if (mounted) setState(() => _busy = false);
-      _snack(context.l10n.couldNotStartPayment);
+      // Paid → create the request. The confirmation below is shown ONLY after
+      // this returns, so "Payment Successful · Request Submitted" can never
+      // describe a request that was not written (spec §20).
+      await ref
+          .read(matchAnalysisControllerProvider.notifier)
+          .requestAndAssignAnalysis(
+            groom: groom,
+            bride: bride,
+            amount: charged,
+            paymentId: token,
+          );
+      if (!mounted) return;
+      _paidToken = ''; // consumed
+      // Both facts, in one place: the payment went through AND the request is
+      // submitted and pending with the astrology team.
+      await HoroscopePaymentSuccessDialog.show(context);
+      if (!mounted) return;
+      ref.read(homeTabIndexProvider.notifier).state = kReportsTabIndex;
+      context.go('/home');
+    } catch (e) {
+      debugPrint('[HoroscopeReport] pay-and-request failed: $e');
+      if (!mounted) return;
+      setState(() => _busy = false);
+      // Telling somebody their payment failed AFTER taking their money is the
+      // worst thing this screen could say — so the two cases are distinct.
+      _snack(_paidToken.isNotEmpty
+          ? context.l10n.paidButReportNotSavedRetry
+          : context.l10n.couldNotStartPayment);
     }
   }
 

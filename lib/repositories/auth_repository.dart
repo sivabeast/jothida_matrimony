@@ -328,10 +328,22 @@ class AuthRepository {
   /// deleted and the Google + Firebase sessions are cleared. After this the
   /// `users/{uid}` (and `astrologers/{uid}`) documents no longer exist, so the
   /// same Google account signing in again is treated as a brand-new user.
-  /// Returns true when the Firebase **Auth** account was removed too. Firestore
-  /// data is always purged; a false result means only the auth record survived
-  /// (re-authentication was cancelled or refused), which the caller may surface.
-  Future<bool> deleteAccount(String uid, {required bool isAstrologer}) async {
+  ///
+  /// The result reports BOTH halves honestly (spec §3/§4):
+  ///
+  ///  * [AccountDeletionResult.authDeleted] — whether the Firebase **Auth**
+  ///    record itself went. False means re-authentication was cancelled or
+  ///    refused, so the same uid can sign in again.
+  ///  * [AccountDeletionResult.failedSteps] — the Firestore collections that
+  ///    could not be cleared, and [AccountDeletionResult.residualData] —
+  ///    whether a verification re-read still finds a profile or account
+  ///    document.
+  ///
+  /// Those two together are what make the dangerous combination visible: a
+  /// surviving auth record AND surviving data is exactly the state in which the
+  /// "deleted" profile reappears at the next sign-in.
+  Future<AccountDeletionResult> deleteAccount(String uid,
+      {required bool isAstrologer}) async {
     debugPrint('[AuthRepository] deleteAccount($uid, isAstrologer=$isAstrologer)');
     // Clear the push token first so a deleted account can never keep receiving
     // notifications on this device.
@@ -340,14 +352,54 @@ class AuthRepository {
     } catch (e) {
       debugPrint('[AuthRepository] deleteAccount: FCM token delete skipped: $e');
     }
-    if (isAstrologer) {
-      await _firestore.deleteAstrologerAccountData(uid);
-    } else {
-      await _firestore.deleteUserAccountData(uid);
-    }
+    final failedSteps = isAstrologer
+        ? await _firestore.deleteAstrologerAccountData(uid)
+        : await _firestore.deleteUserAccountData(uid);
+    // VERIFY rather than assume — still signed in, so the owner rules that
+    // permitted the deletes permit this read too. After the auth account goes,
+    // it would only be denied.
+    final residual = await _firestore.hasResidualAccountData(uid);
     final authDeleted = await _auth.deleteCurrentUser();
     debugPrint('[AuthRepository] deleteAccount: done '
-        '(authAccountDeleted=$authDeleted).');
-    return authDeleted;
+        '(authAccountDeleted=$authDeleted, residualData=$residual, '
+        'failed=${failedSteps.isEmpty ? 'none' : failedSteps.join(',')}).');
+    return AccountDeletionResult(
+      authDeleted: authDeleted,
+      failedSteps: failedSteps,
+      residualData: residual,
+    );
   }
+}
+
+/// What actually happened during an account deletion.
+///
+/// Deliberately not a bare `bool`. "Did it work?" has two independent answers
+/// here — the Firebase Auth record and the Firestore data are removed by
+/// different mechanisms with different failure modes — and collapsing them into
+/// one flag is what let a HALF-deleted account report success (spec §3/§4).
+class AccountDeletionResult {
+  /// Whether the Firebase Auth user itself was deleted.
+  final bool authDeleted;
+
+  /// Names of the Firestore deletion steps that did not complete.
+  final List<String> failedSteps;
+
+  /// Whether a post-deletion re-read still finds account data (a profile or the
+  /// `users/{uid}` document).
+  final bool residualData;
+
+  const AccountDeletionResult({
+    required this.authDeleted,
+    this.failedSteps = const [],
+    this.residualData = false,
+  });
+
+  /// True when the account is genuinely, completely gone.
+  bool get isComplete => authDeleted && failedSteps.isEmpty && !residualData;
+
+  /// True for the ONE combination that can resurrect a deleted profile: the
+  /// auth record survived, so the same uid signs in again, AND data survived
+  /// for that uid to find. Either alone is recoverable; together they are the
+  /// bug this class exists to make visible.
+  bool get mayResurrect => !authDeleted && (residualData || failedSteps.isNotEmpty);
 }

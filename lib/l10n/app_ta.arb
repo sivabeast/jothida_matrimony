@@ -1657,5 +1657,13 @@
   "copy": "நகலெடு",
   "openWhatsappChat": "WhatsApp உரையாடலைத் திறக்கவும்",
   "attachReportHint": "பின்னர் அந்த உரையாடலில் அறிக்கையை இணைக்கவும் — பகிர்வு பட்டியலில் WhatsApp ஐத் தேர்ந்தெடுக்கவும்.",
-  "professionalMarriageCompatReport": "தொழில்முறை திருமண பொருத்த அறிக்கை"
+  "professionalMarriageCompatReport": "தொழில்முறை திருமண பொருத்த அறிக்கை",
+  "navAstrologers": "ஜோதிடர்",
+  "marriedStatusCardTitle": "திருமணம் ஆகிவிட்டதா?",
+  "marriedStatusCardBody": "உங்கள் சுயவிவரத்தில் திருமண நிலையைப் புதுப்பிக்கவும்.",
+  "marriedStatusCardAction": "நிலையைப் புதுப்பிக்கவும்",
+  "marriedStatusCardMarriedBody": "உங்கள் சுயவிவரம் திருமணமானது எனக் குறிக்கப்பட்டு, பொருத்தப் பட்டியலிலிருந்து விலக்கப்பட்டுள்ளது.",
+  "horoscopeRequestSubmitted": "ஜாதக கோரிக்கை சமர்ப்பிக்கப்பட்டது",
+  "horoscopeRequestStatusLine": "நிலை: நிலுவையில்",
+  "paidButReportNotSavedRetry": "உங்கள் பணம் செலுத்தப்பட்டது, ஆனால் அறிக்கை கோரிக்கையைச் சேமிக்க முடியவில்லை. மீண்டும் பணம் செலுத்து என்பதை அழுத்தவும் — இருமுறை கட்டணம் வசூலிக்கப்படாது."
 }

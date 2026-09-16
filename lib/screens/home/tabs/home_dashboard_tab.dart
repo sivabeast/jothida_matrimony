@@ -196,9 +196,12 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             const SizedBox(height: 18),
           ],
 
-          // ── Quick actions — one-tap access to the core journeys ───────────
-          _buildQuickActions(context),
-          const SizedBox(height: 18),
+          // ── Marriage status (§17/§18) ─────────────────────────────────────
+          // Replaces the old quick-action shortcut card, which duplicated the
+          // bottom navigation. Renders NOTHING while there is no profile yet,
+          // so the Create Profile call-to-action below takes the space instead
+          // of an empty gap.
+          ..._buildMarriageStatusCard(context, myProfile),
 
           // ── No profile yet → the premium Create Profile call-to-action, in
           //    place of every matrimony profile section below. Withheld while
@@ -220,8 +223,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
           // ── Trust / feature highlights ───────────────────────────────────
           _buildFeatureHighlights(context),
 
-          // ── Compact notification-style action cards ───────────────────────
-          ..._buildActionCards(context, myProfile),
           const SizedBox(height: 8),
 
           // Matrimony profiles are shown ONLY to members who have a profile.
@@ -359,11 +360,8 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(context.l10n.welcomeBack,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      color: Colors.white.withOpacity(0.8), fontSize: 12.5)),
+              // The "Welcome back" line above the name was removed (§16) — the
+              // header carries the member's NAME and nothing else.
               Text(firstName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -496,130 +494,100 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
         ),
       );
 
-  // ── Quick actions ──────────────────────────────────────────────────────────
+  // ── Marriage status card (§17/§18) ───────────────────────────
 
-  /// A premium white card of five one-tap shortcuts (reference layout):
-  /// Matches · Interests · Astrology · Reports · Muhurtham Day. Each has a soft
-  /// coloured circular icon.
-  Widget _buildQuickActions(BuildContext context) {
-    void goTab(int i) => ref.read(homeTabIndexProvider.notifier).state = i;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
-        decoration: BoxDecoration(
+  /// The card that sits directly under the banner carousel.
+  ///
+  /// It replaced a quick-action shortcut row (Matches · Interests · Astrology ·
+  /// Reports), which only repeated the bottom navigation. What goes there now
+  /// is the one thing Home cannot ask anywhere else: whether the member is
+  /// still looking.
+  ///
+  /// The MARITAL STATUS ON THE PROFILE is the source of truth, so the card
+  /// never invents a status and never asks a question it already knows the
+  /// answer to:
+  ///
+  ///   • no profile yet → nothing is rendered (the Create Profile CTA below
+  ///     owns that space);
+  ///   • still in matchmaking → the prompt, which opens the SAME two-stage
+  ///     "Found your life partner?" flow the rest of the app uses
+  ///     ([_startMarriedFlow]) — no second way to set the status;
+  ///   • already married → a plain statement of that fact, with no call to
+  ///     action, because there is nothing left to update.
+  List<Widget> _buildMarriageStatusCard(
+      BuildContext context, ProfileModel? profile) {
+    if (profile == null) return const [];
+    final l10n = context.l10n;
+    final married = profile.isMarried;
+    return [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Material(
           color: Colors.white,
           borderRadius: BorderRadius.circular(_kCardRadius),
-          boxShadow: _kCardShadow,
-        ),
-        // `start` (not the default `center`) is what keeps all four icons on
-        // EXACTLY the same baseline: a two-line Tamil label used to make its
-        // column taller, and centring then pushed that column's icon down
-        // relative to the others.
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _quickAction(
-                icon: Icons.favorite,
-                label: context.l10n.matches,
-                color: const Color(0xFFE64A6B),
-                onTap: () => goTab(kMatchesTabIndex),
-              ),
-            ),
-            Expanded(
-              child: _quickAction(
-                icon: Icons.people_alt_rounded,
-                label: context.l10n.interests,
-                color: const Color(0xFF7C4DFF),
-                onTap: () => goTab(kInterestsTabIndex),
-              ),
-            ),
-            Expanded(
-              child: _quickAction(
-                icon: Icons.auto_awesome,
-                label: context.l10n.astrology,
-                color: const Color(0xFFF5A623),
-                onTap: () => goTab(kAstrologyTabIndex),
-              ),
-            ),
-            Expanded(
-              child: _quickAction(
-                icon: Icons.description_outlined,
-                label: context.l10n.reports,
-                color: const Color(0xFF2F80ED),
-                onTap: () => goTab(kReportsTabIndex),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _quickAction({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 1),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Premium circular icon: soft two-tone tint + a subtle drop shadow.
-            Container(
-              width: 48,
-              height: 48,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(_kCardRadius),
+            // A married profile has nothing to update — the card states the
+            // status and stops being a button.
+            onTap: married ? null : () => _startMarriedFlow(context, profile),
+            child: Ink(
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [color.withOpacity(0.20), color.withOpacity(0.08)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withOpacity(0.18),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(_kCardRadius),
+                border: Border.all(color: Colors.grey.shade200),
+                boxShadow: _kCardShadow,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: (married ? AppColors.success : AppColors.primary)
+                          .withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(married ? '🎉' : '💍',
+                        style: const TextStyle(fontSize: 20)),
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          married ? l10n.married : l10n.marriedStatusCardTitle,
+                          style: const TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          married
+                              ? l10n.marriedStatusCardMarriedBody
+                              : l10n.marriedStatusCardBody,
+                          style: TextStyle(
+                              fontSize: 12, height: 1.35, color: Colors.grey[700]),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!married) ...[
+                    const SizedBox(width: 8),
+                    Icon(Icons.chevron_right, color: Colors.grey[400], size: 22),
+                  ],
                 ],
               ),
-              child: Icon(icon, color: color, size: 22),
             ),
-            const SizedBox(height: 6),
-            // Fixed-height label area so all five columns are exactly the same
-            // height and the icons above them stay perfectly in line, whether
-            // the label needs one line (English) or two (Tamil).
-            SizedBox(
-              height: 26,
-              child: Align(
-                alignment: Alignment.topCenter,
-                // Prefers a single line and only wraps between WHOLE words,
-                // shrinking the font slightly when a long Tamil word would
-                // otherwise be split mid-word.
-                child: AutoFitLabel(
-                  label,
-                  maxLines: 2,
-                  minFontSize: 7.5,
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    height: 1.12,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
-    );
+      const SizedBox(height: 18),
+    ];
   }
 
   // ── Profile Under Review banner ────────────────────────────────────────────
@@ -1184,103 +1152,6 @@ class _HomeDashboardTabState extends ConsumerState<HomeDashboardTab> {
     );
   }
 
-  // ── Compact notification-style action cards ────────────────────────────────
-
-  List<Widget> _buildActionCards(BuildContext context, ProfileModel? profile) {
-    final cards = <Widget>[];
-
-    // Profile Completion is rendered above in the side-by-side info row
-    // (`_buildInfoCardsRow` → `_profileCompletionMini`).
-
-    // (The old "Upgrade To Premium" card was removed — the app has NO
-    // subscription system; every matrimony feature is free.)
-
-    // 💍 "Found your life partner?" — the ENTRY POINT into the married flow,
-    // shown only while the member is still in matchmaking.
-    //
-    // Once they are married this card is deliberately GONE (spec §21/§22): the
-    // confirmation is a transient snackbar carrying UNDO, and what persists
-    // afterwards is a notification in the bell feed plus the status row on My
-    // Profile — not a large panel permanently occupying the bottom of Home.
-    if (profile != null && !profile.isMarried) {
-      cards.add(_notifCard(
-        emoji: '💍',
-        title: context.l10n.foundLifePartnerQ,
-        subtitle: context.l10n.markProfileMarried,
-        accent: AppColors.success,
-        onTap: () => _startMarriedFlow(context, profile),
-      ));
-    }
-
-    return cards;
-  }
-
-  /// A compact, full-width notification-style card: small icon on the left,
-  /// title + subtitle, and a chevron on the right. ~62px tall.
-  Widget _notifCard({
-    required String emoji,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    required Color accent,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(_kCardRadius),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(_kCardRadius),
-          onTap: onTap,
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 60),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(_kCardRadius),
-              border: Border.all(color: Colors.grey.shade200),
-              boxShadow: _kCardShadow,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                      color: accent.withOpacity(0.12), shape: BoxShape.circle),
-                  alignment: Alignment.center,
-                  child: Text(emoji, style: const TextStyle(fontSize: 18)),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13.5,
-                              fontFamily: 'Poppins')),
-                      const SizedBox(height: 2),
-                      Text(subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              TextStyle(color: Colors.grey[600], fontSize: 11.5)),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Icon(Icons.chevron_right, color: Colors.grey[400], size: 22),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   /// STAGE 1 of the "Found Your Life Partner" flow: ask HOW the partner was
   /// found (through this app / another source) with a Skip escape, then hand

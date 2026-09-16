@@ -180,7 +180,16 @@ service cloud.firestore {
                     || (isAuthenticated()
                         && resource.data.uid == request.auth.uid
                         && request.resource.data.uid == request.auth.uid);
-      allow delete: if isAdmin();
+      // The OWNER may delete their own entry — this is account deletion
+      // cleanup (spec §3/§4). Without it the index outlives the account it
+      // points at: the member's mobile number stays "already registered"
+      // forever and resolves to a Firebase Auth address that no longer exists,
+      // so they can neither sign in nor register that number again. Still
+      // owner-scoped (`resource.data.uid == request.auth.uid`), so nobody can
+      // free up — or hijack — somebody else's number.
+      allow delete: if isAdmin()
+                    || (isAuthenticated()
+                        && resource.data.uid == request.auth.uid);
     }
 
     // ── Profiles ─────────────────────────────────────────────────────────

@@ -191,7 +191,9 @@ class _Body extends StatelessWidget {
               color: AppColors.textPrimary,
             ),
           ),
-          if (cfg.officeAddress.trim().isNotEmpty) ...[
+          // The ONE authoritative address (§11) — the same string the Contact
+          // Details row shows and Get Directions routes to.
+          if (cfg.fullAddress.isNotEmpty) ...[
             const SizedBox(height: 6),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -202,7 +204,7 @@ class _Body extends StatelessWidget {
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
-                    cfg.officeAddress,
+                    cfg.fullAddress,
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                   ),
@@ -360,42 +362,43 @@ class _Body extends StatelessWidget {
   }
 
   List<Widget> _contactRows(BuildContext context) {
+    final l10n = context.l10n;
     final rows = <Widget>[];
     final phone = cfg.officeContactNumber.trim();
     final whatsapp = cfg.whatsappNumber.trim();
     final email = cfg.email.trim();
-    final address = cfg.officeAddress.trim();
+    // ONE location (§11): the centre's complete address. There used to be two
+    // rows here — "Office" (street only) and "Location" (city · district ·
+    // state) — two halves of the same address presented as if they were two
+    // different places, and free to drift apart. [AstrologyServiceConfig
+    // .fullAddress] is the whole thing in one line, and it is the SAME string
+    // Get Directions routes to, so what is shown and where the button goes can
+    // never disagree.
+    final address = cfg.fullAddress;
 
     String digits(String s) => s.replaceAll(RegExp(r'[^0-9+]'), '');
 
     if (phone.isNotEmpty) {
-      rows.add(_contactRow(Icons.call_outlined, 'Phone', phone,
+      rows.add(_contactRow(Icons.call_outlined, l10n.phone, phone,
           () => _launch(context, Uri(scheme: 'tel', path: digits(phone)),
               'Call $phone')));
     }
     if (whatsapp.isNotEmpty) {
       final wa = digits(whatsapp).replaceAll('+', '');
-      rows.add(_contactRow(Icons.chat_outlined, 'WhatsApp', whatsapp,
+      rows.add(_contactRow(Icons.chat_outlined, l10n.whatsapp, whatsapp,
           () => _launch(context, Uri.parse('https://wa.me/$wa'),
               'WhatsApp: $whatsapp')));
     }
     if (email.isNotEmpty) {
-      rows.add(_contactRow(Icons.email_outlined, 'Email', email,
+      rows.add(_contactRow(Icons.email_outlined, l10n.email, email,
           () => _launch(context, Uri(scheme: 'mailto', path: email),
               'Email: $email')));
     }
-    // The office address itself starts Google Maps DIRECTIONS — the
-    // destination is always derived from the astrologer's OWN stored
-    // location/address, never a fixed place (see [_openMaps]).
+    // The address itself starts Google Maps DIRECTIONS — the destination is
+    // always derived from the astrologer's OWN stored location/address, never a
+    // fixed place (see [_openMaps]).
     if (address.isNotEmpty) {
-      rows.add(_contactRow(Icons.location_on_outlined, 'Office', address,
-          _hasMapTarget ? () => _openMaps(context) : null));
-    }
-    // The centre's fixed City · District · State, shown consistently wherever
-    // its location appears.
-    final hierarchy = cfg.locationHierarchy;
-    if (hierarchy.isNotEmpty) {
-      rows.add(_contactRow(Icons.map_outlined, 'Location', hierarchy,
+      rows.add(_contactRow(Icons.location_on_outlined, l10n.location, address,
           _hasMapTarget ? () => _openMaps(context) : null));
     }
     if (_hasMapTarget) {
