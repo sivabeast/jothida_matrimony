@@ -98,10 +98,10 @@ class PlaceOption {
 /// A place chosen in the picker. Carries the three levels separately so a
 /// duplicate city name in another district is never confused with this one.
 ///
-/// A [custom] selection is a free-typed place that is not in the master data
-/// (e.g. a small village). It exists ONLY inside the form that created it —
-/// the picker never writes anything back to the master `location` datasets or
-/// to another member's data (spec §30).
+/// A [custom] selection is a place with no Tamil Nadu town row behind it: a
+/// member-added place outside Tamil Nadu, or a place the member chose to use
+/// without saving it to the shared list. Places added under a Tamil Nadu
+/// district become real town rows (with ids) and are NOT custom.
 class PlaceSelection {
   final String city;
 
@@ -146,11 +146,15 @@ class PlaceSelection {
         custom = true;
 
   /// "Athikkolam, Ramanathapuram, Tamil Nadu" — what the field displays and
-  /// what is stored as the place value.
-  String get display => [city, district, state]
-      .map((s) => s.trim())
-      .where((s) => s.isNotEmpty)
-      .join(', ');
+  /// what is stored as the place value. A place abroad names its country
+  /// ("Dubai, UAE"); India is implied everywhere else.
+  String get display => [
+        city,
+        district,
+        state,
+        if (country.trim().isNotEmpty && country.trim() != kDefaultCountry)
+          country,
+      ].map((s) => s.trim()).where((s) => s.isNotEmpty).join(', ');
 
   bool get isEmpty => city.trim().isEmpty;
 }

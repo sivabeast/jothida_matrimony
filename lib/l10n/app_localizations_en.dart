@@ -4261,4 +4261,105 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deleteAccountLoginNotDeleted =>
       'Your profile data was removed, but your login could not be deleted yet. Please try Delete Account again.';
+
+  @override
+  String addPlaceNamed(String name) {
+    return 'Add \"$name\"';
+  }
+
+  @override
+  String get addPlaceRowHint => 'Not in the list? Add it as a new place';
+
+  @override
+  String get addNewPlaceTitle => 'Add a new place';
+
+  @override
+  String get placeNameLabel => 'Place name';
+
+  @override
+  String get placeWhereIsIt => 'Where is this place?';
+
+  @override
+  String get placeInTamilNadu => 'Tamil Nadu';
+
+  @override
+  String get placeOtherState => 'Other state in India';
+
+  @override
+  String get placeOutsideIndia => 'Outside India';
+
+  @override
+  String get chooseDistrict => 'Choose the district';
+
+  @override
+  String get chooseState => 'Choose the state';
+
+  @override
+  String get chooseCountry => 'Choose the country';
+
+  @override
+  String placeSavedAs(String place) {
+    return 'Will be saved as: $place';
+  }
+
+  @override
+  String get addPlaceButton => 'Add place';
+
+  @override
+  String get savingPlace => 'Saving…';
+
+  @override
+  String placeAddedSuccess(String name) {
+    return '\"$name\" was added to the list and selected.';
+  }
+
+  @override
+  String placeAlreadyListedSelected(String name) {
+    return '\"$name\" is already on the list — it has been selected.';
+  }
+
+  @override
+  String placeAlreadyListed(String name, String parent) {
+    return '\"$name\" is already listed under $parent.';
+  }
+
+  @override
+  String selectExistingPlace(String name) {
+    return 'Select \"$name\"';
+  }
+
+  @override
+  String get placeSaveOffline =>
+      'Could not save the place — check your internet connection and try again.';
+
+  @override
+  String get placeSaveNotAllowed =>
+      'This place could not be added to the shared list from this account.';
+
+  @override
+  String get placeSaveFailed => 'Could not save the place. Please try again.';
+
+  @override
+  String get useWithoutSaving => 'Use for this form only';
+
+  @override
+  String placeUsedForFormOnly(String name) {
+    return '\"$name\" will be used for this form only.';
+  }
+
+  @override
+  String get placeNameEmpty => 'Enter the place name';
+
+  @override
+  String get placeNameTooShort => 'Enter at least 2 letters';
+
+  @override
+  String get placeNameTooLong => 'The name is too long';
+
+  @override
+  String get placeNameInvalid => 'Use letters only — no numbers or symbols';
+
+  @override
+  String get placeNotListedHint =>
+      'Not listed yet? Use \"Add\" above to add it.';
 }

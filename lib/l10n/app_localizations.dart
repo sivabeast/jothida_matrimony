@@ -7711,6 +7711,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your profile data was removed, but your login could not be deleted yet. Please try Delete Account again.'**
   String get deleteAccountLoginNotDeleted;
+
+  /// No description provided for @addPlaceNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Add \"{name}\"'**
+  String addPlaceNamed(String name);
+
+  /// No description provided for @addPlaceRowHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Not in the list? Add it as a new place'**
+  String get addPlaceRowHint;
+
+  /// No description provided for @addNewPlaceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a new place'**
+  String get addNewPlaceTitle;
+
+  /// No description provided for @placeNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Place name'**
+  String get placeNameLabel;
+
+  /// No description provided for @placeWhereIsIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Where is this place?'**
+  String get placeWhereIsIt;
+
+  /// No description provided for @placeInTamilNadu.
+  ///
+  /// In en, this message translates to:
+  /// **'Tamil Nadu'**
+  String get placeInTamilNadu;
+
+  /// No description provided for @placeOtherState.
+  ///
+  /// In en, this message translates to:
+  /// **'Other state in India'**
+  String get placeOtherState;
+
+  /// No description provided for @placeOutsideIndia.
+  ///
+  /// In en, this message translates to:
+  /// **'Outside India'**
+  String get placeOutsideIndia;
+
+  /// No description provided for @chooseDistrict.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the district'**
+  String get chooseDistrict;
+
+  /// No description provided for @chooseState.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the state'**
+  String get chooseState;
+
+  /// No description provided for @chooseCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the country'**
+  String get chooseCountry;
+
+  /// No description provided for @placeSavedAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Will be saved as: {place}'**
+  String placeSavedAs(String place);
+
+  /// No description provided for @addPlaceButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add place'**
+  String get addPlaceButton;
+
+  /// No description provided for @savingPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get savingPlace;
+
+  /// No description provided for @placeAddedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" was added to the list and selected.'**
+  String placeAddedSuccess(String name);
+
+  /// No description provided for @placeAlreadyListedSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" is already on the list — it has been selected.'**
+  String placeAlreadyListedSelected(String name);
+
+  /// No description provided for @placeAlreadyListed.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" is already listed under {parent}.'**
+  String placeAlreadyListed(String name, String parent);
+
+  /// No description provided for @selectExistingPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Select \"{name}\"'**
+  String selectExistingPlace(String name);
+
+  /// No description provided for @placeSaveOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the place — check your internet connection and try again.'**
+  String get placeSaveOffline;
+
+  /// No description provided for @placeSaveNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'This place could not be added to the shared list from this account.'**
+  String get placeSaveNotAllowed;
+
+  /// No description provided for @placeSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the place. Please try again.'**
+  String get placeSaveFailed;
+
+  /// No description provided for @useWithoutSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Use for this form only'**
+  String get useWithoutSaving;
+
+  /// No description provided for @placeUsedForFormOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" will be used for this form only.'**
+  String placeUsedForFormOnly(String name);
+
+  /// No description provided for @placeNameEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the place name'**
+  String get placeNameEmpty;
+
+  /// No description provided for @placeNameTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter at least 2 letters'**
+  String get placeNameTooShort;
+
+  /// No description provided for @placeNameTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'The name is too long'**
+  String get placeNameTooLong;
+
+  /// No description provided for @placeNameInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Use letters only — no numbers or symbols'**
+  String get placeNameInvalid;
+
+  /// No description provided for @placeNotListedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Not listed yet? Use \"Add\" above to add it.'**
+  String get placeNotListedHint;
 }
 
 class _AppLocalizationsDelegate

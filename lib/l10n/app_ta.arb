@@ -1679,5 +1679,85 @@
   "deleteAccountGoogleMismatch": "நீங்கள் உள்நுழைந்த அதே Google கணக்கைத் தேர்ந்தெடுக்கவும்.",
   "deleteAccountSignInAgain": "பாதுகாப்புக்காக, வெளியேறி மீண்டும் உள்நுழைந்த பிறகு உங்கள் கணக்கை நீக்கவும்.",
   "deleteAccountDataNotDeleted": "உங்கள் சில தரவுகளை நீக்க முடியவில்லை, எனவே உங்கள் கணக்கு வைக்கப்பட்டுள்ளது. மீண்டும் முயற்சிக்கவும்.",
-  "deleteAccountLoginNotDeleted": "உங்கள் சுயவிவரத் தரவு நீக்கப்பட்டது, ஆனால் உங்கள் உள்நுழைவை இன்னும் நீக்க முடியவில்லை. கணக்கை நீக்கு என்பதை மீண்டும் முயற்சிக்கவும்."
+  "deleteAccountLoginNotDeleted": "உங்கள் சுயவிவரத் தரவு நீக்கப்பட்டது, ஆனால் உங்கள் உள்நுழைவை இன்னும் நீக்க முடியவில்லை. கணக்கை நீக்கு என்பதை மீண்டும் முயற்சிக்கவும்.",
+  "addPlaceNamed": "\"{name}\" சேர்க்கவும்",
+  "@addPlaceNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlaceRowHint": "பட்டியலில் இல்லையா? புதிய இடமாகச் சேர்க்கவும்",
+  "addNewPlaceTitle": "புதிய இடத்தைச் சேர்க்கவும்",
+  "placeNameLabel": "இடத்தின் பெயர்",
+  "placeWhereIsIt": "இந்த இடம் எங்கே உள்ளது?",
+  "placeInTamilNadu": "தமிழ்நாடு",
+  "placeOtherState": "இந்தியாவின் பிற மாநிலம்",
+  "placeOutsideIndia": "இந்தியாவுக்கு வெளியே",
+  "chooseDistrict": "மாவட்டத்தைத் தேர்ந்தெடுக்கவும்",
+  "chooseState": "மாநிலத்தைத் தேர்ந்தெடுக்கவும்",
+  "chooseCountry": "நாட்டைத் தேர்ந்தெடுக்கவும்",
+  "placeSavedAs": "இவ்வாறு சேமிக்கப்படும்: {place}",
+  "@placeSavedAs": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlaceButton": "இடத்தைச் சேர்",
+  "savingPlace": "சேமிக்கிறது…",
+  "placeAddedSuccess": "\"{name}\" பட்டியலில் சேர்க்கப்பட்டு தேர்ந்தெடுக்கப்பட்டது.",
+  "@placeAddedSuccess": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeAlreadyListedSelected": "\"{name}\" ஏற்கனவே பட்டியலில் உள்ளது — அது தேர்ந்தெடுக்கப்பட்டது.",
+  "@placeAlreadyListedSelected": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeAlreadyListed": "\"{name}\" ஏற்கனவே {parent} கீழ் பட்டியலில் உள்ளது.",
+  "@placeAlreadyListed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "parent": {
+        "type": "String"
+      }
+    }
+  },
+  "selectExistingPlace": "\"{name}\" தேர்ந்தெடுக்கவும்",
+  "@selectExistingPlace": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeSaveOffline": "இடத்தைச் சேமிக்க முடியவில்லை — இணைய இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.",
+  "placeSaveNotAllowed": "இந்தக் கணக்கிலிருந்து இந்த இடத்தைப் பொதுப் பட்டியலில் சேர்க்க முடியவில்லை.",
+  "placeSaveFailed": "இடத்தைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
+  "useWithoutSaving": "இந்தப் படிவத்துக்கு மட்டும் பயன்படுத்து",
+  "placeUsedForFormOnly": "\"{name}\" இந்தப் படிவத்துக்கு மட்டும் பயன்படுத்தப்படும்.",
+  "@placeUsedForFormOnly": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeNameEmpty": "இடத்தின் பெயரை உள்ளிடவும்",
+  "placeNameTooShort": "குறைந்தது 2 எழுத்துகள் உள்ளிடவும்",
+  "placeNameTooLong": "பெயர் மிக நீளமாக உள்ளது",
+  "placeNameInvalid": "எழுத்துகள் மட்டும் — எண்கள் அல்லது குறியீடுகள் வேண்டாம்",
+  "placeNotListedHint": "இன்னும் பட்டியலில் இல்லையா? மேலே உள்ள \"சேர்\" மூலம் சேர்க்கவும்."
 }

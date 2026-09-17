@@ -142,7 +142,13 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   @override
   void initState() {
     super.initState();
-    _prepareThenReady();
+    // After the first frame: preparing resets the shared wizard provider, and
+    // a provider must not be modified while the tree is building — which is
+    // exactly when this screen is mounted (e.g. the admin editor swaps it in
+    // once the member's profile has been found). The spinner covers the gap.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _prepareThenReady();
+    });
   }
 
   /// CREATE mode → restore the local draft. EDIT mode → seed the wizard with
@@ -164,7 +170,8 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
           // blanks over the member's real values.
           final profile = await ref
               .read(profileRepositoryProvider)
-              .getFullProfile(widget.editProfileId!);
+              .getFullProfile(widget.editProfileId!,
+                  ownerUid: widget.ownerUserId);
           if (profile == null) {
             _prefillFailed = true;
           } else {
@@ -175,9 +182,14 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
             // on the public profile doc — seed it separately so the Contact
             // step shows the saved values (and a save can never blank them).
             try {
+              // The OWNER's record — for an admin edit that is the member,
+              // even when the document's own userId is blank.
+              final ownerUid = widget.ownerUserId?.trim().isNotEmpty == true
+                  ? widget.ownerUserId!.trim()
+                  : profile.userId;
               final contact = await ref
                   .read(firestoreServiceProvider)
-                  .getFullContact(profile.userId);
+                  .getFullContact(ownerUid);
               if (contact != null) {
                 ref.read(profileCreationProvider.notifier).updateData({
                   'contactDetails': contact.toMap(),

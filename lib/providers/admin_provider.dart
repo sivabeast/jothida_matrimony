@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/utils/admin_member_rows.dart';
 import '../models/user_model.dart';
 import '../models/profile_model.dart';
 import '../models/astrologer_account_model.dart';
@@ -50,9 +51,21 @@ final allUsersProvider = StreamProvider.autoDispose<List<UserModel>>(
 /// ADMIN BYPASS: the member's private copy is merged in, so a hidden photo,
 /// salary or horoscope is still shown here. The member's privacy settings are
 /// untouched — they govern what OTHER MEMBERS can read, never the admin.
+///
+/// A null value means the SERVER confirmed the member has no profile — an
+/// empty cached answer is never emitted, and the member's profile pointers are
+/// followed first (see core/utils/member_profile_lookup.dart).
 final adminProfileByUserIdProvider =
     StreamProvider.autoDispose.family<ProfileModel?, String>((ref, uid) =>
-        ref.read(profileRepositoryProvider).watchFullProfileByUserId(uid));
+        ref.read(profileRepositoryProvider).watchMemberProfileForAdmin(uid));
+
+/// Admin → Edit Profile: the member's profile resolved ONCE when the editor
+/// opens. Deliberately not a live stream — a re-emission while the admin is
+/// typing would rebuild the page and throw their unsaved edits away. The
+/// wizard re-reads the full document itself before seeding the form.
+final adminEditProfileTargetProvider =
+    FutureProvider.autoDispose.family<ProfileModel?, String>((ref, uid) =>
+        ref.read(profileRepositoryProvider).resolveMemberProfileForAdmin(uid));
 
 /// The member's gated contact record, readable by admins (§6 — "show complete
 /// profile information"), phone numbers included even when the member hides
@@ -118,14 +131,14 @@ final allProfilesProvider = StreamProvider.autoDispose<List<ProfileModel>>(
 /// The list is newest-first, so the FIRST profile seen for a uid is kept —
 /// the old map literal let each later (older) entry overwrite it, which
 /// served a stale duplicate profile over the current one.
+///
+/// A profile with a blank `userId` is joined through the account's
+/// `profileId` pointer — see [profilesByMember].
 final profilesByUserIdProvider =
     FutureProvider.autoDispose<Map<String, ProfileModel>>((ref) async {
   final list = await ref.watch(allProfilesProvider.future);
-  final byUid = <String, ProfileModel>{};
-  for (final p in list) {
-    byUid.putIfAbsent(p.userId, () => p);
-  }
-  return byUid;
+  final users = ref.watch(allUsersProvider).valueOrNull ?? const <UserModel>[];
+  return profilesByMember(list, users);
 });
 
 /// Realtime pending-moderation queue (oldest first) — a newly submitted or

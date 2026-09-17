@@ -39,8 +39,15 @@ class ProfileRepository {
   // and staff only; see core/utils/profile_privacy.dart.
   Stream<ProfileModel?> watchFullProfile(String profileId) =>
       _firestore.watchFullProfile(profileId);
-  Future<ProfileModel?> getFullProfile(String profileId) =>
-      _firestore.getFullProfile(profileId);
+  Future<ProfileModel?> getFullProfile(String profileId, {String? ownerUid}) =>
+      _firestore.getFullProfile(profileId, ownerUid: ownerUid);
+
+  /// ADMIN: member [uid]'s full profile; null only when the server confirms
+  /// there is none (see core/utils/member_profile_lookup.dart).
+  Future<ProfileModel?> resolveMemberProfileForAdmin(String uid) =>
+      _firestore.resolveMemberProfileForAdmin(uid);
+  Stream<ProfileModel?> watchMemberProfileForAdmin(String uid) =>
+      _firestore.watchMemberProfileForAdmin(uid);
   Stream<ProfileModel?> watchFullProfileByUserId(String userId) =>
       _firestore.watchFullProfileByUserId(userId);
   Future<ProfileModel?> getFullProfileByUserId(String userId) =>

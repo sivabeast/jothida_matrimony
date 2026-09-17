@@ -6,6 +6,7 @@ import '../../core/data/master_option.dart';
 import '../../core/services/location_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/l10n_ext.dart';
+import '../../core/utils/place_additions.dart';
 import '../../models/location_model.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/location_provider.dart';
@@ -31,11 +32,18 @@ import 'place_picker_field.dart';
 ///    manual pick). Failures never crash; a friendly message is shown.
 ///  • A saved value that no longer exists in the master data (legacy custom
 ///    entries) is still displayed so old profiles render unchanged.
+///  • A place the member ADDS (see [PlacePickerField]) is emitted like any
+///    other: under a Tamil Nadu district it is a real town row with its own
+///    id; in another state or country it carries that state / country.
 class LocationPickerSection extends ConsumerStatefulWidget {
-  final String? initialCountry; // legacy parameter — country is always India
+  final String? initialCountry;
   final String? initialState;
   final String? initialDistrict;
   final String? initialCity;
+
+  /// The saved city id — resolves a member-added place (whose id is in the
+  /// added range) even before the live list of added places has arrived.
+  final String? initialCityId;
   final double? initialLatitude;
   final double? initialLongitude;
   final ValueChanged<LocationSelection> onChanged;
@@ -49,6 +57,7 @@ class LocationPickerSection extends ConsumerStatefulWidget {
     this.initialState,
     this.initialDistrict,
     this.initialCity,
+    this.initialCityId,
     this.initialLatitude,
     this.initialLongitude,
     required this.onChanged,
@@ -100,10 +109,28 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
       final repo = ref.read(locationRepositoryProvider);
       final savedDistrict = (widget.initialDistrict ?? '').trim();
       final savedCity = (widget.initialCity ?? '').trim();
+      final savedCityId = int.tryParse((widget.initialCityId ?? '').trim());
 
-      var district = await repo.findDistrict(savedDistrict);
-      var city = await repo.findCity(savedCity,
-          districtId: district?.id);
+      TnCity? city;
+      if (savedCityId != null) {
+        if (savedCityId >= kFirstAddedPlaceId) {
+          // A member-added place: make sure the added places are merged
+          // before resolving it, or it would reopen as bare text and lose its
+          // id on the next save.
+          try {
+            repo.mergeAdditions(await ref
+                .read(placeAdditionsProvider.future)
+                .timeout(const Duration(seconds: 6)));
+          } catch (_) {
+            // Offline / unavailable — the name fallback below still shows it.
+          }
+        }
+        city = await repo.cityById(savedCityId);
+      }
+      var district = city != null
+          ? await repo.districtById(city.districtId)
+          : await repo.findDistrict(savedDistrict);
+      city ??= await repo.findCity(savedCity, districtId: district?.id);
       // A saved city under a legacy/renamed district can still locate its
       // district through the city row itself.
       if (district == null && savedCity.isNotEmpty) {
@@ -113,6 +140,7 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
 
       if (!mounted) return;
       final savedState = (widget.initialState ?? '').trim();
+      final savedCountry = (widget.initialCountry ?? '').trim();
       setState(() {
         _district = district;
         _legacyDistrict =
@@ -124,6 +152,11 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
                 savedState.isNotEmpty &&
                 savedState != TnState.nameEn
             ? savedState
+            : null;
+        _customCountry = city == null &&
+                savedCountry.isNotEmpty &&
+                savedCountry != kDefaultCountry
+            ? savedCountry
             : null;
       });
       _emit();
@@ -173,6 +206,8 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
           _legacyDistrict = null;
           _city = city;
           _legacyCity = null;
+          _customState = null;
+          _customCountry = null;
           if (city == null && loc.city.trim().isNotEmpty) {
             _locError = context.l10n.cityNotInListPickNearest(loc.city);
           }
@@ -193,8 +228,8 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
   }
 
   /// A place chosen in the shared search picker → set BOTH dropdowns at once.
-  /// A free-typed place has no master row, so it is kept as a legacy display
-  /// value exactly like an old profile's custom entry.
+  /// A place with no town row (custom) is kept as a display value exactly like
+  /// an old profile's custom entry — under its district when it has one.
   Future<void> _onPlaceSearched(PlaceSelection p) async {
     final repo = ref.read(locationRepositoryProvider);
     // The picker returns the EXACT rows by id — resolving them again by name
@@ -203,41 +238,57 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
     // selection without ids.
     TnCity? city;
     TnDistrict? district;
+    if (p.districtId != null) {
+      district = await repo.districtById(p.districtId!);
+    }
     if (!p.custom) {
       if (p.cityId != null) city = await repo.cityById(p.cityId!);
-      if (p.districtId != null) {
-        district = await repo.districtById(p.districtId!);
-      }
       district ??= await repo
           .findDistrict(p.districtEn.isNotEmpty ? p.districtEn : p.district);
       city ??= await repo.findCity(p.cityEn.isNotEmpty ? p.cityEn : p.city,
           districtId: district?.id);
     }
     if (!mounted) return;
+    final cityName = p.cityEn.trim().isNotEmpty ? p.cityEn : p.city;
     setState(() {
       _district = district;
       _legacyDistrict =
           district == null && p.district.trim().isNotEmpty ? p.district : null;
       _city = city;
-      _legacyCity = city == null && p.city.trim().isNotEmpty ? p.city : null;
-      // A free-typed place outside the listed data keeps the state it named.
-      _customState = p.custom && p.state.trim().isNotEmpty ? p.state : null;
+      _legacyCity = city == null && cityName.trim().isNotEmpty ? cityName : null;
+      // A place outside the listed data keeps the state / country it names.
+      _customState = p.custom && district == null && p.state.trim().isNotEmpty
+          ? p.state
+          : null;
+      _customCountry = p.custom &&
+              p.country.trim().isNotEmpty &&
+              p.country.trim() != kDefaultCountry
+          ? p.country
+          : null;
       _locError = null;
     });
     _emit();
   }
 
-  /// The state of a free-typed place outside Tamil Nadu ("Kochi, Kerala").
+  /// The state of a place outside Tamil Nadu ("Kochi, Kerala").
   String? _customState;
 
+  /// The country of a place outside India ("Dubai, UAE").
+  String? _customCountry;
+
   void _emit() {
+    final customCountry = _city == null ? _customCountry : null;
     final customState = _city == null ? _customState : null;
+    // A place abroad has no Indian state.
+    final state = customCountry != null
+        ? (customState ?? '')
+        : (customState ?? TnState.nameEn);
     widget.onChanged(LocationSelection(
-      country: 'India',
-      state: customState ?? TnState.nameEn,
-      stateId: customState == null
+      country: customCountry ?? kDefaultCountry,
+      state: state,
+      stateId: customState == null && customCountry == null
           ? TnState.id
-          : (LocationCatalog.indianStates.byValue(customState)?.id ?? ''),
+          : (LocationCatalog.indianStates.byValue(state)?.id ?? ''),
       district: _district?.nameEn ?? _legacyDistrict ?? '',
       districtId: _district?.id.toString() ?? '',
       city: _city?.nameEn ?? _legacyCity ?? '',
@@ -245,6 +296,27 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
       latitude: _lat,
       longitude: _lng,
     ));
+  }
+
+  /// "City, District, Tamil Nadu" for a town; a place without a town row
+  /// still names its district, state or country when it has one.
+  String get _displayValue {
+    if (_city != null) {
+      return '${_city!.nameFor(_lang)}, ${_district?.nameFor(_lang) ?? ''}, '
+          '${TnState.nameFor(_lang)}';
+    }
+    final legacy = (_legacyCity ?? '').trim();
+    if (legacy.isEmpty) return '';
+    return [
+      legacy,
+      if (_district != null) ...[
+        _district!.nameFor(_lang),
+        TnState.nameFor(_lang),
+      ] else ...[
+        _customState ?? '',
+        _customCountry ?? '',
+      ],
+    ].where((s) => s.trim().isNotEmpty).join(', ');
   }
 
   @override
@@ -256,13 +328,9 @@ class _LocationPickerSectionState extends ConsumerState<LocationPickerSection> {
         PlacePickerField(
           label: _label('city'),
           isRequired: widget.isRequired,
-          // The member's own location must be a recognised town (or the
-          // nearest one the search offers). Free text is accepted only for a
-          // place that names its state outside Tamil Nadu (spec §28/§29).
-          customNeedsState: true,
-          value: _city == null
-              ? (_legacyCity ?? '')
-              : '${_city!.nameFor(_lang)}, ${_district?.nameFor(_lang) ?? ''}, ${TnState.nameFor(_lang)}',
+          // An unlisted place is ADDED from the picker under its district,
+          // state or country — never stored as a bare, unplaced name.
+          value: _displayValue,
           onChanged: _onPlaceSearched,
         ),
         const SizedBox(height: 10),

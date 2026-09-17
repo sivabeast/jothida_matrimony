@@ -1878,5 +1878,85 @@
   "deleteAccountGoogleMismatch": "Please choose the same Google account you signed in with.",
   "deleteAccountSignInAgain": "For your security, please sign out, sign in again, and then delete your account.",
   "deleteAccountDataNotDeleted": "Some of your data could not be deleted, so your account was kept. Please try again.",
-  "deleteAccountLoginNotDeleted": "Your profile data was removed, but your login could not be deleted yet. Please try Delete Account again."
+  "deleteAccountLoginNotDeleted": "Your profile data was removed, but your login could not be deleted yet. Please try Delete Account again.",
+  "addPlaceNamed": "Add \"{name}\"",
+  "@addPlaceNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlaceRowHint": "Not in the list? Add it as a new place",
+  "addNewPlaceTitle": "Add a new place",
+  "placeNameLabel": "Place name",
+  "placeWhereIsIt": "Where is this place?",
+  "placeInTamilNadu": "Tamil Nadu",
+  "placeOtherState": "Other state in India",
+  "placeOutsideIndia": "Outside India",
+  "chooseDistrict": "Choose the district",
+  "chooseState": "Choose the state",
+  "chooseCountry": "Choose the country",
+  "placeSavedAs": "Will be saved as: {place}",
+  "@placeSavedAs": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "addPlaceButton": "Add place",
+  "savingPlace": "Saving…",
+  "placeAddedSuccess": "\"{name}\" was added to the list and selected.",
+  "@placeAddedSuccess": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeAlreadyListedSelected": "\"{name}\" is already on the list — it has been selected.",
+  "@placeAlreadyListedSelected": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeAlreadyListed": "\"{name}\" is already listed under {parent}.",
+  "@placeAlreadyListed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "parent": {
+        "type": "String"
+      }
+    }
+  },
+  "selectExistingPlace": "Select \"{name}\"",
+  "@selectExistingPlace": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeSaveOffline": "Could not save the place — check your internet connection and try again.",
+  "placeSaveNotAllowed": "This place could not be added to the shared list from this account.",
+  "placeSaveFailed": "Could not save the place. Please try again.",
+  "useWithoutSaving": "Use for this form only",
+  "placeUsedForFormOnly": "\"{name}\" will be used for this form only.",
+  "@placeUsedForFormOnly": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeNameEmpty": "Enter the place name",
+  "placeNameTooShort": "Enter at least 2 letters",
+  "placeNameTooLong": "The name is too long",
+  "placeNameInvalid": "Use letters only — no numbers or symbols",
+  "placeNotListedHint": "Not listed yet? Use \"Add\" above to add it."
 }

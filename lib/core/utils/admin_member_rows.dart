@@ -37,3 +37,27 @@ List<UserModel> adminMemberRows(
         ),
   ];
 }
+
+/// `uid → profile` for the admin lists: every profile under its `userId`
+/// (the first seen wins — [profiles] is newest-first), plus a profile whose
+/// `userId` is BLANK under the member whose account document points at it
+/// (`users/{uid}.profileId`). That is the same linkage the admin Edit Profile
+/// lookup follows, so a member the editor can open is never listed as
+/// "No profile". A pointer to a profile owned by someone else is ignored.
+Map<String, ProfileModel> profilesByMember(
+  List<ProfileModel> profiles,
+  List<UserModel> users,
+) {
+  final byUid = <String, ProfileModel>{};
+  for (final p in profiles) {
+    final owner = p.userId.trim();
+    if (owner.isNotEmpty) byUid.putIfAbsent(owner, () => p);
+  }
+  final byId = {for (final p in profiles) p.id: p};
+  for (final u in users) {
+    if (byUid.containsKey(u.uid)) continue;
+    final linked = byId[(u.profileId ?? '').trim()];
+    if (linked != null && linked.userId.trim().isEmpty) byUid[u.uid] = linked;
+  }
+  return byUid;
+}

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 import '../../core/utils/location_search.dart';
+import '../../core/utils/place_additions.dart';
 import '../../core/utils/value_l10n.dart';
 import '../../models/location_model.dart';
 
@@ -43,12 +44,29 @@ class LocationRepository {
   List<TnCity>? _cities;
   Future<void>? _loading;
 
+  /// The bundled town rows exactly as shipped; [_cities] is these plus the
+  /// member-added Tamil Nadu places.
+  List<TnCity>? _bundledCities;
+
+  /// Member-added places (see `core/utils/place_additions.dart`), as last
+  /// streamed from Firestore, plus places added on THIS device that the stream
+  /// has not delivered yet — so a place just added is never dropped by an
+  /// older snapshot.
+  List<PlaceAddition> _streamedAdditions = const [];
+  final Map<int, PlaceAddition> _localAdditions = {};
+
   /// Loads & joins all four datasets exactly once. Concurrent callers share
   /// the same in-flight future; a failure resets so the next call can retry.
-  Future<void> _ensureLoaded() => _loading ??= _load().catchError((e) {
-        _loading = null;
-        throw e;
-      });
+  Future<void> _ensureLoaded() {
+    // Already loaded: answer with a fresh completed future rather than the
+    // original one, so a caller in another zone (a widget test that loaded
+    // the data with real async) is not left waiting on that zone.
+    if (_bundledCities != null) return Future.value();
+    return _loading ??= _load().catchError((e) {
+      _loading = null;
+      throw e;
+    });
+  }
 
   Future<void> _load() async {
     final datasets = await Future.wait(_keys.map(_readDataset));
@@ -79,17 +97,11 @@ class LocationRepository {
           nameEn: '${r['name']}',
           nameTa: cityTa[(r['id'] as num).toInt()] ?? '${r['name']}',
         ),
-    ]..sort((a, b) => a.nameEn.compareTo(b.nameEn));
-
-    final byDistrict = <int, List<TnCity>>{};
-    for (final c in cities) {
-      (byDistrict[c.districtId] ??= []).add(c);
-    }
+    ];
 
     _districts = districts;
     _districtById = {for (final d in districts) d.id: d};
-    _cities = cities;
-    _citiesByDistrict = byDistrict;
+    _bundledCities = cities;
 
     // Register district/city English→Tamil names so [context.localizeValue]
     // renders stored English location values in Tamil anywhere (profile view,
@@ -99,8 +111,81 @@ class LocationRepository {
       for (final c in cities) c.nameEn: c.nameTa,
     });
 
+    _rebuildCities();
     debugPrint('[LocationRepository] ready — ${districts.length} districts, '
-        '${cities.length} cities.');
+        '${cities.length} bundled cities, ${_cities!.length - cities.length} '
+        'member-added.');
+  }
+
+  // ── Member-added places ────────────────────────────────────────────────────
+
+  /// Replaces the member-added places with the latest [additions] from
+  /// Firestore. Safe to call before the bundled data has loaded.
+  void mergeAdditions(List<PlaceAddition> additions) {
+    _streamedAdditions = List.unmodifiable(additions);
+    for (final a in additions) {
+      _localAdditions.remove(a.id);
+    }
+    if (_bundledCities != null) _rebuildCities();
+  }
+
+  /// A place this device just saved — usable at once, before the live stream
+  /// delivers it.
+  void addAdditionLocally(PlaceAddition place) {
+    if (_streamedAdditions.any((a) => a.id == place.id)) return;
+    _localAdditions[place.id] = place;
+    if (_bundledCities != null) _rebuildCities();
+  }
+
+  /// Every member-added place (streamed + just added here), de-duplicated.
+  List<PlaceAddition> get additions {
+    final seen = <String>{};
+    return [
+      for (final a in [..._streamedAdditions, ..._localAdditions.values])
+        if (seen.add(a.key)) a,
+    ];
+  }
+
+  /// Member-added places OUTSIDE Tamil Nadu (they have no district row).
+  List<PlaceAddition> get additionsOutsideTamilNadu =>
+      [for (final a in additions) if (!a.isTamilNadu) a];
+
+  /// [_cities] = bundled rows + member-added Tamil Nadu places. An addition is
+  /// dropped when its district is unknown, its id collides with a bundled row,
+  /// or the bundled data already carries that name in that district (a later
+  /// release may ship the same town) — the bundled row always wins.
+  void _rebuildCities() {
+    final bundled = _bundledCities!;
+    final bundledIds = {for (final c in bundled) c.id};
+    final bundledKeys = {
+      for (final c in bundled) ...{
+        '${c.districtId}|${placeNameKey(c.nameEn)}',
+        '${c.districtId}|${placeNameKey(c.nameTa)}',
+      },
+    };
+    final added = <TnCity>[];
+    final tamil = <String, String>{};
+    for (final a in additions) {
+      final city = a.toTnCity();
+      if (city == null || _districtById![city.districtId] == null) continue;
+      if (bundledIds.contains(city.id)) continue;
+      if (bundledKeys.contains('${city.districtId}|${placeNameKey(city.nameEn)}')) {
+        continue;
+      }
+      added.add(city);
+      if (a.nameTa.trim().isNotEmpty) tamil[a.name] = a.nameTa;
+    }
+    if (tamil.isNotEmpty) registerMasterTamilNames(tamil);
+
+    final cities = [...bundled, ...added]
+      ..sort((a, b) => a.nameEn.compareTo(b.nameEn));
+    final byDistrict = <int, List<TnCity>>{};
+    for (final c in cities) {
+      (byDistrict[c.districtId] ??= []).add(c);
+    }
+    _cities = cities;
+    _citiesByDistrict = byDistrict;
+    _index = null;
   }
 
   /// One dataset: the bundled asset first; Firestore only when the asset
@@ -147,8 +232,10 @@ class LocationRepository {
   /// The shared place search index, built once from the loaded data.
   Future<PlaceSearchIndex> searchIndex() async {
     await _ensureLoaded();
-    return _index ??=
-        PlaceSearchIndex.build(districts: _districts!, cities: _cities!);
+    return _index ??= PlaceSearchIndex.build(
+        districts: _districts!,
+        cities: _cities!,
+        others: additionsOutsideTamilNadu);
   }
 
   Future<TnCity?> cityById(int id) async {

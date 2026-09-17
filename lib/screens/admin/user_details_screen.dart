@@ -154,9 +154,42 @@ class UserDetailsScreen extends ConsumerWidget {
                   _card([
                     _sectionTitle('Profile'),
                     const SizedBox(height: 8),
-                    const Text(
-                        'This account has not created a matrimony profile yet.',
-                        style: TextStyle(fontSize: 13)),
+                    // "No profile" only once the lookup has CONFIRMED it —
+                    // never while it is still loading or after it failed.
+                    if (profileAsync.hasError)
+                      Row(
+                        children: [
+                          const Icon(Icons.cloud_off_outlined,
+                              size: 18, color: AppColors.error),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text('Could not load the matrimony profile.',
+                                style: TextStyle(fontSize: 13)),
+                          ),
+                          TextButton(
+                            onPressed: () => ref.invalidate(
+                                adminProfileByUserIdProvider(uid)),
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      )
+                    else if (profileAsync.isLoading)
+                      const Row(
+                        children: [
+                          SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: AppColors.primary)),
+                          SizedBox(width: 10),
+                          Text('Loading matrimony profile…',
+                              style: TextStyle(fontSize: 13)),
+                        ],
+                      )
+                    else
+                      const Text(
+                          'This account has not created a matrimony profile yet.',
+                          style: TextStyle(fontSize: 13)),
                   ])
                 else ...[
                   ..._profileCards(profile, contact),

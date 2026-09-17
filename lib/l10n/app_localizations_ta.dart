@@ -4310,4 +4310,107 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get deleteAccountLoginNotDeleted =>
       'உங்கள் சுயவிவரத் தரவு நீக்கப்பட்டது, ஆனால் உங்கள் உள்நுழைவை இன்னும் நீக்க முடியவில்லை. கணக்கை நீக்கு என்பதை மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String addPlaceNamed(String name) {
+    return '\"$name\" சேர்க்கவும்';
+  }
+
+  @override
+  String get addPlaceRowHint => 'பட்டியலில் இல்லையா? புதிய இடமாகச் சேர்க்கவும்';
+
+  @override
+  String get addNewPlaceTitle => 'புதிய இடத்தைச் சேர்க்கவும்';
+
+  @override
+  String get placeNameLabel => 'இடத்தின் பெயர்';
+
+  @override
+  String get placeWhereIsIt => 'இந்த இடம் எங்கே உள்ளது?';
+
+  @override
+  String get placeInTamilNadu => 'தமிழ்நாடு';
+
+  @override
+  String get placeOtherState => 'இந்தியாவின் பிற மாநிலம்';
+
+  @override
+  String get placeOutsideIndia => 'இந்தியாவுக்கு வெளியே';
+
+  @override
+  String get chooseDistrict => 'மாவட்டத்தைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get chooseState => 'மாநிலத்தைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get chooseCountry => 'நாட்டைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String placeSavedAs(String place) {
+    return 'இவ்வாறு சேமிக்கப்படும்: $place';
+  }
+
+  @override
+  String get addPlaceButton => 'இடத்தைச் சேர்';
+
+  @override
+  String get savingPlace => 'சேமிக்கிறது…';
+
+  @override
+  String placeAddedSuccess(String name) {
+    return '\"$name\" பட்டியலில் சேர்க்கப்பட்டு தேர்ந்தெடுக்கப்பட்டது.';
+  }
+
+  @override
+  String placeAlreadyListedSelected(String name) {
+    return '\"$name\" ஏற்கனவே பட்டியலில் உள்ளது — அது தேர்ந்தெடுக்கப்பட்டது.';
+  }
+
+  @override
+  String placeAlreadyListed(String name, String parent) {
+    return '\"$name\" ஏற்கனவே $parent கீழ் பட்டியலில் உள்ளது.';
+  }
+
+  @override
+  String selectExistingPlace(String name) {
+    return '\"$name\" தேர்ந்தெடுக்கவும்';
+  }
+
+  @override
+  String get placeSaveOffline =>
+      'இடத்தைச் சேமிக்க முடியவில்லை — இணைய இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get placeSaveNotAllowed =>
+      'இந்தக் கணக்கிலிருந்து இந்த இடத்தைப் பொதுப் பட்டியலில் சேர்க்க முடியவில்லை.';
+
+  @override
+  String get placeSaveFailed =>
+      'இடத்தைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get useWithoutSaving => 'இந்தப் படிவத்துக்கு மட்டும் பயன்படுத்து';
+
+  @override
+  String placeUsedForFormOnly(String name) {
+    return '\"$name\" இந்தப் படிவத்துக்கு மட்டும் பயன்படுத்தப்படும்.';
+  }
+
+  @override
+  String get placeNameEmpty => 'இடத்தின் பெயரை உள்ளிடவும்';
+
+  @override
+  String get placeNameTooShort => 'குறைந்தது 2 எழுத்துகள் உள்ளிடவும்';
+
+  @override
+  String get placeNameTooLong => 'பெயர் மிக நீளமாக உள்ளது';
+
+  @override
+  String get placeNameInvalid =>
+      'எழுத்துகள் மட்டும் — எண்கள் அல்லது குறியீடுகள் வேண்டாம்';
+
+  @override
+  String get placeNotListedHint =>
+      'இன்னும் பட்டியலில் இல்லையா? மேலே உள்ள \"சேர்\" மூலம் சேர்க்கவும்.';
 }

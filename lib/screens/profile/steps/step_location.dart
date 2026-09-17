@@ -29,6 +29,7 @@ class StepLocation extends ConsumerStatefulWidget {
 class _StepLocationState extends ConsumerState<StepLocation> {
   final _v = InlineValidation();
 
+  String? _country;
   String? _state;
   String? _stateId;
   String? _district;
@@ -44,6 +45,7 @@ class _StepLocationState extends ConsumerState<StepLocation> {
   void initState() {
     super.initState();
     final data = ref.read(profileCreationProvider).data;
+    _country = data['country'] as String?;
     _state = data['state'] as String?;
     _stateId = data['stateId'] as String?;
     _district = data['district'] as String?;
@@ -75,7 +77,7 @@ class _StepLocationState extends ConsumerState<StepLocation> {
     );
     if (!ok) return;
     ref.read(profileCreationProvider.notifier).updateData({
-      'country': 'India',
+      'country': (_country ?? '').trim().isEmpty ? 'India' : _country,
       'state': _state ?? '',
       'stateId': _stateId ?? '',
       'stateName': _state ?? '',
@@ -104,13 +106,16 @@ class _StepLocationState extends ConsumerState<StepLocation> {
           const SizedBox(height: 20),
           LocationPickerSection(
             key: _v.anchor('location'),
+            initialCountry: _country,
             initialState: _state,
             initialDistrict: _district,
             initialCity: _city,
+            initialCityId: _cityId,
             initialLatitude: _lat,
             initialLongitude: _lng,
             onChanged: (loc) => setState(() {
               _v.clear('location');
+              _country = loc.country;
               _state = loc.state.isEmpty ? null : loc.state;
               _stateId = loc.stateId.isEmpty ? null : loc.stateId;
               _district = loc.district.isEmpty ? null : loc.district;

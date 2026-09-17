@@ -8,6 +8,7 @@ import '../../core/config/admin_config.dart';
 import '../../core/services/firestore_sync.dart';
 import '../../core/utils/login_identifier.dart';
 import '../../core/utils/matrimony_photo.dart';
+import '../../core/utils/member_profile_lookup.dart';
 import '../../core/utils/profile_privacy.dart';
 import '../../models/aadhaar_details.dart';
 import '../../models/blocked_entry.dart';
@@ -741,7 +742,7 @@ class FirestoreService {
 
   /// The selection rule itself, over already-parsed profiles — pure, so the
   /// "the newest profile always wins" contract is testable without Firestore.
-  @visibleForTesting
+  /// Also used by the admin member lookup (core/utils/member_profile_lookup).
   static ProfileModel? newestProfile(List<ProfileModel> profiles) {
     if (profiles.isEmpty) return null;
     if (profiles.length == 1) return profiles.first;
@@ -855,14 +856,102 @@ class FirestoreService {
     );
   }
 
-  Future<ProfileModel?> getFullProfile(String profileId) async {
+  /// [ownerUid] is the member the caller KNOWS owns the profile (the admin
+  /// editor passes it): it locates the private copy when the document's own
+  /// `userId` is blank.
+  Future<ProfileModel?> getFullProfile(String profileId,
+      {String? ownerUid}) async {
     final doc = await _db
         .collection(AppConstants.profilesCollection)
         .doc(profileId)
         .get();
     if (!doc.exists) return null;
-    final uid = '${doc.data()?['userId'] ?? ''}';
+    var uid = '${doc.data()?['userId'] ?? ''}'.trim();
+    if (uid.isEmpty) uid = (ownerUid ?? '').trim();
     return _fullOf(doc, await _readPrivateProfile(uid));
+  }
+
+  // ── Admin: a member's profile by uid ───────────────────────────────────────
+
+  /// The FULL matrimony profile of member [uid] for an admin, or null only
+  /// when the database confirms the member has none. Network and permission
+  /// failures THROW — they are never reported as "no profile". See
+  /// core/utils/member_profile_lookup.dart for the rules.
+  Future<ProfileModel?> resolveMemberProfileForAdmin(String uid) async {
+    final profiles = _db.collection(AppConstants.profilesCollection);
+    final found = await resolveMemberProfile(
+      uid: uid,
+      byUserId: ({required bool serverOnly}) async {
+        final snap = await profiles
+            .where('userId', isEqualTo: uid)
+            .get(serverOnly ? const GetOptions(source: Source.server) : null)
+            .timeout(const Duration(seconds: 25));
+        return (
+          profiles: [for (final d in snap.docs) ProfileModel.fromFirestore(d)],
+          fromCache: snap.metadata.isFromCache,
+        );
+      },
+      pointerProfileIds: () => _profilePointersOf(uid),
+      profileById: (id) async {
+        final doc = await profiles.doc(id).get();
+        return doc.exists ? ProfileModel.fromFirestore(doc) : null;
+      },
+    );
+    if (found == null) return null;
+    return await getFullProfile(found.id, ownerUid: uid) ?? found;
+  }
+
+  /// The profile ids member [uid]'s own records point at: the account
+  /// document, the contact record, the private profile copy — and, for very
+  /// old data, a profile stored under the uid itself.
+  Future<List<String>> _profilePointersOf(String uid) async {
+    final ids = <String>[];
+    Future<void> collect(DocumentReference<Map<String, dynamic>> ref) async {
+      try {
+        final snap = await ref.get();
+        final id = '${snap.data()?['profileId'] ?? ''}'.trim();
+        if (id.isNotEmpty) ids.add(id);
+      } on FirebaseException catch (e) {
+        // A record this deployment's rules do not expose is simply not a
+        // pointer; anything else (offline…) must surface as an error.
+        if (e.code != 'permission-denied') rethrow;
+      }
+    }
+
+    await collect(_db.collection(AppConstants.usersCollection).doc(uid));
+    await collect(_db.collection(AppConstants.contactsCollection).doc(uid));
+    await collect(_privateProfileRef(uid));
+    ids.add(uid);
+    return ids;
+  }
+
+  /// LIVE [resolveMemberProfileForAdmin] for the admin User Details page.
+  ///
+  /// An EMPTY result served from the local cache is never emitted — it would
+  /// read as "no profile" when the cache merely has not seen the document —
+  /// so the page keeps loading until the server answers. A server-confirmed
+  /// empty result still follows the member's pointers before emitting null.
+  Stream<ProfileModel?> watchMemberProfileForAdmin(String uid) {
+    final byUid = _db
+        .collection(AppConstants.profilesCollection)
+        .where('userId', isEqualTo: uid)
+        .snapshots(includeMetadataChanges: true)
+        .where((s) => s.docs.isNotEmpty || !s.metadata.isFromCache);
+    return FirestoreSync.combineLatest2<QuerySnapshot<Map<String, dynamic>>,
+            Map<String, dynamic>?,
+            (QuerySnapshot<Map<String, dynamic>>, Map<String, dynamic>?)>(
+      byUid,
+      FirestoreSync.optionalDocData(_privateProfileRef(uid),
+          label: 'profile_private/$uid'),
+      (snap, privateData) => (snap, privateData),
+    ).asyncMap((pair) async {
+      final (snap, privateData) = pair;
+      if (snap.docs.isNotEmpty) {
+        return newestProfile(
+            [for (final d in snap.docs) _fullOf(d, privateData)]);
+      }
+      return resolveMemberProfileForAdmin(uid);
+    });
   }
 
   /// Every private profile copy, keyed by uid — admin only. Emits an empty map

@@ -30,6 +30,7 @@ library;
 
 import '../../models/location_model.dart';
 import '../data/location_catalog.dart';
+import 'place_additions.dart';
 
 /// A spelling-tolerant key for Tamil place names written in English:
 /// lower-case letters only, common transliteration pairs folded
@@ -126,13 +127,18 @@ class PlaceSearchIndex {
   final List<_Entry> _entries;
   final Map<int, _District> _districts;
 
-  PlaceSearchIndex._(this._entries, this._districts);
+  /// Member-added places outside Tamil Nadu — no district row, so they are
+  /// searched by name and by the state / country they were filed under.
+  final List<PlaceAddition> _others;
+
+  PlaceSearchIndex._(this._entries, this._districts, this._others);
 
   /// Builds the index from the location dataset. Pure and cheap (a single
   /// pass); build it once and keep it.
   factory PlaceSearchIndex.build({
     required List<TnDistrict> districts,
     required List<TnCity> cities,
+    List<PlaceAddition> others = const [],
   }) {
     final byId = <int, _District>{
       for (final d in districts) d.id: _District(d, _aliasesFor(d)),
@@ -150,12 +156,15 @@ class PlaceSearchIndex {
       entries.add(_Entry(PlaceOption(city: c, district: d.district),
           isDistrictHq: hq));
     }
-    return PlaceSearchIndex._(entries, byId);
+    return PlaceSearchIndex._(entries, byId, List.unmodifiable(others));
   }
 
   /// Builds the index from already-joined [PlaceOption]s (every town with its
   /// district) — the same list the place providers serve.
-  factory PlaceSearchIndex.fromOptions(List<PlaceOption> options) {
+  factory PlaceSearchIndex.fromOptions(
+    List<PlaceOption> options, {
+    List<PlaceAddition> others = const [],
+  }) {
     final districts = <int, TnDistrict>{};
     final cities = <TnCity>[];
     for (final o in options) {
@@ -163,7 +172,103 @@ class PlaceSearchIndex {
       cities.add(o.city);
     }
     return PlaceSearchIndex.build(
-        districts: districts.values.toList(), cities: cities);
+        districts: districts.values.toList(), cities: cities, others: others);
+  }
+
+  /// The district [text] names — English, Tamil, a known nickname or a
+  /// transliteration of one ("Tuticorin", "Thoothukudi District").
+  TnDistrict? districtNamed(String text) {
+    final t = placeText(text.replaceAll(RegExp(r'\bdistrict\b', caseSensitive: false), ''));
+    final k = placeKey(text);
+    if (t.isEmpty) return null;
+    for (final d in _districts.values) {
+      if (d.texts.contains(t) || (k.isNotEmpty && d.keys.contains(k))) {
+        return d.district;
+      }
+    }
+    return null;
+  }
+
+  /// The Tamil Nadu town named exactly [name] (spelling-tolerant) inside
+  /// [districtId] — the duplicate check for a new place.
+  PlaceOption? exactMatch(String name, {required int districtId}) {
+    final key = placeNameKey(name);
+    final text = placeText(name);
+    if (key.isEmpty) return null;
+    for (final e in _entries) {
+      if (e.option.district.id != districtId) continue;
+      if (e.cityKey == key ||
+          e.cityText == text ||
+          e.cityTa == text ||
+          placeNameKey(e.option.city.nameTa) == key) {
+        return e.option;
+      }
+    }
+    return null;
+  }
+
+  /// The member-added place outside Tamil Nadu with [key]
+  /// (see [placeAdditionKey]).
+  PlaceAddition? otherWithKey(String key) {
+    for (final o in _others) {
+      if (o.key == key) return o;
+    }
+    return null;
+  }
+
+  /// Member-added places outside Tamil Nadu matching [query] — by their own
+  /// name, or by the state / country they sit in ("Kerala" lists them all).
+  List<PlaceAddition> searchOthers(String query, {int limit = 20}) {
+    final place = placePartOf(query);
+    final q = placeText(place);
+    if (q.length < 2 || _others.isEmpty) return const [];
+    final qk = placeKey(place);
+    final whole = placeText(query);
+    final scored = <(PlaceAddition, int)>[];
+    for (final o in _others) {
+      final text = placeText(o.name);
+      final key = placeKey(o.name);
+      var score = 0;
+      if (text == q || (qk.isNotEmpty && key == qk)) {
+        score = 100;
+      } else if (text.startsWith(q) || (qk.length >= 3 && key.startsWith(qk))) {
+        score = 80;
+      } else if (text.contains(q)) {
+        score = 30;
+      } else if (placeText(o.state) == whole || placeText(o.country) == whole) {
+        score = 40;
+      }
+      if (score > 0) scored.add((o, score));
+    }
+    scored.sort((a, b) {
+      final byScore = b.$2.compareTo(a.$2);
+      return byScore != 0 ? byScore : a.$1.name.compareTo(b.$1.name);
+    });
+    return [for (final s in scored.take(limit)) s.$1];
+  }
+
+  /// True when [query] names a listed place exactly (spelling-tolerant) — a
+  /// town, or a member-added place elsewhere — so nothing needs adding.
+  bool hasExactPlace(String query) {
+    final place = placePartOf(query);
+    final q = placeText(place);
+    final qk = placeKey(place);
+    if (q.length < 2) return false;
+    final district = query.contains(',')
+        ? districtNamed(query.substring(query.indexOf(',') + 1))
+        : null;
+    for (final e in _entries) {
+      if (district != null && e.option.district.id != district.id) continue;
+      if (e.cityText == q || e.cityTa == q || (qk.isNotEmpty && e.cityKey == qk)) {
+        return true;
+      }
+    }
+    for (final o in _others) {
+      if (placeText(o.name) == q || (qk.isNotEmpty && placeKey(o.name) == qk)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// Known nicknames of [d] from [LocationCatalog.districtAliases], matched to
@@ -187,7 +292,28 @@ class PlaceSearchIndex {
         ..sort((a, b) => a.nameEn.compareTo(b.nameEn));
 
   /// Searches [query]. Needs at least two characters.
+  ///
+  /// "Place, District" narrows the towns to that district, so a member who
+  /// types the district after the village (as addresses are written) still
+  /// gets the village rather than nothing.
   PlaceSearchResult search(String query, {int limit = 60}) {
+    final comma = query.indexOf(',');
+    if (comma > 0) {
+      final district = districtNamed(query.substring(comma + 1));
+      final inPlace = _search(query.substring(0, comma), limit: limit);
+      if (district == null) return inPlace;
+      final narrowed = [
+        for (final h in inPlace.hits)
+          if (h.option.district.id == district.id) h,
+      ];
+      return narrowed.isEmpty
+          ? const PlaceSearchResult([])
+          : PlaceSearchResult(narrowed, isFallback: inPlace.isFallback);
+    }
+    return _search(query, limit: limit);
+  }
+
+  PlaceSearchResult _search(String query, {required int limit}) {
     final q = placeText(query);
     if (q.length < 2) return const PlaceSearchResult([]);
     final qk = placeKey(query);

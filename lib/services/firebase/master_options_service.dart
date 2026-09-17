@@ -27,9 +27,10 @@ class MasterOptionsService {
   static const religion = 'religion';
   static const caste = 'caste';
   static const subcaste = 'subcaste';
-  // NOTE: state / district / city are NOT custom-addable — the Tamil Nadu
-  // location master data (master_data/districts_* + cities_*) is curated and
-  // read-only; the picker offers no "+ Add" for location fields.
+  // NOTE: locations do NOT use the flat {v, p} lists of this service. A place
+  // has to sit under its district / state / country and carry a stable id, so
+  // member-added places live in their own document of this collection
+  // (`master_options/places`) — see PlaceAdditionsService.
   static const nativePlace = 'native_place';
 
   DocumentReference<Map<String, dynamic>> _doc(String type) =>

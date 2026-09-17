@@ -1,12 +1,16 @@
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/utils/location_search.dart';
+import '../core/utils/place_additions.dart';
 import '../models/location_model.dart';
 import '../services/firebase/location_repository.dart';
+import '../services/firebase/place_additions_service.dart';
+import 'auth_provider.dart';
 import 'locale_provider.dart';
 
-/// Tamil Nadu location data (Firestore-first with bundled-JSON fallback),
-/// cached in memory for the session by [LocationRepository].
+/// Tamil Nadu location data (bundled JSON, with member-added places merged
+/// in), cached in memory for the session by [LocationRepository].
 final locationRepositoryProvider =
     Provider<LocationRepository>((ref) => LocationRepository());
 
@@ -32,18 +36,55 @@ final allCityNamesProvider = FutureProvider<List<String>>((ref) async {
   return names;
 });
 
+/// Writes/reads the member-added places (`master_options/places`).
+final placeAdditionsServiceProvider =
+    Provider<PlaceAdditionsService>((ref) => PlaceAdditionsService());
+
+/// Every member-added place, LIVE — a place any member adds reaches every
+/// picker without a restart, and Firestore's offline cache keeps the list
+/// available after reopening the app without a connection.
+///
+/// Re-subscribes when the session changes: the document is readable by any
+/// visitor session, and a listener refused before the session existed never
+/// retries on its own.
+final placeAdditionsProvider = StreamProvider<List<PlaceAddition>>((ref) {
+  try {
+    ref.watch(firebaseAuthStreamProvider);
+  } catch (_) {
+    // No Firebase (widget tests) — the bundled list still works.
+  }
+  try {
+    return ref.watch(placeAdditionsServiceProvider).watch();
+  } catch (e) {
+    debugPrint('[Locations] member-added places unavailable: $e');
+    return Stream.value(const <PlaceAddition>[]);
+  }
+});
+
 /// The shared place search index (town + district + nickname matching,
-/// transliteration-tolerant, nearest-town fallback) — built once per session
-/// from the bundled location JSON and reused by every place field.
+/// transliteration-tolerant, nearest-town fallback) — built from the bundled
+/// location JSON plus the member-added places, and reused by every place
+/// field.
 final placeSearchIndexProvider = FutureProvider<PlaceSearchIndex>((ref) async {
   // Derived from [allPlaceOptionsProvider] (itself cached for the session), so
   // there is exactly one load of the location data behind every picker.
   final options = await ref.watch(allPlaceOptionsProvider.future);
-  return PlaceSearchIndex.fromOptions(options);
+  final additions =
+      ref.watch(placeAdditionsProvider).valueOrNull ?? const <PlaceAddition>[];
+  final repo = ref.watch(locationRepositoryProvider);
+  final seen = <String>{};
+  final others = [
+    for (final a in [...additions, ...repo.additionsOutsideTamilNadu])
+      if (!a.isTamilNadu && seen.add(a.key)) a,
+  ];
+  // Every district has towns (each has its head-quarters town), so the
+  // districts joined into [options] are the complete parent list.
+  return PlaceSearchIndex.fromOptions(options, others: others);
 });
 
 /// Every city joined to its district — the source for the app's ONE
-/// hierarchical place picker (spec §27–§32).
+/// hierarchical place picker (spec §27–§32). Member-added Tamil Nadu places
+/// are included, each under the district it was added to.
 ///
 /// Cities are NOT de-duplicated by name here: two villages that share a name
 /// in different districts are exactly what the picker has to tell apart, so
@@ -51,6 +92,8 @@ final placeSearchIndexProvider = FutureProvider<PlaceSearchIndex>((ref) async {
 /// results read alphabetically.
 final allPlaceOptionsProvider = FutureProvider<List<PlaceOption>>((ref) async {
   final repo = ref.watch(locationRepositoryProvider);
+  final additions = ref.watch(placeAdditionsProvider).valueOrNull;
+  if (additions != null) repo.mergeAdditions(additions);
   final cities = await repo.getAllCities();
   final districts = await repo.getDistricts();
   final byId = {for (final d in districts) d.id: d};
