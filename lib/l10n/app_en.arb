@@ -1996,7 +1996,7 @@
   "contactAdminDescribe": "Describe the problem",
   "contactAdminSubmit": "Submit Request",
   "contactAdminSubmitted": "Your request has been sent. The administrator will contact you on your registered mobile number.",
-  "contactAdminAlreadySent": "A request for this number was already sent today. The administrator will contact you soon.",
+  "contactAdminAlreadySent": "The request could not be sent. If a request for this number was already sent today, the administrator will contact you — otherwise please try again later.",
   "contactAdminFailed": "Could not send the request. Check your connection and try again.",
   "changePassword": "Change Password",
   "currentPassword": "Current Password",

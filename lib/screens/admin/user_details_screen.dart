@@ -745,10 +745,13 @@ class UserDetailsScreen extends ConsumerWidget {
       backgroundColor: st.hasError ? AppColors.error : null,
       content: Text(st.hasError
           ? 'The user was NOT fully deleted: ${st.error}'
-          : result?.backendUnavailable ?? true
-              ? 'User deleted. Their old login is blocked and removes itself '
-                  'at its next sign-in.'
-              : 'User and Firebase login deleted.'),
+          : (result?.failedSteps.contains('login_tombstone') ?? false)
+              ? 'User data deleted, but the old login could NOT be blocked '
+                  '(deploy the latest Firestore rules). It can still sign in.'
+              : result?.backendUnavailable ?? true
+                  ? 'User deleted. Their old login is blocked and removes '
+                      'itself at its next sign-in.'
+                  : 'User and Firebase login deleted.'),
     ));
     if (!st.hasError) router.pop();
   }

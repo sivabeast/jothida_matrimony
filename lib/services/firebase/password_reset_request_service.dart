@@ -22,7 +22,11 @@ class PasswordResetRequestService {
   /// One per number per day: the id is `{mobile}_{dayKey}` and the security
   /// rules only allow CREATING it, so a second submission the same day is
   /// refused server-side — that is the abuse limit, not a client check.
-  /// Returns false when today's request already exists.
+  ///
+  /// Returns false when the write was refused. A create-only rule answers a
+  /// second request with `permission-denied`, and so do rules that are not
+  /// deployed — the two cannot be told apart from here, so the caller's
+  /// message covers both.
   Future<bool> submit({
     required String uid,
     required String mobile,

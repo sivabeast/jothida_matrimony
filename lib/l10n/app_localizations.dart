@@ -8021,7 +8021,7 @@ abstract class AppLocalizations {
   /// No description provided for @contactAdminAlreadySent.
   ///
   /// In en, this message translates to:
-  /// **'A request for this number was already sent today. The administrator will contact you soon.'**
+  /// **'The request could not be sent. If a request for this number was already sent today, the administrator will contact you — otherwise please try again later.'**
   String get contactAdminAlreadySent;
 
   /// No description provided for @contactAdminFailed.

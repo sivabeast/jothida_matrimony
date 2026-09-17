@@ -4449,7 +4449,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get contactAdminAlreadySent =>
-      'A request for this number was already sent today. The administrator will contact you soon.';
+      'The request could not be sent. If a request for this number was already sent today, the administrator will contact you — otherwise please try again later.';
 
   @override
   String get contactAdminFailed =>

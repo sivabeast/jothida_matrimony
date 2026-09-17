@@ -78,7 +78,8 @@ class _ContactAdminResetSheetState
               );
       if (!mounted) return;
       setState(() {
-        _sent = true;
+        // A refused write is NOT shown as sent — the form stays for a retry.
+        _sent = created;
         _result = created
             ? l10n.contactAdminSubmitted
             : l10n.contactAdminAlreadySent;

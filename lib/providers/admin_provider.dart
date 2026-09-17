@@ -250,8 +250,15 @@ class AdminActionsNotifier extends Notifier<AsyncValue<void>> {
           .read(adminAccountServiceProvider)
           .deleteMember(userId, adminUid: adminUid);
       lastRemoval = result;
-      if (result.failedSteps.isNotEmpty) {
-        throw StateError('Not deleted: ${result.failedSteps.join(', ')}');
+      // The tombstone alone failing means the DATA is gone but the old login
+      // could not be blocked (rules not deployed) — reported as a warning by
+      // the screen, not as "not deleted".
+      final blocking = [
+        for (final step in result.failedSteps)
+          if (step != 'login_tombstone') step,
+      ];
+      if (blocking.isNotEmpty) {
+        throw StateError('Not deleted: ${blocking.join(', ')}');
       }
     });
     if (state.hasError) {
