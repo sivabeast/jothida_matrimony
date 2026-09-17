@@ -90,6 +90,42 @@ service cloud.firestore {
           || getAfter(/databases/$(database)/documents/profile_owners/$(uid)).data.profileId == profileId;
     }
 
+    // A member's OWN new profile: owned by the caller, carrying the details
+    // every profile has (the wizard requires them), and never created already
+    // approved, verified or as a test profile — verification is an admin
+    // decision. Types are checked so a malformed client cannot plant a
+    // non-string owner or name.
+    function isValidNewMemberProfile() {
+      let d = request.resource.data;
+      return d.userId is string
+          && d.userId == request.auth.uid
+          && d.fullName is string && d.fullName.size() > 0
+          && d.gender is string && d.gender.size() > 0
+          && d.get('status', 'pending') == 'pending'
+          && d.get('isVerified', false) == false
+          && d.get('profileVerified', false) == false
+          && d.get('isDummy', false) == false;
+    }
+
+    // What an owner's own edit may NOT change: who owns it, and the moderation
+    // decisions. Re-creating a profile resets it to 'pending' (review again) —
+    // but never out of 'blocked' — and a member can never mark themself
+    // verified or turn a real profile into a test one. Everything else stays
+    // freely editable, exactly as before.
+    function ownerEditKeepsModeration() {
+      let before = resource.data;
+      let after = request.resource.data;
+      return after.get('userId', '') == before.userId
+          && (after.get('status', '') == before.get('status', '')
+              || (after.get('status', '') == 'pending'
+                  && before.get('status', '') != 'blocked'))
+          && (after.get('isVerified', false) == false
+              || before.get('isVerified', false) == true)
+          && (after.get('profileVerified', false) == false
+              || before.get('profileVerified', false) == true)
+          && after.get('isDummy', false) == before.get('isDummy', false);
+    }
+
     // NOTE: there is no email-based astrology access anymore — the old
     // internal astrology account was removed. Requests addressed to the
     // synthetic 'internal_astrology' id are managed by ADMINS only.
@@ -281,7 +317,7 @@ service cloud.firestore {
                   && resource.data.userId == request.auth.uid;
       allow read: if isAdmin();
       allow create: if isAuthenticated()
-                    && request.resource.data.userId == request.auth.uid
+                    && isValidNewMemberProfile()
                     && ownsProfileSlot(request.auth.uid, profileId);
       // Admins create a member's profile under that member's uid (Create
       // Profile, Create Profile for an existing user) — one per account, like
@@ -290,10 +326,11 @@ service cloud.firestore {
       allow create: if isAdmin()
                     && (request.resource.data.get('isDummy', false) == true
                         || ownsProfileSlot(request.resource.data.userId, profileId));
-      // The owner edits their profile but cannot hand it to another uid.
+      // The owner edits their profile but cannot hand it to another uid or
+      // grant it a moderation decision (see ownerEditKeepsModeration).
       allow update: if isAuthenticated()
                     && resource.data.userId == request.auth.uid
-                    && request.resource.data.get('userId', '') == resource.data.userId;
+                    && ownerEditKeepsModeration();
       // Any signed-in user may bump engagement counters (view / interest
       // counts) on a profile they can read — but NOTHING else. This powers
       // incrementViewCount without exposing the rest of the document to edits.

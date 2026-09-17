@@ -10,6 +10,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/errors/auth_exception.dart';
 import '../../core/utils/account_identity.dart';
 import '../../core/utils/login_identifier.dart';
+import '../../core/utils/profile_save_error.dart';
 import '../../firebase_options.dart';
 import '../../models/profile_model.dart';
 import '../../models/user_model.dart';
@@ -595,9 +596,21 @@ class AdminAccountService {
           }
         }
         if (e is AuthException || e is LoginConflictException) rethrow;
-        debugPrint('[AdminAccount] member provisioning FAILED: $e');
+        final failure = classifyProfileSaveError(e);
+        debugPrint('[AdminAccount] member provisioning FAILED '
+            '(${failure.name}): $e');
         throw AuthException(
-          'Could not save the new member account: $e',
+          failure == ProfileSaveFailure.permissionDenied
+              ? "The new member's login was created but the database refused "
+                  'to save its account record (permission denied), so it was '
+                  'rolled back. Check that the latest Firestore rules are '
+                  'deployed.'
+              : failure == ProfileSaveFailure.network
+                  ? 'Could not reach the server while saving the new member '
+                      'account. Nothing was kept — check the connection and '
+                      'try again.'
+                  : 'Could not save the new member account. Nothing was kept '
+                      '— please try again.',
           code: 'member-provisioning-failed',
         );
       }
@@ -648,12 +661,23 @@ class AdminAccountService {
       final user = cred.user!;
       final account =
           await db.collection(AppConstants.usersCollection).doc(user.uid).get();
-      final tomb = await db
-          .collection(AppConstants.loginTombstonesCollection)
-          .doc(user.uid)
-          .get();
-      final deleted = !account.exists ||
-          tomb.data()?['mode'] == LoginTombstone.modeDeleted;
+      // The removed-login record. Unreadable while its rules are not deployed
+      // — that must not abort the admin's verified reclaim with a raw
+      // permission-denied; the account record alone then decides.
+      String tombMode = '';
+      try {
+        final tomb = await db
+            .collection(AppConstants.loginTombstonesCollection)
+            .doc(user.uid)
+            .get();
+        tombMode = '${tomb.data()?['mode'] ?? ''}';
+      } on FirebaseException catch (e) {
+        if (e.code != 'permission-denied') rethrow;
+        debugPrint('[AdminAccount] login_tombstones unreadable (rules not '
+            'deployed) — deciding by the account record only.');
+      }
+      final deleted =
+          !account.exists || tombMode == LoginTombstone.modeDeleted;
       if (deleted) {
         await user.delete();
         debugPrint('[AdminAccount] leftover login ${user.uid} deleted after '

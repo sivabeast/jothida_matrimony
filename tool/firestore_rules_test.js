@@ -4,7 +4,10 @@
 // read or written. Use it where the emulator (Java) is not available.
 //
 //   firebase login            (once)
-//   node tool/firestore_rules_test.js
+//   node tool/firestore_rules_test.js           the repo's firestore.rules
+//   node tool/firestore_rules_test.js --live    what the DEPLOYED rules allow
+//                                               for the same requests (no
+//                                               pass/fail — allowed / denied)
 //
 // Covers the account-ownership model: role self-promotion, one profile per
 // account, the mobile-number registry, removed-login tombstones, admin-assisted
@@ -16,7 +19,8 @@ const path = require('path');
 const root = execSync('npm root -g').toString().trim();
 const auth = require(path.join(root, 'firebase-tools/lib/auth.js'));
 
-const RULES = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
+const LIVE = process.argv.includes('--live');
+const RULES_FILE = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
 const PROJECT = process.env.FIREBASE_PROJECT || 'matrimony-app-bd0d5';
 const D = '/databases/(default)/documents';
 const NOW = '2026-09-17T10:00:00Z';
@@ -41,9 +45,10 @@ const fn = (name, p, value) => ({
 });
 const userDoc = (uid, role = 'user') => get(`users/${uid}`, { role });
 
-function tc(name, expectation, { authz, method, p, data, existing, mocks = [] }) {
+function tc(name, expectation, { authz, method, p, data, existing, mocks = [], live = false }) {
   return {
     name,
+    live,
     body: {
       expectation,
       request: {
@@ -126,12 +131,12 @@ const cases = [
   // ── profiles: one per account ──
   tc('member creates profile with no ownership record (legacy)', 'ALLOW', {
     authz: member('u1'), method: 'create', p: 'profiles/p1',
-    data: { userId: 'u1' },
+    data: newProfile('u1'),
     mocks: [fn('existsAfter', 'profile_owners/u1', false)],
   }),
   tc('member creates profile matching ownership record', 'ALLOW', {
     authz: member('u1'), method: 'create', p: 'profiles/p1',
-    data: { userId: 'u1' },
+    data: newProfile('u1'),
     mocks: [
       fn('existsAfter', 'profile_owners/u1', true),
       { function: 'getAfter', args: [{ exactValue: `${D}/profile_owners/u1` }], result: { value: { data: { profileId: 'p1' } } } },
@@ -139,7 +144,7 @@ const cases = [
   }),
   tc('member creates a SECOND profile', 'DENY', {
     authz: member('u1'), method: 'create', p: 'profiles/p2',
-    data: { userId: 'u1' },
+    data: newProfile('u1'),
     mocks: [
       fn('existsAfter', 'profile_owners/u1', true),
       { function: 'getAfter', args: [{ exactValue: `${D}/profile_owners/u1` }], result: { value: { data: { profileId: 'p1' } } } },
@@ -274,12 +279,181 @@ const cases = [
     authz: member('u1'), method: 'create', p: 'auth_recovery_sessions/u1_1',
     data: { uid: 'u1' },
   }),
+
+  // ── PROFILE CREATION (the permission-denied report) ──────────────────────
+  // The exact writes FirestoreService.createProfile + submitProfile make.
+  ...profileCreationCases(),
 ];
+
+function newProfile(uid, extra = {}) {
+  return {
+    userId: uid, fullName: 'Ravi Kumar', gender: 'Male', dateOfBirth: '1995-01-01T00:00:00Z',
+    religion: 'Hindu', city: 'Madurai', status: 'pending', isActive: true,
+    isVerified: false, isDummy: false, reportCount: 0, viewCount: 0, interestCount: 0,
+    privacySettings: { photo: true }, contactPrivacy: 'private', ...extra,
+  };
+}
+function noClaim(uid) { return fn('existsAfter', `profile_owners/${uid}`, false); }
+function google(uid) { return { uid, token: token('google.com', `${uid}@gmail.com`) }; }
+
+function profileCreationCases() {
+  return [
+    tc('[1] newly registered member creates own profile', 'ALLOW', {
+      authz: member('new1'), method: 'create', p: 'profiles/pNew1',
+      data: newProfile('new1'), mocks: [noClaim('new1')], live: true,
+    }),
+    tc('[2] Google-signed-in member creates own profile', 'ALLOW', {
+      authz: google('g1'), method: 'create', p: 'profiles/pG1',
+      data: newProfile('g1'), mocks: [noClaim('g1')], live: true,
+    }),
+    tc('[2] member queries their own profiles (before creating)', 'ALLOW', {
+      authz: member('new1'), method: 'get', p: 'profiles/pOld',
+      existing: newProfile('new1'), live: true,
+    }),
+    tc('[2] member writes the private copy of hidden fields', 'ALLOW', {
+      authz: member('new1'), method: 'create', p: 'profile_private/new1',
+      data: { userId: 'new1', profileId: 'pNew1', profilePhotoUrl: 'x' }, live: true,
+    }),
+    tc('[2] member writes their contact record', 'ALLOW', {
+      authz: member('new1'), method: 'create', p: 'contacts/new1',
+      data: { userId: 'new1', profileId: 'pNew1', mobileNumber: '' }, live: true,
+    }),
+    tc('[2] member marks their account profile-complete', 'ALLOW', {
+      authz: member('new1'), method: 'update', p: 'users/new1',
+      existing: { role: 'user', isProfileComplete: false },
+      data: { role: 'user', isProfileComplete: true, profileCompleted: true },
+      mocks: [userDoc('new1', 'user')], live: true,
+    }),
+    tc('[3] member creates a profile for ANOTHER user', 'DENY', {
+      authz: member('u1'), method: 'create', p: 'profiles/pX',
+      data: newProfile('victim'), mocks: [userDoc('u1', 'user'), noClaim('victim')], live: true,
+    }),
+    tc('[3] member edits ANOTHER user\'s profile', 'DENY', {
+      authz: member('u1'), method: 'update', p: 'profiles/pV',
+      existing: newProfile('victim'), data: newProfile('victim', { fullName: 'Hacked' }),
+      mocks: [userDoc('u1', 'user')], live: true,
+    }),
+    tc('[3] member writes ANOTHER user\'s private copy', 'DENY', {
+      authz: member('u1'), method: 'create', p: 'profile_private/victim',
+      data: { userId: 'victim' }, mocks: [userDoc('u1', 'user')],
+    }),
+    tc('[4] existing member edits own profile', 'ALLOW', {
+      authz: member('m1'), method: 'update', p: 'profiles/pM1',
+      existing: newProfile('m1', { status: 'approved' }),
+      data: newProfile('m1', { status: 'approved', aboutMe: 'Updated' }),
+      mocks: [userDoc('m1', 'user')], live: true,
+    }),
+    tc('[4] member re-creates a profile (approved → pending review)', 'ALLOW', {
+      authz: member('m1'), method: 'update', p: 'profiles/pM1',
+      existing: newProfile('m1', { status: 'approved', isVerified: true }),
+      data: newProfile('m1'), mocks: [userDoc('m1', 'user')], live: true,
+    }),
+    tc('[4] member marks themself married', 'ALLOW', {
+      authz: member('m1'), method: 'update', p: 'profiles/pM1',
+      existing: newProfile('m1', { status: 'approved' }),
+      data: newProfile('m1', { status: 'approved', isMarried: true, isActive: false }),
+      mocks: [userDoc('m1', 'user')], live: true,
+    }),
+    tc('[4] member approves their own profile', 'DENY', {
+      authz: member('m1'), method: 'update', p: 'profiles/pM1',
+      existing: newProfile('m1'), data: newProfile('m1', { status: 'approved' }),
+      mocks: [userDoc('m1', 'user')],
+    }),
+    tc('[4] member marks their own profile verified', 'DENY', {
+      authz: member('m1'), method: 'update', p: 'profiles/pM1',
+      existing: newProfile('m1'), data: newProfile('m1', { profileVerified: true }),
+      mocks: [userDoc('m1', 'user')],
+    }),
+    tc('[4] a BLOCKED member re-opens their profile for review', 'DENY', {
+      authz: member('m1'), method: 'update', p: 'profiles/pM1',
+      existing: newProfile('m1', { status: 'blocked', isActive: false }),
+      data: newProfile('m1'), mocks: [userDoc('m1', 'user')],
+    }),
+    tc('[5] admin views a member profile', 'ALLOW', {
+      authz: member('adm'), method: 'get', p: 'profiles/pM1',
+      existing: newProfile('m1', { status: 'pending' }), mocks: [userDoc('adm', 'admin')], live: true,
+    }),
+    tc('[5] admin edits and approves a member profile', 'ALLOW', {
+      authz: member('adm'), method: 'update', p: 'profiles/pM1',
+      existing: newProfile('m1'), data: newProfile('m1', { status: 'approved', fullName: 'Fixed' }),
+      mocks: [userDoc('adm', 'admin')], live: true,
+    }),
+    tc('[5] admin creates a profile for a member', 'ALLOW', {
+      authz: member('adm'), method: 'create', p: 'profiles/pA1',
+      data: newProfile('m9', { status: 'approved' }),
+      mocks: [userDoc('adm', 'admin'), noClaim('m9')], live: true,
+    }),
+    tc('[5] admin reads a member\'s private copy', 'ALLOW', {
+      authz: member('adm'), method: 'get', p: 'profile_private/m1',
+      existing: { userId: 'm1' }, mocks: [userDoc('adm', 'admin')],
+    }),
+    tc('[6] signed-out request creates a profile', 'DENY', {
+      authz: null, method: 'create', p: 'profiles/pAnon',
+      data: newProfile('nobody'), live: true,
+    }),
+    tc('[6] guest (anonymous) session creates a profile', 'DENY', {
+      authz: anon('guest1'), method: 'create', p: 'profiles/pGuest',
+      data: newProfile('guest1'), mocks: [noClaim('guest1')], live: true,
+    }),
+    tc('[7] profile without a name', 'DENY', {
+      authz: member('new2'), method: 'create', p: 'profiles/pNoName',
+      data: newProfile('new2', { fullName: '' }), mocks: [noClaim('new2')],
+    }),
+    tc('[7] profile without a gender', 'DENY', {
+      authz: member('new2'), method: 'create', p: 'profiles/pNoGender',
+      data: (() => { const d = newProfile('new2'); delete d.gender; return d; })(),
+      mocks: [noClaim('new2')],
+    }),
+    tc('[7] profile whose owner is not a string', 'DENY', {
+      authz: member('new2'), method: 'create', p: 'profiles/pBadOwner',
+      data: newProfile('new2', { userId: 123 }), mocks: [noClaim('new2')],
+    }),
+    tc('[7] member creates an already-approved profile', 'DENY', {
+      authz: member('new2'), method: 'create', p: 'profiles/pSelfApproved',
+      data: newProfile('new2', { status: 'approved' }), mocks: [noClaim('new2')],
+    }),
+    tc('[7] member creates a test (dummy) profile', 'DENY', {
+      authz: member('new2'), method: 'create', p: 'profiles/pDummy',
+      data: newProfile('new2', { isDummy: true }), mocks: [noClaim('new2')],
+    }),
+    tc('[9] employee reads a member\'s private copy for a report', 'ALLOW', {
+      authz: member('emp', 'emp@gmail.com'), method: 'get', p: 'profile_private/m1',
+      existing: { userId: 'm1' }, mocks: [userDoc('emp', 'astrologer')],
+    }),
+    tc('[9] employee cannot browse account records', 'DENY', {
+      authz: member('emp', 'emp@gmail.com'), method: 'get', p: 'users/m1',
+      existing: { role: 'user' }, mocks: [userDoc('emp', 'astrologer')], live: true,
+    }),
+    tc('[9] member files a horoscope report request', 'ALLOW', {
+      authz: member('m1'), method: 'create', p: 'astrologer_requests/r1',
+      data: { userId: 'm1', type: 'matching', paid: true, amount: 199, paymentId: 'GPA.1234-5678', status: 'pending' },
+      live: true,
+    }),
+    tc('[9] assigned employee updates the request', 'ALLOW', {
+      authz: member('emp', 'emp@gmail.com'), method: 'update', p: 'astrologer_requests/r1',
+      existing: { userId: 'm1', astrologerId: 'emp', astrologerEmail: 'emp@gmail.com', status: 'accepted' },
+      data: { userId: 'm1', astrologerId: 'emp', astrologerEmail: 'emp@gmail.com', status: 'completed' },
+      live: true,
+    }),
+  ];
+}
 
 (async () => {
   const acct = auth.getGlobalDefaultAccount();
   const at = await auth.getAccessToken(acct.tokens.refresh_token, []);
   const token = at.access_token || at;
+  let RULES = RULES_FILE;
+  let run = cases;
+  if (LIVE) {
+    const h = { Authorization: `Bearer ${token}` };
+    const base = `https://firebaserules.googleapis.com/v1/projects/${PROJECT}`;
+    const rel = await (await fetch(`${base}/releases/cloud.firestore`, { headers: h })).json();
+    const rs = await (await fetch(`https://firebaserules.googleapis.com/v1/${rel.rulesetName}`, { headers: h })).json();
+    RULES = rs.source.files[0].content;
+    console.log(`LIVE ruleset ${rel.rulesetName.split('/').pop()} (released ${rel.updateTime})\n`);
+    // Every case asks "is it allowed?" — the answer is reported, not judged.
+    run = cases.filter((c) => c.live).map((c) => ({ ...c, body: { ...c.body, expectation: 'ALLOW' } }));
+  }
   const res = await fetch(
     `https://firebaserules.googleapis.com/v1/projects/${PROJECT}:test`,
     {
@@ -287,7 +461,7 @@ const cases = [
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         source: { files: [{ name: 'firestore.rules', content: RULES }] },
-        testSuite: { testCases: cases.map((c) => c.body) },
+        testSuite: { testCases: run.map((c) => c.body) },
       }),
     },
   );
@@ -299,10 +473,19 @@ const cases = [
   if (json.issues) console.log('ISSUES', JSON.stringify(json.issues, null, 1));
   let pass = 0;
   let fail = 0;
+  if (LIVE) {
+    (json.testResults || []).forEach((r, i) => {
+      const expected = cases.find((c) => c.name === run[i].name).body.expectation;
+      const got = r.state === 'SUCCESS' ? 'ALLOW' : 'DENY';
+      console.log(`${got === 'ALLOW' ? 'allowed' : 'DENIED '}  ${got === expected ? '     ' : '(!)  '}${run[i].name}`);
+    });
+    console.log('\n(!) = the deployed rules answer differently from the repo rules.');
+    process.exit(0);
+  }
   (json.testResults || []).forEach((r, i) => {
     const ok = r.state === 'SUCCESS';
     ok ? pass++ : fail++;
-    console.log(`${ok ? 'PASS' : 'FAIL'}  [${cases[i].body.expectation}] ${cases[i].name}`);
+    console.log(`${ok ? 'PASS' : 'FAIL'}  [${run[i].body.expectation}] ${run[i].name}`);
     if (!ok) console.log('      ', JSON.stringify(r.debugMessages || r.errorPosition || r).slice(0, 600));
   });
   console.log(`\n${pass} passed, ${fail} failed`);

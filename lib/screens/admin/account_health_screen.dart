@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/account_identity.dart';
+import '../../core/utils/profile_save_error.dart';
 import '../../core/utils/login_identifier.dart';
 import '../../core/utils/validators.dart';
 import '../../providers/auth_provider.dart';
@@ -87,7 +88,7 @@ class _AccountHealthScreenState extends ConsumerState<AccountHealthScreen> {
                 const Icon(Icons.cloud_off_outlined,
                     size: 48, color: AppColors.error),
                 const SizedBox(height: 10),
-                Text('The scan could not complete.\n$e',
+                Text('The scan could not complete.\n${describeAdminActionError(e)}',
                     textAlign: TextAlign.center),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
@@ -315,7 +316,8 @@ class _AccountHealthScreenState extends ConsumerState<AccountHealthScreen> {
     } on LoginConflictException catch (e) {
       _snack(e.message, error: true);
     } catch (e) {
-      _snack('Action failed: $e', error: true);
+      debugPrint('[Admin] action failed: $e');
+      _snack(describeAdminActionError(e), error: true);
     }
     return false;
   }

@@ -2,16 +2,21 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart' show DocumentSnapshot;
 import 'package:firebase_core/firebase_core.dart' show FirebaseException;
 import 'package:flutter/foundation.dart' show debugPrint, visibleForTesting;
+import 'dart:ui' show Locale, PlatformDispatcher;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/dev_config.dart';
 import '../core/constants/app_constants.dart';
 import '../core/services/porutham_match.dart';
+import '../core/errors/auth_exception.dart';
 import '../core/utils/location_search.dart' show placeKey;
+import '../core/utils/profile_save_error.dart';
+import '../l10n/app_localizations.dart';
 import '../models/profile_model.dart';
 import '../services/cloudinary/cloudinary_exception.dart';
 import '../services/firebase/firestore_service.dart' show ProfilePage;
 import 'block_provider.dart';
 import 'demo_data_provider.dart';
+import 'locale_provider.dart';
 import 'profile_edit_provider.dart' show retireReplacedPhoto;
 import 'notification_provider.dart';
 import 'service_providers.dart';
@@ -309,6 +314,14 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
     }
 
     try {
+      // BEFORE any upload or write: the right account, a live session, and
+      // the required details. Each of these used to surface only at the
+      // Firestore write, as a bare permission-denied — after the photos had
+      // already been uploaded.
+      await _assertCanSave(userId,
+          onBehalfOfMember: adminCreated || editProfileId != null,
+          isCreate: editProfileId == null);
+
       final repo = ref.read(profileRepositoryProvider);
       final hasPhotos = state.photos.isNotEmpty;
       final horoFiles = <({File file, bool isPdf})>[
@@ -496,7 +509,13 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
 
         // Mark the account as profile-completed so the Home gate opens.
         debugPrint('[submitProfile] ▶ marking profile completed for userId=$userId');
-        await ref.read(firestoreServiceProvider).markProfileCompleted(userId);
+        try {
+          await ref.read(firestoreServiceProvider).markProfileCompleted(userId);
+        } catch (e) {
+          // The profile itself IS saved; a retry reuses it. Report the step.
+          throw ProfileSaveException(classifyProfileSaveError(e),
+              'users/$userId isProfileComplete', e);
+        }
         debugPrint('[submitProfile] ✅ markProfileCompleted done');
         // Mirror the uploaded photo onto users/{uid} straight away, so the very
         // first Home render after onboarding shows the member's own image
@@ -529,7 +548,13 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
       );
       return profileId;
     } catch (e, st) {
-      debugPrint('[submitProfile] ❌ FAILED: $e\n$st');
+      // Developer log: the classified failure and the operation — never the
+      // member's profile details.
+      final failure = classifyProfileSaveError(e);
+      debugPrint('[submitProfile] ❌ FAILED (${failure.name}'
+          '${e is ProfileSaveException ? ' at "${e.operation}"' : ''}, '
+          'target=$userId, signedIn=${ref.read(authRepositoryProvider).currentUserId}): '
+          '$e\n$st');
       state = state.copyWith(
         isLoading: false,
         error: _friendlyProfileError(e),
@@ -587,7 +612,56 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
   /// Turn raw upload/Firestore errors into actionable messages instead of
   /// dumping `e.toString()` (e.g. `[firebase_storage/object-not-found] No
   /// object exists at the desired reference.`) straight into a SnackBar.
+  /// Refuses the save up front — with the reason — when it cannot succeed.
+  Future<void> _assertCanSave(String userId,
+      {required bool onBehalfOfMember, required bool isCreate}) async {
+    final repo = ref.read(authRepositoryProvider);
+    final user = repo.currentUser;
+    final session = checkProfileSaveSession(
+      targetUid: userId,
+      signedInUid: user?.uid,
+      signedInIsGuest: user?.isAnonymous ?? false,
+      onBehalfOfMember: onBehalfOfMember,
+    );
+    if (session != null) {
+      throw ProfileSaveException(session,
+          'session check (target=$userId, signedIn=${user?.uid ?? 'none'})');
+    }
+    if (isCreate) {
+      final missing = missingRequiredProfileFields(state.data);
+      if (missing.isNotEmpty) {
+        throw ProfileSaveException(ProfileSaveFailure.missingFields,
+            'required fields: ${missing.join(', ')}');
+      }
+    }
+    try {
+      await repo.refreshSession();
+    } on AuthException catch (e) {
+      throw ProfileSaveException(
+        e.code == 'network-request-failed'
+            ? ProfileSaveFailure.network
+            : ProfileSaveFailure.sessionExpired,
+        'auth token refresh (${e.code})',
+        e,
+      );
+    }
+  }
+
+  AppLocalizations get _l10n {
+    final chosen = ref.read(localeProvider)?.languageCode ??
+        PlatformDispatcher.instance.locale.languageCode;
+    return lookupAppLocalizations(Locale(chosen == 'ta' ? 'ta' : 'en'));
+  }
+
   String _friendlyProfileError(Object e) {
+    final failure = classifyProfileSaveError(e);
+    if (failure != ProfileSaveFailure.upload &&
+        failure != ProfileSaveFailure.unknown) {
+      return profileSaveMessage(_l10n, failure);
+    }
+    if (e is ProfileSaveException && e.cause != null) {
+      return _friendlyProfileError(e.cause!);
+    }
     if (e is CloudinaryUploadException) {
       if (e.statusCode == 400 &&
           e.message.toLowerCase().contains('preset')) {
@@ -619,11 +693,9 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
           return 'Could not save your photo (${e.code}). Please try again.';
       }
     }
-    if (e is FirebaseException) {
-      return 'Could not save your profile (${e.plugin}/${e.code}): '
-          '${e.message ?? 'unknown error'}.';
-    }
-    return 'Something went wrong while saving your profile: $e';
+    // Never the raw Firebase text ("[cloud_firestore/…] The caller does not
+    // have permission…") — the code stays in the developer log.
+    return profileSaveMessage(_l10n, ProfileSaveFailure.unknown);
   }
 }
 

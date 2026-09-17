@@ -60,6 +60,47 @@ What changed:
 
 ---
 
+## 1b. Profile creation `permission-denied` (diagnosed 2026-09-17)
+
+Checked, in order:
+
+* **Project / App Check** — the app targets `matrimony-app-bd0d5`; App Check is
+  *not* enforced for Firestore, so every refusal comes from the security rules.
+* **Deployed rules** — the live ruleset (released 2026-09-16) is commit
+  `aec7695`. Its `profiles`, `users` and `contacts` rules are identical to the
+  2 Sep ruleset and ALLOW a signed-in member (password or Google) to query,
+  create and edit their own profile. A guest (anonymous) or signed-out session,
+  and any write to another member's profile, are refused — as intended. A guest
+  who registers is upgraded in place and gets a `password`/`google.com` token
+  (verified in the Auth emulator), so that is not the cause either.
+* **What the deployed rules refuse in the flow** —
+  `node tool/firestore_rules_test.js --live` runs the flow's exact requests
+  against production: the only refusal is `profile_private/{uid}`, the private
+  copy of hidden fields. The app has used it (and `contact_private`,
+  `profile_owners`, `login_tombstones`, `password_reset_requests`,
+  `account_reviews`) since commits whose rules were **never deployed** —
+  Firestore denies any collection without a matching rule.
+* **Where the raw text came from** — `[cloud_firestore/permission-denied] The
+  caller does not have permission…` is `FirebaseException.toString()`. It was
+  printed as-is by the admin Create Profile flow (e.g. "Verify & continue" on an
+  old login reads `login_tombstones`), by the admin login actions, and by the
+  Complete Profile screen.
+
+Fixed in code (works on the current rules AND after deploying):
+
+* Profile creation checks the session first — signed in, not a guest, saving
+  the signed-in uid's own profile, token refreshed — and the required details,
+  before uploading anything.
+* The one-profile ownership record is probed with a plain read; the transaction
+  only runs once its rules are live.
+* The profile write must be **confirmed by the server** (30 s); a slow network
+  is reported as a network error, and a retry reuses the same document.
+* Every Firestore step is labelled: the developer log names the exact failing
+  operation; the member sees a translated message (permission / network /
+  session / missing details) — never the raw Firebase text.
+
+The permanent fix is deploying the rules (§2).
+
 ## 2. Deploy the Firestore rules (REQUIRED)
 
 ```bash
@@ -72,7 +113,7 @@ New / changed:
 |---|---|
 | `users/{uid}` | members cannot raise their own `role`, lift `isBlocked`, or clear an admin's `authStatus`; admins may create a member record for an existing login |
 | `login_index/{mobile}` | id must be 10 digits; admins may re-assign a number when restoring a login |
-| `profiles/{id}` | create only under the id in `profile_owners/{uid}` (dummy test profiles exempt); owners cannot change `userId` |
+| `profiles/{id}` | a member creates only their OWN profile, with a non-empty `fullName` and `gender`, as `pending`, not verified and not a test profile, under the id in `profile_owners/{uid}` (admins: any member; dummy test profiles exempt). Owners cannot change `userId`, approve or verify themselves, or re-open a `blocked` profile; every other field stays editable |
 | `profile_owners/{uid}` | **new** — see §0 |
 | `login_tombstones/{uid}` | **new** — admin write; the account itself may read it at sign-in |
 | `password_reset_requests/{mobile}_{day}` | **new** — any session (incl. guest) may *create* a pinned, password-free request, one per number per day; admin manages |
@@ -83,7 +124,8 @@ Verify the rules' behaviour without deploying anything (uses the Rules API test
 endpoint; needs `firebase login`):
 
 ```bash
-node tool/firestore_rules_test.js
+node tool/firestore_rules_test.js          # 70 cases against the repo rules
+node tool/firestore_rules_test.js --live   # same requests against the DEPLOYED rules
 ```
 
 > ⚠ Old app versions keep working with these rules (an account without an

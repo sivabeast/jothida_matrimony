@@ -10,6 +10,7 @@ import '../../core/utils/account_identity.dart';
 import '../../core/utils/login_identifier.dart';
 import '../../core/utils/matrimony_photo.dart';
 import '../../core/utils/member_profile_lookup.dart';
+import '../../core/utils/profile_save_error.dart';
 import '../../core/utils/profile_privacy.dart';
 import '../../models/aadhaar_details.dart';
 import '../../models/blocked_entry.dart';
@@ -330,15 +331,21 @@ class FirestoreService {
   /// Any further stale documents found under the uid are removed in the same
   /// pass, so the invariant is restored rather than merely avoided.
   Future<String> createProfile(ProfileModel profile) async {
-    final existing = await _profileDocsForStrict(profile.userId);
-    final doc = await _reserveOwnProfileDoc(profile.userId, existing);
+    final uid = profile.userId;
+    final existing = await _profileOp('profiles list (userId == $uid)',
+        () => _profileDocsForStrict(uid));
+    final doc = await _reserveOwnProfileDoc(uid, existing);
     final stale = [for (final d in existing) if (d.id != doc.id) d];
     if (stale.isNotEmpty) {
       debugPrint('[Firestore] createProfile: ${existing.length} existing '
-          'profiles for userId=${profile.userId} — reusing ${doc.id} and '
+          'profiles for userId=$uid — reusing ${doc.id} and '
           'deleting the rest.');
-      await _deleteDocs(stale);
+      await _profileOp('profiles delete duplicates of $uid',
+          () => _deleteDocs(stale));
     }
+    // Remembered until the server confirms the write: a retry after a
+    // network failure writes the SAME document instead of creating another.
+    _unconfirmedProfileDocIds[uid] = doc.id;
     // 1) Save the profile FIRST. ProfileModel.toFirestore() no longer includes
     //    contact details, so onboarding can never be blocked by the separate
     //    contact write below.
@@ -365,14 +372,22 @@ class FirestoreService {
           'profileId': doc.id,
           'updatedAt': FieldValue.serverTimestamp(),
         });
-      written = await _commitPrivacyBatch(batch, uid: profile.userId);
+      written = await _commitPrivacyBatch(batch,
+          uid: profile.userId, requireServerAck: true);
     }
     if (!written) {
       // The private collection is not usable (rules not deployed). Keep the
       // previous behaviour — the full profile on one document — rather than
       // lose a value; the next reconcile moves it once the rules are live.
-      await doc.set(data);
+      //
+      // Awaited until the SERVER confirms it (bounded): a profile is never
+      // reported as created while the write only sits in the offline cache,
+      // where a later rejection would silently undo it.
+      await _profileOp(
+          'profiles/${doc.id} ${existing.any((d) => d.id == doc.id) ? 'replace' : 'create'}',
+          () => _serverConfirmed(doc.set(data)));
     }
+    _unconfirmedProfileDocIds.remove(uid);
     debugPrint('[Firestore] createProfile: profiles/${doc.id} written for '
         'userId=${profile.userId} (profilePhotoUrl='
         '${(profile.profilePhotoUrl ?? '').isEmpty ? 'none' : 'set'}, '
@@ -476,10 +491,29 @@ class FirestoreService {
   ///
   /// A batch is atomic: when it is refused, NOTHING in it was applied, so the
   /// public document was not blanked either.
-  Future<bool> _commitPrivacyBatch(WriteBatch batch, {String uid = ''}) async {
+  ///
+  /// [requireServerAck] (profile creation): the batch must be CONFIRMED by the
+  /// server — a slow answer is a network failure, never "queued, assume it
+  /// worked" — so a rejected write can never be reported as a created profile.
+  Future<bool> _commitPrivacyBatch(WriteBatch batch,
+      {String uid = '', bool requireServerAck = false}) async {
     try {
-      await commitWrite(batch.commit(), timeout: const Duration(seconds: 20));
+      if (requireServerAck) {
+        await _profileOp('profiles + profile_private/$uid batch',
+            () => _serverConfirmed(batch.commit()));
+      } else {
+        await commitWrite(batch.commit(), timeout: const Duration(seconds: 20));
+      }
       return true;
+    } on ProfileSaveException catch (e) {
+      if (e.failure == ProfileSaveFailure.permissionDenied) {
+        debugPrint('[FirestoreService] private field storage refused '
+            '(${e.operation}). Deploy firestore.rules — falling back to the '
+            'single-document write.');
+        if (uid.isNotEmpty) _privateStorageReady[uid] = false;
+        return false;
+      }
+      rethrow;
     } on FirebaseException catch (e) {
       if (e.code == 'permission-denied') {
         debugPrint('[FirestoreService] private field storage refused '
@@ -532,6 +566,40 @@ class FirestoreService {
             e.value is FieldValue;
       });
 
+  /// Profile documents created in this session whose write the server has not
+  /// confirmed yet, by uid — see [createProfile].
+  final Map<String, String> _unconfirmedProfileDocIds = {};
+
+  /// How long profile creation waits for the server to confirm a write.
+  static const Duration _profileWriteTimeout = Duration(seconds: 30);
+
+  /// Waits for the server to acknowledge [write]. A timeout is a NETWORK
+  /// failure — the write stays queued locally and a retry reuses its document.
+  static Future<void> _serverConfirmed(Future<void> write) => write.timeout(
+        _profileWriteTimeout,
+        onTimeout: () => throw TimeoutException(
+            'The server did not confirm the profile write in time.',
+            _profileWriteTimeout),
+      );
+
+  /// Runs one Firestore step of profile creation and, when it fails, logs and
+  /// rethrows it as a [ProfileSaveException] naming [operation] — so a
+  /// `permission-denied` says WHICH read or write the rules refused instead of
+  /// a bare "The caller does not have permission".
+  Future<T> _profileOp<T>(String operation, Future<T> Function() run) async {
+    try {
+      return await run();
+    } on ProfileSaveException {
+      rethrow;
+    } catch (e) {
+      final failure = classifyProfileSaveError(e);
+      final code = e is FirebaseException ? e.code : e.runtimeType.toString();
+      debugPrint('[ProfileSave] ❌ "$operation" failed → ${failure.name} '
+          '($code)${e is FirebaseException ? ': ${e.message}' : ''}');
+      throw ProfileSaveException(failure, operation, e);
+    }
+  }
+
   /// [_profileDocsFor] that FAILS instead of answering "none" — profile
   /// creation must never conclude an account has no profile because a read
   /// could not complete (that is how a second profile gets created).
@@ -568,11 +636,32 @@ class FirestoreService {
   ) async {
     final profiles = _db.collection(AppConstants.profilesCollection);
     final existingIds = [for (final d in existing) d.id];
-    final freshId = profiles.doc().id;
+    final freshId = _unconfirmedProfileDocIds[uid] ?? profiles.doc().id;
     if (uid.trim().isEmpty) {
       return existing.isEmpty ? profiles.doc(freshId) : existing.first.reference;
     }
     final claimRef = _profileOwnerRef(uid);
+    // A PLAIN read first. While the ownership rules are not deployed the
+    // collection is unreadable, and a refused read inside a transaction goes
+    // through the Android plugin's failure path (null command list, a second
+    // error event racing the first) — so the transaction only runs once the
+    // record is known to be readable.
+    try {
+      await claimRef
+          .get(const GetOptions(source: Source.server))
+          .timeout(const Duration(seconds: 15));
+    } on FirebaseException catch (e) {
+      if (e.code != 'permission-denied') {
+        throw ProfileSaveException(
+            classifyProfileSaveError(e), 'profile_owners/$uid read', e);
+      }
+      debugPrint('[Firestore] profile_owners not readable for $uid (rules not '
+          'deployed) — reusing the newest existing profile instead.');
+      return existing.isEmpty ? profiles.doc(freshId) : existing.first.reference;
+    } on TimeoutException catch (e) {
+      throw ProfileSaveException(
+          ProfileSaveFailure.network, 'profile_owners/$uid read', e);
+    }
     try {
       final id = await _db.runTransaction<String>((txn) async {
         final snap = await txn.get(claimRef);
@@ -594,10 +683,16 @@ class FirestoreService {
       debugPrint('[Firestore] profile ownership for $uid → $id');
       return profiles.doc(id);
     } on FirebaseException catch (e) {
-      if (e.code != 'permission-denied') rethrow;
+      if (e.code != 'permission-denied') {
+        throw ProfileSaveException(classifyProfileSaveError(e),
+            'profile_owners/$uid reserve (transaction)', e);
+      }
       debugPrint('[Firestore] profile_owners refused for $uid (deploy '
           'firestore.rules) — reusing the newest existing profile instead.');
       return existing.isEmpty ? profiles.doc(freshId) : existing.first.reference;
+    } on TimeoutException catch (e) {
+      throw ProfileSaveException(ProfileSaveFailure.network,
+          'profile_owners/$uid reserve (transaction)', e);
     }
   }
 

@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/account_identity.dart';
+import '../../core/utils/profile_save_error.dart';
 import '../../core/utils/login_identifier.dart';
 import '../../core/utils/phone_utils.dart';
 import '../../models/password_reset_request.dart';
@@ -161,7 +162,8 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
     } on AuthException catch (e) {
       _snack(e.message, error: true);
     } catch (e) {
-      _snack('Action failed: $e', error: true);
+      debugPrint('[Admin] action failed: $e');
+      _snack(describeAdminActionError(e), error: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -268,7 +270,8 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
     } on AuthException catch (e) {
       _snack(e.message, error: true);
     } catch (e) {
-      _snack('Action failed: $e', error: true);
+      debugPrint('[Admin] action failed: $e');
+      _snack(describeAdminActionError(e), error: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }

@@ -457,6 +457,9 @@ class AuthRepository {
   // signs out except [endSessionAfterDeletion], which the flow calls only once
   // the Firebase Auth user is gone.
 
+  /// Forces a fresh ID token — see [AuthService.refreshSession].
+  Future<void> refreshSession() => _auth.refreshSession();
+
   /// The providers linked to the signed-in account ('password', 'google.com').
   List<String> get currentProviderIds => _auth.currentProviderIds;
 

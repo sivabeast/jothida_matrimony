@@ -470,6 +470,30 @@ class AuthService {
     }
   }
 
+  /// Forces a fresh ID token for the signed-in user. Proves the session is
+  /// still valid (not revoked, disabled or deleted) before a write that must
+  /// not fail half-way, and makes Firestore use a token that reflects the
+  /// account's CURRENT sign-in state. Throws [AuthException] with Firebase's
+  /// code (`user-token-expired`, `user-disabled`, `network-request-failed`…).
+  Future<void> refreshSession() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw const AuthException('You are not signed in.',
+          code: 'no-current-user');
+    }
+    try {
+      await user.getIdToken(true).timeout(_tokenTimeout);
+    } on TimeoutException {
+      throw const AuthException(
+          'No internet connection. Please check your network and try again.',
+          code: 'network-request-failed');
+    } on FirebaseAuthException catch (e) {
+      debugPrint('[AuthService] refreshSession FAILED: ${e.code}');
+      throw AuthException(e.message ?? 'Your session has expired.',
+          code: e.code);
+    }
+  }
+
   /// Re-authenticates the signed-in user with their PASSWORD. The e-mail is
   /// always the account's own sign-in address (for a mobile-number account the
   /// synthesized address), never something the member types.

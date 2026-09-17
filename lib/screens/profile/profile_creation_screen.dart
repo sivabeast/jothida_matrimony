@@ -13,6 +13,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../core/utils/login_identifier.dart';
+import '../../core/utils/profile_save_error.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/profile_provider.dart';
@@ -440,11 +441,12 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
       debugPrint('[ProfileCreation] admin account provisioning failed: $e');
       if (!mounted) return;
       setState(() => _provisioning = false);
+      // Never the raw Firebase text — classified, translated, and logged above.
       final message = e is AuthException
           ? e.message
           : e is LoginConflictException
               ? e.message
-              : e.toString();
+              : profileSaveMessage(context.l10n, classifyProfileSaveError(e));
       messenger.showSnackBar(SnackBar(content: Text(message)));
       return;
     }
@@ -465,9 +467,12 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
           return;
         }
       } catch (e) {
+        debugPrint('[ProfileCreation] existing-profile check for '
+            '${target.uid} failed: $e');
         if (!mounted) return;
         messenger.showSnackBar(SnackBar(
-            content: Text('Could not check the existing account ($e).')));
+            content: Text(profileSaveMessage(
+                context.l10n, classifyProfileSaveError(e)))));
         return;
       }
     }
@@ -623,8 +628,10 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
         return;
       }
     } catch (e) {
+      debugPrint('[ProfileCreation] existing-profile check for $uid failed: $e');
       messenger.showSnackBar(SnackBar(
-          content: Text('Could not check for an existing profile ($e).')));
+          content: Text(profileSaveMessage(
+              context.l10n, classifyProfileSaveError(e)))));
       return;
     }
     final profileId = await ref

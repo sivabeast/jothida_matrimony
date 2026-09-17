@@ -26,7 +26,11 @@ class CompleteProfileScreen extends ConsumerWidget {
       body: profileAsync.when(
         loading: () => const Center(
             child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (e, _) => Center(child: Text(context.l10n.couldNotLoadProfileError('$e'))),
+        // The raw Firebase text never reaches the member — it is logged.
+        error: (e, _) {
+          debugPrint('[CompleteProfile] profile load failed: $e');
+          return Center(child: Text(context.l10n.couldNotLoadProfileRetry));
+        },
         data: (profile) {
           final completion = computeProfileCompletion(profile);
           final incomplete =

@@ -2006,5 +2006,11 @@
   "newPasswordMustDiffer": "The new password must be different from the current one.",
   "changePasswordNoPasswordLogin": "Your account signs in with Google, so it has no password to change.",
   "accountUnavailableTitle": "Login unavailable",
-  "accountUnavailableMessage": "Your login has been disabled by the administrator. Your profile has not been deleted. Please contact support to restore access."
+  "accountUnavailableMessage": "Your login has been disabled by the administrator. Your profile has not been deleted. Please contact support to restore access.",
+  "profileSaveNotSignedIn": "Please sign in to your account before saving your profile.",
+  "profileSaveSessionExpired": "Your sign-in session has expired or changed. Please sign out, sign in again and tap Submit — your details are kept.",
+  "profileSavePermissionDenied": "Your profile could not be saved because this account is not allowed to save it. Please sign out and sign in again, then retry. If it keeps happening, contact support.",
+  "profileSaveNetwork": "Could not reach the server, so your profile was not saved. Check your internet connection and tap Submit again — your details are kept.",
+  "profileSaveMissingFields": "Some required details are missing. Please fill in your name, gender and date of birth.",
+  "profileSaveFailedGeneric": "Your profile could not be saved. Please try again."
 }

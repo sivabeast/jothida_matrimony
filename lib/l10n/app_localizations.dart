@@ -8083,6 +8083,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your login has been disabled by the administrator. Your profile has not been deleted. Please contact support to restore access.'**
   String get accountUnavailableMessage;
+
+  /// No description provided for @profileSaveNotSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in to your account before saving your profile.'**
+  String get profileSaveNotSignedIn;
+
+  /// No description provided for @profileSaveSessionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your sign-in session has expired or changed. Please sign out, sign in again and tap Submit — your details are kept.'**
+  String get profileSaveSessionExpired;
+
+  /// No description provided for @profileSavePermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile could not be saved because this account is not allowed to save it. Please sign out and sign in again, then retry. If it keeps happening, contact support.'**
+  String get profileSavePermissionDenied;
+
+  /// No description provided for @profileSaveNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach the server, so your profile was not saved. Check your internet connection and tap Submit again — your details are kept.'**
+  String get profileSaveNetwork;
+
+  /// No description provided for @profileSaveMissingFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Some required details are missing. Please fill in your name, gender and date of birth.'**
+  String get profileSaveMissingFields;
+
+  /// No description provided for @profileSaveFailedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile could not be saved. Please try again.'**
+  String get profileSaveFailedGeneric;
 }
 
 class _AppLocalizationsDelegate

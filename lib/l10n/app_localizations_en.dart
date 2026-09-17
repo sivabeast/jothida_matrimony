@@ -4486,4 +4486,28 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get accountUnavailableMessage =>
       'Your login has been disabled by the administrator. Your profile has not been deleted. Please contact support to restore access.';
+
+  @override
+  String get profileSaveNotSignedIn =>
+      'Please sign in to your account before saving your profile.';
+
+  @override
+  String get profileSaveSessionExpired =>
+      'Your sign-in session has expired or changed. Please sign out, sign in again and tap Submit — your details are kept.';
+
+  @override
+  String get profileSavePermissionDenied =>
+      'Your profile could not be saved because this account is not allowed to save it. Please sign out and sign in again, then retry. If it keeps happening, contact support.';
+
+  @override
+  String get profileSaveNetwork =>
+      'Could not reach the server, so your profile was not saved. Check your internet connection and tap Submit again — your details are kept.';
+
+  @override
+  String get profileSaveMissingFields =>
+      'Some required details are missing. Please fill in your name, gender and date of birth.';
+
+  @override
+  String get profileSaveFailedGeneric =>
+      'Your profile could not be saved. Please try again.';
 }
