@@ -258,6 +258,25 @@ class ProfileCreationNotifier extends Notifier<ProfileCreationState> {
   /// reviewer). Self-registered profiles enter the approval workflow as
   /// 'pending' and only appear in Matches/Search once an admin approves them.
   Future<String?> submitProfile(String userId,
+      {String? editProfileId, bool adminCreated = false}) {
+    // A second tap, or a retry fired while the first save is still uploading,
+    // JOINS that save instead of starting another one — the first line of
+    // defence against duplicate profiles (the ownership record in
+    // FirestoreService.createProfile is the server-side one).
+    final running = _inFlight;
+    if (running != null) {
+      debugPrint('[submitProfile] already in progress — joining it.');
+      return running;
+    }
+    final future = _submitProfile(userId,
+        editProfileId: editProfileId, adminCreated: adminCreated);
+    _inFlight = future;
+    return future.whenComplete(() => _inFlight = null);
+  }
+
+  Future<String?>? _inFlight;
+
+  Future<String?> _submitProfile(String userId,
       {String? editProfileId, bool adminCreated = false}) async {
     state = state.copyWith(isLoading: true, error: null, uploadProgress: 0, uploadStatus: null);
 

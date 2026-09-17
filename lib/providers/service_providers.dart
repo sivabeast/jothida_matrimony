@@ -8,6 +8,9 @@ import '../services/firebase/astrologer_service.dart';
 import '../services/firebase/astrology_team_service.dart';
 import '../services/firebase/chat_service.dart';
 import '../services/firebase/login_directory_service.dart';
+import '../services/firebase/account_admin_backend.dart';
+import '../services/firebase/admin_account_service.dart';
+import '../services/firebase/password_reset_request_service.dart';
 import '../services/billing/play_billing_service.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/profile_repository.dart';
@@ -43,6 +46,23 @@ final chatServiceProvider = Provider<ChatService>((ref) => ChatService());
 /// the user is authenticated (see [LoginDirectoryService]).
 final loginDirectoryServiceProvider =
     Provider<LoginDirectoryService>((ref) => LoginDirectoryService());
+
+/// Client for the trusted account backend (functions/accounts.js).
+final accountAdminBackendProvider =
+    Provider<AccountAdminBackend>((ref) => AccountAdminBackend());
+
+/// Admin login management: inspect / create / restore / delete / reset, and
+/// the Account Health scan.
+final adminAccountServiceProvider =
+    Provider<AdminAccountService>((ref) => AdminAccountService(
+          directory: ref.watch(loginDirectoryServiceProvider),
+          firestore: ref.watch(firestoreServiceProvider),
+          backend: ref.watch(accountAdminBackendProvider),
+        ));
+
+/// Admin-assisted password recovery requests.
+final passwordResetRequestServiceProvider =
+    Provider<PasswordResetRequestService>((ref) => PasswordResetRequestService());
 
 // ── Repositories ──────────────────────────────────────────────────────────────
 final authRepositoryProvider = Provider<AuthRepository>((ref) => AuthRepository(

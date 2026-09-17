@@ -46,6 +46,13 @@ class AdminShell extends ConsumerWidget {
       _NavItem('Married Members', Icons.favorite_outline, '/admin/married'),
       _NavItem('Create Profile', Icons.person_add_alt_1, '/admin/create-profile'),
     ]),
+    // Authentication Management — logins kept apart from profiles.
+    _NavGroup('Accounts & Logins', [
+      _NavItem('Account Health', Icons.health_and_safety_outlined,
+          '/admin/account-health'),
+      _NavItem('Password Reset Requests', Icons.lock_reset,
+          '/admin/password-resets'),
+    ]),
     _NavGroup('Employee Management', [
       _NavItem('Employees', Icons.badge_outlined, '/admin/astrologers'),
       _NavItem('Commission', Icons.percent, '/admin/commission'),

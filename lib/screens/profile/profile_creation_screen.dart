@@ -1,6 +1,7 @@
 import 'dart:async' show unawaited;
 import 'dart:convert';
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,11 +12,13 @@ import '../../core/errors/auth_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/l10n_ext.dart';
+import '../../core/utils/login_identifier.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/service_providers.dart';
 import '../../services/firebase/admin_account_service.dart';
+import '../../widgets/admin/login_conflict_dialog.dart';
 import '../../widgets/profile/share_login_details_dialog.dart';
 import 'steps/step_basic.dart';
 import 'steps/step_location.dart';
@@ -74,12 +77,19 @@ class ProfileCreationScreen extends ConsumerStatefulWidget {
   /// profile onto the admin's own account.
   final String? ownerUserId;
 
+  /// ADMIN creates the profile for an EXISTING account that has none
+  /// (`/admin/user/:uid/create-profile`, spec "Profile Not Created"). Uses the
+  /// member's own Firebase UID from [ownerUserId]: no login step, no second
+  /// account, and the ownership record keeps it to one profile.
+  final bool adminForMember;
+
   const ProfileCreationScreen({
     super.key,
     this.editProfileId,
     this.sectionStep,
     this.adminMode = false,
     this.ownerUserId,
+    this.adminForMember = false,
   });
 
   @override
@@ -113,6 +123,13 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
   /// Admin-on-behalf creation — adds ONE extra step (Login Credentials) at the
   /// very end. Never combined with edit/section mode.
   bool get _isAdminMode => widget.adminMode && !_isEditMode;
+
+  /// Admin completing the profile of an existing account (see
+  /// [ProfileCreationScreen.adminForMember]).
+  bool get _isAdminForMember =>
+      widget.adminForMember &&
+      !_isEditMode &&
+      (widget.ownerUserId ?? '').trim().isNotEmpty;
 
   /// The 11 shared profile steps, plus the admin-only Login Credentials step.
   static const int _memberSteps = 11;
@@ -208,6 +225,8 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
           debugPrint('[ProfileCreation] edit prefill failed: $e');
           _prefillFailed = true;
         }
+      } else if (_isAdminForMember) {
+        await _seedFromMemberAccount(widget.ownerUserId!.trim());
       } else if (!_isAdminMode) {
         // Admin mode always starts blank: the admin's OWN abandoned draft must
         // never leak into a profile they are creating for someone else.
@@ -239,10 +258,35 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
     }
   }
 
+  /// Pre-fills what the member already gave at registration — name, gender,
+  /// date of birth, mobile, e-mail — so the admin completes their details
+  /// rather than retyping (and possibly contradicting) them.
+  Future<void> _seedFromMemberAccount(String uid) async {
+    try {
+      final raw = await ref.read(firestoreServiceProvider).getRawUser(uid);
+      if (raw == null) return;
+      String str(Object? v) => '${v ?? ''}'.trim();
+      final dob = raw['dateOfBirth'];
+      final email = str(raw['email']);
+      ref.read(profileCreationProvider.notifier).updateData({
+        if (str(raw['displayName']).isNotEmpty) 'name': str(raw['displayName']),
+        if (str(raw['gender']).isNotEmpty) 'gender': str(raw['gender']),
+        if (dob is Timestamp) 'dateOfBirth': dob.toDate().toIso8601String(),
+        'contactDetails': {
+          'mobileNumber':
+              LoginIdentifier.localMobile(str(raw['phone'])) ?? str(raw['phone']),
+          'email': LoginIdentifier.realEmailOrEmpty(email),
+        },
+      });
+    } catch (e) {
+      debugPrint('[ProfileCreation] member account prefill skipped: $e');
+    }
+  }
+
   Future<void> _saveDraft() async {
     // Never persist an edit, and never persist a profile the admin is creating
     // for someone else (it would resurface as the admin's own draft).
-    if (_isEditMode || _isAdminMode) return;
+    if (_isEditMode || _isAdminMode || _isAdminForMember) return;
     try {
       final state = ref.read(profileCreationProvider);
       final prefs = await SharedPreferences.getInstance();
@@ -365,14 +409,17 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
     }
   }
 
-  /// ADMIN mode save: provision the member's login FIRST, then write the very
-  /// same profile the member would have created themselves — under the new
+  /// ADMIN mode save: resolve the member's LOGIN first, then write the very
+  /// same profile the member would have created themselves — under that
   /// member's uid, so it is genuinely THEIR profile and they are never asked to
   /// create one again.
   ///
-  /// The account is created before the profile deliberately: if account
-  /// creation fails (duplicate mobile/e-mail, weak password) nothing is written
-  /// at all, so a half-created member can't be left behind.
+  /// The login is resolved before the profile deliberately: if it cannot be
+  /// created (duplicate, weak password, an old login still holding the number)
+  /// nothing is written at all. A conflict is never a dead end — the admin is
+  /// shown the account that holds the number and decides (see
+  /// [showLoginConflictDialog]). "Use existing account" writes the profile
+  /// under THAT uid and creates no login at all.
   Future<void> _submitAsAdmin() async {
     final l10n = context.l10n;
     final data = ref.read(profileCreationProvider).data;
@@ -384,48 +431,66 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
     }
 
     final messenger = ScaffoldMessenger.of(context);
+    final firestore = ref.read(firestoreServiceProvider);
     setState(() => _provisioning = true);
-    final ProvisionedAccount account;
+    final ({String uid, ProvisionedAccount? account})? target;
     try {
-      account = await AdminAccountService().provisionMemberAccount(
-        name: (data['name'] ?? '').toString().trim(),
-        mobile: (creds['mobile'] ?? '').toString(),
-        email: (creds['email'] ?? '').toString(),
-        password: (creds['password'] ?? '').toString(),
-        gender: (data['gender'] ?? '').toString(),
-      );
+      target = await _resolveMemberLogin(data, creds);
     } catch (e) {
       debugPrint('[ProfileCreation] admin account provisioning failed: $e');
       if (!mounted) return;
       setState(() => _provisioning = false);
-      final message = e is AuthException ? e.message : e.toString();
+      final message = e is AuthException
+          ? e.message
+          : e is LoginConflictException
+              ? e.message
+              : e.toString();
       messenger.showSnackBar(SnackBar(content: Text(message)));
       return;
     }
     if (!mounted) return;
     setState(() => _provisioning = false);
+    if (target == null) return; // the admin cancelled
+
+    // Never a second profile for an account that already has one.
+    if (target.account == null || target.account!.restored) {
+      try {
+        final existing = await firestore.profilesOfUser(target.uid);
+        if (existing.isNotEmpty) {
+          if (!mounted) return;
+          messenger.showSnackBar(const SnackBar(
+              content: Text('That account already has a matrimony profile — '
+                  'opening it instead of creating another.')));
+          context.pushReplacement('/admin/user/${target.uid}');
+          return;
+        }
+      } catch (e) {
+        if (!mounted) return;
+        messenger.showSnackBar(SnackBar(
+            content: Text('Could not check the existing account ($e).')));
+        return;
+      }
+    }
 
     // Same submit path as a member creating their own profile — one shared
     // flow, one shared validation, one shared document shape.
     final profileId = await ref
         .read(profileCreationProvider.notifier)
-        .submitProfile(account.uid, adminCreated: true);
+        .submitProfile(target.uid, adminCreated: true);
     if (!mounted) return;
+    final account = target.account;
     if (profileId == null) {
-      // The login was created but the profile was not. The account was
-      // provisioned as "profile complete" — that is only true when the profile
-      // actually landed — so put it back, or the member signs in and is dropped
-      // straight onto a Home page with no profile behind it and no way to
-      // create one (spec §21/§28). The admin can finish the profile later from
-      // Users, and the member is asked for it at first sign-in until then.
-      try {
-        await ref
-            .read(firestoreServiceProvider)
-            .updateUser(account.uid, {'isProfileComplete': false,
-              'profileCompleted': false});
-      } catch (e) {
-        debugPrint('[ProfileCreation] could not reset the profile-complete '
-            'flag for ${account.uid}: $e');
+      // A NEW login was provisioned as "profile complete" — only true when the
+      // profile actually landed — so put it back, or the member signs in and
+      // is dropped onto a Home page with no profile behind it (spec §21/§28).
+      if (account != null && !account.restored) {
+        try {
+          await firestore.updateUser(account.uid,
+              {'isProfileComplete': false, 'profileCompleted': false});
+        } catch (e) {
+          debugPrint('[ProfileCreation] could not reset the profile-complete '
+              'flag for ${account.uid}: $e');
+        }
       }
       final error = ref.read(profileCreationProvider).error;
       if (!mounted) return;
@@ -434,35 +499,153 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
       return;
     }
     await _clearDraft();
-    // Audit trail (best-effort): profile created by admin + credentials
-    // handed over.
-    unawaited(ref.read(firestoreServiceProvider).logAdminAction(
-          adminUid:
-              ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ?? '',
-          action: 'profile_created',
-          targetUid: account.uid,
-          targetProfileId: profileId,
-          details: 'Admin-created member (mobile ${account.mobile})',
-        ));
+    final adminUid =
+        ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ?? '';
+    unawaited(firestore.logAdminAction(
+      adminUid: adminUid,
+      action: account == null
+          ? 'profile_created_for_existing_account'
+          : 'profile_created',
+      targetUid: target.uid,
+      targetProfileId: profileId,
+      details: account == null
+          ? 'Linked to the existing login (no new account created)'
+          : 'Admin-created member (mobile ${account.mobile}'
+              '${account.restored ? ', existing login re-used' : ''})',
+    ));
     if (!mounted) return;
     messenger.showSnackBar(
         SnackBar(content: Text(context.l10n.profileCreatedForMember)));
-    // Hand the member their login — including the one-tap WhatsApp share.
-    await showShareLoginDetailsDialog(
-      context,
-      memberName: (data['name'] ?? '').toString().trim(),
-      mobile: account.mobile,
-      email: account.email,
-      password: (creds['password'] ?? '').toString(),
-    );
-    unawaited(ref.read(firestoreServiceProvider).logAdminAction(
-          adminUid:
-              ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ?? '',
-          action: 'credentials_shared',
-          targetUid: account.uid,
-          details: 'Login details dialog shown (WhatsApp share offered)',
-        ));
+    if (account != null) {
+      // Hand the member their login — including the one-tap WhatsApp share.
+      await showShareLoginDetailsDialog(
+        context,
+        memberName: (data['name'] ?? '').toString().trim(),
+        mobile: account.mobile,
+        email: account.email,
+        password: (creds['password'] ?? '').toString(),
+      );
+      unawaited(firestore.logAdminAction(
+        adminUid: adminUid,
+        action: 'credentials_shared',
+        targetUid: account.uid,
+        details: 'Login details dialog shown (WhatsApp share offered)',
+      ));
+    }
     if (!mounted) return;
+    context.pop();
+  }
+
+  /// The uid the admin's new profile belongs to: a freshly provisioned login,
+  /// an existing account the admin chose to use, or a leftover login verified
+  /// with its password. Null when the admin cancelled.
+  Future<({String uid, ProvisionedAccount? account})?> _resolveMemberLogin(
+      Map<String, dynamic> data, Map creds) async {
+    final linkUid = '${creds['linkExistingUid'] ?? ''}'.trim();
+    if (linkUid.isNotEmpty) return (uid: linkUid, account: null);
+
+    final service = ref.read(adminAccountServiceProvider);
+    final name = (data['name'] ?? '').toString().trim();
+    final mobile = (creds['mobile'] ?? '').toString();
+    final email = (creds['email'] ?? '').toString();
+    final password = (creds['password'] ?? '').toString();
+    final gender = (data['gender'] ?? '').toString();
+    var releaseStaleIndex = creds['releaseStaleIndex'] == true;
+    var replaceOrphanUid = '${creds['replaceOrphanUid'] ?? ''}';
+
+    for (var attempt = 0; attempt < 4; attempt++) {
+      try {
+        final account = await service.provisionMemberAccount(
+          name: name,
+          mobile: mobile,
+          email: email,
+          password: password,
+          gender: gender,
+          releaseStaleIndex: releaseStaleIndex,
+          replaceOrphanUid: replaceOrphanUid,
+        );
+        return (uid: account.uid, account: account);
+      } on LoginConflictException catch (conflict) {
+        if (!mounted) return null;
+        setState(() => _provisioning = false);
+        final choice = await showLoginConflictDialog(context, conflict);
+        if (!mounted) return null;
+        setState(() => _provisioning = true);
+        switch (choice) {
+          case null:
+            return null;
+          case OpenExistingAccount(:final uid):
+            context.push(
+                uid.isEmpty ? '/admin/account-health' : '/admin/user/$uid');
+            return null;
+          case LinkExistingAccount(:final account):
+            return (uid: account.uid, account: null);
+          case CreateNewLogin(
+              releaseStaleIndex: final release,
+              replaceOrphanUid: final replace,
+            ):
+            releaseStaleIndex = releaseStaleIndex || release;
+            if (replace.isNotEmpty) replaceOrphanUid = replace;
+          case ReclaimWithPassword(:final currentPassword):
+            final account = await service.reclaimWithCurrentPassword(
+              name: name,
+              mobile: mobile,
+              email: email,
+              currentPassword: currentPassword,
+              newPassword: password,
+              gender: gender,
+            );
+            return (uid: account.uid, account: account);
+        }
+      }
+    }
+    throw const AuthException(
+        'The login could not be created. Open Account Health to review this '
+        'number.',
+        code: 'member-provisioning-failed');
+  }
+
+  /// Admin → a member with a login but NO profile → Create Profile. The
+  /// profile is written under the member's existing uid; nothing about their
+  /// login changes.
+  Future<void> _submitForExistingMember() async {
+    final uid = widget.ownerUserId!.trim();
+    final messenger = ScaffoldMessenger.of(context);
+    final firestore = ref.read(firestoreServiceProvider);
+    try {
+      final existing = await firestore.profilesOfUser(uid);
+      if (existing.isNotEmpty) {
+        if (!mounted) return;
+        messenger.showSnackBar(const SnackBar(
+            content: Text('This account already has a matrimony profile — '
+                'nothing was created.')));
+        context.pushReplacement('/admin/user/$uid');
+        return;
+      }
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+          content: Text('Could not check for an existing profile ($e).')));
+      return;
+    }
+    final profileId = await ref
+        .read(profileCreationProvider.notifier)
+        .submitProfile(uid, adminCreated: true);
+    if (!mounted) return;
+    if (profileId == null) {
+      final error = ref.read(profileCreationProvider).error;
+      messenger.showSnackBar(SnackBar(
+          content: Text(error ?? context.l10n.failedToCreateProfile)));
+      return;
+    }
+    unawaited(firestore.logAdminAction(
+      adminUid: ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ?? '',
+      action: 'profile_created_for_existing_account',
+      targetUid: uid,
+      targetProfileId: profileId,
+      details: 'Admin completed the profile of an existing login',
+    ));
+    messenger.showSnackBar(
+        SnackBar(content: Text(context.l10n.profileCreatedForMember)));
     context.pop();
   }
 
@@ -472,6 +655,10 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
     if (_isEditMode && _prefillFailed) return;
     if (_isAdminMode) {
       await _submitAsAdmin();
+      return;
+    }
+    if (_isAdminForMember) {
+      await _submitForExistingMember();
       return;
     }
     // The profile's OWNER, not the signed-in account: an admin editing a
@@ -573,7 +760,7 @@ class _ProfileCreationScreenState extends ConsumerState<ProfileCreationScreen> {
             : _currentStep > 0
                 ? IconButton(
                     icon: const Icon(Icons.arrow_back), onPressed: _prevStep)
-                : (_isEditMode || _isAdminMode)
+                : (_isEditMode || _isAdminMode || _isAdminForMember)
                     // Admin mode is a normal admin page — closing it just
                     // leaves; it must never sign the admin out.
                     ? IconButton(

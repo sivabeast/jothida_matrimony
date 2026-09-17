@@ -106,6 +106,14 @@ class AuthException implements Exception {
           code: 'app-check-token-invalid',
         );
       }
+      // SMS verification on a Spark-plan project fails as a generic
+      // `internal-error` whose message names billing.
+      if ((error.message ?? '').toUpperCase().contains('BILLING_NOT_ENABLED')) {
+        return const AuthException(
+          'OTP verification is not available right now (billing-not-enabled).',
+          code: 'otp-unavailable',
+        );
+      }
       switch (error.code) {
         case 'network-request-failed':
           return const AuthException(
@@ -140,6 +148,64 @@ class AuthException implements Exception {
             'An account already exists with these details. Please sign in '
             'instead, or use Forgot Password.',
             code: 'email-already-in-use',
+          );
+        // A phone number or other credential that is already attached to a
+        // DIFFERENT Firebase account. Not "an account already exists with
+        // this phone number" in general — only this identity is taken.
+        case 'credential-already-in-use':
+          return const AuthException(
+            'This phone number is already linked to another login. Sign in '
+            'to that account instead, or contact the administrator.',
+            code: 'credential-already-in-use',
+          );
+        case 'phone-number-already-exists':
+          return const AuthException(
+            'This phone number already belongs to another login account.',
+            code: 'phone-number-already-exists',
+          );
+        // ── Phone OTP ─────────────────────────────────────────────────────
+        case 'invalid-verification-code':
+        case 'missing-verification-code':
+          return const AuthException(
+            'The OTP you entered is incorrect. Check the SMS and try again.',
+            code: 'invalid-verification-code',
+          );
+        case 'session-expired':
+        case 'code-expired':
+        case 'invalid-verification-id':
+          return const AuthException(
+            'This OTP has expired. Request a new code.',
+            code: 'session-expired',
+          );
+        case 'invalid-phone-number':
+          return const AuthException(
+            'Enter a valid 10-digit mobile number.',
+            code: 'invalid-phone-number',
+          );
+        case 'quota-exceeded':
+          return const AuthException(
+            'Too many OTP requests right now. Please try again later.',
+            code: 'quota-exceeded',
+          );
+        // Phone Auth SMS needs the Blaze plan; Spark projects answer with
+        // these. Recovery then offers the administrator path.
+        case 'billing-not-enabled':
+        case 'app-not-authorized':
+        case 'missing-client-identifier':
+        case 'captcha-check-failed':
+          return AuthException(
+            'OTP verification is not available right now (${error.code}).',
+            code: 'otp-unavailable',
+          );
+        case 'requires-recent-login':
+          return const AuthException(
+            'For your security, please enter your current password again.',
+            code: 'requires-recent-login',
+          );
+        case 'user-mismatch':
+          return const AuthException(
+            'Those details belong to a different account.',
+            code: 'user-mismatch',
           );
         case 'weak-password':
           return const AuthException(

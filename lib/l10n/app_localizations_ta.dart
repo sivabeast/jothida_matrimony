@@ -2827,7 +2827,7 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get phoneResetUnavailable =>
-      'கைபேசி வழி கடவுச்சொல் மீட்டமைப்பு இந்தப் பதிப்பில் இன்னும் இல்லை. மின்னஞ்சல் வழியாக மீட்டமைக்கவும் அல்லது ஆதரவைத் தொடர்பு கொள்ளவும்.';
+      'OTP மூலம் கடவுச்சொல் மீட்டமைப்பு தற்போது கிடைக்கவில்லை. மின்னஞ்சல் வழியாக மீட்டமைக்கவும் அல்லது நிர்வாகியின் உதவியைக் கோரவும்.';
 
   @override
   String get createProfileCtaTitle =>
@@ -4413,4 +4413,130 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get placeNotListedHint =>
       'இன்னும் பட்டியலில் இல்லையா? மேலே உள்ள \"சேர்\" மூலம் சேர்க்கவும்.';
+
+  @override
+  String get recoveryEnterRegisteredMobile =>
+      'உங்கள் கணக்கில் பதிவு செய்த கைபேசி எண்ணை உள்ளிடவும். அந்த எண்ணுக்கு OTP அனுப்புவோம்.';
+
+  @override
+  String get recoveryCountryIndia => 'இந்தியா (+91)';
+
+  @override
+  String get recoveryNoAccountFound =>
+      'இந்தக் கைபேசி எண்ணில் எந்தக் கணக்கும் பதிவு செய்யப்படவில்லை.';
+
+  @override
+  String get recoveryCheckFailed =>
+      'இந்தக் கைபேசி எண்ணைச் சரிபார்க்க முடியவில்லை. இணைய இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get recoveryOtpUnavailable =>
+      'OTP சரிபார்ப்பு தற்போது கிடைக்கவில்லை. கடவுச்சொல்லை மீட்டமைக்க நிர்வாகியின் உதவியைக் கோரலாம்.';
+
+  @override
+  String get recoveryVerifyOtp => 'OTP-ஐ சரிபார்';
+
+  @override
+  String recoveryResendIn(int seconds) {
+    return '$seconds வினாடிகளில் OTP-ஐ மீண்டும் அனுப்பலாம்';
+  }
+
+  @override
+  String get recoveryTooManyWrongCodes =>
+      'தவறான குறியீடுகள் அதிகமாக உள்ளிடப்பட்டன. புதிய OTP-ஐக் கோரவும்.';
+
+  @override
+  String recoveryTooManyRequests(int minutes) {
+    return 'இந்த எண்ணுக்கு அதிகமான OTP கோரிக்கைகள். $minutes நிமிடங்கள் கழித்து மீண்டும் முயற்சிக்கவும்.';
+  }
+
+  @override
+  String get recoveryCodeExpired =>
+      'இந்த OTP காலாவதியாகிவிட்டது. புதிய குறியீட்டைக் கோரவும்.';
+
+  @override
+  String get recoveryChooseAccount =>
+      'இந்த எண் ஒன்றுக்கு மேற்பட்ட உள்நுழைவுகளுடன் இணைக்கப்பட்டுள்ளது. கடவுச்சொல்லை மீட்டமைக்க வேண்டிய கணக்கைத் தேர்ந்தெடுக்கவும்:';
+
+  @override
+  String get recoveryMobileLogin => 'கைபேசி எண் உள்நுழைவு';
+
+  @override
+  String get recoverySetNewPassword => 'புதிய கடவுச்சொல்லை அமைக்கவும்';
+
+  @override
+  String get recoverySetNewPasswordIntro =>
+      'உங்கள் கைபேசி எண் சரிபார்க்கப்பட்டது. உங்கள் கணக்குக்கு புதிய கடவுச்சொல்லைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get recoveryResetButton => 'கடவுச்சொல்லை மீட்டமை';
+
+  @override
+  String get recoveryMultipleProfiles =>
+      'இந்த எண் ஒன்றுக்கு மேற்பட்ட சுயவிவரங்களுடன் இணைக்கப்பட்டுள்ளதால் தானாக மீட்டமைக்க முடியாது. நிர்வாகிக்குத் தெரிவிக்கப்பட்டுள்ளது — அவரைத் தொடர்பு கொள்ளவும்.';
+
+  @override
+  String get recoveryNewPasswordWorks =>
+      'உங்கள் கடவுச்சொல் மீட்டமைக்கப்பட்டது. கைபேசி எண் மற்றும் புதிய கடவுச்சொல்லுடன் உள்நுழையவும். மற்ற சாதனங்களிலிருந்து வெளியேற்றப்பட்டுள்ளது.';
+
+  @override
+  String get contactAdminToReset =>
+      'கடவுச்சொல் மீட்டமைக்க நிர்வாகியைத் தொடர்பு கொள்ளுங்கள்';
+
+  @override
+  String get contactAdminIntro =>
+      'நிர்வாகிக்கு ஒரு கோரிக்கையை அனுப்புங்கள். பதிவு செய்த கைபேசி எண் மூலம் உங்கள் அடையாளத்தைச் சரிபார்த்து, கடவுச்சொல்லை மீட்டமைக்க உதவுவார். உங்கள் கடவுச்சொல்லையோ OTP-ஐயோ யாருடனும் பகிர வேண்டாம் — நிர்வாகி அவற்றைக் கேட்கமாட்டார்.';
+
+  @override
+  String get contactAdminNameOptional => 'உங்கள் பெயர் (விருப்பத்தேர்வு)';
+
+  @override
+  String get contactAdminDescribe => 'சிக்கலை விவரிக்கவும்';
+
+  @override
+  String get contactAdminSubmit => 'கோரிக்கையை அனுப்பு';
+
+  @override
+  String get contactAdminSubmitted =>
+      'உங்கள் கோரிக்கை அனுப்பப்பட்டது. பதிவு செய்த கைபேசி எண்ணில் நிர்வாகி உங்களைத் தொடர்பு கொள்வார்.';
+
+  @override
+  String get contactAdminAlreadySent =>
+      'இந்த எண்ணுக்கான கோரிக்கை இன்று ஏற்கனவே அனுப்பப்பட்டுள்ளது. நிர்வாகி விரைவில் உங்களைத் தொடர்பு கொள்வார்.';
+
+  @override
+  String get contactAdminFailed =>
+      'கோரிக்கையை அனுப்ப முடியவில்லை. இணைய இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get changePassword => 'கடவுச்சொல்லை மாற்று';
+
+  @override
+  String get currentPassword => 'தற்போதைய கடவுச்சொல்';
+
+  @override
+  String get changePasswordIntro =>
+      'தற்போதைய கடவுச்சொல்லை உள்ளிட்டு, புதிய கடவுச்சொல்லைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get mustChangePasswordIntro =>
+      'நிர்வாகி உங்கள் கடவுச்சொல்லை மீட்டமைத்துள்ளார். பாதுகாப்புக்காக, தொடர உங்கள் சொந்த புதிய கடவுச்சொல்லைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get passwordChangedSuccess => 'உங்கள் கடவுச்சொல் மாற்றப்பட்டது.';
+
+  @override
+  String get newPasswordMustDiffer =>
+      'புதிய கடவுச்சொல் தற்போதைய கடவுச்சொல்லிலிருந்து வேறுபட்டிருக்க வேண்டும்.';
+
+  @override
+  String get changePasswordNoPasswordLogin =>
+      'உங்கள் கணக்கு Google மூலம் உள்நுழைவதால், மாற்றுவதற்கு கடவுச்சொல் இல்லை.';
+
+  @override
+  String get accountUnavailableTitle => 'உள்நுழைவு கிடைக்கவில்லை';
+
+  @override
+  String get accountUnavailableMessage =>
+      'உங்கள் உள்நுழைவை நிர்வாகி முடக்கியுள்ளார். உங்கள் சுயவிவரம் நீக்கப்படவில்லை. அணுகலை மீட்டெடுக்க ஆதரவைத் தொடர்பு கொள்ளவும்.';
 }

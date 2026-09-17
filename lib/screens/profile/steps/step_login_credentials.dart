@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/errors/auth_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/l10n_ext.dart';
 import '../../../core/utils/login_identifier.dart';
 import '../../../core/utils/validators.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/service_providers.dart';
+import '../../../services/firebase/admin_account_service.dart';
+import '../../../widgets/admin/login_conflict_dialog.dart';
 import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/gradient_button.dart';
 
@@ -15,10 +19,11 @@ import '../../../widgets/common/gradient_button.dart';
 /// member will use.
 ///
 /// The mobile number and e-mail are pre-filled from the Contact Details step of
-/// the very same wizard, and the admin can edit either of them. Uniqueness is
-/// checked before anything is created, so a duplicate account can never be
-/// produced: the mobile number is looked up in the login index here, and a
-/// duplicate e-mail is rejected by Firebase itself with a clear message.
+/// the very same wizard, and the admin can edit either of them. What already
+/// holds the number is inspected before anything is created, and the admin
+/// decides: release a deleted login's leftover registration, create the
+/// profile for the EXISTING account, or stop — a duplicate account is never
+/// produced.
 ///
 /// This step exists ONLY in admin mode — a member creating their own profile
 /// already has a login.
@@ -83,38 +88,66 @@ class _StepLoginCredentialsState extends ConsumerState<StepLoginCredentials> {
 
   Future<void> _saveAndSubmit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    final l10n = context.l10n;
     final mobile = LoginIdentifier.localMobile(_mobileController.text) ?? '';
+    final email = _emailController.text.trim().toLowerCase();
 
     setState(() {
       _checking = true;
       _mobileError = null;
     });
+    final resolution = <String, dynamic>{};
     try {
-      // Uniqueness FIRST — never create a duplicate account.
-      final taken = await ref
-          .read(loginDirectoryServiceProvider)
-          .isPhoneRegistered(mobile);
-      if (!mounted) return;
-      if (taken) {
-        setState(() => _mobileError = l10n.mobileAlreadyRegistered);
-        return;
+      // What already holds this number — BEFORE anything is created. A
+      // leftover registration of a deleted login, an existing member, or an
+      // old Firebase login each need a different decision, not one blanket
+      // "already has an account".
+      final service = ref.read(adminAccountServiceProvider);
+      final inspection = await service.inspectMobile(mobile, email: email);
+      try {
+        service.assertAvailable(inspection);
+      } on LoginConflictException catch (conflict) {
+        if (!mounted) return;
+        final choice = await showLoginConflictDialog(context, conflict);
+        if (!mounted) return;
+        switch (choice) {
+          case null:
+            return;
+          case OpenExistingAccount(:final uid):
+            context.push(uid.isEmpty ? '/admin/account-health' : '/admin/user/$uid');
+            return;
+          case CreateNewLogin(:final releaseStaleIndex, :final replaceOrphanUid):
+            resolution['releaseStaleIndex'] = releaseStaleIndex;
+            resolution['replaceOrphanUid'] = replaceOrphanUid;
+          case LinkExistingAccount(:final account):
+            resolution['linkExistingUid'] = account.uid;
+          case ReclaimWithPassword():
+            // Only offered once creation itself hits the old login.
+            return;
+        }
       }
+    } on AuthException catch (e) {
+      if (mounted) setState(() => _mobileError = e.message);
+      return;
     } catch (e) {
-      // A failed lookup must not block the admin: Firebase still rejects a
-      // duplicate e-mail, and the mobile index is re-checked server-side by
-      // the provisioning step.
-      debugPrint('[LoginCredentials] mobile availability check skipped: $e');
+      // A duplicate guard that could not run is NOT "the number is free".
+      debugPrint('[LoginCredentials] mobile availability check failed: $e');
+      if (mounted) {
+        setState(() => _mobileError =
+            'Could not check this mobile number. Check the connection and '
+            'try again.');
+      }
+      return;
     } finally {
       if (mounted) setState(() => _checking = false);
     }
-    if (!mounted || _mobileError != null) return;
+    if (!mounted) return;
 
     ref.read(profileCreationProvider.notifier).updateData({
       'loginCredentials': {
         'mobile': mobile,
-        'email': _emailController.text.trim().toLowerCase(),
+        'email': email,
         'password': _passwordController.text,
+        ...resolution,
       },
     });
     widget.onNext();

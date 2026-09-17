@@ -2791,7 +2791,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneResetUnavailable =>
-      'Mobile password reset is not available yet on this build. Please reset using your email address, or contact support.';
+      'Password reset by OTP is not available right now. Reset using your email address, or ask the administrator for help.';
 
   @override
   String get createProfileCtaTitle =>
@@ -4362,4 +4362,128 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get placeNotListedHint =>
       'Not listed yet? Use \"Add\" above to add it.';
+
+  @override
+  String get recoveryEnterRegisteredMobile =>
+      'Enter the mobile number registered with your account. We will send an OTP to it.';
+
+  @override
+  String get recoveryCountryIndia => 'India (+91)';
+
+  @override
+  String get recoveryNoAccountFound =>
+      'No account is registered with this mobile number.';
+
+  @override
+  String get recoveryCheckFailed =>
+      'Could not check this mobile number. Check your connection and try again.';
+
+  @override
+  String get recoveryOtpUnavailable =>
+      'OTP verification is not available right now. You can ask the administrator to help you reset your password.';
+
+  @override
+  String get recoveryVerifyOtp => 'Verify OTP';
+
+  @override
+  String recoveryResendIn(int seconds) {
+    return 'Resend OTP in ${seconds}s';
+  }
+
+  @override
+  String get recoveryTooManyWrongCodes =>
+      'Too many incorrect codes. Request a new OTP.';
+
+  @override
+  String recoveryTooManyRequests(int minutes) {
+    return 'Too many OTP requests for this number. Try again in $minutes minutes.';
+  }
+
+  @override
+  String get recoveryCodeExpired => 'This OTP has expired. Request a new code.';
+
+  @override
+  String get recoveryChooseAccount =>
+      'This number is linked to more than one login. Choose the account whose password you want to reset:';
+
+  @override
+  String get recoveryMobileLogin => 'Mobile number login';
+
+  @override
+  String get recoverySetNewPassword => 'Set a new password';
+
+  @override
+  String get recoverySetNewPasswordIntro =>
+      'Your mobile number is verified. Choose a new password for your account.';
+
+  @override
+  String get recoveryResetButton => 'Reset Password';
+
+  @override
+  String get recoveryMultipleProfiles =>
+      'This number is linked to more than one profile, so it cannot be reset automatically. The administrator has been notified — please contact them.';
+
+  @override
+  String get recoveryNewPasswordWorks =>
+      'Your password has been reset. Sign in with your mobile number and the new password. Other devices have been signed out.';
+
+  @override
+  String get contactAdminToReset => 'Contact Admin to Reset Password';
+
+  @override
+  String get contactAdminIntro =>
+      'Send a request to the administrator. They will verify your identity through your registered mobile number and help you reset your password. Never share your password or OTP with anyone — the administrator will never ask for them.';
+
+  @override
+  String get contactAdminNameOptional => 'Your name (optional)';
+
+  @override
+  String get contactAdminDescribe => 'Describe the problem';
+
+  @override
+  String get contactAdminSubmit => 'Submit Request';
+
+  @override
+  String get contactAdminSubmitted =>
+      'Your request has been sent. The administrator will contact you on your registered mobile number.';
+
+  @override
+  String get contactAdminAlreadySent =>
+      'A request for this number was already sent today. The administrator will contact you soon.';
+
+  @override
+  String get contactAdminFailed =>
+      'Could not send the request. Check your connection and try again.';
+
+  @override
+  String get changePassword => 'Change Password';
+
+  @override
+  String get currentPassword => 'Current Password';
+
+  @override
+  String get changePasswordIntro =>
+      'Enter your current password, then choose a new one.';
+
+  @override
+  String get mustChangePasswordIntro =>
+      'The administrator reset your password. For your security, choose your own new password to continue.';
+
+  @override
+  String get passwordChangedSuccess => 'Your password has been changed.';
+
+  @override
+  String get newPasswordMustDiffer =>
+      'The new password must be different from the current one.';
+
+  @override
+  String get changePasswordNoPasswordLogin =>
+      'Your account signs in with Google, so it has no password to change.';
+
+  @override
+  String get accountUnavailableTitle => 'Login unavailable';
+
+  @override
+  String get accountUnavailableMessage =>
+      'Your login has been disabled by the administrator. Your profile has not been deleted. Please contact support to restore access.';
 }

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../core/config/admin_config.dart';
+import '../core/utils/account_identity.dart' show LoginAccessState;
 import '../core/utils/matrimony_photo.dart';
 import 'profile_model.dart' show ProfilePrivacy;
 
@@ -30,6 +31,14 @@ class UserModel {
   // report in. Null until the user has chosen.
   final String? preferredLanguage;
 
+  /// Whether this account may still sign in (`users/{uid}.authStatus`). Set by
+  /// an admin's Delete Login; see [LoginAccessState].
+  final LoginAccessState loginAccess;
+
+  /// Set when an admin issued a TEMPORARY password — the member must choose
+  /// their own before using the app (router gate → `/change-password`).
+  final bool mustChangePassword;
+
   const UserModel({
     required this.uid,
     this.email,
@@ -52,6 +61,8 @@ class UserModel {
     this.privacySettings = ProfilePrivacy.defaults,
     this.fcmToken,
     this.preferredLanguage,
+    this.loginAccess = LoginAccessState.active,
+    this.mustChangePassword = false,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -88,6 +99,8 @@ class UserModel {
       privacySettings: ProfilePrivacy.fromMap(data['privacySettings']),
       fcmToken: data['fcmToken'],
       preferredLanguage: data['preferred_language'],
+      loginAccess: LoginAccessState.parse(data['authStatus']),
+      mustChangePassword: _boolOf(data['mustChangePassword']),
     );
   }
 
@@ -171,6 +184,8 @@ class UserModel {
     Map<String, bool>? privacySettings,
     String? fcmToken,
     String? preferredLanguage,
+    LoginAccessState? loginAccess,
+    bool? mustChangePassword,
   }) =>
       UserModel(
         uid: uid ?? this.uid,
@@ -193,6 +208,8 @@ class UserModel {
         privacySettings: privacySettings ?? this.privacySettings,
         fcmToken: fcmToken ?? this.fcmToken,
         preferredLanguage: preferredLanguage ?? this.preferredLanguage,
+        loginAccess: loginAccess ?? this.loginAccess,
+        mustChangePassword: mustChangePassword ?? this.mustChangePassword,
       );
 
   /// `super_admin` accounts also have full admin privileges (route protection

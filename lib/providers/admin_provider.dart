@@ -6,6 +6,7 @@ import '../models/profile_model.dart';
 import '../models/astrologer_account_model.dart';
 import '../models/astrologer_request_model.dart';
 import '../models/dashboard_analytics.dart';
+import '../services/firebase/admin_account_service.dart';
 import 'auth_provider.dart';
 import 'notification_provider.dart';
 import 'service_providers.dart';
@@ -230,16 +231,38 @@ class AdminActionsNotifier extends Notifier<AsyncValue<void>> {
     if (!state.hasError) await _log('user_activated', targetUid: userId);
   }
 
+  /// What the last [deleteUser] actually removed — the screens report it
+  /// instead of a bare "User deleted." (spec: success only once it happened).
+  LoginRemovalResult? lastRemoval;
+
+  /// Admin → Delete User: the account, its profile and member-private records
+  /// AND its login (Firebase Auth record via the backend, or a tombstone that
+  /// stops the old credentials at their next sign-in). A step that did not
+  /// complete is an ERROR, never a silent success.
   Future<void> deleteUser(String userId) async {
     debugPrint('[AdminActions] deleteUser($userId)');
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
-        () => ref.read(adminRepositoryProvider).deleteUser(userId));
+    lastRemoval = null;
+    final adminUid =
+        ref.read(firebaseAuthStreamProvider).valueOrNull?.uid ?? '';
+    state = await AsyncValue.guard(() async {
+      final result = await ref
+          .read(adminAccountServiceProvider)
+          .deleteMember(userId, adminUid: adminUid);
+      lastRemoval = result;
+      if (result.failedSteps.isNotEmpty) {
+        throw StateError('Not deleted: ${result.failedSteps.join(', ')}');
+      }
+    });
     if (state.hasError) {
       debugPrint('[AdminActions] ❌ deleteUser failed: ${state.error}');
-    } else {
-      await _log('user_deleted', targetUid: userId);
     }
+    await _log(state.hasError ? 'user_delete_incomplete' : 'user_deleted',
+        targetUid: userId,
+        details: lastRemoval == null
+            ? '${state.error ?? ''}'
+            : 'auth=${lastRemoval!.authDeleted ?? 'tombstoned (no backend)'}'
+                '${lastRemoval!.failedSteps.isEmpty ? '' : ' failed=${lastRemoval!.failedSteps.join(',')}'}');
   }
 
   // ── Astrologer verification ────────────────────────────────────────────────

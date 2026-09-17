@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/config/admin_config.dart';
 import '../../core/services/firestore_sync.dart';
+import '../../core/utils/account_identity.dart';
 import '../../core/utils/login_identifier.dart';
 import '../../core/utils/matrimony_photo.dart';
 import '../../core/utils/member_profile_lookup.dart';
@@ -266,6 +267,14 @@ class FirestoreService {
     return UserModel.fromFirestore(doc);
   }
 
+  /// `users/{uid}` as stored (fields the model does not carry, e.g. the
+  /// registration date of birth). Null when it does not exist.
+  Future<Map<String, dynamic>?> getRawUser(String uid) async {
+    final doc =
+        await _db.collection(AppConstants.usersCollection).doc(uid).get();
+    return doc.data();
+  }
+
   Future<void> updateFcmToken(String uid, String token) => _db
       .collection(AppConstants.usersCollection)
       .doc(uid)
@@ -321,15 +330,14 @@ class FirestoreService {
   /// Any further stale documents found under the uid are removed in the same
   /// pass, so the invariant is restored rather than merely avoided.
   Future<String> createProfile(ProfileModel profile) async {
-    final existing = await _profileDocsFor(profile.userId);
-    final doc = existing.isEmpty
-        ? _db.collection(AppConstants.profilesCollection).doc()
-        : existing.first.reference;
-    if (existing.length > 1) {
+    final existing = await _profileDocsForStrict(profile.userId);
+    final doc = await _reserveOwnProfileDoc(profile.userId, existing);
+    final stale = [for (final d in existing) if (d.id != doc.id) d];
+    if (stale.isNotEmpty) {
       debugPrint('[Firestore] createProfile: ${existing.length} existing '
           'profiles for userId=${profile.userId} — reusing ${doc.id} and '
           'deleting the rest.');
-      await _deleteDocs(existing.skip(1).toList());
+      await _deleteDocs(stale);
     }
     // 1) Save the profile FIRST. ProfileModel.toFirestore() no longer includes
     //    contact details, so onboarding can never be blocked by the separate
@@ -524,6 +532,94 @@ class FirestoreService {
             e.value is FieldValue;
       });
 
+  /// [_profileDocsFor] that FAILS instead of answering "none" — profile
+  /// creation must never conclude an account has no profile because a read
+  /// could not complete (that is how a second profile gets created).
+  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
+      _profileDocsForStrict(String userId) async {
+    if (userId.trim().isEmpty) return const [];
+    final snap = await _db
+        .collection(AppConstants.profilesCollection)
+        .where('userId', isEqualTo: userId)
+        .get(const GetOptions(source: Source.server))
+        .timeout(const Duration(seconds: 25));
+    return snap.docs.toList()
+      ..sort((a, b) => _createdAtOf(b).compareTo(_createdAtOf(a)));
+  }
+
+  DocumentReference<Map<String, dynamic>> _profileOwnerRef(String uid) =>
+      _db.collection(AppConstants.profileOwnersCollection).doc(uid);
+
+  /// ONE PROFILE PER ACCOUNT, enforced server-side.
+  ///
+  /// Records in `profile_owners/{uid}` — inside a transaction — which profile
+  /// document the account owns, and returns that document. The security rules
+  /// refuse a profile create whose id does not match the record, so a double
+  /// tap, a network retry or two devices submitting at once all land on the
+  /// SAME document: the losing transaction retries, sees the record and reuses
+  /// its id. See [chooseOwnProfileDocId] for the order.
+  ///
+  /// A `permission-denied` here means the ownership rules are not deployed
+  /// yet; the previous behaviour (reuse the newest existing profile) is kept
+  /// rather than blocking profile creation.
+  Future<DocumentReference<Map<String, dynamic>>> _reserveOwnProfileDoc(
+    String uid,
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> existing,
+  ) async {
+    final profiles = _db.collection(AppConstants.profilesCollection);
+    final existingIds = [for (final d in existing) d.id];
+    final freshId = profiles.doc().id;
+    if (uid.trim().isEmpty) {
+      return existing.isEmpty ? profiles.doc(freshId) : existing.first.reference;
+    }
+    final claimRef = _profileOwnerRef(uid);
+    try {
+      final id = await _db.runTransaction<String>((txn) async {
+        final snap = await txn.get(claimRef);
+        final claimed = '${snap.data()?['profileId'] ?? ''}'.trim();
+        final chosen = chooseOwnProfileDocId(
+          existingNewestFirst: existingIds,
+          claimedId: claimed,
+          freshId: freshId,
+        );
+        if (claimed != chosen) {
+          txn.set(claimRef, {
+            'profileId': chosen,
+            'userId': uid,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+        return chosen;
+      }).timeout(const Duration(seconds: 20));
+      debugPrint('[Firestore] profile ownership for $uid → $id');
+      return profiles.doc(id);
+    } on FirebaseException catch (e) {
+      if (e.code != 'permission-denied') rethrow;
+      debugPrint('[Firestore] profile_owners refused for $uid (deploy '
+          'firestore.rules) — reusing the newest existing profile instead.');
+      return existing.isEmpty ? profiles.doc(freshId) : existing.first.reference;
+    }
+  }
+
+  /// ADMIN / owner: records [profileId] as [uid]'s one profile (Account Health
+  /// "repair ownership" and the migration). The rules only allow re-pointing
+  /// an owner record whose current profile no longer exists — or an admin.
+  Future<void> setProfileOwner(String uid, String profileId) =>
+      _profileOwnerRef(uid).set({
+        'profileId': profileId,
+        'userId': uid,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+  /// ADMIN: every ownership record, `uid → profileId`.
+  Future<Map<String, String>> allProfileOwners() async {
+    final snap =
+        await _db.collection(AppConstants.profileOwnersCollection).get();
+    return {
+      for (final d in snap.docs) d.id: '${d.data()['profileId'] ?? ''}'.trim(),
+    };
+  }
+
   /// Every profile document currently stored under [userId], newest first.
   ///
   /// Owner-scoped (`userId == request.auth.uid`) or admin, which is exactly who
@@ -690,9 +786,23 @@ class FirestoreService {
     return ProfileModel.fromFirestore(doc);
   }
 
-  /// Admin moderation: permanently delete a reported profile document.
-  Future<void> deleteProfileById(String profileId) =>
-      _db.collection(AppConstants.profilesCollection).doc(profileId).delete();
+  /// Admin moderation: permanently delete a reported profile document — and
+  /// the ownership record that pointed at it, so the member can create a
+  /// profile again instead of being refused as "already has one".
+  Future<void> deleteProfileById(String profileId) async {
+    final ref = _db.collection(AppConstants.profilesCollection).doc(profileId);
+    final owner = '${(await ref.get()).data()?['userId'] ?? ''}'.trim();
+    await ref.delete();
+    if (owner.isEmpty) return;
+    try {
+      final claim = await _profileOwnerRef(owner).get();
+      if ('${claim.data()?['profileId'] ?? ''}' == profileId) {
+        await _profileOwnerRef(owner).delete();
+      }
+    } catch (e) {
+      debugPrint('[Firestore] ownership record cleanup for $owner skipped: $e');
+    }
+  }
 
   Future<ProfileModel?> getProfileByUserId(String userId) async {
     final snap = await _db
@@ -2366,20 +2476,250 @@ class FirestoreService {
     }
   }
 
-  /// Permanently deletes a user account document and any associated profile
-  /// documents. (Chats / interests are left for a backend cleanup job.)
-  Future<void> deleteUser(String userId) async {
-    debugPrint('[Firestore] 🗑 deleteUser($userId)');
-    final profiles = await _db
-        .collection(AppConstants.profilesCollection)
-        .where('userId', isEqualTo: userId)
-        .get();
-    final batch = _db.batch();
-    for (final doc in profiles.docs) {
-      batch.delete(doc.reference);
+  /// ADMIN → Delete User. Removes the member's account record, their profile
+  /// and the member-private records that must not outlive it (contact details,
+  /// private field copies, Aadhaar, the ownership record), and makes sure the
+  /// LOGIN cannot come back. Returns the steps that did not complete.
+  ///
+  /// THE BUG THIS FIXES: this used to delete `profiles` + `users/{uid}` only.
+  /// `login_index/{mobile}` survived, so re-creating a login for the same
+  /// number failed with "This mobile number already has an account", and the
+  /// Firebase Auth record survived (a client cannot delete another user's
+  /// login), so the old password still signed in and silently recreated an
+  /// empty account for the "deleted" member.
+  ///
+  /// Now, in order:
+  ///  1. `login_tombstones/{uid}` FIRST — whatever fails later, the next
+  ///     sign-in with the old credentials deletes that Auth record itself and
+  ///     is refused (AuthRepository). The trusted backend, when deployed,
+  ///     deletes the Auth record immediately instead (AdminAccountService).
+  ///  2. the profile(s), their ownership record, contact + private copies and
+  ///     Aadhaar;
+  ///  3. every `login_index` entry pointing at the uid — the number is free;
+  ///  4. `users/{uid}` LAST.
+  ///
+  /// Interests, chats and paid horoscope requests are deliberately NOT touched
+  /// here: they are shared with other members, or are payment records.
+  Future<List<String>> deleteUser(String userId, {String adminUid = ''}) async {
+    debugPrint('[Firestore] 🗑 admin deleteUser($userId)');
+    final failed = <String>[];
+    Future<void> step(String label, Future<bool> Function() run) async {
+      if (!await run()) failed.add(label);
     }
-    batch.delete(_db.collection(AppConstants.usersCollection).doc(userId));
-    await batch.commit();
+
+    Map<String, dynamic>? account;
+    try {
+      account = (await _db
+              .collection(AppConstants.usersCollection)
+              .doc(userId)
+              .get())
+          .data();
+    } catch (e) {
+      debugPrint('[Firestore] deleteUser: account read skipped: $e');
+    }
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> index = const [];
+    try {
+      index = (await _db
+              .collection(LoginDirectoryService.collection)
+              .where('uid', isEqualTo: userId)
+              .get())
+          .docs;
+    } catch (e) {
+      debugPrint('[Firestore] deleteUser: login_index read skipped: $e');
+    }
+
+    await step('login_tombstone', () async {
+      try {
+        await writeLoginTombstone(
+          userId,
+          mode: LoginTombstone.modeDeleted,
+          mobile: index.isNotEmpty
+              ? index.first.id
+              : (LoginIdentifier.localMobile('${account?['phone'] ?? ''}') ??
+                  ''),
+          authEmail: index.isNotEmpty
+              ? '${index.first.data()['authEmail'] ?? ''}'
+              : '',
+          by: adminUid,
+        );
+        return true;
+      } catch (e) {
+        debugPrint('[Firestore] deleteUser: tombstone write FAILED: $e');
+        return false;
+      }
+    });
+    await step('profiles',
+        () => _deleteWhere(AppConstants.profilesCollection, 'userId', userId));
+    await step('profile_owners',
+        () => _deleteDocSafe(AppConstants.profileOwnersCollection, userId));
+    await step('contacts',
+        () => _deleteDocSafe(AppConstants.contactsCollection, userId));
+    await step('contact_private',
+        () => _deleteDocSafe(AppConstants.contactPrivateCollection, userId));
+    await step('profile_private',
+        () => _deleteDocSafe(AppConstants.profilePrivateCollection, userId));
+    await step('aadhaar',
+        () => _deleteDocSafe(AppConstants.aadhaarCollection, userId));
+    await step('login_index', () async {
+      try {
+        await _deleteDocs(index);
+        return true;
+      } catch (e) {
+        debugPrint('[Firestore] deleteUser: login_index delete FAILED: $e');
+        return false;
+      }
+    });
+    await step('users',
+        () => _deleteDocSafe(AppConstants.usersCollection, userId));
+    if (failed.isNotEmpty) {
+      debugPrint('[Firestore] ⚠ admin deleteUser($userId) incomplete → '
+          '${failed.join(', ')}');
+    }
+    return failed;
+  }
+
+  // ── Login lifecycle (admin) ────────────────────────────────────────────────
+
+  DocumentReference<Map<String, dynamic>> _tombstoneRef(String uid) =>
+      _db.collection(AppConstants.loginTombstonesCollection).doc(uid);
+
+  /// Records that [uid]'s login was removed. See [LoginTombstone].
+  Future<void> writeLoginTombstone(
+    String uid, {
+    required String mode,
+    String mobile = '',
+    String authEmail = '',
+    String by = '',
+    bool authDeleted = false,
+  }) =>
+      _tombstoneRef(uid).set({
+        'mode': mode,
+        if (mobile.isNotEmpty) 'mobile': mobile,
+        if (authEmail.isNotEmpty) 'authEmail': authEmail.trim().toLowerCase(),
+        'authDeleted': authDeleted,
+        'by': by,
+        'at': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+  /// The tombstone of [uid] (null when there is none) and the sign-in address
+  /// it recorded. Read by the account ITSELF at sign-in (owner rule) and by
+  /// admins. Throws on a failed read.
+  Future<({LoginTombstone? tombstone, String authEmail})> readLoginTombstone(
+      String uid) async {
+    final snap = await _tombstoneRef(uid)
+        .get(const GetOptions(source: Source.server))
+        .timeout(const Duration(seconds: 12));
+    return (
+      tombstone: LoginTombstone.fromMap(uid, snap.data()),
+      authEmail: '${snap.data()?['authEmail'] ?? ''}'.trim(),
+    );
+  }
+
+  Future<void> clearLoginTombstone(String uid) => _tombstoneRef(uid).delete();
+
+  /// ADMIN (Account Health): every tombstone, by uid.
+  Future<Map<String, LoginTombstone>> allLoginTombstones() async {
+    final snap =
+        await _db.collection(AppConstants.loginTombstonesCollection).get();
+    final out = <String, LoginTombstone>{};
+    for (final d in snap.docs) {
+      final t = LoginTombstone.fromMap(d.id, d.data());
+      if (t != null) out[d.id] = t;
+    }
+    return out;
+  }
+
+  /// ADMIN: marks whether [uid] may sign in, without touching any other field.
+  Future<void> setLoginAccess(String uid, LoginAccessState access,
+          {String by = ''}) =>
+      _db.collection(AppConstants.usersCollection).doc(uid).update({
+        'authStatus': access == LoginAccessState.active
+            ? FieldValue.delete()
+            : access.storedValue,
+        if (access != LoginAccessState.active) ...{
+          'loginRemovedAt': FieldValue.serverTimestamp(),
+          'loginRemovedBy': by,
+        },
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+  /// ADMIN: account documents whose mobile number is [mobile], in any of the
+  /// forms older builds stored it in.
+  Future<List<UserModel>> usersWithPhone(String mobile) async {
+    final m = LoginIdentifier.localMobile(mobile);
+    if (m == null) return const [];
+    final snap = await _db
+        .collection(AppConstants.usersCollection)
+        .where('phone', whereIn: [m, '+91$m', '91$m', '+91 $m'])
+        .limit(20)
+        .get(const GetOptions(source: Source.server))
+        .timeout(const Duration(seconds: 20));
+    return [for (final d in snap.docs) UserModel.fromFirestore(d)];
+  }
+
+  /// Owner or admin: `users/{uid}` straight from the server (null when gone).
+  Future<UserModel?> getUserFromServer(String uid) async {
+    final doc = await _db
+        .collection(AppConstants.usersCollection)
+        .doc(uid)
+        .get(const GetOptions(source: Source.server))
+        .timeout(const Duration(seconds: 15));
+    return doc.exists ? UserModel.fromFirestore(doc) : null;
+  }
+
+  /// ADMIN (Account Health): every account document, whatever its role, from
+  /// the server. Not a stream — a scan is a one-off, and a live listener on
+  /// the whole collection would re-run it on every login.
+  Future<List<UserModel>> getAllUsersForScan() async {
+    final snap = await _db
+        .collection(AppConstants.usersCollection)
+        .get(const GetOptions(source: Source.server))
+        .timeout(const Duration(seconds: 60));
+    return [for (final d in snap.docs) UserModel.fromFirestore(d)];
+  }
+
+  /// ADMIN (Account Health): every profile document (public halves only — the
+  /// scan needs ownership, not hidden values), from the server.
+  Future<List<ProfileModel>> getAllProfilesForScan() async {
+    final snap = await _db
+        .collection(AppConstants.profilesCollection)
+        .get(const GetOptions(source: Source.server))
+        .timeout(const Duration(seconds: 60));
+    return [for (final d in snap.docs) ProfileModel.fromFirestore(d)];
+  }
+
+  // ── Account Health "reviewed" decisions ─────────────────────────────────────
+
+  Future<Set<String>> reviewedAccountIssueKeys() async {
+    final snap =
+        await _db.collection(AppConstants.accountReviewsCollection).get();
+    return {for (final d in snap.docs) '${d.data()['key'] ?? d.id}'};
+  }
+
+  Future<void> markAccountIssueReviewed(String key,
+          {String adminUid = '', String note = ''}) =>
+      _db
+          .collection(AppConstants.accountReviewsCollection)
+          .doc(key.replaceAll('/', '_'))
+          .set({
+        'key': key,
+        'note': note,
+        'by': adminUid,
+        'at': FieldValue.serverTimestamp(),
+      });
+
+  Future<void> clearAccountIssueReview(String key) => _db
+      .collection(AppConstants.accountReviewsCollection)
+      .doc(key.replaceAll('/', '_'))
+      .delete();
+
+  /// ADMIN: the non-test profiles filed under [uid], newest first.
+  Future<List<ProfileModel>> profilesOfUser(String uid) async {
+    final docs = await _profileDocsForStrict(uid);
+    return [
+      for (final d in docs)
+        if (d.data()['isDummy'] != true) ProfileModel.fromFirestore(d),
+    ];
   }
 
   // ── Self-service account deletion (immediate, no admin approval) ────────────
@@ -2426,6 +2766,10 @@ class FirestoreService {
     // member still look like a member.
     await step('profiles',
         () => _deleteWhere(AppConstants.profilesCollection, 'userId', uid));
+    // The one-profile ownership record — after the profiles, which is the only
+    // order the rules accept from the owner (its profile must be gone).
+    await step('profile_owners',
+        () => _deleteDocSafe(AppConstants.profileOwnersCollection, uid));
     await step('interests(sent)',
         () => _deleteWhere(AppConstants.interestsCollection, 'senderId', uid));
     await step(

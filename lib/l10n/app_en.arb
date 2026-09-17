@@ -1287,7 +1287,7 @@
     }
   },
   "backToLogin": "Back to Login",
-  "phoneResetUnavailable": "Mobile password reset is not available yet on this build. Please reset using your email address, or contact support.",
+  "phoneResetUnavailable": "Password reset by OTP is not available right now. Reset using your email address, or ask the administrator for help.",
   "createProfileCtaTitle": "Complete your profile to discover matching profiles",
   "createProfileCtaBody": "Matches, interests, chat and contact details unlock as soon as your matrimony profile is ready.",
   "matchesLockedTitle": "Complete your profile to view matching profiles",
@@ -1958,5 +1958,53 @@
   "placeNameTooShort": "Enter at least 2 letters",
   "placeNameTooLong": "The name is too long",
   "placeNameInvalid": "Use letters only — no numbers or symbols",
-  "placeNotListedHint": "Not listed yet? Use \"Add\" above to add it."
+  "placeNotListedHint": "Not listed yet? Use \"Add\" above to add it.",
+  "recoveryEnterRegisteredMobile": "Enter the mobile number registered with your account. We will send an OTP to it.",
+  "recoveryCountryIndia": "India (+91)",
+  "recoveryNoAccountFound": "No account is registered with this mobile number.",
+  "recoveryCheckFailed": "Could not check this mobile number. Check your connection and try again.",
+  "recoveryOtpUnavailable": "OTP verification is not available right now. You can ask the administrator to help you reset your password.",
+  "recoveryVerifyOtp": "Verify OTP",
+  "recoveryResendIn": "Resend OTP in {seconds}s",
+  "@recoveryResendIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "recoveryTooManyWrongCodes": "Too many incorrect codes. Request a new OTP.",
+  "recoveryTooManyRequests": "Too many OTP requests for this number. Try again in {minutes} minutes.",
+  "@recoveryTooManyRequests": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "recoveryCodeExpired": "This OTP has expired. Request a new code.",
+  "recoveryChooseAccount": "This number is linked to more than one login. Choose the account whose password you want to reset:",
+  "recoveryMobileLogin": "Mobile number login",
+  "recoverySetNewPassword": "Set a new password",
+  "recoverySetNewPasswordIntro": "Your mobile number is verified. Choose a new password for your account.",
+  "recoveryResetButton": "Reset Password",
+  "recoveryMultipleProfiles": "This number is linked to more than one profile, so it cannot be reset automatically. The administrator has been notified — please contact them.",
+  "recoveryNewPasswordWorks": "Your password has been reset. Sign in with your mobile number and the new password. Other devices have been signed out.",
+  "contactAdminToReset": "Contact Admin to Reset Password",
+  "contactAdminIntro": "Send a request to the administrator. They will verify your identity through your registered mobile number and help you reset your password. Never share your password or OTP with anyone — the administrator will never ask for them.",
+  "contactAdminNameOptional": "Your name (optional)",
+  "contactAdminDescribe": "Describe the problem",
+  "contactAdminSubmit": "Submit Request",
+  "contactAdminSubmitted": "Your request has been sent. The administrator will contact you on your registered mobile number.",
+  "contactAdminAlreadySent": "A request for this number was already sent today. The administrator will contact you soon.",
+  "contactAdminFailed": "Could not send the request. Check your connection and try again.",
+  "changePassword": "Change Password",
+  "currentPassword": "Current Password",
+  "changePasswordIntro": "Enter your current password, then choose a new one.",
+  "mustChangePasswordIntro": "The administrator reset your password. For your security, choose your own new password to continue.",
+  "passwordChangedSuccess": "Your password has been changed.",
+  "newPasswordMustDiffer": "The new password must be different from the current one.",
+  "changePasswordNoPasswordLogin": "Your account signs in with Google, so it has no password to change.",
+  "accountUnavailableTitle": "Login unavailable",
+  "accountUnavailableMessage": "Your login has been disabled by the administrator. Your profile has not been deleted. Please contact support to restore access."
 }

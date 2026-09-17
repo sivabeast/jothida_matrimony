@@ -9,7 +9,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/account_identity.dart';
 import '../../core/utils/admin_member_rows.dart';
+import '../../core/utils/login_identifier.dart';
 import '../../core/utils/matrimony_photo.dart';
 import '../../core/utils/profile_status.dart';
 import '../../core/utils/profile_completion.dart';
@@ -17,6 +19,8 @@ import '../../models/profile_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/admin/account_access_card.dart'
+    show confirmDestructiveAction, memberStatusColor;
 import '../../widgets/common/data_states.dart';
 import '../../widgets/common/network_photo.dart' show PhotoAvatar;
 
@@ -223,7 +227,13 @@ enum _UserFilter {
   rejected('Rejected'),
   suspended('Suspended'),
   recentJoined('Recently Joined'),
-  recentUpdated('Recently Updated');
+  recentUpdated('Recently Updated'),
+  // Account status (login ↔ profile) — see MemberAccountStatus.
+  profileNotCreated('Profile Not Created'),
+  profileIncomplete('Profile Incomplete'),
+  profileCompleted('Profile Completed'),
+  authDeleted('Login Deleted'),
+  needsReview('Needs Review');
 
   final String label;
   const _UserFilter(this.label);
@@ -333,11 +343,27 @@ class _UsersTabState extends ConsumerState<_UsersTab>
         _UserTab.incomplete => p == null,
       };
 
+  /// Account status of every visible row, computed once per build (profile
+  /// count per uid and phone-number conflicts need the whole list).
+  Map<String, MemberAccountStatus> _statusByUid = const {};
+
+  MemberAccountStatus? _statusOf(String uid) => _statusByUid[uid];
+
   bool _filterMatches(
       _UserFilter f, UserModel u, ProfileModel? p, DateTime cutoff) {
     switch (f) {
       case _UserFilter.all:
         return true;
+      case _UserFilter.profileNotCreated:
+        return _statusOf(u.uid) == MemberAccountStatus.profileNotCreated;
+      case _UserFilter.profileIncomplete:
+        return _statusOf(u.uid) == MemberAccountStatus.profileIncomplete;
+      case _UserFilter.profileCompleted:
+        return _statusOf(u.uid) == MemberAccountStatus.profileCompleted;
+      case _UserFilter.authDeleted:
+        return _statusOf(u.uid) == MemberAccountStatus.authDeleted;
+      case _UserFilter.needsReview:
+        return _statusOf(u.uid) == MemberAccountStatus.needsReview;
       case _UserFilter.approved:
         return (p?.status ?? '').trim().toLowerCase() == 'approved';
       case _UserFilter.pending:
@@ -493,23 +519,38 @@ class _UsersTabState extends ConsumerState<_UsersTab>
 
   Future<void> _bulkDelete() async {
     final n = _selected.length;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete accounts?'),
-        content: Text('This permanently deletes $n account(s). '
-            'This cannot be undone.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+    // Only the accounts the admin explicitly ticked — each one listed with its
+    // phone number, UID and status before anything happens, and a typed
+    // confirmation, because every one of them loses its login too.
+    final users = {
+      for (final u in ref.read(allUsersProvider).valueOrNull ??
+          const <UserModel>[])
+        u.uid: u,
+    };
+    final profiles = _profilesNow;
+    final confirmed = await confirmDestructiveAction(
+      context,
+      title: 'Delete $n account(s)?',
+      facts: [
+        for (final uid in _selected.take(15))
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Text(
+              '• ${_displayNameOf(users[uid] ?? UserModel(uid: uid, createdAt: DateTime.now(), updatedAt: DateTime.now()), profiles[uid])}'
+              ' — ${(users[uid]?.phone ?? '').isEmpty ? 'no phone' : users[uid]!.phone} — $uid'
+              ' — ${_statusOf(uid)?.label ?? ''}',
+              style: const TextStyle(fontSize: 12),
+            ),
           ),
-        ],
-      ),
+        if (n > 15) Text('…and ${n - 15} more',
+            style: const TextStyle(fontSize: 12)),
+      ],
+      explanation:
+          'Each selected account, its matrimony profile, contact details and '
+          'Aadhaar record are permanently deleted, its mobile number is '
+          'released and its login removed. Chats, interests and paid requests '
+          'shared with other members are kept. This cannot be undone.',
+      actionLabel: 'Delete $n',
     );
     if (confirmed != true || !mounted) return;
     final uids = _selected.toList();
@@ -609,9 +650,39 @@ class _UsersTabState extends ConsumerState<_UsersTab>
 
     // Every member: account documents plus profiles whose account document
     // is missing (they used to be invisible here).
-    final all = adminMemberRows(
-        usersAsync.valueOrNull ?? const <UserModel>[], profiles);
+    final accountDocs = usersAsync.valueOrNull ?? const <UserModel>[];
+    final all = adminMemberRows(accountDocs, profiles);
     final cutoff = DateTime.now().subtract(const Duration(days: 7));
+
+    // Account status per row: more than one profile on a uid, or one mobile
+    // number on several accounts, is a review case; a row synthesized from a
+    // profile has no account document behind it.
+    final profileCounts = <String, int>{};
+    for (final p in ref.watch(allProfilesProvider).valueOrNull ??
+        const <ProfileModel>[]) {
+      final owner = p.userId.trim();
+      if (p.isDummy || owner.isEmpty) continue;
+      profileCounts[owner] = (profileCounts[owner] ?? 0) + 1;
+    }
+    final uidsByPhone = <String, Set<String>>{};
+    for (final u in accountDocs) {
+      final m = LoginIdentifier.localMobile(u.phone ?? '');
+      if (m != null) uidsByPhone.putIfAbsent(m, () => <String>{}).add(u.uid);
+    }
+    final conflicted = <String>{
+      for (final set in uidsByPhone.values)
+        if (set.length > 1) ...set,
+    };
+    final documented = {for (final u in accountDocs) u.uid};
+    _statusByUid = {
+      for (final u in all)
+        u.uid: classifyMemberAccount(
+          user: documented.contains(u.uid) ? u : null,
+          profile: profiles[u.uid],
+          profileCount: profileCounts[u.uid] ?? 0,
+          phoneConflict: conflicted.contains(u.uid),
+        ),
+    };
 
     // The users↔profiles join drives the tabs (Incomplete = no joined
     // profile), so wait for BOTH streams before rendering rows — otherwise
@@ -719,6 +790,7 @@ class _UsersTabState extends ConsumerState<_UsersTab>
                         child: _UserCard(
                           user: u,
                           profile: profiles[u.uid],
+                          accountStatus: _statusByUid[u.uid],
                           selectMode: _selectMode,
                           selected: _selected.contains(u.uid),
                           onToggle: _busy ? null : () => _toggleUid(u.uid),
@@ -974,12 +1046,16 @@ class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
 class _UserCard extends ConsumerWidget {
   final UserModel user;
   final ProfileModel? profile;
+
+  /// Login ↔ profile status (Profile Not Created … Needs Review).
+  final MemberAccountStatus? accountStatus;
   final bool selectMode;
   final bool selected;
   final VoidCallback? onToggle;
   const _UserCard(
       {required this.user,
       this.profile,
+      this.accountStatus,
       this.selectMode = false,
       this.selected = false,
       this.onToggle});
@@ -1114,6 +1190,9 @@ class _UserCard extends ConsumerWidget {
                     if (status.isNotEmpty)
                       _chip(profileStatusLabel(status).toUpperCase(),
                           profileStatusColor(status)),
+                    if (accountStatus != null)
+                      _chip(accountStatus!.label.toUpperCase(),
+                          memberStatusColor(accountStatus!)),
                   ],
                 ),
                 const SizedBox(height: 7),
@@ -1161,6 +1240,9 @@ class _UserCard extends ConsumerWidget {
                   case 'edit':
                     // The member's own profile wizard, in edit mode (§13/§15).
                     context.push('/admin/user/${user.uid}/edit');
+                  case 'create_profile':
+                    // Signed up, no profile: created under THIS uid.
+                    context.push('/admin/user/${user.uid}/create-profile');
                   case 'suspend':
                     await _act(
                         context,
@@ -1186,12 +1268,21 @@ class _UserCard extends ConsumerWidget {
                         leading: Icon(Icons.person_search_outlined),
                         title: Text('View Full Profile'),
                         contentPadding: EdgeInsets.zero)),
-                const PopupMenuItem(
-                    value: 'edit',
-                    child: ListTile(
-                        leading: Icon(Icons.edit_outlined),
-                        title: Text('Edit Profile'),
-                        contentPadding: EdgeInsets.zero)),
+                if (profile == null &&
+                    accountStatus == MemberAccountStatus.profileNotCreated)
+                  const PopupMenuItem(
+                      value: 'create_profile',
+                      child: ListTile(
+                          leading: Icon(Icons.person_add_alt_1),
+                          title: Text('Create Profile'),
+                          contentPadding: EdgeInsets.zero))
+                else
+                  const PopupMenuItem(
+                      value: 'edit',
+                      child: ListTile(
+                          leading: Icon(Icons.edit_outlined),
+                          title: Text('Edit Profile'),
+                          contentPadding: EdgeInsets.zero)),
                 const PopupMenuDivider(),
                 if (user.isBlocked)
                   const PopupMenuItem(

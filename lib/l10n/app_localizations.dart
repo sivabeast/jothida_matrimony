@@ -5165,7 +5165,7 @@ abstract class AppLocalizations {
   /// No description provided for @phoneResetUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'Mobile password reset is not available yet on this build. Please reset using your email address, or contact support.'**
+  /// **'Password reset by OTP is not available right now. Reset using your email address, or ask the administrator for help.'**
   String get phoneResetUnavailable;
 
   /// No description provided for @createProfileCtaTitle.
@@ -7879,6 +7879,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not listed yet? Use \"Add\" above to add it.'**
   String get placeNotListedHint;
+
+  /// No description provided for @recoveryEnterRegisteredMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the mobile number registered with your account. We will send an OTP to it.'**
+  String get recoveryEnterRegisteredMobile;
+
+  /// No description provided for @recoveryCountryIndia.
+  ///
+  /// In en, this message translates to:
+  /// **'India (+91)'**
+  String get recoveryCountryIndia;
+
+  /// No description provided for @recoveryNoAccountFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No account is registered with this mobile number.'**
+  String get recoveryNoAccountFound;
+
+  /// No description provided for @recoveryCheckFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not check this mobile number. Check your connection and try again.'**
+  String get recoveryCheckFailed;
+
+  /// No description provided for @recoveryOtpUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'OTP verification is not available right now. You can ask the administrator to help you reset your password.'**
+  String get recoveryOtpUnavailable;
+
+  /// No description provided for @recoveryVerifyOtp.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify OTP'**
+  String get recoveryVerifyOtp;
+
+  /// No description provided for @recoveryResendIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend OTP in {seconds}s'**
+  String recoveryResendIn(int seconds);
+
+  /// No description provided for @recoveryTooManyWrongCodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many incorrect codes. Request a new OTP.'**
+  String get recoveryTooManyWrongCodes;
+
+  /// No description provided for @recoveryTooManyRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many OTP requests for this number. Try again in {minutes} minutes.'**
+  String recoveryTooManyRequests(int minutes);
+
+  /// No description provided for @recoveryCodeExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This OTP has expired. Request a new code.'**
+  String get recoveryCodeExpired;
+
+  /// No description provided for @recoveryChooseAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'This number is linked to more than one login. Choose the account whose password you want to reset:'**
+  String get recoveryChooseAccount;
+
+  /// No description provided for @recoveryMobileLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile number login'**
+  String get recoveryMobileLogin;
+
+  /// No description provided for @recoverySetNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a new password'**
+  String get recoverySetNewPassword;
+
+  /// No description provided for @recoverySetNewPasswordIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Your mobile number is verified. Choose a new password for your account.'**
+  String get recoverySetNewPasswordIntro;
+
+  /// No description provided for @recoveryResetButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Password'**
+  String get recoveryResetButton;
+
+  /// No description provided for @recoveryMultipleProfiles.
+  ///
+  /// In en, this message translates to:
+  /// **'This number is linked to more than one profile, so it cannot be reset automatically. The administrator has been notified — please contact them.'**
+  String get recoveryMultipleProfiles;
+
+  /// No description provided for @recoveryNewPasswordWorks.
+  ///
+  /// In en, this message translates to:
+  /// **'Your password has been reset. Sign in with your mobile number and the new password. Other devices have been signed out.'**
+  String get recoveryNewPasswordWorks;
+
+  /// No description provided for @contactAdminToReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Admin to Reset Password'**
+  String get contactAdminToReset;
+
+  /// No description provided for @contactAdminIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a request to the administrator. They will verify your identity through your registered mobile number and help you reset your password. Never share your password or OTP with anyone — the administrator will never ask for them.'**
+  String get contactAdminIntro;
+
+  /// No description provided for @contactAdminNameOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Your name (optional)'**
+  String get contactAdminNameOptional;
+
+  /// No description provided for @contactAdminDescribe.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the problem'**
+  String get contactAdminDescribe;
+
+  /// No description provided for @contactAdminSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Request'**
+  String get contactAdminSubmit;
+
+  /// No description provided for @contactAdminSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Your request has been sent. The administrator will contact you on your registered mobile number.'**
+  String get contactAdminSubmitted;
+
+  /// No description provided for @contactAdminAlreadySent.
+  ///
+  /// In en, this message translates to:
+  /// **'A request for this number was already sent today. The administrator will contact you soon.'**
+  String get contactAdminAlreadySent;
+
+  /// No description provided for @contactAdminFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send the request. Check your connection and try again.'**
+  String get contactAdminFailed;
+
+  /// No description provided for @changePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Password'**
+  String get changePassword;
+
+  /// No description provided for @currentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Password'**
+  String get currentPassword;
+
+  /// No description provided for @changePasswordIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your current password, then choose a new one.'**
+  String get changePasswordIntro;
+
+  /// No description provided for @mustChangePasswordIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'The administrator reset your password. For your security, choose your own new password to continue.'**
+  String get mustChangePasswordIntro;
+
+  /// No description provided for @passwordChangedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Your password has been changed.'**
+  String get passwordChangedSuccess;
+
+  /// No description provided for @newPasswordMustDiffer.
+  ///
+  /// In en, this message translates to:
+  /// **'The new password must be different from the current one.'**
+  String get newPasswordMustDiffer;
+
+  /// No description provided for @changePasswordNoPasswordLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account signs in with Google, so it has no password to change.'**
+  String get changePasswordNoPasswordLogin;
+
+  /// No description provided for @accountUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Login unavailable'**
+  String get accountUnavailableTitle;
+
+  /// No description provided for @accountUnavailableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your login has been disabled by the administrator. Your profile has not been deleted. Please contact support to restore access.'**
+  String get accountUnavailableMessage;
 }
 
 class _AppLocalizationsDelegate

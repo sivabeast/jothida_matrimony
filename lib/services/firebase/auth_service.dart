@@ -85,6 +85,89 @@ class AuthService {
     });
   }
 
+  // ── Password recovery by OTP ────────────────────────────────────────────
+
+  /// Sends (or RE-sends, with [forceResendingToken]) the recovery OTP.
+  ///
+  /// Kept apart from [verifyPhone] because recovery must never touch the
+  /// current session's identity: the code is only verified later by
+  /// [signInForRecovery], and nothing here links or signs in.
+  Future<void> sendRecoveryOtp({
+    required String mobile,
+    int? forceResendingToken,
+    required void Function(String verificationId, int? resendToken) onCodeSent,
+    required void Function(AuthException error) onError,
+    void Function(PhoneAuthCredential credential)? onAutoVerified,
+  }) async {
+    debugPrint('[AuthService] sendRecoveryOtp: +91$mobile '
+        '(resend=${forceResendingToken != null})');
+    try {
+      await _auth.verifyPhoneNumber(
+        phoneNumber: '+91$mobile',
+        forceResendingToken: forceResendingToken,
+        timeout: const Duration(seconds: 60),
+        verificationCompleted: (credential) => onAutoVerified?.call(credential),
+        verificationFailed: (e) {
+          debugPrint('[AuthService] sendRecoveryOtp failed: ${e.code} '
+              '${e.message}');
+          onError(AuthException.from(e));
+        },
+        codeSent: onCodeSent,
+        codeAutoRetrievalTimeout: (_) {},
+      );
+    } catch (e) {
+      onError(AuthException.from(e));
+    }
+  }
+
+  /// Verifies the recovery OTP by signing in to the PHONE identity directly —
+  /// never linking it to a guest session, which would turn a throwaway
+  /// verification into a permanent identity. Returns the phone identity and
+  /// whether Firebase just created it.
+  Future<({User user, bool isNew})> signInForRecovery({
+    String? verificationId,
+    String? smsCode,
+    PhoneAuthCredential? credential,
+  }) {
+    return _guard(() async {
+      final cred = credential ??
+          PhoneAuthProvider.credential(
+              verificationId: verificationId!, smsCode: smsCode!);
+      final result = await _auth
+          .signInWithCredential(cred)
+          .timeout(_credentialTimeout);
+      return (
+        user: result.user!,
+        isNew: result.additionalUserInfo?.isNewUser ?? false,
+      );
+    });
+  }
+
+  /// Changes the signed-in account's password after re-authenticating with
+  /// the current one. Firebase ends the account's other sessions itself when
+  /// the password changes.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await reauthenticateWithPassword(currentPassword);
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw const AuthException('You are not signed in.',
+          code: 'no-current-user');
+    }
+    try {
+      await user.updatePassword(newPassword).timeout(_credentialTimeout);
+      debugPrint('[AuthService] changePassword: ok (${user.uid}).');
+    } on TimeoutException {
+      throw const AuthException(
+          'No internet connection. Please check your network and try again.',
+          code: 'network-request-failed');
+    } catch (e) {
+      throw AuthException.from(e);
+    }
+  }
+
   // ── Email / Password ──────────────────────────────────────────────────────
   /// Creates an e-mail/password account. Delegates to
   /// [registerOrLinkWithEmail] so a Guest Mode session is upgraded in place

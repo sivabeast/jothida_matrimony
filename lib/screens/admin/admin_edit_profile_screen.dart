@@ -128,6 +128,89 @@ class AdminEditProfileScreen extends ConsumerWidget {
   }
 }
 
+/// Admin → a member with a login but NO profile → Create Profile
+/// (`/admin/user/:uid/create-profile`).
+///
+/// The server is asked first whether the account really has no profile — the
+/// same lookup as [AdminEditProfileScreen] — so this page can never create a
+/// second one: an existing profile opens in the editor instead. The wizard then
+/// writes the new profile under the member's OWN Firebase UID.
+class AdminCreateMemberProfileScreen extends ConsumerWidget {
+  final String uid;
+  const AdminCreateMemberProfileScreen({super.key, required this.uid});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final member = uid.trim();
+    if (member.isEmpty) {
+      return _AdminEditMessage(
+        icon: Icons.person_search_outlined,
+        title: 'No member selected',
+        text: 'Open Create Profile from a member in Users.',
+        onBack: () => AdminEditProfileScreen._back(context),
+      );
+    }
+    final account = ref.watch(adminUserByUidProvider(member));
+    final target = ref.watch(adminEditProfileTargetProvider(member));
+    if (account.isLoading || target.isLoading) {
+      return const Scaffold(
+        backgroundColor: AppColors.scaffoldBg,
+        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      );
+    }
+    if (target.hasError) {
+      return _AdminEditMessage(
+        icon: Icons.cloud_off_outlined,
+        title: 'Could not check this member',
+        text: describeAdminProfileLoadError(target.error!),
+        onBack: () => AdminEditProfileScreen._back(context),
+        primaryLabel: 'Retry',
+        primaryIcon: Icons.refresh,
+        onPrimary: () => ref.invalidate(adminEditProfileTargetProvider(member)),
+      );
+    }
+    final user = account.valueOrNull;
+    if (user == null) {
+      return _AdminEditMessage(
+        icon: Icons.no_accounts_outlined,
+        title: 'Account not found',
+        text: 'There is no account record for this user id, so a profile '
+            'cannot be linked to it. Review it in Account Health.',
+        onBack: () => AdminEditProfileScreen._back(context),
+      );
+    }
+    final existing = target.valueOrNull;
+    if (existing != null) {
+      return _AdminEditMessage(
+        icon: Icons.person_outline,
+        title: 'Profile already exists',
+        text: 'This account already has a matrimony profile '
+            '(${existing.fullName.isEmpty ? existing.id : existing.fullName}). '
+            'An account can only have one — edit it instead.',
+        onBack: () => AdminEditProfileScreen._back(context),
+        primaryLabel: 'Edit Profile',
+        primaryIcon: Icons.edit_outlined,
+        onPrimary: () => context.pushReplacement('/admin/user/$member/edit'),
+      );
+    }
+    if (const {'admin', 'super_admin', 'astrologer', 'family'}
+        .contains(user.role)) {
+      return _AdminEditMessage(
+        icon: Icons.badge_outlined,
+        title: 'Not a matrimony account',
+        text: 'This is a ${user.role} account. Staff, admin and family accounts '
+            'never have a matrimony profile.',
+        onBack: () => AdminEditProfileScreen._back(context),
+      );
+    }
+    return ProfileCreationScreen(
+      key: ValueKey('admin-create-for-$member'),
+      adminForMember: true,
+      ownerUserId: member,
+    );
+  }
+}
+
 /// A human explanation of a failed profile load — the cause decides what the
 /// admin can do about it.
 String describeAdminProfileLoadError(Object error) {

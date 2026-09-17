@@ -52,6 +52,44 @@ service cloud.firestore {
       return isAuthenticated() && getUserData().role == 'astrologer';
     }
 
+    // ── Role escalation guard ──────────────────────────────────────────────
+    // `isAdmin()` reads users/{uid}.role, and a member may write their own
+    // account document — so without this ANY signed-in member could give
+    // themselves role 'admin' and every admin-only rule in this file (and the
+    // admin account functions) would mean nothing.
+    //
+    // The roles a caller may put on THEIR OWN document:
+    //   • 'user', and 'family' (a restriction: Wedding Workspace only);
+    //   • 'astrologer' only when the admin-managed employee registry lists the
+    //     caller's Firebase-verified e-mail;
+    //   • 'admin' / 'super_admin' only for the whitelisted, VERIFIED e-mail
+    //     addresses — mirrors lib/core/config/admin_config.dart; change both.
+    // Admins may set any role (rules below).
+    function tokenEmail() {
+      return request.auth.token.get('email', '').lower();
+    }
+    function allowedSelfRole(role) {
+      return role == 'user'
+          || role == 'family'
+          || (role == 'astrologer'
+              && tokenEmail() != ''
+              && exists(/databases/$(database)/documents/astrology_team/$(tokenEmail())))
+          || (request.auth.token.get('email_verified', false) == true
+              && ((role == 'super_admin' && tokenEmail() in ['sivabeast123123@gmail.com'])
+                  || (role == 'admin' && tokenEmail() in ['sathiyaraj887084@gmail.com'])));
+    }
+
+    // ── One matrimony profile per account ─────────────────────────────────
+    // profile_owners/{uid}.profileId names the ONE profile document the uid
+    // owns. A profile can only be created under that id, so a double tap, a
+    // retry or a second device can never add a second profile. An account
+    // with no record yet (legacy data, older app versions) is not blocked —
+    // Account Health backfills the record, and from then on it is binding.
+    function ownsProfileSlot(uid, profileId) {
+      return !existsAfter(/databases/$(database)/documents/profile_owners/$(uid))
+          || getAfter(/databases/$(database)/documents/profile_owners/$(uid)).data.profileId == profileId;
+    }
+
     // NOTE: there is no email-based astrology access anymore — the old
     // internal astrology account was removed. Requests addressed to the
     // synthetic 'internal_astrology' id are managed by ADMINS only.
@@ -153,8 +191,25 @@ service cloud.firestore {
     // have NO read access here (previously granted via isAdminOrAstrologer).
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isAuthenticated() && isOwner(userId);
-      allow update: if isOwner(userId) || isAdmin();
+      // A member creates their own document — with a role they may hold
+      // (allowedSelfRole), not suspended, and never pre-marked as a removed
+      // login.
+      allow create: if isAuthenticated() && isOwner(userId)
+                    && allowedSelfRole(request.resource.data.get('role', 'user'))
+                    && request.resource.data.get('isBlocked', false) == false
+                    && !('authStatus' in request.resource.data);
+      // Admins create the document for an existing login that has none
+      // (Account Health / Create Profile for an existing user) — as a member.
+      allow create: if isAdmin()
+                    && request.resource.data.get('role', 'user') == 'user';
+      // The owner edits their own document, but can never raise their role,
+      // lift a suspension or undo an admin's Delete Login.
+      allow update: if isAdmin()
+                    || (isOwner(userId)
+                        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])
+                            || allowedSelfRole(request.resource.data.role))
+                        && !request.resource.data.diff(resource.data).affectedKeys()
+                              .hasAny(['isBlocked', 'authStatus', 'loginRemovedAt', 'loginRemovedBy']));
       // Self-service account deletion: a user may delete their OWN account
       // document immediately (no admin approval). Admins may delete any.
       allow delete: if isOwner(userId) || isAdmin();
@@ -173,8 +228,17 @@ service cloud.firestore {
     // re-point another member's number at their own account.
     match /login_index/{mobile} {
       allow read: if true;
+      // ONE MOBILE NUMBER → ONE LOGIN: `create` only succeeds while the number
+      // is free — a held number can only be changed by its owner or an admin.
       allow create: if isAuthenticated()
+                    && mobile.matches('^[0-9]{10}$')
                     && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.authEmail is string;
+      // Admins restore a disabled login's number for that account.
+      allow create: if isAdmin()
+                    && mobile.matches('^[0-9]{10}$')
+                    && request.resource.data.uid is string
+                    && request.resource.data.uid != ''
                     && request.resource.data.authEmail is string;
       allow update: if isAdmin()
                     || (isAuthenticated()
@@ -217,13 +281,19 @@ service cloud.firestore {
                   && resource.data.userId == request.auth.uid;
       allow read: if isAdmin();
       allow create: if isAuthenticated()
-                    && request.resource.data.userId == request.auth.uid;
-      // Admins may create profiles directly — used by the Test Data tool to
-      // seed dummy testing profiles (isDummy == true) whose userId is a fixed
-      // seed id rather than the admin's own uid.
-      allow create: if isAdmin();
+                    && request.resource.data.userId == request.auth.uid
+                    && ownsProfileSlot(request.auth.uid, profileId);
+      // Admins create a member's profile under that member's uid (Create
+      // Profile, Create Profile for an existing user) — one per account, like
+      // everyone else. The Test Data tool's dummy profiles (isDummy == true,
+      // fixed seed ids) are exempt.
+      allow create: if isAdmin()
+                    && (request.resource.data.get('isDummy', false) == true
+                        || ownsProfileSlot(request.resource.data.userId, profileId));
+      // The owner edits their profile but cannot hand it to another uid.
       allow update: if isAuthenticated()
-                    && resource.data.userId == request.auth.uid;
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.get('userId', '') == resource.data.userId;
       // Any signed-in user may bump engagement counters (view / interest
       // counts) on a profile they can read — but NOTHING else. This powers
       // incrementViewCount without exposing the rest of the document to edits.
@@ -236,6 +306,86 @@ service cloud.firestore {
       allow delete: if isAdmin()
                     || (isAuthenticated()
                         && resource.data.userId == request.auth.uid);
+    }
+
+    // ── Profile ownership (one profile per account) ───────────────────────
+    // profile_owners/{uid} = { profileId, userId, updatedAt }. See
+    // ownsProfileSlot. The owner may point it at a new profile only when the
+    // one it names no longer exists (deleted, or never written because a save
+    // was interrupted), and may remove it only together with that profile
+    // (account deletion). Admins resolve duplicates.
+    match /profile_owners/{uid} {
+      allow read: if (isAuthenticated() && isOwner(uid)) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(uid)
+                    && request.resource.data.userId == uid
+                    && request.resource.data.profileId is string
+                    && request.resource.data.profileId != '';
+      allow update: if isAuthenticated() && isOwner(uid)
+                    && request.resource.data.userId == uid
+                    && request.resource.data.profileId is string
+                    && request.resource.data.profileId != ''
+                    && (request.resource.data.profileId == resource.data.profileId
+                        || !existsAfter(/databases/$(database)/documents/profiles/$(resource.data.profileId)));
+      allow delete: if isAuthenticated() && isOwner(uid)
+                    && !existsAfter(/databases/$(database)/documents/profiles/$(resource.data.profileId));
+      allow read, write: if isAdmin();
+    }
+
+    // ── Removed logins ────────────────────────────────────────────────────
+    // login_tombstones/{uid} = { mode: 'deleted' | 'disabled', mobile,
+    // authEmail, authDeleted, by, at }. Written by admins when a login is
+    // removed; read by THAT account at its next sign-in, which then refuses
+    // the session (and, for a deleted account, deletes its own leftover
+    // Firebase Auth record — the app cannot do that for another user on the
+    // Spark plan).
+    match /login_tombstones/{uid} {
+      allow read: if (isAuthenticated() && isOwner(uid)) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // ── Admin-assisted password recovery ──────────────────────────────────
+    // password_reset_requests/{mobile}_{dayKey}. A locked-out member files a
+    // request from whatever session the device has — including the guest
+    // (anonymous) one, since by definition they cannot sign in. The payload is
+    // pinned: the registered number, an optional name, a short description,
+    // status 'pending'. It can never carry a password or OTP, and the id makes
+    // it ONE request per number per day (create-only; an overwrite is an
+    // update, which only admins may do). The requester may read back their
+    // own request; everything else is admin-only.
+    match /password_reset_requests/{requestId} {
+      allow create: if isAnyVisitor()
+                    && request.resource.data.keys().hasOnly(['mobile', 'name', 'description', 'status', 'createdAt', 'createdByUid', 'dayKey', 'source'])
+                    && request.resource.data.keys().hasAll(['mobile', 'status', 'createdAt', 'createdByUid', 'dayKey'])
+                    && request.resource.data.mobile is string
+                    && request.resource.data.mobile.matches('^[0-9]{10}$')
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.createdByUid == request.auth.uid
+                    && request.resource.data.createdAt == request.time
+                    && request.resource.data.get('name', '') is string
+                    && request.resource.data.get('name', '').size() <= 80
+                    && request.resource.data.get('description', '') is string
+                    && request.resource.data.get('description', '').size() <= 500
+                    && request.resource.data.get('source', 'app') == 'app'
+                    && request.resource.data.dayKey is int
+                    && math.abs(request.resource.data.dayKey - math.floor(request.time.toMillis() / 86400000)) <= 1
+                    && requestId == request.resource.data.mobile + '_' + string(request.resource.data.dayKey);
+      allow read: if isAdmin()
+                  || (isAnyVisitor() && resource.data.get('createdByUid', '') == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // Account Health "reviewed — leave as is" decisions.
+    match /account_reviews/{key} {
+      allow read, write: if isAdmin();
+    }
+
+    // Written ONLY by the account backend (Admin SDK): rate-limit windows and
+    // one-time OTP recovery sessions. No client may read or forge them.
+    match /auth_rate_limits/{key} {
+      allow read, write: if false;
+    }
+    match /auth_recovery_sessions/{key} {
+      allow read, write: if false;
     }
 
     // ── Contacts (phone / WhatsApp) ───────────────────────────────────────

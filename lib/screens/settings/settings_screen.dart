@@ -7,6 +7,7 @@ import '../../core/utils/account_deletion.dart';
 import '../../core/utils/l10n_ext.dart';
 import '../../providers/app_update_provider.dart';
 import '../../providers/review_provider.dart';
+import '../../providers/service_providers.dart';
 
 /// Settings hub — groups app preferences and links to legal/support pages.
 /// Registered at `/settings`. Reached from Profile → "Settings".
@@ -25,8 +26,9 @@ class SettingsScreen extends ConsumerWidget {
         foregroundColor: Colors.white,
       ),
       // Application settings only — Logout lives in the side menu, never here.
-      // No Change Password / Mobile / Email, 2FA, online-status or block tools:
-      // the app uses Google / OTP sign-in, so those are unnecessary.
+      // No Mobile / Email change, 2FA, online-status or block tools. Change
+      // Password is shown only to accounts that actually have a password
+      // (mobile number / e-mail login) — a Google account has none.
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -48,6 +50,15 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           // ── Account ──────────────────────────────────────────────────────
           _GroupLabel(l10n.account),
+          if (ref
+              .read(authRepositoryProvider)
+              .currentProviderIds
+              .contains('password'))
+            _SettingsTile(
+              icon: Icons.password_outlined,
+              title: l10n.changePassword,
+              route: '/change-password',
+            ),
           _DeleteAccountTile(
             onTap: () => confirmAndDeleteAccount(context, ref),
           ),

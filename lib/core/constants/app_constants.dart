@@ -66,6 +66,17 @@ class AppConstants {
   // Immutable audit trail of important admin actions (approve/reject/suspend/
   // delete profile, credentials shared, announcements sent…). Admin-only.
   static const String adminLogsCollection = 'admin_logs';
+  // One-profile-per-account registry: profile_owners/{uid} = { profileId }.
+  // The rules refuse a profile create whose id does not match it.
+  static const String profileOwnersCollection = 'profile_owners';
+  // Written by an admin when a login is removed; read by that account at its
+  // next sign-in (see core/utils/account_identity.dart → LoginTombstone).
+  static const String loginTombstonesCollection = 'login_tombstones';
+  // Admin-assisted password recovery requests (Admin → Password Reset Requests).
+  static const String passwordResetRequestsCollection =
+      'password_reset_requests';
+  // Admin "reviewed — leave as is" decisions from Account Health.
+  static const String accountReviewsCollection = 'account_reviews';
 
   // Astrologer specializations
   static const List<String> astrologerSpecializations = [

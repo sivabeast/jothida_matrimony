@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/account_identity.dart';
+import '../../core/utils/login_identifier.dart';
 import '../../core/utils/profile_status.dart';
 import '../../models/aadhaar_details.dart';
 import '../../models/astrologer_request_model.dart';
@@ -13,6 +15,8 @@ import '../../models/user_model.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/service_providers.dart';
+import '../../widgets/admin/account_access_card.dart';
+import '../../widgets/admin/login_conflict_dialog.dart';
 import '../../widgets/export/download_saved_dialog.dart';
 import '../../widgets/export/profile_form_export.dart';
 import '../../core/services/horoscope_calculation_service.dart';
@@ -150,6 +154,14 @@ class UserDetailsScreen extends ConsumerWidget {
                   _row('Last Login', _date(user.lastLoginAt)),
                 ]),
                 const SizedBox(height: 14),
+                // Login & Access — the LOGIN (UID, phone, auth + profile
+                // status) managed apart from the matrimony profile.
+                AccountAccessCard(
+                  user: user,
+                  profile: profile,
+                  profileLoading: profileAsync.isLoading,
+                ),
+                const SizedBox(height: 14),
                 if (profile == null)
                   _card([
                     _sectionTitle('Profile'),
@@ -186,10 +198,23 @@ class UserDetailsScreen extends ConsumerWidget {
                               style: TextStyle(fontSize: 13)),
                         ],
                       )
-                    else
+                    else ...[
                       const Text(
                           'This account has not created a matrimony profile yet.',
                           style: TextStyle(fontSize: 13)),
+                      const SizedBox(height: 10),
+                      // Profile Not Created → the admin completes it under
+                      // THIS account's uid; no second login is created.
+                      ElevatedButton.icon(
+                        onPressed: () => context
+                            .push('/admin/user/${user!.uid}/create-profile'),
+                        icon: const Icon(Icons.person_add_alt_1, size: 18),
+                        label: const Text('Create Profile for this User'),
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white),
+                      ),
+                    ],
                   ])
                 else ...[
                   ..._profileCards(profile, contact),
@@ -673,32 +698,58 @@ class UserDetailsScreen extends ConsumerWidget {
 
   Future<void> _delete(
       BuildContext context, WidgetRef ref, UserModel user) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete user?'),
-        content: const Text(
-            'This permanently removes the user account and their profile data. '
-            'This cannot be undone.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: TextButton.styleFrom(foregroundColor: AppColors.error),
-              child: const Text('Delete')),
-        ],
-      ),
+    final profile =
+        ref.read(adminProfileByUserIdProvider(user.uid)).valueOrNull;
+    final mobile = LoginIdentifier.localMobile(user.phone ?? '') ?? '';
+    final ok = await confirmDestructiveAction(
+      context,
+      title: 'Delete user?',
+      facts: [
+        AccountFactsCard(
+          authChecked: false,
+          account: ExistingLogin(
+            uid: user.uid,
+            displayName: user.displayName ?? '',
+            mobile: mobile,
+            role: user.role,
+            hasAccountRecord: true,
+            access: user.loginAccess,
+            profileCount: profile == null ? 0 : 1,
+            profileId: profile?.id ?? '',
+            profileName: profile?.fullName ?? '',
+            profileStatus: profile?.status ?? '',
+          ),
+        ),
+      ],
+      explanation:
+          'This permanently removes the account, its matrimony profile, contact '
+          'details, private copies and Aadhaar record, releases the mobile '
+          'number, and removes the login (from Firebase Authentication when '
+          'the account backend is deployed — otherwise the old credentials are '
+          'blocked and delete themselves at their next sign-in).\n\nChats, '
+          'interests and paid horoscope requests shared with other members are '
+          'not deleted. To stop sign-in but KEEP all data, use Delete login '
+          'instead. This cannot be undone.',
+      actionLabel: 'Delete user',
     );
     if (ok != true) return;
+    if (!context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
-    await ref.read(adminActionsProvider.notifier).deleteUser(user.uid);
+    final notifier = ref.read(adminActionsProvider.notifier);
+    await notifier.deleteUser(user.uid);
     final st = ref.read(adminActionsProvider);
+    final result = notifier.lastRemoval;
     ref.invalidate(allUsersProvider);
     messenger.showSnackBar(SnackBar(
-        content: Text(st.hasError ? 'Could not delete user.' : 'User deleted.')));
+      backgroundColor: st.hasError ? AppColors.error : null,
+      content: Text(st.hasError
+          ? 'The user was NOT fully deleted: ${st.error}'
+          : result?.backendUnavailable ?? true
+              ? 'User deleted. Their old login is blocked and removes itself '
+                  'at its next sign-in.'
+              : 'User and Firebase login deleted.'),
+    ));
     if (!st.hasError) router.pop();
   }
 

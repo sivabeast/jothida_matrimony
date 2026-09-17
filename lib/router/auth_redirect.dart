@@ -138,6 +138,25 @@ String? resolveAuthRedirect({
     log?.call('authenticated but no user document — holding at "$loc"');
     return onAuthPage || onSplash ? null : '/login';
   }
+  // ── A login the administrator removed ────────────────────────────────────
+  // `users/{uid}.authStatus` says this account may not sign in (Delete Login).
+  // A device that stayed signed in is held on a screen that explains it and
+  // offers Sign Out — it never reaches the app behind it. Sign-in itself is
+  // refused earlier, in AuthRepository.
+  if (!user.loginAccess.canSignIn) {
+    if (loc == '/account-unavailable' || loc == '/help') return null;
+    log?.call('login removed by admin → /account-unavailable');
+    return '/account-unavailable';
+  }
+
+  // ── Temporary password (admin-assisted recovery) ─────────────────────────
+  // Must be replaced with the member's own before anything else.
+  if (user.mustChangePassword) {
+    if (loc == '/change-password' || loc == '/help') return null;
+    log?.call('temporary password → /change-password');
+    return '/change-password';
+  }
+
   // Account deleted / signed out mid-session is covered above; from here the
   // visitor is a real, documented account.
   log?.call('redirect check: loc=$loc, uid=${user.uid}, role=${user.role}, '

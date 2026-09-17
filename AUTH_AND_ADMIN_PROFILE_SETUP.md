@@ -1,114 +1,214 @@
-# Authentication & Admin Profile Creation — setup
+# Authentication, accounts & admin login management — setup
 
-Everything in this document is about **deployment**, not code. The app builds and
-runs as-is; these two steps switch on the parts that need backend configuration.
+How logins, matrimony profiles and password recovery fit together, and what has
+to be deployed or configured for each part.
 
 ---
 
-## 1. Deploy the Firestore rules (REQUIRED)
+## 0. Account policy
 
-A new collection, `login_index`, was added. Without its rule, **login with a
-mobile number cannot resolve accounts that registered with a real e-mail**, and
-account creation cannot write its index entry.
+| Rule | Enforced by |
+|---|---|
+| **One mobile number → one login account** | `login_index/{mobile}` — a create-only registry claimed atomically at registration and admin provisioning (`LoginDirectoryService.claim`); rules refuse a claim for anyone but the caller (or an admin) |
+| **One login (Firebase UID) → at most one matrimony profile** | `profile_owners/{uid}.profileId` — written in a transaction before the profile; the rules refuse any profile create whose id does not match it |
+| The **UID**, never the phone number, links a login to its profile | `profiles.userId`; owners cannot change it (rules) |
+| Logins and profiles are separate | A second login identity is never turned into a second profile. Account Health lists it; the admin links or removes it explicitly — nothing is merged automatically |
+| Admin rights come from `users/{uid}.role`, which a member **cannot** raise | Role guard in `firestore.rules` (`allowedSelfRole`) + every admin Cloud Function re-reads the role server-side |
+
+The app's password logins are Firebase **e-mail/password** credentials. A member
+without a real e-mail uses the non-deliverable address
+`p<10-digit-mobile>@phone.jothidamatrimony.app`; `login_index` maps a mobile
+number to whichever address the account uses.
+
+---
+
+## 1. Why "An account already exists with this phone number" appeared after the login was deleted
+
+Two independent leftovers:
+
+1. **Admin → Delete User** removed `profiles` and `users/{uid}` only. The
+   `login_index/{mobile}` entry survived, and that entry is exactly what the
+   Create Profile → Login Credentials step checked → *"This mobile number
+   already has an account."*
+2. The **Firebase Authentication record** survived too — a client app cannot
+   delete another user's login (that needs the Admin SDK), and the project is on
+   the **Spark plan**, where Cloud Functions cannot be deployed. So creating the
+   login again failed with `email-already-in-use`, and the old password still
+   signed in and quietly recreated an empty account for the "deleted" member.
+
+What changed:
+
+* **Delete User** now writes a `login_tombstones/{uid}` record first, removes
+  the profile, the ownership record, contact/private copies, Aadhaar and **every
+  `login_index` entry of the uid**, then `users/{uid}`. With the backend
+  deployed it deletes the Firebase Auth record first.
+* Without the backend, the tombstone makes the leftover login **delete itself**
+  the next time anyone signs in with it (`AuthRepository._refuseRemovedLogin`,
+  before any document is written) — which also frees the number and address.
+* **Delete Login** (new) removes only the ability to sign in: the profile,
+  chats, interests, horoscope documents and requests are kept, the number is
+  released, and **Restore Login** gives it back to the same account.
+* Creating a login now **inspects** what holds the number and shows the admin
+  the account — phone, Firebase UID, profile status, account status — with safe
+  choices: release a deleted login's registration, create the profile for the
+  EXISTING account (no second login), replace an unused Firebase login
+  (backend), or verify an old login with its current password (Spark).
+* Registration refuses a number that already has a login (pre-check + atomic
+  claim + rollback of the just-created login if another sign-up won the race).
+* Profile creation is idempotent: repeated taps join the running save, and the
+  ownership record makes retries / second devices land on the same document.
+
+---
+
+## 2. Deploy the Firestore rules (REQUIRED)
 
 ```bash
 firebase deploy --only firestore:rules
 ```
 
-### What `login_index` is
+New / changed:
 
-`login_index/{10-digit-mobile}` → `{ authEmail, uid, updatedAt }`
+| Path | Rule |
+|---|---|
+| `users/{uid}` | members cannot raise their own `role`, lift `isBlocked`, or clear an admin's `authStatus`; admins may create a member record for an existing login |
+| `login_index/{mobile}` | id must be 10 digits; admins may re-assign a number when restoring a login |
+| `profiles/{id}` | create only under the id in `profile_owners/{uid}` (dummy test profiles exempt); owners cannot change `userId` |
+| `profile_owners/{uid}` | **new** — see §0 |
+| `login_tombstones/{uid}` | **new** — admin write; the account itself may read it at sign-in |
+| `password_reset_requests/{mobile}_{day}` | **new** — any session (incl. guest) may *create* a pinned, password-free request, one per number per day; admin manages |
+| `account_reviews/{key}` | **new** — admin only |
+| `auth_rate_limits`, `auth_recovery_sessions` | **new** — backend only, no client access |
 
-Firebase Authentication verifies a password against an **e-mail** credential
-only. A member signing in with their **mobile number** therefore has to be
-resolved to that address *before* they are authenticated — which is why the read
-is public. The document holds nothing but the sign-in address and its owner: no
-profile, contact or account data is duplicated. `users/{uid}` remains the single
-source of truth for the account itself.
-
-Writes are locked to the owner (`uid == request.auth.uid`), so nobody can
-re-point another member's number at their own account.
-
-### Accounts with no e-mail
-
-A member created by an admin often has no e-mail. Their Firebase credential then
-uses a deterministic, **non-deliverable** address derived from their number:
-
-```
-p<10-digit-mobile>@phone.jothidamatrimony.app
-```
-
-Nothing is ever sent to it — it only carries the password credential — and phone
-login resolves it without any lookup at all.
-
----
-
-## 2. Deploy the OTP password-reset function (OPTIONAL)
-
-"Forgot Password → **Email**" works with no backend at all (Firebase sends the
-reset link).
-
-"Forgot Password → **Mobile Number**" needs one callable function, because the
-client SDK can only change the password of the account it is signed into, and
-verifying an SMS code signs the device into the *phone-provider* identity rather
-than the member's password account.
+Verify the rules' behaviour without deploying anything (uses the Rules API test
+endpoint; needs `firebase login`):
 
 ```bash
-firebase deploy --only functions:resetPasswordWithPhone
+node tool/firestore_rules_test.js
 ```
 
-The function (`functions/index.js`) refuses anything it cannot prove:
-
-1. the caller must hold an OTP-verified phone session
-   (`sign_in_provider == 'phone'`);
-2. the verified number must equal the number being reset;
-3. it resolves that number to the owner through `login_index` and sets the
-   password with the Admin SDK;
-4. it deletes the throwaway phone identity, so OTP resets never litter Firebase
-   Auth with orphan accounts.
-
-Until it is deployed the app says so plainly on that screen and points the member
-at the e-mail path — it never fails silently.
-
-**Prerequisite:** Phone sign-in must be enabled in *Firebase Console →
-Authentication → Sign-in method*, and the app's SHA-1/SHA-256 registered (the
-same requirement Google Sign-In already has).
+> ⚠ Old app versions keep working with these rules (an account without an
+> ownership record is not blocked). Once the new version is out, raise
+> `latestVersionCode` in Admin → App Version so everyone moves to it.
 
 ---
 
-## 3. Admin "Create Matrimony Profile"
+## 3. Deploy the account backend (Blaze plan — REQUIRED for the full feature set)
 
-*Admin → Settings → Create Matrimony Profile* (`/admin/create-profile`).
+`functions/accounts.js`, exported from `functions/index.js`:
 
-It runs the **same** profile-creation wizard members use — same fields, same
-validation, same document shape — and appends one final **Login Credentials**
-step (mobile + e-mail pre-filled from the Contact step, both editable).
+| Function | Used for |
+|---|---|
+| `adminInspectLogin` | what really exists in Firebase Auth for a number / e-mail / UID |
+| `adminProvisionLogin` | create a login, restore one **under the same UID**, replace an unused Firebase login (after confirmation) |
+| `adminDeleteLogin` | delete the Firebase Auth record (keeping or not keeping data) |
+| `adminSetTemporaryPassword` | admin-assisted recovery — one-time password, all sessions revoked, member must change it |
+| `adminListAuthAccounts` | Account Health: deleted / unlinked login checks |
+| `resetPasswordWithPhone` | OTP self-service recovery (hardened: fresh session ≤ 10 min, same number, one use, rate-limited, never picks between two profiles) |
 
-On save:
+Every admin function re-checks `users/{caller}.role` with the Admin SDK and all
+of them enforce App Check. Passwords are never stored or logged; a temporary
+password travels only in the callable response to the admin's device.
 
-1. the member's Firebase Auth account is created on a **secondary Firebase app**
-   so the admin's own session is never swapped out;
-2. `users/{uid}` and the `login_index` entry are written from that new member's
-   session, so no security rule has to be loosened for the admin;
-3. the profile and contact records are written by the admin under the existing
-   admin rules;
-4. the account is flagged `isProfileComplete: true` — an admin-created member is
-   **never** asked to create a profile they already have;
-5. a **Share Login Details** dialog opens WhatsApp with a ready-made message
-   containing the login details, the Play Store link and sign-in instructions.
+```bash
+# needs the Blaze (pay-as-you-go) plan — see FIREBASE_SPARK note below
+firebase deploy --only functions:adminInspectLogin,functions:adminProvisionLogin,functions:adminDeleteLogin,functions:adminSetTemporaryPassword,functions:adminListAuthAccounts,functions:resetPasswordWithPhone
+```
 
-Duplicates are impossible: the mobile number is checked against `login_index`
-before anything is created, and a duplicate e-mail is rejected by Firebase
-itself.
+Pure backend rules are unit-tested:
 
-The Play Store link in that message uses the URL configured in *Admin → Settings
-→ App Update Settings* when one is set; otherwise it falls back to the listing
-for `com.jothida.jothida_matrimony`.
+```bash
+node --test functions/test/accountsCore.test.js
+```
+
+**On the Spark plan today** the app detects the missing backend and says so:
+login creation and Delete User/Delete Login still work (tombstones instead of
+Auth deletion), Account Health checks Firestore only, and temporary passwords /
+same-UID restores / OTP recovery are unavailable. Blaze keeps the free tier;
+set a budget alert when upgrading.
 
 ---
 
-## 4. App Check
+## 4. Password recovery
 
-App Check enforcement (if on) applies to the secondary Firebase app too, so it is
-activated for that instance as well. Nothing extra to configure — the same
-registration that lets the main app sign in covers it.
+### Forgot Password → Mobile number + OTP (primary)
+
+1. Registered number (must be in `login_index`, else → Contact Admin).
+2. Firebase Phone Auth OTP — resend after 60 s, max 3 sends / 30 min per number
+   on the device, 5 wrong codes per OTP, plus Firebase's own SMS quotas.
+3. The OTP signs the device into a throwaway **phone** identity (never linked).
+4. `resetPasswordWithPhone` (lookup) returns the resettable account(s), masked.
+   Several login identities of ONE person → the member picks; a number on more
+   than one matrimony profile → refused and flagged to the admin.
+5. New password + confirmation.
+6. The backend sets it, revokes every session of the account, marks the
+   verification used and deletes the throwaway identity.
+
+**Prerequisites:** Blaze plan (Phone Auth SMS is Blaze-only; Spark projects get
+`BILLING_NOT_ENABLED`), *Authentication → Sign-in method → Phone* enabled, the
+app's SHA-1/SHA-256 registered, and the backend deployed. WhatsApp OTP is **not**
+offered: Firebase Phone Auth only delivers SMS.
+
+### Forgot Password → E-mail
+
+Firebase's reset link, for members with a real address. No backend needed.
+
+### Contact Admin to Reset Password (always available)
+
+Creates `password_reset_requests/{mobile}_{day}` with the number, an optional
+name and a description — never a password or OTP. Admin → **Password Reset
+Requests**: mark Under Review → verify through the registered number → identify
+the account (resolved from the number) → send a Firebase reset e-mail to the
+account's real address, or set a temporary password (backend) → Resolved /
+Rejected with a note.
+
+A temporary password sets `users/{uid}.mustChangePassword`; the router holds the
+member on **Change Password** until they choose their own.
+
+---
+
+## 5. Admin panel
+
+* **Users** — every row shows Profile Not Created / Profile Incomplete / Profile
+  Completed / Login Deleted / Needs Review, with matching filters and a Create
+  Profile action for members without one.
+* **User Details → Login & Access** — Firebase UID, registered phone, login and
+  profile status; Check login, Create profile, Delete login, Restore login,
+  Temporary password. Delete User asks for the account facts + typed `DELETE`.
+* **Create Profile** — Login Credentials step inspects the number first and
+  offers the conflict choices from §1.
+* **Accounts & Logins → Account Health** — duplicate numbers, multiple profiles
+  on one UID, profiles whose login is gone, deleted logins still holding a
+  number, unlinked Firebase logins, accounts without a Firebase login, index
+  mismatches, missing ownership records, members without a profile. Each case is
+  resolved individually; "Mark reviewed" leaves it as is.
+* **Accounts & Logins → Password Reset Requests** — §4.
+
+---
+
+## 6. One-time cleanup after deploying (existing data)
+
+1. Deploy the rules (§2).
+2. Admin → **Account Health** → *Missing ownership records* → **Record ownership
+   for all** (non-destructive; makes one-profile-per-account binding for
+   existing members).
+3. *Deleted login still holds a phone number* → **Release the number** for each
+   (only the leftover registration is removed).
+4. *Multiple profiles for one account* → open each, choose the profile to KEEP,
+   confirm (typed `DELETE`).
+5. *Duplicate phone number* → open the accounts, verify with the member, delete
+   the wrong login (data kept) or mark reviewed. Nothing is merged
+   automatically.
+6. With the backend deployed, rescan for *Unlinked authentication account* /
+   *Authentication account deleted* and resolve those the same way.
+
+---
+
+## 7. Admin "Create Matrimony Profile" (unchanged behaviour)
+
+It still runs the **same** wizard members use plus a final **Login Credentials**
+step, creates the login on a secondary Firebase app (the admin's session is
+never swapped out), writes `users/{uid}` + the number claim from the new
+member's session, and opens **Share Login Details** (WhatsApp) afterwards. A
+success message is shown only after the server confirmed the writes.
+
+App Check is activated on the secondary app on both its fresh and reused paths.

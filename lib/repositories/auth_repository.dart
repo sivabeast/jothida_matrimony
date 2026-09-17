@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../core/errors/auth_exception.dart';
+import '../core/utils/account_identity.dart';
 import '../core/utils/login_identifier.dart';
 import '../models/user_model.dart';
 import '../services/firebase/auth_service.dart';
@@ -164,6 +165,9 @@ class AuthRepository {
   /// document, register the FCM token, and return the [UserModel].
   Future<UserModel> _onAuthenticated(User user,
       {String? phone, String? loginProvider}) async {
+    // BEFORE anything is written: a login the admin removed must neither get
+    // in nor recreate its account document on the way.
+    await _refuseRemovedLogin(user);
     debugPrint('[AuthRepository] _onAuthenticated: '
         'createOrUpdateUserOnLogin(${user.uid}, loginProvider=$loginProvider)');
     final UserModel model;
@@ -214,6 +218,16 @@ class AuthRepository {
       throw AuthException('Signed in, but something went wrong while '
           'setting up your account: $e');
     }
+    if (!model.loginAccess.canSignIn) {
+      debugPrint('[AuthRepository] ${user.uid} login is '
+          '${model.loginAccess.name} — refusing the session.');
+      await _auth.signOut();
+      throw const AuthException(
+        'Your login has been disabled by the administrator. Please contact '
+        'support to restore access.',
+        code: 'login-disabled',
+      );
+    }
     debugPrint('[AuthRepository] _onAuthenticated: Firestore doc ready.');
     // FCM token registration is best-effort and must NEVER block or delay the
     // sign-in. `getToken()` can hang (not throw) on emulators, restricted
@@ -222,6 +236,51 @@ class AuthRepository {
     // user reaches their screen the moment their account doc is ready.
     unawaited(_registerFcmToken(user.uid));
     return model;
+  }
+
+  /// Refuses a sign-in whose login an admin removed (`login_tombstones/{uid}`).
+  ///
+  /// Firebase Authentication records cannot be deleted from the app on the
+  /// Spark plan, so an admin's Delete User left a working password behind. The
+  /// tombstone closes that: an account DELETED by the admin deletes its own
+  /// Auth record right here — the sign-in is seconds old, so Firebase allows
+  /// it without re-authentication — which also frees the mobile number and
+  /// e-mail for a new login. A login that was only DISABLED (data kept) is
+  /// signed out and left intact so the admin can restore it.
+  ///
+  /// A failed read is not treated as a removal (rules not deployed yet, or
+  /// offline); `users/{uid}.authStatus` is checked again after the account read.
+  Future<void> _refuseRemovedLogin(User user) async {
+    if (user.isAnonymous) return;
+    final LoginTombstone? tombstone;
+    try {
+      tombstone = (await _firestore.readLoginTombstone(user.uid)).tombstone;
+    } catch (e) {
+      debugPrint('[AuthRepository] tombstone check for ${user.uid} skipped: $e');
+      return;
+    }
+    if (tombstone == null) return;
+    if (tombstone.deletesAuthRecord) {
+      debugPrint('[AuthRepository] ${user.uid} was deleted by an admin — '
+          'removing the leftover Firebase Auth record.');
+      try {
+        await _auth.deleteAuthUser();
+      } catch (e) {
+        debugPrint('[AuthRepository] leftover Auth record delete failed: $e');
+      }
+      await _auth.endSessionAfterDeletion();
+      throw const AuthException(
+        'This account was deleted by the administrator. Please contact support '
+        'if you need access again.',
+        code: 'account-deleted',
+      );
+    }
+    await _auth.signOut();
+    throw const AuthException(
+      'Your login has been disabled by the administrator. Please contact '
+      'support to restore access.',
+      code: 'login-disabled',
+    );
   }
 
   /// Best-effort push-token registration, intentionally detached from the
@@ -270,10 +329,54 @@ class AuthRepository {
     final authEmail = realEmail.isNotEmpty
         ? realEmail
         : LoginIdentifier.phoneAuthEmail(mobile);
+
+    // ONE MOBILE NUMBER → ONE LOGIN. Checked before the Firebase account
+    // exists, so the common case never creates anything…
+    final LoginIndexEntry? holder;
+    try {
+      holder = await _directory.lookup(mobile);
+    } catch (e) {
+      debugPrint('[AuthRepository] registerUserWithDetails: mobile check '
+          'failed: $e');
+      throw const AuthException(
+        'Could not check whether this mobile number is already registered. '
+        'Check your connection and try again.',
+        code: 'mobile-check-failed',
+      );
+    }
+    if (holder != null) throw _mobileAlreadyRegistered;
+
     debugPrint('[AuthRepository] registerUserWithDetails: creating Firebase '
         'account (realEmail=${realEmail.isNotEmpty})...');
     final cred = await _auth.registerWithEmail(authEmail, password);
     final user = cred.user!;
+
+    // …and CLAIMED atomically right after, which closes the race where two
+    // sign-ups for the same number both passed the check above. The loser's
+    // brand-new login is removed again before any account document exists.
+    try {
+      final owner = await _directory.claim(
+          mobile: mobile, authEmail: authEmail, uid: user.uid);
+      if (owner.uid != user.uid) {
+        debugPrint('[AuthRepository] registerUserWithDetails: $mobile was '
+            'claimed by ${owner.uid} meanwhile — rolling back ${user.uid}.');
+        try {
+          await _auth.deleteAuthUser();
+        } catch (e) {
+          debugPrint('[AuthRepository] rollback of ${user.uid} failed: $e');
+        }
+        await _auth.signOut();
+        throw _mobileAlreadyRegistered;
+      }
+    } on AuthException {
+      rethrow;
+    } catch (e) {
+      // Rules not deployed / offline: the pre-check above already passed, and
+      // the synthesized address still resolves a phone login.
+      debugPrint('[AuthRepository] registerUserWithDetails: mobile claim '
+          'skipped (non-fatal): $e');
+    }
+
     debugPrint('[AuthRepository] registerUserWithDetails: Firebase user '
         '${user.uid} created. Updating display name...');
     await user.updateDisplayName(name);
@@ -299,7 +402,34 @@ class AuthRepository {
     return model;
   }
 
+  static const AuthException _mobileAlreadyRegistered = AuthException(
+    'This mobile number is already registered. Log in with it, or use Forgot '
+    'Password to recover the account.',
+    code: 'mobile-already-in-use',
+  );
+
   Future<UserModel?> getUserModel(String uid) => _firestore.getUser(uid);
+
+  /// Changes the signed-in member's password (Settings → Change Password, and
+  /// the forced change after an admin issued a temporary one).
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await _auth.changePassword(
+        currentPassword: currentPassword, newPassword: newPassword);
+    final uid = _auth.currentUserId;
+    if (uid == null) return;
+    try {
+      await _firestore.updateUser(uid, {
+        'mustChangePassword': false,
+        'passwordChangedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('[AuthRepository] changePassword: flag clear failed: $e');
+      rethrow;
+    }
+  }
 
   /// Signs out. The device's FCM token is deleted and cleared from
   /// `users/{uid}` FIRST (while the session still satisfies the owner-only

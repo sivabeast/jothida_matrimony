@@ -24,6 +24,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/chat/chat_list_screen.dart';
 import '../screens/chat/chat_screen.dart';
 import '../screens/auth/register_screen.dart';
+import '../screens/auth/change_password_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/profile/my_profile_screen.dart';
@@ -37,6 +38,8 @@ import '../screens/admin/astrology_service_settings_screen.dart';
 import '../screens/admin/admin_dashboard.dart';
 import '../screens/admin/admin_users_page.dart';
 import '../screens/admin/admin_edit_profile_screen.dart';
+import '../screens/admin/account_health_screen.dart';
+import '../screens/admin/password_reset_requests_screen.dart';
 import '../screens/admin/astrologer_accounts_screen.dart';
 import '../screens/admin/astrologer_details_screen.dart';
 import '../screens/admin/user_details_screen.dart';
@@ -236,6 +239,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
       GoRoute(path: '/forgot-password', builder: (_, __) => const ForgotPasswordScreen()),
+      // Settings → Change Password, and the forced change after an admin
+      // issued a temporary password (resolveAuthRedirect).
+      GoRoute(
+          path: '/change-password',
+          builder: (_, __) => const ChangePasswordScreen()),
+      // A signed-in session whose login the admin removed.
+      GoRoute(
+          path: '/account-unavailable',
+          builder: (_, __) => const AccountUnavailableScreen()),
       GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
       GoRoute(path: '/profile/create', builder: (_, __) => const ProfileCreationScreen()),
       // Step 12 — onboarding success screen (completion % + next actions).
@@ -491,6 +503,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               path: '/admin/user/:uid/edit',
               builder: (_, state) => AdminEditProfileScreen(
                   uid: state.pathParameters['uid'] ?? '')),
+          // A member who signed in but never created a profile: the admin
+          // creates it under that member's OWN uid (no second login).
+          GoRoute(
+              path: '/admin/user/:uid/create-profile',
+              builder: (_, state) => AdminCreateMemberProfileScreen(
+                  uid: state.pathParameters['uid'] ?? '')),
+          // Authentication Management: duplicate numbers, deleted / unlinked
+          // logins, missing profiles, profile ↔ login mismatches.
+          GoRoute(
+              path: '/admin/account-health',
+              builder: (_, __) => const AccountHealthScreen()),
+          // Admin-assisted password recovery requests.
+          GoRoute(
+              path: '/admin/password-resets',
+              builder: (_, __) => const PasswordResetRequestsScreen()),
           // Astrologers page → admin-provisioned account registry (add by
           // Gmail, enable/disable; Google-only login + auto-assignment).
           GoRoute(

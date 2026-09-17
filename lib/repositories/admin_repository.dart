@@ -35,7 +35,8 @@ class AdminRepository {
 
   Future<void> unblockUser(String userId) => _firestore.unblockUser(userId);
 
-  Future<void> deleteUser(String userId) => _firestore.deleteUser(userId);
+  Future<List<String>> deleteUser(String userId, {String adminUid = ''}) =>
+      _firestore.deleteUser(userId, adminUid: adminUid);
 
   Future<Map<String, dynamic>> getAdminStats() => _firestore.getAdminStats();
 
